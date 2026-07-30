@@ -64,9 +64,11 @@ internal static class MappedCache<T> where T : new()
         if (!typeof(IMapped<T>).IsAssignableFrom(typeof(T)))
             return null;
 
+        // AOT-SAFE: hand-written IMapped<T> fallback only; a source-generated T returned above via Accessors. The consumer roots CreateRowMapper or implements IGeneratedAccessors<T>; JAUNTYGEN002 warns at build. Spec 009.
         MethodInfo? method = typeof(T).GetMethod("CreateRowMapper", BindingFlags.Public | BindingFlags.Static, null, [typeof(IDataReader)], null);
         if (method != null && method.ReturnType == typeof(Func<IDataReader, T>))
         {
+            // AOT-SAFE: delegate over the member resolved just above; same population and rooting.
             return (Func<IDataReader, Func<IDataReader, T>>)method.CreateDelegate(typeof(Func<IDataReader, Func<IDataReader, T>>));
         }
 
@@ -88,17 +90,21 @@ internal static class MappedCache<T> where T : new()
         {
             // On .NET 8+, source gen produces a static ReadEntity method.
 
+            // AOT-SAFE: hand-written IMapped<T> fallback only; a source-generated T returned above via Accessors. The consumer roots ReadEntity or implements IGeneratedAccessors<T>; JAUNTYGEN002 warns at build. Spec 009.
             MethodInfo? method = typeof(T).GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Static, null, [typeof(IDataReader)], null);
             if (method != null)
             {
+                // AOT-SAFE: delegate over the member resolved just above; same population and rooting.
                 return (Func<IDataReader, T>)method.CreateDelegate(typeof(Func<IDataReader, T>));
             }
 
             // Fallback for non-static ReadEntity
 
+            // AOT-SAFE: same population as the static lookup above - hand-written IMapped<T> with an instance ReadEntity; consumer-rooted, JAUNTYGEN002 warns. Spec 009.
             MethodInfo? instanceMethod = typeof(T).GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Instance, null, [typeof(IDataReader)], null);
             if (instanceMethod != null)
             {
+                // AOT-SAFE: delegate over the member resolved just above; same population and rooting.
                 var openDelegate = (Func<T, IDataReader, T>)instanceMethod.CreateDelegate(typeof(Func<T, IDataReader, T>));
                 return (IDataReader r) => openDelegate(new T(), r);
             }
