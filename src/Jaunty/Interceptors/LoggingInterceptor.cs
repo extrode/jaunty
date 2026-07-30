@@ -202,6 +202,13 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
 #endif
     private static PropertyInfo[] GetPublicProperties(Type type)
     {
+        // Until spec 011 this line passed Verify-NativeAOT only because the file still carried a
+        // DynamicallyAccessedMembers attribute that the scanner's KeepPatterns match against
+        // whole-file content. It preserved nothing, so removing it was right, and this marker is
+        // what should have stood in for it in the same commit.
+        // Preservation comes from the generated call-site rooting described on
+        // ParameterCache.BuildMetadata, not from any annotation here.
+        // AOT-SAFE: reflects a runtime Type; rooted at the consumer's call sites, see spec 011.
         return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 
