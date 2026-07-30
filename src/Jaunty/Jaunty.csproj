@@ -32,8 +32,10 @@
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
 	</ItemGroup>
 
-	<!-- For net8.0, these are built-in but we need to include the package for compatibility -->
-	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+	<!-- For net8.0+, these are built-in but we need to include the package for compatibility.
+	     Was conditioned == net8.0; the first net10 leg compile (010 T11) failed with CS0234 on
+	     every Microsoft.Extensions using, because the condition silently dropped both packages. -->
+	<ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
 	</ItemGroup>

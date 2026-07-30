@@ -7,12 +7,18 @@
     <Authors>Syed Beparey</Authors>
     <Description>Reflection-based mapping extension for Jaunty. Enables Dictionary, dynamic, and ValueTuple mapping.</Description>
     <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
-    <!-- Suppress AOT/trimming warnings - this project uses reflection by design -->
-    <NoWarn>$(NoWarn);IL2057;IL2067;IL2070;IL2077;IL2080;IL2090;IL2091;IL2093;IL3050</NoWarn>
+    <!-- Suppress AOT/trimming warnings - this project uses reflection by design.
+         IL2060/IL2075 joined the list with net10: its trim analyzer flags MakeGenericMethod and
+         PropertyType.GetMethod sites the net8 analyzer did not (010 T11, first net10 compile). -->
+    <NoWarn>$(NoWarn);IL2057;IL2060;IL2067;IL2070;IL2075;IL2077;IL2080;IL2090;IL2091;IL2093;IL3050</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <ProjectReference Include="..\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <ProjectReference Include="..\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net10.0" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
