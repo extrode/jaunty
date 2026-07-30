@@ -1,4 +1,9 @@
 <Project>
+  <!-- Chain to the repository-root props (LangVersion). Without this import MSBuild stops at
+       the nearest Directory.Build.props and everything under src/ silently falls back to the
+       SDK's per-TFM language default. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
   <PropertyGroup>
     <!-- Single source of truth for the local/dev version. Release builds override
          via -p:Version=<tag> in .github/workflows/release.yml (SemVer, see CHANGELOG.md). -->
