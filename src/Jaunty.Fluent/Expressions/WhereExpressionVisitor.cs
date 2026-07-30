@@ -268,10 +268,27 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             && node.Arguments.Count == 1
             && typeof(System.Collections.IEnumerable).IsAssignableFrom(node.Object.Type);
 
-        if (isEnumerableContains || isInstanceContains)
+        // C# 14's first-class span conversions rebind an *array* receiver away from
+        // Enumerable.Contains to MemoryExtensions.Contains(ReadOnlySpan<T>, T). The tree is built
+        // by whoever writes the lambda, so this arrives from a consumer compiling with C# 14 no
+        // matter which language version Jaunty itself was built with - the LangVersion pin in
+        // Directory.Build.props does not protect against it. Arity and argument order match the
+        // Enumerable form; only the collection differs, arriving wrapped in
+        // ReadOnlySpan<T>.op_Implicit. Matched by name because MemoryExtensions does not exist on
+        // netstandard2.0 and referencing it would add a System.Memory dependency to every consumer.
+        bool isSpanContains = node.Method.Name == "Contains"
+            && node.Object is null
+            && node.Arguments.Count == 2
+            && node.Method.DeclaringType?.FullName == "System.MemoryExtensions";
+
+        if (isEnumerableContains || isInstanceContains || isSpanContains)
         {
-            var collection = EvaluateExpression(isEnumerableContains ? node.Arguments[0] : node.Object!);
-            var memberExpr = (isEnumerableContains ? node.Arguments[1] : node.Arguments[0]) as MemberExpression;
+            var collectionExpr = isInstanceContains ? node.Object! : node.Arguments[0];
+            if (isSpanContains)
+                collectionExpr = UnwrapSpanConversion(collectionExpr);
+
+            var collection = EvaluateExpression(collectionExpr);
+            var memberExpr = (isInstanceContains ? node.Arguments[0] : node.Arguments[1]) as MemberExpression;
 
             if (memberExpr is not null && IsParameterMember(memberExpr) && collection is System.Collections.IEnumerable enumerable)
             {
@@ -363,7 +380,11 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 "condition to use a single method call on the property, or express it as raw SQL.");
         }
 
-        // Fallback: evaluate and use as constant
+        // Fallback: evaluate and use as constant. Only legitimate when the call is closed over
+        // captured state; the guard above is what keeps a parameter-referencing subtree from
+        // reaching Compile() and surfacing as an opaque "variable 'p' ... is not defined". The
+        // C# 14 span-rebinding fix upstream hit exactly that: an unsupported translation looked
+        // like an evaluation bug.
         var result = EvaluateExpression(node);
         if (result is bool boolResult)
         {
@@ -910,6 +931,25 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     // rather than rewriting every call site, so the shared implementation - including its
     // closure-member fast path - is the only place the behaviour lives.
     private static object? EvaluateExpression(Expression expression) => ExpressionEvaluator.Evaluate(expression);
+
+    /// <summary>
+    /// Strips the <c>ReadOnlySpan&lt;T&gt;.op_Implicit</c> (or <c>Span&lt;T&gt;</c>) wrapper C# 14
+    /// emits around an array passed to a span-based overload, yielding the original array
+    /// expression. Returns the expression unchanged when it is not such a conversion, so an
+    /// unrecognised shape falls through to the normal evaluation path rather than being mangled.
+    /// </summary>
+    private static Expression UnwrapSpanConversion(Expression expression)
+    {
+        if (expression is MethodCallExpression { Method.Name: "op_Implicit", Object: null, Arguments.Count: 1 } conversion
+            && conversion.Method.DeclaringType?.FullName is string declaring
+            && (declaring.StartsWith("System.ReadOnlySpan`1", StringComparison.Ordinal)
+                || declaring.StartsWith("System.Span`1", StringComparison.Ordinal)))
+        {
+            return conversion.Arguments[0];
+        }
+
+        return expression;
+    }
 
     /// <summary>
     /// Formats the length operand of <c>string.Substring(start, length)</c> for the generated SQL.
