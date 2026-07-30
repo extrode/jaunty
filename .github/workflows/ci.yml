@@ -86,8 +86,11 @@ jobs:
       - name: Restore
         run: dotnet restore Jaunty.slnx
 
+      # --no-incremental because ILLink/AOT analysis only runs on a clean compile: an
+      # incremental build on this self-hosted runner's persistent workspace reported 0
+      # diagnostics where a clean build of the same tree reported 4 (spec 010, AC2).
       - name: Build
-        run: dotnet build Jaunty.slnx -c Release --no-restore
+        run: dotnet build Jaunty.slnx -c Release --no-restore --no-incremental
 
       - name: Test - Core (SQLite + SQL Server)
         env:
