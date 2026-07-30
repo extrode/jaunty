@@ -195,8 +195,11 @@ files** are untouched.
   It is **first-party**, so `010-spec.md:252-256` explicitly forbids sweeping it into T15's
   `WarningsNotAsErrors`. It appeared once and vanished under incremental analysis — the plan's own
   first draft lost it to precisely the trap its first risk bullet describes.
-- [ ] **T17** `--no-incremental` on the CI build step — files: `.github/workflows/ci.yml:73` —
+- [x] **T17** `--no-incremental` on the CI build step — files: `.github/workflows/ci.yml:73` —
   covers: §3.1, AC2 — done when: CI cannot report a false-clean net10 build.
+  **DONE 2026-07-30** — pulled ahead of PR2 because it is a pure YAML edit, safe to make while the
+  T8 baseline ran. The self-hosted runner's persistent workspace is exactly where the stale-obj
+  false-clean bites. Verified by YAML parse; the behavioural proof is CI's next run.
 - [ ] **T18** net10 legs for the five test suites plus the T13 assertion — files:
   `.github/workflows/ci.yml:75-121`, `.github/workflows/release.yml:49` — covers: §3.5, AC3, AC6 —
   done when: all five suites run on both targets and are green. **Duplicated steps, not a job
