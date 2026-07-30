@@ -47,8 +47,7 @@ internal static class TargetDdlGenerator
             }
 
             keyProperty = prop;
-            ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
-            keyColumnName = colAttr?.Name ?? prop.Name;
+            keyColumnName = MappedPropertyFilter.GetColumnName(prop);
         }
 
         return keyColumnName;
@@ -65,8 +64,8 @@ internal static class TargetDdlGenerator
 
         foreach (PropertyInfo prop in MappedPropertyFilter.GetMappedProperties(entityType))
         {
-            ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
-            var columnName = colAttr?.Name ?? prop.Name;
+            // AUD-R26-067: was a fourth inline copy of the "[Column] name or property name" rule.
+            var columnName = MappedPropertyFilter.GetColumnName(prop);
             DuplicateColumnGuard.Claim(entityType, columnName, prop, claimed);
             var isPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() is not null;
 

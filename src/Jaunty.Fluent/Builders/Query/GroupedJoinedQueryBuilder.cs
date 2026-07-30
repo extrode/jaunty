@@ -30,8 +30,9 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
     {
         _parent = parent;
         _metadata = [FluentMetadataCache.GetMetadata<TFrom>(), FluentMetadataCache.GetMetadata<TJoin>()];
+        CachedDialectMetadata[] cachedMetadata = [FluentMetadataCache.GetForDialect<TFrom>(_parent.Dialect), FluentMetadataCache.GetForDialect<TJoin>(_parent.Dialect)];
         string[] tablePrefixes = [_parent.FromAlias ?? _metadata[0].TableName, _parent.Joins[0].Alias ?? _metadata[1].TableName];
-        _visitor = new JoinedGroupByExpressionVisitor(_parent.Dialect, _metadata, tablePrefixes, keySelector);
+        _visitor = new JoinedGroupByExpressionVisitor(_parent.Dialect, _metadata, cachedMetadata, tablePrefixes, keySelector);
     }
 
     public IGroupedJoinedQuery<TFrom, TJoin, TKey> Having(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, bool>> predicate)

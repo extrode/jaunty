@@ -61,11 +61,9 @@ internal static class ColumnMappingCache
         });
     }
 
-    private static string GetColumnName(PropertyInfo prop)
-    {
-        ColumnAttribute? attr = prop.GetCustomAttribute<ColumnAttribute>();
-        return attr?.Name ?? prop.Name;
-    }
+    // AUD-R26-067: shared with ExpressionTranslator and TargetDdlGenerator - see
+    // MappedPropertyFilter.GetColumnName for why the naming half of the rule moved there too.
+    private static string GetColumnName(PropertyInfo prop) => MappedPropertyFilter.GetColumnName(prop);
 
     /// <summary>
     /// Compiles a getter delegate: (object entity) => (object?)entity.Property

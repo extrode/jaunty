@@ -21,6 +21,12 @@ internal sealed class JoinedGroupByExpressionVisitor
 {
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata[] _metadata;
+
+    // AUD-R26-058: parallel to _metadata, same indices. This class is non-generic by design - one
+    // implementation serves arities 2, 3 and 4 - so it cannot call FluentMetadataCache.GetForDialect<T>
+    // itself the way the other converted sites do. Its three callers are all generic on their entity
+    // types and already build the _metadata array, so they build this one alongside it.
+    private readonly CachedDialectMetadata[] _cachedMetadata;
     private readonly string[] _tablePrefixes;
     private readonly string[] _groupByColumns;
     private readonly Dictionary<string, string> _keyPropertyToColumn;
@@ -31,16 +37,23 @@ internal sealed class JoinedGroupByExpressionVisitor
 
     /// <param name="dialect">The SQL dialect, for column escaping.</param>
     /// <param name="metadata">Entity metadata, ordered index 0 = TFrom, index 1 = TJoin, etc.</param>
+    /// <param name="cachedMetadata">
+    /// Pre-escaped per-dialect metadata, parallel to <paramref name="metadata"/> and in the same
+    /// order. Supplied by the caller because this class is non-generic - one implementation serves
+    /// arities 2, 3 and 4 - so it cannot resolve the cache entries itself, while all three callers
+    /// are generic on their entity types and already build the metadata array (AUD-R26-058).
+    /// </param>
     /// <param name="tablePrefixes">Table alias (or table name, if unaliased) per joined
     /// entity, same order as <paramref name="metadata"/> - every generated column reference
     /// is qualified with it, since two joined tables can share a column name (e.g. both
     /// having an "id" or shared FK column) and an unqualified GROUP BY/SELECT reference to it
     /// is ambiguous and fails at execution, unlike the single-entity case where it can't be.</param>
     /// <param name="keySelector">The GROUP BY key selector.</param>
-    public JoinedGroupByExpressionVisitor(ISqlDialect dialect, EntityMetadata[] metadata, string[] tablePrefixes, LambdaExpression keySelector)
+    public JoinedGroupByExpressionVisitor(ISqlDialect dialect, EntityMetadata[] metadata, CachedDialectMetadata[] cachedMetadata, string[] tablePrefixes, LambdaExpression keySelector)
     {
         _dialect = dialect;
         _metadata = metadata;
+        _cachedMetadata = cachedMetadata;
         _tablePrefixes = tablePrefixes;
         (_groupByColumns, _keyPropertyToColumn) = ExtractGroupByColumns(keySelector);
     }
@@ -432,20 +445,10 @@ internal sealed class JoinedGroupByExpressionVisitor
         return expr is ParameterExpression p && ReferenceEquals(p, groupingParam);
     }
 
-    private string GetQualifiedColumnName(int paramIndex, string propertyName)
-    {
-        IReadOnlyList<ColumnMetadata> columns = _metadata[paramIndex].Columns;
-        string columnName = propertyName;
-
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].PropertyName == propertyName)
-            {
-                columnName = columns[i].ColumnName;
-                break;
-            }
-        }
-
-        return $"{_tablePrefixes[paramIndex]}.{_dialect.EscapeColumnName(columnName)}";
-    }
+    // AUD-R26-058: was a linear scan of _metadata[paramIndex].Columns followed by
+    // _dialect.EscapeColumnName - a SqlIdentifierValidator regex match and a keyword HashSet lookup
+    // per column reference per query build. AUD-R25 replaced exactly that with the pre-escaped
+    // lookup everywhere else and missed this site.
+    private string GetQualifiedColumnName(int paramIndex, string propertyName) =>
+        $"{_tablePrefixes[paramIndex]}.{_cachedMetadata[paramIndex].GetColumnName(propertyName)}";
 }

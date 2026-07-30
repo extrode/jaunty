@@ -75,6 +75,15 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         // options.EnableStreaming is likewise not applicable rather than merely unimplemented: the
         // binary COPY protocol has no buffered mode, so this import always streams and false cannot
         // be honored. Documented on BulkCopyOptions.EnableStreaming (AUD-R25).
+        //
+        // AUD-R26-061: options.IdentityMode, options.CheckConstraints and options.TableLock are
+        // not read here either, and the reasons differ from the ones above. CheckConstraints and
+        // TableLock are not expressible: this provider has no per-import constraint control or
+        // table-lock hint, and approximating the latter with a separate LOCK statement would carry
+        // different transactional semantics than the flag implies. IdentityMode is inert on every
+        // provider, not just this one - EntityDataReader streams EntityMetadata.InsertColumns,
+        // which excludes identity columns, so the identity value never reaches any bulk copy at
+        // all. Documented per provider on BulkCopyOptions; pinned by BulkCopyIdentityModeTests.
 
         // Build COPY command
         var copyCommand = BuildCopyCommand(schemaName, tableName, data);
@@ -158,6 +167,15 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         // options.EnableStreaming is likewise not applicable rather than merely unimplemented: the
         // binary COPY protocol has no buffered mode, so this import always streams and false cannot
         // be honored. Documented on BulkCopyOptions.EnableStreaming (AUD-R25).
+        //
+        // AUD-R26-061: options.IdentityMode, options.CheckConstraints and options.TableLock are
+        // not read here either, and the reasons differ from the ones above. CheckConstraints and
+        // TableLock are not expressible: this provider has no per-import constraint control or
+        // table-lock hint, and approximating the latter with a separate LOCK statement would carry
+        // different transactional semantics than the flag implies. IdentityMode is inert on every
+        // provider, not just this one - EntityDataReader streams EntityMetadata.InsertColumns,
+        // which excludes identity columns, so the identity value never reaches any bulk copy at
+        // all. Documented per provider on BulkCopyOptions; pinned by BulkCopyIdentityModeTests.
 
         var copyCommand = BuildCopyCommand(schemaName, tableName, data);
 
