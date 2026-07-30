@@ -121,7 +121,9 @@ files** are untouched.
   `benchmarks/BENCHMARK-RESULTS.md` — covers: §3.7, AC7 — done when: a full net8 run is recorded
   with its commit SHA. **Ordering is load-bearing: once T10 lands there is no net8-only tree to
   measure.** Blocks T20.
-- [ ] **T9** Widen the **5 net8.0-conditioned `PropertyGroup`s** — files:
+- [x] **T9** *(done 2026-07-30 — all 5 widened; verified per-TFM by `dotnet msbuild -getProperty`
+  evaluation, not compile: net8/net10 receive each group, net472/ns2.0 unchanged. Compile proof
+  lands with T14.)* Widen the **5 net8.0-conditioned `PropertyGroup`s** — files:
   `src/Jaunty/Jaunty.csproj:41-45`, `src/Jaunty.FlatFiles/…:24-28`, `src/Jaunty.Fluent/…:23-25`,
   `tests/Jaunty.Tests/…:16-22`, `tests/Jaunty.Tests/…:40` — covers: §3.2, AC2, AC3 — done when:
   each condition uses
