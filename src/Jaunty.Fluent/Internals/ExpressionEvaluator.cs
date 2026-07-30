@@ -37,9 +37,16 @@ internal static class ExpressionEvaluator
 {
     public static object? Evaluate(Expression expression)
     {
+        // The generic Lambda<TDelegate> with a statically-known delegate type, not the non-generic
+        // Lambda(...).Compile().DynamicInvoke(): net10's ref assemblies annotate the non-generic
+        // factory [RequiresDynamicCode] (IL3050) because it must construct a delegate type at
+        // runtime, where Func<object?> is fixed at compile time and Compile() falls back to the
+        // interpreter under NativeAOT. Also skips DynamicInvoke's reflection dispatch. Exceptions
+        // from the evaluated member now surface unwrapped instead of inside
+        // TargetInvocationException; the tests assert InnerException ?? ex for exactly this reason.
         return TryEvaluate(expression, out object? value)
             ? value
-            : Expression.Lambda(expression).Compile().DynamicInvoke();
+            : Expression.Lambda<Func<object?>>(Expression.Convert(expression, typeof(object))).Compile()();
     }
 
     /// <summary>
