@@ -190,9 +190,13 @@ attribute is the whole difference between working and broken, which is why step 
 
 ## §7 — What is deliberately not done
 
-- **`NativeAOT-FluentQuery` still fails.** Round-27 item 18, and out of scope per §4: it throws from
-  `Expression.GetUserDefinedBinaryOperatorOrThrow` inside `Program.<Main>$`, building
+- **`NativeAOT-FluentQuery` still fails** — as of this spec. Round-27 item 18, and out of scope per §4:
+  it throws from `Expression.GetUserDefinedBinaryOperatorOrThrow` inside `Program.<Main>$`, building
   `x => x.UnitPrice > 20m`, before any Jaunty code runs.
+  > **Superseded the same day** by AUD-R26-072, a separate change: one `[DynamicDependency]` on
+  > `decimal` reached from the three Fluent entry points. All four samples now pass. The scope line
+  > above was still the right call — that fix belonged in `Jaunty.Fluent`, on its own measurements,
+  > not folded into this spec's parameter-binding work.
 - **The forwarding gap is not closed.** Closing it means inter-procedural analysis of the consumer's
   own call graph. Documented on `JauntyAot` with the two one-line fixes instead.
 - **Open question 1 is still open.** Whether `JAUNTYGEN003` should be gated on the consumer's
