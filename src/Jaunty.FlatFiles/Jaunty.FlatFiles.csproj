@@ -35,6 +35,14 @@
 		                  SetTargetFramework="TargetFramework=net8.0"
 		                  SkipGetTargetFrameworkProperties="true" />
 	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<ProjectReference Include="..\Jaunty\Jaunty.csproj"
+		                  SetTargetFramework="TargetFramework=net10.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\Jaunty.Fluent\Jaunty.Fluent.csproj"
+		                  SetTargetFramework="TargetFramework=net10.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<ProjectReference Include="..\Jaunty\Jaunty.csproj"
 		                  SetTargetFramework="TargetFramework=netstandard2.0"

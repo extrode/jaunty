@@ -26,6 +26,7 @@
     <Project Path="samples/NativeAOT-Basic/NativeAOT-Basic.csproj" />
     <Project Path="samples/NativeAOT-WithReflection/NativeAOT-WithReflection.csproj" />
     <Project Path="samples/NativeAOT-CustomMapper/NativeAOT-CustomMapper.csproj" />
+    <Project Path="samples/NativeAOT-FluentQuery/NativeAOT-FluentQuery.csproj" />
   </Folder>
   <Folder Name="/tools/">
   </Folder>
