@@ -466,6 +466,36 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     /// call for that result set, instead of rebuilding it on every call (previously: once per
     /// entity per row).
     /// </remarks>
+    /// <summary>
+    /// Maps result-set column name to ordinal, case-insensitively, resolving a duplicate name to
+    /// its <b>first</b> ordinal.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26-059 (batch 5, low/consistency). The tie-break was undocumented, and the library holds
+    /// three different answers to the same question: this resolves a duplicate to the first ordinal,
+    /// the dictionary row-builders (<c>QueryPartialList</c>, <c>SpecialTypeMappers.CreateDictionaryMapper</c>)
+    /// resolve it to the last via <c>row[columnNames[i]] = value</c>, and
+    /// <c>EnsureNoAmbiguousColumns</c> throws with a message telling the caller how to
+    /// disambiguate. All three use <see cref="StringComparer.OrdinalIgnoreCase"/>, so all three see
+    /// the same collisions.
+    /// </para>
+    /// <para>
+    /// First-wins is deliberate <em>here</em> and is not simply the row-builders' rule spelled
+    /// differently. This lookup only ever sees a reader whose columns were aliased by
+    /// <c>SelectBothInternal</c> with the disjoint <c>f_</c> and <c>j_</c> prefixes, so the ordinary
+    /// unaliased-join collision the row-builders hit - <c>SELECT o.Id, c.id</c> - cannot occur. A
+    /// duplicate reaching here means two prefixed aliases genuinely collided, and first-wins keeps
+    /// the entity order the prefixes encode.
+    /// </para>
+    /// <para>
+    /// Converging the three is deliberately not done from this finding: it is
+    /// <c>EnsureNoAmbiguousColumns</c>'s throw that the other two should probably adopt, and that is
+    /// a behavioural change to shipped query paths that belongs with the batch-1 finding against
+    /// <c>QueryPartialList</c> rather than bolted on here. Recorded so whoever takes that one settles
+    /// all three at once instead of leaving the library with two answers and a half.
+    /// </para>
+    /// </remarks>
     internal static Dictionary<string, int> BuildOrdinalLookup(IDataReader reader)
     {
         var map = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);

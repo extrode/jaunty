@@ -58,11 +58,34 @@ internal static class ExpressionTranslator
         return GetColumnName(prop);
     }
 
-    private static string GetColumnName(PropertyInfo prop)
-    {
-        ColumnAttribute? attr = prop.GetCustomAttribute<ColumnAttribute>();
-        return attr?.Name ?? prop.Name;
-    }
+    /// <summary>
+    /// AUD-R26-067: the fourth copy of the "[Column] name or property name" rule, now shared with
+    /// <see cref="ColumnMappingCache"/> and <see cref="Import.TargetDdlGenerator"/> via
+    /// <see cref="MappedPropertyFilter"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It is deliberately <em>not</em> guarded by <see cref="MappedPropertyFilter.IsMapped"/>, even
+    /// though the finding asked for that and a first attempt added it. Measured: the guard is a
+    /// behavioural regression. The registered view exposes every column in the <em>file</em> -
+    /// <c>DuckDb.GenerateViewSqlWithDateTimeCasts</c> builds its select list from the reader's own
+    /// field names, not from the entity's mapping - so a property marked <c>[Ignore]</c> ("do not
+    /// materialise this") whose column is nevertheless present in the CSV is legitimately usable in
+    /// an <c>Update</c>/<c>Delete</c> predicate today. Measured before and after: an
+    /// <c>[Ignore]</c>d <c>Audited</c> property over a CSV with an <c>Audited</c> column gives
+    /// <c>Delete&lt;Row&gt;(r =&gt; r.Audited == "yes")</c> → 1 row deleted without the guard, and
+    /// <c>InvalidOperationException</c> with it.
+    /// </para>
+    /// <para>
+    /// The finding's own measurement used a property with no corresponding file column, where the
+    /// provider does reject the SQL - so its complaint (an opaque
+    /// <c>Binder Error: Referenced column "Secret" not found in FROM clause!</c> naming neither the
+    /// entity nor the reason) is real but narrower than the guard. Closing it properly means
+    /// deciding whether the entity's mapping or the file's columns define the queryable surface
+    /// here, which is a design decision rather than a fix; carried to round 27.
+    /// </para>
+    /// </remarks>
+    private static string GetColumnName(PropertyInfo prop) => MappedPropertyFilter.GetColumnName(prop);
 
     // AUD-R12-127: mirrors DuckDbDialect's private QuoteIdentifier escaping. Callers of
     // ResolveColumnName/ResolveColumnFromMember outside this file (e.g. DuckDbUpdate.cs) escape

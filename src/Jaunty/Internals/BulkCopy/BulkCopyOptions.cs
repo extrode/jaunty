@@ -68,6 +68,35 @@ public sealed class BulkCopyOptions
     /// Gets or sets how identity columns are handled.
     /// Default is <see cref="BulkCopyIdentityMode.Default"/>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>AUD-R26-061: currently has no effect on any provider, including SQL Server.</b> Jaunty's
+    /// bulk-insert path streams entities through <c>EntityDataReader&lt;T&gt;</c>, which exposes
+    /// <c>EntityMetadata.InsertColumns</c> - built as "not identity and not computed". The identity
+    /// value is therefore never in the data stream, and no provider-side flag can preserve a value
+    /// it was never sent.
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>
+    /// <b>SQL Server</b> - <see cref="BulkCopyIdentityMode.KeepIdentity"/> is mapped onto
+    /// <c>SqlBulkCopyOptions.KeepIdentity</c>, but that flag only says "do not reseed for identity
+    /// values in the incoming data", and <c>ApplyColumnMappings</c> maps only the reader's columns -
+    /// which exclude the identity column. The server generates identity values exactly as it would
+    /// have without the flag.
+    /// </description></item>
+    /// <item><description>
+    /// <b>PostgreSQL and MySQL</b> - not read at all. Same net result, reached one step earlier.
+    /// </description></item>
+    /// </list>
+    /// <para>
+    /// Making <see cref="BulkCopyIdentityMode.KeepIdentity"/> work means changing which columns
+    /// <c>EntityDataReader</c> streams - which changes the SQL every provider emits and needs
+    /// <c>SET IDENTITY_INSERT</c> on SQL Server, <c>OVERRIDING SYSTEM VALUE</c> on PostgreSQL for
+    /// <c>GENERATED ALWAYS</c> columns, and the caller to hold the corresponding permissions. That
+    /// is a feature rather than a wiring fix, so the property is documented as inert rather than
+    /// quietly widened. Pinned by <c>BulkCopyIdentityModeTests</c>.
+    /// </para>
+    /// </remarks>
     public BulkCopyIdentityMode IdentityMode { get; set; } = BulkCopyIdentityMode.Default;
 
     /// <summary>
@@ -75,12 +104,23 @@ public sealed class BulkCopyOptions
     /// Default is <see langword="true"/> - constraints are enforced.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// AUD-R26. This defaulted to <see langword="false"/> alongside
     /// <c>BulkCopyConfiguration.DefaultCheckConstraints</c>. Jaunty's own callers always assign it
     /// explicitly, so flipping the configuration default was enough to fix the reported defect - but
     /// leaving this one <see langword="false"/> would mean a <see cref="BulkCopyOptions"/> built
     /// directly, by a custom <c>IBulkCopyProvider</c> or a future call site, silently opted out of
     /// validation again. The unsafe value should not be the one you get by saying nothing.
+    /// </para>
+    /// <para>
+    /// AUD-R26-061: honored on SQL Server only, where it maps onto
+    /// <c>SqlBulkCopyOptions.CheckConstraints</c>. PostgreSQL and MySQL do not read it and cannot:
+    /// <c>NpgsqlBinaryImporter</c> exposes no per-import constraint control, and the MySQL provider
+    /// issues ordinary multi-row INSERTs, which always enforce constraints - so on those two
+    /// providers the behaviour is permanently that of <see langword="true"/> and
+    /// <see langword="false"/> is not expressible. Setting it false therefore weakens validation on
+    /// SQL Server alone.
+    /// </para>
     /// </remarks>
     public bool CheckConstraints { get; set; } = true;
 
@@ -88,6 +128,14 @@ public sealed class BulkCopyOptions
     /// Gets or sets the table locking option.
     /// Default is <see cref="TableLockOption.Default"/>.
     /// </summary>
+    /// <remarks>
+    /// AUD-R26-061: honored on SQL Server only, where
+    /// <see cref="TableLockOption.BulkLock"/> maps onto <c>SqlBulkCopyOptions.TableLock</c>.
+    /// PostgreSQL and MySQL do not read it - neither <c>NpgsqlBinaryImporter</c> nor a multi-row
+    /// INSERT takes a table-level lock hint, and acquiring one would mean issuing a separate
+    /// <c>LOCK TABLE</c>/<c>LOCK TABLES</c> statement with different transactional semantics than
+    /// the flag implies. Left unread rather than approximated.
+    /// </remarks>
     public TableLockOption TableLock { get; set; } = TableLockOption.Default;
 
     /// <summary>
