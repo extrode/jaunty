@@ -14,7 +14,7 @@ namespace Jaunty.SourceGenerator;
 /// Source generator that creates entity mappers for classes marked with table mapping attributes.
 /// </summary>
 [Generator]
-public class JauntyGenerator : IIncrementalGenerator
+public partial class JauntyGenerator : IIncrementalGenerator
 {
     /// <summary>
     /// Reported when two mapped properties resolve to the same effective column name (a literal
@@ -32,9 +32,46 @@ public class JauntyGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    /// Reported when a type implements <c>IMapped&lt;T&gt;</c> by hand instead of being
+    /// source-generated. Spec 009.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A source-generated entity implements <c>IGeneratedAccessors&lt;T&gt;</c>, so Jaunty takes its
+    /// mapper as a delegate and the generated <c>ReadEntity</c> is statically referenced - the trimmer
+    /// keeps it. A hand-written <c>IMapped&lt;T&gt;</c> has no such reference, so
+    /// <c>MappedCache&lt;T&gt;</c> falls back to <c>typeof(T).GetMethod("ReadEntity")</c>, and on a
+    /// trimmed or NativeAOT publish that member can be removed. The failure then surfaces at runtime
+    /// as <c>No mapper found for type 'X'</c>, with nothing connecting it to trimming - which is
+    /// exactly the defect spec 009 exists to remove. Reporting it here converts a runtime surprise
+    /// into a build-time warning that names the type.
+    /// </para>
+    /// <para>
+    /// Warning rather than error on purpose: a hand-written <c>IMapped&lt;T&gt;</c> is legitimate and
+    /// works fine on the JIT, so this must not break those builds. It does fire for JIT-only consumers
+    /// who will never trim; if that proves noisy, the fix is to gate it on the consumer's
+    /// <c>PublishTrimmed</c>/<c>IsTrimmable</c> via a <c>CompilerVisibleProperty</c> shipped in the
+    /// package's .props, not to lower the severity - the condition it reports is real.
+    /// </para>
+    /// </remarks>
+    private static readonly DiagnosticDescriptor HandWrittenMapperNotTrimSafeDescriptor = new(
+        id: "JAUNTYGEN002",
+        title: "Hand-written IMapped<T> will not survive trimming",
+        messageFormat: "Type '{0}' implements IMapped<{0}> by hand, so Jaunty locates its ReadEntity by reflection and a trimmed or NativeAOT publish can remove it, failing at runtime with \"No mapper found for type '{0}'\". Add [Table] so Jaunty generates the mapper, implement IGeneratedAccessors<{0}>, or root the member with [DynamicDependency].",
+        category: "JauntySourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     /// <summary>The two <c>[Table]</c> attributes the generator recognizes, by metadata name.</summary>
     private const string JauntyTableAttribute = "Jaunty.Attributes.TableAttribute";
     private const string DataAnnotationsTableAttribute = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";
+
+    /// <summary>The interface a hand-written mapper implements, by metadata name.</summary>
+    private const string MappedInterfaceMetadataName = "IMapped`1";
+
+    /// <summary>The namespace <see cref="MappedInterfaceMetadataName"/> must live in to count.</summary>
+    private const string JauntyInterfacesNamespace = "Jaunty.Interfaces";
 
     /// <summary>
     /// Initializes the source generator by registering syntax providers and source output callbacks.
@@ -91,6 +128,81 @@ public class JauntyGenerator : IIncrementalGenerator
             var source = GenerateMapper(entity, spc.ReportDiagnostic);
             spc.AddSource($"{entity.HintName}.JauntyMapper.g.cs", SourceText.From(source, Encoding.UTF8));
         });
+
+        // Spec 009 / JAUNTYGEN002. No attribute to key on here, so this is the one place the
+        // generator has to look at plain class declarations. The predicate stays syntax-only and
+        // cheap - a class with a base list - and the transform yields a small value-equatable
+        // struct (or null), so an edit that does not change the answer is cached like everything
+        // else in the pipeline.
+        IncrementalValuesProvider<HandWrittenMapper?> handWrittenMappers = context.SyntaxProvider.CreateSyntaxProvider(
+            predicate: static (node, _) => node is ClassDeclarationSyntax { BaseList: not null },
+            transform: static (ctx, _) => FindHandWrittenMapper(ctx));
+
+        context.RegisterSourceOutput(handWrittenMappers, static (spc, mapper) =>
+        {
+            if (mapper is { } m)
+                spc.ReportDiagnostic(Diagnostic.Create(HandWrittenMapperNotTrimSafeDescriptor, m.Location, m.TypeName));
+        });
+
+        // Spec 011. Unlike everything above, this reads the consumer's *call sites* rather than their
+        // type declarations: the parameter objects passed to Query/Execute are frequently anonymous
+        // and are never declared as entities, so the call site is the only place their types are
+        // knowable. See ParameterRooting.cs.
+        RegisterParameterRooting(context);
+    }
+
+    /// <summary>
+    /// A hand-written <c>IMapped&lt;T&gt;</c> implementation worth warning about. A value type holding
+    /// no symbols, so the incremental driver can compare two results and skip downstream work.
+    /// </summary>
+    private readonly struct HandWrittenMapper : IEquatable<HandWrittenMapper>
+    {
+        public HandWrittenMapper(string typeName, Location location)
+        {
+            TypeName = typeName;
+            Location = location;
+        }
+
+        public string TypeName { get; }
+        public Location Location { get; }
+
+        public bool Equals(HandWrittenMapper other)
+            => TypeName == other.TypeName && Location.Equals(other.Location);
+
+        public override bool Equals(object? obj) => obj is HandWrittenMapper other && Equals(other);
+
+        public override int GetHashCode() => unchecked((TypeName?.GetHashCode() ?? 0) * 397) ^ Location.GetHashCode();
+    }
+
+    /// <summary>
+    /// Returns the class under the cursor when it implements <c>Jaunty.Interfaces.IMapped&lt;T&gt;</c>
+    /// by hand, or <see langword="null"/> otherwise.
+    /// </summary>
+    /// <remarks>
+    /// <c>[Table]</c> entities are excluded: the generator emits <c>IMapped&lt;T&gt;</c> and
+    /// <c>IGeneratedAccessors&lt;T&gt;</c> for them, so they are trim-safe and warning about them
+    /// would be a false positive. They also would not be caught semantically here - a generator does
+    /// not see its own output - but the attribute check makes that independent of that detail rather
+    /// than reliant on it.
+    /// </remarks>
+    private static HandWrittenMapper? FindHandWrittenMapper(GeneratorSyntaxContext ctx)
+    {
+        if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node) is not INamedTypeSymbol symbol)
+            return null;
+
+        if (HasAttribute(symbol, "TableAttribute"))
+            return null;
+
+        // Already trim-safe by declaring the accessors itself.
+        if (symbol.AllInterfaces.Any(static i => i.MetadataName == "IGeneratedAccessors`1"
+                && i.ContainingNamespace?.ToDisplayString() == JauntyInterfacesNamespace))
+            return null;
+
+        if (!symbol.AllInterfaces.Any(static i => i.MetadataName == MappedInterfaceMetadataName
+                && i.ContainingNamespace?.ToDisplayString() == JauntyInterfacesNamespace))
+            return null;
+
+        return new HandWrittenMapper(symbol.Name, ctx.Node.GetLocation());
     }
 
     /// <summary>
@@ -440,7 +552,7 @@ public class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"namespace {namespaceName}");
             sb.AppendLine("{");
         }
-        sb.AppendLine($"    {entity.AccessibilityKeyword} partial class {className} : IMapped<{className}>, IEntityMetadataSource");
+        sb.AppendLine($"    {entity.AccessibilityKeyword} partial class {className} : IMapped<{className}>, IEntityMetadataSource, IGeneratedAccessors<{className}>");
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
         sb.AppendLine("        {");
@@ -869,6 +981,31 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        string IEntityMetadataSource.TableName => TableName;");
         sb.AppendLine("        string? IEntityMetadataSource.SchemaName => SchemaName;");
         sb.AppendLine("        System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;");
+
+        // IGeneratedAccessors<T> - spec 009. Hands the members emitted above to Jaunty as delegates
+        // so MappedCache<T>/WriteParameterCache<T> reach them by interface dispatch instead of
+        // typeof(T).GetMethod(name). Each body is a static method group reference, which is an
+        // ordinary IL call the trimmer must honour - that reference, and nothing else, is what keeps
+        // these members alive on a trimmed or NativeAOT publish. Measured before this existed:
+        // NativeAOT-Basic threw "No mapper found for type 'Product'" and Insert threw "No parameter
+        // binder found", while the identical code on the JIT worked.
+        //
+        // Explicit implementations: these are the consumer's own entity classes, so the accessors
+        // stay off their public surface, exactly as IEntityMetadataSource.Columns does above.
+        sb.AppendLine();
+        sb.AppendLine("        #if NET8_0_OR_GREATER");
+        sb.AppendLine($"        Func<IDataReader, {className}> IGeneratedAccessors<{className}>.RowMapper => ReadEntity;");
+        sb.AppendLine("        #else");
+        // Below net8.0 ReadEntity is an instance member (see IMapped<T>), so the delegate has to
+        // construct one. Per row, not once: the reflection fallback this replaces did
+        // `r => openDelegate(new T(), r)`, and reusing a single instance across rows would change
+        // behaviour for any ReadEntity that touches `this`.
+        sb.AppendLine($"        Func<IDataReader, {className}> IGeneratedAccessors<{className}>.RowMapper => r => new {className}().ReadEntity(r);");
+        sb.AppendLine("        #endif");
+        sb.AppendLine($"        Func<IDataReader, Func<IDataReader, {className}>> IGeneratedAccessors<{className}>.RowMapperFactory => CreateRowMapper;");
+        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.InsertBinder => BindInsert;");
+        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.UpdateBinder => BindUpdate;");
+        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.DeleteBinder => BindDelete;");
 
         sb.AppendLine("    }");
         if (!isGlobalNamespace)

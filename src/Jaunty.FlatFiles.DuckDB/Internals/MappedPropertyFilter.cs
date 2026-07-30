@@ -87,6 +87,20 @@ internal static class MappedPropertyFilter
     }
 
     /// <summary>
+    /// The column a mapped property maps to: its <c>[Column]</c> name, or its own name.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-067: this two-line rule existed in three places -
+    /// <see cref="ColumnMappingCache"/>, <see cref="Import.TargetDdlGenerator"/>'s inline resolution
+    /// and <c>ExpressionTranslator.GetColumnName</c>. The first two had already been brought under
+    /// this class's <see cref="GetMappedProperties"/> for the *filtering* half of the rule while
+    /// each keeping its own copy of the *naming* half; the third was outside both. Same class of
+    /// drift AUD-R25 created this type for, so the naming half lives here now as well.
+    /// </remarks>
+    public static string GetColumnName(PropertyInfo property) =>
+        property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+
+    /// <summary>
     /// Returns <see langword="true"/> when <paramref name="property"/> should be treated as a column.
     /// </summary>
     public static bool IsMapped(PropertyInfo property)

@@ -23,6 +23,20 @@ public class JoinedGroupByExpressionVisitorTests
         FluentMetadataCache.GetMetadata<Category>()
     };
 
+    // AUD-R26-058: parallel to _metadata, in the same order. The visitor is non-generic - one
+    // implementation serves arities 2, 3 and 4 - so its callers supply the pre-escaped per-dialect
+    // metadata rather than it resolving the cache entries itself.
+    private readonly CachedDialectMetadata[] _cachedMetadata;
+
+    public JoinedGroupByExpressionVisitorTests()
+    {
+        _cachedMetadata =
+        [
+            FluentMetadataCache.GetForDialect<Product>(_dialect),
+            FluentMetadataCache.GetForDialect<Category>(_dialect)
+        ];
+    }
+
     [Fact]
     public void TranslateSelect_WithCompositeKey_BareKeyProjection_EmitsAllKeyColumns()
     {
@@ -34,7 +48,7 @@ public class JoinedGroupByExpressionVisitorTests
         // case: a bare `g.Key` access has no expression tree describing the composite type's
         // real property names.
         Expression<Func<Product, Category, object>> keySelector = (p, c) => new { p.CategoryId, c.CategoryName };
-        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, new[] { "p", "c" }, keySelector);
+        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
 
         Expression<Func<IGroupingJoined<object, Product, Category>, object>> selectExpr = g => g.Key;
         var (columns, aliases) = visitor.TranslateSelect(selectExpr);
@@ -53,7 +67,7 @@ public class JoinedGroupByExpressionVisitorTests
         // falling through to TranslateHavingOperand, unlike the single-entity
         // GroupedQueryBuilder.TranslateHavingExpression it's meant to mirror.
         Expression<Func<Product, Category, object>> keySelector = (p, c) => new { p.CategoryId };
-        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, new[] { "p", "c" }, keySelector);
+        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
 
         Expression<Func<IGroupingJoined<object, Product, Category>, int>> havingExpr = g => g.Count();
         var (sql, parameters) = visitor.TranslateHavingPredicate(havingExpr);

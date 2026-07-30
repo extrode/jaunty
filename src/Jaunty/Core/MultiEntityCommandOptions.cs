@@ -25,17 +25,30 @@ public readonly struct MultiEntityCommandOptions<T1, T2>
     /// <summary>Command type. Defaults to Text.</summary>
     public readonly CommandType CommandType;
 
+    /// <summary>
+    /// Hint for the number of rows the query is expected to return, used to pre-size the result
+    /// list. Null means use <c>JauntyConfig.QueryResultCapacity</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-054 (batch 4, low/consistency). This field did not exist, so the implicit conversion
+    /// below always produced a null <c>ExpectedRowCount</c> - and <c>QueryCore</c>/<c>QueryCoreAsync</c>
+    /// read exactly that at all twelve multi-entity call sites. The consumer was already there; only
+    /// the field a caller could set was missing, so no multi-entity query could pre-size its list.
+    /// </remarks>
+    public readonly int? ExpectedRowCount;
+
     /// <summary>Initializes a new instance with execution options.</summary>
-    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text)
+    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
+        ExpectedRowCount = expectedRowCount;
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2)&gt; for use with the multi-entity query core.</summary>
     public static implicit operator CommandOptions<(T1, T2)>(MultiEntityCommandOptions<T1, T2> opts) =>
-        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType, expectedRowCount: opts.ExpectedRowCount);
 }
 
 // ============================================================
@@ -59,17 +72,30 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3>
     /// <summary>Command type. Defaults to Text.</summary>
     public readonly CommandType CommandType;
 
+    /// <summary>
+    /// Hint for the number of rows the query is expected to return, used to pre-size the result
+    /// list. Null means use <c>JauntyConfig.QueryResultCapacity</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-054 (batch 4, low/consistency). This field did not exist, so the implicit conversion
+    /// below always produced a null <c>ExpectedRowCount</c> - and <c>QueryCore</c>/<c>QueryCoreAsync</c>
+    /// read exactly that at all twelve multi-entity call sites. The consumer was already there; only
+    /// the field a caller could set was missing, so no multi-entity query could pre-size its list.
+    /// </remarks>
+    public readonly int? ExpectedRowCount;
+
     /// <summary>Initializes a new instance with execution options.</summary>
-    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text)
+    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
+        ExpectedRowCount = expectedRowCount;
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3)&gt; for use with the multi-entity query core.</summary>
     public static implicit operator CommandOptions<(T1, T2, T3)>(MultiEntityCommandOptions<T1, T2, T3> opts) =>
-        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType, expectedRowCount: opts.ExpectedRowCount);
 }
 
 // ============================================================
@@ -94,17 +120,30 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4>
     /// <summary>Command type. Defaults to Text.</summary>
     public readonly CommandType CommandType;
 
+    /// <summary>
+    /// Hint for the number of rows the query is expected to return, used to pre-size the result
+    /// list. Null means use <c>JauntyConfig.QueryResultCapacity</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-054 (batch 4, low/consistency). This field did not exist, so the implicit conversion
+    /// below always produced a null <c>ExpectedRowCount</c> - and <c>QueryCore</c>/<c>QueryCoreAsync</c>
+    /// read exactly that at all twelve multi-entity call sites. The consumer was already there; only
+    /// the field a caller could set was missing, so no multi-entity query could pre-size its list.
+    /// </remarks>
+    public readonly int? ExpectedRowCount;
+
     /// <summary>Initializes a new instance with execution options.</summary>
-    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text)
+    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
+        ExpectedRowCount = expectedRowCount;
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4)&gt; for use with the multi-entity query core.</summary>
     public static implicit operator CommandOptions<(T1, T2, T3, T4)>(MultiEntityCommandOptions<T1, T2, T3, T4> opts) =>
-        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType, expectedRowCount: opts.ExpectedRowCount);
 }
 
 // ============================================================
@@ -130,17 +169,30 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5>
     /// <summary>Command type. Defaults to Text.</summary>
     public readonly CommandType CommandType;
 
+    /// <summary>
+    /// Hint for the number of rows the query is expected to return, used to pre-size the result
+    /// list. Null means use <c>JauntyConfig.QueryResultCapacity</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-054 (batch 4, low/consistency). This field did not exist, so the implicit conversion
+    /// below always produced a null <c>ExpectedRowCount</c> - and <c>QueryCore</c>/<c>QueryCoreAsync</c>
+    /// read exactly that at all twelve multi-entity call sites. The consumer was already there; only
+    /// the field a caller could set was missing, so no multi-entity query could pre-size its list.
+    /// </remarks>
+    public readonly int? ExpectedRowCount;
+
     /// <summary>Initializes a new instance with execution options.</summary>
-    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text)
+    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
+        ExpectedRowCount = expectedRowCount;
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5)&gt; for use with the multi-entity query core.</summary>
     public static implicit operator CommandOptions<(T1, T2, T3, T4, T5)>(MultiEntityCommandOptions<T1, T2, T3, T4, T5> opts) =>
-        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType, expectedRowCount: opts.ExpectedRowCount);
 }
 
 // ============================================================
@@ -167,17 +219,30 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6>
     /// <summary>Command type. Defaults to Text.</summary>
     public readonly CommandType CommandType;
 
+    /// <summary>
+    /// Hint for the number of rows the query is expected to return, used to pre-size the result
+    /// list. Null means use <c>JauntyConfig.QueryResultCapacity</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-054 (batch 4, low/consistency). This field did not exist, so the implicit conversion
+    /// below always produced a null <c>ExpectedRowCount</c> - and <c>QueryCore</c>/<c>QueryCoreAsync</c>
+    /// read exactly that at all twelve multi-entity call sites. The consumer was already there; only
+    /// the field a caller could set was missing, so no multi-entity query could pre-size its list.
+    /// </remarks>
+    public readonly int? ExpectedRowCount;
+
     /// <summary>Initializes a new instance with execution options.</summary>
-    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text)
+    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
+        ExpectedRowCount = expectedRowCount;
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5, T6)&gt; for use with the multi-entity query core.</summary>
     public static implicit operator CommandOptions<(T1, T2, T3, T4, T5, T6)>(MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6> opts) =>
-        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType, expectedRowCount: opts.ExpectedRowCount);
 }
 
 // ============================================================
@@ -205,15 +270,28 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6, T7>
     /// <summary>Command type. Defaults to Text.</summary>
     public readonly CommandType CommandType;
 
+    /// <summary>
+    /// Hint for the number of rows the query is expected to return, used to pre-size the result
+    /// list. Null means use <c>JauntyConfig.QueryResultCapacity</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-054 (batch 4, low/consistency). This field did not exist, so the implicit conversion
+    /// below always produced a null <c>ExpectedRowCount</c> - and <c>QueryCore</c>/<c>QueryCoreAsync</c>
+    /// read exactly that at all twelve multi-entity call sites. The consumer was already there; only
+    /// the field a caller could set was missing, so no multi-entity query could pre-size its list.
+    /// </remarks>
+    public readonly int? ExpectedRowCount;
+
     /// <summary>Initializes a new instance with execution options.</summary>
-    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text)
+    public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
+        ExpectedRowCount = expectedRowCount;
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5, T6, T7)&gt; for use with the multi-entity query core.</summary>
     public static implicit operator CommandOptions<(T1, T2, T3, T4, T5, T6, T7)>(MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6, T7> opts) =>
-        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType, expectedRowCount: opts.ExpectedRowCount);
 }

@@ -30,10 +30,22 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
     private readonly int _maxRecords;
     private readonly object _trimLock = new();
 
+    private long _sequence;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="AuditInterceptor"/> class.
     /// </summary>
-    /// <param name="maxRecords">Maximum number of audit records to retain. Defaults to 1000.</param>
+    /// <param name="maxRecords">
+    /// Maximum number of audit <b>records</b> to retain. Defaults to 1000.
+    /// </param>
+    /// <remarks>
+    /// The bound is on records, not commands, and this interceptor writes <b>two records per
+    /// command</b> - an <see cref="AuditPhase.Executing"/> and then an
+    /// <see cref="AuditPhase.Executed"/> or <see cref="AuditPhase.Failed"/>. The default of 1000
+    /// therefore covers roughly 500 commands. Recorded under AUD-R26-055: for a knob whose whole
+    /// purpose is bounding an audit trail, the factor of two is worth stating rather than leaving
+    /// the caller to infer it.
+    /// </remarks>
     public AuditInterceptor(int maxRecords = 1000)
     {
         _maxRecords = maxRecords > 0 ? maxRecords : 1000;
@@ -47,11 +59,45 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
     /// <summary>
     /// Gets the most recent audit records.
     /// </summary>
-    /// <param name="count">Number of records to retrieve.</param>
-    /// <returns>The most recent audit records in chronological order.</returns>
+    /// <param name="count">Number of records to retrieve. Zero or less returns nothing.</param>
+    /// <returns>
+    /// The most recently written <paramref name="count"/> records, oldest first.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26-055 (batch 4, low/bug). This was
+    /// <c>OrderByDescending(r =&gt; r.Timestamp).Take(count).Reverse()</c>, which did not deliver the
+    /// chronological order it documented. <c>OrderByDescending</c> is stable, so records sharing a
+    /// timestamp kept insertion order <em>within the descending sequence</em> and the trailing
+    /// <c>Reverse()</c> flipped them - ties came back in reverse insertion order.
+    /// </para>
+    /// <para>
+    /// The <c>Take</c> was the worse half. On a run of equal timestamps the stable descending sort
+    /// leaves the queue in its original oldest-first order, so <c>Take(count)</c> selected the
+    /// <b>oldest</b> <c>count</c> records - from a method named <c>GetRecentRecords</c>. Ties are
+    /// the normal case, not an edge case: <see cref="DateTime.UtcNow"/> has about 15.6 ms of
+    /// resolution on Windows and every command writes two records, so a single command can produce
+    /// a mis-ordered pair.
+    /// </para>
+    /// <para>
+    /// No sort is needed at all. <see cref="RecordAudit"/> is the only writer and enqueues under a
+    /// lock, so the queue is already in insertion order - the last <paramref name="count"/> entries
+    /// of a snapshot <em>are</em> the most recent, already oldest-first.
+    /// <c>ConcurrentQueue.ToArray</c> gives that snapshot atomically, which also removes the
+    /// torn read the old code was open to, where <c>Count</c> and the enumeration could disagree
+    /// under a concurrent write.
+    /// </para>
+    /// </remarks>
     public IEnumerable<AuditRecord> GetRecentRecords(int count = 100)
     {
-        return _auditLog.OrderByDescending(r => r.Timestamp).Take(count).Reverse();
+        if (count <= 0) return Array.Empty<AuditRecord>();
+
+        AuditRecord[] snapshot = _auditLog.ToArray();
+        if (snapshot.Length <= count) return snapshot;
+
+        var recent = new AuditRecord[count];
+        Array.Copy(snapshot, snapshot.Length - count, recent, 0, count);
+        return recent;
     }
 
     /// <summary>
@@ -70,6 +116,12 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
     {
         lock (_trimLock)
         {
+            // AUD-R26-055: numbered here, inside the same lock that orders the enqueue, so the
+            // sequence a record carries agrees with its position in the queue. Assigning it at
+            // construction instead would let two threads number in one order and enqueue in the
+            // other.
+            record.Sequence = ++_sequence;
+
             while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
             _auditLog.Enqueue(record);
         }
@@ -159,6 +211,20 @@ public sealed class AuditRecord
     /// Gets or sets the UTC timestamp of the audit event.
     /// </summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets a monotonic, gap-free-until-trimmed number identifying this record's position
+    /// in the interceptor that produced it. Starts at 1.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-055. <see cref="Timestamp"/> cannot totally order an audit trail - it is
+    /// <see cref="DateTime.UtcNow"/>, whose resolution is about 15.6 ms on Windows, and a single
+    /// command writes two records - so a consumer that persists these and sorts them later cannot
+    /// recover the order they happened in. This can. A gap at the start of a retrieved run means
+    /// older records were trimmed, which is worth being able to see in an audit log; numbers are
+    /// never reused or renumbered.
+    /// </remarks>
+    public long Sequence { get; set; }
 
     /// <summary>
     /// Gets or sets the phase of command execution.

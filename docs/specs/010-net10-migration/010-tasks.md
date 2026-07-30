@@ -57,18 +57,24 @@ files** are untouched.
   mechanical checks (publish exit 0 with no new `ilc` diagnostic; exit code equals net8; stdout
   equals net8 modulo timings and paths).
   **DONE 2026-07-30.** The AC2 *relaxation* the first draft called mandatory was dissolved by T1.
-- [ ] **T4** `ParameterCache.cs:40` — `Cache.GetOrAdd(type, _ => BuildMetadata(type))`, closing over
+- [x] **T4** `ParameterCache.cs:40` — `Cache.GetOrAdd(type, _ => BuildMetadata(type))`, closing over
   the DAM-annotated `type` rather than passing a method group, plus a `TryGetValue` fast path so the
   closure is not allocated on the hit path — files:
   `src/Jaunty/Internals/Parameters/ParameterCache.cs` — covers: §3.3, AC2 — done when: clean net10
-  build shows one fewer `IL2111` and nothing new; the `IL2070` suppression at `:48-50` **survives
-  deliberately** and is 009's. Measured 4 → 3 in the probe worktree; the edit already sits there
-  uncommitted and needs porting to `dev` with the fast path added.
-- [ ] **T5** `ParameterBinder` `IL2072` ×2 — `#pragma warning disable IL2072` naming spec 009 in the
-  justification — files: `src/Jaunty/Internals/Parameters/ParameterBinder.cs` (`:81`, `:920`) —
-  covers: §3.3, AC2 — done when: clean net10 build is 0 errors. These two are the **only** ILLink
-  diagnostics AC2 permits to be silenced, and only because AC2 defers them to 009 by name.
-  `object.GetType()` cannot carry DAM, so no annotation can express this.
+  build shows one fewer `IL2111` and nothing new.
+  **DONE UPSTREAM 2026-07-30, `c90e5af8` (spec 011), merged here as `30b28874`.** It went further
+  than this task asked and was right to: rather than keep the annotation and close over it, spec 011
+  **deleted** the `[DynamicallyAccessedMembers]` from `Get(Type)` — it could never be satisfied,
+  since every caller arrives through `parameters.GetType()` on an `object` — and arranged real
+  preservation at the consumer's call sites instead (`JauntyAot.PreserveParameters<T>()` emitted by
+  the generator, `JAUNTYGEN003` where it cannot see the type). The `TryGetValue` fast path this task
+  specified is present at `:52`, so `BuildMetadata` still runs only on a miss.
+- [x] **T5** ~~`ParameterBinder` `IL2072` ×2~~ — **DISSOLVED, not done.** There is nothing left to
+  suppress. Both diagnostics were caused by `ParameterCache.Get`'s unsatisfiable annotation; deleting
+  it in T4 removed the requirement the two call sites were failing, so `ParameterBinder.cs:81` and
+  `:918` now compile clean with no `#pragma` and no justification text to maintain. **AC2's "two
+  IL2072 deliberately left standing, deferred to spec 009 by name" is void** — nothing stands.
+  Amending AC2 is T21's, and no diagnostic is now silenced anywhere in `src/Jaunty`.
 - [ ] **T6** `TypedKeyGuard` control — **Option 1 (escaping box)**, chosen over fencing — files:
   `tests/Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:74-83` — covers: §3.4, AC8 — done when: a
   control asserts `> 0` on **both** net8 and net10, and the class XML-doc records that .NET 10
@@ -89,6 +95,16 @@ files** are untouched.
   `dotnet build src/Jaunty/Jaunty.csproj -f net10.0 --no-incremental -nodeReuse:false` in the probe
   worktree reports **0 errors**, and the same clean build on `dev` for net8/net472/netstandard2.0 is
   unchanged. Expected residue after T4+T5: zero.
+  **DONE 2026-07-30 for `src/Jaunty`.** `dotnet build src/Jaunty/Jaunty.csproj --no-incremental -c
+  Release -f net10.0` in `.worktrees/net10-measure` (rebased onto the merge at `76eb2948`): **0
+  warnings, 0 errors** — the residue is zero and no suppression was added for it, which is a better
+  outcome than AC2 asked for. The same command for net8 on the main tree: 0/0.
+  Proved non-vacuous rather than assumed: commenting out `ParameterCache`'s `IL2070` suppression and
+  rebuilding clean produced exactly `2 IL2070`, so ILLink analysis is running on the run that
+  reported zero. File restored via `git checkout --`; probe tree clean.
+  **Still open for T14:** this covers `src/Jaunty` only. The other eight `src/` projects have not
+  been net10-measured, and three of them (`Jaunty.Fluent`, both `FlatFiles`) gained reflection this
+  merge.
 
 ## PR2 — the retarget
 
@@ -211,14 +227,14 @@ files** are untouched.
 |---|---|
 | §3.1 FlatFiles/DuckDB on net10 | already measured at spec time; T17 keeps CI honest |
 | §3.2 add net10.0 alongside net8.0, incl. pins | T9, T10, T11, T12, T13 |
-| §3.3 the four ILLink diagnostics | T1 , T4, T5, + T16 for the IL2057 |
+| §3.3 the four ILLink diagnostics | T1 , T4 (upstream), T5 dissolved, T7 measured 0; T16 for the IL2057 |
 | §3.4 `TypedKeyGuard` control | T6 |
 | §3.5 CI/release net10 legs | T18 |
 | §3.6 NativeAOT publish | T15, T19 |
 | §3.7 benchmark baseline then delta | T8 → T20 |
 | §3.8 net10 feature adoption | deferred with a trigger (above) |
 | AC1 | T10, T11, T13, T14 |
-| AC2 | T1 , T4, T5, T7, T16, T17 — **unrelaxed**, T1 dissolved the amendment |
+| AC2 | T1 , T4 , T7 , T16, T17 — **unrelaxed and now unsilenced**: T5 dissolved, so AC2's clause deferring two IL2072 to spec 009 is void and T21 must strike it |
 | AC3 | T14, T18 (subject to the known flake) |
 | AC4 | T10, T14 |
 | AC5 | T12, T19 — as rescoped by T3 |

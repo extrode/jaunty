@@ -49,23 +49,85 @@ public class TablePromoterTests : IDisposable
         Assert.Equal("BASE TABLE", result);
     }
 
+    /// <summary>
+    /// AUD-R26-069: this used to assert the opposite - that a source arriving with
+    /// <c>IsPromotedToTable = true</c> suppressed promotion - and that assertion was the defect.
+    /// The flag is state on the <em>file source</em> describing something that happened on
+    /// <em>one connection</em>. A source added to two <c>FlatFileOptions</c> ("the same CSV, two
+    /// databases") therefore got promoted on the first connection and skipped on the second, which
+    /// then issued its UPDATE/DELETE against a view - and DuckDB rejects that. Promotion is now
+    /// tracked per connection, so a flag set elsewhere no longer speaks for this one.
+    /// </summary>
     [Fact]
-    public void EnsurePromotedToTable_AlreadyTable_NoOp()
+    public void EnsurePromotedToTable_FlagSetByAnotherConnection_StillPromotesHere()
     {
-        // Arrange
         var source = new TestFileSource("test_view") { IsPromotedToTable = true };
 
-        // Act
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
 
-        // Assert
         Assert.True(source.IsPromotedToTable);
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
+    }
 
-        // No promotion SQL should have run: test_view must still be a view, not a table.
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT table_type FROM information_schema.tables WHERE table_name = 'test_view'";
-        var result = cmd.ExecuteScalar();
-        Assert.Equal("VIEW", result);
+    /// <summary>
+    /// Preloaded sources are a different case and must still short-circuit: there is no view to
+    /// promote, so the promotion SQL would fail rather than be redundant.
+    /// </summary>
+    [Fact]
+    public void EnsurePromotedToTable_Preloaded_NoOp()
+    {
+        var source = new TestFileSource("test_view") { IsPreloaded = true };
+
+        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
+
+        Assert.Equal("VIEW", TableTypeOf(_connection, "test_view"));
+    }
+
+    /// <summary>
+    /// And the per-connection record still does its job: promoting twice on the same connection
+    /// runs the SQL once. The second run would fail on <c>DROP VIEW</c> if it did not, since by then
+    /// the view is gone.
+    /// </summary>
+    [Fact]
+    public void EnsurePromotedToTable_TwiceOnOneConnection_PromotesOnce()
+    {
+        var source = new TestFileSource("test_view");
+
+        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
+        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
+
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
+    }
+
+    /// <summary>
+    /// The scenario the finding describes, end to end: one source instance, two connections. Both
+    /// must end up with a real table.
+    /// </summary>
+    [Fact]
+    public void EnsurePromotedToTable_OneSourceTwoConnections_PromotesOnBoth()
+    {
+        var source = new TestFileSource("test_view");
+
+        using var second = new DuckDBConnection("DataSource=:memory:");
+        second.Open();
+        using (DuckDBCommand cmd = second.CreateCommand())
+        {
+            cmd.CommandText = "CREATE VIEW test_view AS SELECT 1 as id, 'test' as name";
+            cmd.ExecuteNonQuery();
+        }
+
+        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
+        TablePromoter.EnsurePromotedToTable(second, source, _dialect);
+
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
+        Assert.Equal("BASE TABLE", TableTypeOf(second, "test_view"));
+    }
+
+    private static object? TableTypeOf(DuckDBConnection connection, string name)
+    {
+        using DuckDBCommand cmd = connection.CreateCommand();
+        cmd.CommandText = $"SELECT table_type FROM information_schema.tables WHERE table_name = '{name}'";
+        return cmd.ExecuteScalar();
     }
 
     [Fact]
@@ -96,23 +158,16 @@ public class TablePromoterTests : IDisposable
         Assert.Equal("BASE TABLE", result);
     }
 
+    /// <inheritdoc cref="EnsurePromotedToTable_FlagSetByAnotherConnection_StillPromotesHere"/>
     [Fact]
-    public async Task EnsurePromotedToTableAsync_AlreadyTable_NoOp()
+    public async Task EnsurePromotedToTableAsync_FlagSetByAnotherConnection_StillPromotesHere()
     {
-        // Arrange
         var source = new TestFileSource("test_view") { IsPromotedToTable = true };
 
-        // Act
         await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, default);
 
-        // Assert
         Assert.True(source.IsPromotedToTable);
-
-        // No promotion SQL should have run: test_view must still be a view, not a table.
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT table_type FROM information_schema.tables WHERE table_name = 'test_view'";
-        var result = cmd.ExecuteScalar();
-        Assert.Equal("VIEW", result);
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
     }
 
     private sealed class TestFileSource : IFileSource
