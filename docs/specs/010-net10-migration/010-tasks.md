@@ -231,7 +231,23 @@ files** are untouched.
   under single-file and NativeAOT, so it could not serve AC5's samples.
   This assertion is **load-bearing twice**: it is also the stated ground for treating atomicity as a
   preference rather than a requirement. Verify it fails when a pin is deliberately reverted.
-- [ ] **T14** Full clean solution build and both suites on every target — covers: AC1, AC3, AC4 —
+- [x] **T14** 2026-07-30. `dotnet build Jaunty.slnx -c Release --no-incremental`: **0 errors**,
+  111 warnings (6× NU1510 pruning advice on the benchmarks RegularExpressions pin — noted in
+  `work/todo.md`; rest pre-existing test-project warnings). The first clean build surfaced 3 more
+  latent analyzer errors hidden by incremental builds until T17: 2× IL2070 in FlatFiles.DuckDB
+  net8 leg (reflection-by-design, on no AOT publish path — NoWarn'd like Extensions.Reflection)
+  and 1× IL2075 in `FlatFiles/Internals/TableNameResolver.cs:36` net10 leg (duck-typed
+  DataAnnotations attribute read — **properly fixed** with a typed check on net8+, reflection kept
+  for ns2.0; covered by existing `Resolve_WithDataAnnotationsTableAttribute` test).
+  Suites: all green on every leg — Jaunty.Tests 2985/5422 net8+net10, 2944/5381 net472 (skips
+  2437 every leg, equal to baseline; Scaffolding skips 24 both legs), Fluent 1267×2, FlatFiles
+  185×2, DuckDB 620×2, SourceGenerator 109×2, Scaffolding 555×2, Scaffolding.Cli 34×2, and
+  Fluent.SourceGen.Tests (outside the slnx) 9/17×2. One order-dependent flake seen once on the
+  net8 leg only: `SqlDialectFactoryTests` ×2, `BulkCopyDialectFactory.Enable()` pollution from
+  parallel collections — pre-existing, TFM-agnostic, mechanism already in
+  `audit/findings-registry.md:2516`; recorded in `work/todo.md`, green on rerun.
+  Original task text follows.
+  Full clean solution build and both suites on every target — covers: AC1, AC3, AC4 —
   done when: `dotnet build Jaunty.slnx --no-incremental` is 0 errors and the suites pass on net8.0,
   net10.0, net472 and netstandard2.0 with skip counts no higher than the net8 baseline.
   Note the file is **`Jaunty.slnx`**, not `Jaunty.sln` (`dotnet build Jaunty.sln` → MSB1009).
