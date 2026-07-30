@@ -140,6 +140,58 @@ jobs:
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-flatfiles.trx"
 
+      # net10 legs (spec 010 T18): duplicated steps, deliberately NOT a job matrix -
+      # the runner is self-hosted and a matrix re-spins the SQL Server service
+      # container per leg. These also carry the T13 loader assertion, which fails
+      # if a net10 leg silently loads a net8-compiled Jaunty.dll.
+      - name: Test - Core net10 (SQLite + SQL Server)
+        env:
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+        run: >-
+          dotnet test tests/Jaunty.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-core-net10.trx"
+
+      - name: Test - Source Generator net10 (shape safety)
+        run: >-
+          dotnet test tests/Jaunty.SourceGenerator.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-sourcegen-net10.trx"
+
+      - name: Test - Fluent net10
+        run: >-
+          dotnet test tests/Jaunty.Fluent.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-net10.trx"
+
+      - name: Test - Scaffolding net10
+        run: >-
+          dotnet test tests/Jaunty.Scaffolding.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-scaffolding-net10.trx"
+
+      - name: Test - FlatFiles net10 (DuckDB)
+        run: >-
+          dotnet test Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net10.0
+          --filter "FullyQualifiedName~Jaunty.FlatFiles"
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-flatfiles-net10.trx"
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
