@@ -94,22 +94,18 @@ public sealed class SqlServerSchemaReader : ISchemaReader
 
     private static DbConnection CreateConnection(string connectionString)
     {
-        // Try Microsoft.Data.SqlClient first, then System.Data.SqlClient
-        var connectionTypes = new[]
-        {
-            "Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient",
-            "System.Data.SqlClient.SqlConnection, System.Data.SqlClient",
-        };
+        // Try Microsoft.Data.SqlClient first, then System.Data.SqlClient.
+        // Literal type names, not a loop over an array: the trim analyzer only recognizes
+        // Type.GetType on a string it can see (IL2057, fatal at ilc on the NativeAOT publish -
+        // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
+        // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
+        // returns null and falls through.
+        var type = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
+                ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
 
-        foreach (var typeName in connectionTypes)
+        if (type != null)
         {
-#pragma warning disable IL2057 // Type name is from trusted source list
-            var type = Type.GetType(typeName);
-#pragma warning restore IL2057
-            if (type != null)
-            {
-                return ReflectedConnectionFactory.Create(type, connectionString);
-            }
+            return ReflectedConnectionFactory.Create(type, connectionString);
         }
 
         throw new InvalidOperationException(
