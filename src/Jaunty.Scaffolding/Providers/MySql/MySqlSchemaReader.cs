@@ -88,20 +88,17 @@ public sealed class MySqlSchemaReader : ISchemaReader
 
     private static DbConnection CreateConnection(string connectionString)
     {
-        var connectionTypes = new[]
-        {
-            "MySqlConnector.MySqlConnection, MySqlConnector",
-            "MySql.Data.MySqlClient.MySqlConnection, MySql.Data",
-        };
+        // Try to load MySqlConnector first, then MySql.Data.
+        // Literal type names, not a loop over an array: the trim analyzer only recognizes
+        // Type.GetType on a string it can see (IL2057, fatal at ilc on the NativeAOT publish -
+        // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
+        // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
+        // returns null and falls through.
+        var type = Type.GetType("MySqlConnector.MySqlConnection, MySqlConnector")
+                ?? Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data");
 
-        foreach (var typeName in connectionTypes)
-        {
-#pragma warning disable IL2057 // Type name is from trusted source list
-            var type = Type.GetType(typeName);
-#pragma warning restore IL2057
-            if (type != null)
-                return ReflectedConnectionFactory.Create(type, connectionString);
-        }
+        if (type != null)
+            return ReflectedConnectionFactory.Create(type, connectionString);
 
         throw new InvalidOperationException("Could not find MySQL provider. Please install MySqlConnector or MySql.Data.");
     }
