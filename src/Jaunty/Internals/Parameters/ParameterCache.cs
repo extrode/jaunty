@@ -31,13 +31,27 @@ internal static class ParameterCache
     /// </summary>
     /// <param name="type">The entity type to get parameter metadata for.</param>
     /// <returns>An array of parameter metadata for all public properties.</returns>
-    public static ParameterMetadata[] Get(
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-#endif
-        Type type)
+    /// <remarks>
+    /// Spec 010. This used to declare
+    /// <c>[DynamicallyAccessedMembers(PublicProperties)]</c> on <paramref name="type"/>. The
+    /// annotation was removed because it was not true and could not become true: every caller reaches
+    /// here through <c>parameters.GetType()</c> on an <c>object</c>, which carries no annotation, so
+    /// nothing was ever propagated. Its only effect was to relocate the problem - two IL2072 warnings
+    /// at the call sites for failing to satisfy a requirement no caller can satisfy, plus an IL2111
+    /// here for handing the annotated <see cref="BuildMetadata"/> to <c>GetOrAdd</c> as a delegate.
+    /// Three warnings, no preservation. Actual preservation is arranged at the consumer's call sites
+    /// by generated rooting; see <c>Jaunty.JauntyAot</c> and <c>JAUNTYGEN003</c>.
+    /// </remarks>
+    public static ParameterMetadata[] Get(Type type)
     {
-        return Cache.GetOrAdd(type, BuildMetadata);
+        // Called directly rather than as a `GetOrAdd(type, BuildMetadata)` method group: passing a
+        // method whose parameter is annotated as a delegate is what produced IL2111, and the trimmer
+        // is right that it cannot see through a delegate. Behaviour is unchanged - the factory
+        // overload holds no lock either, so a concurrent double-build was always possible.
+        if (Cache.TryGetValue(type, out ParameterMetadata[]? cached))
+            return cached;
+
+        return Cache.GetOrAdd(type, BuildMetadata(type));
     }
 
     /// <summary>
@@ -45,14 +59,20 @@ internal static class ParameterCache
     /// </summary>
     /// <param name="type">The entity type to build metadata for.</param>
     /// <returns>An array of parameter metadata, one per public property.</returns>
+    /// <remarks>
+    /// The one place in the parameter path that actually reflects, and so the one honest place for the
+    /// suppression. Spec 010 arranges preservation from outside: the source generator reads the
+    /// consumer's <c>Query</c>/<c>Execute</c> call sites and emits
+    /// <c>JauntyAot.PreserveParameters&lt;T&gt;()</c> for each parameters type into a module
+    /// initializer, so the getters this enumerates are statically required by the consumer's own
+    /// assembly. Where it cannot - an <c>object</c>-typed variable, a type built by reflection - it
+    /// reports <c>JAUNTYGEN003</c> at that call site instead of letting the failure surface after
+    /// publish.
+    /// </remarks>
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Parameters object properties may be trimmed under NativeAOT if the type isn't otherwise rooted; this is called for any named or anonymous parameters type passed to Query/Execute APIs, not just anonymous types. Suppressed pending a source-generated parameter-binding path (see MappedCache.cs's analogous ReadEntity limitation); callers using NativeAOT publish today must ensure their parameter POCOs are otherwise rooted until that lands.")]
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType() from an object, so no annotation can flow here and none is declared (spec 010 removed the one that used to be, because it produced three warnings and preserved nothing). Preservation is arranged at the consumer's call sites: the source generator emits JauntyAot.PreserveParameters<T>() for every parameters type it can see there. Call sites it cannot see are reported as JAUNTYGEN003 rather than left to fail at runtime.")]
 #endif
-    private static ParameterMetadata[] BuildMetadata(
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-#endif
-        Type type)
+    private static ParameterMetadata[] BuildMetadata(Type type)
     {
         PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
         var result = new List<ParameterMetadata>(props.Length);
