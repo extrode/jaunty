@@ -354,7 +354,9 @@ internal static class WriteParameterCache<T> where T : new()
     private static Action<IDbCommand, T>? TryGetGeneratedBinder(string methodName)
     {
 
+        // AOT-SAFE: hand-written convention binder only; a source-generated T supplies its delegate via IGeneratedAccessors<T> and never reaches here. The consumer roots BindInsert/BindUpdate/BindDelete. Spec 009.
         MethodInfo? method = typeof(T).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static, null, [typeof(IDbCommand), typeof(T)], null);
+        // AOT-SAFE: delegate over the member resolved just above; same population and rooting.
         return (Action<IDbCommand, T>?)method?.CreateDelegate(typeof(Action<IDbCommand, T>));
     }
 
