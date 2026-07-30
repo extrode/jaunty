@@ -191,15 +191,15 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     }
 
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Used for anonymous types and records whose properties are always preserved by the compiler.")]
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Reflects over the properties of whatever object was passed as command parameters, which is a runtime Type and so cannot be annotated. Anonymous types and records are preserved by the compiler, but a named POCO passed as parameters is not, and under trimming or NativeAOT its properties may be removed - the log line then omits them. Logging is diagnostic and never affects the query, so this degrades output rather than behaviour. Suppressed pending a source-generated parameter-binding path (spec 009, the same limitation ParameterCache.BuildMetadata carries); callers using NativeAOT publish today must ensure their parameter POCOs are otherwise rooted if they want parameter logging.")]
 #endif
-    private static PropertyInfo[] GetPublicProperties(
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-#endif
-        Type type)
+    private static PropertyInfo[] GetPublicProperties(Type type)
     {
-        // AOT-SAFE: parameter annotated with DynamicallyAccessedMembers(PublicProperties); trimmer preserves the members it reflects over
+        // AOT-SAFE: reflection over an unannotated runtime Type, suppressed above with the trimming
+        // limitation stated. The DynamicallyAccessedMembers annotation this parameter used to carry
+        // was removed on 2026-07-30: the sole call site passes parameters.GetType(), so no caller
+        // ever supplied a statically-known type for the trimmer to act on, and converting the
+        // annotated method to a delegate at the GetOrAdd above raised IL2111 for nothing.
         return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 
