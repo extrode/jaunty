@@ -198,3 +198,47 @@ Headline warm means (Jaunty vs Dapper), for at-a-glance drift checks — T20 dif
 | BulkInsert 100 (Sqlite) | 284 μs | 753 μs |
 | BulkInsert 10k (PostgreSql) | 81.1 ms | 1,812 ms |
 | BulkInsert 10k (MariaDb) | 66.6 ms | 20,619 ms |
+
+---
+
+## Spec 010 net10 delta (T20) — 2026-07-30
+
+Same command, same machine, same tree rebuilt for net10:
+`dotnet run -c Release -f net10.0 --no-build -- --filter "*" --join` from
+`benchmarks/Jaunty.Benchmarks` · full artifacts (gitignored):
+`docs/benchmark-artifacts/results/BenchmarkRun-joined-2026-07-30-17-29-17-report.{csv,md}` ·
+run wall clock 48:58.
+
+**692 cases, 672 completed — the same 20 comparison-lib failures as the baseline, none Jaunty.**
+Per-case Mean deltas over all 672 comparable cases (net10 / net8 − 1):
+
+| Slice | Median delta |
+|---|---:|
+| All 672 cases | **−2.1%** |
+| Jaunty methods only (148) | **−3.4%** |
+| Sqlite (164) | −5.1% |
+| SqlServer (158) | −3.1% |
+| MariaDb (164) | −1.7% |
+| PostgreSql (150) | +2.2% |
+
+**Verdict: no net10 regression attributable to Jaunty; net10 is a few percent faster overall.**
+
+The PostgreSql tail (a handful of small-row Query cases up to +875%) is **environmental, not
+net10**: hand-coded ADO.NET (+843%), Dapper (+821%), RepoDb (+826%) and linq2db (+754%) regress
+by the same amount on the same warm 1-row case — a ~700 μs round-trip floor added by the Postgres
+container during this run's window. At 10,000 rows, where server latency stops dominating, the
+same cases are within a few percent either way (Jaunty +3.1%, Dapper +0.9%, ADO.NET +11.6%).
+
+Headline warm means, net8 → net10 (Jaunty, with Dapper for reference where cases align):
+
+| Case | Jaunty net8 | Jaunty net10 | Dapper net8 | Dapper net10 |
+|---|---:|---:|---:|---:|
+| Query 1 row (Sqlite) | 8.04 μs | **5.36 μs** | 5.33 μs | 4.51 μs |
+| Query 10k rows (Sqlite) | 11.67 ms | **9.86 ms** | 8.58 ms | 7.72 ms |
+| QueryFirst (Sqlite) | 6.63 μs | **5.67 μs** | 5.94 μs | 5.66 μs |
+| Insert (SqlServer) | 377 μs | **228 μs** | — | — |
+| BulkInsert 100 (Sqlite) | 284 μs | **266 μs** | — | — |
+| BulkInsert 10k (MariaDb) | 66.6 ms | **60.3 ms** | — | — |
+
+The Jaunty-vs-Dapper gap on the flagship 1-row Sqlite query narrows from 1.51x to 1.19x on
+net10; allocations are unchanged (2,812 B vs 1,760 B, both TFMs).
