@@ -259,24 +259,43 @@ jobs:
       # GLOBAL property that flows into referenced projects, and the
       # netstandard2.0 source generator then fails with NETSDK1207
       # (AOT unsupported for that target framework).
-      - name: Publish NativeAOT
+      #
+      # Two legs since spec 010 (T19): net8 is the CONTROL, net10 the migration
+      # under test. -f is now required - the Cli multi-targets net8.0;net10.0,
+      # and a framework-less publish of a multi-target project fails outright.
+      - name: Publish NativeAOT (net8 control)
         run: >-
           dotnet publish
           src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj
           -c Release
+          -f net8.0
           -r linux-x64
           --self-contained
-          -o ./publish-aot
+          -o ./publish-aot-net8
 
-      - name: Verify AOT binary
+      - name: Publish NativeAOT (net10)
+        run: >-
+          dotnet publish
+          src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj
+          -c Release
+          -f net10.0
+          -r linux-x64
+          --self-contained
+          -o ./publish-aot-net10
+
+      - name: Verify AOT binaries
         run: |
-          if [ -f ./publish-aot/Jaunty.Scaffolding.Cli ]; then
-            SIZE=$(stat --format="%s" ./publish-aot/Jaunty.Scaffolding.Cli)
-            SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
-            echo "AOT binary produced successfully"
-            echo "Binary size: ${SIZE_MB} MB"
-          else
-            echo "ERROR: AOT binary not found"
-            ls -la ./publish-aot/ || true
-            exit 1
-          fi
+          fail=0
+          for leg in net8 net10; do
+            bin="./publish-aot-$leg/Jaunty.Scaffolding.Cli"
+            if [ -f "$bin" ]; then
+              SIZE=$(stat --format="%s" "$bin")
+              SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+              echo "$leg: AOT binary produced, ${SIZE_MB} MB"
+            else
+              echo "ERROR: $leg AOT binary not found"
+              ls -la "./publish-aot-$leg/" || true
+              fail=1
+            fi
+          done
+          exit $fail
