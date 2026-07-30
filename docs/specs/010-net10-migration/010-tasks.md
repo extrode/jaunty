@@ -160,6 +160,21 @@ files** are untouched.
   **`NativeAOT-FluentQuery` is not in `Jaunty.slnx`**, so no solution build and no CI step has ever
   touched it — yet **AC5 says four samples**. Either add it to the solution or give AC5 an explicit
   route to it; leaving it out makes AC5 unverifiable for a quarter of its subject.
+  **Decided 2026-07-30** (mechanical edits land with T10/T11; T12 ticks when they build):
+  - `NativeAOT-FluentQuery` — **into `Jaunty.slnx` and retargeted with the other three samples.**
+    AC5 names it; a criterion whose subject no build touches is unverifiable. It has `PublishAot`
+    and full src references like its three in-solution siblings — no structural reason to differ.
+    **It has never been built by any CI step, so it must be built locally before the slnx edit
+    lands, not discovered broken by CI.**
+  - `tests/Jaunty.Fluent.SourceGen.Tests` — **retargeted, pins duplicated with T11's.** It is the
+    only test coverage of Fluent source-gen; leaving it net8-only would silently exclude that
+    surface from net10 the way `NativeAOT-FluentQuery` was excluded from AC5. Its 3 pins are
+    outside T11's 21 (it is not in the solution), so T11's count grows to 24 or its note says why.
+  - `SakilaQueries` — **stays net8.0.** Torture-test scratch: a one-off validation artifact,
+    exercised manually, never shipped, no AC references it. Retargeting adds a build to maintain
+    and proves nothing 010 claims.
+  - `MangleMap` — **stays net8.0.** A standalone osx-arm64 developer utility for sqlite interop
+    symbol mangling; runs on a Mac outside this repo's build, test and publish paths entirely.
 - [ ] **T13** Loader assertion — files: new test under `tests/Jaunty.Tests/` — covers: §3.2, AC1 —
   done when: each net10 test leg asserts the `Jaunty.dll` it loaded was *compiled* as net10:
   ```csharp
