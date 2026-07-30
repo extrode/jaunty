@@ -2,7 +2,7 @@
 
 > spec.md — The "what" and "why". No technical implementation details.
 
-Status: **done** · Created: 2026-07-29 · Updated: 2026-07-30 (T1–T21 done; AC2 deferral clause struck and amended; AC7 delta −2.1%/−3.4% no regression; AC6's behavioural CI proof lands with the owner's next push) 
+Status: **done** · Created: 2026-07-29 · Updated: 2026-07-30 (T1–T21 done; AC2 deferral clause struck and amended; AC7 delta −2.1%/−3.4% no regression; AC6 proven by CI run 30533068286 — all eight ACs met, spec closed) 
 · Origin: SDK/CI divergence investigation, 2026-07-29
 
 ---
@@ -342,7 +342,7 @@ Command per claim, run 2026-07-30 on the dev tree unless noted. Full per-task de
 | AC3 | met | `dotnet test Jaunty.slnx -c Release --no-build` → all suites 0 failures on net8.0 AND net10.0, skips 2437 both legs (T14); one order-dependent pre-existing flake recorded in `work/todo.md` |
 | AC4 | met | same T14 run: net472 leg 2944/5381 green (loads ns2.0 build, loader-asserted); ns2.0 compiled in the same slnx build |
 | AC5 | met | `dotnet publish samples/<S> -c Release -f <tfm> -r win-x64` ×8 → all exit 0; binaries run exit 0 ×8; `diff` of stdout per sample → byte-identical all four; ilc warnings 0/0 on three samples, WithReflection same-set rolled/unrolled (T19) |
-| AC6 | pending CI | workflows edited (T17, T18, T19) and YAML-parsed; behavioural proof is the next push's run — the runner cannot be exercised without pushing, which is the owner's action |
+| AC6 | met | CI run 30533068286 at `bc41b16b` (2026-07-30, self-hosted `REDACTED-RUNNER`): all three jobs green — Build & Test all 10 legs (5 net8 + 5 net10, `--no-incremental`, T13 loader assertion live), Verify NativeAOT (18/18 sites justified), NativeAOT Publish net8 control 41.47 MB + net10 31.95 MB (−23%); required three runner-infrastructure fixes recorded in `work/todo.md` (native dockerd, clang/zlib + scoped sudoers, bc/gettext-base), zero workflow or code changes |
 | AC7 | met | `dotnet run -c Release -f net10.0 --no-build -- --filter "*" --join` (T20, 2026-07-30, 48:58): 672/692 completed, same 20 comparison-lib failures as baseline, none Jaunty; median delta all cases −2.1%, Jaunty methods −3.4% — no regression; delta and PostgreSql-tail attribution (identical in hand-coded ADO.NET, environmental) recorded in `benchmarks/BENCHMARK-RESULTS.md` |
 | AC8 | met | `dotnet test tests/Jaunty.Tests -f net8.0 --filter FullyQualifiedName~TypedKeyGuard` — control rewritten to an escaping-box sink (net10's escape analysis elides the old form; measured 0 vs 239,952 boxes) with reason recorded in the class doc (T6) |
 
