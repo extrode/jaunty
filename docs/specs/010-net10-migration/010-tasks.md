@@ -285,7 +285,11 @@ files** are untouched.
   **DONE 2026-07-30** — pulled ahead of PR2 because it is a pure YAML edit, safe to make while the
   T8 baseline ran. The self-hosted runner's persistent workspace is exactly where the stale-obj
   false-clean bites. Verified by YAML parse; the behavioural proof is CI's next run.
-- [ ] **T18** net10 legs for the five test suites plus the T13 assertion — files:
+- [x] **T18** 2026-07-30. Five duplicated net10 steps in `ci.yml` (distinct trx names,
+  `-net10` suffix; comment records the no-matrix rationale) and one duplicated suite step in
+  `release.yml`. All legs run locally green under T14. Verified by YAML parse (18 ci steps,
+  10 release steps); behavioural proof is CI's next run. Original task text follows.
+  net10 legs for the five test suites plus the T13 assertion — files:
   `.github/workflows/ci.yml:75-121`, `.github/workflows/release.yml:49` — covers: §3.5, AC3, AC6 —
   done when: all five suites run on both targets and are green. **Duplicated steps, not a job
   matrix** — the runner is self-hosted and a matrix re-spins the SQL Server service container per
