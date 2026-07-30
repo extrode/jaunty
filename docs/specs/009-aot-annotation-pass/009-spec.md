@@ -139,9 +139,33 @@ stated justification was false, corrected rather than papered over.
 
 - `Jaunty.Extensions.Reflection`. It is reflection by name and by design; it is not
   AOT-compatible and should say so rather than be annotated.
-- The other 12 `[UnconditionalSuppressMessage]` sites in `src/` (`Jaunty.Init`,
-  `LoggingInterceptor`, `CsvImport`, `ParameterCache`, `JauntyDiagnosticListener`). They are a
-  separate audit; only the three on the two caches are known-false.
+- The other `[UnconditionalSuppressMessage]` sites in `src/` (`Jaunty.Init`, `CsvImport`,
+  `JauntyDiagnosticListener`). They are a separate audit; only the known-false ones are in scope.
+
+**Scope amendment, 2026-07-30 (from spec 010).** Retargeting to `net10.0` surfaced four ILLink
+diagnostics under the stricter net10 analyser, three of which landed in code this section had put
+out of scope — so as the two specs originally stood, nobody owned them. Corrected:
+
+| Site | Was | Now | Why |
+| --- | --- | --- | --- |
+| `ParameterBinder.cs:81` and `:920` (`IL2072`) | unlisted | **in scope** | `ParameterCache.Get(type)` called on an `object.GetType()` result. These are the two diagnostics 010 deliberately leaves standing, and `010-spec.md` AC2 defers them to this spec **by name**. Binder and cache are one flow; fixing the cache without its callers fixes nothing. |
+| `ParameterCache.BuildMetadata` `IL2070` suppression (`:48-50`) | out of scope | **in scope** | Its own justification says "suppressed pending a source-generated parameter-binding path", which is this spec's remit by definition. |
+| `ParameterCache.cs:40` `IL2111` | out of scope | **closed by 010** | Fixed in ~1 line by giving `GetOrAdd` a closure instead of a method group. Independently fixable, so it did not wait. |
+| `LoggingInterceptor` `IL2111` + false justification | out of scope | **closed by 010** | The `[DynamicallyAccessedMembers]` annotation was decorative — the sole call site passes an unannotated `parameters.GetType()`. Removed on 2026-07-30, clearing the diagnostic with no suppression, and `:194`'s justification (which `010-spec.md:67` records as false for named POCOs) was rewritten to state the real limitation and point here. **No longer this spec's to fix; the remaining limitation is genuinely deferred and now says so.** |
+
+The residue for this spec is therefore the `ParameterBinder` pair plus `ParameterCache`'s `IL2070`
+suppression, all three on one code path, which is a better-shaped unit of work than the original
+split.
+
+**Superseded the same day.** That residue is now
+[spec 011](../011-aot-parameter-binding/011-spec.md), which is `Status: implemented` — it deleted the
+unsatisfiable annotation on `ParameterCache.Get`, which dissolved both `ParameterBinder` `IL2072`
+diagnostics outright, and moved preservation to generated call-site rooting
+(`JauntyAot.PreserveParameters<T>()`, with `JAUNTYGEN003` where the generator cannot see the type).
+The three sites this table claimed for 009 are therefore all closed; measured on the merged tree,
+`src/Jaunty` builds for `net10.0` with **0 warnings**. What remains 009's is unchanged and is the
+harder half: `MappedCache<T>` and `WriteParameterCache<T>`, whose reflection is by *method name* on
+`T` rather than by property on a runtime `Type`, so 011's call-site rooting does not reach it.
 - Making `Jaunty.Extensions.Reflection`'s consumers AOT-safe.
 - Trim-size optimisation. This is about correctness, not footprint.
 

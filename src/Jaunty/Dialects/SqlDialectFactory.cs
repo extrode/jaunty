@@ -342,6 +342,9 @@ public static class SqlDialectFactory
         // decorator in any sense this method can resolve, and picking one would be guessing - the
         // behaviour being removed. Zero or two or more, and the caller gets its error instead.
         FieldInfo? single = null;
+        // Finding nothing is a supported outcome - the caller gets its own error, which is exactly
+        // what a trimmed build that had removed the field would produce. Degrades, never misbehaves.
+        // AOT-SAFE: a best-effort probe on a decorator supplied by the caller, not on a Jaunty type.
         foreach (FieldInfo field in connectionType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance))
         {
             if (!typeof(IDbConnection).IsAssignableFrom(field.FieldType))
