@@ -75,10 +75,19 @@ files** are untouched.
   `:918` now compile clean with no `#pragma` and no justification text to maintain. **AC2's "two
   IL2072 deliberately left standing, deferred to spec 009 by name" is void** — nothing stands.
   Amending AC2 is T21's, and no diagnostic is now silenced anywhere in `src/Jaunty`.
-- [ ] **T6** `TypedKeyGuard` control — **Option 1 (escaping box)**, chosen over fencing — files:
+- [x] **T6** `TypedKeyGuard` control — **Option 1 (escaping box)**, chosen over fencing — files:
   `tests/Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:74-83` — covers: §3.4, AC8 — done when: a
   control asserts `> 0` on **both** net8 and net10, and the class XML-doc records that .NET 10
   elides the `ThrowIfNull` box so the original comparison is true on net8/net472 and moot on net10.
+  - **DONE 2026-07-30.** The gate was measured, not assumed, through a copy of `Measure()` on both
+    TFMs at 100k iterations: old form 239,952 bytes on net8 / **0 on net10** (the premise is real —
+    the old control fails on net10), escaping box **2,400,000 on both** (escape analysis cannot
+    elide a store to a static sink), so Option 1 stands and Option 2 was not needed. Control
+    renamed `AnEscapingBox_IsSeen_...`, asserts `> 0`, class doc records the elision. Suites:
+    TypedKeyGuardTests 14/14 net8, 10/10 net472. The 239,952 mystery from the withdrawn draft is
+    also resolved: it *is* a true 100k-run figure — only ~10k iterations box before tier-up.
+    **Note for T18:** the xunit control has run on net10 only through the harness copy; the test
+    project gains its net10 leg there, which is where "asserts > 0 on both" is finally executed.
   - Rationale for Option 1 over the plan's Option 2, which review recommended: fencing
     `TheOldFormStillBoxes` behind `#if !NET10_0_OR_GREATER` leaves net10 with **all three**
     remaining tests asserting `== 0`, so a blind harness returning 0 passes every one. Review
