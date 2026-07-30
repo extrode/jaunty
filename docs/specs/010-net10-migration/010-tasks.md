@@ -315,10 +315,22 @@ files** are untouched.
   **A sample that fails identically on both targets passes AC5** — `NativeAOT-Basic` already fails
   at runtime on net8 today with `No mapper found for type Product` (`009-spec.md:27-30`), which is
   009's defect, not this migration's. net8-works/net10-fails is the regression to catch.
-- [ ] **T20** Benchmark delta — files: `benchmarks/BENCHMARK-RESULTS.md` — covers: §3.7, AC7 — done
+- [x] **T20** Benchmark delta — files: `benchmarks/BENCHMARK-RESULTS.md` — covers: §3.7, AC7 — done
   when: net10 is measured against T8's baseline and the delta recorded. Depends on T8.
-- [ ] **T21** Set `Status: done` — files: `docs/specs/010-net10-migration/010-spec.md` — covers: all
+  DONE 2026-07-30: `dotnet run -c Release -f net10.0 --no-build -- --filter "*" --join` from
+  `benchmarks/Jaunty.Benchmarks`, 48:58 wall, 672/692 completed (same 20 comparison-lib failures
+  as the net8 baseline, none Jaunty). Median per-case delta −2.1% all / −3.4% Jaunty-only; per
+  provider Sqlite −5.1%, SqlServer −3.1%, MariaDb −1.7%, PostgreSql +2.2%. The PostgreSql
+  small-row tail (up to +875%) is environmental, proven by identical deltas in hand-coded ADO.NET
+  (+843%), Dapper (+821%), RepoDb (+826%) on the same cases. Delta section appended to
+  `benchmarks/BENCHMARK-RESULTS.md`; artifacts
+  `docs/benchmark-artifacts/results/BenchmarkRun-joined-2026-07-30-17-29-17-report.{csv,md}`.
+- [x] **T21** Set `Status: done` — files: `docs/specs/010-net10-migration/010-spec.md` — covers: all
   — done when: every AC is met or explicitly amended, with the command that produced each claim.
+  DONE 2026-07-30: Status flipped to done; §8 evidence table carries a command per AC; AC2's
+  deferral clause struck with amendment (T5 dissolved; two NoWarn scope exclusions recorded);
+  AC6 remains "behavioural proof on the owner's next push" by design — the self-hosted runner
+  cannot be exercised without pushing, which is the owner's action.
 
 ## Out of scope, recorded so it is not re-derived
 

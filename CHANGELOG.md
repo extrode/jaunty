@@ -9,6 +9,18 @@ default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
 
+### .NET 10 migration (spec 010, 2026-07-30)
+
+Every project now targets `net8.0` + `net10.0` (ns2.0/net472 support unchanged), with 21
+project-reference pins duplicated per TFM and a loader assertion that fails any leg that
+silently loads the wrong build. The first clean net10 builds exposed six latent defects green
+CI had hidden — a dropped package group (CS0234), a non-generic `Expression.Lambda` (IL3050),
+trim-analyzer strictness (IL2060/75), and IL2070/IL2075/IL2057 in FlatFiles and Scaffolding —
+four fixed properly, two recorded as reflection-by-design scope exclusions. CI gained net10
+test legs and a dual net8/net10 NativeAOT publish; all four AOT samples publish and run with
+byte-identical stdout on both TFMs. Benchmarks: net10 is a median 2–3% faster with no
+regression; the flagship 1-row query narrowed from 1.51x to 1.19x of Dapper.
+
 Twenty-six audit rounds since `v1.0.0-rc.1`, plus the Dapper-parity and torture-test
 work. The suite runs 12,207 tests green across `net8.0` and `net472` with all four
 server dialects configured.
