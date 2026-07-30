@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
@@ -12,14 +12,14 @@
 		<!-- ASYNC_ENUMERABLE_SUPPORT on ns2.0 too (via Microsoft.Bcl.AsyncInterfaces):
 		     both TFMs expose the same IAsyncEnumerable streaming API. -->
 		<DefineConstants>$(DefineConstants);AsyncInterfaces;ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
-		<!--<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.3" />-->
+		<!--<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.10" />-->
 	</PropertyGroup>
 
 	<Choose>
 		<When Condition="$(DefineConstants.Contains('AsyncInterfaces'))">
 			<ItemGroup>
 				<PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
-					<Version>10.0.3</Version>
+					<Version>10.0.10</Version>
 				</PackageReference>
 			</ItemGroup>
 		</When>
@@ -27,17 +27,17 @@
 
 	<!-- Logging and Diagnostics - only needed for netstandard2.0 (net8.0 has these built-in) -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
-		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.10" />
 	</ItemGroup>
 
 	<!-- For net8.0+, these are built-in but we need to include the package for compatibility.
 	     Was conditioned == net8.0; the first net10 leg compile (010 T11) failed with CS0234 on
 	     every Microsoft.Extensions using, because the condition silently dropped both packages. -->
 	<ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
