@@ -2,8 +2,14 @@
 
 **Branch**: `dev`
 **Date**: 2026-07-30
-**Spec**: [010-spec.md](010-spec.md)
+**Spec**: [011-spec.md](011-spec.md)
 **Status**: implemented · Origin: round-27 carry-forward item 17
+
+> **Renumbered 010 → 011 on 2026-07-30.** This work was authored as spec 010 on an unpushed local
+> branch while `010-net10-migration` was authored and pushed concurrently. The pushed one keeps the
+> number. The two implementation commits, `b4bddb70` and `e5bd8565`, still say `feat(010)` — they
+> were made before the collision was visible and are not worth rewriting history over. Nothing else
+> refers to this work as 010.
 
 ---
 
@@ -147,7 +153,7 @@ claim unexamined — the same error one layer in.
 
 Samples, published and executed:
 
-| Sample | Before 010 | After 010 |
+| Sample | Before 011 | After 011 |
 |---|---|---|
 | `NativeAOT-Basic` | mapped rows, then **FAIL** on `new { Id = 1 }` | **PASS**, end to end, source unchanged |
 | `NativeAOT-CustomMapper` | PASS | PASS |

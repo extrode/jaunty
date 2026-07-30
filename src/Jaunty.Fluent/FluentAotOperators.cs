@@ -39,11 +39,11 @@ namespace Jaunty.Fluent;
 /// the library ships a NativeAOT sample asserting they work. A consumer cannot reasonably be expected
 /// to know that comparing one of the most ordinary column types requires a trimmer directive. Jaunty
 /// asks for the expression tree, so Jaunty arranges for it to be constructible; the same reasoning as
-/// spec 010, where Jaunty reflects over parameter objects and so arranges their preservation.
+/// spec 011, where Jaunty reflects over parameter objects and so arranges their preservation.
 /// </para>
 /// <para>
 /// <b>Why it is called explicitly from the three entry points.</b> The directive has to sit in code the
-/// trimmer actually keeps - spec 010 measured the alternative, and annotations inside a method nobody
+/// trimmer actually keeps - spec 011 measured the alternative, and annotations inside a method nobody
 /// calls are removed along with it. A <c>[ModuleInitializer]</c> would guarantee that unconditionally
 /// and was the first attempt, but <c>CA2255</c> rejects one in a library, correctly. So the reachability
 /// comes from an ordinary call in each of <see cref="FluentExtensions.From{T}"/>,
