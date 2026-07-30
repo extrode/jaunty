@@ -156,6 +156,16 @@ out of scope — so as the two specs originally stood, nobody owned them. Correc
 The residue for this spec is therefore the `ParameterBinder` pair plus `ParameterCache`'s `IL2070`
 suppression, all three on one code path, which is a better-shaped unit of work than the original
 split.
+
+**Superseded the same day.** That residue is now
+[spec 011](../011-aot-parameter-binding/011-spec.md), which is `Status: implemented` — it deleted the
+unsatisfiable annotation on `ParameterCache.Get`, which dissolved both `ParameterBinder` `IL2072`
+diagnostics outright, and moved preservation to generated call-site rooting
+(`JauntyAot.PreserveParameters<T>()`, with `JAUNTYGEN003` where the generator cannot see the type).
+The three sites this table claimed for 009 are therefore all closed; measured on the merged tree,
+`src/Jaunty` builds for `net10.0` with **0 warnings**. What remains 009's is unchanged and is the
+harder half: `MappedCache<T>` and `WriteParameterCache<T>`, whose reflection is by *method name* on
+`T` rather than by property on a runtime `Type`, so 011's call-site rooting does not reach it.
 - Making `Jaunty.Extensions.Reflection`'s consumers AOT-safe.
 - Trim-size optimisation. This is about correctness, not footprint.
 
