@@ -211,7 +211,13 @@ files** are untouched.
     and proves nothing 010 claims.
   - `MangleMap` — **stays net8.0.** A standalone osx-arm64 developer utility for sqlite interop
     symbol mangling; runs on a Mac outside this repo's build, test and publish paths entirely.
-- [ ] **T13** Loader assertion — files: new test under `tests/Jaunty.Tests/` — covers: §3.2, AC1 —
+- [x] **T13** 2026-07-30. `tests/Jaunty.Tests/Unit/LoadedAssemblyTargetTests.cs`: loader
+  assertion per leg (net10 → v10.0, net8 → v8.0, net472 → .NETStandard v2.0) plus T9's owed
+  `ASYNC_ENUMERABLE_SUPPORT` presence test (`QueryStreamAsync` on the loaded build, all legs).
+  2/2 green on all three TFMs; perturbation run: with the net10 Jaunty pin deliberately reverted
+  to net8, the loader assertion failed (Assert.Equal strings differ) and passed again on restore —
+  the test is not vacuous. Original task text follows.
+  Loader assertion — files: new test under `tests/Jaunty.Tests/` — covers: §3.2, AC1 —
   done when: each net10 test leg asserts the `Jaunty.dll` it loaded was *compiled* as net10:
   ```csharp
   var tfm = typeof(Jaunty.Jaunty).Assembly
