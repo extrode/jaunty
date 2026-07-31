@@ -1,4 +1,4 @@
-using Jaunty.Interceptors;
+﻿using Jaunty.Interceptors;
 
 namespace Jaunty.Tests.Unit.Interceptors;
 
@@ -50,6 +50,24 @@ public class CommandContextTests
 
         // Assert
         Assert.DoesNotContain("secret123", result);
+    }
+
+
+    [Theory]
+    [InlineData("Server=localhost;Database=Test;Access Token=tok-abc123;", "tok-abc123")]
+    [InlineData("Server=localhost;Database=Test;Client Secret=sec-abc123;", "sec-abc123")]
+    [InlineData("Server=localhost;Database=Test;ApiKey=key-abc123;", "key-abc123")]
+    [InlineData("Server=localhost;Database=Test;Passfile=/home/u/.pgpass;", ".pgpass")]
+    [InlineData("Server=localhost;Database=Test;SSL Password=ssl-abc123;", "ssl-abc123")]
+    [InlineData("Server=localhost;Database=Test;User Password=up-abc123;", "up-abc123")]
+    public void ConnectionString_WithCredentialBearingKey_RedactsValue(string connectionString, string secret)
+    {
+        var context = CreateContext(connectionString);
+
+        var result = context.ConnectionString;
+
+        Assert.DoesNotContain(secret, result, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("localhost", result, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 
 using Jaunty.Attributes;
 
@@ -25,8 +25,11 @@ internal static class TableNameResolver
             return jauntyAttr.Name;
 
         // Also check System.ComponentModel.DataAnnotations.Schema.TableAttribute for compatibility
-        // Avoid LINQ allocation by using for loop instead of FirstOrDefault
-        var attrs = entityType.GetCustomAttributes(inherit: false);
+        // Avoid LINQ allocation by using for loop instead of FirstOrDefault.
+        // R28: inherit: true to match the Jaunty TableAttribute lookup above, which uses
+        // GetCustomAttribute's inherit-true default - an entity inheriting the DataAnnotations
+        // [Table] from a base class used to silently fall through to the class-name default.
+        var attrs = entityType.GetCustomAttributes(inherit: true);
         foreach (var attr in attrs)
         {
 #if NET8_0_OR_GREATER
