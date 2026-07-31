@@ -913,6 +913,28 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         await Assert.ThrowsAsync<ArgumentException>(() => connection.ImportCsvAsync(TableName, csvPath, options).AsTask());
     }
 
+    [Fact]
+    public void ImportCsv_DelimiterEqualsQuote_ThrowsArgumentException()
+    {
+        var csvPath = ResolveCsvPath();
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        var options = new CsvImportOptions { Delimiter = ';', Quote = ';' };
+
+        var ex = Assert.Throws<ArgumentException>(() => connection.ImportCsv(TableName, csvPath, options));
+        Assert.Contains("must differ", ex.Message);
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_DelimiterEqualsQuote_ThrowsArgumentException()
+    {
+        var csvPath = ResolveCsvPath();
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        var options = new CsvImportOptions { Delimiter = ';', Quote = ';' };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => connection.ImportCsvAsync(TableName, csvPath, options).AsTask());
+        Assert.Contains("must differ", ex.Message);
+    }
+
     // AUD-R12: ImportViaPreparedStatements (the fallback path for in-memory SQLite connections)
     // read the CSV with StreamReader.ReadLine() and parsed each physical line independently, so a
     // quoted field containing an embedded newline was silently split across two "rows" instead of
