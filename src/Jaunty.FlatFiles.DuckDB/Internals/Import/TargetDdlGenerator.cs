@@ -76,13 +76,11 @@ internal static class TargetDdlGenerator
             // put in it - a string column for EnumStorage.String, the underlying integral type's
             // column for Numeric - rather than the text column every enum used to get.
             Type underlyingType = ImportTypeMapping.Normalize(prop.PropertyType, prop);
+            // R29: only string consulted the nullable-reference-type annotation; every other
+            // reference type (byte[], POCOs) was unconditionally nullable, so a non-nullable
+            // byte[] property never got its NOT NULL constraint.
             var isNullable = Nullable.GetUnderlyingType(prop.PropertyType) is not null
-                || (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string));
-
-            if (prop.PropertyType == typeof(string))
-            {
-                isNullable = IsNullableReferenceType(prop);
-            }
+                || (!prop.PropertyType.IsValueType && IsNullableReferenceType(prop));
 
             result.Add((columnName, underlyingType, isPrimaryKey, isNullable));
         }

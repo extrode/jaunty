@@ -35,6 +35,16 @@ public class TargetDdlGeneratorTests
         public string Description { get; set; } = string.Empty;
     }
 
+    private sealed class BinaryPayloadEntity
+    {
+        [Key]
+        public int Id { get; set; }
+
+        public byte[] Data { get; set; } = Array.Empty<byte>();
+
+        public byte[]? OptionalData { get; set; }
+    }
+
     private sealed class CompositeKeyWithColumnAttributeEntity
     {
         [Key]
@@ -93,5 +103,14 @@ public class TargetDdlGeneratorTests
 
         var nameColumn = columns.Single(c => c.Name == "Name");
         Assert.False(nameColumn.IsPrimaryKey);
+    }
+
+    [Fact]
+    public void GetColumnDefinitions_NonNullableByteArray_IsNotNullable()
+    {
+        var columns = TargetDdlGenerator.GetColumnDefinitions(typeof(BinaryPayloadEntity));
+
+        Assert.False(columns.Single(c => c.Name == "Data").IsNullable);
+        Assert.True(columns.Single(c => c.Name == "OptionalData").IsNullable);
     }
 }
