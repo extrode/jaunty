@@ -429,7 +429,9 @@ internal static class ParameterBinder
                 // Empty collection: a subquery that returns no rows, so IN matches nothing and
                 // NOT IN matches everything. MySQL/MariaDB reject a FROM-less WHERE
                 // (ER_NO_TABLES_USED), so that dialect gets the same subquery over DUAL.
-                replacement = knownDialect is MySqlDialect
+                // Unwrap: with native bulk copy enabled the resolved dialect is the
+                // MySqlDialectWithBulkCopy wrapper, not a MySqlDialect subtype.
+                replacement = knownDialect is not null && SqlDialectFactory.Unwrap(knownDialect) is MySqlDialect
                     ? "(SELECT NULL FROM DUAL WHERE 1 = 0)"
                     : "(SELECT NULL WHERE 1 = 0)";
             }
