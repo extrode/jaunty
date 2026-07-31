@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Data;
+using System.Globalization;
 using System.Data.Common;
 using System.Text;
 
@@ -107,6 +108,22 @@ public sealed partial class DuckDb : IFlatFile
     {
         ArgumentNullException.ThrowIfNull(source);
         EnsureExtensionsLoaded(source);
+
+        // A file-backed catalog can already hold this object as a table: a previous instance's
+        // mutation promoted the registration view, and the promotion persisted. Re-running the
+        // unconditional CREATE OR REPLACE VIEW would be rejected by DuckDB ("Existing object is
+        // of type Table, trying to replace with type View"), so the table - which holds the
+        // mutated data - is left alone. Preloaded sources are exempt: their CREATE OR REPLACE
+        // TABLE deliberately reloads from the file every time.
+        if (!source.IsPreloaded && ExistsAsTable(source.TableName))
+        {
+            if (_options.ValidateSchema && source.EntityType != typeof(object))
+                ValidateSchema(source);
+
+            _sources[source.EntityType] = source;
+            return;
+        }
+
         string sql = GenerateRegistrationSql(source);
 
         using DuckDBCommand cmd = _connection.CreateCommand();
@@ -124,6 +141,17 @@ public sealed partial class DuckDb : IFlatFile
     {
         ArgumentNullException.ThrowIfNull(source);
         await EnsureExtensionsLoadedAsync(source, cancellationToken).ConfigureAwait(false);
+
+        // Same promoted-table guard as RegisterSource; see the comment there.
+        if (!source.IsPreloaded && await ExistsAsTableAsync(source.TableName, cancellationToken).ConfigureAwait(false))
+        {
+            if (_options.ValidateSchema && source.EntityType != typeof(object))
+                await ValidateSchemaAsync(source, cancellationToken).ConfigureAwait(false);
+
+            _sources[source.EntityType] = source;
+            return;
+        }
+
         string sql = await GenerateRegistrationSqlAsync(source, cancellationToken).ConfigureAwait(false);
 
         DuckDBCommand cmd = _connection.CreateCommand();
@@ -211,6 +239,24 @@ public sealed partial class DuckDb : IFlatFile
                 $"No file source registered for entity type '{typeof(T).Name}'. " +
                 $"Register it via AddCsv<{typeof(T).Name}>(), AddParquet<{typeof(T).Name}>(), etc.")
             : source;
+    }
+
+    private bool ExistsAsTable(string tableName)
+    {
+        using DuckDBCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = $name AND table_type = 'BASE TABLE'";
+        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+    }
+
+    private async ValueTask<bool> ExistsAsTableAsync(string tableName, CancellationToken cancellationToken)
+    {
+        DuckDBCommand cmd = _connection.CreateCommand();
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
+        cmd.CommandText = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = $name AND table_type = 'BASE TABLE'";
+        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        object? count = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return Convert.ToInt64(count, CultureInfo.InvariantCulture) > 0;
     }
 
     private string GenerateRegistrationSql(IFileSource source)
