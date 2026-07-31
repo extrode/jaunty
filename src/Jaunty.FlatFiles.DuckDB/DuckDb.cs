@@ -183,9 +183,21 @@ public sealed partial class DuckDb : IFlatFile
             if (extension is null || !_loadedExtensions.TryAdd(extension, true))
                 continue;
 
-            using DuckDBCommand cmd = _connection.CreateCommand();
-            cmd.CommandText = $"INSTALL {extension}; LOAD {extension};";
-            cmd.ExecuteNonQuery();
+            try
+            {
+                using DuckDBCommand cmd = _connection.CreateCommand();
+                cmd.CommandText = $"INSTALL {extension}; LOAD {extension};";
+                cmd.ExecuteNonQuery();
+            }
+            catch
+            {
+                // R27 batch 13: the TryAdd above wins the right to run INSTALL/LOAD, but a
+                // failure (offline machine, blocked extension repository) must not leave the
+                // extension marked loaded - a later registration would skip the install and die
+                // much later with DuckDB's opaque "extension not loaded" error.
+                _loadedExtensions.TryRemove(extension, out _);
+                throw;
+            }
         }
     }
 
@@ -201,10 +213,19 @@ public sealed partial class DuckDb : IFlatFile
             if (extension is null || !_loadedExtensions.TryAdd(extension, true))
                 continue;
 
-            DuckDBCommand cmd = _connection.CreateCommand();
-            await using var cmdDisposer = cmd.ConfigureAwait(false);
-            cmd.CommandText = $"INSTALL {extension}; LOAD {extension};";
-            await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                DuckDBCommand cmd = _connection.CreateCommand();
+                await using var cmdDisposer = cmd.ConfigureAwait(false);
+                cmd.CommandText = $"INSTALL {extension}; LOAD {extension};";
+                await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                // R27 batch 13: see the sync path - do not leave a failed install marked loaded.
+                _loadedExtensions.TryRemove(extension, out _);
+                throw;
+            }
         }
     }
 
