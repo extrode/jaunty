@@ -394,11 +394,22 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 ? nullableType.TypeArguments[0]
                 : prop.Type;
 
+            // AUD-R30: [EnumStorage] participates in the write path (BindInsert/BindUpdate), so it
+            // must be captured here like [Column]/[DatabaseGenerated]. Raw int rather than the enum
+            // type keeps the model free of Jaunty-assembly references.
+            int? enumStorageOverride = null;
+            if (underlyingType.TypeKind == TypeKind.Enum
+                && GetAttribute(prop, "EnumStorageAttribute")?.ConstructorArguments.FirstOrDefault().Value is int storageValue)
+            {
+                enumStorageOverride = storageValue;
+            }
+
             properties.Add(new PropertyMetadata(
                 prop.Name, columnName, isKey, isIdentity, isComputed,
                 prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 underlyingType.TypeKind == TypeKind.Enum,
-                isIdentityInferred));
+                isIdentityInferred,
+                enumStorageOverride));
         }
 
         // AUD-R25: the implicit-identity inference applies only to a single-key entity.
@@ -791,13 +802,34 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        }");
         sb.AppendLine();
 
+        // AUD-R30: the write path must apply the same value conversion the reflection binder's
+        // BuildValueConverter does - TypeHandlerRegistry first, then [EnumStorage] /
+        // JauntyConfig.DefaultEnumStorage for enums. Before this, BindInsert/BindUpdate/BindDelete
+        // handed the raw boxed enum to IDbDataParameter.Value: a string-stored enum entity READ
+        // correctly (the generated reader parses names) but WROTE its numeric value back, and
+        // registered type handlers were ignored entirely - so adding the generator package
+        // silently changed write behaviour for the same entity.
+        string BindParamCall(PropertyMetadata p)
+        {
+            string name = $"\"@{EscapeStringLiteral(p.ColumnName)}\"";
+            if (!p.IsEnum)
+                return $"AddParam(command, p, {name}, entity.{p.PropertyName});";
+            string storage = p.EnumStorageOverride switch
+            {
+                1 => "global::Jaunty.Attributes.EnumStorage.String",
+                0 => "global::Jaunty.Attributes.EnumStorage.Numeric",
+                _ => "(global::Jaunty.Attributes.EnumStorage?)null",
+            };
+            return $"AddEnumParam(command, p, {name}, entity.{p.PropertyName}, {storage});";
+        }
+
         // 2. BindInsert
         sb.AppendLine($"        public static void BindInsert(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
         foreach (PropertyMetadata p in properties.Where(x => !x.IsIdentity && !x.IsComputed))
         {
-            sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
+            sb.AppendLine($"            {BindParamCall(p)}");
         }
         sb.AppendLine("        }");
 
@@ -807,11 +839,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            var p = command.Parameters;");
         foreach (PropertyMetadata p in properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity && !x.IsComputed))
         {
-            sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
+            sb.AppendLine($"            {BindParamCall(p)}");
         }
         foreach (PropertyMetadata p in properties.Where(x => x.IsPrimaryKey))
         {
-            sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
+            sb.AppendLine($"            {BindParamCall(p)}");
         }
         sb.AppendLine("        }");
 
@@ -821,7 +853,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            var p = command.Parameters;");
         foreach (PropertyMetadata p in properties.Where(x => x.IsPrimaryKey))
         {
-            sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
+            sb.AppendLine($"            {BindParamCall(p)}");
         }
         sb.AppendLine("        }");
 
@@ -829,7 +861,17 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        {");
         sb.AppendLine("            var p = cmd.CreateParameter();");
         sb.AppendLine("            p.ParameterName = name;");
-        sb.AppendLine("            p.Value = value ?? DBNull.Value;");
+        sb.AppendLine("            // AUD-R30: route through the same type-handler/enum-storage conversion the");
+        sb.AppendLine("            // reflection binder applies, via the public bridge in Jaunty core.");
+        sb.AppendLine("            p.Value = global::Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? DBNull.Value;");
+        sb.AppendLine("            pc.Add(p);");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine("        private static void AddEnumParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value, global::Jaunty.Attributes.EnumStorage? storage)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            var p = cmd.CreateParameter();");
+        sb.AppendLine("            p.ParameterName = name;");
+        sb.AppendLine("            p.Value = global::Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? DBNull.Value;");
         sb.AppendLine("            pc.Add(p);");
         sb.AppendLine("        }");
 
