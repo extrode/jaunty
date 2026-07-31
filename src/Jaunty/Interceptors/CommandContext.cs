@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 
 namespace Jaunty.Interceptors;
@@ -99,14 +99,18 @@ public sealed class CommandContext
     /// </summary>
     /// <remarks>
     /// The underlying provider's connection string is parsed with <see cref="DbConnectionStringBuilder"/>
-    /// and any key that case-insensitively matches a known sensitive keyword (e.g. "Password", "Pwd",
-    /// "User Password") is removed before the string is rebuilt. This sanitization is performed
+    /// and any key whose name case-insensitively contains a sensitive fragment (password, pwd, secret,
+    /// token, apikey, passfile) is removed before the string is rebuilt. This sanitization is performed
     /// unconditionally; it does not rely on the provider itself withholding sensitive data.
     /// If the connection string cannot be parsed, "(unknown)" is returned instead of the raw value.
     /// </remarks>
     public string ConnectionString => SanitizeConnectionString(Connection.ConnectionString);
 
-    private static readonly string[] SensitiveConnectionStringKeys = { "Password", "Pwd", "User Password" };
+    // R28: an exact-match list ("Password", "Pwd", "User Password") let every other
+    // credential-bearing key through - "Access Token", "Client Secret", "ApiKey", Npgsql's
+    // "Passfile"/"SSL Password", any custom provider's "Token". Redaction now matches key-name
+    // fragments over the parsed keys, so over-redaction of an unusual key beats leaking one.
+    private static readonly string[] SensitiveKeyFragments = { "password", "pwd", "secret", "token", "apikey", "api key", "passfile" };
 
     private static string SanitizeConnectionString(string? connectionString)
     {
@@ -117,10 +121,19 @@ public sealed class CommandContext
         {
             var builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
 
-            foreach (var sensitiveKey in SensitiveConnectionStringKeys)
+            var keys = new string[builder.Keys.Count];
+            builder.Keys.CopyTo(keys, 0);
+
+            foreach (var key in keys)
             {
-                if (builder.ContainsKey(sensitiveKey))
-                    builder.Remove(sensitiveKey);
+                foreach (var fragment in SensitiveKeyFragments)
+                {
+                    if (key.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        builder.Remove(key);
+                        break;
+                    }
+                }
             }
 
             return builder.ConnectionString ?? "(unknown)";
