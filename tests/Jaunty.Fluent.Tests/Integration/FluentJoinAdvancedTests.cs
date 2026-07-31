@@ -1,4 +1,4 @@
-using Jaunty.Fluent.Tests.Entities;
+﻿using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
@@ -1185,5 +1185,15 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             query.SelectAsync<Product, Product>());
+    }
+
+    [Fact]
+    public void InnerJoin_WhereColumnValue_ColumnWithSpace_ThrowsBeforeParameterIsBuilt()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            _fixture.Connection.From<Product>("p")
+                .InnerJoin<Category>("c")
+                .On("p.category_id", "c.category_id")
+                .Where("p.order date", 1));
     }
 }
