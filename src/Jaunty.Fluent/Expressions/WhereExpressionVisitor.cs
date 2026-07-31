@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -106,7 +106,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             // literal null must still become IS NULL/IS NOT NULL rather than a naive operator.
             if (node.NodeType is ExpressionType.Equal or ExpressionType.NotEqual)
             {
-                if (IsNullConstant(node.Right))
+                if (IsNullOperand(node.Right))
                 {
                     Visit(node.Left);
                     _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
@@ -114,7 +114,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                     return node;
                 }
 
-                if (IsNullConstant(node.Left))
+                if (IsNullOperand(node.Left))
                 {
                     Visit(node.Right);
                     _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
@@ -840,6 +840,25 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         }
 
         return (null, null, null, false);
+    }
+
+    // R28: the no-column fallback above used to test only for a literal null, but the main
+    // column path treats a runtime-null evaluated value as IS NULL / IS NOT NULL. A closure-
+    // captured variable that is null at translation time arrives as a MemberExpression, so
+    // Sql.NullIf(...) == capturedNull fell through to a bound parameter and generated
+    // "expr = @p" with @p = NULL, which three-valued logic never matches.
+    private bool IsNullOperand(Expression expression)
+    {
+        if (IsNullConstant(expression))
+            return true;
+
+        if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            expression = unary.Operand;
+
+        if (expression is MemberExpression && !ReferencesLambdaParameter(expression))
+            return EvaluateExpression(expression) is null;
+
+        return false;
     }
 
     private static bool IsNullConstant(Expression expression)

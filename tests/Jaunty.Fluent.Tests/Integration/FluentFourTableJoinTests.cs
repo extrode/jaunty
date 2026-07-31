@@ -1,4 +1,4 @@
-using Jaunty.Fluent.Tests.Entities;
+﻿using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 using Jaunty.Fluent;
 
@@ -778,5 +778,19 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
         var parameters = builder._parent._parent.GetParameters().GetAll();
 
         Assert.Contains(parameters, p => p.Name == "@value" && Equals(p.Value, 1));
+    }
+
+    [Fact]
+    public void FourTableJoin_WhereColumnValue_ColumnWithSpace_ThrowsBeforeParameterIsBuilt()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            _fixture.Connection.From<Product>()
+                .InnerJoin<Category>()
+                .On(p => p.CategoryId, c => c.CategoryId)
+                .InnerJoin<Supplier>()
+                .On(p => p.SupplierId, s => s.SupplierId)
+                .LeftJoin<Product, Category, Supplier, Order>()
+                .On("orders.order_id > 0")
+                .Where("products.product name", "Chai"));
     }
 }
