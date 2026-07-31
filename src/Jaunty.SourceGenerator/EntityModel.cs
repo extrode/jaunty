@@ -54,7 +54,8 @@ internal readonly record struct PropertyMetadata(
     bool IsComputed,
     string TypeName,
     bool IsEnum,
-    bool IsIdentityInferred)
+    bool IsIdentityInferred,
+    int? EnumStorageOverride)
 {
     /// <summary>
     /// AUD-R25: whether the property's type - or, for a nullable value type, its underlying
@@ -70,6 +71,16 @@ internal readonly record struct PropertyMetadata(
     /// composite-key entity; an explicit attribute is always honoured.
     /// </summary>
     public bool IsIdentityInferred { get; init; } = IsIdentityInferred;
+
+    /// <summary>
+    /// AUD-R30: the <c>[EnumStorage]</c> attribute's raw value (0 = Numeric, 1 = String) when the
+    /// property carries one, or <see langword="null"/> to defer to
+    /// <c>JauntyConfig.DefaultEnumStorage</c> at bind time. An explicit attribute is immutable and
+    /// safe to bake into the generated binder; the config default is mutable process-wide state
+    /// and must be read per call - the same split the reflection path's
+    /// <c>BuildValueConverter</c> makes. Meaningful only when <see cref="IsEnum"/> is true.
+    /// </summary>
+    public int? EnumStorageOverride { get; init; } = EnumStorageOverride;
 }
 
 /// <summary>
