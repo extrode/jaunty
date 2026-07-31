@@ -62,7 +62,10 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
 
     public string GetLastInsertIdSql(params string[] columnNames)
     {
-        if (columnNames.Length == 0) return "RETURNING id;";
+        // R27 batch 7: the empty-array case used to fabricate "RETURNING id", a column name it
+        // was never given. lastval() is the session's most recent sequence value - the PostgreSQL
+        // analog of what the other dialects return when handed no column names.
+        if (columnNames.Length == 0) return "SELECT lastval();";
         return $"RETURNING {string.Join(", ", columnNames)};";
     }
 

@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -56,6 +56,16 @@ public static class SqlDialectFactory
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
 
+        return GetDialectCore(connection, depth: 0);
+    }
+
+    // R27 batch 7: the decorator recursion had no depth bound - ReferenceEquals catches a
+    // decorator returning itself, but a two-element cycle (A exposes B, B exposes A) recursed
+    // until the stack overflowed. Bounded like Unwrap's MaxDepth, and for the same reason.
+    private const int MaxDecoratorDepth = 8;
+
+    private static ISqlDialect GetDialectCore(IDbConnection connection, int depth)
+    {
         Type connectionType = connection.GetType();
         if (_dialectCache.TryGetValue(connectionType, out ISqlDialect? cached))
             return cached;
@@ -71,8 +81,8 @@ public static class SqlDialectFactory
         // wraps different engines in different places, so caching ProfiledDbConnection ->
         // SQLiteDialect would hand SQLite's dialect to a profiled Npgsql connection. The recursive
         // call caches against the inner type, which is the part worth caching.
-        if (TryGetInnerConnection(connection, out IDbConnection? inner))
-            return GetDialect(inner!);
+        if (depth < MaxDecoratorDepth && TryGetInnerConnection(connection, out IDbConnection? inner))
+            return GetDialectCore(inner!, depth + 1);
 
         throw new InvalidOperationException(
             $"No SQL dialect is registered for connection type '{connectionType.Name}'. " +
@@ -90,6 +100,10 @@ public static class SqlDialectFactory
     /// <param name="dialect">The dialect instance to use for that connection type.</param>
     public static void RegisterDialect(string connectionTypeName, ISqlDialect dialect)
     {
+        // R27 batch 7: a null registration used to be stored and surface later as a
+        // NullReferenceException at an unrelated GetDialect call site.
+        if (dialect is null) throw new ArgumentNullException(nameof(dialect));
+
         _customDialects[connectionTypeName] = dialect;
 
         // Invalidate any already-cached resolution for a connection type with this name so a
@@ -152,6 +166,8 @@ public static class SqlDialectFactory
     /// <param name="dialect">The dialect instance to use for that connection type.</param>
     public static void RegisterDialect<TConnection>(ISqlDialect dialect) where TConnection : IDbConnection
     {
+        if (dialect is null) throw new ArgumentNullException(nameof(dialect));
+
         var typeName = typeof(TConnection).Name;
         _customDialects[typeName] = dialect;
 

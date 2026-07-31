@@ -95,11 +95,12 @@ internal static class TypeHandlerRegistry
             if (converted is null)
             {
                 result = default!;
+                // R27 batch 7: a null from the handler cannot represent a non-nullable value
+                // type; reporting success would hand back default(T) (e.g. 0 for int),
+                // indistinguishable from real data.
+                return default(T) is null;
             }
-            else
-            {
-                result = (T)converted;
-            }
+            result = (T)converted;
             return true;
         }
         catch (Exception ex)
