@@ -136,8 +136,18 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // Handle null comparisons
         if (value is null)
         {
-            _sql.Append(escapedColumn);
-            _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+            if (node.NodeType is ExpressionType.Equal or ExpressionType.NotEqual)
+            {
+                _sql.Append(escapedColumn);
+                _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+            }
+            else
+            {
+                // A relational comparison against NULL is UNKNOWN in SQL and false for C#'s
+                // lifted operators - never true either way - so emit a match-nothing predicate
+                // rather than IS NOT NULL, which would match every non-null row.
+                _sql.Append("1 = 0");
+            }
             _sql.Append(')');
             return node;
         }
