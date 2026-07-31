@@ -75,6 +75,9 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     /// with no observable effect.
     /// </para>
     /// </remarks>
+    // The reader parameter is deliberately unread (R27 CF-3): it exists so the caller's cache key
+    // can be the reader's column list, matching the arity-3..7 siblings' signature; the resolver
+    // itself keys on the type pair alone.
     private static MultiEntityMapper<T1, T2> CreateMapper(IDataReader reader)
     {
         if (JauntyConfig.ReflectionMultiMapperResolver?.Invoke(typeof(T1), typeof(T2)) is Action<T1, T2, IDataRecord> combined)
