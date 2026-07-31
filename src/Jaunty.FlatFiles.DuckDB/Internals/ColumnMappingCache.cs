@@ -49,7 +49,10 @@ internal static class ColumnMappingCache
                     Getter = CreateGetter(prop),
                     Setter = CreateSetter(prop),
                     PropertyType = prop.PropertyType,
-                    IsDateTime = underlyingType == typeof(DateTime)
+                    // R29: DateTimeOffset needs the same CAST(... AS TIMESTAMP) view treatment as
+                    // DateTime, else a text-sniffed column materializes as string with no
+                    // string->DateTimeOffset conversion path.
+                    IsDateTime = underlyingType == typeof(DateTime) || underlyingType == typeof(DateTimeOffset)
                 };
             }
 

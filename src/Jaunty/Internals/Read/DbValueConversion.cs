@@ -93,8 +93,14 @@ internal static class DbValueConversion
         if (underlyingType == typeof(char) && value is string charString)
             return charString.Length > 0 ? charString[0] : '\0';
 
-        if (underlyingType == typeof(DateTimeOffset) && value is string dtoString)
-            return DateTimeOffset.Parse(dtoString, CultureInfo.InvariantCulture);
+        // R29: the source-generated converter also accepts DateTime (new DateTimeOffset honors
+        // the value's Kind; Unspecified assumes local, matching that sibling). This path threw
+        // InvalidCastException for any provider that surfaces a timestamp column as DateTime.
+        if (underlyingType == typeof(DateTimeOffset))
+        {
+            if (value is string dtoString) return DateTimeOffset.Parse(dtoString, CultureInfo.InvariantCulture);
+            if (value is DateTime dtoDateTime) return new DateTimeOffset(dtoDateTime);
+        }
 
         if (underlyingType == typeof(TimeSpan) && value is string tsString)
             return TimeSpan.Parse(tsString, CultureInfo.InvariantCulture);

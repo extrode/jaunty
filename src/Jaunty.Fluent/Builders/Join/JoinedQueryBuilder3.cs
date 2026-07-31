@@ -37,8 +37,8 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         string leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
-        string leftColumn = GetColumnName(FluentMetadataCache.GetMetadata<T1>(), leftProp, _parent.FromAlias);
-        string rightColumn = GetColumnName(_metadata, rightProp, _alias);
+        string leftColumn = GetColumnName<T1>(leftProp, _parent.FromAlias);
+        string rightColumn = GetColumnName<T3>(rightProp, _alias);
 
         string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery3(condition);
@@ -49,8 +49,8 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         string leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
-        string leftColumn = GetColumnName(FluentMetadataCache.GetMetadata<T2>(), leftProp, _parent.Joins[0].Alias);
-        string rightColumn = GetColumnName(_metadata, rightProp, _alias);
+        string leftColumn = GetColumnName<T2>(leftProp, _parent.Joins[0].Alias);
+        string rightColumn = GetColumnName<T3>(rightProp, _alias);
 
         string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery3(condition);
@@ -90,21 +90,15 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         return new JoinedQuery3Builder<T1, T2, T3>(_parent);
     }
 
-    private string GetColumnName(EntityMetadata metadata, string propertyName, string? alias)
+    private string GetColumnName<T>(string propertyName, string? alias) where T : new()
     {
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
-        string columnName = propertyName;
+        // R29: was a linear scan of metadata.Columns plus a fresh EscapeColumnName per call; the
+        // arity-2 helpers were converted to the pre-escaped CachedDialectMetadata lookup under
+        // AUD-R26-058 and these string-overload helpers were left on the old shape.
+        EntityMetadata metadata = FluentMetadataCache.GetMetadata<T>();
+        CachedDialectMetadata cached = FluentMetadataCache.GetForDialect<T>(_parent.Dialect);
 
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].PropertyName == propertyName)
-            {
-                columnName = columns[i].ColumnName;
-                break;
-            }
-        }
-
-        string escaped = _parent.Dialect.EscapeColumnName(columnName);
+        string escaped = cached.GetColumnName(propertyName);
         string prefix = alias ?? _parent.Dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
@@ -198,7 +192,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> OrderBy<TKey>(Expression<Func<T1, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T1>(), propertyName, _parent.FromAlias);
+        string columnName = GetColumnNameForOrderBy<T1>(propertyName, _parent.FromAlias);
         _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
@@ -206,7 +200,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> OrderByDescending<TKey>(Expression<Func<T1, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T1>(), propertyName, _parent.FromAlias);
+        string columnName = GetColumnNameForOrderBy<T1>(propertyName, _parent.FromAlias);
         _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
@@ -214,7 +208,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> OrderByJoined<TKey>(Expression<Func<T2, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T2>(), propertyName, _parent.Joins[0].Alias);
+        string columnName = GetColumnNameForOrderBy<T2>(propertyName, _parent.Joins[0].Alias);
         _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
@@ -222,7 +216,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> OrderByJoinedDescending<TKey>(Expression<Func<T2, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T2>(), propertyName, _parent.Joins[0].Alias);
+        string columnName = GetColumnNameForOrderBy<T2>(propertyName, _parent.Joins[0].Alias);
         _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
@@ -230,7 +224,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> OrderByJoined<TKey>(Expression<Func<T3, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T3>(), propertyName, _parent.Joins[1].Alias);
+        string columnName = GetColumnNameForOrderBy<T3>(propertyName, _parent.Joins[1].Alias);
         _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
@@ -238,7 +232,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> OrderByJoinedDescending<TKey>(Expression<Func<T3, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T3>(), propertyName, _parent.Joins[1].Alias);
+        string columnName = GetColumnNameForOrderBy<T3>(propertyName, _parent.Joins[1].Alias);
         _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
@@ -246,7 +240,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> ThenBy<TKey>(Expression<Func<T1, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T1>(), propertyName, _parent.FromAlias);
+        string columnName = GetColumnNameForOrderBy<T1>(propertyName, _parent.FromAlias);
         _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
@@ -254,7 +248,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> ThenByDescending<TKey>(Expression<Func<T1, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T1>(), propertyName, _parent.FromAlias);
+        string columnName = GetColumnNameForOrderBy<T1>(propertyName, _parent.FromAlias);
         _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
@@ -262,7 +256,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> ThenByJoined<TKey>(Expression<Func<T2, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T2>(), propertyName, _parent.Joins[0].Alias);
+        string columnName = GetColumnNameForOrderBy<T2>(propertyName, _parent.Joins[0].Alias);
         _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
@@ -270,7 +264,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> ThenByJoinedDescending<TKey>(Expression<Func<T2, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T2>(), propertyName, _parent.Joins[0].Alias);
+        string columnName = GetColumnNameForOrderBy<T2>(propertyName, _parent.Joins[0].Alias);
         _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
@@ -278,7 +272,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> ThenByJoined<TKey>(Expression<Func<T3, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T3>(), propertyName, _parent.Joins[1].Alias);
+        string columnName = GetColumnNameForOrderBy<T3>(propertyName, _parent.Joins[1].Alias);
         _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
@@ -286,7 +280,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public IJoinedQuery3<T1, T2, T3> ThenByJoinedDescending<TKey>(Expression<Func<T3, TKey>> keySelector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T3>(), propertyName, _parent.Joins[1].Alias);
+        string columnName = GetColumnNameForOrderBy<T3>(propertyName, _parent.Joins[1].Alias);
         _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
@@ -554,21 +548,15 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
 
     // ==================== HELPERS ====================
 
-    private string GetColumnNameForOrderBy(EntityMetadata metadata, string propertyName, string? alias)
+    private string GetColumnNameForOrderBy<T>(string propertyName, string? alias) where T : new()
     {
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
-        string columnName = propertyName;
+        // R29: was a linear scan of metadata.Columns plus a fresh EscapeColumnName per call; the
+        // arity-2 helpers were converted to the pre-escaped CachedDialectMetadata lookup under
+        // AUD-R26-058 and these string-overload helpers were left on the old shape.
+        EntityMetadata metadata = FluentMetadataCache.GetMetadata<T>();
+        CachedDialectMetadata cached = FluentMetadataCache.GetForDialect<T>(_parent.Dialect);
 
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].PropertyName == propertyName)
-            {
-                columnName = columns[i].ColumnName;
-                break;
-            }
-        }
-
-        string escaped = _parent.Dialect.EscapeColumnName(columnName);
+        string escaped = cached.GetColumnName(propertyName);
         string prefix = alias ?? _parent.Dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
