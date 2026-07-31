@@ -1,4 +1,4 @@
-using Jaunty.Fluent.Tests.Entities;
+﻿using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
@@ -245,5 +245,43 @@ public class FluentSqlFunctionsTests : IClassFixture<FluentDatabaseFixture>
 
         // Products where ReorderLevel is null OR ReorderLevel is 0
         Assert.NotEmpty(products);
+    }
+
+    [Fact]
+    public void NullIf_ToSql_EqualsCapturedNullVariable_GeneratesIsNull()
+    {
+        short? captured = null;
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => Sql.NullIf(p.UnitsInStock, (short?)0) == captured)
+            .ToSql();
+
+        Assert.Contains("NULLIF", sql);
+        Assert.Contains("IS NULL", sql);
+        Assert.DoesNotContain("= @", sql);
+    }
+
+    [Fact]
+    public void NullIf_ToSql_NotEqualsCapturedNullVariable_GeneratesIsNotNull()
+    {
+        short? captured = null;
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => Sql.NullIf(p.UnitsInStock, (short?)0) != captured)
+            .ToSql();
+
+        Assert.Contains("IS NOT NULL", sql);
+        Assert.DoesNotContain("<> @", sql);
+    }
+
+    [Fact]
+    public void NullIf_ToSql_CapturedNonNullVariable_StillBindsParameter()
+    {
+        short? captured = 5;
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => Sql.NullIf(p.UnitsInStock, (short?)0) == captured)
+            .ToSql();
+
+        Assert.Contains("NULLIF", sql);
+        Assert.DoesNotContain("IS NULL", sql);
+        Assert.Contains("@", sql);
     }
 }
