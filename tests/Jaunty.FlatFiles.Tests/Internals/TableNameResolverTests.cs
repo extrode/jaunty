@@ -1,4 +1,4 @@
-using Jaunty.Attributes;
+﻿using Jaunty.Attributes;
 using Jaunty.FlatFiles.Internals;
 
 namespace Jaunty.FlatFiles.Tests.Internals;
@@ -9,6 +9,10 @@ public class TableNameResolverTests
     public class EntityWithTableAttribute
     {
         public int Id { get; set; }
+    }
+
+    public class EntityDerivedFromDataAnnotationsTable : EntityWithDataAnnotationsTableAttribute
+    {
     }
 
     public class EntityWithoutAttribute
@@ -61,6 +65,13 @@ public class TableNameResolverTests
     public void Resolve_WithDataAnnotationsTableAttribute_ReturnsAttributeName()
     {
         var name = TableNameResolver.Resolve<EntityWithDataAnnotationsTableAttribute>();
+        Assert.Equal("da_products", name);
+    }
+
+    [Fact]
+    public void Resolve_WithInheritedDataAnnotationsTableAttribute_ReturnsAttributeName()
+    {
+        var name = TableNameResolver.Resolve<EntityDerivedFromDataAnnotationsTable>();
         Assert.Equal("da_products", name);
     }
 }

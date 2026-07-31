@@ -1,3 +1,5 @@
+﻿using Jaunty.Core;
+
 namespace Jaunty.FlatFiles.DuckDB.Tests.Read;
 
 /// <summary>
@@ -110,5 +112,56 @@ public class MultiEntityQueryTests : IDisposable
     private sealed class Right
     {
         public int Amount { get; set; }
+    }
+
+    [Fact]
+    public void QueryMultiEntity_WithOptions_MapsColumnsByName()
+    {
+        var options = new CommandOptions<(Left, Right)>(commandTimeout: 30);
+        List<(Left, Right)> results = _db.QueryMultiEntity<Left, Right>(
+            "SELECT 5 AS Id, 'Opt' AS Name, 500 AS Amount", options);
+
+        (Left left, Right right) = Assert.Single(results);
+        Assert.Equal(5, left.Id);
+        Assert.Equal("Opt", left.Name);
+        Assert.Equal(500, right.Amount);
+    }
+
+    [Fact]
+    public void QueryMultiEntity_WithParametersAndOptions_BindsByName()
+    {
+        var options = new CommandOptions<(Left, Right)>(commandTimeout: 30);
+        List<(Left, Right)> results = _db.QueryMultiEntity<Left, Right>(
+            "SELECT 6 AS Id, 'PO' AS Name, $Amount AS Amount",
+            new { Amount = 600 }, options);
+
+        (Left left, Right right) = Assert.Single(results);
+        Assert.Equal(6, left.Id);
+        Assert.Equal(600, right.Amount);
+    }
+
+    [Fact]
+    public async Task QueryMultiEntityAsync_WithOptions_MapsColumnsByName()
+    {
+        var options = new CommandOptions<(Left, Right)>(commandTimeout: 30);
+        List<(Left, Right)> results = await _db.QueryMultiEntityAsync<Left, Right>(
+            "SELECT 7 AS Id, 'AOpt' AS Name, 700 AS Amount", options);
+
+        (Left left, Right right) = Assert.Single(results);
+        Assert.Equal(7, left.Id);
+        Assert.Equal(700, right.Amount);
+    }
+
+    [Fact]
+    public async Task QueryMultiEntityAsync_WithParametersAndOptions_BindsByName()
+    {
+        var options = new CommandOptions<(Left, Right)>(commandTimeout: 30);
+        List<(Left, Right)> results = await _db.QueryMultiEntityAsync<Left, Right>(
+            "SELECT 8 AS Id, 'APO' AS Name, $Amount AS Amount",
+            new { Amount = 800 }, options);
+
+        (Left left, Right right) = Assert.Single(results);
+        Assert.Equal(8, left.Id);
+        Assert.Equal(800, right.Amount);
     }
 }

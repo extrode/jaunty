@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Text;
 
@@ -79,7 +79,10 @@ internal static class ImportExecutor
 
         // Build a column index map for the reader (source column name → reader ordinal)
         var readerColumnMap = new int[mappings.Count];
-        var mappingList = mappings.Values.ToList();
+        // R28: pre-sized copy loop instead of LINQ ToList, matching ExecuteAsync above.
+        var mappingList = new List<ColumnMapping>(mappings.Count);
+        foreach (ColumnMapping mapping in mappings.Values)
+            mappingList.Add(mapping);
         for (int i = 0; i < mappingList.Count; i++)
         {
             try
