@@ -34,7 +34,28 @@ internal static class JoinParameterName
         if (bare.Length == 0)
             throw new ArgumentException($"Join condition parameter name '{name}' is only a parameter prefix.", argumentName);
 
+        if (IsReservedPositionalName(bare))
+            throw new ArgumentException(
+                $"Join condition parameter name '{name}' is reserved: \"jp\" followed by digits is the " +
+                "positional form Where/And/Or expression parameters are renumbered into, so a named " +
+                "parameter using it would collide with them. Choose a different name.",
+                argumentName);
+
         return prefix + bare;
+    }
+
+    private static bool IsReservedPositionalName(string bare)
+    {
+        if (bare.Length < 3 || bare[0] != 'j' || bare[1] != 'p')
+            return false;
+
+        for (int i = 2; i < bare.Length; i++)
+        {
+            if (bare[i] is < '0' or > '9')
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>
