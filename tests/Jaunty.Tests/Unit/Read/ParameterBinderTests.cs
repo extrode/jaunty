@@ -542,6 +542,40 @@ public class ParameterBinderTests
         Assert.Contains("(SELECT NULL WHERE 1 = 0)", command.CommandText);
     }
 
+    /// <summary>
+    /// R27 batch 4: MySQL/MariaDB reject a FROM-less WHERE (ER_NO_TABLES_USED), so the
+    /// no-match sentinel for that dialect selects over DUAL.
+    /// </summary>
+    [Fact]
+    public void Bind_EmptyArray_MySqlDialect_UsesDualSubquery()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids")
+        {
+            Connection = new MySqlConnection(),
+        };
+
+        ParameterBinder.Bind(command, new { Ids = Array.Empty<int>() });
+
+        Assert.Empty(command.Parameters);
+        Assert.Contains("(SELECT NULL FROM DUAL WHERE 1 = 0)", command.CommandText);
+    }
+
+    // Named so SqlDialectFactory's type-name resolution picks MySqlDialect.
+    private sealed class MySqlConnection : IDbConnection
+    {
+        public string ConnectionString { get; set; } = "";
+        public int ConnectionTimeout => 0;
+        public string Database => "";
+        public ConnectionState State => ConnectionState.Open;
+        public IDbTransaction BeginTransaction() => throw new NotSupportedException();
+        public IDbTransaction BeginTransaction(IsolationLevel il) => throw new NotSupportedException();
+        public void ChangeDatabase(string databaseName) { }
+        public void Close() { }
+        public IDbCommand CreateCommand() => throw new NotSupportedException();
+        public void Dispose() { }
+        public void Open() { }
+    }
+
     [Fact]
     public void Bind_SingleItemArray_ExpandsToSingleParam()
     {
