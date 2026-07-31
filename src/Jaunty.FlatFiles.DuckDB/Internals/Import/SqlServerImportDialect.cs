@@ -119,14 +119,21 @@ internal sealed class SqlServerImportDialect : IImportDialect, IQuotedIdentifier
 
         if (conflictStrategy == ConflictStrategy.Upsert)
         {
-            sb.Append(" WHEN MATCHED THEN UPDATE SET ");
-            var first = true;
+            // Key-only entity: "WHEN MATCHED THEN UPDATE SET" with no assignments is a syntax
+            // error, so omit the clause entirely - the row already matches by key and there is
+            // nothing to update.
+            var assignments = new StringBuilder();
             foreach (var colName in columnNames)
             {
                 if (colName == keyColumnName) continue;
-                if (!first) sb.Append(", ");
-                sb.Append($"target.{QuoteIdentifier(colName)} = source.{QuoteIdentifier(colName)}");
-                first = false;
+                if (assignments.Length > 0) assignments.Append(", ");
+                assignments.Append($"target.{QuoteIdentifier(colName)} = source.{QuoteIdentifier(colName)}");
+            }
+
+            if (assignments.Length > 0)
+            {
+                sb.Append(" WHEN MATCHED THEN UPDATE SET ");
+                sb.Append(assignments);
             }
         }
 

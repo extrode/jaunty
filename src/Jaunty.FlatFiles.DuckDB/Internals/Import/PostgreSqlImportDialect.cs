@@ -95,15 +95,19 @@ internal sealed class PostgreSqlImportDialect : IImportDialect, IQuotedIdentifie
             }
             else if (conflictStrategy == ConflictStrategy.Upsert)
             {
-                sb.Append($" ON CONFLICT ({QuoteIdentifier(keyColumnName)}) DO UPDATE SET ");
-                var first = true;
+                // Key-only entity: "DO UPDATE SET" with no assignments is a syntax error, so
+                // degrade to DO NOTHING (matching DuckDbDialect.GenerateUpsertSql's guard).
+                var assignments = new StringBuilder();
                 foreach (var colName in columnNames)
                 {
                     if (colName == keyColumnName) continue;
-                    if (!first) sb.Append(", ");
-                    sb.Append($"{QuoteIdentifier(colName)} = EXCLUDED.{QuoteIdentifier(colName)}");
-                    first = false;
+                    if (assignments.Length > 0) assignments.Append(", ");
+                    assignments.Append($"{QuoteIdentifier(colName)} = EXCLUDED.{QuoteIdentifier(colName)}");
                 }
+
+                sb.Append(assignments.Length > 0
+                    ? $" ON CONFLICT ({QuoteIdentifier(keyColumnName)}) DO UPDATE SET {assignments}"
+                    : $" ON CONFLICT ({QuoteIdentifier(keyColumnName)}) DO NOTHING");
             }
         }
 
