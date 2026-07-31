@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-using Jaunty.Internals.Parameters;
+using Jaunty.Internals;
 
 namespace Jaunty.Extensions.Reflection;
 
