@@ -1,4 +1,4 @@
-using Jaunty.Internals.Parameters;
+using Jaunty.Internals;
 
 using Xunit;
 

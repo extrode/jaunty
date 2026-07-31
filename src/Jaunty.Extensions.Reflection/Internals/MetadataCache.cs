@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 using Jaunty.Configuration;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Parameters;
 using Jaunty.Attributes;
 using Jaunty.TypeHandlers;
 using System.Globalization;

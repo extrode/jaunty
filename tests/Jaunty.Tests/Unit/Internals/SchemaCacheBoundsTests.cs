@@ -4,7 +4,7 @@ using System.Reflection;
 using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection;
-using Jaunty.Internals.Parameters;
+using Jaunty.Internals;
 
 using Xunit;
 

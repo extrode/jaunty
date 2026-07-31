@@ -2,7 +2,7 @@ using System;
 using System.Data;
 
 using Jaunty.Configuration;
-using Jaunty.Internals.Parameters;
+using Jaunty.Internals;
 
 namespace Jaunty.Internals.Read;
 
