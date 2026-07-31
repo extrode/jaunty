@@ -466,6 +466,10 @@ public static class CsvImportExtensions
             // Fallback: Use COPY FROM with file path (requires server access to file).
             // Deliberately not preceded by RequireFileOnThisMachine: the server opens this one, so
             // the caller's filesystem says nothing about whether it will work.
+            // AUD-R30: unlike the STDIN branch above, the server opens the file here, so a
+            // non-default Encoding cannot be honoured and must fail loudly like the other
+            // engine-opens-the-file paths - it was silently discarded before.
+            ThrowIfEncodingUnsupported(options, "PostgreSQL server-side COPY FROM");
             using IDbCommand cmd = connection.CreateCommand();
             cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
             try
@@ -520,6 +524,9 @@ public static class CsvImportExtensions
                 return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
             }
 
+            // AUD-R30: see the sync sibling - the server opens the file on this branch, so a
+            // non-default Encoding must be rejected rather than silently discarded.
+            ThrowIfEncodingUnsupported(options, "PostgreSQL server-side COPY FROM");
             using DbCommand cmd = connection.CreateCommand();
             cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
             try
@@ -940,7 +947,8 @@ public static class CsvImportExtensions
     /// <remarks>
     /// AUD-R26 (batch 4, low/consistency). <c>Encoding</c> is read only where .NET opens the file -
     /// the SQLite prepared-statement fallback and PostgreSQL's <c>COPY FROM STDIN</c>. On the
-    /// sqlite3 CLI, <c>LOAD DATA LOCAL INFILE</c> and <c>BULK INSERT</c> something else opens it and
+    /// sqlite3 CLI, <c>LOAD DATA LOCAL INFILE</c>, <c>BULK INSERT</c> and (AUD-R30) PostgreSQL's
+    /// server-side <c>COPY FROM</c> fallback, something else opens it and
     /// the setting was discarded in silence, so a caller who set Latin-1 for a Latin-1 file got
     /// UTF-8 behaviour and mojibake with nothing to indicate why. <c>NullValue</c> already failed
     /// loudly on these paths; this makes the type's two unhonourable options behave alike. The
@@ -953,8 +961,8 @@ public static class CsvImportExtensions
                 $"CsvImportOptions.Encoding is not supported by the {importMethodName} import path - " +
                 "the file is opened by the database engine rather than by Jaunty, so the encoding is the " +
                 $"engine's to determine and '{options.Encoding.WebName}' cannot be applied. Leave Encoding at its " +
-                "default (UTF-8), or import into an in-memory SQLite database or PostgreSQL, whose paths read the " +
-                "file here and honour it.");
+                "default (UTF-8), or import into an in-memory SQLite database or PostgreSQL via Npgsql's COPY FROM " +
+                "STDIN, whose paths read the file here and honour it.");
     }
 
     private static void ThrowIfNullValueUnsupported(CsvImportOptions options, string importMethodName)
@@ -1068,6 +1076,14 @@ public static class CsvImportExtensions
                     }
                 }
                 fields.Add(sb.ToString());
+
+                // AUD-R30: anything between a closing quote and the next delimiter (e.g.
+                // "abc"def,x) is malformed CSV per RFC 4180. It used to be parsed as the start of
+                // a new unquoted field, silently inflating the field count.
+                if (i < len && line[i] != delimiter)
+                    throw new FormatException(
+                        $"Malformed CSV: unexpected character '{line[i]}' after a closing quote at position {i}. " +
+                        "A quoted field must be followed by the delimiter or the end of the line.");
 
                 // Skip delimiter after quoted field
                 if (i < len && line[i] == delimiter)
