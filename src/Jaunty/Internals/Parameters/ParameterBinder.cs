@@ -396,9 +396,10 @@ internal static class ParameterBinder
 
         // Fail fast with a clear error instead of letting the provider reject SQL that
         // exceeds its parameter limit with an opaque driver-level exception.
+        ISqlDialect? knownDialect = null;
         if (connection is not null)
         {
-            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+            ISqlDialect dialect = knownDialect = SqlDialectFactory.GetDialect(connection);
             // R16: totalExpandedCount alone undercounts - it ignores the non-collection scalar
             // placeholders in the same statement (seen.Count includes both), so a statement could
             // still exceed the provider's true parameter maximum while passing a collection-only
@@ -425,8 +426,12 @@ internal static class ParameterBinder
             string replacement;
             if (expansion.Count == 0)
             {
-                // Empty collection: use subquery that returns no rows
-                replacement = "(SELECT NULL WHERE 1 = 0)";
+                // Empty collection: a subquery that returns no rows, so IN matches nothing and
+                // NOT IN matches everything. MySQL/MariaDB reject a FROM-less WHERE
+                // (ER_NO_TABLES_USED), so that dialect gets the same subquery over DUAL.
+                replacement = knownDialect is MySqlDialect
+                    ? "(SELECT NULL FROM DUAL WHERE 1 = 0)"
+                    : "(SELECT NULL WHERE 1 = 0)";
             }
             else
             {
