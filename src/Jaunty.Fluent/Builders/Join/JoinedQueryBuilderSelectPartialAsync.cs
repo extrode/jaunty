@@ -489,7 +489,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
                 }
             }
 
-            return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+            // R27 batch 8: emptiness by row count, not a null test - with a value-type T the old
+            // "result ?? throw" saw default(T) after zero rows and returned 0 instead of throwing.
+            if (count == 0)
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+            return result!;
         }
     }
 
