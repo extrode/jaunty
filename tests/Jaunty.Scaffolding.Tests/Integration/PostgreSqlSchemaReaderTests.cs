@@ -62,6 +62,7 @@ public class PostgreSqlSchemaReaderTests
     {
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
+            DROP TABLE IF EXISTS scaffold_test_shipments;
             DROP TABLE IF EXISTS scaffold_test_order_items;
             CREATE TABLE scaffold_test_order_items (
                 order_id INT NOT NULL,
@@ -168,6 +169,39 @@ public class PostgreSqlSchemaReaderTests
         Assert.Equal("product_id", fk.ForeignKeyColumn);
         Assert.Equal("scaffold_test_products", fk.ReferencedTable);
         Assert.Equal("product_id", fk.ReferencedColumn);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_CompositeForeignKey_OneRowPerColumnCorrectlyPaired()
+    {
+        using var conn = OpenOrSkip();
+        CreateCompositeKeyTable(conn);
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                DROP TABLE IF EXISTS scaffold_test_shipments;
+                CREATE TABLE scaffold_test_shipments (
+                    shipment_id SERIAL PRIMARY KEY,
+                    order_id INT NOT NULL,
+                    line_number INT NOT NULL,
+                    FOREIGN KEY (order_id, line_number)
+                        REFERENCES scaffold_test_order_items (order_id, line_number)
+                );
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString,
+            new SchemaReaderOptions { IncludeTables = ["scaffold_test_shipments"], IncludeForeignKeys = true });
+
+        var table = schema.Tables.Single(t => t.TableName == "scaffold_test_shipments");
+        Assert.Equal(2, table.ForeignKeys.Count);
+        Assert.Contains(table.ForeignKeys, fk =>
+            fk.ForeignKeyColumn == "order_id" && fk.ReferencedColumn == "order_id");
+        Assert.Contains(table.ForeignKeys, fk =>
+            fk.ForeignKeyColumn == "line_number" && fk.ReferencedColumn == "line_number");
+        Assert.All(table.ForeignKeys, fk => Assert.Equal("scaffold_test_order_items", fk.ReferencedTable));
     }
 
     [Fact]
