@@ -94,8 +94,10 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public T SelectPartialFirst<T>(string columns, Func<IDataReader, T> mapper)
     {
-        T? result = SelectPartialFirstOrDefault(columns, mapper);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        (bool found, T? result) = SelectPartialFirstCore(columns, mapper);
+        if (!found)
+            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        return result!;
     }
 
     public IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns)
@@ -132,13 +134,22 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     }
 
     public T? SelectPartialFirstOrDefault<T>(string columns, Func<IDataReader, T> mapper)
+        => SelectPartialFirstCore(columns, mapper).Value;
+
+    /// <summary>
+    /// R27 batch 8: emptiness is reported by the flag, not a null test on the mapped value -
+    /// with a value-type <typeparamref name="T"/> the old "result ?? throw" saw
+    /// <c>default(T)</c> after zero rows and returned 0 instead of throwing, and a mapper
+    /// legitimately mapping a row to null was misreported as "no elements".
+    /// </summary>
+    private (bool Found, T? Value) SelectPartialFirstCore<T>(string columns, Func<IDataReader, T> mapper)
     {
         string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 1);
 
         return CommandObservation.Execute(
             sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        T? Body()
+        (bool Found, T? Value) Body()
         {
 
             using IDbCommand command = _connection.CreateCommand();
@@ -154,7 +165,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             try
             {
                 using IDataReader reader = command.ExecuteReader();
-                return reader.Read() ? mapper(reader) : default;
+                return reader.Read() ? (true, mapper(reader)) : (false, default);
             }
             finally
             {
@@ -172,8 +183,10 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public T SelectPartialSingle<T>(string columns, Func<IDataReader, T> mapper)
     {
-        T? result = SelectPartialSingleOrDefault(columns, mapper);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        (int count, T? result) = SelectPartialSingleCore(columns, mapper);
+        if (count == 0)
+            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        return result!;
     }
 
     public IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns)
@@ -221,13 +234,20 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     }
 
     public T? SelectPartialSingleOrDefault<T>(string columns, Func<IDataReader, T> mapper)
+        => SelectPartialSingleCore(columns, mapper).Value;
+
+    /// <summary>
+    /// R27 batch 8: same flag-over-null contract as <see cref="SelectPartialFirstCore{T}"/>,
+    /// with the row count carrying both the zero-row and more-than-one-row outcomes.
+    /// </summary>
+    private (int Count, T? Value) SelectPartialSingleCore<T>(string columns, Func<IDataReader, T> mapper)
     {
         string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 2);
 
         return CommandObservation.Execute(
             sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        T? Body()
+        (int Count, T? Value) Body()
         {
             T? result = default;
             int count = 0;
@@ -260,7 +280,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
                     _connection.Close();
             }
 
-            return result;
+            return (count, result);
         }
     }
 
