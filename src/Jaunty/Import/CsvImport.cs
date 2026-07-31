@@ -572,7 +572,7 @@ public static class CsvImportExtensions
             sb.Append($"INTO TABLE {escapedTable} ");
             sb.Append($"FIELDS TERMINATED BY '{options.Delimiter}' ");
             sb.Append($"OPTIONALLY ENCLOSED BY '{EscapeSqlCharLiteral(options.Quote)}' ");
-            sb.Append("LINES TERMINATED BY '\\n' ");
+            sb.Append($"LINES TERMINATED BY '{MySqlLineTerminator(filePath)}' ");
             if (options.HasHeader)
                 sb.Append("IGNORE 1 LINES");
 
@@ -611,7 +611,7 @@ public static class CsvImportExtensions
             sb.Append($"INTO TABLE {escapedTable} ");
             sb.Append($"FIELDS TERMINATED BY '{options.Delimiter}' ");
             sb.Append($"OPTIONALLY ENCLOSED BY '{EscapeSqlCharLiteral(options.Quote)}' ");
-            sb.Append("LINES TERMINATED BY '\\n' ");
+            sb.Append($"LINES TERMINATED BY '{MySqlLineTerminator(filePath)}' ");
             if (options.HasHeader)
                 sb.Append("IGNORE 1 LINES");
 
@@ -807,7 +807,18 @@ public static class CsvImportExtensions
     private const string SqlServerCrLfTerminator = "0x0d0a";
     private const string SqlServerLfTerminator = "0x0a";
 
-    private static string SqlServerRowTerminator(string filePath)
+    private static string SqlServerRowTerminator(string filePath) =>
+        DetectCrLf(filePath) == false ? SqlServerLfTerminator : SqlServerCrLfTerminator;
+
+    // R27 batch 03 (medium): MySQL LOAD DATA hardcoded LINES TERMINATED BY '\n', so a CRLF file -
+    // the default output of Excel and most Windows tooling - imported every last field with a
+    // trailing \r, silently. The same sniffing that picks SQL Server's ROWTERMINATOR now picks the
+    // MySQL terminator. LOCAL INFILE reads the file client-side and RequireFileOnThisMachine has
+    // already run, so the file is readable here; the unreadable fallback keeps the old '\n'.
+    private static string MySqlLineTerminator(string filePath) =>
+        DetectCrLf(filePath) == true ? "\\r\\n" : "\\n";
+
+    private static bool? DetectCrLf(string filePath)
     {
         try
         {
@@ -820,7 +831,7 @@ public static class CsvImportExtensions
                 for (int i = 0; i < read; i++)
                 {
                     if (buffer[i] == 0x0A)
-                        return previous == 0x0D ? SqlServerCrLfTerminator : SqlServerLfTerminator;
+                        return previous == 0x0D;
                     previous = buffer[i];
                 }
             }
@@ -835,7 +846,7 @@ public static class CsvImportExtensions
         {
         }
 
-        return SqlServerCrLfTerminator;
+        return null;
     }
 
     // Postgres COPY's WITH (...) clause natively supports NULL '<value>' and QUOTE '<char>', unlike
