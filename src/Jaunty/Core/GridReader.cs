@@ -782,6 +782,10 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </summary>
     public void Dispose()
     {
+        // R27 batch 6: without this, a Read* after an explicit early Dispose passed
+        // EnsureNotConsumed and failed inside the provider's disposed reader instead of with
+        // the documented InvalidOperationException.
+        _consumed = true;
         reader.Dispose();
         command?.Dispose();
         if (closeConnection && connection.State != ConnectionState.Closed)
@@ -793,6 +797,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </summary>
     public async ValueTask DisposeAsync()
     {
+        _consumed = true;
         GC.SuppressFinalize(this);
 
         if (reader is IAsyncDisposable asyncReader)

@@ -1,4 +1,4 @@
-using Jaunty.Attributes;
+﻿using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection;
 using Jaunty.TypeHandlers;
@@ -382,6 +382,57 @@ public class TypeHandlerRegistryTests : IDisposable
 
         public override object? ToDbValue(string? value) => value?.ToLowerInvariant();
     }
+
+    #region TryConvertFromDb null-from-handler (R27 batch 7)
+
+    // A null from the handler cannot represent a non-nullable value type; success would hand
+    // back default(T) (0 for int), indistinguishable from real data.
+    [Fact]
+    public void TryConvertFromDb_HandlerReturnsNull_NonNullableValueType_ReturnsFalse()
+    {
+        TypeHandlerRegistry.Register<int>(new NullReturningHandler());
+
+        bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out int result);
+
+        Assert.False(ok);
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    public void TryConvertFromDb_HandlerReturnsNull_ReferenceType_ReturnsTrueWithNull()
+    {
+        TypeHandlerRegistry.Register<string>(new NullReturningHandler());
+
+        bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out string result);
+
+        Assert.True(ok);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void TryConvertFromDb_HandlerReturnsNull_NullableValueType_ReturnsTrueWithNull()
+    {
+        TypeHandlerRegistry.Register<int?>(new NullReturningHandler());
+        try
+        {
+            bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out int? result);
+
+            Assert.True(ok);
+            Assert.Null(result);
+        }
+        finally
+        {
+            TypeHandlerRegistry.Remove<int?>();
+        }
+    }
+
+    private sealed class NullReturningHandler : ITypeHandler
+    {
+        public object? Parse(object? dbValue) => null;
+        public object? ToDbValue(object? value) => null;
+    }
+
+    #endregion
 
     // Helper for testing
     private class TestTypeHandler : TypeHandler<int>

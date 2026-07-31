@@ -1,7 +1,6 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
 using Jaunty.Core;
@@ -24,7 +23,6 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private readonly List<WhereCondition> _whereConditions;
     private readonly ParameterCollection _parameters;
     private readonly string[] _groupByColumns;
-    private readonly Expression<Func<T, TKey>> _keySelector;
     private readonly List<string> _havingConditions = [];
     private int _havingParamSeq;
 
@@ -36,7 +34,6 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         _metadata = FluentMetadataCache.GetMetadata<T>();
         _whereConditions = whereConditions;
         _parameters = parameters;
-        _keySelector = keySelector;
         _groupByColumns = ExtractGroupByColumns(keySelector);
     }
 

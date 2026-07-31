@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -6,7 +6,6 @@ using System.Text;
 
 using Jaunty.Dialects;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -17,7 +16,6 @@ namespace Jaunty.Fluent.Expressions;
 internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor where T : new()
 {
     private readonly ISqlDialect _dialect;
-    private readonly EntityMetadata _metadata;
     private readonly string[] _groupByColumns;
     private readonly List<string> _selectColumns = new();
     private readonly List<string> _columnAliases = new();
@@ -25,7 +23,6 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
     public GroupByExpressionVisitor(ISqlDialect dialect, string[] groupByColumns)
     {
         _dialect = dialect;
-        _metadata = FluentMetadataCache.GetMetadata<T>();
         _groupByColumns = groupByColumns;
     }
 
