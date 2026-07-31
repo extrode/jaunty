@@ -1,6 +1,7 @@
-using System.Data;
+﻿using System.Data;
 
 using Jaunty.Attributes;
+using Jaunty.Dialects;
 using Jaunty.Configuration;
 using Jaunty.Internals;
 using Jaunty.Internals.Parameters;
@@ -558,6 +559,42 @@ public class ParameterBinderTests
 
         Assert.Empty(command.Parameters);
         Assert.Contains("(SELECT NULL FROM DUAL WHERE 1 = 0)", command.CommandText);
+    }
+
+    /// <summary>
+    /// With native bulk copy enabled, resolution returns the MySqlDialectWithBulkCopy wrapper,
+    /// not a MySqlDialect subtype - the sentinel check must unwrap before type-testing. The
+    /// registration uses a name nothing else resolves, so it is safe to leave in place.
+    /// </summary>
+    [Fact]
+    public void Bind_EmptyArray_WrappedMySqlDialect_UsesDualSubquery()
+    {
+        SqlDialectFactory.RegisterDialect("R27WrappedMySqlConnection",
+            new global::Jaunty.Extensions.Reflection.Dialects.MySqlDialectWithBulkCopy());
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids")
+        {
+            Connection = new R27WrappedMySqlConnection(),
+        };
+
+        ParameterBinder.Bind(command, new { Ids = Array.Empty<int>() });
+
+        Assert.Contains("(SELECT NULL FROM DUAL WHERE 1 = 0)", command.CommandText);
+    }
+
+    private sealed class R27WrappedMySqlConnection : IDbConnection
+    {
+        public string ConnectionString { get; set; } = "";
+        public int ConnectionTimeout => 0;
+        public string Database => "";
+        public ConnectionState State => ConnectionState.Closed;
+
+        public IDbTransaction BeginTransaction() => throw new NotSupportedException();
+        public IDbTransaction BeginTransaction(IsolationLevel il) => throw new NotSupportedException();
+        public void ChangeDatabase(string databaseName) { }
+        public void Close() { }
+        public IDbCommand CreateCommand() => throw new NotSupportedException();
+        public void Dispose() { }
+        public void Open() { }
     }
 
     // Named so SqlDialectFactory's type-name resolution picks MySqlDialect.
