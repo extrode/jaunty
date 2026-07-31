@@ -242,8 +242,14 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
                 _parameters.Add(newName, value);
             }
 
-            string pattern = "(?:" + string.Join("|", renames.Keys.Select(Regex.Escape)) + @")(?!\w)";
-            finalSql = Regex.Replace(finalSql, pattern, m => renames[m.Value]);
+            // AUD-R30: the alternation pattern used to be rebuilt from the parameter names on
+            // every call, costing a regex parse per Where/And/Or. Every name the visitors mint is
+            // "<prefix>jp<n>", so one cached per-prefix pattern matches them all; a token not in
+            // the rename map (impossible today, but the lookup must not throw) is left unchanged.
+            Regex renameRegex = JoinParameterRenameRegexes.Cache.GetOrAdd(_dialect.ParameterPrefix,
+                static prefix => new Regex(Regex.Escape(prefix) + @"jp\d+(?!\w)", RegexOptions.Compiled));
+            finalSql = renameRegex.Replace(finalSql,
+                m => renames.TryGetValue(m.Value, out string? renamed) ? renamed : m.Value);
         }
 
         _conditions.Add(WhereCondition.Expression(finalSql, op));
@@ -533,4 +539,14 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
 
         return map;
     }
+}
+
+/// <summary>
+/// AUD-R30: one compiled rename regex per dialect parameter prefix ('@', ':', '$'), shared across
+/// every <see cref="JoinedQueryBuilder{TFrom, TJoin}"/> closed type - a static on the generic
+/// builder would re-create the cache (and its compiled regexes) once per entity pair.
+/// </summary>
+internal static class JoinParameterRenameRegexes
+{
+    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Text.RegularExpressions.Regex> Cache = new();
 }

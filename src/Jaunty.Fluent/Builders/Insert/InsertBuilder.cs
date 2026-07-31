@@ -151,7 +151,15 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         return await ExecuteInsertAsync(sql, options, cancellationToken).ConfigureAwait(false);
     }
 
-    public string ToSql() => BuildInsertSql();
+    public string ToSql()
+    {
+        // AUD-R30: Insert()/InsertAsync() fail fast with no values, but ToSql() built
+        // "INSERT INTO x () VALUES ()" - invalid SQL on every engine - without complaint.
+        if (_columns.Count == 0)
+            throw new InvalidOperationException("ToSql() requires at least one value to be specified.");
+
+        return BuildInsertSql();
+    }
 
     #endregion
 

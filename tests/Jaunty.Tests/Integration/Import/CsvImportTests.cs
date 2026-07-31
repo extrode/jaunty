@@ -1243,4 +1243,18 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             File.Delete(path);
         }
     }
+
+    [Fact]
+    public void ParseCsvLine_CharactersAfterClosingQuote_ThrowsAsMalformed()
+    {
+        var ex = Assert.Throws<FormatException>(() => CsvImportExtensions.ParseCsvLine("\"abc\"def,x", ',', '"'));
+        Assert.Contains("closing quote", ex.Message);
+    }
+
+    [Fact]
+    public void ParseCsvLine_QuotedFieldFollowedByDelimiter_StillParses()
+    {
+        var fields = CsvImportExtensions.ParseCsvLine("\"abc\",x", ',', '"');
+        Assert.Equal(new[] { "abc", "x" }, fields);
+    }
 }
