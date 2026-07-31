@@ -328,6 +328,44 @@ public class ReflectionSetterCachingTests : IDisposable
         Assert.Empty(exceptions);
     }
 
+    /// <summary>
+    /// R27 batch 11: the same Remove-then-Add race, in <see cref="MultiEntityMapper{T1,T2}.Get"/>'s
+    /// per-reader memo, which was not brought in line when <see cref="MetadataCache{T}.GetSetters"/>
+    /// was fixed.
+    /// </summary>
+    [Fact]
+    public async System.Threading.Tasks.Task ConcurrentMultiEntityMapperGet_OnOneReader_DoesNotThrow()
+    {
+        var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+
+        for (int round = 0; round < 100; round++)
+        {
+            var reader = new RecycledReader(["Id", "Name"], [1, "one"]);
+            using var gate = new System.Threading.Barrier(4);
+
+            var tasks = new System.Threading.Tasks.Task[4];
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = System.Threading.Tasks.Task.Run(() =>
+                {
+                    gate.SignalAndWait();
+                    try
+                    {
+                        MultiEntityMapper<Widget, Widget>.Get(reader);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
+                });
+            }
+
+            await System.Threading.Tasks.Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+
+        Assert.Empty(exceptions);
+    }
+
     // ------------------------------------------------------------------
 
     /// <summary>
