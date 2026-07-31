@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Jaunty.Internals.Parameters;
+namespace Jaunty.Internals;
 
 /// <summary>
 /// Caps for <see cref="BoundedCache{TKey, TValue}"/>, on a non-generic type so a call site can name

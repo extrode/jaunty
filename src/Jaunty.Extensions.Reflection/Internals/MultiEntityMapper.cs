@@ -4,7 +4,7 @@ using System.Data;
 using System.Runtime.CompilerServices;
 
 using Jaunty.Configuration;
-using Jaunty.Internals.Parameters;
+using Jaunty.Internals;
 
 namespace Jaunty.Extensions.Reflection;
 
