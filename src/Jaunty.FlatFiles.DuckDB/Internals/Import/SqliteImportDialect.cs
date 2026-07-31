@@ -107,15 +107,20 @@ internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDia
             // UPDATE, unlike "INSERT OR REPLACE" which is a DELETE+INSERT under the hood -
             // it fires UPDATE triggers instead of DELETE+INSERT triggers, doesn't churn the
             // rowid/AUTOINCREMENT counter, and doesn't cascade-delete FK-dependent child rows.
-            sb.Append($" ON CONFLICT ({QuoteIdentifier(keyColumnName!)}) DO UPDATE SET ");
-            var first = true;
+            // Key-only entity: there is nothing to update, and "DO UPDATE SET" with no
+            // assignments is a syntax error, so degrade to DO NOTHING (matching
+            // DuckDbDialect.GenerateUpsertSql's guard for the same case).
+            var assignments = new StringBuilder();
             foreach (var colName in columnNames)
             {
                 if (colName == keyColumnName) continue;
-                if (!first) sb.Append(", ");
-                sb.Append($"{QuoteIdentifier(colName)} = excluded.{QuoteIdentifier(colName)}");
-                first = false;
+                if (assignments.Length > 0) assignments.Append(", ");
+                assignments.Append($"{QuoteIdentifier(colName)} = excluded.{QuoteIdentifier(colName)}");
             }
+
+            sb.Append(assignments.Length > 0
+                ? $" ON CONFLICT ({QuoteIdentifier(keyColumnName!)}) DO UPDATE SET {assignments}"
+                : $" ON CONFLICT ({QuoteIdentifier(keyColumnName!)}) DO NOTHING");
         }
 
         return sb.ToString();
