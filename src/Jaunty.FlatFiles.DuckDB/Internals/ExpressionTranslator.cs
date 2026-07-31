@@ -136,6 +136,12 @@ internal static class ExpressionTranslator
 
         if (value is null)
         {
+            // A relational comparison (<, <=, >, >=) against NULL is UNKNOWN in SQL and false
+            // for C#'s lifted operators - never true either way - so it becomes a match-nothing
+            // predicate; only ==/!= translate to the IS NULL forms.
+            if (binary.NodeType is not (ExpressionType.Equal or ExpressionType.NotEqual))
+                return "1 = 0";
+
             var nullOp = binary.NodeType == ExpressionType.Equal ? "IS NULL" : "IS NOT NULL";
             return $"\"{EscapeColumnName(columnName!)}\" {nullOp}";
         }
