@@ -1,4 +1,4 @@
-using Jaunty.Dialects;
+﻿using Jaunty.Dialects;
 
 namespace Jaunty.Tests.Unit.Dialects;
 
@@ -981,9 +981,10 @@ public class SqlDialectTests
     #region PostgreSQL GetLastInsertIdSql Edge Cases
 
     [Fact]
-    public void Postgres_GetLastInsertIdSql_NoColumns_ReturnsDefaultReturning()
+    public void Postgres_GetLastInsertIdSql_NoColumns_ReturnsLastval()
     {
-        Assert.Equal("RETURNING id;", _postgres.GetLastInsertIdSql());
+        // R27 batch 7: used to fabricate "RETURNING id", a column name it was never given.
+        Assert.Equal("SELECT lastval();", _postgres.GetLastInsertIdSql());
     }
 
     [Fact]

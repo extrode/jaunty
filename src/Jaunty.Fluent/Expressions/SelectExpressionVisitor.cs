@@ -1,10 +1,9 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
 using Jaunty.Dialects;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -15,13 +14,11 @@ namespace Jaunty.Fluent.Expressions;
 internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : new()
 {
     private readonly ISqlDialect _dialect;
-    private readonly EntityMetadata _metadata;
     private readonly List<SelectColumn> _columns = new();
 
     public SelectExpressionVisitor(ISqlDialect dialect)
     {
         _dialect = dialect;
-        _metadata = FluentMetadataCache.GetMetadata<T>();
     }
 
     /// <summary>

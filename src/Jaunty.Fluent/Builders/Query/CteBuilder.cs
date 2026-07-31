@@ -1,11 +1,10 @@
-using System.Data;
+﻿using System.Data;
 using System.Linq.Expressions;
 using System.Text;
 
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent;
 
@@ -16,7 +15,6 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 {
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
-    private readonly EntityMetadata _metadata;
     private readonly CachedDialectMetadata _cache;
     private readonly string _cteName;
     private readonly ParameterCollection _parameters = new();
@@ -36,7 +34,6 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
-        _metadata = FluentMetadataCache.GetMetadata<T>();
         _cache = FluentMetadataCache.GetForDialect<T>(_dialect);
         _cteName = cteName;
     }
