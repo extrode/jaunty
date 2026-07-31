@@ -97,6 +97,29 @@ public class FluentWhereTests : IClassFixture<FluentDatabaseFixture>
         Assert.Contains("IS NULL", sql);
     }
 
+    [Fact]
+    public void Where_RelationalCompareAgainstNullValue_GeneratesMatchNothing()
+    {
+        decimal? min = null;
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.UnitPrice > min)
+            .ToSql();
+
+        Assert.Contains("1 = 0", sql);
+        Assert.DoesNotContain("IS NOT NULL", sql);
+    }
+
+    [Fact]
+    public void Where_RelationalCompareAgainstNullValue_ReturnsNoRows()
+    {
+        decimal? min = null;
+        var products = _fixture.Connection.From<Product>()
+            .Where(p => p.UnitPrice > min)
+            .Select();
+
+        Assert.Empty(products);
+    }
+
     // --- String Method Tests ---
 
     [Fact]

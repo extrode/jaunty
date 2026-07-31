@@ -56,6 +56,19 @@ public class ExpressionTranslatorTests
     }
 
     [Fact]
+    public void Translate_RelationalCompareAgainstNullValue_GeneratesMatchNothing()
+    {
+        decimal? min = null;
+        Expression<Func<SalesRecord, bool>> predicate = x => x.Revenue > min;
+
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        Assert.Contains("1 = 0", sql);
+        Assert.DoesNotContain("IS NOT NULL", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
     public void Translate_AndOperator_GeneratesAndSql()
     {
         // Arrange
