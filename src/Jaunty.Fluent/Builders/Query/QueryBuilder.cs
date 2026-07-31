@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
@@ -868,7 +868,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var sql = BuildCountSql();
         // SQLite returns Int64 for COUNT, so we need to handle conversion
         var result = _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
-        return (int)result;
+        return CountConversion.ToInt32(result);
     }
 
     public int Count(CommandOptions options)
@@ -876,7 +876,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var sql = BuildCountSql();
         // SQLite returns Int64 for COUNT, so we need to handle conversion
         var result = _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options));
-        return (int)result;
+        return CountConversion.ToInt32(result);
     }
 
     public long LongCount()
@@ -897,7 +897,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var sql = BuildAggregateSql("COUNT", columnName);
         // SQLite returns Int64 for COUNT
         var result = _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
-        return (int)result;
+        return CountConversion.ToInt32(result);
     }
 
     public long LongCount<TResult>(Expression<Func<T, TResult>> selector)
@@ -1178,7 +1178,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return (int)result;
+        return CountConversion.ToInt32(result);
     }
 
     public async Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default)
@@ -1187,7 +1187,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false);
-        return (int)result;
+        return CountConversion.ToInt32(result);
     }
 
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
@@ -1213,7 +1213,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return (int)result;
+        return CountConversion.ToInt32(result);
     }
 
     public async Task<long> LongCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
