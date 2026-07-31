@@ -127,6 +127,16 @@ public class DbValueConversionTests
     }
 
     [Fact]
+    public void DateTimeOffset_FromADateTime_Converts()
+    {
+        var input = new DateTime(2026, 7, 30, 12, 0, 0, DateTimeKind.Utc);
+
+        Assert.Equal(
+            new DateTimeOffset(2026, 7, 30, 12, 0, 0, TimeSpan.Zero),
+            DbValueConversion.Convert(input, typeof(DateTimeOffset)));
+    }
+
+    [Fact]
     public void TimeSpan_FromAString_Converts()
     {
         Assert.Equal(new TimeSpan(1, 2, 3), DbValueConversion.Convert("01:02:03", typeof(TimeSpan)));

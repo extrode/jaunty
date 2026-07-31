@@ -89,6 +89,7 @@ public static class CsvImportExtensions
 
         ValidateDelimiter(options.Delimiter);
         ValidateQuote(options.Quote);
+        ValidateDelimiterQuoteDistinct(options.Delimiter, options.Quote);
 
         // Unwrap before the type test: SqlDialectFactory.GetDialect runs every dialect through the
         // bulk-copy enhancement step, which after UseNativeBulkCopy() substitutes a wrapper that
@@ -164,6 +165,7 @@ public static class CsvImportExtensions
 
         ValidateDelimiter(options.Delimiter);
         ValidateQuote(options.Quote);
+        ValidateDelimiterQuoteDistinct(options.Delimiter, options.Quote);
 
         // See the sync overload: unwrap before the type test so the bulk-copy wrapper doesn't
         // make every supported engine fall through to NotSupportedException.
@@ -762,6 +764,15 @@ public static class CsvImportExtensions
     {
         if (delimiter is '\'' or '"' or '\\' or '\r' or '\n')
             throw new ArgumentException($"Delimiter '{delimiter}' is not supported; it conflicts with SQL/CLI quoting.", nameof(delimiter));
+    }
+
+    // R29: the two validators above check each character in isolation, so Delimiter == Quote
+    // (both individually legal, e.g. ';') passed validation and produced silently corrupted
+    // parsing - every field boundary is also a quote toggle.
+    private static void ValidateDelimiterQuoteDistinct(char delimiter, char quote)
+    {
+        if (delimiter == quote)
+            throw new ArgumentException($"Delimiter and Quote must differ; both are '{delimiter}'.", nameof(quote));
     }
 
     // Unlike Delimiter, Quote legitimately needs to allow '\'' (EscapeSqlCharLiteral doubles it)
