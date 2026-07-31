@@ -55,6 +55,13 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.SelectByIdSql;
 
+            // R27 batch 5: previously reported to the interceptor pipeline but never applied
+            // (the AUD-R26 GetAllCore fix did not bring the by-id siblings along). Guarded the
+            // same way: a `default` CommandOptions<T> carries CommandType 0, which providers
+            // reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
             // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
             // IDbTransaction through it throws an opaque InvalidCastException. Validate via
@@ -123,6 +130,13 @@ public static partial class Jaunty
 
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.SelectByIdSql;
+
+            // R27 batch 5: previously reported to the interceptor pipeline but never applied
+            // (the AUD-R26 GetAllCore fix did not bring the by-id siblings along). Guarded the
+            // same way: a `default` CommandOptions<T> carries CommandType 0, which providers
+            // reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
             // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
@@ -232,6 +246,11 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.SelectByIdSql;
 
+            // R27 batch 5: see the sync sites - applied, not merely announced, with the same
+            // guard against the struct default's CommandType 0.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -309,6 +328,11 @@ public static partial class Jaunty
             using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.SelectByIdSql;
+
+            // R27 batch 5: see the sync sites - applied, not merely announced, with the same
+            // guard against the struct default's CommandType 0.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
