@@ -63,6 +63,22 @@ public class FluentJoinParameterCollisionTests : IClassFixture<FluentDatabaseFix
     }
 
     [Fact]
+    public void InnerJoin_TwelveWherePredicates_MultiDigitTokensRenumberCorrectly()
+    {
+        var products = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On((p, c) => p.CategoryId == c.CategoryId)
+            .Where((p, c) => (p.UnitPrice > 10m && p.UnitPrice < 20m) || (p.ProductId > 500 && p.ProductId < 600))
+            .And((p, c) => c.CategoryId >= 1 && c.CategoryId <= 9999 && p.ProductId > 0 && p.ProductId < 100000)
+            .Or((p, c) => p.UnitPrice > 100000m && p.UnitPrice < 100001m && p.ProductId > 900000 && p.ProductId < 900001)
+            .Select();
+
+        Assert.Equal(2, products.Count);
+        Assert.Contains(products, p => p.ProductName == "Chai");
+        Assert.Contains(products, p => p.ProductName == "Chang");
+    }
+
+    [Fact]
     public void On_NamedParameter_ReservedPositionalName_Throws()
     {
         var ex = Assert.Throws<ArgumentException>(() => _fixture.Connection.From<Product>()
