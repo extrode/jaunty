@@ -81,6 +81,27 @@ internal static class ReaderValueConverter
             return true;
         }
 
+        // R29: Convert.ChangeType has no path to DateTimeOffset from either representation a
+        // DuckDB reader produces (DateTime for TIMESTAMP, string for VARCHAR), so DateTimeOffset
+        // properties could not be read at all. new DateTimeOffset honors the value's Kind
+        // (Unspecified assumes local), matching DbValueConversion and the source-generated
+        // converter.
+        if (underlyingType == typeof(DateTimeOffset))
+        {
+            if (value is DateTime dateTime)
+            {
+                converted = new DateTimeOffset(dateTime);
+                return true;
+            }
+
+            if (value is string offsetText
+                && DateTimeOffset.TryParse(offsetText, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTimeOffset parsedOffset))
+            {
+                converted = parsedOffset;
+                return true;
+            }
+        }
+
         if (underlyingType.IsEnum)
         {
             if (!convertEnums)
