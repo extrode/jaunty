@@ -227,18 +227,42 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     {
         string finalSql = sql;
 
-        for (int i = 0; i < parameters.Count; i++)
+        if (parameters.Count > 0)
         {
-            (string oldName, object? value) = parameters[i];
-            string newName = $"{_dialect.ParameterPrefix}jp{_paramSeq++}";
+            // All renames applied in a single pass: renaming one name at a time lets a new name
+            // capture a not-yet-renamed old occurrence in the same condition (with the sequence
+            // at 1, "@jp0" -> "@jp1" while the condition's own "@jp1" is still pending, so the
+            // next step rewrites both to "@jp2" and one bound value silently serves both operands).
+            var renames = new Dictionary<string, string>(parameters.Count, StringComparer.Ordinal);
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                (string oldName, object? value) = parameters[i];
+                string newName = $"{_dialect.ParameterPrefix}jp{_paramSeq++}";
+                renames[oldName] = newName;
+                _parameters.Add(newName, value);
+            }
 
-            if (newName != oldName)
-                finalSql = Regex.Replace(finalSql, Regex.Escape(oldName) + @"(?!\w)", m => newName);
-
-            _parameters.Add(newName, value);
+            string pattern = "(?:" + string.Join("|", renames.Keys.Select(Regex.Escape)) + @")(?!\w)";
+            finalSql = Regex.Replace(finalSql, pattern, m => renames[m.Value]);
         }
 
         _conditions.Add(WhereCondition.Expression(finalSql, op));
+    }
+
+    /// <summary>
+    /// Registers the value parameters bound by an <c>On(predicate)</c> join expression. The join
+    /// visitor mints them from a fresh counter as "@jp0".."@jpN-1" - the same shape
+    /// <see cref="AddWhereExpression"/> renumbers Where/And/Or parameters into - so the query-wide
+    /// sequence must advance past them, or the first Where expression after the join would be
+    /// renumbered onto the ON parameter's name and throw a duplicate-parameter error.
+    /// </summary>
+    internal void AddOnParameters(List<(string Name, object? Value)> parameters)
+    {
+        for (int i = 0; i < parameters.Count; i++)
+        {
+            _parameters.Add(parameters[i].Name, parameters[i].Value);
+            _paramSeq++;
+        }
     }
 
     /// <summary>
