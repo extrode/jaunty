@@ -836,6 +836,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        private static class OrdinalMap");
         sb.AppendLine("        {");
         sb.AppendLine("            private static readonly ConditionalWeakTable<IDataReader, CacheEntry> _cache = new();");
+        sb.AppendLine("#if !NET8_0_OR_GREATER");
+        sb.AppendLine("            private static readonly object _cacheWriteLock = new();");
+        sb.AppendLine("#endif");
         // Thread-local: a shared static _last is constantly overwritten under concurrent access
         // from multiple threads reading different readers of the same entity type, degrading the
         // fast path to an almost-always-miss (falls through to the ConditionalWeakTable lookup on
@@ -862,8 +865,19 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"                ords[{i}] = reader.GetOrdinal(\"{EscapeStringLiteral(properties[i].ColumnName)}\");");
         }
         sb.AppendLine("                var entry = new CacheEntry(reader, ords);");
-        sb.AppendLine("                _cache.Remove(reader);");
-        sb.AppendLine("                _cache.Add(reader, entry);");
+        // Remove-then-Add on a ConditionalWeakTable races with itself (two threads both miss,
+        // both remove, both add, second Add throws ArgumentException) - and this pair lives in
+        // generated code the consumer cannot edit. The #if is resolved in the consumer's own
+        // compilation, mirroring MetadataCache.GetSetters' fix.
+        sb.AppendLine("#if NET8_0_OR_GREATER");
+        sb.AppendLine("                _cache.AddOrUpdate(reader, entry);");
+        sb.AppendLine("#else");
+        sb.AppendLine("                lock (_cacheWriteLock)");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    _cache.Remove(reader);");
+        sb.AppendLine("                    _cache.Add(reader, entry);");
+        sb.AppendLine("                }");
+        sb.AppendLine("#endif");
         sb.AppendLine("                _last = entry;");
         sb.AppendLine("                return ords;");
         sb.AppendLine("            }");

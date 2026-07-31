@@ -38,6 +38,9 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     // property). Every hit is therefore validated against the reader's current schema before
     // being trusted, same as the source generator's OrdinalMap.CacheEntry.Matches pattern.
     private static readonly ConditionalWeakTable<IDataReader, ReaderCacheEntry> ReaderCache = new();
+#if !NET8_0_OR_GREATER
+    private static readonly object ReaderCacheWriteLock = new();
+#endif
 
     private readonly PropertySetter<T1>[] _t1Setters;
     private readonly PropertySetter<T2>[] _t2Setters;
@@ -56,8 +59,19 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
         string schemaKey = BuildSchemaKey(reader);
         MultiEntityMapper<T1, T2> mapper = Cache.GetOrAdd(schemaKey, _ => Create(reader));
 
-        ReaderCache.Remove(reader);
-        ReaderCache.Add(reader, new ReaderCacheEntry(reader, mapper));
+        // Not Remove-then-Add: ConditionalWeakTable.Add throws ArgumentException when the key is
+        // already present, so that two-step form races with itself - two threads both miss, both
+        // remove, both add, and the second Add throws. Same fix as MetadataCache.GetSetters.
+        var freshEntry = new ReaderCacheEntry(reader, mapper);
+#if NET8_0_OR_GREATER
+        ReaderCache.AddOrUpdate(reader, freshEntry);
+#else
+        lock (ReaderCacheWriteLock)
+        {
+            ReaderCache.Remove(reader);
+            ReaderCache.Add(reader, freshEntry);
+        }
+#endif
 
         return mapper;
     }
