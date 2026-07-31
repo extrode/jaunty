@@ -45,10 +45,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
         (string condition, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
         JoinedQueryBuilder<TFrom, TJoin> joinedQuery = CreateJoinedQuery(condition);
-        for (int i = 0; i < parameters.Count; i++)
-        {
-            joinedQuery.AddParameter(parameters[i].Name, parameters[i].Value);
-        }
+        joinedQuery.AddOnParameters(parameters);
         return joinedQuery;
     }
 
