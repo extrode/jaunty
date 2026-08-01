@@ -63,6 +63,15 @@ internal static class SqlParameterParser
                 continue;
             }
 
+            // MySQL/MariaDB quote identifiers with backticks, doubling an embedded one. Without
+            // this, `it's` starts a phantom string literal that swallows the rest of the statement
+            // (losing every later parameter), and `@col` yields a parameter that does not exist.
+            if (c == '`')
+            {
+                i = SkipQuoted(sql, i + 1, '`');
+                continue;
+            }
+
             // Skip SQL Server global/system variable (@@IDENTITY, @@ROWCOUNT, ...)
             if (c == '@' && i + 1 < len && sql[i + 1] == '@')
             {
@@ -226,6 +235,13 @@ internal static class SqlParameterParser
             if (c == '[')
             {
                 i = SkipQuotedClassic(sql, i + 1, len, ']');
+                continue;
+            }
+
+            // See the span walker: backtick-quoted MySQL identifiers must be skipped too.
+            if (c == '`')
+            {
+                i = SkipQuotedClassic(sql, i + 1, len, '`');
                 continue;
             }
 

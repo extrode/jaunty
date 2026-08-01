@@ -123,7 +123,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     {
         bool hasOrderingOrPaging = query is QueryBuilder<T> qb
             ? qb.HasOrderingOrPaging()
-            : sql.IndexOf(" ORDER BY ", StringComparison.Ordinal) >= 0;
+            : CustomOperandHasOrderingOrPaging(sql);
 
         if (hasOrderingOrPaging)
         {
@@ -132,6 +132,45 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
                 "Ordering and paging apply to the combined result - call OrderBy/Take/Skip on the outer " +
                 "set-operation chain (after Union/UnionAll/Except/Intersect) instead.");
         }
+    }
+
+    // A QueryBuilder<T> reports its own ordering/paging state; a custom IQueryTerminal<T> can only
+    // be judged by the SQL it produced. Until AUD-R31 that meant searching for " ORDER BY " alone,
+    // so an operand that applied paging *without* ordering - LIMIT/OFFSET/FETCH on the ANSI and
+    // MySQL/SQLite/PostgreSQL dialects, TOP on SQL Server - passed the guard and had its paging
+    // spliced into the combined statement, where it silently governs the whole result. Matching is
+    // whole-word and case-insensitive because custom SQL is hand-written; a column merely
+    // containing one of these words (toplevel, limits) is therefore not flagged.
+    private static readonly string[] PagingKeywords = ["ORDER BY", "LIMIT", "OFFSET", "FETCH", "TOP"];
+
+    private static bool CustomOperandHasOrderingOrPaging(string sql)
+    {
+        foreach (string keyword in PagingKeywords)
+        {
+            int from = 0;
+            while (from <= sql.Length - keyword.Length)
+            {
+                int at = sql.IndexOf(keyword, from, StringComparison.OrdinalIgnoreCase);
+                if (at < 0)
+                    break;
+
+                if (IsWordBoundary(sql, at - 1) && IsWordBoundary(sql, at + keyword.Length))
+                    return true;
+
+                from = at + 1;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsWordBoundary(string sql, int index)
+    {
+        if (index < 0 || index >= sql.Length)
+            return true;
+
+        char c = sql[index];
+        return !char.IsLetterOrDigit(c) && c != '_';
     }
 
     private ParameterCollection ExtractParameters(IQueryTerminal<T> query, string sql)
