@@ -802,6 +802,18 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         return node;
     }
 
+    /// <summary>
+    /// AUD-R32-002. Same gap as <c>SelectExpressionVisitor.VisitConditional</c>: a ternary has no
+    /// override here, so the base traversal walked Test/IfTrue/IfFalse in order and each appended
+    /// its own fragment to the shared <c>_sql</c> builder with nothing joining them - broken or
+    /// silently wrong SQL rather than a translation error. Every other unsupported shape in this
+    /// file throws.
+    /// </summary>
+    protected override Expression VisitConditional(ConditionalExpression node)
+        => throw new NotSupportedException(
+            "Conditional (ternary) expressions are not supported in WHERE predicates. " +
+            "Use Sql.Case(...) for a CASE WHEN, or split the predicate into separate conditions.");
+
     protected override Expression VisitConstant(ConstantExpression node)
     {
         switch (node.Value)
