@@ -121,6 +121,20 @@ jobs:
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-fluent.trx"
 
+      # Named projects, not a solution-wide run: every test project needs its own step
+      # here or it never executes in CI. Jaunty.Fluent.SourceGen.Tests and
+      # Jaunty.Scaffolding.Cli.Tests had no step and ran nowhere until 2026-08-01.
+      # tests/Jaunty.Tests/Unit/SolutionLayoutTests.cs guards the solution file; this
+      # list is the second half of the same contract and has to be extended by hand.
+      - name: Test - Fluent source-gen (no reflection package reference)
+        run: >-
+          dotnet test tests/Jaunty.Fluent.SourceGen.Tests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-sourcegen.trx"
+
       - name: Test - Scaffolding
         run: >-
           dotnet test tests/Jaunty.Scaffolding.Tests
@@ -129,6 +143,15 @@ jobs:
           --framework net8.0
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-scaffolding.trx"
+
+      - name: Test - Scaffolding CLI
+        run: >-
+          dotnet test tests/Jaunty.Scaffolding.Cli.Tests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-scaffolding-cli.trx"
 
       - name: Test - FlatFiles (DuckDB)
         run: >-
@@ -173,6 +196,15 @@ jobs:
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-fluent-net10.trx"
 
+      - name: Test - Fluent source-gen net10 (no reflection package reference)
+        run: >-
+          dotnet test tests/Jaunty.Fluent.SourceGen.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-sourcegen-net10.trx"
+
       - name: Test - Scaffolding net10
         run: >-
           dotnet test tests/Jaunty.Scaffolding.Tests
@@ -181,6 +213,15 @@ jobs:
           --framework net10.0
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-scaffolding-net10.trx"
+
+      - name: Test - Scaffolding CLI net10
+        run: >-
+          dotnet test tests/Jaunty.Scaffolding.Cli.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-scaffolding-cli-net10.trx"
 
       - name: Test - FlatFiles net10 (DuckDB)
         run: >-
