@@ -36,7 +36,9 @@ namespace Jaunty.Fluent.Tests.Unit;
 /// <para>
 /// The joined builders' self-executing terminals (<c>SelectBoth</c>, <c>Select&lt;T&gt;</c>,
 /// <c>Select&lt;T&gt;(mapper)</c> and friends) still have no options overload; that half is carried
-/// forward deliberately and the reason is recorded on <c>SelectBothInternal</c>.
+/// forward deliberately and the reason is recorded on <c>SelectBothInternal</c>. The grouped
+/// joined builders are no longer part of that carry-forward: CF-9 / AUD-R31-007 gave
+/// <c>GroupedJoinedQueryBuilder{,3,4}</c> the same overloads, covered at the bottom of this file.
 /// </para>
 /// </summary>
 public class FluentCommandOptionsTests
@@ -47,7 +49,32 @@ public class FluentCommandOptionsTests
         [Key]
         public int Id { get; set; }
         public int CategoryId { get; set; }
+        public int SupplierId { get; set; }
         public string Name { get; set; } = string.Empty;
+    }
+
+    [Table("opt_categories")]
+    public class Category
+    {
+        [Key]
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    [Table("opt_suppliers")]
+    public class Supplier
+    {
+        [Key]
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    [Table("opt_orders")]
+    public class Order
+    {
+        [Key]
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
     }
 
     // ------------------------------------------------------------------
@@ -250,6 +277,172 @@ public class FluentCommandOptionsTests
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }, CancellationToken.None);
 
         Assert.Null(connection.LastCommand!.Transaction);
+    }
+
+    // ------------------------------------------------------------------
+    // Grouped joined select - CF-9 / AUD-R31-007. Asserted here rather than against a real SQLite
+    // file for the reason in this class's doc comment: SQLite associates commands with the
+    // connection's open transaction implicitly, so a round-trip passes whether or not the option
+    // ever reaches the command.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void GroupedJoinedSelect_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .GroupBy((p, c) => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void GroupedJoinedSelect_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .GroupBy((p, c) => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(commandTimeout: 42));
+
+        Assert.Equal(42, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void GroupedJoinedSelect_WithoutOptions_LeavesTheCommandUntouched()
+    {
+        var connection = new SqliteConnection();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .GroupBy((p, c) => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.Null(connection.LastCommand!.Transaction);
+        Assert.Equal(0, connection.LastCommand.CommandTimeout);
+    }
+
+    [Fact]
+    public async Task GroupedJoinedSelectAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .GroupBy((p, c) => p.CategoryId)
+            .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task GroupedJoinedSelectAsync_WithCancellationTokenOnly_StaysUnambiguous()
+    {
+        var connection = new Async.SqliteConnection();
+
+        await connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .GroupBy((p, c) => p.CategoryId)
+            .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }, CancellationToken.None);
+
+        Assert.Null(connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void GroupedJoined3Select_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .GroupBy((p, c, s) => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void GroupedJoined3Select_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .GroupBy((p, c, s) => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(commandTimeout: 43));
+
+        Assert.Equal(43, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public async Task GroupedJoined3SelectAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .GroupBy((p, c, s) => p.CategoryId)
+            .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void GroupedJoined4Select_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .InnerJoin<Product, Category, Supplier, Order>().On("opt_products.id", "opt_orders.employee_id")
+            .GroupBy((p, c, s, o) => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void GroupedJoined4Select_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .InnerJoin<Product, Category, Supplier, Order>().On("opt_products.id", "opt_orders.employee_id")
+            .GroupBy((p, c, s, o) => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(commandTimeout: 44));
+
+        Assert.Equal(44, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public async Task GroupedJoined4SelectAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .InnerJoin<Product, Category, Supplier, Order>().On("opt_products.id", "opt_orders.employee_id")
+            .GroupBy((p, c, s, o) => p.CategoryId)
+            .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }, new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
     }
 
     // ------------------------------------------------------------------
