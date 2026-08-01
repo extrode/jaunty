@@ -204,6 +204,14 @@ public sealed class Scaffolder
 
     private static void ValidateOptions(ScaffoldOptions options)
     {
+        // AUD-R32-007 (re-found from round 27): a null options dereferenced inside ScaffoldAsync's
+        // try, so the NullReferenceException was swallowed by the catch-all and came back as
+        // ScaffoldResult.Failed("Object reference not set to an instance of an object.") -
+        // indistinguishable from a database failure. Every other bad argument here throws
+        // ArgumentException, which the caller converts to a Failed result with a usable message.
+        if (options is null)
+            throw new ArgumentNullException(nameof(options), "Scaffold options are required.");
+
         if (string.IsNullOrWhiteSpace(options.ConnectionString))
             throw new ArgumentException("Connection string is required.", nameof(options));
 
