@@ -141,6 +141,20 @@ public class QueryMultiEntityN4Tests : IClassFixture<DialectFixture>
         txn.Rollback();
     }
 
+    // AUD-R32: bare (sql, parameters) overload — no CommandOptions/MultiEntityCommandOptions — was never called by any test.
+    [Theory]
+    [SystemSqlite]
+    public void Query_FourEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.Query<Author, Book, Chapter, Section>(
+            $"{JoinSql} WHERE a.id = @AuthorId", new { AuthorId = 1 });
+
+        Assert.Single(results);
+        Assert.Equal("Isaac Asimov", results[0].Item1.Name);
+    }
+
     [Theory]
     [SystemSqlite]
     public void Query_FourEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
@@ -218,6 +232,20 @@ public class QueryMultiEntityN4Tests : IClassFixture<DialectFixture>
         var (author, _, _, _) = connection.QueryFirst<Author, Book, Chapter, Section>(JoinSql, options);
 
         Assert.Equal("Isaac Asimov", author.Name);
+    }
+
+    // AUD-R32: bare (sql, parameters) overload — no CommandOptions/MultiEntityCommandOptions — was never called by any test.
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_FourEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, _, section) = connection.QueryFirst<Author, Book, Chapter, Section>(
+            $"{JoinSql} WHERE a.id = @AuthorId", new { AuthorId = 1 });
+
+        Assert.Equal("Isaac Asimov", author.Name);
+        Assert.Equal("Introduction", section.Name);
     }
 
     [Theory]

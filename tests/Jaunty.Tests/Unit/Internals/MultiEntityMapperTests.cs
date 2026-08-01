@@ -650,6 +650,40 @@ public class MultiEntityMapperTests : IDisposable
 
     #endregion
 
+    #region Build - Reflection-Layer Arity-2 Direct Coverage (AUD-R32)
+
+    // Entities scoped to this scenario so the arity-2 Jaunty.Extensions.Reflection.MultiEntityMapper<T1,T2>
+    // static cache can't be warmed by any other test in the suite.
+    public class ReflArity2T1
+    {
+        public int Id { get; set; }
+    }
+
+    public class ReflArity2T2
+    {
+        public int Code { get; set; }
+    }
+
+    [Fact]
+    public void Build_ReflectionLayerArity2_ReturnsWorkingMapper()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT 1 AS Id, 2 AS Code";
+        using var reader = cmd.ExecuteReader();
+        reader.Read();
+
+        var mapper = global::Jaunty.Extensions.Reflection.MultiEntityMapper<ReflArity2T1, ReflArity2T2>.Build(reader);
+        var t1 = new ReflArity2T1();
+        var t2 = new ReflArity2T2();
+        mapper.ApplyT1(t1, reader);
+        mapper.ApplyT2(t2, reader);
+
+        Assert.Equal(1, t1.Id);
+        Assert.Equal(2, t2.Code);
+    }
+
+    #endregion
+
     private static Action<object, IDataRecord> BuildLiveApplier(Type type, IDataReader reader)
     {
         var matches = new List<(System.Reflection.PropertyInfo Property, int Ordinal)>();
