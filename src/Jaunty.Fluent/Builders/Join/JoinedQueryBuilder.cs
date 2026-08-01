@@ -224,6 +224,16 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     /// dropping/overwriting one of the bound values.
     /// </summary>
     internal void AddWhereExpression(string sql, List<(string Name, object? Value)> parameters, LogicalOperator op)
+        => _conditions.Add(WhereCondition.Expression(RegisterExpressionParameters(sql, parameters), op));
+
+    /// <summary>
+    /// Binds the values a join-predicate visitor produced and rewrites their names in
+    /// <paramref name="sql"/> against the query-wide counter, returning the rewritten text. Used
+    /// for both WHERE expressions and the arity-3/4 <c>On(predicate)</c> conditions, which land in
+    /// a <see cref="JoinInfo"/> rather than a <see cref="WhereCondition"/> but are minted from the
+    /// same reset-per-visitor "jp0".."jpN" sequence and so collide the same way.
+    /// </summary>
+    internal string RegisterExpressionParameters(string sql, List<(string Name, object? Value)> parameters)
     {
         string finalSql = sql;
 
@@ -252,7 +262,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
                 m => renames.TryGetValue(m.Value, out string? renamed) ? renamed : m.Value);
         }
 
-        _conditions.Add(WhereCondition.Expression(finalSql, op));
+        return finalSql;
     }
 
     /// <summary>
