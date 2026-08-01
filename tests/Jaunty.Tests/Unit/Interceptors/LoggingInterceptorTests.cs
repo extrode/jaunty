@@ -803,6 +803,85 @@ public class LoggingInterceptorTests
 
     #endregion
 
+    #region Sync Wrapper Tests (round-32 AUD, LoggingInterceptor sync forwarders)
+
+    [Fact]
+    public void OnCommandExecuting_LogsSql_WhenLogSqlIsTrue()
+    {
+        // Arrange
+        var provider = CreateTestProvider();
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = false };
+        var interceptor = new LoggingInterceptor(logger, config);
+        var context = new CommandContext(
+            "SELECT * FROM Users",
+            null,
+            CreateMockConnection(),
+            CommandType.Text);
+
+        // Act
+        interceptor.OnCommandExecuting(context);
+
+        // Assert
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Contains("Executing SQL Text: SELECT * FROM Users", logs[0].Message);
+    }
+
+    [Fact]
+    public void OnCommandExecuted_LogsCompletionWithElapsedTime()
+    {
+        // Arrange
+        var provider = CreateTestProvider();
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration();
+        var interceptor = new LoggingInterceptor(logger, config);
+        var context = new CommandContext(
+            "SELECT * FROM Users",
+            null,
+            CreateMockConnection(),
+            CommandType.Text,
+            TimeSpan.FromMilliseconds(150));
+
+        // Act
+        interceptor.OnCommandExecuted(context);
+
+        // Assert
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Contains("Completed SQL Text in 150.00ms", logs[0].Message);
+    }
+
+    [Fact]
+    public void OnCommandFailed_LogsErrorWithException()
+    {
+        // Arrange
+        var provider = CreateTestProvider();
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration();
+        var interceptor = new LoggingInterceptor(logger, config);
+        var exception = new InvalidOperationException("Test exception");
+        var context = new CommandContext(
+            "SELECT * FROM Users",
+            null,
+            CreateMockConnection(),
+            CommandType.Text,
+            TimeSpan.FromMilliseconds(50),
+            exception);
+
+        // Act
+        interceptor.OnCommandFailed(context, exception);
+
+        // Assert
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Equal(LogLevel.Error, logs[0].Level);
+        Assert.Contains("Failed executing SQL Text", logs[0].Message);
+        Assert.Contains("Test exception", logs[0].Message);
+    }
+
+    #endregion
+
     #region Test Helper Classes
 
     private class TestLoggerProvider : ILoggerProvider, ILogger<LoggingInterceptor>

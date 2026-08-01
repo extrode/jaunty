@@ -446,6 +446,259 @@ public class FluentCommandOptionsTests
     }
 
     // ------------------------------------------------------------------
+    // SetOperationBuilder (UNION/UNION ALL/EXCEPT/INTERSECT) terminals - AUD-R32. None of the
+    // CommandOptions-accepting overloads on ISetOperationClause<T>/ISetOperationOrderByClause<T>
+    // had a test, including the private ToTypedOptions<TResult> helper every one of them funnels
+    // through. Same reasoning as the rest of this file: SQLite binds a command to the connection's
+    // open transaction implicitly, so only a capturing IDbCommand can prove the option reached it.
+    // ------------------------------------------------------------------
+
+    private static ISetOperationClause<Product> BuildUnion(IDbConnection connection) =>
+        connection.From<Product>()
+            .Where(p => p.Name == "a")
+            .Union(connection.From<Product>().Where(p => p.Name == "b"));
+
+    [Fact]
+    public void SetOperationSelect_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        BuildUnion(connection).Select(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void SetOperationSelect_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        BuildUnion(connection).Select(new CommandOptions(commandTimeout: 55));
+
+        Assert.Equal(55, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void SetOperationSelect_WithoutOptions_LeavesTheCommandUntouched()
+    {
+        var connection = new SqliteConnection();
+
+        BuildUnion(connection).Select();
+
+        Assert.Null(connection.LastCommand!.Transaction);
+        Assert.Equal(0, connection.LastCommand.CommandTimeout);
+    }
+
+    [Fact]
+    public void SetOperationSelectFirst_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        // EmptyReader.Read() is always false, so SelectFirst throws for lack of rows once it
+        // reaches ExecuteReader - but options are assigned to the command before that point, so
+        // the assertion below is unaffected by the (expected) exception.
+        Assert.ThrowsAny<InvalidOperationException>(
+            () => BuildUnion(connection).SelectFirst(new CommandOptions(transaction: transaction)));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void SetOperationSelectFirst_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        Assert.ThrowsAny<InvalidOperationException>(
+            () => BuildUnion(connection).SelectFirst(new CommandOptions(commandTimeout: 56)));
+
+        Assert.Equal(56, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void SetOperationSelectFirstOrDefault_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        Product? result = BuildUnion(connection).SelectFirstOrDefault(new CommandOptions(transaction: transaction));
+
+        Assert.Null(result);
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void SetOperationSelectFirstOrDefault_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        Product? result = BuildUnion(connection).SelectFirstOrDefault(new CommandOptions(commandTimeout: 57));
+
+        Assert.Null(result);
+        Assert.Equal(57, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void SetOperationSelectSingle_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        Assert.ThrowsAny<InvalidOperationException>(
+            () => BuildUnion(connection).SelectSingle(new CommandOptions(transaction: transaction)));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void SetOperationSelectSingle_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        Assert.ThrowsAny<InvalidOperationException>(
+            () => BuildUnion(connection).SelectSingle(new CommandOptions(commandTimeout: 58)));
+
+        Assert.Equal(58, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void SetOperationSelectSingleOrDefault_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        Product? result = BuildUnion(connection).SelectSingleOrDefault(new CommandOptions(transaction: transaction));
+
+        Assert.Null(result);
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void SetOperationSelectSingleOrDefault_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        Product? result = BuildUnion(connection).SelectSingleOrDefault(new CommandOptions(commandTimeout: 59));
+
+        Assert.Null(result);
+        Assert.Equal(59, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await BuildUnion(connection).SelectAsync(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectAsync_WithoutOptions_LeavesTheCommandUntouched()
+    {
+        var connection = new Async.SqliteConnection();
+
+        await BuildUnion(connection).SelectAsync(CancellationToken.None);
+
+        Assert.Null(connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectFirstAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(
+            () => BuildUnion(connection).SelectFirstAsync(new CommandOptions(transaction: transaction)));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectFirstAsync_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new Async.SqliteConnection();
+
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(
+            () => BuildUnion(connection).SelectFirstAsync(new CommandOptions(commandTimeout: 60)));
+
+        Assert.Equal(60, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectFirstOrDefaultAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        Product? result = await BuildUnion(connection).SelectFirstOrDefaultAsync(new CommandOptions(transaction: transaction));
+
+        Assert.Null(result);
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectFirstOrDefaultAsync_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new Async.SqliteConnection();
+
+        Product? result = await BuildUnion(connection).SelectFirstOrDefaultAsync(new CommandOptions(commandTimeout: 61));
+
+        Assert.Null(result);
+        Assert.Equal(61, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectSingleAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(
+            () => BuildUnion(connection).SelectSingleAsync(new CommandOptions(transaction: transaction)));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectSingleAsync_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new Async.SqliteConnection();
+
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(
+            () => BuildUnion(connection).SelectSingleAsync(new CommandOptions(commandTimeout: 62)));
+
+        Assert.Equal(62, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectSingleOrDefaultAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        Product? result = await BuildUnion(connection).SelectSingleOrDefaultAsync(new CommandOptions(transaction: transaction));
+
+        Assert.Null(result);
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task SetOperationSelectSingleOrDefaultAsync_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new Async.SqliteConnection();
+
+        Product? result = await BuildUnion(connection).SelectSingleOrDefaultAsync(new CommandOptions(commandTimeout: 63));
+
+        Assert.Null(result);
+        Assert.Equal(63, connection.LastCommand!.CommandTimeout);
+    }
+
+    // ------------------------------------------------------------------
     // Stubs. Both connection classes must be named SqliteConnection: dialect resolution keys on
     // the connection's exact Type.Name, and Type.Name ignores the enclosing type, which is why the
     // async one is nested a level deeper rather than renamed.
