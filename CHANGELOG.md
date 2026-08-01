@@ -48,6 +48,15 @@ Every item here was reachable from caller-supplied input.
 
 ### Added
 
+- **Fluent API fanout (2026-08-02)** — three long-standing asymmetries between sibling
+  interfaces closed together, all additive:
+  `IUpdateWhereClause<T>` gains the `And`/`Or` × `Between`/`Exists`/`InSubquery` families
+  (and their `Not` forms) that `IWhereClause<T>` already had;
+  the 3-way and 4-way `IJoinClause` gain the predicate-expression `On(...)` overload the
+  2-way interface had, with join values renumbered against the query-wide parameter
+  sequence so a third or fourth join cannot re-mint a name the query already bound;
+  `IGroupedJoinedQuery{,3,4}` gain the `Select`/`SelectAsync` `CommandOptions` overloads,
+  so a grouped joined query can finally take a caller's transaction or a timeout.
 - **`GROUP BY` on joined queries** — 2-way, 3-way and 4-way, via the new
   `JoinedGroupByExpressionVisitor`. Aggregate and grouping columns are qualified with
   the table alias, and compound `HAVING` works across joins.
