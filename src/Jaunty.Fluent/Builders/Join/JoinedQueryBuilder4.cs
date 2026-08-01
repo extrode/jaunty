@@ -75,6 +75,24 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         return CreateJoinedQuery4(condition);
     }
 
+    public IJoinedQuery4<T1, T2, T3, T4> On(Expression<Func<T1, T2, T3, T4, bool>> predicate)
+    {
+        JoinedQueryBuilder<T1, T2> root = _parent._parent;
+
+        var visitor = new JoinExpressionVisitor4<T1, T2, T3, T4>(
+            root.Dialect,
+            root.FromAlias,
+            root.Joins[0].Alias,
+            root.Joins[1].Alias,
+            _alias);
+
+        (string condition, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
+
+        // Renumbered against the query-wide sequence for the same reason as the arity-3 overload:
+        // by the fourth join the query can already hold "jp0", and each visitor restarts at 0.
+        return CreateJoinedQuery4(root.RegisterExpressionParameters(condition, parameters));
+    }
+
     public IJoinedQuery4<T1, T2, T3, T4> On(string leftColumn, string rightColumn) =>
         CreateJoinedQuery4($"{leftColumn} = {rightColumn}");
 

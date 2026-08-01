@@ -2243,6 +2243,141 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return this;
     }
 
+    // The BETWEEN, EXISTS and IN-SUBQUERY families below delegate to the same private Build*Clause
+    // helpers the IWhereClause<T> members use; only the returned interface differs, which is why
+    // they are explicit implementations rather than another set of public methods.
+    /// <summary>
+    /// AND BETWEEN condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// AND NOT BETWEEN condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// OR BETWEEN condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    /// <summary>
+    /// OR NOT BETWEEN condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    /// <summary>
+    /// AND EXISTS condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate)
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// AND NOT EXISTS condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate)
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// OR EXISTS condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate)
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    /// <summary>
+    /// OR NOT EXISTS condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate)
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    /// <summary>
+    /// AND IN SUBQUERY condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery)
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// AND NOT IN SUBQUERY condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery)
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// OR IN SUBQUERY condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery)
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    /// <summary>
+    /// OR NOT IN SUBQUERY condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery)
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
     /// <summary>
     /// Updates all rows (no WHERE clause). Use with caution.
     /// </summary>
