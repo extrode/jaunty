@@ -326,4 +326,34 @@ public class MetadataBuilderTests
         var nameCol = metadata.Columns.First(c => c.Property.Name == "Name");
         Assert.Equal("Name", nameCol.ColumnName);
     }
+
+    // AUD-R32-006: ColumnAttribute's constructor rejects null but not "", and this was the one
+    // resolution in Build<T> without an IsNullOrEmpty guard - so [Column("")] mapped the property
+    // to an empty column name while the DataAnnotations-compat path on the same property fell
+    // back to the default.
+
+    public class EmptyColumnNameEntity
+    {
+        public int Id { get; set; }
+
+        [Column("")]
+        public string Name { get; set; } = string.Empty;
+    }
+
+    [Fact]
+    public void Build_EmptyColumnAttributeName_FallsBackToThePropertyName()
+    {
+        var metadata = MetadataBuilder.Build<EmptyColumnNameEntity>();
+
+        var nameCol = metadata.Columns.First(c => c.Property.Name == "Name");
+        Assert.Equal("Name", nameCol.ColumnName);
+    }
+
+    [Fact]
+    public void Build_NonEmptyColumnAttributeName_StillWins()
+    {
+        var metadata = MetadataBuilder.Build<ColumnAttributeEntity>();
+
+        Assert.All(metadata.Columns, c => Assert.False(string.IsNullOrEmpty(c.ColumnName)));
+    }
 }
