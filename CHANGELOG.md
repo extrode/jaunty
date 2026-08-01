@@ -92,6 +92,18 @@ Every item here was reachable from caller-supplied input.
 
 ### Fixed
 
+**Test suites that never ran (2026-08-01)**
+
+- `tests/Jaunty.Fluent.SourceGen.Tests` was absent from `Jaunty.slnx` from the day spec 003
+  created it, so solution-wide builds and tests skipped it silently. Now listed.
+- Neither `Jaunty.Fluent.SourceGen.Tests` (17 tests) nor `Jaunty.Scaffolding.Cli.Tests`
+  (34) had a CI step, and `release.yml`'s name-based filter matched neither
+  (`~Jaunty.Fluent.Tests` does not match `Jaunty.Fluent.SourceGen.Tests`, and
+  `~Jaunty.Scaffolding.Tests` does not match the CLI suite). Both now run in CI on
+  `net8.0` and `net10.0` and in the release gate.
+- `SolutionLayoutTests` asserts every `tests/**/*.csproj` on disk appears in `Jaunty.slnx`,
+  so the next omission fails a test instead of disappearing.
+
 **Transactions and connection lifetime**
 
 - `AsyncTransactionValidator` wired into 8 files: async paths silently dropped a
