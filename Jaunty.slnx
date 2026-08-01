@@ -10,6 +10,7 @@
     <Project Path="src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Jaunty.Fluent.SourceGen.Tests/Jaunty.Fluent.SourceGen.Tests.csproj" />
     <Project Path="tests/Jaunty.Fluent.Tests/Jaunty.Fluent.Tests.csproj" />
     <Project Path="tests/Jaunty.Scaffolding.Cli.Tests/Jaunty.Scaffolding.Cli.Tests.csproj" />
     <Project Path="tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj" />
