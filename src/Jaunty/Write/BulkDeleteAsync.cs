@@ -259,7 +259,7 @@ public static partial class Jaunty
         var bulkParameters = new BulkOperationParameters("BulkDelete", typeof(T), entityList.Count);
 
         // AUD-R26: the whole operation is reported once, not once per statement - a 100,000-row
-        // BulkInsert is one logical write, and firing the pipeline per row would both swamp an
+        // BulkDelete is one logical write, and firing the pipeline per row would both swamp an
         // auditor and cost more than the bulk path saves. The body below is unchanged; it lives in
         // a local function so the transaction, FK-toggle and rollback logic is captured rather than
         // re-threaded through a new signature.

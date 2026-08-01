@@ -229,6 +229,37 @@ public class FluentObservabilityTests : IClassFixture<FluentDatabaseFixture>, ID
     // The logger was the other half of the same gap
     // ------------------------------------------------------------------
 
+    // ------------------------------------------------------------------
+    // AUD-R31: what is reported must be what executes
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void AJoinedMappedSelectFirstReportsThePagedSqlItActuallyExecutes()
+    {
+        // SelectWithMapper applied the limit inside the callback CommandObservation.Execute
+        // wraps, so the pipeline was handed the un-paginated text while the command that ran
+        // carried LIMIT.
+        _ = Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On((p, c) => p.CategoryId == c.CategoryId)
+            .SelectFirst(r => r.GetInt32(0));
+
+        AssertObserved("SelectFirst(mapper) on a join");
+        Assert.Contains("LIMIT", _interceptor.LastSql!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AJoinedMappedSelectFirstAsyncReportsThePagedSqlItActuallyExecutes()
+    {
+        _ = await Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On((p, c) => p.CategoryId == c.CategoryId)
+            .SelectFirstAsync(r => r.GetInt32(0), TestContext.Current.CancellationToken);
+
+        AssertObserved("SelectFirstAsync(mapper) on a join");
+        Assert.Contains("LIMIT", _interceptor.LastSql!, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void TheLoggerSeesFluentCommandsToo()
     {
