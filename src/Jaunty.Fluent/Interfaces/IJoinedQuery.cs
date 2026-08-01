@@ -568,6 +568,22 @@ public interface IJoinClause<T1, T2, T3> where T1 : new() where T2 : new() where
     IJoinedQuery3<T1, T2, T3> OnFromSecond<TLeftKey, TRightKey>(Expression<Func<T2, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey);
 
     /// <summary>
+    /// Specifies the join condition using a predicate expression over all three tables, for
+    /// conditions the key-expression overloads cannot state - a composite key, a comparison
+    /// against a literal, or a join back to the second table as well as the first.
+    /// </summary>
+    /// <param name="predicate">Expression defining the join condition.</param>
+    /// <example>
+    /// <code>
+    /// db.From&lt;Order&gt;("o")
+    ///     .InnerJoin&lt;Customer&gt;("c").On((o, c) =&gt; o.CustomerId == c.Id)
+    ///     .InnerJoin&lt;OrderLine&gt;("l").On((o, c, l) =&gt; l.OrderId == o.Id &amp;&amp; l.Quantity &gt; 0)
+    ///     .Select();
+    /// </code>
+    /// </example>
+    IJoinedQuery3<T1, T2, T3> On(Expression<Func<T1, T2, T3, bool>> predicate);
+
+    /// <summary>
     /// Specifies the join condition using column names.
     /// </summary>
     IJoinedQuery3<T1, T2, T3> On(string leftColumn, string rightColumn);
@@ -642,6 +658,23 @@ public interface IJoinClause<T1, T2, T3, T4>
     IJoinedQuery4<T1, T2, T3, T4> OnFromThird<TLeftKey, TRightKey>(
         Expression<Func<T3, TLeftKey>> leftKey,
         Expression<Func<T4, TRightKey>> rightKey);
+
+    /// <summary>
+    /// Specifies the join condition using a predicate expression over all four tables, for
+    /// conditions the key-expression overloads cannot state - a composite key, a comparison
+    /// against a literal, or a join back to more than one earlier table.
+    /// </summary>
+    /// <param name="predicate">Expression defining the join condition.</param>
+    /// <example>
+    /// <code>
+    /// db.From&lt;Order&gt;("o")
+    ///     .InnerJoin&lt;Customer&gt;("c").On((o, c) =&gt; o.CustomerId == c.Id)
+    ///     .InnerJoin&lt;OrderLine&gt;("l").On((o, c, l) =&gt; l.OrderId == o.Id)
+    ///     .InnerJoin&lt;Product&gt;("p").On((o, c, l, p) =&gt; l.ProductId == p.Id &amp;&amp; p.Active)
+    ///     .Select();
+    /// </code>
+    /// </example>
+    IJoinedQuery4<T1, T2, T3, T4> On(Expression<Func<T1, T2, T3, T4, bool>> predicate);
 
     /// <summary>
     /// Specifies the join condition using column names.
