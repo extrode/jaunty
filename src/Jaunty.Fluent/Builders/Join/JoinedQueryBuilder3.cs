@@ -56,6 +56,21 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         return CreateJoinedQuery3(condition);
     }
 
+    public IJoinedQuery3<T1, T2, T3> On(Expression<Func<T1, T2, T3, bool>> predicate)
+    {
+        var visitor = new JoinExpressionVisitor3<T1, T2, T3>(
+            _parent.Dialect,
+            _parent.FromAlias,
+            _parent.Joins[0].Alias,
+            _alias);
+
+        (string condition, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
+
+        // Renumbered against the query-wide sequence: each visitor mints its value parameters
+        // from a counter that restarts at 0, so by the third join "jp0" is usually already bound.
+        return CreateJoinedQuery3(_parent.RegisterExpressionParameters(condition, parameters));
+    }
+
     public IJoinedQuery3<T1, T2, T3> On(string leftColumn, string rightColumn)
         => CreateJoinedQuery3($"{leftColumn} = {rightColumn}");
 

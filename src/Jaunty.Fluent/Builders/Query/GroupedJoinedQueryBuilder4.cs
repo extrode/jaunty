@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
 
+using Jaunty.Core;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
@@ -66,15 +67,21 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
     }
 
     public List<TResult> Select<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
+        => Select(selector, default);
+
+    public List<TResult> Select<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
     {
         var sql = BuildSelectSql(selector);
-        return ExecuteQuery<TResult>(sql, selector);
+        return ExecuteQuery<TResult>(sql, selector, options);
     }
 
-    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CancellationToken cancellationToken = default)
+    public Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CancellationToken cancellationToken = default)
+        => SelectAsync(selector, default, cancellationToken);
+
+    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(selector);
-        return await ExecuteQueryAsync<TResult>(sql, selector, cancellationToken).ConfigureAwait(false);
+        return await ExecuteQueryAsync<TResult>(sql, selector, options, cancellationToken).ConfigureAwait(false);
     }
 
     public string ToSql<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
@@ -119,12 +126,12 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         return sb.ToString();
     }
 
-    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
+    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
         => CommandObservation.Execute(
-            sql, _parent._parent._parent.DescribeParameters(), _parent._parent._parent.Connection, CommandType.Text,
-            () => ExecuteQueryDirect(sql, selector));
+            sql, _parent._parent._parent.DescribeParameters(), _parent._parent._parent.Connection, FluentCommandOptions.Describe(options),
+            () => ExecuteQueryDirect(sql, selector, options));
 
-    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
+    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
@@ -134,6 +141,7 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         IDbConnection connection = _parent._parent._parent.Connection;
         using IDbCommand command = connection.CreateCommand();
         command.CommandText = sql;
+        FluentCommandOptions.Apply(command, connection, options);
         _parent._parent._parent.BindParameters(command);
 
         CommandObservation.Log(sql, _parent._parent._parent.DescribeParameters());
@@ -158,12 +166,12 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         return results;
     }
 
-    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CancellationToken cancellationToken)
+    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
         => await CommandObservation.ExecuteAsync(
-            sql, _parent._parent._parent.DescribeParameters(), _parent._parent._parent.Connection, CommandType.Text,
-            () => ExecuteQueryDirectAsync(sql, selector, cancellationToken), cancellationToken).ConfigureAwait(false);
+            sql, _parent._parent._parent.DescribeParameters(), _parent._parent._parent.Connection, FluentCommandOptions.Describe(options),
+            () => ExecuteQueryDirectAsync(sql, selector, options, cancellationToken), cancellationToken).ConfigureAwait(false);
 
-    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CancellationToken cancellationToken)
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
     {
         IDbConnection connection = _parent._parent._parent.Connection;
         if (connection is not DbConnection dbConn)
@@ -176,6 +184,7 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
 
         using DbCommand command = dbConn.CreateCommand();
         command.CommandText = sql;
+        FluentCommandOptions.Apply(command, connection, options);
         _parent._parent._parent.BindParameters(command);
 
         CommandObservation.Log(sql, _parent._parent._parent.DescribeParameters());

@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -23,9 +25,27 @@ public interface IGroupedJoinedQuery3<T1, T2, T3, TKey>
     List<TResult> Select<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector);
 
     /// <summary>
+    /// Projects the grouped results into a new type, using the supplied
+    /// <paramref name="options"/> for the command.
+    /// </summary>
+    /// <remarks>
+    /// The joined counterpart of the overload <see cref="IGroupedQuery{T,TKey}"/> gained under
+    /// AUD-R26-060: this builder executes its own command rather than delegating to core, so
+    /// without this there is no way to enlist a grouped joined query in a caller's transaction
+    /// or give it a timeout.
+    /// </remarks>
+    List<TResult> Select<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options);
+
+    /// <summary>
     /// Projects the grouped results into a new type asynchronously.
     /// </summary>
     Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Projects the grouped results into a new type asynchronously, using the supplied
+    /// <paramref name="options"/> for the command.
+    /// </summary>
+    Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the generated SQL for debugging purposes.
