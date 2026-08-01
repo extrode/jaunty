@@ -41,13 +41,17 @@ jobs:
           --no-restore
           -p:Version=${{ steps.version.outputs.version }}
 
+      # The filter names suites explicitly, so a substring has to match the suite's real
+      # namespace: "~Jaunty.Fluent.Tests" does NOT match Jaunty.Fluent.SourceGen.Tests and
+      # "~Jaunty.Scaffolding.Tests" does NOT match Jaunty.Scaffolding.Cli.Tests. Both were
+      # missing here and shipped untested until 2026-08-01. A new suite needs adding by hand.
       - name: Test (SQLite core + all local suites)
         run: >-
           dotnet test Jaunty.slnx
           -c Release
           --no-build
           --framework net8.0
-          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
+          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Fluent.SourceGen.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.Scaffolding.Cli.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
 
       # net10 leg (spec 010 T18): same suites on the second shipped target.
       - name: Test net10 (SQLite core + all local suites)
@@ -56,7 +60,7 @@ jobs:
           -c Release
           --no-build
           --framework net10.0
-          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
+          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Fluent.SourceGen.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.Scaffolding.Cli.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
 
       - name: Pack
         run: >-
