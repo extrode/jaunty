@@ -28,7 +28,10 @@ internal static class HavingExpressionHelpers
         {
             null => "NULL",
             string s => $"'{dialect.EscapeStringLiteral(s)}'",
-            bool b => b ? "1" : "0",
+            // AUD-R32-001: was hardcoded "1"/"0". PostgreSqlDialect.FormatBooleanLiteral returns
+            // TRUE/FALSE, and a bare 1/0 is not a boolean there - a projected or grouped bool
+            // constant produced SQL PostgreSQL rejects. The dialect method exists for this.
+            bool b => dialect.FormatBooleanLiteral(b),
             DateTime dt => $"'{dt:yyyy-MM-dd HH:mm:ss}'",
             // Numeric types (decimal/double/float/int/...) implement IFormattable - format with
             // the invariant culture so a comma-decimal culture (e.g. de-DE) doesn't corrupt the

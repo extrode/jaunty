@@ -52,4 +52,54 @@ public class HavingExpressionHelpersTests
 
         Assert.Equal("NULL", result);
     }
+
+    // AUD-R32-001: bool was hardcoded to "1"/"0", which is not a boolean on PostgreSQL.
+
+    [Theory]
+    [InlineData(true, "TRUE")]
+    [InlineData(false, "FALSE")]
+    public void FormatLiteral_PostgreSqlDialect_Bool_UsesTrueFalse(bool value, string expected)
+    {
+        var dialect = new PostgreSqlDialect();
+
+        string result = HavingExpressionHelpers.FormatLiteral(value, dialect);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(true, "1")]
+    [InlineData(false, "0")]
+    public void FormatLiteral_SqlServerDialect_Bool_StillUsesOneZero(bool value, string expected)
+    {
+        var dialect = new SqlServerDialect();
+
+        string result = HavingExpressionHelpers.FormatLiteral(value, dialect);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(true, "1")]
+    [InlineData(false, "0")]
+    public void FormatLiteral_SqliteDialect_Bool_StillUsesOneZero(bool value, string expected)
+    {
+        var dialect = new SQLiteDialect();
+
+        string result = HavingExpressionHelpers.FormatLiteral(value, dialect);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(true, "1")]
+    [InlineData(false, "0")]
+    public void FormatLiteral_MySqlDialect_Bool_StillUsesOneZero(bool value, string expected)
+    {
+        var dialect = new MySqlDialect();
+
+        string result = HavingExpressionHelpers.FormatLiteral(value, dialect);
+
+        Assert.Equal(expected, result);
+    }
 }
