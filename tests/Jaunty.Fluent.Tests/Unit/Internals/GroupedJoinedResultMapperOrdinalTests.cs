@@ -175,12 +175,75 @@ public class GroupedJoinedResultMapperOrdinalTests
     }
 
     // ---------------------------------------------------------------------------
+    // AUD-R31: constructor parameters are matched to aliases by name, not position
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void MapResult_ConstructorParametersInDifferentOrderThanAliases_BindsByName()
+    {
+        var reader = new CountingReader(Aliases, rows: 1);
+        GroupedJoinedResultMapper.ResultMapperPlan plan =
+            GroupedJoinedResultMapper.ResultMapperPlan.Resolve<ReversedCtorRow>(Aliases);
+
+        Assert.True(reader.Read());
+        ReversedCtorRow row = GroupedJoinedResultMapper.MapResult<ReversedCtorRow>(reader, Aliases, in plan);
+
+        Assert.Equal(0, row.Id);
+        Assert.Equal(1, row.Name);
+        Assert.Equal(2, row.Total);
+    }
+
+    [Fact]
+    public void MapResult_ConstructorParametersMatchingAliasOrder_StillBindsCorrectly()
+    {
+        var reader = new CountingReader(Aliases, rows: 1);
+        GroupedJoinedResultMapper.ResultMapperPlan plan =
+            GroupedJoinedResultMapper.ResultMapperPlan.Resolve<CtorRow>(Aliases);
+
+        Assert.True(reader.Read());
+        CtorRow row = GroupedJoinedResultMapper.MapResult<CtorRow>(reader, Aliases, in plan);
+
+        Assert.Equal(0, row.Id);
+        Assert.Equal("1", row.Name);
+        Assert.Equal(2, row.Total);
+    }
+
+    [Fact]
+    public void MapResult_ConstructorParameterNamesUnrelatedToAliases_RemainsPositional()
+    {
+        var reader = new CountingReader(Aliases, rows: 1);
+        GroupedJoinedResultMapper.ResultMapperPlan plan =
+            GroupedJoinedResultMapper.ResultMapperPlan.Resolve<UnrelatedCtorRow>(Aliases);
+
+        Assert.True(reader.Read());
+        UnrelatedCtorRow row = GroupedJoinedResultMapper.MapResult<UnrelatedCtorRow>(reader, Aliases, in plan);
+
+        Assert.Equal(0, row.A);
+        Assert.Equal(1, row.B);
+        Assert.Equal(2, row.C);
+    }
+
+    // ---------------------------------------------------------------------------
 
     public class CtorRow(int id, string name, int total)
     {
         public int Id { get; } = id;
         public string Name { get; } = name;
         public int Total { get; } = total;
+    }
+
+    public class ReversedCtorRow(int total, int name, int id)
+    {
+        public int Id { get; } = id;
+        public int Name { get; } = name;
+        public int Total { get; } = total;
+    }
+
+    public class UnrelatedCtorRow(int a, int b, int c)
+    {
+        public int A { get; } = a;
+        public int B { get; } = b;
+        public int C { get; } = c;
     }
 
     public class PropertyRow
