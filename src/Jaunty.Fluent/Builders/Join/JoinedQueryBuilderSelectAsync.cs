@@ -371,14 +371,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildSelectPartialSql("*");
 
+        // AUD-R31: page before reporting, so interceptors and the diagnostics listener see the
+        // command that actually executes. SelectBothInternal already decides the final text here.
+        if (limit.HasValue)
+            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
+
         return await CommandObservation.ExecuteAsync(
             sql, DescribeParameters(), _connection, CommandType.Text, Body, cancellationToken).ConfigureAwait(false);
 
         async ValueTask<List<T>> Body()
         {
-            if (limit.HasValue)
-                sql = _dialect.GetPagingSql(sql, 0, limit.Value);
-
             var results = new List<T>();
 
             if (_connection is not DbConnection dbConn)
@@ -433,14 +435,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildSelectPartialSql("*");
 
+        // AUD-R31: page before reporting, so interceptors and the diagnostics listener see the
+        // command that actually executes. SelectBothInternal already decides the final text here.
+        if (limit.HasValue)
+            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
+
         return await CommandObservation.ExecuteAsync(
             sql, DescribeParameters(), _connection, CommandType.Text, Body, cancellationToken).ConfigureAwait(false);
 
         async ValueTask<List<T>> Body()
         {
-            if (limit.HasValue)
-                sql = _dialect.GetPagingSql(sql, 0, limit.Value);
-
             var results = new List<T>();
 
             if (_connection is not DbConnection dbConn)

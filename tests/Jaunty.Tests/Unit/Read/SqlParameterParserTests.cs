@@ -425,6 +425,60 @@ WHERE product_name = @Name";
     }
 
     #endregion
+
+    #region Backtick-quoted identifiers (MySQL)
+
+    [Fact]
+    public void ExtractParameterNames_BacktickIdentifierStartingWithSigil_IsNotAParameter()
+    {
+        const string sql = "SELECT `@col` FROM t WHERE id = @Id";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Equal("Id", Assert.Single(names));
+    }
+
+    [Fact]
+    public void ExtractParameterNames_BacktickIdentifierContainingApostrophe_DoesNotSwallowRestOfSql()
+    {
+        const string sql = "SELECT `it's` FROM t WHERE id = @Id";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Equal("Id", Assert.Single(names));
+    }
+
+    [Fact]
+    public void ExtractParameterNames_BacktickIdentifierWithEmbeddedSigil_IsNotAParameter()
+    {
+        const string sql = "SELECT `sales$2024` FROM t WHERE id = @Id";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Equal("Id", Assert.Single(names));
+    }
+
+    [Fact]
+    public void ExtractParameterNames_BacktickIdentifierWithDoubledBacktick_ResumesAfterIdentifier()
+    {
+        const string sql = "SELECT `we``ird` FROM t WHERE id = @Id AND x = @X";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Equal(["Id", "X"], names);
+    }
+
+    [Fact]
+    public void ExtractParameterNames_ParameterInsideStringLiteralAfterBacktick_StillNotAParameter()
+    {
+        const string sql = "SELECT `col` FROM t WHERE a = 'not @APara' AND id = @Id";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Equal("Id", Assert.Single(names));
+    }
+
+    #endregion
 }
 
 // R23 batch-3: SqlParameterParserCache.GetOrAdd had no dedicated test - only transitive exercise
@@ -460,4 +514,5 @@ public class SqlParameterParserCacheTests
         Assert.Equal("A", Assert.Single(a));
         Assert.Equal("B", Assert.Single(b));
     }
+
 }

@@ -505,6 +505,42 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
         Assert.Contains("OrderBy", ex.Message);
     }
 
+    [Theory]
+    [InlineData("SELECT * FROM products WHERE category_id = 2 LIMIT 5")]
+    [InlineData("SELECT * FROM products WHERE category_id = 2 limit 5")]
+    [InlineData("SELECT * FROM products WHERE category_id = 2 OFFSET 10 ROWS")]
+    [InlineData("SELECT * FROM products WHERE category_id = 2 OFFSET 10 ROWS FETCH NEXT 5 ROWS ONLY")]
+    [InlineData("SELECT TOP 5 * FROM products WHERE category_id = 2")]
+    public void Union_OperandCustomImplementationAlreadyHasPagingWithoutOrderBy_ThrowsNotSupportedException(string sql)
+    {
+        // AUD-R31: the custom-terminal branch only searched for " ORDER BY ", so a custom
+        // implementation that applied paging without ordering had its LIMIT/OFFSET/FETCH/TOP
+        // spliced verbatim into the combined statement - the exact silent semantic corruption
+        // this guard exists to prevent.
+        var other = new StubQueryTerminal<Product>(sql);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(other)
+                .ToSql());
+
+        Assert.Contains("Take", ex.Message);
+    }
+
+    [Fact]
+    public void Union_OperandCustomImplementationWithColumnNamedLikePagingKeyword_IsAccepted()
+    {
+        var other = new StubQueryTerminal<Product>("SELECT toplevel, limits FROM products WHERE category_id = 2");
+
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(other)
+            .ToSql();
+
+        Assert.Contains("toplevel", sql);
+    }
+
     [Fact]
     public void Union_FirstQueryAlreadyHasOrderBy_ThrowsNotSupportedException()
     {

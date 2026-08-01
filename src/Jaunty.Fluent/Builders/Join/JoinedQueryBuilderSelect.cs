@@ -335,14 +335,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildSelectPartialSql("*");
 
+        // AUD-R31: page before reporting, so interceptors and the diagnostics listener see the
+        // command that actually executes. SelectBothInternal already decides the final text here.
+        if (limit.HasValue)
+            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
+
         return CommandObservation.Execute(
             sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
         List<T> Body()
         {
-            if (limit.HasValue)
-                sql = _dialect.GetPagingSql(sql, 0, limit.Value);
-
             var results = new List<T>();
 
             using IDbCommand command = _connection.CreateCommand();
@@ -395,14 +397,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildSelectPartialSql("*");
 
+        // AUD-R31: page before reporting, so interceptors and the diagnostics listener see the
+        // command that actually executes. SelectBothInternal already decides the final text here.
+        if (limit.HasValue)
+            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
+
         return CommandObservation.Execute(
             sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
         List<T> Body()
         {
-            if (limit.HasValue)
-                sql = _dialect.GetPagingSql(sql, 0, limit.Value);
-
             var results = new List<T>();
 
             using IDbCommand command = _connection.CreateCommand();
