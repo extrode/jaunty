@@ -25,16 +25,29 @@ internal static class GroupedJoinedResultMapper
         private object? _ordinalsReader;
         private int[]? _ordinals;
 
-        private ResultMapperPlan(ConstructorInfo? constructor, ParameterInfo[]? constructorParameters, PropertyInfo?[]? properties)
+        private ResultMapperPlan(
+            ConstructorInfo? constructor,
+            ParameterInfo[]? constructorParameters,
+            PropertyInfo?[]? properties,
+            int[]? parameterAliasOrder = null)
         {
             Constructor = constructor;
             ConstructorParameters = constructorParameters;
             Properties = properties;
+            ParameterAliasOrder = parameterAliasOrder;
         }
 
         public ConstructorInfo? Constructor { get; }
         public ParameterInfo[]? ConstructorParameters { get; }
         public PropertyInfo?[]? Properties { get; }
+
+        /// <summary>
+        /// For the constructor path: <c>ParameterAliasOrder[p]</c> is the index of the alias that
+        /// feeds constructor parameter <c>p</c>. Null when the constructor's parameter names do not
+        /// all correspond to aliases, in which case binding stays positional - see
+        /// <see cref="Resolve{TResult}"/>.
+        /// </summary>
+        public int[]? ParameterAliasOrder { get; }
 
         /// <summary>
         /// Returns this plan's ordinal buffer for <paramref name="reader"/>, with every slot reset
@@ -67,7 +80,10 @@ internal static class GroupedJoinedResultMapper
                 ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
 
                 if (constructor is not null)
-                    return new ResultMapperPlan(constructor, constructor.GetParameters(), properties: null);
+                {
+                    ParameterInfo[] parameters = constructor.GetParameters();
+                    return new ResultMapperPlan(constructor, parameters, properties: null, BuildParameterAliasOrder(parameters, aliases));
+                }
             }
 
             var properties = new PropertyInfo?[aliases.Length];
@@ -76,6 +92,48 @@ internal static class GroupedJoinedResultMapper
 #pragma warning restore IL2090
 
             return new ResultMapperPlan(constructor: null, constructorParameters: null, properties);
+        }
+
+        /// <summary>
+        /// Maps each constructor parameter to the alias of the same name (case-insensitively),
+        /// so a projection's columns reach the members that share their names rather than whatever
+        /// happens to sit at the same position - AUD-R31. An anonymous type's compiler-generated
+        /// constructor always mirrors declaration order, so this is a no-op for it; a hand-written
+        /// DTO or record whose constructor declares the same names in a different order used to be
+        /// bound positionally and silently mis-populated.
+        /// <para>
+        /// Returns null when the names do not all line up, which keeps a constructor whose
+        /// parameters are named unlike the aliases entirely on the previous positional behaviour -
+        /// positional is the only way such a type could ever have been bound.
+        /// </para>
+        /// </summary>
+        private static int[]? BuildParameterAliasOrder(ParameterInfo[] parameters, string[] aliases)
+        {
+            var order = new int[parameters.Length];
+            bool reordered = false;
+
+            for (int p = 0; p < parameters.Length; p++)
+            {
+                string? name = parameters[p].Name;
+                int aliasIndex = -1;
+
+                for (int a = 0; a < aliases.Length; a++)
+                {
+                    if (string.Equals(aliases[a], name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        aliasIndex = a;
+                        break;
+                    }
+                }
+
+                if (aliasIndex < 0)
+                    return null;
+
+                order[p] = aliasIndex;
+                reordered |= aliasIndex != p;
+            }
+
+            return reordered ? order : null;
         }
     }
 
@@ -87,17 +145,19 @@ internal static class GroupedJoinedResultMapper
         {
             var values = new object?[aliases.Length];
             ParameterInfo[] parameters = plan.ConstructorParameters!;
+            int[]? order = plan.ParameterAliasOrder;
 
-            for (int i = 0; i < aliases.Length; i++)
+            for (int p = 0; p < parameters.Length; p++)
             {
-                int ordinal = ResolveOrdinal(reader, aliases, ordinals, i);
+                int aliasIndex = order is null ? p : order[p];
+                int ordinal = ResolveOrdinal(reader, aliases, ordinals, aliasIndex);
 
                 if (!reader.IsDBNull(ordinal))
                 {
                     object value = reader.GetValue(ordinal);
-                    Type targetType = parameters[i].ParameterType;
+                    Type targetType = parameters[p].ParameterType;
                     Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                    values[i] = ConvertColumnValue(value, underlyingType);
+                    values[p] = ConvertColumnValue(value, underlyingType);
                 }
             }
 
