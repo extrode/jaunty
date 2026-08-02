@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -280,7 +280,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
         if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node) is not INamedTypeSymbol symbol)
             return null;
 
-        if (HasAttribute(symbol, "TableAttribute"))
+        // AUD-R34-031: by fully-qualified name, matching discovery. A consumer's own unrelated
+        // TableAttribute does not make this type generated, so it must not suppress the warning that
+        // says it is not.
+        if (GetRecognizedTableAttribute(symbol) is not null)
             return null;
 
         // Already trim-safe by declaring the accessors itself.
@@ -1378,6 +1381,30 @@ public partial class JauntyGenerator : IIncrementalGenerator
         => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
 
     /// <summary>
+    /// The <c>[Table]</c> attribute the generator recognizes - Jaunty's or DataAnnotations' - or
+    /// <see langword="null"/> when the type carries neither.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-031 (round-33 carry-forward). Entity discovery keys on the two attributes by
+    /// <em>fully-qualified metadata name</em> (<c>ForAttributeWithMetadataName</c>, narrowed in
+    /// AUD-R25), but the two places that ask a symbol about its <c>[Table]</c> after discovery went
+    /// through <see cref="GetAttribute(ISymbol, string)"/>, which compares the simple name only. A
+    /// consumer's own unrelated <c>TableAttribute</c> - the name is common enough that several
+    /// libraries define one - therefore had two effects it should not have. On a hand-written
+    /// <c>IMapped&lt;T&gt;</c> it suppressed the JAUNTYGEN002 warning, which exists precisely because
+    /// that type is <em>not</em> generated and so is not trim-safe; and on a real entity carrying
+    /// both a recognized <c>[Table]</c> and a foreign one, <c>FirstOrDefault</c> could read the table
+    /// name and schema off whichever came first in source order, generating SQL against the wrong
+    /// table with nothing reported.
+    /// </remarks>
+    private static AttributeData? GetRecognizedTableAttribute(ISymbol symbol)
+        => symbol.GetAttributes().FirstOrDefault(static a =>
+        {
+            var name = a.AttributeClass?.ToDisplayString();
+            return name == JauntyTableAttribute || name == DataAnnotationsTableAttribute;
+        });
+
+    /// <summary>
     /// Escapes a value for safe interpolation inside a generated C# string literal, doubling
     /// backslashes and escaping embedded double quotes so a table/column name (sourced from a
     /// [Table]/[Column] attribute, not a compiler-validated identifier) cannot break out of the
@@ -1401,7 +1428,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
         var tableName = classSymbol.Name;
         string? schemaName = null;
 
-        AttributeData? tableAttr = GetAttribute(classSymbol, "TableAttribute");
+        // AUD-R34-031: the recognized two by fully-qualified name, matching discovery. A simple-name
+        // match could read the name and schema off a foreign TableAttribute that happened to come
+        // first in source order.
+        AttributeData? tableAttr = GetRecognizedTableAttribute(classSymbol);
         if (tableAttr is null)
             return (tableName, schemaName);
 
