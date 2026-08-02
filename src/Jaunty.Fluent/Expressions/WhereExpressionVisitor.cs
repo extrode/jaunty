@@ -758,13 +758,25 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             return node;
         }
 
-        if (node.NodeType == ExpressionType.Convert)
+        if (node.NodeType is ExpressionType.Convert or ExpressionType.ConvertChecked)
         {
             Visit(node.Operand);
             return node;
         }
 
-        return base.VisitUnary(node);
+        // AUD-R34-020. Quote is load-bearing: it is how a compound `Sql.Case().When(x => a && b, ...)`
+        // condition gets re-entered (see the note above VisitLambda), and the base default - visit
+        // the body, which dispatches straight back to VisitBinary - is exactly right there.
+        if (node.NodeType == ExpressionType.Quote)
+            return base.VisitUnary(node);
+
+        // Everything else used to take that same tail, which visits the operand and appends nothing
+        // for the operator: `p => -p.UnitPrice > 5m` translated to `([unit_price] > @Value)`, the
+        // negation silently gone, so the caller got the opposite rows rather than an error. Negate,
+        // NegateChecked, TypeAs, OnesComplement, ArrayLength and UnaryPlus all took that route.
+        throw new NotSupportedException(
+            $"Unary operator '{node.NodeType}' is not supported in WHERE predicates. Compute the " +
+            "value before the query, or express the condition without it.");
     }
 
     protected override Expression VisitMember(MemberExpression node)
