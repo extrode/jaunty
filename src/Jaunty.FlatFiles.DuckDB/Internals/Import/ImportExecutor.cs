@@ -160,8 +160,12 @@ internal static class ImportExecutor
                 paramArray[i] = param;
             }
 
-            // Prepare the command for better performance
-            cmd.Prepare();
+            // Prepare the command for better performance. AUD-R32-005: best-effort, matching
+            // every other prepare in the codebase (BulkInsert/BulkUpdate/BulkDelete/ExecuteBatch,
+            // sync and async). This path is specifically the fallback for a target provider that
+            // cannot create a DbBatch - exactly the kind least likely to implement Prepare - so
+            // an unguarded throw aborted the whole import where the siblings degrade.
+            try { cmd.Prepare(); } catch { /* Best effort — not all providers support this */ }
 
             int batchCount = 0;
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))

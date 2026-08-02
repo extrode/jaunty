@@ -65,6 +65,8 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         if (StartRowMethod == null || WriteGenericMethod == null || CompleteMethod == null || WriteNullMethod == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter members could not be resolved via reflection.");
 
+        ValidateTransaction(connection, options.Transaction);
+
         MethodInfo writeGenericMethod = WriteGenericMethod;
 
         // NpgsqlBinaryImporter has no per-import timeout/batch-size/check-constraints/table-lock
@@ -158,6 +160,8 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
         if (CompleteAsyncMethod == null && CompleteMethod == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter.Complete/CompleteAsync could not be resolved via reflection.");
+
+        ValidateTransaction(connection, options.Transaction);
 
         // NpgsqlBinaryImporter has no per-import timeout/batch-size/check-constraints/table-lock
         // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
@@ -262,6 +266,29 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                 DisposeMethod?.Invoke(importer, null);
             }
         }
+    }
+
+    /// <summary>
+    /// AUD-R32-008. This provider cannot enlist a transaction explicitly: Npgsql's binary COPY
+    /// always runs on whatever transaction is already ambient on the connection, and
+    /// <c>BeginBinaryImport</c> takes no transaction argument. That makes silence the dangerous
+    /// option - <see cref="IBulkCopyProvider"/> documents that a supplied transaction is enlisted,
+    /// and a caller passing one belonging to a different connection would have been ignored
+    /// without a word, copying outside the transaction they thought they were in. SqlServer's
+    /// provider rejects a mismatched transaction rather than proceeding; this does the same for
+    /// the one mismatch that is detectable here.
+    /// </summary>
+    private static void ValidateTransaction(IDbConnection connection, IDbTransaction? transaction)
+    {
+        if (transaction is null)
+            return;
+
+        if (!ReferenceEquals(transaction.Connection, connection))
+            throw new ArgumentException(
+                "BulkCopyOptions.Transaction must belong to the connection the copy runs on. " +
+                "PostgreSQL's binary COPY joins the connection's ambient transaction and cannot " +
+                "enlist a different one, so a mismatch would silently copy outside it.",
+                nameof(transaction));
     }
 
     /// <summary>
