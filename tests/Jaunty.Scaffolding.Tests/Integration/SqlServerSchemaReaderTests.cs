@@ -73,6 +73,59 @@ public class SqlServerSchemaReaderTests
         cmd.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// AUD-R33-008. The three CLR-backed system types share <c>system_type_id</c> 240, so the old
+    /// <c>TYPE_NAME(ty.system_type_id)</c> could not tell them apart; the alias column is the
+    /// control that the fix did not swap that bug for the opposite one, where a user-defined alias
+    /// reports its own name instead of the base type <c>SqlServerTypeMapper</c> understands.
+    /// </summary>
+    private static void CreateTypeNameTable(SqlConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            DROP TABLE IF EXISTS scaffold_test_typenames;
+            IF TYPE_ID('scaffold_test_code') IS NULL CREATE TYPE scaffold_test_code FROM NVARCHAR(20);
+            CREATE TABLE scaffold_test_typenames (
+                id INT IDENTITY(1,1) PRIMARY KEY,
+                area GEOGRAPHY NULL,
+                shape GEOMETRY NULL,
+                node HIERARCHYID NULL,
+                code scaffold_test_code NULL
+            );
+            """;
+        cmd.ExecuteNonQuery();
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_ReportsEachClrTypeUnderItsOwnName()
+    {
+        using var conn = OpenOrSkip();
+        CreateTypeNameTable(conn);
+
+        var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_typenames"] });
+
+        var table = schema.Tables.Single();
+
+        Assert.Equal("geography", table.Columns.Single(c => c.ColumnName == "area").DataType);
+        Assert.Equal("geometry", table.Columns.Single(c => c.ColumnName == "shape").DataType);
+        Assert.Equal("hierarchyid", table.Columns.Single(c => c.ColumnName == "node").DataType);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_ReportsAnAliasTypeAsItsBaseType()
+    {
+        using var conn = OpenOrSkip();
+        CreateTypeNameTable(conn);
+
+        var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_typenames"] });
+
+        var table = schema.Tables.Single();
+
+        Assert.Equal("nvarchar", table.Columns.Single(c => c.ColumnName == "code").DataType);
+    }
+
     [Fact]
     public async Task ReadSchemaAsync_ReturnsTableWithColumns()
     {

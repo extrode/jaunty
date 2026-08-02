@@ -660,12 +660,46 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         }
     }
 
+    private void ThrowIfPagedBeforeGroupBy()
+    {
+        if (_take.HasValue || _skip.HasValue)
+        {
+            throw new NotSupportedException(
+                "Take/Skip applied before a GroupBy are not carried into the grouped query. Jaunty " +
+                "cannot tell whether you meant to group only the paged rows or to page the groups, " +
+                "and the two return different results. Remove the Take/Skip from before the " +
+                "GroupBy, or page the source explicitly and group the result.");
+        }
+    }
+
     #endregion
 
     #region GROUP BY
 
+    /// <remarks>
+    /// AUD-R33-002. <c>_take</c>/<c>_skip</c> are not passed to <see cref="GroupedQueryBuilder{T, TKey}"/>
+    /// and it has no field for them, so paging written before the grouping used to vanish without a
+    /// word. <c>IFromClause&lt;T&gt;.Take</c>/<c>Skip</c> return <c>IFromClause&lt;T&gt;</c> and
+    /// <c>IWhereClause&lt;T&gt;.Take</c>/<c>Skip</c> return <c>IWhereClause&lt;T&gt;</c>, and both of
+    /// those interfaces declare <c>GroupBy</c>, so <c>From&lt;T&gt;().Take(5).GroupBy(...)</c>
+    /// compiles and silently groups the whole table.
+    /// <para>
+    /// Exactly the case <see cref="ThrowIfPagedBeforeJoin"/> guards, and rejected for the same
+    /// reason: <c>Take(5)</c> before a <c>GroupBy</c> can mean "group the first five rows" or
+    /// "return the first five groups", the two give different answers, and picking one silently
+    /// would swap a wrong result for a different wrong result.
+    /// </para>
+    /// <para>
+    /// <c>_distinct</c> and <c>_orderByColumns</c> are dropped by the same line but are not
+    /// reachable here - <c>Distinct</c> returns <c>IDistinctClause&lt;T&gt;</c> and <c>OrderBy</c>
+    /// returns <c>IOrderByClause&lt;T&gt;</c>, neither of which exposes <c>GroupBy</c>. If either
+    /// ever does, this guard needs widening.
+    /// </para>
+    /// </remarks>
     public IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector)
     {
+        ThrowIfPagedBeforeGroupBy();
+
         return new GroupedQueryBuilder<T, TKey>(
             _connection,
             _dialect,

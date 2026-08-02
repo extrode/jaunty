@@ -63,6 +63,37 @@ public partial class JauntyGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    /// Reported when a <c>[Table]</c> entity is nested inside a type the generated partial cannot be
+    /// re-declared in, so no mapper is emitted for it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R33-006. A nested entity is discovered like any other, but the emitted file used to
+    /// reconstruct only <c>namespace + class</c>, putting the partial at namespace scope - where it
+    /// is a <i>different type</i> from the entity. Every member it emitted then named something that
+    /// type does not declare (CS1061), and a nested <c>private</c>/<c>protected</c> entity emitted an
+    /// accessibility illegal at namespace scope (CS1527), all inside a <c>.g.cs</c> the consumer
+    /// cannot edit and with nothing saying why. Nesting is now reconstructed properly; this
+    /// diagnostic covers what remains impossible - an enclosing type that is not <c>partial</c>
+    /// (CS0260 if we emitted anyway) or is generic (its type parameters would have to be threaded
+    /// through the mapper's signatures).
+    /// </para>
+    /// <para>
+    /// Warning rather than error, and generation is skipped: without a generated mapper
+    /// <c>MappedCache&lt;T&gt;</c> falls back to reflection, which handles nested entities fine. The
+    /// entity keeps working, it just loses the AOT-safe path - which is the same trade-off
+    /// JAUNTYGEN002 reports, so it gets the same severity.
+    /// </para>
+    /// </remarks>
+    private static readonly DiagnosticDescriptor UnsupportedNestingDescriptor = new(
+        id: "JAUNTYGEN004",
+        title: "Entity is nested in a type the mapper cannot be generated into",
+        messageFormat: "No mapper was generated for entity '{0}' because {1}. Jaunty will map it by reflection instead, which a trimmed or NativeAOT publish can break.",
+        category: "JauntySourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     /// <summary>The two <c>[Table]</c> attributes the generator recognizes, by metadata name.</summary>
     private const string JauntyTableAttribute = "Jaunty.Attributes.TableAttribute";
     private const string DataAnnotationsTableAttribute = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";
@@ -125,6 +156,19 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         context.RegisterSourceOutput(entities, static (spc, entity) =>
         {
+            // AUD-R33-006. Emitting a partial that cannot compile is strictly worse than emitting
+            // nothing: the reflection fallback still maps the entity, whereas broken generated
+            // source fails the consumer's build in a file they cannot open.
+            if (entity.UnsupportedNestingReason is not null)
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(
+                    UnsupportedNestingDescriptor,
+                    entity.DiagnosticLocation?.ToLocation(),
+                    entity.ClassName,
+                    entity.UnsupportedNestingReason));
+                return;
+            }
+
             var source = GenerateMapper(entity, spc.ReportDiagnostic);
             spc.AddSource($"{entity.HintName}.JauntyMapper.g.cs", SourceText.From(source, Encoding.UTF8));
         });
@@ -349,6 +393,17 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // that fails to compile (CS0200/CS8852), so treat both as implicitly [Ignore]d.
             if (prop.SetMethod is null || prop.SetMethod.IsInitOnly) continue;
 
+            // AUD-R33-007: and a setter that exists but cannot be reached from the entity class is
+            // the same defect one step along. Since GetMappableProperties walks base types (AUD-R26)
+            // a base-class `public string CreatedBy { get; private set; }`, or an `internal set` on a
+            // base type in another assembly, reaches this loop; the emitted `entity.CreatedBy = ...`
+            // then fails with CS0272 inside a .g.cs. The accessibility question is not answerable
+            // from DeclaredAccessibility alone - it depends on where the setter was declared and on
+            // assembly boundaries and InternalsVisibleTo - so ask the compilation, which is what
+            // decides it. The reflection twin has no equivalent problem: MetadataBuilder tests
+            // property.CanWrite, which is true here, and SetValue does reach a non-public setter.
+            if (!context.SemanticModel.Compilation.IsSymbolAccessibleWithin(prop.SetMethod, classSymbol)) continue;
+
             // Support [Column] from both
             AttributeData? columnAttr = GetAttribute(prop, "ColumnAttribute");
             // AUD-R32-006: an empty [Column("")] falls back to the property name rather than
@@ -442,6 +497,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         (var tableName, var schemaName) = GetTableNameAndSchema(classSymbol);
 
+        (EquatableArray<ContainingTypeInfo> containingTypes, var unsupportedNesting) = BuildContainingTypes(classSymbol);
+
         return new EntityModel(
             Namespace: classSymbol.ContainingNamespace.IsGlobalNamespace
                 ? null
@@ -452,8 +509,91 @@ public partial class JauntyGenerator : IIncrementalGenerator
             TableName: tableName,
             SchemaName: schemaName,
             Properties: new EquatableArray<PropertyMetadata>(properties.ToImmutableArray()),
-            DiagnosticLocation: LocationInfo.From(classSymbol.Locations.FirstOrDefault()));
+            DiagnosticLocation: LocationInfo.From(classSymbol.Locations.FirstOrDefault()),
+            ContainingTypes: containingTypes,
+            UnsupportedNestingReason: unsupportedNesting);
     }
+
+    /// <summary>
+    /// Walks the chain of types enclosing <paramref name="classSymbol"/> and returns it outermost
+    /// first, or a reason why the mapper cannot be generated into it.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R33-006. An enclosing type must be <c>partial</c> for a second declaration of it to be
+    /// legal at all, and must be non-generic because the generated members would otherwise have to
+    /// close over its type parameters. Both are checked here, at model-build time, so the decision
+    /// travels in the value-equatable model rather than being re-derived from symbols at emit time.
+    /// </remarks>
+    private static (EquatableArray<ContainingTypeInfo> ContainingTypes, string? UnsupportedReason) BuildContainingTypes(INamedTypeSymbol classSymbol)
+    {
+        if (classSymbol.ContainingType is null)
+            return (new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty), null);
+
+        var chain = new List<ContainingTypeInfo>();
+
+        for (INamedTypeSymbol? containing = classSymbol.ContainingType; containing is not null; containing = containing.ContainingType)
+        {
+            if (containing.IsGenericType)
+                return (default, $"its enclosing type '{containing.Name}' is generic");
+
+            if (!IsDeclaredPartial(containing))
+                return (default, $"its enclosing type '{containing.Name}' is not declared 'partial'");
+
+            string? keyword = TypeKeyword(containing);
+
+            if (keyword is null)
+                return (default, $"its enclosing type '{containing.Name}' is not a class, struct, record or interface");
+
+            chain.Add(new ContainingTypeInfo(
+                AccessibilityKeyword(containing.DeclaredAccessibility),
+                keyword,
+                containing.Name));
+        }
+
+        chain.Reverse();
+        return (new EquatableArray<ContainingTypeInfo>(chain.ToImmutableArray()), null);
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when every source declaration of <paramref name="symbol"/>
+    /// carries the <c>partial</c> modifier.
+    /// </summary>
+    private static bool IsDeclaredPartial(INamedTypeSymbol symbol)
+    {
+        foreach (SyntaxReference reference in symbol.DeclaringSyntaxReferences)
+        {
+            if (reference.GetSyntax() is not TypeDeclarationSyntax declaration)
+                return false;
+
+            var isPartial = false;
+
+            foreach (SyntaxToken modifier in declaration.Modifiers)
+            {
+                if (modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword))
+                {
+                    isPartial = true;
+                    break;
+                }
+            }
+
+            if (!isPartial)
+                return false;
+        }
+
+        return symbol.DeclaringSyntaxReferences.Length > 0;
+    }
+
+    /// <summary>
+    /// The C# keyword a type must be re-declared with, or <see langword="null"/> for a type kind
+    /// that cannot enclose a partial declaration (an enum or delegate, which cannot nest types).
+    /// </summary>
+    private static string? TypeKeyword(INamedTypeSymbol symbol) => symbol.TypeKind switch
+    {
+        TypeKind.Class => symbol.IsRecord ? "record" : "class",
+        TypeKind.Struct => symbol.IsRecord ? "record struct" : "struct",
+        TypeKind.Interface => "interface",
+        _ => null
+    };
 
     /// <summary>
     /// Builds a collision-resistant hint name for the generated source file from the entity's
@@ -567,6 +707,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"namespace {namespaceName}");
             sb.AppendLine("{");
         }
+        // AUD-R33-006: re-declare every enclosing type, or the partial below lands at namespace
+        // scope and is a different type from the entity - see UnsupportedNestingDescriptor.
+        foreach (ContainingTypeInfo containing in entity.ContainingTypes)
+            sb.AppendLine($"    {containing.AccessibilityKeyword} partial {containing.Keyword} {containing.Name}").AppendLine("    {");
+
         sb.AppendLine($"    {entity.AccessibilityKeyword} partial class {className} : IMapped<{className}>, IEntityMetadataSource, IGeneratedAccessors<{className}>");
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
@@ -699,10 +844,18 @@ public partial class JauntyGenerator : IIncrementalGenerator
             var dbValue = ReadExpression(typeInfo, typeForGetFieldValue, "dbReader", i, isDbDataReader: true, p.IsEnum);
             if (needsNullCheck)
             {
-                // default must be typed to the property, not the getter: an untyped default in
-                // the ternary binds to the getter type, so DBNull would map to 0/false for
-                // nullable value types instead of null.
-                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : {dbValue};");
+                // AUD-R33-009: this used to be
+                // `entity.P = dbReader.IsDBNull(ord[i]) ? default(T)! : value;`, which is not what
+                // the IDataReader branch twenty lines below does, nor what the reflection twin
+                // (MetadataCache's PropertyAccessor.Set) does - both leave the property untouched.
+                // For a property with an initializer or constructor default
+                // (`public string Name { get; set; } = "";`) a NULL column therefore reset it to
+                // null on one path and preserved it on the other, for the same entity and the same
+                // row, decided by nothing the caller can see - which of the two reader interfaces
+                // their provider happens to implement. Skipping is the behaviour that agrees with
+                // both of the other two implementations, so it is the one kept.
+                sb.AppendLine($"                if (!dbReader.IsDBNull(ord[{i}]))");
+                sb.AppendLine($"                    entity.{p.PropertyName} = {dbValue};");
             }
             else
             {
@@ -767,7 +920,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
             var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "rr", i, isDbDataReader: true, p.IsEnum);
             if (typeInfo.NeedsNullCheck)
             {
-                sb.AppendLine($"                    entity.{p.PropertyName} = rr.IsDBNull(ord[{i}]) ? default({p.TypeName})! : {rowValue};");
+                // AUD-R33-009, as in ReadEntity above: skip rather than reset, matching the plain
+                // IDataReader closure below and the reflection twin.
+                sb.AppendLine($"                    if (!rr.IsDBNull(ord[{i}]))");
+                sb.AppendLine($"                        entity.{p.PropertyName} = {rowValue};");
             }
             else
             {
@@ -1068,6 +1224,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.DeleteBinder => BindDelete;");
 
         sb.AppendLine("    }");
+
+        for (int i = 0; i < entity.ContainingTypes.Count; i++)
+            sb.AppendLine("    }");
+
         if (!isGlobalNamespace)
             sb.AppendLine("}");
 

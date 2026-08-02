@@ -336,4 +336,85 @@ public class ExpressionTranslatorTests
         // Assert
         Assert.Contains("\"bad\"\"name\" IN (", sql);
     }
+
+    // AUD-R33-001: ExtractColumnAndValue swaps the operands when the entity member is on the
+    // right, but the operator used to be emitted from binary.NodeType unchanged, so every
+    // constant-on-left relational predicate produced the exact inverse of what was written.
+    [Fact]
+    public void Translate_ConstantOnLeftLessThan_MirrorsToGreaterThan()
+    {
+        Expression<Func<SalesRecord, bool>> predicate = x => 1000 < x.Revenue;
+
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        Assert.Contains("\"Revenue\" > $1", sql);
+        Assert.Single(parameters);
+        Assert.Equal(1000m, parameters[0].Value);
+    }
+
+    [Fact]
+    public void Translate_ConstantOnLeftGreaterThan_MirrorsToLessThan()
+    {
+        Expression<Func<SalesRecord, bool>> predicate = x => 1000 > x.Revenue;
+
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        Assert.Contains("\"Revenue\" < $1", sql);
+    }
+
+    [Fact]
+    public void Translate_ConstantOnLeftLessThanOrEqual_MirrorsToGreaterThanOrEqual()
+    {
+        Expression<Func<SalesRecord, bool>> predicate = x => 1000 <= x.Revenue;
+
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        Assert.Contains("\"Revenue\" >= $1", sql);
+    }
+
+    [Fact]
+    public void Translate_ConstantOnLeftGreaterThanOrEqual_MirrorsToLessThanOrEqual()
+    {
+        Expression<Func<SalesRecord, bool>> predicate = x => 1000 >= x.Revenue;
+
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        Assert.Contains("\"Revenue\" <= $1", sql);
+    }
+
+    [Fact]
+    public void Translate_ConstantOnLeftEquality_IsUnchangedBecauseItIsSymmetric()
+    {
+        Expression<Func<SalesRecord, bool>> equal = x => 1 == x.Id;
+        Expression<Func<SalesRecord, bool>> notEqual = x => 1 != x.Id;
+
+        var (equalSql, _) = ExpressionTranslator.Translate(equal);
+        var (notEqualSql, _) = ExpressionTranslator.Translate(notEqual);
+
+        Assert.Contains("\"Id\" = $1", equalSql);
+        Assert.Contains("\"Id\" != $1", notEqualSql);
+    }
+
+    [Fact]
+    public void Translate_ConstantOnLeftNullEquality_StillEmitsIsNull()
+    {
+        string? nothing = null;
+        Expression<Func<SalesRecord, bool>> predicate = x => nothing == x.Region;
+
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        Assert.Contains("\"region\" IS NULL", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
+    public void Translate_ConstantOnLeftRelationalAgainstNull_StillMatchesNothing()
+    {
+        decimal? nothing = null;
+        Expression<Func<SalesRecord, bool>> predicate = x => nothing < x.Revenue;
+
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        Assert.Contains("1 = 0", sql);
+    }
 }
