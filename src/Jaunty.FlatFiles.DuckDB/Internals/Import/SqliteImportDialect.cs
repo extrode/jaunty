@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 using Jaunty.FlatFiles.Import;
@@ -8,7 +9,7 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// <summary>
 /// Import dialect for SQLite databases.
 /// </summary>
-internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDialect
+internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDialect, IImportValueTransform
 {
     /// <summary>
     /// Singleton instance.
@@ -48,11 +49,37 @@ internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDia
         _ when clrType == typeof(TimeSpan) => "TEXT",
         _ when clrType == typeof(char) => "TEXT",
         _ when clrType == typeof(uint) => "INTEGER",
-        _ when clrType == typeof(ulong) => "INTEGER",
+        // AUD-R34-029: SQLite's INTEGER storage class is a signed 64-bit two's-complement value, so
+        // the top ~47% of ulong's range cannot be represented as declared - and the provider does
+        // not complain, it reinterprets: ulong.MaxValue arrives as -1. SqlServerImportDialect and
+        // PostgreSqlImportDialect widen to DECIMAL(20,0)/NUMERIC(20,0) for exactly this reason, but
+        // SQLite has no unsigned and no 128-bit integer type, so the representation has to change
+        // rather than widen. TEXT holds the decimal digits losslessly; TryTransformForBinding below
+        // is the other half, because the declared type alone does not stop the provider's
+        // reinterpretation.
+        _ when clrType == typeof(ulong) => "TEXT",
         _ when clrType == typeof(sbyte) => "INTEGER",
         _ when clrType == typeof(ushort) => "INTEGER",
         _ => throw ImportTypeMapping.Unsupported(clrType, "SQLite")
     };
+
+    /// <summary>
+    /// AUD-R34-029: binds a <see cref="ulong"/> as its invariant decimal text, matching the
+    /// <c>TEXT</c> column <see cref="MapClrTypeToSqlType"/> declares for it. Without this the
+    /// provider binds the value as a signed 64-bit integer and the column silently receives a
+    /// negative number for anything above <see cref="long.MaxValue"/>.
+    /// </summary>
+    bool IImportValueTransform.TryTransformForBinding(object value, out object transformed)
+    {
+        if (value is ulong unsigned)
+        {
+            transformed = unsigned.ToString(CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        transformed = value;
+        return false;
+    }
 
     /// <inheritdoc />
     public string GenerateInsertSql(
