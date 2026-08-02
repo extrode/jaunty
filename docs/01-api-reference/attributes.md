@@ -184,6 +184,24 @@ Composite keys are not affected: neither path infers identity for an entity with
 column, since no database has two identity columns. An explicit `[DatabaseGenerated]` on one part
 of a composite key is still honoured.
 
+**A property whose setter is `init`-only or inaccessible is mapped by reflection only.**
+
+The generated mapper assigns properties after construction (`entity.Name = ...`), so it cannot
+write an `init`-only setter, nor a setter declared on a base class that the entity itself cannot
+reach (`private set` on a base, or an `internal set` across an assembly boundary). The reflection
+mapper writes both without difficulty — `PropertyInfo.SetValue` is not bound by either rule.
+
+| Setter | `Jaunty.SourceGenerator` | `Jaunty.Extensions.Reflection` |
+|---|---|---|
+| `set` | Mapped | Mapped |
+| `init` | **Not mapped** | Mapped |
+| Inaccessible from the entity (e.g. base-class `private set`) | **Not mapped** | Mapped |
+| No setter at all | Not mapped | Not mapped |
+
+The build reports `JAUNTYGEN005` for each such property, naming the entity, the property and the
+reason. Give the property a plain accessible setter to map it on both paths, or mark it `[Ignore]`
+to record that the exclusion is intended and silence the warning.
+
 ## EnumStorage Attribute
 
 ### [EnumStorage(EnumStorage storage)]
