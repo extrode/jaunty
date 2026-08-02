@@ -1,5 +1,4 @@
-﻿using System.Data;
-using System.Data.SQLite;
+﻿using System.Data.SQLite;
 
 using Jaunty.Core;
 using Jaunty.Tests.Helpers;
@@ -9,21 +8,23 @@ namespace Jaunty.Tests.Integration.Read;
 /// <summary>
 /// AUD-R34-002. The entity-mapping APIs pair an <c>(IDbConnection, string, object parameters)</c>
 /// overload with an <c>(IDbConnection, string, CommandOptions&lt;T&gt;)</c> one. The only conversion
-/// on <see cref="CommandOptions{T}"/> is generic -> non-generic, so a **non-generic**
+/// on <see cref="CommandOptions{T}"/> used to be generic -> non-generic, so a non-generic
 /// <see cref="CommandOptions"/> - what <c>CommandOptions.WithTransaction</c> and
-/// <c>CommandOptions.WithTimeout</c> return - is not convertible to <c>CommandOptions&lt;T&gt;</c>
-/// and binds to <c>object parameters</c> instead.
+/// <c>CommandOptions.WithTimeout</c> return - was not convertible to <c>CommandOptions&lt;T&gt;</c>
+/// and bound to <c>object parameters</c> instead.
 /// <para>
-/// Nothing complains. <c>ParameterBinder.Bind</c> treats the struct as a parameters object,
-/// <c>IsScalarType</c> is false for it, and <c>CommandOptions</c> exposes public *fields* rather than
-/// properties, so <c>ParameterCache.Get</c> yields no metadata and the "unused parameter properties"
-/// guard has nothing to report. Zero parameters bind, no error is raised, and the transaction or
-/// timeout the caller asked for is discarded.
+/// Nothing complained. <c>ParameterBinder.Bind</c> treated the struct as a parameters object,
+/// <c>IsScalarType</c> is false for it, and <c>CommandOptions</c> exposes public <i>fields</i> rather
+/// than properties, so <c>ParameterCache.Get</c> yielded no metadata and the "unused parameter
+/// properties" guard had nothing to report. Zero parameters bound, no error was raised, and the
+/// transaction or timeout the caller asked for was discarded.
 /// </para>
 /// <para>
-/// These tests pin the behaviour rather than assert it is desirable: they exist so that a change to
-/// the overload set is a deliberate act with a visible diff, and so that the trap is written down
-/// somewhere executable. See the registry entry for the options considered.
+/// The remedy is the reverse implicit conversion on <see cref="CommandOptions{T}"/>, not an overload
+/// per API: overload resolution prefers a conversion to <c>CommandOptions&lt;T&gt;</c> over boxing to
+/// <c>object</c>, so every arity of every entity API is fixed by the one operator. These tests assert
+/// the binding, not just that rows came back - a call that returns rows is exactly what the defect
+/// looked like.
 /// </para>
 /// </summary>
 public class NonGenericCommandOptionsOverloadTests
@@ -131,11 +132,11 @@ public class NonGenericCommandOptionsOverloadTests
     }
 
     /// <summary>
-    /// The damaging case: the caller asks for the work to run inside their transaction and it does
-    /// not. The command is issued with no transaction attached at all.
+    /// The damaging case: the caller asks for the work to run inside their transaction. Before the
+    /// fix the command was issued with no transaction attached at all.
     /// </summary>
     [Fact]
-    public void Query_GivenANonGenericCommandOptionsWithATransaction_DiscardsTheTransaction()
+    public void Query_GivenANonGenericCommandOptionsWithATransaction_AppliesTheTransaction()
     {
         using RecordingConnection connection = CreateAndSeed();
         using IDbTransaction transaction = connection.BeginTransaction();
@@ -143,18 +144,72 @@ public class NonGenericCommandOptionsOverloadTests
         List<Row> rows = connection.Query<Row>("SELECT id AS Id FROM ngopt", CommandOptions.WithTransaction(transaction));
 
         Assert.Single(rows);
-        Assert.Null(connection.ExecutedTransaction);
+        Assert.Same(transaction, connection.ExecutedTransaction);
     }
 
     [Fact]
-    public void Query_GivenANonGenericCommandOptionsWithATimeout_DiscardsTheTimeout()
+    public void Query_GivenANonGenericCommandOptionsWithATimeout_AppliesTheTimeout()
     {
         using RecordingConnection connection = CreateAndSeed();
 
         List<Row> rows = connection.Query<Row>("SELECT id AS Id FROM ngopt", CommandOptions.WithTimeout(97));
 
         Assert.Single(rows);
-        Assert.NotEqual(97, connection.ExecutedTimeout);
+        Assert.Equal(97, connection.ExecutedTimeout);
+    }
+
+    /// <summary>
+    /// All three fields the non-generic form carries have to survive the conversion, not just the two
+    /// the defect was reported against. Asserted on the conversion rather than through a query because
+    /// SQLite rejects <see cref="CommandType.StoredProcedure"/> before the command executes, so no
+    /// value would be observable at the connection.
+    /// </summary>
+    [Fact]
+    public void TheConversionToTheGenericForm_CarriesEveryFieldTheNonGenericFormHas()
+    {
+        using RecordingConnection connection = CreateAndSeed();
+        using IDbTransaction transaction = connection.BeginTransaction();
+
+        CommandOptions<Row> converted = new CommandOptions(transaction, commandTimeout: 97, commandType: CommandType.StoredProcedure);
+
+        Assert.Same(transaction, converted.Transaction);
+        Assert.Equal(97, converted.CommandTimeout);
+        Assert.Equal(CommandType.StoredProcedure, converted.CommandType);
+        Assert.Null(converted.Mapper);
+        Assert.Null(converted.ExpectedRowCount);
+    }
+
+    /// <summary>
+    /// The four-argument shape, which did not compile at all before the conversion existed: there was
+    /// no <c>(sql, parameters, CommandOptions)</c> overload and no conversion to the generic one.
+    /// </summary>
+    [Fact]
+    public void Query_GivenParametersAndANonGenericCommandOptions_AppliesBoth()
+    {
+        using RecordingConnection connection = CreateAndSeed();
+
+        List<Row> rows = connection.Query<Row>(
+            "SELECT id AS Id FROM ngopt WHERE id = @id", new { id = 1 }, CommandOptions.WithTimeout(97));
+
+        Assert.Single(rows);
+        Assert.Equal(97, connection.ExecutedTimeout);
+    }
+
+    /// <summary>
+    /// The conversion must not steal the <c>object parameters</c> overload from its actual callers.
+    /// An anonymous type is still a parameters object and must still bind, or the fix would have
+    /// broken every parameterised query in the library.
+    /// </summary>
+    [Fact]
+    public void Query_GivenAnAnonymousParametersObject_StillBindsItAsParameters()
+    {
+        using RecordingConnection connection = CreateAndSeed();
+
+        List<Row> present = connection.Query<Row>("SELECT id AS Id FROM ngopt WHERE id = @id", new { id = 1 });
+        List<Row> absent = connection.Query<Row>("SELECT id AS Id FROM ngopt WHERE id = @id", new { id = 2 });
+
+        Assert.Single(present);
+        Assert.Empty(absent);
     }
 
     /// <summary>
@@ -167,7 +222,7 @@ public class NonGenericCommandOptionsOverloadTests
     {
         using RecordingConnection connection = CreateAndSeed();
 
-        List<Row> rows = connection.Query<Row>("SELECT id AS Id FROM ngopt", CommandOptions<Row>.WithTimeout(97));
+        List<Row> rows = connection.Query("SELECT id AS Id FROM ngopt", CommandOptions<Row>.WithTimeout(97));
 
         Assert.Single(rows);
         Assert.Equal(97, connection.ExecutedTimeout);
@@ -179,7 +234,7 @@ public class NonGenericCommandOptionsOverloadTests
         using RecordingConnection connection = CreateAndSeed();
         using IDbTransaction transaction = connection.BeginTransaction();
 
-        List<Row> rows = connection.Query<Row>("SELECT id AS Id FROM ngopt", CommandOptions<Row>.WithTransaction(transaction));
+        List<Row> rows = connection.Query("SELECT id AS Id FROM ngopt", CommandOptions<Row>.WithTransaction(transaction));
 
         Assert.Single(rows);
         Assert.Same(transaction, connection.ExecutedTransaction);

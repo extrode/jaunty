@@ -177,6 +177,41 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// </para>
     /// </remarks>
     public static implicit operator CommandOptions(CommandOptions<T> options) => new(options.Transaction, options.CommandTimeout, options.CommandType);
+
+    /// <summary>
+    /// Implicitly converts a non-generic <see cref="CommandOptions"/> to a
+    /// <see cref="CommandOptions{T}"/>, carrying the transaction, timeout and command type.
+    /// </summary>
+    /// <param name="options">The non-generic command options to convert.</param>
+    /// <returns>A <see cref="CommandOptions{T}"/> with no mapper and no row-count hint.</returns>
+    /// <remarks>
+    /// <para>
+    /// AUD-R34-002 (high, design flaw in the overload set). Every entity-mapping API pairs an
+    /// <c>(IDbConnection, string sql, object parameters)</c> overload with an
+    /// <c>(IDbConnection, string sql, CommandOptions&lt;T&gt; options)</c> one. Without this
+    /// conversion a non-generic <see cref="CommandOptions"/> - which is what
+    /// <see cref="CommandOptions.WithTransaction"/> and <see cref="CommandOptions.WithTimeout"/>
+    /// return - was not convertible to <c>CommandOptions&lt;T&gt;</c>, so the only applicable
+    /// candidate was <c>object parameters</c>. The caller's options were bound as a parameters
+    /// object, no properties were found on a struct exposing public fields, zero parameters bound,
+    /// nothing was reported, and <b>the transaction or timeout was silently discarded</b>. The
+    /// repo's own tests made that mistake in three places.
+    /// </para>
+    /// <para>
+    /// The conversion is what fixes it, and it fixes it for every arity of every entity API at
+    /// once: overload resolution prefers the conversion to <c>CommandOptions&lt;T&gt;</c> over the
+    /// boxing conversion to <c>object</c>, because <c>CommandOptions&lt;T&gt;</c> converts to
+    /// <c>object</c> and <c>object</c> does not convert back - the better-conversion-target rule.
+    /// So the call that used to bind to <c>object parameters</c> now binds to the overload the
+    /// caller meant, with no source change on their side.
+    /// </para>
+    /// <para>
+    /// <see cref="Mapper"/> and <see cref="ExpectedRowCount"/> are null on the result, which loses
+    /// nothing: the source type has no member for either. Round-tripping through the non-generic
+    /// form still drops them - see the conversion above.
+    /// </para>
+    /// </remarks>
+    public static implicit operator CommandOptions<T>(CommandOptions options) => new(null, options.Transaction, options.CommandTimeout, options.CommandType);
 }
 
 /// <summary>
