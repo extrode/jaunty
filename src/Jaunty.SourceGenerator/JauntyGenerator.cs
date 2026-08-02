@@ -1174,18 +1174,26 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // fast path to an almost-always-miss (falls through to the ConditionalWeakTable lookup on
         // every call). [ThreadStatic] gives each thread its own slot so its own repeated reads of
         // the same reader still hit the fast path regardless of what other threads are doing.
+        // AUD-R34-032: weak, because the slot is per thread and is only ever overwritten by the
+        // next resolve of the same entity type on that same thread. A strong reference pinned the
+        // CacheEntry - and through its _reader field the reader, its command and its connection -
+        // for as long as the thread lived, so a pooled or idle thread that mapped one entity and
+        // then went quiet held the whole chain past Dispose for an unbounded time. The
+        // ConditionalWeakTable beside it is deliberately weak for exactly this reason; this was the
+        // one strong root undoing it. Weak costs one TryGetTarget on the fast path and nothing else:
+        // while the reader is alive the CWT keeps the entry alive, so the memo still hits.
         sb.AppendLine("            [ThreadStatic]");
-        sb.AppendLine("            private static CacheEntry? _last;");
+        sb.AppendLine("            private static WeakReference<CacheEntry>? _last;");
         sb.AppendLine();
         sb.AppendLine($"            public static int[] Resolve(IDataReader reader)");
         sb.AppendLine("            {");
-        sb.AppendLine("                var last = _last;");
-        sb.AppendLine("                if (last is not null && last.Matches(reader))");
+        sb.AppendLine("                var lastRef = _last;");
+        sb.AppendLine("                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))");
         sb.AppendLine("                    return last.Ordinals;");
         sb.AppendLine();
         sb.AppendLine("                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))");
         sb.AppendLine("                {");
-        sb.AppendLine("                    _last = cached;");
+        sb.AppendLine("                    SetLast(cached);");
         sb.AppendLine("                    return cached.Ordinals;");
         sb.AppendLine("                }");
         sb.AppendLine();
@@ -1208,8 +1216,17 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("                    _cache.Add(reader, entry);");
         sb.AppendLine("                }");
         sb.AppendLine("#endif");
-        sb.AppendLine("                _last = entry;");
+        sb.AppendLine("                SetLast(entry);");
         sb.AppendLine("                return ords;");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.AppendLine("            private static void SetLast(CacheEntry entry)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                var lastRef = _last;");
+        sb.AppendLine("                if (lastRef is null)");
+        sb.AppendLine("                    _last = new WeakReference<CacheEntry>(entry);");
+        sb.AppendLine("                else");
+        sb.AppendLine("                    lastRef.SetTarget(entry);");
         sb.AppendLine("            }");
         sb.AppendLine();
         sb.AppendLine("            private sealed class CacheEntry");
