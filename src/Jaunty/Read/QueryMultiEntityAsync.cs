@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
@@ -319,134 +319,6 @@ public static partial class Jaunty
 
     #endregion
 
-    #region Legacy Multi-Entity QueryAsync APIs (Marked as Obsolete for Consistency)
-
-    /// <summary>
-    /// Asynchronously executes a query and maps columns to two entity types by property name.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static ValueTask<List<(T1, T2)>> QueryAsync<T1, T2>(
-        this IDbConnection connection,
-        string sql,
-        object? parameters = null,
-        CommandOptions options = default,
-        CancellationToken cancellationToken = default)
-        where T1 : new()
-        where T2 : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-#endif
-        if (connection is not DbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return ExecuteReaderAsync<List<(T1, T2)>>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            // AUD-R26: these two obsolete overloads hardcoded 64, so a consumer who tuned
-            // JauntyConfig.QueryResultCapacity for their workload silently got the default here and
-            // nowhere else - every non-obsolete multi-entity path in QueryCore.cs already reads it.
-            // The per-call ExpectedRowCount hint the non-obsolete paths also honour is not available:
-            // these take the non-generic CommandOptions, which carries no such field, and widening a
-            // public struct for two obsolete entry points is not worth it.
-            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity);
-
-            var dbReader = (DbDataReader)reader;
-
-            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                return results;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-            do
-            {
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.Map(t1, t2, dbReader);
-
-                results.Add((t1, t2));
-            }
-            while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
-
-            return results;
-        }, cancellationToken);
-    }
-
-    /// <summary>
-    /// Asynchronously executes a query, maps to two entity types, and combines them using a function.
-    /// </summary>
-    /// <remarks>
-    /// AUD-R34-003, residual and deliberately not fixed. Passing options <i>positionally</i> -
-    /// <c>QueryAsync&lt;T1, T2, R&gt;(sql, map, CommandOptions.WithTimeout(60))</c> - binds them to
-    /// <paramref name="parameters"/> and discards them, and unlike the rest of the multi-entity
-    /// surface there is no <c>CommandOptions&lt;T&gt;</c> sibling for the AUD-R34-002 conversion to
-    /// select. The obvious remedy, a <c>(sql, map, CommandOptions)</c> overload, is a <b>source
-    /// break</b>: both overloads would then be applicable to the named form
-    /// <c>(sql, map, options: x)</c>, which is CS0121 - the library's own tests call it that way.
-    /// So: use the named argument, which is correct today, or move to the non-obsolete overload
-    /// taking <c>CommandOptions&lt;(T1, T2)&gt;</c>, which this whole overload is obsolete in favour
-    /// of anyway.
-    /// </remarks>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static ValueTask<List<TResult>> QueryAsync<T1, T2, TResult>(
-        this IDbConnection connection,
-        string sql,
-        Func<T1, T2, TResult> map,
-        object? parameters = null,
-        CommandOptions options = default,
-        CancellationToken cancellationToken = default)
-        where T1 : new()
-        where T2 : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-        ArgumentNullException.ThrowIfNull(map);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-        if (map is null) throw new ArgumentNullException(nameof(map));
-#endif
-
-        if (connection is not DbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return ExecuteReaderAsync<List<TResult>>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            var results = new List<TResult>(JauntyConfig.QueryResultCapacity);
-
-            var dbReader = (DbDataReader)reader;
-
-            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                return results;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-            do
-            {
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.Map(t1, t2, dbReader);
-
-                results.Add(map(t1, t2));
-            }
-            while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
-
-            return results;
-        }, cancellationToken);
-    }
-
-    #endregion
-
     #region Multi-Entity QueryFirstAsync APIs
 
     /// <summary>
@@ -743,49 +615,6 @@ public static partial class Jaunty
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
-    }
-
-    /// <summary>
-    /// Asynchronously executes a query and returns the first row mapped to two entity types.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static ValueTask<(T1, T2)> QueryFirstAsync<T1, T2>(
-        this IDbConnection connection,
-        string sql,
-        object? parameters = null,
-        CommandOptions options = default,
-        CancellationToken cancellationToken = default)
-        where T1 : new()
-        where T2 : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-#endif
-        if (connection is not DbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            var dbReader = (DbDataReader)reader;
-
-            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.Map(t1, t2, dbReader);
-
-            return (t1, t2);
-        }, cancellationToken);
     }
 
     #endregion
@@ -1102,49 +931,6 @@ public static partial class Jaunty
             : QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
 
-    /// <summary>
-    /// Asynchronously executes a query and returns the first row mapped to two entity types, or default if empty.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static ValueTask<(T1, T2)?> QueryFirstOrDefaultAsync<T1, T2>(
-        this IDbConnection connection,
-        string sql,
-        object? parameters = null,
-        CommandOptions options = default,
-        CancellationToken cancellationToken = default)
-        where T1 : new()
-        where T2 : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-#endif
-        if (connection is not DbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            var dbReader = (DbDataReader)reader;
-
-            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                return null;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.Map(t1, t2, dbReader);
-
-            return (t1, t2);
-        }, cancellationToken);
-    }
-
     #endregion
 
     #region Multi-Entity QuerySingleAsync APIs
@@ -1448,51 +1234,6 @@ public static partial class Jaunty
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QuerySingleMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
-    }
-
-    /// <summary>
-    /// Asynchronously executes a query and returns exactly one row mapped to two entity types.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static ValueTask<(T1, T2)> QuerySingleAsync<T1, T2>(
-        this IDbConnection connection,
-        string sql,
-        object? parameters = null,
-        CommandOptions options = default,
-        CancellationToken cancellationToken = default)
-        where T1 : new()
-        where T2 : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-#endif
-        if (connection is not DbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            var dbReader = (DbDataReader)reader;
-
-            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.Map(t1, t2, dbReader);
-
-            return await dbReader.ReadAsync(ct).ConfigureAwait(false)
-                ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
-                : ((T1, T2))(t1, t2);
-        }, cancellationToken);
     }
 
     #endregion
@@ -1811,51 +1552,6 @@ public static partial class Jaunty
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
-    }
-
-    /// <summary>
-    /// Asynchronously executes a query and returns exactly one row mapped to two entity types, or default if empty.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static ValueTask<(T1, T2)?> QuerySingleOrDefaultAsync<T1, T2>(
-        this IDbConnection connection,
-        string sql,
-        object? parameters = null,
-        CommandOptions options = default,
-        CancellationToken cancellationToken = default)
-        where T1 : new()
-        where T2 : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-#endif
-        if (connection is not DbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            var dbReader = (DbDataReader)reader;
-
-            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                return null;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.Map(t1, t2, dbReader);
-
-            return await dbReader.ReadAsync(ct).ConfigureAwait(false)
-                ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
-                : ((T1, T2)?)(t1, t2);
-        }, cancellationToken);
     }
 
     #endregion
