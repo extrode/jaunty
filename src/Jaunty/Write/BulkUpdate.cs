@@ -292,19 +292,23 @@ public static partial class Jaunty
                 if (wasClosed)
                     connection.Open();
 
-                if (ignoreConstraints && requiresAutocommit)
-                    ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
-
-                if (ownTransaction)
-                    transaction = connection.BeginTransaction();
-
-                if (ignoreConstraints && !requiresAutocommit)
-                    ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
-
                 int totalUpdated = 0;
 
                 try
                 {
+                    // AUD-R34-008: this block used to sit outside this try, so a throw from
+                    // BeginTransaction - or from the second disable - skipped the catch below and
+                    // left foreign key enforcement off. The outer finally only disposes and closes,
+                    // and the connection then goes back to the pool disabled.
+                    if (ignoreConstraints && requiresAutocommit)
+                        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
+
+                    if (ownTransaction)
+                        transaction = connection.BeginTransaction();
+
+                    if (ignoreConstraints && !requiresAutocommit)
+                        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
+
                     using IDbCommand command = connection.CreateCommand();
                     command.Transaction = transaction;
                     command.CommandText = cached.UpdateSql;
