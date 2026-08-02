@@ -1014,7 +1014,7 @@ internal static class ParameterBinder
         }
     }
 
-    internal static object? ApplyTypeHandlerIfNeeded(object? value, PropertyInfo? propertyInfo)
+    internal static object? ApplyTypeHandlerIfNeeded(object? value, PropertyInfo? propertyInfo, EnumStorage? enumStorageOverride = null)
     {
         if (value is null)
             return value;
@@ -1040,7 +1040,7 @@ internal static class ParameterBinder
         // Handle enums based on storage strategy
         if (valueType.IsEnum)
         {
-            EnumStorage storage = GetEnumStorage(propertyInfo);
+            EnumStorage storage = GetEnumStorage(propertyInfo, enumStorageOverride);
             if (storage == EnumStorage.String)
             {
                 return value.ToString();
@@ -1056,8 +1056,18 @@ internal static class ParameterBinder
         return value;
     }
 
-    private static EnumStorage GetEnumStorage(PropertyInfo? property)
+    // AUD-R35: the override is checked before the reflection lookup because the source-generated
+    // path has no PropertyInfo to reflect over - ColumnMetadata.Property is null there - so
+    // without it every generated-path caller fell through to JauntyConfig.DefaultEnumStorage and
+    // silently ignored a property-level [EnumStorage]. The two are never both populated: the
+    // reflection path supplies the property, the generated path supplies the override.
+    private static EnumStorage GetEnumStorage(PropertyInfo? property, EnumStorage? enumStorageOverride)
     {
+        if (enumStorageOverride.HasValue)
+        {
+            return enumStorageOverride.Value;
+        }
+
         if (property is not null)
         {
             EnumStorageAttribute? enumAttr = EnumStorageAttributeCache.GetOrAdd(property, static p => p.GetCustomAttribute<EnumStorageAttribute>());

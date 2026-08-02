@@ -1,7 +1,9 @@
 using System.Data;
+using System.Linq;
 
 using Jaunty.Attributes;
 using Jaunty.Configuration;
+using Jaunty.Interfaces;
 using Jaunty.SourceGenerator.Tests.Entities;
 
 namespace Jaunty.SourceGenerator.Tests;
@@ -62,6 +64,33 @@ public sealed class GeneratedEnumWriteTests
         GenTicket.BindInsert(command, new GenTicket { StateNullable = null });
 
         Assert.Contains(command.Bound, p => p.ParameterName == "@state_nullable" && Equals(p.Value, DBNull.Value));
+    }
+
+    [Theory]
+    [InlineData("state_string", EnumStorage.String)]
+    [InlineData("state_numeric", EnumStorage.Numeric)]
+    [InlineData("state_nullable", EnumStorage.String)]
+    public void EntityColumns_ExplicitStorage_CarriesTheOverride(string columnName, EnumStorage expected)
+    {
+        EntityColumnInfo column = GenTicket.EntityColumns.Single(c => c.ColumnName == columnName);
+
+        Assert.Equal(expected, column.EnumStorageOverride);
+    }
+
+    [Fact]
+    public void EntityColumns_NoAttribute_CarriesNoOverride()
+    {
+        EntityColumnInfo column = GenTicket.EntityColumns.Single(c => c.ColumnName == "state_default");
+
+        Assert.Null(column.EnumStorageOverride);
+    }
+
+    [Fact]
+    public void EntityColumns_NonEnumColumn_CarriesNoOverride()
+    {
+        EntityColumnInfo column = GenTicket.EntityColumns.Single(c => c.ColumnName == "ticket_id");
+
+        Assert.Null(column.EnumStorageOverride);
     }
 
     [Fact]

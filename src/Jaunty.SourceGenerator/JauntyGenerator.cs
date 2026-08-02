@@ -1326,9 +1326,20 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // Explicit interface implementation for TableName/SchemaName since the public static
         // properties of the same name already exist above (a class cannot have both a static
         // and an instance member sharing one name).
+        // AUD-R35: the [EnumStorage] override is emitted here as well as into AddEnumParam. The
+        // binders (AUD-R30) baked it in, but EntityColumnInfo did not carry it, so every core
+        // caller that reaches for ColumnMetadata.Property - Upsert, Get, the bulk value setters -
+        // found null on the generated path and silently fell back to DefaultEnumStorage. Insert
+        // wrote "Active" and Upsert wrote 1 into the same column.
         string EntityColumnInfoCtor(PropertyMetadata p)
             => $"new EntityColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, {p.IsComputed.ToString().ToLower()}, " +
-               $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!)";
+               $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!, " +
+               p.EnumStorageOverride switch
+               {
+                   1 => "global::Jaunty.Attributes.EnumStorage.String)",
+                   0 => "global::Jaunty.Attributes.EnumStorage.Numeric)",
+                   _ => "(global::Jaunty.Attributes.EnumStorage?)null)",
+               };
 
         sb.AppendLine();
         sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }");
