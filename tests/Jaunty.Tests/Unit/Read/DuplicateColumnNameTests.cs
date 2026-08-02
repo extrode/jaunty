@@ -168,6 +168,53 @@ public class DuplicateColumnNameTests
         Assert.Equal(1L, row["Id_2"]);
     }
 
+    /// <summary>
+    /// AUD-R34-024. The third untyped-row path, and the one the AUD-R26 fix never reached: an
+    /// ExpandoObject is an indexer over a dictionary too, so Query&lt;dynamic&gt; over the same
+    /// join kept only the last Id and dropped the first.
+    /// </summary>
+    [Fact]
+    public void TheExpandoMapper_KeepsBothValuesToo()
+    {
+        using SqliteConnection connection = Seed();
+
+        IDictionary<string, object?> row =
+            Assert.Single(connection.Query<dynamic>(JoinSql).Cast<IDictionary<string, object?>>());
+
+        Assert.Equal(2, row.Count);
+        Assert.Equal(10L, row["Id"]);
+        Assert.Equal(1L, row["Id_2"]);
+    }
+
+    /// <summary>
+    /// ExpandoObject's own dictionary is case-<em>sensitive</em>, so "Id"/"id" did not collide
+    /// there - but disambiguating under a different comparer than the sibling paths use is exactly
+    /// what AUD-R25 warned against, so this path adopts the same OrdinalIgnoreCase rule and the
+    /// second column is renamed rather than left shadowing-by-case.
+    /// </summary>
+    [Fact]
+    public void TheExpandoMapper_DisambiguatesCaseDifferingNamesToo()
+    {
+        using SqliteConnection connection = Seed();
+
+        IDictionary<string, object?> row =
+            Assert.Single(connection.Query<dynamic>(CaseDifferingSql).Cast<IDictionary<string, object?>>());
+
+        Assert.Equal(["Id", "id_2"], row.Keys);
+    }
+
+    [Fact]
+    public void TheExpandoMapper_LeavesAResultSetWithoutDuplicatesAlone()
+    {
+        using SqliteConnection connection = Seed();
+
+        IDictionary<string, object?> row = Assert.Single(connection
+            .Query<dynamic>("SELECT o.Id, c.Name FROM Orders o JOIN Customers c ON c.Id = o.CustomerId")
+            .Cast<IDictionary<string, object?>>());
+
+        Assert.Equal(["Id", "Name"], row.Keys);
+    }
+
     // ------------------------------------------------------------------
     // What must not change
     // ------------------------------------------------------------------
