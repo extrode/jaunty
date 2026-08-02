@@ -214,7 +214,7 @@ public static partial class Jaunty
 
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = "@" + col.ColumnName;
-            param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(GetColumnValue(col, entity), col.Property) ?? DBNull.Value;
+            param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(GetColumnValue(col, entity), col.Property, col.EnumStorageOverride) ?? DBNull.Value;
             command.Parameters.Add(param);
             addedParams.Add(col.ColumnName);
         }
@@ -228,7 +228,7 @@ public static partial class Jaunty
 
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = "@" + col.ColumnName;
-            param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(GetColumnValue(col, entity), col.Property) ?? DBNull.Value;
+            param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(GetColumnValue(col, entity), col.Property, col.EnumStorageOverride) ?? DBNull.Value;
             command.Parameters.Add(param);
         }
     }
