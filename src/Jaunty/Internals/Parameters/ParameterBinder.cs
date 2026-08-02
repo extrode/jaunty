@@ -419,6 +419,16 @@ internal static class ParameterBinder
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var replacements = new Dictionary<string, string>(CommonConstants.OrdinalIgnoreCase);
 
+        // AUD-R34-013: minted placeholder names used to be `expansion.Name + i` with no check that
+        // the name was free, so `new { Ids = new[] { 1, 2 }, Ids0 = 5 }` against
+        // `... a IN @Ids AND b = @Ids0` rewrote to `IN (@Ids0, @Ids1) AND b = @Ids0` and the genuine
+        // @Ids0 bound the collection's first element - BindDynamic consults the expanded names
+        // before the property lookup. Reserve every name the SQL or the parameters object already
+        // uses, and lengthen the mint prefix until it clears them all.
+        var reserved = new HashSet<string>(seen, CommonConstants.OrdinalIgnoreCase);
+        foreach (string propertyName in propertyLookup.Keys)
+            reserved.Add(propertyName);
+
         foreach (CollectionExpansion expansion in expansions)
         {
             expandedOriginalNames.Add(expansion.Name);
@@ -437,13 +447,16 @@ internal static class ParameterBinder
             }
             else
             {
-                var sb = new StringBuilder(expansion.Count * (expansion.Name.Length + 5));
+                string mintPrefix = FreeMintPrefix(expansion.Name, expansion.Count, reserved);
+
+                var sb = new StringBuilder(expansion.Count * (mintPrefix.Length + 5));
                 sb.Append('(');
                 int i = 0;
                 foreach (var item in expansion.Items)
                 {
                     if (i > 0) sb.Append(", ");
-                    var expandedName = expansion.Name + i;
+                    var expandedName = mintPrefix + i;
+                    reserved.Add(expandedName);
                     sb.Append(paramPrefix).Append(expandedName);
                     expandedParams[expandedName] = new ExpandedParameterValue(item, expansion.Property);
                     i++;
@@ -461,6 +474,35 @@ internal static class ParameterBinder
         var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements);
 
         return (result, expandedParams, expandedOriginalNames);
+    }
+
+    /// <summary>
+    /// The shortest prefix starting from <paramref name="name"/> for which none of
+    /// <c>prefix + 0 .. prefix + (count - 1)</c> is already taken (AUD-R34-013). Underscores are
+    /// appended one at a time; <paramref name="reserved"/> is finite, so this terminates, and the
+    /// result is a legal parameter name because an underscore is a parameter character.
+    /// </summary>
+    private static string FreeMintPrefix(string name, int count, HashSet<string> reserved)
+    {
+        string prefix = name;
+
+        while (true)
+        {
+            bool clear = true;
+            for (int i = 0; i < count; i++)
+            {
+                if (reserved.Contains(prefix + i))
+                {
+                    clear = false;
+                    break;
+                }
+            }
+
+            if (clear)
+                return prefix;
+
+            prefix += "_";
+        }
     }
 
     // Literal/comment-aware prefix detection. Walks the SQL using the same tokenization rules as
