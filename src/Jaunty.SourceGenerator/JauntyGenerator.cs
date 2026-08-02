@@ -1500,7 +1500,16 @@ public partial class JauntyGenerator : IIncrementalGenerator
             "float" => new("reader.GetFloat", "float", false),
             "short" => new("reader.GetInt16", "short", false),
             "byte" => new("reader.GetByte", "byte", false),
-            "global::System.Guid" => new("reader.GetGuid", "Guid", false),
+            // AUD-R34-034: GetValue, not GetGuid. Guid does not implement IConvertible, and a
+            // provider that stores a GUID column as TEXT or BLOB - SQLite above all - throws
+            // InvalidCastException from GetGuid on the IDataReader path and from the base
+            // GetFieldValue<Guid> (an unboxing cast) on the other. The reflection twin has accepted
+            // a string GUID all along (DbValueConversion.Convert), and the emitted ReadFallback<T>
+            // already carried the string and byte[] branches for it - they were simply unreachable,
+            // because nothing routed a Guid property through the helper. Same trade AUD-R25 made for
+            // enums and DateTimeOffset: one boxed read on Guid columns, in exchange for the type
+            // working on every provider instead of the ones that specialise the typed getter.
+            "global::System.Guid" => new("reader.GetValue", "Guid", false),
             "global::System.DateTime" => new("reader.GetDateTime", "DateTime", false),
             "global::System.TimeSpan" => new("reader.GetValue", "TimeSpan", false),
             "global::System.DateTimeOffset" => new("reader.GetValue", "DateTimeOffset", false),
@@ -1514,7 +1523,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             "float?" => new("reader.GetFloat", "float", true),
             "short?" => new("reader.GetInt16", "short", true),
             "byte?" => new("reader.GetByte", "byte", true),
-            "global::System.Guid?" => new("reader.GetGuid", "Guid", true),
+            "global::System.Guid?" => new("reader.GetValue", "Guid", true),
             "global::System.DateTime?" => new("reader.GetDateTime", "DateTime", true),
             "global::System.TimeSpan?" => new("reader.GetValue", "TimeSpan", true),
             "global::System.DateTimeOffset?" => new("reader.GetValue", "DateTimeOffset", true),
