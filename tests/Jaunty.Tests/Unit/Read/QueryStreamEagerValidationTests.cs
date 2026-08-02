@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.SQLite;
 
 using Jaunty.Core;
@@ -7,7 +7,7 @@ using Jaunty.Tests.Entities;
 namespace Jaunty.Tests.Unit.Read;
 
 /// <summary>
-/// Regression tests proving that <c>QueryStream&lt;T1, T2&gt;</c> (the obsolete overload),
+/// Regression tests proving that <c>QueryStream&lt;T1, T2&gt;</c>,
 /// <c>QueryStream&lt;T1, T2, T3&gt;</c>, and both <c>QueryPartialList</c> overloads validate
 /// <c>connection</c>/<c>sql</c> eagerly — i.e. calling the method itself throws immediately, with
 /// no need to enumerate the returned <see cref="IEnumerable{T}"/> (via <c>.ToList()</c>,
@@ -15,18 +15,18 @@ namespace Jaunty.Tests.Unit.Read;
 /// methods deferred validation to first enumeration (or, for a null connection, threw an unhelpful
 /// <see cref="NullReferenceException"/> instead of <see cref="ArgumentNullException"/>).
 /// </summary>
-#pragma warning disable CS0618 // Suppress obsolete warning — these tests intentionally call the obsolete QueryStream<T1, T2> overload.
 public class QueryStreamEagerValidationTests
 {
     private static SQLiteConnection CreateUnopenedConnection() => new();
 
     // ---------------------------------------------------------------------------
-    // QueryStream<T1, T2>(connection, sql, parameters = null, options = default) (obsolete overload)
+    // QueryStream<T1, T2>(connection, sql, CommandOptions<(T1, T2)> options)
     //
-    // Called as a static method (Jaunty.QueryStream<...>) with `options: default(CommandOptions)`
-    // explicitly specified (non-generic CommandOptions), which is the only way to disambiguate this
-    // obsolete overload from the newer, non-obsolete QueryStream<T1, T2>(connection, sql) overload
-    // that would otherwise win overload resolution for a 2-argument call.
+    // Called as a static method (Jaunty.QueryStream<...>) with a non-generic CommandOptions, which
+    // the AUD-R34-002 implicit conversion binds to the CommandOptions<(T1, T2)> overload. These
+    // cases previously targeted the obsolete (sql, parameters, CommandOptions) overload, deleted
+    // along with the rest of the obsolete multi-entity surface; the eager-validation contract
+    // under test is the same on the supported overload.
     // ---------------------------------------------------------------------------
 
     [Fact]
@@ -35,7 +35,7 @@ public class QueryStreamEagerValidationTests
         IDbConnection? nullConnection = null;
 
         var ex = Assert.Throws<ArgumentNullException>(() =>
-            Jaunty.QueryStream<Category, OrderSummary>(nullConnection!, "SELECT 1", parameters: null, options: default(CommandOptions)));
+            Jaunty.QueryStream<Category, OrderSummary>(nullConnection!, "SELECT 1", options: default(CommandOptions)));
 
         Assert.Equal("connection", ex.ParamName);
     }
@@ -46,7 +46,7 @@ public class QueryStreamEagerValidationTests
         using var connection = CreateUnopenedConnection();
 
         var ex = Assert.Throws<ArgumentNullException>(() =>
-            Jaunty.QueryStream<Category, OrderSummary>(connection, null!, parameters: null, options: default(CommandOptions)));
+            Jaunty.QueryStream<Category, OrderSummary>(connection, null!, options: default(CommandOptions)));
 
         Assert.Equal("sql", ex.ParamName);
     }
@@ -62,7 +62,7 @@ public class QueryStreamEagerValidationTests
         // throws the narrower ArgumentException for whitespace/empty). ThrowsAny accepts either
         // concrete type so this test holds across both target frameworks.
         var ex = Assert.ThrowsAny<ArgumentException>(() =>
-            Jaunty.QueryStream<Category, OrderSummary>(connection, "", parameters: null, options: default(CommandOptions)));
+            Jaunty.QueryStream<Category, OrderSummary>(connection, "", options: default(CommandOptions)));
 
         Assert.Equal("sql", ex.ParamName);
     }
@@ -78,7 +78,7 @@ public class QueryStreamEagerValidationTests
         // throws the narrower ArgumentException for whitespace/empty). ThrowsAny accepts either
         // concrete type so this test holds across both target frameworks.
         var ex = Assert.ThrowsAny<ArgumentException>(() =>
-            Jaunty.QueryStream<Category, OrderSummary>(connection, "   \t\n  ", parameters: null, options: default(CommandOptions)));
+            Jaunty.QueryStream<Category, OrderSummary>(connection, "   \t\n  ", options: default(CommandOptions)));
 
         Assert.Equal("sql", ex.ParamName);
     }
@@ -257,4 +257,3 @@ public class QueryStreamEagerValidationTests
         Assert.Equal("sql", ex.ParamName);
     }
 }
-#pragma warning restore CS0618
