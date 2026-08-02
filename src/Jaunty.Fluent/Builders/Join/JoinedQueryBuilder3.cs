@@ -313,7 +313,15 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
 
     public List<T1> Select(CommandOptions options) => _parent.Select(options);
 
-    public List<(T1, T2, T3)> SelectAll()
+    public List<(T1, T2, T3)> SelectAll() => SelectAll(default);
+
+    /// <summary>
+    /// AUD-R34-016. <c>SelectAll</c> builds and executes its own command, and had no
+    /// <c>CommandOptions</c> overload to take a transaction or timeout from - so on a provider
+    /// that validates the pairing (SqlClient, Microsoft.Data.Sqlite) the whole tuple-returning
+    /// surface of a 3-way join threw inside a caller's transaction rather than joining it.
+    /// </summary>
+    public List<(T1, T2, T3)> SelectAll(CommandOptions options)
     {
         EntityMetadata t1Metadata = FluentMetadataCache.GetMetadata<T1>();
         EntityMetadata t2Metadata = FluentMetadataCache.GetMetadata<T2>();
@@ -336,6 +344,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
             using IDbCommand command = _parent.Connection.CreateCommand();
             command.CommandText = sql;
             _parent.BindParameters(command);
+            FluentCommandOptions.Apply(command, _parent.Connection, options);
 
             CommandObservation.Log(sql, _parent.DescribeParameters());
 
@@ -443,7 +452,11 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         return await _parent.Connection.QueryPartialAsync<T1>(sql, _parent.GetParameters().ToParameterObject()!, ToTypedOptions<T1>(options), cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<List<(T1, T2, T3)>> SelectAllAsync(CancellationToken cancellationToken = default)
+    public Task<List<(T1, T2, T3)>> SelectAllAsync(CancellationToken cancellationToken = default)
+        => SelectAllAsync(default, cancellationToken);
+
+    /// <summary>AUD-R34-016: see the synchronous <see cref="SelectAll(CommandOptions)"/>.</summary>
+    public async Task<List<(T1, T2, T3)>> SelectAllAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
         if (_parent.Connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async operations require a DbConnection.");
@@ -469,6 +482,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
             using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = sql;
             _parent.BindParameters(command);
+            FluentCommandOptions.Apply(command, _parent.Connection, options);
 
             CommandObservation.Log(sql, _parent.DescribeParameters());
 
