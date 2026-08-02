@@ -77,7 +77,8 @@ internal static class ParameterBinder
         }
 
         // Slow path: parse and bind, then cache if no collection expansion happened
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql);
+        bool backslashEscapes = UsesBackslashEscapes(command.Connection);
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql, backslashEscapes);
         ParameterMetadata[] meta = ParameterCache.Get(type);
 
         // Build lookup from property names
@@ -195,7 +196,7 @@ internal static class ParameterBinder
         // the parameters type merely has a collection-typed property whose value happened to be
         // null. That SQL was already parsed through SqlParameterParserCache two lines earlier and
         // the result discarded, so every such call re-tokenized the whole statement on the hot path.
-        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql);
+        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql, UsesBackslashEscapes(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -358,6 +359,16 @@ internal static class ParameterBinder
         public readonly PropertyInfo? Property = property;
     }
 
+    /// <summary>
+    /// Whether the connection's engine treats a backslash as an escape inside a string literal
+    /// (AUD-R34-014). MySQL and MariaDB do by default; every other engine does not, and applying
+    /// the rule there would swallow the terminator of a literal ending in a backslash. Resolved by
+    /// concrete dialect type rather than an <c>ISqlDialect</c> member so no public interface gains
+    /// a member every third-party implementation would have to add.
+    /// </summary>
+    private static bool UsesBackslashEscapes(IDbConnection? connection)
+        => connection is not null && SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection)) is MySqlDialect;
+
     private static (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, HashSet<string>? expandedOriginalNames)
         ExpandCollectionParameters(
             string sql,
@@ -414,7 +425,8 @@ internal static class ParameterBinder
 
         // Second pass: build replacements and expanded params
         // Detect parameter prefix from the SQL (@ or $)
-        var paramPrefix = DetectParameterPrefix(sql);
+        bool backslashEscapes = knownDialect is not null && SqlDialectFactory.Unwrap(knownDialect) is MySqlDialect;
+        var paramPrefix = DetectParameterPrefix(sql, backslashEscapes);
         var expandedParams = new Dictionary<string, ExpandedParameterValue>(CommonConstants.OrdinalIgnoreCase);
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var replacements = new Dictionary<string, string>(CommonConstants.OrdinalIgnoreCase);
@@ -471,7 +483,7 @@ internal static class ParameterBinder
         // Rewrite the SQL in a single literal/comment-aware pass so that @Name-looking text inside
         // string literals, quoted identifiers, or comments is never mistaken for a real placeholder
         // (unlike a naive textual find/replace, which would corrupt such SQL).
-        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements);
+        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements, backslashEscapes);
 
         return (result, expandedParams, expandedOriginalNames);
     }
@@ -512,7 +524,7 @@ internal static class ParameterBinder
     // Internal rather than private so AUD-R26's sigil-position rule can be tested at this site
     // directly; the precedent is AUD-R9-011, which promoted PostgreSqlSchemaReader's SQL consts for
     // the same reason. ParameterBinder is itself internal, so this widens nothing publicly.
-    internal static string DetectParameterPrefix(string sql)
+    internal static string DetectParameterPrefix(string sql, bool backslashEscapes = false)
     {
         int len = sql.Length;
         int i = 0;
@@ -543,9 +555,13 @@ internal static class ParameterBinder
             if (c is '\'' or '"' or '[' or '`')
             {
                 char terminator = c == '[' ? ']' : c;
+                // AUD-R34-014: string literals only, and MySQL/MariaDB only.
+                bool escapes = backslashEscapes && c is '\'' or '"';
                 i++;
                 while (i < len)
                 {
+                    if (escapes && sql[i] == '\\' && i + 1 < len) { i += 2; continue; }
+
                     if (sql[i] == terminator)
                     {
                         if (i + 1 < len && sql[i + 1] == terminator) { i += 2; continue; }
@@ -614,7 +630,7 @@ internal static class ParameterBinder
     // Literal/comment-aware placeholder rewrite. Walks the SQL using the same tokenization rules as
     // SqlParameterParser (skipping string literals, quoted identifiers, comments, and @@ system
     // variables) and replaces only genuine parameter placeholders whose name is in 'replacements'.
-    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements)
+    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements, bool backslashEscapes)
     {
         var sb = new StringBuilder(sql.Length + 16);
         int i = 0;
@@ -650,10 +666,18 @@ internal static class ParameterBinder
             if (c is '\'' or '"' or '[' or '`')
             {
                 char terminator = c == '[' ? ']' : c;
+                // AUD-R34-014: string literals only, and MySQL/MariaDB only.
+                bool escapes = backslashEscapes && c is '\'' or '"';
                 int start = i;
                 i++;
                 while (i < len)
                 {
+                    if (escapes && sql[i] == '\\' && i + 1 < len)
+                    {
+                        i += 2;
+                        continue;
+                    }
+
                     if (sql[i] == terminator)
                     {
                         if (i + 1 < len && sql[i + 1] == terminator)
@@ -812,7 +836,7 @@ internal static class ParameterBinder
 
     private static void BindScalar(IDbCommand command, object value)
     {
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -881,7 +905,7 @@ internal static class ParameterBinder
     /// </remarks>
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
     {
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         Dictionary<string, object?>? caseInsensitive = null;
