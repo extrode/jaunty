@@ -28,6 +28,18 @@ internal static class GeneratorHarness
     /// </summary>
     internal static (ImmutableArray<string> Sources, ImmutableArray<Diagnostic> GeneratorDiagnostics, ImmutableArray<Diagnostic> CompileErrors) RunAndCompile(string source)
     {
+        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, ImmutableArray<Diagnostic> compileErrors, _) = Run(source);
+        return (sources, generatorDiagnostics, compileErrors);
+    }
+
+    /// <summary>
+    /// As <see cref="RunAndCompile"/>, plus the resulting <see cref="Compilation"/> - which is the
+    /// only way to ask what the generated source actually <em>declares</em>. Text assertions cannot:
+    /// a string literal containing <c>class Injected</c> and an escaped-out-of declaration of one
+    /// read identically as substrings, and only the second creates a type.
+    /// </summary>
+    internal static (ImmutableArray<string> Sources, ImmutableArray<Diagnostic> GeneratorDiagnostics, ImmutableArray<Diagnostic> CompileErrors, Compilation Output) Run(string source)
+    {
         var compilation = CSharpCompilation.Create(
             "GeneratorHarnessProbe",
             [CSharpSyntaxTree.ParseText(source, ParseOptions)],
@@ -49,7 +61,7 @@ internal static class GeneratorHarness
         ImmutableArray<Diagnostic> compileErrors =
             [.. output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error)];
 
-        return (sources, generatorDiagnostics, compileErrors);
+        return (sources, generatorDiagnostics, compileErrors, output);
     }
 
     private static IEnumerable<MetadataReference> ReferenceAssemblies()
