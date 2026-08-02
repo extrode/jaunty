@@ -453,11 +453,33 @@ public static class CsvImportExtensions
                 using var writer = (IDisposable)beginTextImport.Invoke(connection, new object[] { copyCommand })!;
                 var textWriter = (TextWriter)writer;
 
-                using var fileReader = new StreamReader(filePath, options.Encoding);
-                string? line;
-                while ((line = fileReader.ReadLine()) != null)
+                try
                 {
-                    textWriter.WriteLine(line);
+                    // AUD-R34-010: this was a ReadLine/WriteLine loop, which re-terminates every
+                    // line with the writer's NewLine - Environment.NewLine by default. A newline
+                    // inside a quoted field (RFC 4180, and handled deliberately by ReadCsvRecord
+                    // below) was therefore rewritten to the host's newline on the way to the
+                    // server: an embedded LF arrived as CRLF on Windows, an embedded CRLF arrived
+                    // as LF on Linux. Same class of defect as AUD-R26's ROWTERMINATOR finding.
+                    // Copying characters through verbatim leaves the file's own bytes intact and
+                    // lets COPY apply its own rules.
+                    using var fileReader = new StreamReader(filePath, options.Encoding);
+                    char[] buffer = new char[CopyBufferChars];
+                    int read;
+                    while ((read = fileReader.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        textWriter.Write(buffer, 0, read);
+                    }
+                }
+                catch
+                {
+                    // AUD-R34-011: Npgsql's copy writer *completes* the COPY when disposed and
+                    // aborts it only on an explicit Cancel(). Without this, a failure part-way
+                    // through the file - a decoding error under a strict Encoding, an I/O error -
+                    // unwound through `using`, committed the rows written so far, and left the
+                    // caller with an exception and a silently partial import.
+                    CancelCopy(writer);
+                    throw;
                 }
 
                 return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
@@ -514,11 +536,25 @@ public static class CsvImportExtensions
                 using var writer = (IDisposable)beginTextImport.Invoke(connection, new object[] { copyCommand })!;
                 var textWriter = (TextWriter)writer;
 
-                using var fileReader = new StreamReader(filePath, options.Encoding);
-                string? line;
-                while ((line = await fileReader.ReadLineAsync().ConfigureAwait(false)) != null)
+                try
                 {
-                    await textWriter.WriteLineAsync(line).ConfigureAwait(false);
+                    // AUD-R34-010: see the sync sibling - a ReadLine/WriteLine loop rewrote every
+                    // newline, including the ones inside quoted fields, to the host's newline.
+                    using var fileReader = new StreamReader(filePath, options.Encoding);
+                    char[] buffer = new char[CopyBufferChars];
+                    int read;
+                    while ((read = await fileReader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
+                    {
+                        await textWriter.WriteAsync(buffer, 0, read).ConfigureAwait(false);
+                    }
+                }
+                catch
+                {
+                    // AUD-R34-011: see the sync sibling - disposing the copy writer completes the
+                    // COPY, so a mid-file failure has to cancel it explicitly or the rows written
+                    // so far are committed behind the caller's back.
+                    await CancelCopyAsync(writer).ConfigureAwait(false);
+                    throw;
                 }
 
                 return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
@@ -548,6 +584,64 @@ public static class CsvImportExtensions
                 connection.Close();
 #endif
             }
+        }
+    }
+
+    /// <summary>
+    /// Characters copied per read on the PostgreSQL STDIN path. Sized to match
+    /// <see cref="StreamReader"/>'s own default buffer so a read rarely spans two of them.
+    /// </summary>
+    private const int CopyBufferChars = 4096;
+
+    /// <summary>
+    /// Aborts an in-progress <c>COPY ... FROM STDIN</c> (AUD-R34-011). Npgsql's copy writer
+    /// completes the operation on <c>Dispose</c>, so a failure part-way through the file has to
+    /// call <c>Cancel()</c> or the rows already written are committed. Reflected for the same
+    /// reason <c>BeginTextImport</c> is - Jaunty does not reference Npgsql.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Npgsql copy-writer Cancel() probe on the runtime writer type; a missing method means there is nothing to cancel and the exception propagates unchanged.")]
+#endif
+    private static void CancelCopy(IDisposable writer)
+    {
+        try
+        {
+            // AOT-SAFE: Npgsql feature probe on the runtime writer type; null means no cancel to make
+            MethodInfo? cancel = writer.GetType().GetMethod("Cancel", Type.EmptyTypes);
+            cancel?.Invoke(writer, null);
+        }
+        catch
+        {
+            // The copy is already failing and the caller's exception is the one worth surfacing;
+            // a provider that refuses the cancel must not replace it with its own.
+        }
+    }
+
+    /// <summary>
+    /// Async twin of <see cref="CancelCopy"/>, preferring Npgsql's <c>CancelAsync()</c>.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Npgsql copy-writer CancelAsync()/Cancel() probe on the runtime writer type; a missing method means there is nothing to cancel and the exception propagates unchanged.")]
+#endif
+    private static async ValueTask CancelCopyAsync(IDisposable writer)
+    {
+        try
+        {
+            // AOT-SAFE: Npgsql feature probe on the runtime writer type; null falls back to Cancel()
+            MethodInfo? cancelAsync = writer.GetType().GetMethod("CancelAsync", Type.EmptyTypes);
+            if (cancelAsync is not null && cancelAsync.Invoke(writer, null) is Task pending)
+            {
+                await pending.ConfigureAwait(false);
+                return;
+            }
+
+            // AOT-SAFE: as above, synchronous fallback
+            MethodInfo? cancel = writer.GetType().GetMethod("Cancel", Type.EmptyTypes);
+            cancel?.Invoke(writer, null);
+        }
+        catch
+        {
+            // See CancelCopy.
         }
     }
 
