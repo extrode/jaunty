@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 
 using Jaunty.Scaffolding.Abstractions;
 using Jaunty.Scaffolding.Providers.SqlServer;
@@ -100,7 +100,8 @@ public class SqlServerSchemaReaderTests
                 area GEOGRAPHY NULL,
                 shape GEOMETRY NULL,
                 node HIERARCHYID NULL,
-                code scaffold_test_code NULL
+                code scaffold_test_code NULL,
+                anything SQL_VARIANT NULL
             );
             """;
         cmd.ExecuteNonQuery();
@@ -120,6 +121,27 @@ public class SqlServerSchemaReaderTests
         Assert.Equal("geography", table.Columns.Single(c => c.ColumnName == "area").DataType);
         Assert.Equal("geometry", table.Columns.Single(c => c.ColumnName == "shape").DataType);
         Assert.Equal("hierarchyid", table.Columns.Single(c => c.ColumnName == "node").DataType);
+    }
+
+    /// <summary>
+    /// AUD-R34-038 (round-33 carry-forward, coverage). SqlServerTypeMapper has a "sql_variant"
+    /// arm and a unit test for it, but nothing asserted that the schema reader ever reports that
+    /// name - and the mapper's fallback for an unrecognised name is the same "object" the
+    /// sql_variant arm returns, so a reader reporting anything else would look identical in the
+    /// generated entity and in every existing test.
+    /// </summary>
+    [Fact]
+    public async Task ReadSchemaAsync_ReportsASqlVariantColumnAsSqlVariant()
+    {
+        using var conn = OpenOrSkip();
+        CreateTypeNameTable(conn);
+
+        var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_typenames"] });
+
+        var table = schema.Tables.Single();
+
+        Assert.Equal("sql_variant", table.Columns.Single(c => c.ColumnName == "anything").DataType);
     }
 
     [Fact]
