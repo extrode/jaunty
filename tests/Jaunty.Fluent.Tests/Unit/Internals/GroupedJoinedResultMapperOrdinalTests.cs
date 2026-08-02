@@ -174,6 +174,43 @@ public class GroupedJoinedResultMapperOrdinalTests
         Assert.Equal(0, row.Id);
     }
 
+    /// <summary>
+    /// AUD-R33-005. The constructor path left the slot <c>null</c> for a NULL column and handed it
+    /// to <c>ConstructorInfo.Invoke</c>, which throws an opaque <see cref="ArgumentException"/>
+    /// naming neither the column nor the parameter. It now names both. <c>Id</c> and <c>Total</c>
+    /// are non-nullable <see cref="int"/> parameters on <c>CtorRow</c>, so ordinal 0 is the case.
+    /// </summary>
+    [Fact]
+    public void MapResult_ConstructorPath_NullIntoNonNullableValueType_ThrowsNamingColumnAndParameter()
+    {
+        var reader = new CountingReader(Aliases, rows: 1) { NullOrdinal = 0 };
+        reader.Read();
+        GroupedJoinedResultMapper.ResultMapperPlan plan =
+            GroupedJoinedResultMapper.ResultMapperPlan.Resolve<CtorRow>(Aliases);
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => GroupedJoinedResultMapper.MapResult<CtorRow>(reader, Aliases, in plan));
+
+        Assert.Contains("Id", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("CtorRow", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Int32", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A NULL into a reference-type parameter still arrives as null, not a default instance.</summary>
+    [Fact]
+    public void MapResult_ConstructorPath_NullIntoReferenceType_IsStillNull()
+    {
+        var reader = new CountingReader(Aliases, rows: 1) { NullOrdinal = 1 };
+        reader.Read();
+        GroupedJoinedResultMapper.ResultMapperPlan plan =
+            GroupedJoinedResultMapper.ResultMapperPlan.Resolve<CtorRow>(Aliases);
+
+        CtorRow row = GroupedJoinedResultMapper.MapResult<CtorRow>(reader, Aliases, in plan);
+
+        Assert.Null(row.Name);
+        Assert.Equal(0, row.Id);
+    }
+
     // ---------------------------------------------------------------------------
     // AUD-R31: constructor parameters are matched to aliases by name, not position
     // ---------------------------------------------------------------------------

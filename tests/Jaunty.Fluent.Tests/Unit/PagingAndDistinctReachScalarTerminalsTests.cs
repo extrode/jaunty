@@ -219,6 +219,50 @@ public class PagingAndDistinctReachScalarTerminalsTests : IDisposable
     }
 
     // ------------------------------------------------------------------
+    // AUD-R33-002: Take/Skip before a GroupBy, the same hole one clause over
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// <c>GroupBy</c> builds a <c>GroupedQueryBuilder</c> that has no paging fields, so the
+    /// <c>Take</c>/<c>Skip</c> used to be dropped and the whole table grouped. Reachable from both
+    /// <c>IFromClause</c> and <c>IWhereClause</c>, since both declare <c>GroupBy</c>.
+    /// </summary>
+    [Fact]
+    public void TakeBeforeAGroupByThrowsRatherThanBeingDiscarded()
+    {
+        var exception = Assert.Throws<NotSupportedException>(
+            () => _connection.From<Item>().Take(1).GroupBy(i => i.CatId));
+
+        Assert.Contains("Take/Skip", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SkipBeforeAGroupByThrows()
+    {
+        Assert.Throws<NotSupportedException>(() => _connection.From<Item>().Skip(2).GroupBy(i => i.CatId));
+    }
+
+    /// <summary>The Where-clause entry point reaches the same guard.</summary>
+    [Fact]
+    public void PagingBeforeAGroupByAfterWhereAlsoThrows()
+    {
+        Assert.Throws<NotSupportedException>(
+            () => _connection.From<Item>().Where(i => i.CatId == 1).Take(1).GroupBy(i => i.CatId));
+        Assert.Throws<NotSupportedException>(
+            () => _connection.From<Item>().Where(i => i.CatId == 1).Skip(1).GroupBy(i => i.CatId));
+    }
+
+    /// <summary>The guard must not fire on an ordinary grouping.</summary>
+    [Fact]
+    public void AGroupByWithoutPagingIsUnaffected()
+    {
+        var groups = _connection.From<Item>().GroupBy(i => i.CatId).Select(g => new { g.Key });
+
+        Assert.NotEmpty(groups);
+    }
+
+    // ------------------------------------------------------------------
     // Capturing double, for the assertions that have to see the SQL. Named exactly
     // SqliteConnection: dialect resolution keys on Type.Name.
     // ------------------------------------------------------------------

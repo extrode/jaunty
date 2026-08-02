@@ -21,10 +21,28 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         WHERE t.is_ms_shipped = 0
         ORDER BY s.name, t.name";
 
+    /// <remarks>
+    /// AUD-R33-008: <c>DataType</c> used to be <c>TYPE_NAME(ty.system_type_id)</c>, even though the
+    /// join is already on <c>c.user_type_id = ty.user_type_id</c> - so the row holding the column's
+    /// actual type was in hand and a second, lossy lookup was done instead. <c>TYPE_NAME</c> takes a
+    /// <i>user</i> type id, so passing it a system type id is only correct for types where the two
+    /// coincide. They do not for the CLR-backed system types: <c>geography</c>, <c>geometry</c> and
+    /// <c>hierarchyid</c> all share <c>system_type_id</c> 240 while having distinct
+    /// <c>user_type_id</c>s, so all three resolved through the same lookup and none of them could
+    /// come back correct.
+    /// <para>
+    /// Selecting <c>ty.name</c> outright would have swapped one bug for another: for an alias type
+    /// (<c>CREATE TYPE OrderCode FROM nvarchar(20)</c>) <c>ty.name</c> is <c>OrderCode</c>, which
+    /// <c>SqlServerTypeMapper</c> has never heard of, whereas the old expression correctly resolved
+    /// it to the underlying <c>nvarchar</c>. The <c>CASE</c> keeps that behaviour for alias types -
+    /// the only kind of row where <c>is_user_defined</c> is 1 and a base type is what the mapper
+    /// wants - and reports every system type under its own name.
+    /// </para>
+    /// </remarks>
     private const string ColumnsSql = @"
         SELECT
             c.name AS ColumnName,
-            TYPE_NAME(ty.system_type_id) AS DataType,
+            CASE WHEN ty.is_user_defined = 1 THEN TYPE_NAME(ty.system_type_id) ELSE ty.name END AS DataType,
             c.is_nullable AS IsNullable,
             c.is_identity AS IsIdentity,
             c.is_computed AS IsComputed,
