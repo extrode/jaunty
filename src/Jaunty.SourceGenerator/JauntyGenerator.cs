@@ -499,6 +499,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         (EquatableArray<ContainingTypeInfo> containingTypes, var unsupportedNesting) = BuildContainingTypes(classSymbol);
 
+        // AUD-R34-028: the entity's own declaration, which AUD-R33-006 checked only for enclosing
+        // types. Same rule and same reporting: emitting a partial that cannot compile is strictly
+        // worse than emitting nothing, because the reflection fallback still maps the entity.
+        unsupportedNesting ??= UnsupportedDeclarationReason(classSymbol);
+
         return new EntityModel(
             Namespace: classSymbol.ContainingNamespace.IsGlobalNamespace
                 ? null
@@ -512,6 +517,57 @@ public partial class JauntyGenerator : IIncrementalGenerator
             DiagnosticLocation: LocationInfo.From(classSymbol.Locations.FirstOrDefault()),
             ContainingTypes: containingTypes,
             UnsupportedNestingReason: unsupportedNesting);
+    }
+
+    /// <summary>
+    /// A reason the entity's own declaration cannot carry the generated partial, or
+    /// <see langword="null"/> when it can.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-028. <c>GenerateMapper</c> assumes a concrete, instantiable, non-generic,
+    /// <c>partial</c>, non-file-local class, and every violation emitted a <c>.g.cs</c> that failed
+    /// the consumer's build with nothing explaining it: <c>abstract</c> gives CS0144 on the emitted
+    /// <c>new Order()</c> (the reflection twin throws a clear <c>InvalidOperationException</c>
+    /// instead), a parameterized-only constructor gives CS1729, <c>static</c> cannot implement
+    /// <c>IMapped&lt;T&gt;</c>, a generic <c>Repo&lt;T&gt;</c> generates an arity-0
+    /// <c>partial class Repo</c> that is a different type so every member access is CS1061, a
+    /// non-<c>partial</c> class gives CS0260, and a <c>file</c>-local one gets a distinct
+    /// non-file-local partial in another file.
+    /// </remarks>
+    private static string? UnsupportedDeclarationReason(INamedTypeSymbol classSymbol)
+    {
+        if (classSymbol.IsStatic)
+            return "it is declared 'static' and a static class cannot implement the mapper interface";
+
+        if (classSymbol.IsAbstract)
+            return "it is abstract and the generated mapper has to construct it";
+
+        if (classSymbol.IsGenericType)
+            return "it is generic";
+
+        if (classSymbol.IsFileLocal)
+            return "it is declared 'file'-local, so the generated partial in another file would be a different type";
+
+        if (!IsDeclaredPartial(classSymbol))
+            return "it is not declared 'partial'";
+
+        var hasParameterlessConstructor = false;
+
+        foreach (IMethodSymbol constructor in classSymbol.InstanceConstructors)
+        {
+            if (constructor.Parameters.Length == 0
+                && constructor.DeclaredAccessibility != Accessibility.Private
+                && constructor.DeclaredAccessibility != Accessibility.Protected)
+            {
+                hasParameterlessConstructor = true;
+                break;
+            }
+        }
+
+        if (!hasParameterlessConstructor)
+            return "it has no accessible parameterless constructor and the generated mapper has to construct it";
+
+        return null;
     }
 
     /// <summary>
