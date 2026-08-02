@@ -93,8 +93,15 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         return CreateJoinedQuery4(root.RegisterExpressionParameters(condition, parameters));
     }
 
-    public IJoinedQuery4<T1, T2, T3, T4> On(string leftColumn, string rightColumn) =>
-        CreateJoinedQuery4($"{leftColumn} = {rightColumn}");
+    /// <inheritdoc cref="JoinClauseBuilder{TFrom, TJoin}.On(string, string)"/>
+    public IJoinedQuery4<T1, T2, T3, T4> On(string leftColumn, string rightColumn)
+    {
+        // AUD-R34-022.
+        JoinColumnReference.Require(leftColumn, nameof(leftColumn));
+        JoinColumnReference.Require(rightColumn, nameof(rightColumn));
+
+        return CreateJoinedQuery4($"{leftColumn} = {rightColumn}");
+    }
 
     public IJoinedQuery4<T1, T2, T3, T4> On(string condition) => CreateJoinedQuery4(condition);
 
