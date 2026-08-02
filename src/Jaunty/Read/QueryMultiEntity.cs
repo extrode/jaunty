@@ -291,7 +291,7 @@ public static partial class Jaunty
             // nowhere else - every non-obsolete multi-entity path in QueryCore.cs already reads it.
             // The per-call ExpectedRowCount hint the non-obsolete paths also honour is not available:
             // these take the non-generic CommandOptions, which carries no such field, and widening a
-            // public struct for the obsolete entry points is not worth it - there are twelve of them
+            // public struct for the obsolete entry points is not worth it - there are thirteen of them
             // across this file and QueryMultiEntityAsync.cs, not the two this comment first claimed.
             var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity);
 
