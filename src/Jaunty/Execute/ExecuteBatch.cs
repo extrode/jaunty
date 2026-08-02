@@ -148,16 +148,31 @@ public static partial class Jaunty
                 // holding a type the provider inferred from a previous set's value.
                 Type parameterType = parameters.GetType();
 
-                if (parameterType != boundType || !ParameterBinder.TryRebind(command, parameters))
+                // AUD-R34-009: ParameterBinder.Bind rewrites command.CommandText when a set contains
+                // a collection to expand into an IN clause, and CommandText was assigned once above
+                // the loop - so the next set was bound against the previous set's expanded text,
+                // `IN (@Ids0, @Ids1)`, which names parameters no property matches. Expansion is
+                // per-set by construction, so an expanded text can never be reused: restore the
+                // original SQL and rebind from scratch.
+                bool expanded = !string.Equals(command.CommandText, sql, StringComparison.Ordinal);
+
+                if (expanded || parameterType != boundType || !ParameterBinder.TryRebind(command, parameters))
                 {
+                    if (expanded)
+                        command.CommandText = sql;
+
                     command.Parameters.Clear();
                     ParameterBinder.Bind(command, parameters);
                     boundType = parameterType;
+
+                    // The plan prepared for the previous set describes text and a parameter shape
+                    // that no longer exist. `prepared` used to latch true for the whole batch.
+                    prepared = false;
                 }
 
                 // Best-effort optimization, now genuinely mirroring BulkInsertLoop: Prepare() once
-                // the first parameter set has established the command's parameter shape, so providers
-                // that cache a compiled plan for repeated CommandText don't recompile it every row.
+                // the parameter set has established the command's parameter shape, so providers that
+                // cache a compiled plan for repeated CommandText don't recompile it every row.
                 if (!prepared)
                 {
                     try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
@@ -310,16 +325,31 @@ public static partial class Jaunty
                 // holding a type the provider inferred from a previous set's value.
                 Type parameterType = parameters.GetType();
 
-                if (parameterType != boundType || !ParameterBinder.TryRebind(command, parameters))
+                // AUD-R34-009: ParameterBinder.Bind rewrites command.CommandText when a set contains
+                // a collection to expand into an IN clause, and CommandText was assigned once above
+                // the loop - so the next set was bound against the previous set's expanded text,
+                // `IN (@Ids0, @Ids1)`, which names parameters no property matches. Expansion is
+                // per-set by construction, so an expanded text can never be reused: restore the
+                // original SQL and rebind from scratch.
+                bool expanded = !string.Equals(command.CommandText, sql, StringComparison.Ordinal);
+
+                if (expanded || parameterType != boundType || !ParameterBinder.TryRebind(command, parameters))
                 {
+                    if (expanded)
+                        command.CommandText = sql;
+
                     command.Parameters.Clear();
                     ParameterBinder.Bind(command, parameters);
                     boundType = parameterType;
+
+                    // The plan prepared for the previous set describes text and a parameter shape
+                    // that no longer exist. `prepared` used to latch true for the whole batch.
+                    prepared = false;
                 }
 
                 // Best-effort optimization, now genuinely mirroring BulkInsertLoop: Prepare() once
-                // the first parameter set has established the command's parameter shape, so providers
-                // that cache a compiled plan for repeated CommandText don't recompile it every row.
+                // the parameter set has established the command's parameter shape, so providers that
+                // cache a compiled plan for repeated CommandText don't recompile it every row.
                 if (!prepared)
                 {
                     try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
