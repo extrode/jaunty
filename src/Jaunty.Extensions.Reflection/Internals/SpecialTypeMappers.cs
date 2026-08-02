@@ -156,6 +156,12 @@ public static class SpecialTypeMappers
         for (int i = 0; i < fieldCount; i++)
             columnNames[i] = reader.GetName(i);
 
+        // AUD-R34-024: CreateDictionaryMapper below has done this since AUD-R26, which named both
+        // untyped-row sites so they could not drift again - this one was never carried over. An
+        // ExpandoObject is an indexer over a dictionary too, so a Query<dynamic> over a join with
+        // two Id columns silently kept only the last and dropped the first.
+        columnNames = DuplicateColumnNames.Disambiguate(columnNames);
+
         return new Func<IDataReader, object>(r =>
         {
             IDictionary<string, object?> expando = new ExpandoObject();
