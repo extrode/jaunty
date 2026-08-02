@@ -81,8 +81,14 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
         private readonly int _fieldCount;
         private readonly string[] _columnNames;
 
+        // AUD-R34-023: the per-reader memo short-circuits the schema-key Cache entirely, so it
+        // needs the same generation tag - otherwise a configuration change was invisible for as
+        // long as the provider kept handing back the same reader instance.
+        private readonly int _generation;
+
         public ReaderCacheEntry(IDataReader reader, MultiEntityMapper<T1, T2> mapper)
         {
+            _generation = ConfigurationGeneration.Current;
             _fieldCount = reader.FieldCount;
             _columnNames = new string[_fieldCount];
             for (int i = 0; i < _fieldCount; i++)
@@ -94,6 +100,9 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 
         public bool Matches(IDataReader reader)
         {
+            if (_generation != ConfigurationGeneration.Current)
+                return false;
+
             if (reader.FieldCount != _fieldCount)
                 return false;
 
@@ -112,8 +121,14 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 
     private static string BuildSchemaKey(IDataReader reader)
     {
+        // AUD-R34-023: the generation is part of the key. Without it a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset(), both of which call ConfigurationGeneration.Invalidate())
+        // left an already-built mapper in place for the process lifetime - MetadataCache<T> below
+        // rebuilt and JauntyReflectionExtensions.MultiMapperCache above is ConfigurationScoped, but
+        // the delegate that cache rebuilds calls straight back into this one, which returned the
+        // pre-change mapper for a column shape it had seen before.
         string[] parts = new string[reader.FieldCount + 1];
-        parts[0] = reader.FieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + reader.FieldCount.ToString();
 
         for (int i = 0; i < reader.FieldCount; i++)
             parts[i + 1] = reader.GetName(i) ?? string.Empty;
