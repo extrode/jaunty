@@ -22,9 +22,44 @@ namespace Jaunty.Internals.Read;
 /// </remarks>
 internal static class MultiEntityMapperNGuard
 {
+    /// <summary>
+    /// Rejects a value-type entity before it can be mapped (AUD-R34-015).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>T1..T7</c> are constrained only to <c>new()</c>, so a struct entity compiles. It cannot
+    /// work: the N-ary apply closures are <c>(t, r) =&gt; delegates[i](t!, r)</c> over
+    /// <c>Action&lt;object, IDataRecord&gt;</c>, so the target is boxed and the setters run against
+    /// the throwaway box; arity 2 passes the struct by value and loses the writes the same way. The
+    /// caller's entity came back all-default with no exception and no wrong-looking SQL - the worst
+    /// shape a defect can take. <c>MultiEntityMapper.cs</c>'s own AUD-R26 remarks already describe
+    /// the boxed-copy behaviour for value types, so the possibility was known one file over.
+    /// </para>
+    /// <para>
+    /// Supporting struct entities properly means ref-passing apply delegates through both the core
+    /// and <c>Jaunty.Extensions.Reflection</c>, which <c>Action&lt;&gt;</c> cannot express. Until
+    /// that exists this fails loudly rather than returning zeroed entities.
+    /// </para>
+    /// </remarks>
+    public static void RequireReferenceTypes(Type[] types)
+    {
+        for (int i = 0; i < types.Length; i++)
+        {
+            if (!types[i].IsValueType) continue;
+
+            throw new NotSupportedException(
+                $"Multi-entity mapping requires reference-type entities, and '{types[i].Name}' " +
+                $"(entity {i + 1} of {types.Length}: {DescribeTypes(types)}) is a value type. A " +
+                "struct entity is populated through a copy, so every mapped value would be " +
+                "discarded and the entity returned all-default. Declare the entity as a class.");
+        }
+    }
+
     public static Action<object, IDataRecord>[] Resolve(
         Func<Type[], IDataReader, Action<object, IDataRecord>[]> resolver, Type[] types, IDataReader reader)
     {
+        RequireReferenceTypes(types);
+
         Action<object, IDataRecord>[]? delegates = resolver(types, reader);
 
         if (delegates is null)
