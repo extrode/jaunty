@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Data;
 using System.Reflection;
 
@@ -275,5 +275,82 @@ public class PostgreSqlBulkCopyProviderTests
             conn, null, "bulk_pg_cache_async", reader, new BulkCopyOptions(), CancellationToken.None);
 
         Assert.Equal(4, cache.Count);
+    }
+
+    // ------------------------------------------------------------------
+    // AUD-R34-036 (round-33 carry-forward, coverage): the ValidateTransaction guard.
+    //
+    // AUD-R32-008 added it and nothing exercised it. None of these needs a live server - the guard
+    // runs before the connection is touched - which is the point: the whole guard was reachable
+    // only through tests that skip on every machine without PostgreSQL.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void CopyToServer_TransactionFromAnotherConnection_IsRejected()
+    {
+        using var conn = new NpgsqlConnection("Host=localhost;Database=none");
+        using var reader = MakeTable(1).CreateDataReader();
+        var options = new BulkCopyOptions { Transaction = new ForeignTransaction(new NpgsqlConnection()) };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            new PostgreSqlBulkCopyProvider().CopyToServer(conn, null, "irrelevant", reader, options));
+
+        Assert.Contains("must belong to the connection", ex.Message, StringComparison.Ordinal);
+        Assert.Equal("transaction", ex.ParamName);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_TransactionFromAnotherConnection_IsRejected()
+    {
+        using var conn = new NpgsqlConnection("Host=localhost;Database=none");
+        using var reader = MakeTable(1).CreateDataReader();
+        var options = new BulkCopyOptions { Transaction = new ForeignTransaction(new NpgsqlConnection()) };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            new PostgreSqlBulkCopyProvider().CopyToServerAsync(
+                conn, null, "irrelevant", reader, options, CancellationToken.None).AsTask());
+
+        Assert.Contains("must belong to the connection", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A transaction with no connection at all - a disposed or committed one reports null - is the
+    /// same mismatch and must not slip through the ReferenceEquals.
+    /// </summary>
+    [Fact]
+    public void CopyToServer_TransactionWithNoConnection_IsRejected()
+    {
+        using var conn = new NpgsqlConnection("Host=localhost;Database=none");
+        using var reader = MakeTable(1).CreateDataReader();
+        var options = new BulkCopyOptions { Transaction = new ForeignTransaction(null) };
+
+        Assert.Throws<ArgumentException>(() =>
+            new PostgreSqlBulkCopyProvider().CopyToServer(conn, null, "irrelevant", reader, options));
+    }
+
+    /// <summary>
+    /// And the normal case - no transaction, the copy joins whatever is ambient - passes the guard.
+    /// Proven by the failure being about the closed connection rather than the transaction.
+    /// </summary>
+    [Fact]
+    public void CopyToServer_NullTransaction_IsNotRejectedByTheGuard()
+    {
+        using var conn = new NpgsqlConnection("Host=localhost;Database=none");
+        using var reader = MakeTable(1).CreateDataReader();
+
+        Exception? ex = Record.Exception(() =>
+            new PostgreSqlBulkCopyProvider().CopyToServer(conn, null, "irrelevant", reader, new BulkCopyOptions()));
+
+        Assert.NotNull(ex);
+        Assert.DoesNotContain("must belong to the connection", ex.Message, StringComparison.Ordinal);
+    }
+
+    private sealed class ForeignTransaction(IDbConnection? connection) : IDbTransaction
+    {
+        public IDbConnection? Connection => connection;
+        public IsolationLevel IsolationLevel => IsolationLevel.ReadCommitted;
+        public void Commit() { }
+        public void Rollback() { }
+        public void Dispose() { }
     }
 }
