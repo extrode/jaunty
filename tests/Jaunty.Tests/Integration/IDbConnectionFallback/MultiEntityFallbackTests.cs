@@ -1,4 +1,4 @@
-using System.Data.SQLite;
+﻿using System.Data.SQLite;
 
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
@@ -30,10 +30,8 @@ public class MultiEntityFallbackTests : IDisposable
     [Fact]
     public void QueryMultiEntity_ViaWrapper_ReturnsResults()
     {
-#pragma warning disable CS0618 // Obsolete overload that accepts CommandOptions (non-generic)
         var results = _wrapper.Query<OrderSummary, CategorySummary>(
             "SELECT o.order_id AS OrderId, o.customer_id AS CustomerId, c.category_id AS CategoryId, c.category_name AS CategoryName FROM orders o, categories c WHERE c.category_id = 1 ORDER BY o.order_id LIMIT 3");
-#pragma warning restore CS0618
 
         Assert.Equal(3, results.Count);
         Assert.All(results, r =>
@@ -46,10 +44,8 @@ public class MultiEntityFallbackTests : IDisposable
     [Fact]
     public void QueryFirstMultiEntity_ViaWrapper_ReturnsFirst()
     {
-#pragma warning disable CS0618
         var result = _wrapper.QueryFirst<OrderSummary, CategorySummary>(
             "SELECT o.order_id AS OrderId, o.customer_id AS CustomerId, c.category_id AS CategoryId, c.category_name AS CategoryName FROM orders o, categories c WHERE c.category_id = 1 ORDER BY o.order_id LIMIT 3");
-#pragma warning restore CS0618
 
         Assert.True(result.Item1.OrderId > 0);
         Assert.NotNull(result.Item2.CategoryName);
@@ -58,11 +54,9 @@ public class MultiEntityFallbackTests : IDisposable
     [Fact]
     public void QueryFirstOrDefaultMultiEntity_ViaWrapper_NoResults_ReturnsNull()
     {
-#pragma warning disable CS0618
         var result = _wrapper.QueryFirstOrDefault<OrderSummary, CategorySummary>(
             "SELECT o.order_id AS OrderId, o.customer_id AS CustomerId, c.category_id AS CategoryId, c.category_name AS CategoryName FROM orders o, categories c WHERE o.order_id = @Id AND c.category_id = 1",
             new { Id = -999 });
-#pragma warning restore CS0618
 
         Assert.Null(result);
     }
@@ -70,11 +64,9 @@ public class MultiEntityFallbackTests : IDisposable
     [Fact]
     public void QuerySingleMultiEntity_ViaWrapper_ReturnsSingle()
     {
-#pragma warning disable CS0618
         var result = _wrapper.QuerySingle<OrderSummary, CategorySummary>(
             "SELECT o.order_id AS OrderId, o.customer_id AS CustomerId, c.category_id AS CategoryId, c.category_name AS CategoryName FROM orders o, categories c WHERE o.order_id = @OrderId AND c.category_id = @CatId",
             new { OrderId = 10248, CatId = 1 });
-#pragma warning restore CS0618
 
         Assert.Equal(10248, result.Item1.OrderId);
         Assert.NotNull(result.Item2.CategoryName);
@@ -83,21 +75,17 @@ public class MultiEntityFallbackTests : IDisposable
     [Fact]
     public void QuerySingleOrDefaultMultiEntity_ViaWrapper_MultipleResults_Throws()
     {
-#pragma warning disable CS0618
         Assert.Throws<InvalidOperationException>(() =>
             _wrapper.QuerySingleOrDefault<OrderSummary, CategorySummary>(
                 "SELECT o.order_id AS OrderId, o.customer_id AS CustomerId, c.category_id AS CategoryId, c.category_name AS CategoryName FROM orders o, categories c WHERE c.category_id = 1 ORDER BY o.order_id LIMIT 2"));
-#pragma warning restore CS0618
     }
 
     [Fact]
     public void QueryStreamMultiEntity_ViaWrapper_YieldsResults()
     {
         var count = 0;
-#pragma warning disable CS0618
         foreach (var (order, category) in _wrapper.QueryStream<OrderSummary, CategorySummary>(
             "SELECT o.order_id AS OrderId, o.customer_id AS CustomerId, c.category_id AS CategoryId, c.category_name AS CategoryName FROM orders o, categories c WHERE c.category_id = 1 ORDER BY o.order_id LIMIT 3"))
-#pragma warning restore CS0618
         {
             Assert.True(order.OrderId > 0);
             Assert.NotNull(category.CategoryName);
@@ -111,11 +99,9 @@ public class MultiEntityFallbackTests : IDisposable
     public void QueryStreamMultiEntity_ViaWrapper_EmptyResult_YieldsNothing()
     {
         var count = 0;
-#pragma warning disable CS0618
         foreach (var _ in _wrapper.QueryStream<OrderSummary, CategorySummary>(
             "SELECT o.order_id AS OrderId, o.customer_id AS CustomerId, c.category_id AS CategoryId, c.category_name AS CategoryName FROM orders o, categories c WHERE o.order_id = @Id AND c.category_id = 1",
             new { Id = -999 }))
-#pragma warning restore CS0618
         {
             count++;
         }

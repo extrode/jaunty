@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 
 using Jaunty.Core;
 
@@ -100,6 +100,20 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         return ExecuteStoredProcedure<T>(connection, procedureName, parameters, default);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedure("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options) where T : new()
+    {
+        return ExecuteStoredProcedure<T>(connection, procedureName, null, options);
     }
 
     /// <summary>
@@ -234,6 +248,20 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         return ExecuteStoredProcedureFirst<T>(connection, procedureName, parameters, default);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureFirst("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options) where T : new()
+    {
+        return ExecuteStoredProcedureFirst<T>(connection, procedureName, null, options);
     }
 
     /// <summary>
@@ -373,6 +401,20 @@ public static partial class Jaunty
     }
 
     /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureFirstOrDefault("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options) where T : new()
+    {
+        return ExecuteStoredProcedureFirstOrDefault<T>(connection, procedureName, null, options);
+    }
+
+    /// <summary>
     /// Executes a stored procedure with parameters and options, returning the first result mapped to an entity of type <typeparamref name="T"/>, 
     /// or <see langword="null"/> if no results are found.
     /// </summary>
@@ -496,6 +538,20 @@ public static partial class Jaunty
     }
 
     /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureScalar("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options)
+    {
+        return ExecuteStoredProcedureScalar<T>(connection, procedureName, null, options);
+    }
+
+    /// <summary>
     /// Executes a stored procedure with parameters and options, returning a scalar value of type <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The scalar type to return.</typeparam>
@@ -610,6 +666,20 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         return ExecuteStoredProcedureNonQuery(connection, procedureName, parameters, default);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureNonQuery("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, CommandOptions options)
+    {
+        return ExecuteStoredProcedureNonQuery(connection, procedureName, null, options);
     }
 
     /// <summary>
