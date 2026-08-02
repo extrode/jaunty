@@ -107,7 +107,7 @@ internal static class ImportExecutor
 
                         return ImportBatchesAsync(
                             reader, targetConnection, insertSql, mappings,
-                            options.BatchSize, options.OnProgress, cancellationToken);
+                            options.BatchSize, options.OnProgress, dialect, cancellationToken);
                     },
                     cancellationToken).ConfigureAwait(false);
             }
@@ -115,8 +115,13 @@ internal static class ImportExecutor
     }
 
     private static async ValueTask<long> ImportBatchesAsync(DbDataReader reader, DbConnection targetConnection, string insertSql,
-        IReadOnlyDictionary<string, ColumnMapping> mappings, int batchSize, Action<long, long?>? onProgress, CancellationToken cancellationToken)
+        IReadOnlyDictionary<string, ColumnMapping> mappings, int batchSize, Action<long, long?>? onProgress,
+        IImportDialect dialect, CancellationToken cancellationToken)
     {
+        // AUD-R34-029: null for every dialect whose declared types are same-shape widenings, which
+        // is all of them but SQLite.
+        var transform = dialect as IImportValueTransform;
+
         long totalImported = 0;
 
         // Build a column index map for the reader (source column name → reader ordinal)
@@ -160,8 +165,8 @@ internal static class ImportExecutor
             // batch of rows is sent as a single round-trip instead of one ExecuteNonQueryAsync per
             // row. Providers that don't support DbBatch fall back to the single-command path below.
             totalImported = targetConnection.CanCreateBatch
-                ? await ImportUsingDbBatchAsync(reader, targetConnection, transaction, insertSql, mappingList, readerColumnMap, batchSize, onProgress, cancellationToken).ConfigureAwait(false)
-                : await ImportUsingSingleCommandAsync(reader, targetConnection, transaction, insertSql, mappingList, readerColumnMap, batchSize, onProgress, cancellationToken).ConfigureAwait(false);
+                ? await ImportUsingDbBatchAsync(reader, targetConnection, transaction, insertSql, mappingList, readerColumnMap, batchSize, onProgress, transform, cancellationToken).ConfigureAwait(false)
+                : await ImportUsingSingleCommandAsync(reader, targetConnection, transaction, insertSql, mappingList, readerColumnMap, batchSize, onProgress, transform, cancellationToken).ConfigureAwait(false);
 
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -182,7 +187,7 @@ internal static class ImportExecutor
     private static async ValueTask<long> ImportUsingSingleCommandAsync(
         DbDataReader reader, DbConnection targetConnection, DbTransaction transaction, string insertSql,
         List<ColumnMapping> mappingList, int[] readerColumnMap, int batchSize, Action<long, long?>? onProgress,
-        CancellationToken cancellationToken)
+        IImportValueTransform? transform, CancellationToken cancellationToken)
     {
         long totalImported = 0;
 
@@ -218,7 +223,7 @@ internal static class ImportExecutor
                 for (int i = 0; i < mappingList.Count; i++)
                 {
                     var value = reader.GetValue(readerColumnMap[i]);
-                    paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType);
+                    paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType, transform);
                 }
 
                 await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -245,7 +250,7 @@ internal static class ImportExecutor
     private static async ValueTask<long> ImportUsingDbBatchAsync(
         DbDataReader reader, DbConnection targetConnection, DbTransaction transaction, string insertSql,
         List<ColumnMapping> mappingList, int[] readerColumnMap, int batchSize, Action<long, long?>? onProgress,
-        CancellationToken cancellationToken)
+        IImportValueTransform? transform, CancellationToken cancellationToken)
     {
         long totalImported = 0;
         int rowsBuffered = 0;
@@ -273,7 +278,7 @@ internal static class ImportExecutor
                     var value = reader.GetValue(readerColumnMap[i]);
                     DbParameter param = parameterFactory.CreateParameter();
                     param.ParameterName = $"@p{i}";
-                    param.Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType);
+                    param.Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType, transform);
                     batchCommand.Parameters.Add(param);
                 }
 
@@ -305,7 +310,7 @@ internal static class ImportExecutor
     /// <summary>
     /// Converts a value from the DuckDB reader to a type suitable for the target database parameter.
     /// </summary>
-    private static object ConvertValue(object value, Type targetType)
+    private static object ConvertValue(object value, Type targetType, IImportValueTransform? transform)
     {
         if (value is null or DBNull) return DBNull.Value;
 
@@ -321,9 +326,15 @@ internal static class ImportExecutor
         // unmapped enum CLR type) and silently rewrites data on SQLite and SQL Server, which infer
         // the parameter type from Type.GetTypeCode and see an enum as its underlying integer: a text
         // column that received "Closed" would start receiving 1.
-        return ReaderValueConverter.TryConvert(value, targetType, convertEnums: false, out object? converted)
+        object result = ReaderValueConverter.TryConvert(value, targetType, convertEnums: false, out object? converted)
             ? converted!
             : value;
+
+        // AUD-R34-029: last, so the transform sees the value in the shape the target column was
+        // declared for. Only SQLite's ulong-to-TEXT reshaping goes through here today.
+        return transform is not null && transform.TryTransformForBinding(result, out object transformed)
+            ? transformed
+            : result;
     }
 
     /// <summary>
