@@ -55,12 +55,13 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
-    [Obsolete]
-    public void Query_TwoEntities_WithCombiner_BuildsObjectGraph(DialectInfo dialect)
+    public void QueryStream_TwoEntities_BuildsObjectGraph(DialectInfo dialect)
     {
         using IDbConnection connection = _fixture.GetConnection(dialect);
 
-        List<ProductInfo> results = connection.Query<ProductInfo, CategoryInfo, ProductInfo>(
+        List<ProductInfo> results = [];
+
+        foreach ((ProductInfo product, CategoryInfo category) in connection.QueryStream<ProductInfo, CategoryInfo>(
             $@"SELECT {TopPrefix(dialect, 5)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -69,12 +70,11 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              {LimitSuffix(dialect, 5)}",
-            (product, category) =>
-            {
-                product.Category = category;
-                return product;
-            });
+              {LimitSuffix(dialect, 5)}"))
+        {
+            product.Category = category;
+            results.Add(product);
+        }
 
         Assert.Equal(5, results.Count);
         Assert.All(results, p =>

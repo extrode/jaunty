@@ -86,25 +86,28 @@ public class QueryStreamMultiEntityCommandTypeTests : IDisposable
         Assert.Equal(CommandType.StoredProcedure, connection.LastCommand!.CommandType);
     }
 
-    // AUD-R12: the obsolete QueryStream<T1, T2>(connection, sql, parameters, CommandOptions)
-    // overload's QueryStreamCoreIterator only assigned command.Transaction when
+    // AUD-R12 originally covered the obsolete QueryStream<T1, T2>(sql, parameters, CommandOptions)
+    // overload, whose QueryStreamCoreIterator only assigned command.Transaction when
     // options.Transaction was already a System.Data.Common.DbTransaction, silently dropping any
-    // other IDbTransaction implementation instead of assigning or throwing.
-#pragma warning disable CS0618 // intentionally calling the obsolete QueryStream<T1, T2> overload
+    // other IDbTransaction implementation. That overload and its iterator were deleted with the
+    // rest of the obsolete multi-entity surface; the same input now reaches the supported path,
+    // because the AUD-R34-002 implicit CommandOptions -> CommandOptions<T> conversion binds a
+    // non-generic CommandOptions to the CommandOptions<(T1, T2)> overload rather than boxing it
+    // into object. The behaviour under test is unchanged: a non-DbTransaction must be assigned.
     [Fact]
-    public void QueryStream_FallbackPath_ObsoleteOverload_WithNonDbTransaction_AssignsTransactionInsteadOfSilentlyDroppingIt()
+    public void QueryStream_FallbackPath_WithNonDbTransaction_AssignsTransactionInsteadOfSilentlyDroppingIt()
     {
         var connection = new SpyConnection();
         var transaction = new FakeTransaction();
-        var options = new CommandOptions(transaction: transaction);
 
-        var results = connection.QueryStream<OrderSummary, CategorySummary>("dbo.GetOrdersWithCategory", options: options).ToList();
+        var results = connection.QueryStream<OrderSummary, CategorySummary>(
+            "dbo.GetOrdersWithCategory",
+            options: new CommandOptions(transaction: transaction)).ToList();
 
         Assert.Empty(results);
         Assert.NotNull(connection.LastCommand);
         Assert.Same(transaction, connection.LastCommand!.Transaction);
     }
-#pragma warning restore CS0618
 }
 
 #region Minimal In-Memory Fakes For Direct CommandType Observation
