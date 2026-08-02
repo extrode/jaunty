@@ -494,7 +494,11 @@ internal static class ParameterBinder
                 continue;
             }
 
-            if (c is '\'' or '"' or '[')
+            // AUD-R34-012: the backtick was missing here while SqlParameterParser's twin walkers
+            // already had it (AUD-R31-001), so only two of the four sigil walkers were fixed. A
+            // backtick fell through to the default arm and an apostrophe inside `it's` then opened
+            // a phantom string literal that ran to the end of the statement.
+            if (c is '\'' or '"' or '[' or '`')
             {
                 char terminator = c == '[' ? ']' : c;
                 i++;
@@ -599,8 +603,9 @@ internal static class ParameterBinder
                 continue;
             }
 
-            // String literal or quoted identifier: copy verbatim (handles doubled-quote escapes)
-            if (c is '\'' or '"' or '[')
+            // String literal or quoted identifier: copy verbatim (handles doubled-quote escapes).
+            // AUD-R34-012: the backtick arm was missing here too - see DetectParameterPrefix.
+            if (c is '\'' or '"' or '[' or '`')
             {
                 char terminator = c == '[' ? ']' : c;
                 int start = i;
