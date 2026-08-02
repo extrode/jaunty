@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace Jaunty.SourceGenerator.Tests;
 
@@ -20,9 +19,6 @@ namespace Jaunty.SourceGenerator.Tests;
 /// </summary>
 public class NestedEntityGenerationTests
 {
-    private static readonly CSharpParseOptions ParseOptions = CSharpParseOptions.Default
-        .WithPreprocessorSymbols("NET8_0_OR_GREATER", "NET6_0_OR_GREATER");
-
     private const string NestedInPartialClass = """
         using Jaunty.Attributes;
 
@@ -43,7 +39,7 @@ public class NestedEntityGenerationTests
     public void EntityNestedInAPartialClass_GeneratesSourceThatCompiles()
     {
         (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, ImmutableArray<Diagnostic> compileErrors) =
-            RunAndCompile(NestedInPartialClass);
+            GeneratorHarness.RunAndCompile(NestedInPartialClass);
 
         Assert.Single(sources);
         Assert.Empty(generatorDiagnostics.Where(d => d.Id == "JAUNTYGEN004"));
@@ -53,7 +49,7 @@ public class NestedEntityGenerationTests
     [Fact]
     public void EntityNestedInAPartialClass_ReDeclaresTheEnclosingType()
     {
-        (ImmutableArray<string> sources, _, _) = RunAndCompile(NestedInPartialClass);
+        (ImmutableArray<string> sources, _, _) = GeneratorHarness.RunAndCompile(NestedInPartialClass);
 
         Assert.Contains("public partial class Outer", sources[0]);
         Assert.Contains("partial class Order", sources[0]);
@@ -62,7 +58,7 @@ public class NestedEntityGenerationTests
     [Fact]
     public void EntityNestedTwoLevelsDeep_GeneratesSourceThatCompiles()
     {
-        (ImmutableArray<string> sources, _, ImmutableArray<Diagnostic> compileErrors) = RunAndCompile("""
+        (ImmutableArray<string> sources, _, ImmutableArray<Diagnostic> compileErrors) = GeneratorHarness.RunAndCompile("""
             using Jaunty.Attributes;
 
             namespace NestProbe;
@@ -93,7 +89,7 @@ public class NestedEntityGenerationTests
     [Fact]
     public void PrivateNestedEntity_GeneratesSourceThatCompiles()
     {
-        (ImmutableArray<string> sources, _, ImmutableArray<Diagnostic> compileErrors) = RunAndCompile("""
+        (ImmutableArray<string> sources, _, ImmutableArray<Diagnostic> compileErrors) = GeneratorHarness.RunAndCompile("""
             using Jaunty.Attributes;
 
             namespace NestProbe;
@@ -118,7 +114,7 @@ public class NestedEntityGenerationTests
     [Fact]
     public void EntityNestedInANonPartialClass_ReportsJauntyGen004AndGeneratesNothing()
     {
-        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, _) = RunAndCompile("""
+        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, _) = GeneratorHarness.RunAndCompile("""
             using Jaunty.Attributes;
 
             namespace NestProbe;
@@ -143,7 +139,7 @@ public class NestedEntityGenerationTests
     [Fact]
     public void EntityNestedInAGenericClass_ReportsJauntyGen004AndGeneratesNothing()
     {
-        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, _) = RunAndCompile("""
+        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, _) = GeneratorHarness.RunAndCompile("""
             using Jaunty.Attributes;
 
             namespace NestProbe;
@@ -172,7 +168,7 @@ public class NestedEntityGenerationTests
     public void TopLevelEntity_IsUnaffected()
     {
         (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, ImmutableArray<Diagnostic> compileErrors) =
-            RunAndCompile("""
+            GeneratorHarness.RunAndCompile("""
                 using Jaunty.Attributes;
 
                 namespace NestProbe;
@@ -191,44 +187,4 @@ public class NestedEntityGenerationTests
         Assert.DoesNotContain("partial class Outer", sources[0]);
     }
 
-    /// <summary>
-    /// Runs the generator over <paramref name="source"/> and compiles the original plus everything
-    /// it emitted, returning the generated texts, the generator's own diagnostics, and any
-    /// compilation <em>errors</em> (warnings are left out - the nullability and unused-member noise
-    /// of a fixture compilation is not what these tests are about).
-    /// </summary>
-    private static (ImmutableArray<string> Sources, ImmutableArray<Diagnostic> GeneratorDiagnostics, ImmutableArray<Diagnostic> CompileErrors) RunAndCompile(string source)
-    {
-        var compilation = CSharpCompilation.Create(
-            "NestedEntityProbe",
-            [CSharpSyntaxTree.ParseText(source, ParseOptions)],
-            ReferenceAssemblies(),
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
-
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: [new global::Jaunty.SourceGenerator.JauntyGenerator().AsSourceGenerator()],
-            additionalTexts: null,
-            parseOptions: ParseOptions,
-            optionsProvider: null,
-            driverOptions: new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None));
-
-        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation output, out ImmutableArray<Diagnostic> generatorDiagnostics);
-
-        ImmutableArray<string> sources =
-            [.. driver.GetRunResult().Results.SelectMany(r => r.GeneratedSources).Select(s => s.SourceText.ToString())];
-
-        ImmutableArray<Diagnostic> compileErrors =
-            [.. output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error)];
-
-        return (sources, generatorDiagnostics, compileErrors);
-    }
-
-    private static IEnumerable<MetadataReference> ReferenceAssemblies()
-    {
-        IEnumerable<string> loaded = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .Select(a => a.Location);
-
-        return loaded.Distinct().Select(path => (MetadataReference)MetadataReference.CreateFromFile(path));
-    }
 }
