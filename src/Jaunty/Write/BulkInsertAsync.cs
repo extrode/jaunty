@@ -221,25 +221,29 @@ public static partial class Jaunty
                 if (wasClosed)
                     await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-                if (ignoreConstraints && requiresAutocommit)
-                    await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
-
-                if (ownTransaction)
-                {
-    #if NET8_0_OR_GREATER
-                    transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-    #else
-                    transaction = connection.BeginTransaction();
-    #endif
-                }
-
-                if (ignoreConstraints && !requiresAutocommit)
-                    await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
-
                 int totalInserted = 0;
 
                 try
                 {
+                    // AUD-R34-008: this block used to sit outside this try, so a throw from
+                    // BeginTransaction - or from the second disable - skipped the catch below and
+                    // left foreign key enforcement off. The outer finally only disposes and closes,
+                    // and the connection then goes back to the pool disabled.
+                    if (ignoreConstraints && requiresAutocommit)
+                        await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
+
+                    if (ownTransaction)
+                    {
+    #if NET8_0_OR_GREATER
+                        transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+    #else
+                        transaction = connection.BeginTransaction();
+    #endif
+                    }
+
+                    if (ignoreConstraints && !requiresAutocommit)
+                        await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
+
                     Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.InsertValueSetter;
                     if (valueSetter == null)
                         throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
