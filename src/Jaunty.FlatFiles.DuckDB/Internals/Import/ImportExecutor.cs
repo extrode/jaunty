@@ -4,6 +4,8 @@ using System.Text;
 
 using Jaunty.FlatFiles.Import;
 using Jaunty.FlatFiles.Interfaces;
+using Jaunty.Internals;
+using Jaunty.Internals.Write;
 using System.Globalization;
 
 namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
@@ -34,10 +36,25 @@ internal static class ImportExecutor
         if (options.CreateTableIfMissing)
         {
             var ddl = TargetDdlGenerator.GenerateCreateTableSql(entityType, tableName, dialect);
-            DbCommand ddlCmd = targetConnection.CreateCommand();
-            await using var ddlCmdDisposer = ddlCmd.ConfigureAwait(false);
-            ddlCmd.CommandText = ddl;
-            await ddlCmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+            // AUD-R34-007: every command in this file was built and executed directly, so an
+            // ImportIntoAsync call was invisible to a registered ICommandInterceptor - the exact
+            // gap AUD-R26 closed for the rest of this assembly, and which DuckDbObservation's own
+            // remarks claim was closed for "write-back and import" too. Each distinct statement is
+            // reported on its own; the INSERTs are reported once for the whole import, below.
+            await CommandObservation.ExecuteAsync<object?>(
+                ddl, null, targetConnection, DuckDbObservation.Text,
+                async () =>
+                {
+                    CommandObservation.Log(ddl, null);
+
+                    DbCommand ddlCmd = targetConnection.CreateCommand();
+                    await using var ddlCmdDisposer = ddlCmd.ConfigureAwait(false);
+                    ddlCmd.CommandText = ddl;
+                    await ddlCmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    return null;
+                },
+                cancellationToken).ConfigureAwait(false);
         }
 
         // Validate schema alignment — check that the target table exists and has compatible columns
@@ -48,7 +65,17 @@ internal static class ImportExecutor
         await using (sourceCmd.ConfigureAwait(false))
         {
             sourceCmd.CommandText = $"SELECT * FROM \"{tableName.Replace("\"", "\"\"")}\"";
-            DbDataReader reader = await sourceCmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+            // AUD-R34-007: the read against the DuckDB source is a command in its own right, and
+            // the only one on the source connection - reported separately from the target writes.
+            DbDataReader reader = await CommandObservation.ExecuteAsync(
+                sourceCmd.CommandText, null, sourceConnection, DuckDbObservation.Text,
+                async () =>
+                {
+                    CommandObservation.Log(sourceCmd.CommandText, null);
+                    return await sourceCmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                },
+                cancellationToken).ConfigureAwait(false);
             await using (reader.ConfigureAwait(false))
             {
                 // Build the insert SQL template using the dialect
@@ -64,10 +91,25 @@ internal static class ImportExecutor
                 var keyColumnName = TargetDdlGenerator.GetKeyColumnName(entityType);
                 var insertSql = dialect.GenerateInsertSql(tableName, columnNames, parameterNames, options.OnConflict, keyColumnName);
 
-                // Import in batches within a transaction
-                return await ImportBatchesAsync(
-                    reader, targetConnection, insertSql, mappings,
-                    options.BatchSize, options.OnProgress, cancellationToken).ConfigureAwait(false);
+                // Import in batches within a transaction.
+                // AUD-R34-007: reported once for the whole import rather than once per row or per
+                // batch, matching core's bulk paths (see BulkInsertAsync) - a large import is one
+                // logical write, and firing the pipeline per row would swamp an auditor. The row
+                // count is not knowable before the source is drained, which is what
+                // BulkOperationParameters' nullable rowCount is for.
+                var importParameters = new BulkOperationParameters("ImportInto", entityType.Name, rowCount: null);
+
+                return await CommandObservation.ExecuteAsync(
+                    insertSql, importParameters, targetConnection, DuckDbObservation.Text,
+                    () =>
+                    {
+                        CommandObservation.Log(insertSql, importParameters);
+
+                        return ImportBatchesAsync(
+                            reader, targetConnection, insertSql, mappings,
+                            options.BatchSize, options.OnProgress, cancellationToken);
+                    },
+                    cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -319,7 +361,18 @@ internal static class ImportExecutor
             DbCommand cmd = targetConnection.CreateCommand();
             await using var cmdDisposer = cmd.ConfigureAwait(false);
             cmd.CommandText = $"SELECT * FROM {QuoteTargetIdentifier(dialect, tableName)} WHERE 0=1";
-            DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+            // AUD-R34-007: the schema probe is a real command against the target and is reported
+            // like one. A failure here is caught below and rethrown as InvalidOperationException,
+            // so the pipeline sees the DbException at the point the provider raised it.
+            DbDataReader reader = await CommandObservation.ExecuteAsync(
+                cmd.CommandText, null, targetConnection, DuckDbObservation.Text,
+                async () =>
+                {
+                    CommandObservation.Log(cmd.CommandText, null);
+                    return await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                },
+                cancellationToken).ConfigureAwait(false);
             await using var readerDisposer = reader.ConfigureAwait(false);
 
             // Table exists — validate columns
