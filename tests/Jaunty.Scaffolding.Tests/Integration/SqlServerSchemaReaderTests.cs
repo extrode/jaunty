@@ -81,10 +81,20 @@ public class SqlServerSchemaReaderTests
     /// </summary>
     private static void CreateTypeNameTable(SqlConnection conn)
     {
+        // Two commands, not one batch: SQL Server compiles a batch in full before running any of it,
+        // so a CREATE TABLE naming a type the same batch creates fails to compile ("Cannot find data
+        // type scaffold_test_code") even though the CREATE TYPE precedes it.
+        using (var typeCmd = conn.CreateCommand())
+        {
+            typeCmd.CommandText = """
+                DROP TABLE IF EXISTS scaffold_test_typenames;
+                IF TYPE_ID('scaffold_test_code') IS NULL CREATE TYPE scaffold_test_code FROM NVARCHAR(20);
+                """;
+            typeCmd.ExecuteNonQuery();
+        }
+
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            DROP TABLE IF EXISTS scaffold_test_typenames;
-            IF TYPE_ID('scaffold_test_code') IS NULL CREATE TYPE scaffold_test_code FROM NVARCHAR(20);
             CREATE TABLE scaffold_test_typenames (
                 id INT IDENTITY(1,1) PRIMARY KEY,
                 area GEOGRAPHY NULL,

@@ -27,16 +27,18 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     /// actual type was in hand and a second, lossy lookup was done instead. <c>TYPE_NAME</c> takes a
     /// <i>user</i> type id, so passing it a system type id is only correct for types where the two
     /// coincide. They do not for the CLR-backed system types: <c>geography</c>, <c>geometry</c> and
-    /// <c>hierarchyid</c> all share <c>system_type_id</c> 240 while having distinct
-    /// <c>user_type_id</c>s, so all three resolved through the same lookup and none of them could
-    /// come back correct.
+    /// <c>hierarchyid</c> all carry <c>system_type_id</c> 240, which is not a user type id at all, so
+    /// <c>TYPE_NAME</c> returned NULL and <see cref="ReadColumnsAsync"/>'s <c>GetString</c> threw
+    /// <c>SqlNullValueException</c>. Scaffolding any table holding one of those columns failed
+    /// outright rather than producing a wrong type name.
     /// <para>
     /// Selecting <c>ty.name</c> outright would have swapped one bug for another: for an alias type
     /// (<c>CREATE TYPE OrderCode FROM nvarchar(20)</c>) <c>ty.name</c> is <c>OrderCode</c>, which
     /// <c>SqlServerTypeMapper</c> has never heard of, whereas the old expression correctly resolved
     /// it to the underlying <c>nvarchar</c>. The <c>CASE</c> keeps that behaviour for alias types -
     /// the only kind of row where <c>is_user_defined</c> is 1 and a base type is what the mapper
-    /// wants - and reports every system type under its own name.
+    /// wants - and reports every system type under its own name. Note the CLR types above are
+    /// <i>system</i> types (<c>is_user_defined</c> = 0), so they take the <c>ty.name</c> arm.
     /// </para>
     /// </remarks>
     private const string ColumnsSql = @"
