@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 
 using Jaunty.Configuration;
@@ -110,6 +110,59 @@ public static partial class Jaunty
             T entity = map(reader);
 
             return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
+        });
+    }
+
+    // AUD-R34-004: the multi-entity cores delegate to the single-entity ones when options.Mapper is
+    // set (AUD-R33-004 / AUD-R34-001), but QueryFirstOrDefaultCore/QuerySingleOrDefaultCore return
+    // T? over a type parameter constrained only by new(). For a ValueTuple that T? is the tuple
+    // itself, so an empty result set came back as (default, default) and the implicit conversion to
+    // (T1, ..., TN)? set HasValue - the OrDefault methods returned a tuple of nulls instead of null,
+    // and the null guards in QueryFirst/QuerySingle never fired. These twins constrain the tuple to
+    // struct, so default is a real null and both mapper paths keep the reflection path's contract.
+    private static TTuple? QueryFirstOrDefaultMappedTupleCore<TTuple>(IDbConnection connection, string sql, object? parameters, CommandOptions<TTuple> options, MappingMode mode) where TTuple : struct
+    {
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                if (!reader.Read()) return (TTuple?)null;
+                Func<DbDataReader, TTuple> map = DrDispatcher.Resolve(reader, options, mode);
+                return map(reader);
+            });
+        }
+
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read()) return (TTuple?)null;
+            Func<IDataReader, TTuple> map = DrDispatcher.Resolve(reader, options, mode);
+            return map(reader);
+        });
+    }
+
+    // describeType is only ever invoked on the more-than-one-row failure. It is passed rather than
+    // derived from typeof(TTuple), whose Name is "ValueTuple`2" - callers already build the
+    // "(T1, T2)" wording their reflection-mapping path throws, and a non-capturing lambda is cached
+    // by the compiler, so matching the two messages costs no per-call allocation.
+    private static TTuple? QuerySingleOrDefaultMappedTupleCore<TTuple>(IDbConnection connection, string sql, object? parameters, CommandOptions<TTuple> options, MappingMode mode, Func<string> describeType) where TTuple : struct
+    {
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                if (!reader.Read()) return (TTuple?)null;
+                Func<DbDataReader, TTuple> map = DrDispatcher.Resolve(reader, options, mode);
+                TTuple entity = map(reader);
+                return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{describeType()}'.") : (TTuple?)entity;
+            });
+        }
+
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read()) return (TTuple?)null;
+            Func<IDataReader, TTuple> map = DrDispatcher.Resolve(reader, options, mode);
+            TTuple entity = map(reader);
+            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{describeType()}'.") : (TTuple?)entity;
         });
     }
 
@@ -416,7 +469,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QueryFirstOrDefaultCore<(T1, T2)>(connection, sql, parameters, options, mode);
+            return QueryFirstOrDefaultMappedTupleCore<(T1, T2)>(connection, sql, parameters, options, mode);
 
         if (connection is DbConnection dbConnection)
         {
@@ -465,7 +518,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QuerySingleOrDefaultCore<(T1, T2)>(connection, sql, parameters, options, mode);
+            return QuerySingleOrDefaultMappedTupleCore<(T1, T2)>(connection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name})");
 
         if (connection is DbConnection dbConnection)
         {
@@ -711,7 +764,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QueryFirstOrDefaultCore<(T1, T2, T3)>(connection, sql, parameters, options, mode);
+            return QueryFirstOrDefaultMappedTupleCore<(T1, T2, T3)>(connection, sql, parameters, options, mode);
 
         if (connection is DbConnection dbConnection)
         {
@@ -766,7 +819,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QuerySingleOrDefaultCore<(T1, T2, T3)>(connection, sql, parameters, options, mode);
+            return QuerySingleOrDefaultMappedTupleCore<(T1, T2, T3)>(connection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})");
 
         if (connection is DbConnection dbConnection)
         {
@@ -1024,7 +1077,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QueryFirstOrDefaultCore<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode);
+            return QueryFirstOrDefaultMappedTupleCore<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode);
 
         if (connection is DbConnection dbConnection)
         {
@@ -1083,7 +1136,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QuerySingleOrDefaultCore<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode);
+            return QuerySingleOrDefaultMappedTupleCore<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})");
 
         if (connection is DbConnection dbConnection)
         {
@@ -1353,7 +1406,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QueryFirstOrDefaultCore<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode);
+            return QueryFirstOrDefaultMappedTupleCore<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode);
 
         if (connection is DbConnection dbConnection)
         {
@@ -1416,7 +1469,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QuerySingleOrDefaultCore<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode);
+            return QuerySingleOrDefaultMappedTupleCore<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})");
 
         if (connection is DbConnection dbConnection)
         {
@@ -1698,7 +1751,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QueryFirstOrDefaultCore<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode);
+            return QueryFirstOrDefaultMappedTupleCore<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode);
 
         if (connection is DbConnection dbConnection)
         {
@@ -1765,7 +1818,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QuerySingleOrDefaultCore<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode);
+            return QuerySingleOrDefaultMappedTupleCore<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})");
 
         if (connection is DbConnection dbConnection)
         {
@@ -2059,7 +2112,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QueryFirstOrDefaultCore<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode);
+            return QueryFirstOrDefaultMappedTupleCore<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode);
 
         if (connection is DbConnection dbConnection)
         {
@@ -2130,7 +2183,7 @@ public static partial class Jaunty
         // other strategy, so the single-entity core is the honouring path already written and
         // tested - delegating to it is exact rather than a second implementation to keep in step.
         if (options.Mapper is not null)
-            return QuerySingleOrDefaultCore<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode);
+            return QuerySingleOrDefaultMappedTupleCore<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})");
 
         if (connection is DbConnection dbConnection)
         {

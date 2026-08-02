@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -94,6 +94,40 @@ public partial class JauntyGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    /// Reported when the generated mapper drops a property the reflection mapper maps, so referencing
+    /// the generator package silently changes which columns an entity has.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R34-030, from the round-33 carry-forward. Two skips in <c>BuildEntityModel</c> are
+    /// invisible divergences rather than agreed exclusions. An <c>init</c>-only setter cannot be
+    /// assigned by the post-construction <c>entity.Prop = value</c> this generator emits (CS8852),
+    /// and a setter that exists but is not accessible from the entity class gives CS0272
+    /// (AUD-R33-007) - so both have to be skipped here. Neither is a problem for the reflection
+    /// twin: <c>MetadataBuilder</c> tests <c>property.CanWrite</c>, which is true for both, and
+    /// <c>SetValue</c> reaches an init-only or non-public setter happily. The column is therefore
+    /// read, written and mapped under reflection and silently absent once the generator package is
+    /// referenced - the same silent-column-loss shape as the inherited-property defect AUD-R26
+    /// fixed, and not something a green test suite catches, because the entity still maps.
+    /// </para>
+    /// <para>
+    /// Warning rather than a fix on either side: closing the gap properly means emitting an object
+    /// initializer, which cannot express "leave the property alone when the column is NULL" (the
+    /// behaviour AUD-R33-009 settled on and the reflection twin shares), and dropping the property
+    /// from the reflection path instead would remove working behaviour from entities that never see
+    /// the generator. So the divergence stands and is made loud: <c>[Ignore]</c>/<c>[NotMapped]</c>
+    /// silences it and records that the exclusion is intended.
+    /// </para>
+    /// </remarks>
+    private static readonly DiagnosticDescriptor PropertyDroppedByGeneratorDescriptor = new(
+        id: "JAUNTYGEN005",
+        title: "Property is mapped by reflection but dropped by the generated mapper",
+        messageFormat: "Property '{0}.{1}' is not mapped by the generated mapper because {2}, but Jaunty's reflection mapper does map it - so referencing the generator package silently drops this column. Give it a plain accessible setter, or mark it [Ignore] to record that the exclusion is intended.",
+        category: "JauntySourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     /// <summary>The two <c>[Table]</c> attributes the generator recognizes, by metadata name.</summary>
     private const string JauntyTableAttribute = "Jaunty.Attributes.TableAttribute";
     private const string DataAnnotationsTableAttribute = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";
@@ -169,6 +203,18 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 return;
             }
 
+            // AUD-R34-030: only once a mapper is actually emitted. If generation was skipped above,
+            // the reflection fallback maps the entity in full and there is no divergence to report.
+            foreach (DroppedPropertyInfo dropped in entity.DroppedProperties)
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(
+                    PropertyDroppedByGeneratorDescriptor,
+                    dropped.Location?.ToLocation() ?? entity.DiagnosticLocation?.ToLocation(),
+                    entity.ClassName,
+                    dropped.PropertyName,
+                    dropped.Reason));
+            }
+
             var source = GenerateMapper(entity, spc.ReportDiagnostic);
             spc.AddSource($"{entity.HintName}.JauntyMapper.g.cs", SourceText.From(source, Encoding.UTF8));
         });
@@ -234,7 +280,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
         if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node) is not INamedTypeSymbol symbol)
             return null;
 
-        if (HasAttribute(symbol, "TableAttribute"))
+        // AUD-R34-031: by fully-qualified name, matching discovery. A consumer's own unrelated
+        // TableAttribute does not make this type generated, so it must not suppress the warning that
+        // says it is not.
+        if (GetRecognizedTableAttribute(symbol) is not null)
             return null;
 
         // Already trim-safe by declaring the accessors itself.
@@ -381,6 +430,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         List<IPropertySymbol> allProperties = GetMappableProperties(classSymbol);
 
         var properties = new List<PropertyMetadata>();
+        var dropped = new List<DroppedPropertyInfo>();
         foreach (IPropertySymbol? prop in allProperties)
         {
             // Support [Ignore] and [NotMapped]
@@ -391,7 +441,19 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // `entity.Prop = value` assignments this generator emits in ReadEntity/CreateRowMapper/
             // the ColumnInfo and EntityColumnInfo setter lambdas. Either would emit an assignment
             // that fails to compile (CS0200/CS8852), so treat both as implicitly [Ignore]d.
-            if (prop.SetMethod is null || prop.SetMethod.IsInitOnly) continue;
+            if (prop.SetMethod is null) continue;
+
+            // AUD-R34-030: but init-only is a divergence, not an agreed exclusion - the reflection
+            // twin maps it, so the column is silently lost here. Reported rather than fixed; see
+            // PropertyDroppedByGeneratorDescriptor for why neither side can simply move.
+            if (prop.SetMethod.IsInitOnly)
+            {
+                dropped.Add(new DroppedPropertyInfo(
+                    prop.Name,
+                    "its setter is 'init'-only and the generated mapper assigns properties after construction",
+                    LocationInfo.From(prop.Locations.FirstOrDefault())));
+                continue;
+            }
 
             // AUD-R33-007: and a setter that exists but cannot be reached from the entity class is
             // the same defect one step along. Since GetMappableProperties walks base types (AUD-R26)
@@ -402,7 +464,16 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // assembly boundaries and InternalsVisibleTo - so ask the compilation, which is what
             // decides it. The reflection twin has no equivalent problem: MetadataBuilder tests
             // property.CanWrite, which is true here, and SetValue does reach a non-public setter.
-            if (!context.SemanticModel.Compilation.IsSymbolAccessibleWithin(prop.SetMethod, classSymbol)) continue;
+            if (!context.SemanticModel.Compilation.IsSymbolAccessibleWithin(prop.SetMethod, classSymbol))
+            {
+                // AUD-R34-030: same silent divergence as the init-only case above - CanWrite is true
+                // and SetValue reaches a non-public setter, so reflection maps this column.
+                dropped.Add(new DroppedPropertyInfo(
+                    prop.Name,
+                    "its setter is not accessible from the entity class, so the generated assignment would not compile",
+                    LocationInfo.From(prop.Locations.FirstOrDefault())));
+                continue;
+            }
 
             // Support [Column] from both
             AttributeData? columnAttr = GetAttribute(prop, "ColumnAttribute");
@@ -499,6 +570,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         (EquatableArray<ContainingTypeInfo> containingTypes, var unsupportedNesting) = BuildContainingTypes(classSymbol);
 
+        // AUD-R34-028: the entity's own declaration, which AUD-R33-006 checked only for enclosing
+        // types. Same rule and same reporting: emitting a partial that cannot compile is strictly
+        // worse than emitting nothing, because the reflection fallback still maps the entity.
+        unsupportedNesting ??= UnsupportedDeclarationReason(classSymbol);
+
         return new EntityModel(
             Namespace: classSymbol.ContainingNamespace.IsGlobalNamespace
                 ? null
@@ -511,7 +587,59 @@ public partial class JauntyGenerator : IIncrementalGenerator
             Properties: new EquatableArray<PropertyMetadata>(properties.ToImmutableArray()),
             DiagnosticLocation: LocationInfo.From(classSymbol.Locations.FirstOrDefault()),
             ContainingTypes: containingTypes,
-            UnsupportedNestingReason: unsupportedNesting);
+            UnsupportedNestingReason: unsupportedNesting,
+            DroppedProperties: new EquatableArray<DroppedPropertyInfo>(dropped.ToImmutableArray()));
+    }
+
+    /// <summary>
+    /// A reason the entity's own declaration cannot carry the generated partial, or
+    /// <see langword="null"/> when it can.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-028. <c>GenerateMapper</c> assumes a concrete, instantiable, non-generic,
+    /// <c>partial</c>, non-file-local class, and every violation emitted a <c>.g.cs</c> that failed
+    /// the consumer's build with nothing explaining it: <c>abstract</c> gives CS0144 on the emitted
+    /// <c>new Order()</c> (the reflection twin throws a clear <c>InvalidOperationException</c>
+    /// instead), a parameterized-only constructor gives CS1729, <c>static</c> cannot implement
+    /// <c>IMapped&lt;T&gt;</c>, a generic <c>Repo&lt;T&gt;</c> generates an arity-0
+    /// <c>partial class Repo</c> that is a different type so every member access is CS1061, a
+    /// non-<c>partial</c> class gives CS0260, and a <c>file</c>-local one gets a distinct
+    /// non-file-local partial in another file.
+    /// </remarks>
+    private static string? UnsupportedDeclarationReason(INamedTypeSymbol classSymbol)
+    {
+        if (classSymbol.IsStatic)
+            return "it is declared 'static' and a static class cannot implement the mapper interface";
+
+        if (classSymbol.IsAbstract)
+            return "it is abstract and the generated mapper has to construct it";
+
+        if (classSymbol.IsGenericType)
+            return "it is generic";
+
+        if (classSymbol.IsFileLocal)
+            return "it is declared 'file'-local, so the generated partial in another file would be a different type";
+
+        if (!IsDeclaredPartial(classSymbol))
+            return "it is not declared 'partial'";
+
+        var hasParameterlessConstructor = false;
+
+        foreach (IMethodSymbol constructor in classSymbol.InstanceConstructors)
+        {
+            if (constructor.Parameters.Length == 0
+                && constructor.DeclaredAccessibility != Accessibility.Private
+                && constructor.DeclaredAccessibility != Accessibility.Protected)
+            {
+                hasParameterlessConstructor = true;
+                break;
+            }
+        }
+
+        if (!hasParameterlessConstructor)
+            return "it has no accessible parameterless constructor and the generated mapper has to construct it";
+
+        return null;
     }
 
     /// <summary>
@@ -1046,18 +1174,26 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // fast path to an almost-always-miss (falls through to the ConditionalWeakTable lookup on
         // every call). [ThreadStatic] gives each thread its own slot so its own repeated reads of
         // the same reader still hit the fast path regardless of what other threads are doing.
+        // AUD-R34-032: weak, because the slot is per thread and is only ever overwritten by the
+        // next resolve of the same entity type on that same thread. A strong reference pinned the
+        // CacheEntry - and through its _reader field the reader, its command and its connection -
+        // for as long as the thread lived, so a pooled or idle thread that mapped one entity and
+        // then went quiet held the whole chain past Dispose for an unbounded time. The
+        // ConditionalWeakTable beside it is deliberately weak for exactly this reason; this was the
+        // one strong root undoing it. Weak costs one TryGetTarget on the fast path and nothing else:
+        // while the reader is alive the CWT keeps the entry alive, so the memo still hits.
         sb.AppendLine("            [ThreadStatic]");
-        sb.AppendLine("            private static CacheEntry? _last;");
+        sb.AppendLine("            private static WeakReference<CacheEntry>? _last;");
         sb.AppendLine();
         sb.AppendLine($"            public static int[] Resolve(IDataReader reader)");
         sb.AppendLine("            {");
-        sb.AppendLine("                var last = _last;");
-        sb.AppendLine("                if (last is not null && last.Matches(reader))");
+        sb.AppendLine("                var lastRef = _last;");
+        sb.AppendLine("                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))");
         sb.AppendLine("                    return last.Ordinals;");
         sb.AppendLine();
         sb.AppendLine("                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))");
         sb.AppendLine("                {");
-        sb.AppendLine("                    _last = cached;");
+        sb.AppendLine("                    SetLast(cached);");
         sb.AppendLine("                    return cached.Ordinals;");
         sb.AppendLine("                }");
         sb.AppendLine();
@@ -1080,8 +1216,17 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("                    _cache.Add(reader, entry);");
         sb.AppendLine("                }");
         sb.AppendLine("#endif");
-        sb.AppendLine("                _last = entry;");
+        sb.AppendLine("                SetLast(entry);");
         sb.AppendLine("                return ords;");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.AppendLine("            private static void SetLast(CacheEntry entry)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                var lastRef = _last;");
+        sb.AppendLine("                if (lastRef is null)");
+        sb.AppendLine("                    _last = new WeakReference<CacheEntry>(entry);");
+        sb.AppendLine("                else");
+        sb.AppendLine("                    lastRef.SetTarget(entry);");
         sb.AppendLine("            }");
         sb.AppendLine();
         sb.AppendLine("            private sealed class CacheEntry");
@@ -1253,6 +1398,30 @@ public partial class JauntyGenerator : IIncrementalGenerator
         => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
 
     /// <summary>
+    /// The <c>[Table]</c> attribute the generator recognizes - Jaunty's or DataAnnotations' - or
+    /// <see langword="null"/> when the type carries neither.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-031 (round-33 carry-forward). Entity discovery keys on the two attributes by
+    /// <em>fully-qualified metadata name</em> (<c>ForAttributeWithMetadataName</c>, narrowed in
+    /// AUD-R25), but the two places that ask a symbol about its <c>[Table]</c> after discovery went
+    /// through <see cref="GetAttribute(ISymbol, string)"/>, which compares the simple name only. A
+    /// consumer's own unrelated <c>TableAttribute</c> - the name is common enough that several
+    /// libraries define one - therefore had two effects it should not have. On a hand-written
+    /// <c>IMapped&lt;T&gt;</c> it suppressed the JAUNTYGEN002 warning, which exists precisely because
+    /// that type is <em>not</em> generated and so is not trim-safe; and on a real entity carrying
+    /// both a recognized <c>[Table]</c> and a foreign one, <c>FirstOrDefault</c> could read the table
+    /// name and schema off whichever came first in source order, generating SQL against the wrong
+    /// table with nothing reported.
+    /// </remarks>
+    private static AttributeData? GetRecognizedTableAttribute(ISymbol symbol)
+        => symbol.GetAttributes().FirstOrDefault(static a =>
+        {
+            var name = a.AttributeClass?.ToDisplayString();
+            return name == JauntyTableAttribute || name == DataAnnotationsTableAttribute;
+        });
+
+    /// <summary>
     /// Escapes a value for safe interpolation inside a generated C# string literal, doubling
     /// backslashes and escaping embedded double quotes so a table/column name (sourced from a
     /// [Table]/[Column] attribute, not a compiler-validated identifier) cannot break out of the
@@ -1276,7 +1445,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
         var tableName = classSymbol.Name;
         string? schemaName = null;
 
-        AttributeData? tableAttr = GetAttribute(classSymbol, "TableAttribute");
+        // AUD-R34-031: the recognized two by fully-qualified name, matching discovery. A simple-name
+        // match could read the name and schema off a foreign TableAttribute that happened to come
+        // first in source order.
+        AttributeData? tableAttr = GetRecognizedTableAttribute(classSymbol);
         if (tableAttr is null)
             return (tableName, schemaName);
 
@@ -1328,7 +1500,16 @@ public partial class JauntyGenerator : IIncrementalGenerator
             "float" => new("reader.GetFloat", "float", false),
             "short" => new("reader.GetInt16", "short", false),
             "byte" => new("reader.GetByte", "byte", false),
-            "global::System.Guid" => new("reader.GetGuid", "Guid", false),
+            // AUD-R34-034: GetValue, not GetGuid. Guid does not implement IConvertible, and a
+            // provider that stores a GUID column as TEXT or BLOB - SQLite above all - throws
+            // InvalidCastException from GetGuid on the IDataReader path and from the base
+            // GetFieldValue<Guid> (an unboxing cast) on the other. The reflection twin has accepted
+            // a string GUID all along (DbValueConversion.Convert), and the emitted ReadFallback<T>
+            // already carried the string and byte[] branches for it - they were simply unreachable,
+            // because nothing routed a Guid property through the helper. Same trade AUD-R25 made for
+            // enums and DateTimeOffset: one boxed read on Guid columns, in exchange for the type
+            // working on every provider instead of the ones that specialise the typed getter.
+            "global::System.Guid" => new("reader.GetValue", "Guid", false),
             "global::System.DateTime" => new("reader.GetDateTime", "DateTime", false),
             "global::System.TimeSpan" => new("reader.GetValue", "TimeSpan", false),
             "global::System.DateTimeOffset" => new("reader.GetValue", "DateTimeOffset", false),
@@ -1342,7 +1523,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             "float?" => new("reader.GetFloat", "float", true),
             "short?" => new("reader.GetInt16", "short", true),
             "byte?" => new("reader.GetByte", "byte", true),
-            "global::System.Guid?" => new("reader.GetGuid", "Guid", true),
+            "global::System.Guid?" => new("reader.GetValue", "Guid", true),
             "global::System.DateTime?" => new("reader.GetDateTime", "DateTime", true),
             "global::System.TimeSpan?" => new("reader.GetValue", "TimeSpan", true),
             "global::System.DateTimeOffset?" => new("reader.GetValue", "DateTimeOffset", true),

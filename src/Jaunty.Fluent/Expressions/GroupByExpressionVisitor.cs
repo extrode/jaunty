@@ -65,8 +65,12 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         else
         {
             // Single expression: g.Key or g.Count()
+            // AUD-R34-005: the alias was reported to the caller but never emitted, so the column
+            // arrived named after its source (or unnamed, for COUNT(*)) while the mappers looked
+            // it up by "Value". For a value-typed TResult that lookup silently found nothing and
+            // every row mapped to 0. The composite-key branch above already aliases; so does this.
             (string? sql, string? alias) = TranslateExpression(body, "Value");
-            _selectColumns.Add(sql);
+            _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(alias)}");
             _columnAliases.Add(alias);
         }
 

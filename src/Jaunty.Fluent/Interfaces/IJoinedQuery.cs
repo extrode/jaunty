@@ -844,6 +844,14 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     List<(T1, T2, T3)> SelectAll();
 
     /// <summary>
+    /// Executes the query and returns all three entities as tuples, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction). AUD-R34-016: this
+    /// terminal builds its own command, and without this overload it could not be enlisted in the
+    /// caller's transaction at all.
+    /// </summary>
+    List<(T1, T2, T3)> SelectAll(CommandOptions options);
+
+    /// <summary>
     /// Returns the first result or throws if empty.
     /// </summary>
     T1 SelectFirst();
@@ -959,6 +967,12 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     /// Executes the query asynchronously and returns all three entities as tuples.
     /// </summary>
     Task<List<(T1, T2, T3)>> SelectAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns all three entities as tuples, using the
+    /// specified <see cref="CommandOptions"/> (AUD-R34-016).
+    /// </summary>
+    Task<List<(T1, T2, T3)>> SelectAllAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result asynchronously or throws if empty.
@@ -1201,6 +1215,14 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     List<(T1, T2, T3, T4)> SelectAll();
 
     /// <summary>
+    /// Executes the query and returns all four entities as tuples, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction). AUD-R34-016: this
+    /// terminal builds its own command, and without this overload it could not be enlisted in the
+    /// caller's transaction at all.
+    /// </summary>
+    List<(T1, T2, T3, T4)> SelectAll(CommandOptions options);
+
+    /// <summary>
     /// Returns the first result or throws if empty.
     /// </summary>
     T1 SelectFirst();
@@ -1316,6 +1338,12 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     /// Executes the query asynchronously and returns all four entities as tuples.
     /// </summary>
     Task<List<(T1, T2, T3, T4)>> SelectAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns all four entities as tuples, using the
+    /// specified <see cref="CommandOptions"/> (AUD-R34-016).
+    /// </summary>
+    Task<List<(T1, T2, T3, T4)>> SelectAllAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result asynchronously or throws if empty.

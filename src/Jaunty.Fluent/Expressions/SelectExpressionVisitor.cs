@@ -122,6 +122,18 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             "Type tests ('is', 'as') are not supported in SELECT projections. There is no SQL " +
             "equivalent of a CLR type test; project a discriminator column instead.");
 
+    /// <summary>
+    /// AUD-R34-018. The one shape AUD-R33-010's sweep missed: <c>p =&gt; new[] { p.A, p.B }</c> is a
+    /// <c>NewArrayInit</c>, which <c>Translate</c>'s switch does not name, so it descended into its
+    /// children and each element landed in <c>_columns</c> on its own - the projection silently
+    /// became <c>SELECT a, b</c>, and any operator inside the initializer was dropped with it. The
+    /// WHERE twin already threw here.
+    /// </summary>
+    protected override Expression VisitNewArray(NewArrayExpression node)
+        => throw new NotSupportedException(
+            "Array construction is not supported in SELECT projections. List the columns directly, " +
+            "or project into an anonymous type and build the array from the results.");
+
     /// <inheritdoc cref="VisitTypeBinary"/>
     protected override Expression VisitListInit(ListInitExpression node)
         => throw new NotSupportedException(

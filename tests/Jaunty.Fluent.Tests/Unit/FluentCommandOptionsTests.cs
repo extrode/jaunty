@@ -699,6 +699,300 @@ public class FluentCommandOptionsTests
     }
 
     // ------------------------------------------------------------------
+    // AUD-R34-016: SelectAll on the 3- and 4-way joined builders. These build and execute their
+    // own command and had no options overload at all, so the tuple-returning surface of a wide
+    // join could not join the caller's transaction - a throw on SqlClient, not a lost option.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void JoinedSelectAll3_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .SelectAll(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void JoinedSelectAll3_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .SelectAll(new CommandOptions(commandTimeout: 71));
+
+        Assert.Equal(71, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void JoinedSelectAll3_WithoutOptions_LeavesTheCommandUntouched()
+    {
+        var connection = new SqliteConnection();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .SelectAll();
+
+        Assert.Null(connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task JoinedSelectAllAsync3_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .SelectAllAsync(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task JoinedSelectAllAsync3_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new Async.SqliteConnection();
+
+        await connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .SelectAllAsync(new CommandOptions(commandTimeout: 72));
+
+        Assert.Equal(72, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void JoinedSelectAll4_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .LeftJoin<Product, Category, Supplier, Order>().On("1 = 1")
+            .SelectAll(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void JoinedSelectAll4_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .LeftJoin<Product, Category, Supplier, Order>().On("1 = 1")
+            .SelectAll(new CommandOptions(commandTimeout: 73));
+
+        Assert.Equal(73, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void JoinedSelectAll4_WithoutOptions_LeavesTheCommandUntouched()
+    {
+        var connection = new SqliteConnection();
+
+        connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .LeftJoin<Product, Category, Supplier, Order>().On("1 = 1")
+            .SelectAll();
+
+        Assert.Null(connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task JoinedSelectAllAsync4_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .LeftJoin<Product, Category, Supplier, Order>().On("1 = 1")
+            .SelectAllAsync(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task JoinedSelectAllAsync4_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new Async.SqliteConnection();
+
+        await connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.Id)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id)
+            .LeftJoin<Product, Category, Supplier, Order>().On("1 = 1")
+            .SelectAllAsync(new CommandOptions(commandTimeout: 74));
+
+        Assert.Equal(74, connection.LastCommand!.CommandTimeout);
+    }
+
+    // ------------------------------------------------------------------
+    // AUD-R34-017: the CTE builder's four terminals executed through the IDbConnection extension
+    // methods with no options argument, so a CTE query could not be enlisted in the caller's
+    // transaction at all.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void CteSelect_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        connection.Cte<Product>("Cheap")
+            .As(q => q.Where(p => p.Id > 0))
+            .Select(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void CteSelect_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        connection.Cte<Product>("Cheap")
+            .As(q => q.Where(p => p.Id > 0))
+            .Select(new CommandOptions(commandTimeout: 81));
+
+        Assert.Equal(81, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void CteSelect_WithoutOptions_LeavesTheCommandUntouched()
+    {
+        var connection = new SqliteConnection();
+
+        connection.Cte<Product>("Cheap")
+            .As(q => q.Where(p => p.Id > 0))
+            .Select();
+
+        Assert.Null(connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task CteSelectAsync_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        await connection.Cte<Product>("Cheap")
+            .As(q => q.Where(p => p.Id > 0))
+            .SelectAsync(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public async Task CteSelectAsync_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new Async.SqliteConnection();
+
+        await connection.Cte<Product>("Cheap")
+            .As(q => q.Where(p => p.Id > 0))
+            .SelectAsync(new CommandOptions(commandTimeout: 82));
+
+        Assert.Equal(82, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void CteSelectFirst_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        try
+        {
+            connection.Cte<Product>("Cheap")
+                .As(q => q.Where(p => p.Id > 0))
+                .SelectFirst(new CommandOptions(transaction: transaction));
+        }
+        catch (InvalidOperationException)
+        {
+            // The stub reader returns no rows; QueryFirst throws after the command was built.
+        }
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void CteSelectFirst_WithOptions_StillLimitsToOneRow()
+    {
+        var connection = new SqliteConnection();
+
+        try
+        {
+            connection.Cte<Product>("Cheap")
+                .As(q => q.Where(p => p.Id > 0))
+                .SelectFirst(new CommandOptions(commandTimeout: 83));
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        Assert.Equal(83, connection.LastCommand!.CommandTimeout);
+        Assert.Contains("1", connection.LastCommand!.CommandText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CteSelectFirstOrDefault_WithOptions_EnlistsTheCallersTransaction()
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        connection.Cte<Product>("Cheap")
+            .As(q => q.Where(p => p.Id > 0))
+            .SelectFirstOrDefault(new CommandOptions(transaction: transaction));
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+
+    [Fact]
+    public void CteSelectFirstOrDefault_WithOptions_AppliesTheCommandTimeout()
+    {
+        var connection = new SqliteConnection();
+
+        connection.Cte<Product>("Cheap")
+            .As(q => q.Where(p => p.Id > 0))
+            .SelectFirstOrDefault(new CommandOptions(commandTimeout: 84));
+
+        Assert.Equal(84, connection.LastCommand!.CommandTimeout);
+    }
+
+    [Fact]
+    public void CteSelectFirstOrDefault_WithOptions_RestoresTheTakeCount()
+    {
+        var connection = new SqliteConnection();
+
+        ICteQueryClause<Product> cte = connection.Cte<Product>("Cheap")
+            .As(q => q.Where(p => p.Id > 0));
+
+        cte.SelectFirstOrDefault(new CommandOptions(commandTimeout: 85));
+        var firstSql = connection.LastCommand!.CommandText;
+
+        cte.Select(new CommandOptions(commandTimeout: 86));
+        var allSql = connection.LastCommand!.CommandText;
+
+        Assert.NotEqual(firstSql, allSql);
+    }
+
+    // ------------------------------------------------------------------
     // Stubs. Both connection classes must be named SqliteConnection: dialect resolution keys on
     // the connection's exact Type.Name, and Type.Name ignores the enclosing type, which is why the
     // async one is nested a level deeper rather than renamed.

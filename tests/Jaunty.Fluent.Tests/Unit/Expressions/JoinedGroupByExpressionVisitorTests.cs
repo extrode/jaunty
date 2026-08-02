@@ -59,6 +59,24 @@ public class JoinedGroupByExpressionVisitorTests
         Assert.Equal(new[] { "Key0", "Key1" }, aliases);
     }
 
+    /// <summary>
+    /// AUD-R34-005, the joined twin: the single-expression branch reported the alias "Value" and
+    /// emitted the column without it, so the mapper resolved a name the result set never carried.
+    /// </summary>
+    [Fact]
+    public void TranslateSelect_SingleExpression_EmitsTheAliasItReports()
+    {
+        Expression<Func<Product, Category, object>> keySelector = (p, c) => c.CategoryName;
+        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
+
+        Expression<Func<IGroupingJoined<object, Product, Category>, object>> selectExpr = g => g.Count();
+        var (columns, aliases) = visitor.TranslateSelect(selectExpr);
+
+        var column = Assert.Single(columns);
+        Assert.Equal("Value", aliases[0]);
+        Assert.Contains($"AS {_dialect.EscapeColumnName("Value")}", column, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TranslateHavingPredicate_BareAggregateWithoutComparison_TranslatesOperandDirectly()
     {
