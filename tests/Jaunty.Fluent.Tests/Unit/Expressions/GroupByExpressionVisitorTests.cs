@@ -73,6 +73,25 @@ public class GroupByExpressionVisitorTests
 
     #endregion
 
+    /// <summary>
+    /// AUD-R34-005. The single-expression branch reported the alias "Value" to the caller but did
+    /// not emit it, so the mappers - which resolve every column by the reported name - looked up a
+    /// column that was never named. Both shapes that reach this branch are pinned here.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TranslateSelect_SingleExpression_EmitsTheAliasItReports(bool aggregate)
+    {
+        Expression<Func<IGrouping<short, Product>, object>> expr = aggregate ? g => g.Count() : g => g.Key;
+        var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[CategoryId]" });
+        var (columns, aliases) = visitor.TranslateSelect(expr);
+
+        var column = Assert.Single(columns);
+        Assert.Equal("Value", aliases[0]);
+        Assert.Contains($"AS {_dialect.EscapeColumnName("Value")}", column, StringComparison.Ordinal);
+    }
+
     #region Aggregate Functions
 
     [Fact]
