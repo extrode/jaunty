@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using Jaunty.Attributes;
 using Jaunty.Interfaces;
 using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
@@ -140,15 +141,17 @@ internal static class WriteParameterCache<T> where T : new()
         IReadOnlyList<ColumnMetadata> columns = metadata.InsertColumns;
         var getters = new Func<T, object?>[columns.Count];
         var properties = new PropertyInfo?[columns.Count];
+        var storages = new EnumStorage?[columns.Count];
         var columnNames = new string[columns.Count];
         for (int i = 0; i < columns.Count; i++)
         {
             getters[i] = CreateTypedGetter(columns[i]);
             properties[i] = columns[i].Property;
+            storages[i] = columns[i].EnumStorageOverride;
             columnNames[i] = columns[i].ColumnName;
         }
 
-        return CreateValueSetter(getters, properties, columnNames, "insert");
+        return CreateValueSetter(getters, properties, storages, columnNames, "insert");
     }
 
     private static Action<IDataParameterCollection, T>? CreateUpdateValueSetter(EntityMetadata? metadata)
@@ -159,6 +162,7 @@ internal static class WriteParameterCache<T> where T : new()
         IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
         var getters = new Func<T, object?>[updateColumns.Count + primaryKeys.Count];
         var properties = new PropertyInfo?[updateColumns.Count + primaryKeys.Count];
+        var storages = new EnumStorage?[updateColumns.Count + primaryKeys.Count];
         var columnNames = new string[updateColumns.Count + primaryKeys.Count];
 
         // Non-key columns first, then keys: the order PrepareUpdateParameters creates the
@@ -167,16 +171,18 @@ internal static class WriteParameterCache<T> where T : new()
         {
             getters[i] = CreateTypedGetter(updateColumns[i]);
             properties[i] = updateColumns[i].Property;
+            storages[i] = updateColumns[i].EnumStorageOverride;
             columnNames[i] = updateColumns[i].ColumnName;
         }
         for (int i = 0; i < primaryKeys.Count; i++)
         {
             getters[updateColumns.Count + i] = CreateTypedGetter(primaryKeys[i]);
             properties[updateColumns.Count + i] = primaryKeys[i].Property;
+            storages[updateColumns.Count + i] = primaryKeys[i].EnumStorageOverride;
             columnNames[updateColumns.Count + i] = primaryKeys[i].ColumnName;
         }
 
-        return CreateValueSetter(getters, properties, columnNames, "update");
+        return CreateValueSetter(getters, properties, storages, columnNames, "update");
     }
 
     private static Action<IDataParameterCollection, T>? CreateDeleteValueSetter(EntityMetadata? metadata)
@@ -186,15 +192,17 @@ internal static class WriteParameterCache<T> where T : new()
         IReadOnlyList<ColumnMetadata> deleteColumns = metadata.DeleteColumns;
         var getters = new Func<T, object?>[deleteColumns.Count];
         var properties = new PropertyInfo?[deleteColumns.Count];
+        var storages = new EnumStorage?[deleteColumns.Count];
         var columnNames = new string[deleteColumns.Count];
         for (int i = 0; i < deleteColumns.Count; i++)
         {
             getters[i] = CreateTypedGetter(deleteColumns[i]);
             properties[i] = deleteColumns[i].Property;
+            storages[i] = deleteColumns[i].EnumStorageOverride;
             columnNames[i] = deleteColumns[i].ColumnName;
         }
 
-        return CreateValueSetter(getters, properties, columnNames, "delete");
+        return CreateValueSetter(getters, properties, storages, columnNames, "delete");
     }
 
     /// <summary>
@@ -237,7 +245,7 @@ internal static class WriteParameterCache<T> where T : new()
     /// </para>
     /// </remarks>
     private static Action<IDataParameterCollection, T> CreateValueSetter(
-        Func<T, object?>[] getters, PropertyInfo?[] properties, string[] columnNames, string operation)
+        Func<T, object?>[] getters, PropertyInfo?[] properties, EnumStorage?[] storages, string[] columnNames, string operation)
     {
         IDataParameterCollection? verifiedAgainst = null;
 
@@ -271,7 +279,7 @@ internal static class WriteParameterCache<T> where T : new()
                         $"'{columnNames[i]}' was expected. Jaunty binds bulk values by position; an entry it cannot " +
                         "set would silently keep the previous row's value.");
 
-                parameter.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[i](entity), properties[i]) ?? DBNull.Value;
+                parameter.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[i](entity), properties[i], storages[i]) ?? DBNull.Value;
             }
         };
     }

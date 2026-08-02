@@ -199,7 +199,7 @@ public static partial class Jaunty
         ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         IDbDataParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
-        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property) ?? DBNull.Value;
+        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property, primaryKey.EnumStorageOverride) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
     internal static async ValueTask<T?> GetByIdSimpleCoreAsync<T>(DbConnection dbConnection, object id, CommandOptions<T> options, CancellationToken cancellationToken) where T : new()
@@ -373,7 +373,7 @@ public static partial class Jaunty
         ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         DbParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
-        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property) ?? DBNull.Value;
+        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property, primaryKey.EnumStorageOverride) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
 }
