@@ -1,7 +1,7 @@
-using System.Data;
+﻿using System.Data;
 
-using Jaunty.Core;
 using Jaunty.Configuration;
+using Jaunty.Core;
 using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 
@@ -177,7 +177,7 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-        return QueryMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+        return QueryMultiEntityCore(connection, sql, null, options, MappingMode.Strict);
     }
 
     /// <summary>
@@ -269,99 +269,6 @@ public static partial class Jaunty
         if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
-    }
-
-    #endregion
-
-    #region Legacy Multi-Entity Query APIs (Marked as Obsolete for Consistency)
-
-    /// <summary>
-    /// Executes a query and maps columns to two entity types by property name.
-    /// Columns are matched to entity properties using case-insensitive name matching.
-    /// T1 has priority - if a column matches both types, it maps to T1.
-    /// Use SQL aliases to disambiguate (e.g., "o.id AS OrderId, c.id AS CustomerId").
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
-    {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            // AUD-R26: these two obsolete overloads hardcoded 64, so a consumer who tuned
-            // JauntyConfig.QueryResultCapacity for their workload silently got the default here and
-            // nowhere else - every non-obsolete multi-entity path in QueryCore.cs already reads it.
-            // The per-call ExpectedRowCount hint the non-obsolete paths also honour is not available:
-            // these take the non-generic CommandOptions, which carries no such field, and widening a
-            // public struct for the obsolete entry points is not worth it - there are thirteen of them
-            // across this file and QueryMultiEntityAsync.cs, not the two this comment first claimed.
-            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity);
-
-            if (!reader.Read())
-                return results;
-
-            // Build mapping on first row
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
-            {
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.Map(t1, t2, reader);
-
-                results.Add((t1, t2));
-            }
-            while (reader.Read());
-
-            return results;
-        });
-    }
-
-    /// <summary>
-    /// Executes a query, maps to two entity types, and combines them using a function.
-    /// </summary>
-    /// <remarks>
-    /// AUD-R34-003, residual and deliberately not fixed. Passing options <i>positionally</i> -
-    /// <c>Query&lt;T1, T2, R&gt;(sql, map, CommandOptions.WithTimeout(60))</c> - binds them to
-    /// <paramref name="parameters"/> and discards them, and unlike the rest of the multi-entity
-    /// surface there is no <c>CommandOptions&lt;T&gt;</c> sibling for the AUD-R34-002 conversion to
-    /// select. The obvious remedy, a <c>(sql, map, CommandOptions)</c> overload, is a <b>source
-    /// break</b>: both overloads would then be applicable to the named form
-    /// <c>(sql, map, options: x)</c>, which is CS0121 - the library's own tests call it that way.
-    /// So: use the named argument, which is correct today, or move to the non-obsolete overload
-    /// taking <c>CommandOptions&lt;(T1, T2)&gt;</c>, which this whole overload is obsolete in favour
-    /// of anyway.
-    /// </remarks>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static List<TResult> Query<T1, T2, TResult>(this IDbConnection connection, string sql, Func<T1, T2, TResult> map, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(map);
-#else
-        if (map is null) throw new ArgumentNullException(nameof(map));
-#endif
-
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            var results = new List<TResult>(JauntyConfig.QueryResultCapacity);
-
-            if (!reader.Read())
-                return results;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
-            {
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.Map(t1, t2, reader);
-
-                results.Add(map(t1, t2));
-            }
-            while (reader.Read());
-
-            return results;
-        });
     }
 
     #endregion
@@ -601,29 +508,6 @@ public static partial class Jaunty
         if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
-    }
-
-    /// <summary>
-    /// Executes a query and returns the first row mapped to two entity types.
-    /// Throws if no rows are returned.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
-    {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            if (!reader.Read())
-                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.Map(t1, t2, reader);
-
-            return (t1, t2);
-        });
     }
 
     #endregion
@@ -875,28 +759,6 @@ public static partial class Jaunty
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
-    /// <summary>
-    /// Executes a query and returns the first row mapped to two entity types, or default if empty.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
-    {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            if (!reader.Read())
-                return ((T1, T2)?)null;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.Map(t1, t2, reader);
-
-            return (t1, t2);
-        });
-    }
-
     #endregion
 
     #region Multi-Entity QuerySingle APIs
@@ -1139,29 +1001,6 @@ public static partial class Jaunty
         if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
-    }
-
-    /// <summary>
-    /// Executes a query and returns exactly one row mapped to two entity types.
-    /// Throws if zero or more than one row is returned.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
-    {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            if (!reader.Read())
-                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.Map(t1, t2, reader);
-
-            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : (t1, t2);
-        });
     }
 
     #endregion
@@ -1421,29 +1260,6 @@ public static partial class Jaunty
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
-    /// <summary>
-    /// Executes a query and returns exactly one row mapped to two entity types, or default if empty.
-    /// Throws if more than one row is returned.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
-    {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            if (!reader.Read())
-                return ((T1, T2)?)null;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.Map(t1, t2, reader);
-
-            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : ((T1, T2)?)(t1, t2);
-        });
-    }
-
     #endregion
 
     #region Multi-Entity QueryStream APIs
@@ -1688,108 +1504,6 @@ public static partial class Jaunty
         if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
-    }
-
-    /// <summary>
-    /// Executes a query and streams rows mapped to two entity types.
-    /// Connection stays open until enumeration completes.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
-    {
-        return QueryStreamCore<T1, T2>(connection, sql, parameters, options);
-    }
-
-    // Eagerly validates (connection/sql) rather than deferring to first enumeration: a
-    // yield-return method only executes its body once enumerated, so a check placed there would
-    // silently never run for a caller who discards the returned IEnumerable<(T1, T2)> (or breaks
-    // out of a foreach early) without enumerating it. Splitting into a thin eager wrapper plus a
-    // private iterator ensures misuse (e.g. a null connection) is caught immediately at call time
-    // instead of being deferred to whenever/if enumeration happens.
-    private static IEnumerable<(T1, T2)> QueryStreamCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions options) where T1 : new() where T2 : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-#endif
-        return QueryStreamCoreIterator<T1, T2>(connection, sql, parameters, options);
-    }
-
-    private static IEnumerable<(T1, T2)> QueryStreamCoreIterator<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions options) where T1 : new() where T2 : new()
-    {
-        bool wasClosed = connection.State == ConnectionState.Closed;
-
-        IDbCommand? command = null;
-        IDataReader? reader = null;
-        MultiEntityMapper<T1, T2>? mapping = null;
-
-        try
-        {
-            if (wasClosed) connection.Open();
-
-            command = connection.CreateCommand();
-            command.CommandText = sql;
-
-            // AUD-R25: this iterator applied neither CommandType nor the logger, unlike every other
-            // obsolete multi-entity overload in this file (which route through ExecuteReader) and
-            // unlike the non-obsolete replacement QueryStreamMultiEntityCore. Passing
-            // CommandOptions.AsStoredProcedure() therefore left the command as CommandType.Text, so
-            // the provider executed the procedure *name* as a raw SQL statement, and the command
-            // never reached JauntyConfig.Logger. AUD-R12 amended this same iterator for the
-            // silently-dropped non-DbTransaction without carrying these two assignments across.
-            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
-                command.CommandType = options.CommandType;
-
-            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
-            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
-            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
-            // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
-            // transaction gets Jaunty's clear ArgumentException instead of being silently dropped.
-            if (options.Transaction is not null)
-            {
-                command.Transaction = connection is System.Data.Common.DbConnection
-                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
-                    : options.Transaction;
-            }
-
-            if (options.CommandTimeout.HasValue)
-                command.CommandTimeout = options.CommandTimeout.Value;
-
-            if (parameters is not null)
-                ParameterBinder.Bind(command, parameters);
-
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
-
-            reader = command.ExecuteReader();
-
-            if (!reader.Read())
-                yield break;
-
-            mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
-            {
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.Map(t1, t2, reader);
-
-                yield return (t1, t2);
-            }
-            while (reader.Read());
-        }
-        finally
-        {
-            reader?.Dispose();
-            command?.Dispose();
-            if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
-        }
     }
 
     #endregion

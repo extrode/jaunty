@@ -37,7 +37,6 @@ public class CommandOptionsGenericFormDriftTests
             .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             .Where(m => m.GetParameters().Any(p => p.ParameterType == typeof(CommandOptions)))
             .Where(m => m.IsGenericMethodDefinition)
-            .Where(m => !m.IsDefined(typeof(ObsoleteAttribute), inherit: false))
             .Where(m => ReferencesGenericParameter(m.ReturnType))
             .Where(m => !m.GetParameters().Any(IsMapDelegate))
             .Select(m => $"{m.DeclaringType!.Name}.{m.Name}<{m.GetGenericArguments().Length}>({m.GetParameters().Length})")

@@ -1,4 +1,4 @@
-using System.Data.SQLite;
+﻿using System.Data.SQLite;
 
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
@@ -6,12 +6,11 @@ using Jaunty.Tests.Helpers;
 namespace Jaunty.Tests.Integration.IDbConnectionFallback;
 
 /// <summary>
-/// Tests that the [Obsolete] async multi-entity overloads correctly reject non-DbConnection
+/// Tests that the async multi-entity overloads correctly reject non-DbConnection
 /// wrappers instead of letting an unchecked cast to DbDataReader throw a misleading
 /// InvalidCastException. The async public API requires DbConnection and throws
 /// InvalidOperationException for IDbConnection-only implementations.
 /// </summary>
-#pragma warning disable CS0618 // Suppress obsolete warnings — these tests intentionally call obsolete methods
 public class AsyncMultiEntityFallbackTests : IDisposable
 {
     private readonly SQLiteConnection _realConnection;
@@ -43,12 +42,14 @@ public class AsyncMultiEntityFallbackTests : IDisposable
     }
 
     [Fact]
-    public async Task QueryAsyncWithCombiner_ViaWrapper_ThrowsForNonDbConnection()
+    public async Task QueryStreamAsync_ViaWrapper_ThrowsForNonDbConnection()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _wrapper.QueryAsync<OrderSummary, CategorySummary, string>(
-                JoinSql,
-                (order, category) => order.OrderId + category.CategoryName).AsTask());
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach ((OrderSummary, CategorySummary) _ in _wrapper.QueryStreamAsync<OrderSummary, CategorySummary>(JoinSql))
+            {
+            }
+        });
     }
 
     [Fact]
