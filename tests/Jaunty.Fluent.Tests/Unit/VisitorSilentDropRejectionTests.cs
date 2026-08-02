@@ -36,6 +36,15 @@ public class VisitorSilentDropRejectionTests
         public string Name { get; set; } = string.Empty;
     }
 
+    [Table("visitor_collides")]
+    public class Collides
+    {
+        [Key]
+        public int Id { get; set; }
+        public DateTime Created { get; set; }
+        public int Day { get; set; }
+    }
+
     [Table("visitor_third")]
     public class Third
     {
@@ -211,6 +220,45 @@ public class VisitorSilentDropRejectionTests
         var sql = TranslateWhere(p => !(p.Id > 5));
 
         Assert.Contains("NOT (", sql, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------------
+    // AUD-R34-021: a member chain over the parameter emitted as a column named after its leaf.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void WherePredicate_OnADateTimePart_ThrowsInsteadOfEmittingAYearColumn()
+    {
+        var exception = Assert.Throws<NotSupportedException>(
+            () => TranslateWhere(p => p.Created.Year == 1997));
+
+        Assert.Contains("Year", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Sql.Year", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WherePredicate_OnADateTimePart_ThatCollidesWithAMappedColumn_StillThrows()
+    {
+        var visitor = new WhereExpressionVisitor<Collides>(new SQLiteDialect());
+
+        Assert.Throws<NotSupportedException>(
+            () => visitor.Translate(p => p.Created.Day == 3));
+    }
+
+    [Fact]
+    public void WherePredicate_OnAStringLength_StillTranslates()
+    {
+        var sql = TranslateWhere(p => p.Name.Length > 3);
+
+        Assert.Contains("LENGTH(", sql, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WherePredicate_OnADirectColumn_StillTranslates()
+    {
+        var sql = TranslateWhere(p => p.Name == "x");
+
+        Assert.Contains("Name", sql, StringComparison.Ordinal);
     }
 
     [Fact]
