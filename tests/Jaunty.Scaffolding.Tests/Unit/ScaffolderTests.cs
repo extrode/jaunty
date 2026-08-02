@@ -11,6 +11,19 @@ public class ScaffolderTests
     // ------------------------------------------------------------------
 
     [Fact]
+    public async Task ScaffoldAsync_NullOptions_ReportsTheMissingArgumentNotANullReference()
+    {
+        // AUD-R32-007 (re-found from round 27): the null used to be dereferenced inside the try,
+        // so the catch-all returned "Object reference not set to an instance of an object." -
+        // indistinguishable from a database failure and naming nothing the caller can act on.
+        ScaffoldResult result = await new Scaffolder().ScaffoldAsync(null!);
+
+        Assert.False(result.Success);
+        Assert.DoesNotContain("Object reference not set", result.Error, StringComparison.Ordinal);
+        Assert.Contains("options", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task ScaffoldAsync_EmptyConnectionString_ReturnsFailedWithMessage()
     {
         var options = new ScaffoldOptions { ConnectionString = "", OutputDirectory = "./out", Namespace = "Generated" };

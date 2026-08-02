@@ -81,11 +81,15 @@ public sealed partial class DuckDb : IFlatFile
         if (options.RegisterDialect)
             SqlDialectFactory.RegisterDialect("DuckDBConnection", _dialect);
 
-        if (options.AutoOpen)
-            _connection.Open();
-
         try
         {
+            // AUD-R32-004: Open() used to sit outside this try. A throwing Open (locked file,
+            // a path that is a directory, a corrupt database) left _connection undisposed, and
+            // the constructor never returns an instance the caller could Dispose - so the
+            // native handle leaked. Same reason the source loop is guarded.
+            if (options.AutoOpen)
+                _connection.Open();
+
             foreach (IFileSource source in options.Sources)
             {
                 if (options.PreloadIntoMemory && !source.IsPreloaded)

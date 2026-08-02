@@ -2,6 +2,7 @@ using System.Data.Common;
 
 using DuckDB.NET.Data;
 
+using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
 using System.Globalization;
 using Jaunty.Internals;
@@ -16,7 +17,38 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
-        return await QueryInternalAsync<T>(sql, [], cancellationToken).ConfigureAwait(false);
+        return await QueryInternalAsync<T>(sql, [], default, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Executes a raw SQL query using <paramref name="options"/> for the command and returns the
+    /// results as strongly-typed entities.
+    /// </summary>
+    /// <typeparam name="T">The entity type to materialize results into.</typeparam>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>A list of entities matching the query.</returns>
+    /// <remarks>See <see cref="Query{T}(string, CommandOptions)"/> - AUD-R32-009.</remarks>
+    public async ValueTask<List<T>> QueryAsync<T>(string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        return await QueryInternalAsync<T>(sql, [], options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc cref="QueryAsync{T}(string, CommandOptions, CancellationToken)"/>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="parameters">Parameters for the query.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    public async ValueTask<List<T>> QueryAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        return await QueryInternalAsync<T>(sql, parameters, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -25,10 +57,10 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
-        return await QueryInternalAsync<T>(sql, parameters, cancellationToken).ConfigureAwait(false);
+        return await QueryInternalAsync<T>(sql, parameters, default, cancellationToken).ConfigureAwait(false);
     }
 
-    private ValueTask<List<T>> QueryInternalAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken) where T : class, new()
+    private ValueTask<List<T>> QueryInternalAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         // Materialised once: the caller's sequence is enumerated to bind the command, and
         // describing it separately for the interceptor and again for the logger would enumerate a
@@ -41,16 +73,17 @@ public sealed partial class DuckDb
 
         return CommandObservation.ExecuteAsync(
             sql, described, _connection, DuckDbObservation.Text,
-            () => QueryInternalDirectAsync<T>(sql, materialised, described, cancellationToken), cancellationToken);
+            () => QueryInternalDirectAsync<T>(sql, materialised, described, options, cancellationToken), cancellationToken);
     }
 
-    private async ValueTask<List<T>> QueryInternalDirectAsync<T>(string sql, (string Name, object? Value)[] parameters, object described, CancellationToken cancellationToken) where T : class, new()
+    private async ValueTask<List<T>> QueryInternalDirectAsync<T>(string sql, (string Name, object? Value)[] parameters, object described, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         CommandObservation.Log(sql, described);
 
         DuckDBCommand cmd = _connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = sql;
+        NonQueryExecutor.ApplyOptions(cmd, options);
 
         foreach ((string name, object? value) in parameters)
         {
