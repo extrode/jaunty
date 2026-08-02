@@ -79,6 +79,26 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     List<T> Query<T>(string sql, params (string Name, object? Value)[] parameters) where T : class, new();
 
     /// <summary>
+    /// Executes a raw SQL query using <paramref name="options"/> for the command and returns the
+    /// results as strongly-typed entities.
+    /// </summary>
+    /// <typeparam name="T">The entity type to materialize results into.</typeparam>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <returns>A list of entities matching the query.</returns>
+    /// <remarks>
+    /// AUD-R32-009: the raw-SQL read was the one operation here with no options overload, so it
+    /// could not join the transaction its Insert/Update/Delete neighbours were given.
+    /// </remarks>
+    List<T> Query<T>(string sql, CommandOptions options) where T : class, new();
+
+    /// <inheritdoc cref="Query{T}(string, CommandOptions)"/>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <param name="parameters">Parameters for the query.</param>
+    List<T> Query<T>(string sql, CommandOptions options, params (string Name, object? Value)[] parameters) where T : class, new();
+
+    /// <summary>
     /// Executes a raw SQL query and returns the results as strongly-typed entities.
     /// </summary>
     /// <typeparam name="T">The entity type to materialize results into.</typeparam>
@@ -96,6 +116,19 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>A list of entities matching the query.</returns>
     ValueTask<List<T>> QueryAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <inheritdoc cref="Query{T}(string, CommandOptions)"/>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    ValueTask<List<T>> QueryAsync<T>(string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <inheritdoc cref="Query{T}(string, CommandOptions)"/>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="parameters">Parameters for the query.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    ValueTask<List<T>> QueryAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new();
 
     // ==========================================
     // CRUD Operations

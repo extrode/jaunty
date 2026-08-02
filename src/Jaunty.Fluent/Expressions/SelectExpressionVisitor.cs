@@ -95,6 +95,20 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         return node;
     }
 
+    /// <summary>
+    /// AUD-R32-002. A ternary is a <see cref="ConditionalExpression"/>, which <c>Translate</c>'s
+    /// top-level switch does not name, so it used to fall through to the base visitor's default
+    /// traversal: Test/IfTrue/IfFalse were each walked independently and any member access inside
+    /// them landed in <c>_columns</c> as a column of its own, producing a SELECT list that has
+    /// nothing to do with the ternary. Every other untranslatable shape in this class throws;
+    /// this one silently returned wrong SQL. If CASE WHEN support is ever wanted, this override
+    /// is where it goes - see <c>Sql.Case</c> for the supported spelling.
+    /// </summary>
+    protected override Expression VisitConditional(ConditionalExpression node)
+        => throw new NotSupportedException(
+            "Conditional (ternary) expressions are not supported in SELECT projections. " +
+            "Use Sql.Case(...) for a CASE WHEN, or project the operands and branch in memory.");
+
     private string TranslateProjectionExpression(Expression expr)
     {
         // Recursively unwrap Convert and Quote

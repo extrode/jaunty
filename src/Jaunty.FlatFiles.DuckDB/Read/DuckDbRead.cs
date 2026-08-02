@@ -2,6 +2,7 @@ using System.Data.Common;
 
 using DuckDB.NET.Data;
 
+using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.Fluent;
 using System.Globalization;
@@ -29,7 +30,29 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
-        return QueryInternal<T>(sql, []);
+        return QueryInternal<T>(sql, [], default);
+    }
+
+    /// <summary>
+    /// Executes a raw SQL query using <paramref name="options"/> for the command and returns the
+    /// results as strongly-typed entities.
+    /// </summary>
+    /// <typeparam name="T">The entity type to materialize results into.</typeparam>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <returns>A list of entities matching the query.</returns>
+    /// <remarks>
+    /// AUD-R32-009: the raw-SQL single-entity read was the last read surface on <see cref="DuckDb"/>
+    /// with no options overload, so it could not be enlisted in the same transaction as the
+    /// <c>Insert</c>/<c>Update</c>/<c>Delete</c> calls beside it. Same reasoning as AUD-R26-068,
+    /// which gave <c>QueryMultiEntity</c> its overload.
+    /// </remarks>
+    public List<T> Query<T>(string sql, CommandOptions options) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        return QueryInternal<T>(sql, [], options);
     }
 
     /// <summary>
@@ -44,20 +67,33 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
-        return QueryInternal<T>(sql, parameters);
+        return QueryInternal<T>(sql, parameters, default);
     }
 
-    private List<T> QueryInternal<T>(string sql, (string Name, object? Value)[] parameters) where T : class, new()
+    /// <inheritdoc cref="Query{T}(string, CommandOptions)"/>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <param name="parameters">Parameters for the query.</param>
+    public List<T> Query<T>(string sql, CommandOptions options, params (string Name, object? Value)[] parameters) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        return QueryInternal<T>(sql, parameters, options);
+    }
+
+    private List<T> QueryInternal<T>(string sql, (string Name, object? Value)[] parameters, CommandOptions options) where T : class, new()
         => CommandObservation.Execute(
             sql, DuckDbObservation.Describe(parameters), _connection, DuckDbObservation.Text,
-            () => QueryInternalDirect<T>(sql, parameters));
+            () => QueryInternalDirect<T>(sql, parameters, options));
 
-    private List<T> QueryInternalDirect<T>(string sql, (string Name, object? Value)[] parameters) where T : class, new()
+    private List<T> QueryInternalDirect<T>(string sql, (string Name, object? Value)[] parameters, CommandOptions options) where T : class, new()
     {
         CommandObservation.Log(sql, DuckDbObservation.Describe(parameters));
 
         using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
+        NonQueryExecutor.ApplyOptions(cmd, options);
 
         foreach ((string name, object? value) in parameters)
         {

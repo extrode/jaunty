@@ -89,7 +89,12 @@ internal static class MetadataBuilder
             string colName = JauntyConfig.ColumnNameResolver?.Invoke(property.Name) ?? property.Name;
             ColumnAttribute? colAttr = property.GetCustomAttribute<ColumnAttribute>();
 
-            if (colAttr is not null)
+            // AUD-R32-006: the IsNullOrEmpty guard was missing here alone. ColumnAttribute's
+            // constructor rejects null but not "", so [Column("")] mapped the property to an
+            // empty column name, while the DataAnnotations-compat path below and the table/schema
+            // resolutions above all fall back to the default. The source generator carries the
+            // same guard so both mapping modes agree.
+            if (colAttr is not null && !string.IsNullOrEmpty(colAttr.Name))
                 colName = colAttr.Name;
             else
             {

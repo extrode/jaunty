@@ -189,6 +189,20 @@ public class QueryMultiEntityN5Tests : IClassFixture<DialectFixture>
         txn.Rollback();
     }
 
+    // AUD-R32: bare (sql, parameters) overload — no CommandOptions/MultiEntityCommandOptions — was never called by any test.
+    [Theory]
+    [SystemSqlite]
+    public void Query_FiveEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.Query<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 });
+
+        Assert.Single(results);
+        Assert.Equal("Ada Lovelace", results[0].Item1.AuthorName);
+    }
+
     [Theory]
     [SystemSqlite]
     public void Query_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
@@ -267,6 +281,7 @@ public class QueryMultiEntityN5Tests : IClassFixture<DialectFixture>
         Assert.Equal("Ada Lovelace", author.AuthorName);
     }
 
+    // AUD-R32: bare (sql, parameters) overload — no CommandOptions/MultiEntityCommandOptions — was never called by any test.
     [Theory]
     [SystemSqlite]
     public void QueryFirst_FiveEntities_WithParameters_FiltersRow(DialectInfo _)

@@ -102,7 +102,11 @@ internal static class NonQueryExecutor
         return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static void ApplyOptions(DuckDBCommand cmd, CommandOptions options)
+    /// <summary>
+    /// AUD-R32-009: was private. The raw-SQL read path needs the same treatment and duplicating it
+    /// there is how the two drift - the transaction-validation reasoning below is the whole point.
+    /// </summary>
+    internal static void ApplyOptions(DuckDBCommand cmd, CommandOptions options)
     {
         // cmd.Transaction's own property type is the narrower DuckDBTransaction, so assigning
         // through IDbCommand.Transaction (typed DbTransaction) is required to reach it generically.

@@ -351,7 +351,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
             // Support [Column] from both
             AttributeData? columnAttr = GetAttribute(prop, "ColumnAttribute");
-            var columnName = columnAttr?.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? prop.Name;
+            // AUD-R32-006: an empty [Column("")] falls back to the property name rather than
+            // generating a mapping to "". The null-coalesce alone did not catch it, and the
+            // reflection MetadataBuilder carries the matching guard so both modes agree.
+            var columnAttrName = columnAttr?.ConstructorArguments.FirstOrDefault().Value?.ToString();
+            var columnName = string.IsNullOrEmpty(columnAttrName) ? prop.Name : columnAttrName!;
 
             // Support [Key] from both, plus conventions
             var isKey = HasAttribute(prop, "KeyAttribute") || prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals($"{className}Id", StringComparison.OrdinalIgnoreCase);

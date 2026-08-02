@@ -126,6 +126,20 @@ public class QueryMultiEntityN7Tests : IClassFixture<DialectFixture>
         txn.Rollback();
     }
 
+    // AUD-R32: bare (sql, parameters) overload — no CommandOptions/MultiEntityCommandOptions — was never called by any test.
+    [Theory]
+    [SystemSqlite]
+    public void Query_SevenEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.Query<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 });
+
+        Assert.Single(results);
+        Assert.Equal(1, results[0].Item1.Id);
+    }
+
     [Theory]
     [SystemSqlite]
     public void Query_SevenEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)

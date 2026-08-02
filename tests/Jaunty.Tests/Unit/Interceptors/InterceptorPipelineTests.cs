@@ -384,6 +384,102 @@ public class InterceptorPipelineTests
 
     #endregion
 
+    #region Sync Interceptor Tests (round-32 AUD, ISyncCommandInterceptor sync entry points)
+
+    [Fact]
+    public void InvokeExecuting_WithSyncInterceptor_CallsSyncHookNotAsyncHook()
+    {
+        // Arrange
+        var interceptor = new TestSyncInterceptor();
+        var pipeline = new InterceptorPipeline(new ICommandInterceptor[] { interceptor });
+
+        // Act
+        pipeline.InvokeExecuting("SELECT 1", null, CreateMockConnection(), CommandType.Text);
+
+        // Assert
+        Assert.Equal(new[] { "SELECT 1" }, interceptor.SyncExecutingCalls);
+        Assert.Empty(interceptor.AsyncExecutingCalls);
+    }
+
+    [Fact]
+    public void InvokeExecuted_WithSyncInterceptor_CallsSyncHookNotAsyncHook()
+    {
+        // Arrange
+        var interceptor = new TestSyncInterceptor();
+        var pipeline = new InterceptorPipeline(new ICommandInterceptor[] { interceptor });
+
+        // Act
+        pipeline.InvokeExecuted("SELECT 1", null, CreateMockConnection(), CommandType.Text, TimeSpan.FromMilliseconds(10));
+
+        // Assert
+        Assert.Equal(new[] { "SELECT 1" }, interceptor.SyncExecutedCalls);
+        Assert.Empty(interceptor.AsyncExecutedCalls);
+    }
+
+    [Fact]
+    public void InvokeFailed_WithSyncInterceptor_CallsSyncHookNotAsyncHook()
+    {
+        // Arrange
+        var interceptor = new TestSyncInterceptor();
+        var pipeline = new InterceptorPipeline(new ICommandInterceptor[] { interceptor });
+        var exception = new InvalidOperationException("boom");
+
+        // Act
+        pipeline.InvokeFailed("SELECT 1", null, CreateMockConnection(), CommandType.Text, TimeSpan.FromMilliseconds(10), exception);
+
+        // Assert
+        Assert.Equal(new[] { "SELECT 1:boom" }, interceptor.SyncFailedCalls);
+        Assert.Empty(interceptor.AsyncFailedCalls);
+    }
+
+    [Fact]
+    public void ExecuteWithInterception_WithSyncInterceptor_DrivesAllThreeSyncHooks()
+    {
+        // Arrange
+        var interceptor = new TestSyncInterceptor();
+        var pipeline = new InterceptorPipeline(new ICommandInterceptor[] { interceptor });
+
+        // Act
+        var result = pipeline.ExecuteWithInterception(
+            "SELECT 1",
+            null,
+            CreateMockConnection(),
+            CommandType.Text,
+            () => 42);
+
+        // Assert
+        Assert.Equal(42, result);
+        Assert.Single(interceptor.SyncExecutingCalls);
+        Assert.Single(interceptor.SyncExecutedCalls);
+        Assert.Empty(interceptor.SyncFailedCalls);
+        Assert.Empty(interceptor.AsyncExecutingCalls);
+        Assert.Empty(interceptor.AsyncExecutedCalls);
+        Assert.Empty(interceptor.AsyncFailedCalls);
+    }
+
+    [Fact]
+    public void ExecuteWithInterception_WithSyncInterceptor_ExecuteFuncThrows_CallsSyncFailedHook()
+    {
+        // Arrange
+        var interceptor = new TestSyncInterceptor();
+        var pipeline = new InterceptorPipeline(new ICommandInterceptor[] { interceptor });
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() =>
+            pipeline.ExecuteWithInterception<int>(
+                "SELECT 1",
+                null,
+                CreateMockConnection(),
+                CommandType.Text,
+                () => throw new InvalidOperationException("Execute failed")));
+
+        Assert.Single(interceptor.SyncFailedCalls);
+        Assert.Contains("Execute failed", interceptor.SyncFailedCalls[0]);
+        Assert.Empty(interceptor.AsyncFailedCalls);
+    }
+
+    #endregion
+
     #region Helper Classes
 
     private class SimpleInterceptor : ICommandInterceptor
@@ -430,6 +526,43 @@ public class InterceptorPipelineTests
 
         public ValueTask OnCommandFailedAsync(CommandContext context, Exception exception, CancellationToken cancellationToken)
             => new ValueTask();
+    }
+
+    private class TestSyncInterceptor : ISyncCommandInterceptor
+    {
+        public List<string> SyncExecutingCalls { get; } = new();
+        public List<string> SyncExecutedCalls { get; } = new();
+        public List<string> SyncFailedCalls { get; } = new();
+        public List<string> AsyncExecutingCalls { get; } = new();
+        public List<string> AsyncExecutedCalls { get; } = new();
+        public List<string> AsyncFailedCalls { get; } = new();
+
+        public void OnCommandExecuting(CommandContext context)
+            => SyncExecutingCalls.Add(context.CommandText);
+
+        public void OnCommandExecuted(CommandContext context)
+            => SyncExecutedCalls.Add(context.CommandText);
+
+        public void OnCommandFailed(CommandContext context, Exception exception)
+            => SyncFailedCalls.Add($"{context.CommandText}:{exception.Message}");
+
+        public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken cancellationToken)
+        {
+            AsyncExecutingCalls.Add(context.CommandText);
+            return new ValueTask();
+        }
+
+        public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken cancellationToken)
+        {
+            AsyncExecutedCalls.Add(context.CommandText);
+            return new ValueTask();
+        }
+
+        public ValueTask OnCommandFailedAsync(CommandContext context, Exception exception, CancellationToken cancellationToken)
+        {
+            AsyncFailedCalls.Add($"{context.CommandText}:{exception.Message}");
+            return new ValueTask();
+        }
     }
 
     private class TestDbConnection : IDbConnection
