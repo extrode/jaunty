@@ -844,10 +844,18 @@ public partial class JauntyGenerator : IIncrementalGenerator
             var dbValue = ReadExpression(typeInfo, typeForGetFieldValue, "dbReader", i, isDbDataReader: true, p.IsEnum);
             if (needsNullCheck)
             {
-                // default must be typed to the property, not the getter: an untyped default in
-                // the ternary binds to the getter type, so DBNull would map to 0/false for
-                // nullable value types instead of null.
-                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : {dbValue};");
+                // AUD-R33-009: this used to be
+                // `entity.P = dbReader.IsDBNull(ord[i]) ? default(T)! : value;`, which is not what
+                // the IDataReader branch twenty lines below does, nor what the reflection twin
+                // (MetadataCache's PropertyAccessor.Set) does - both leave the property untouched.
+                // For a property with an initializer or constructor default
+                // (`public string Name { get; set; } = "";`) a NULL column therefore reset it to
+                // null on one path and preserved it on the other, for the same entity and the same
+                // row, decided by nothing the caller can see - which of the two reader interfaces
+                // their provider happens to implement. Skipping is the behaviour that agrees with
+                // both of the other two implementations, so it is the one kept.
+                sb.AppendLine($"                if (!dbReader.IsDBNull(ord[{i}]))");
+                sb.AppendLine($"                    entity.{p.PropertyName} = {dbValue};");
             }
             else
             {
@@ -912,7 +920,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
             var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "rr", i, isDbDataReader: true, p.IsEnum);
             if (typeInfo.NeedsNullCheck)
             {
-                sb.AppendLine($"                    entity.{p.PropertyName} = rr.IsDBNull(ord[{i}]) ? default({p.TypeName})! : {rowValue};");
+                // AUD-R33-009, as in ReadEntity above: skip rather than reset, matching the plain
+                // IDataReader closure below and the reflection twin.
+                sb.AppendLine($"                    if (!rr.IsDBNull(ord[{i}]))");
+                sb.AppendLine($"                        entity.{p.PropertyName} = {rowValue};");
             }
             else
             {
