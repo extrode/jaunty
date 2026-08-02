@@ -381,6 +381,18 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously executes a query, maps to two entity types, and combines them using a function.
     /// </summary>
+    /// <remarks>
+    /// AUD-R34-003, residual and deliberately not fixed. Passing options <i>positionally</i> -
+    /// <c>QueryAsync&lt;T1, T2, R&gt;(sql, map, CommandOptions.WithTimeout(60))</c> - binds them to
+    /// <paramref name="parameters"/> and discards them, and unlike the rest of the multi-entity
+    /// surface there is no <c>CommandOptions&lt;T&gt;</c> sibling for the AUD-R34-002 conversion to
+    /// select. The obvious remedy, a <c>(sql, map, CommandOptions)</c> overload, is a <b>source
+    /// break</b>: both overloads would then be applicable to the named form
+    /// <c>(sql, map, options: x)</c>, which is CS0121 - the library's own tests call it that way.
+    /// So: use the named argument, which is correct today, or move to the non-obsolete overload
+    /// taking <c>CommandOptions&lt;(T1, T2)&gt;</c>, which this whole overload is obsolete in favour
+    /// of anyway.
+    /// </remarks>
     [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
     public static ValueTask<List<TResult>> QueryAsync<T1, T2, TResult>(
         this IDbConnection connection,
