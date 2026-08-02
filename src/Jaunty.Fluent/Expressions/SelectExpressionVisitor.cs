@@ -109,6 +109,47 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             "Conditional (ternary) expressions are not supported in SELECT projections. " +
             "Use Sql.Case(...) for a CASE WHEN, or project the operands and branch in memory.");
 
+    /// <summary>
+    /// AUD-R33-010, the SELECT half. <c>Translate</c> hands anything that is not a method call,
+    /// member access, constant, unary or binary expression to <c>Visit</c>, and the only overrides
+    /// on that path were <see cref="VisitNew"/>, <see cref="VisitMemberInit"/> and
+    /// <see cref="VisitConditional"/> - so a projection body of any other shape descended into its
+    /// children, added nothing to <c>_columns</c> for the wrapper node, and produced a silently
+    /// empty or partial SELECT list instead of a translation error.
+    /// </summary>
+    protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        => throw new NotSupportedException(
+            "Type tests ('is', 'as') are not supported in SELECT projections. There is no SQL " +
+            "equivalent of a CLR type test; project a discriminator column instead.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitListInit(ListInitExpression node)
+        => throw new NotSupportedException(
+            "Collection initializers are not supported in SELECT projections. Project the columns " +
+            "and build the collection from the results.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitInvocation(InvocationExpression node)
+        => throw new NotSupportedException(
+            "Invoking a delegate or a nested lambda is not supported in SELECT projections. " +
+            "Inline the projection, or apply the delegate to the results.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitIndex(IndexExpression node)
+        => throw new NotSupportedException(
+            "Indexer access is not supported in SELECT projections. Project the column and index " +
+            "the result.");
+
+    /// <summary>
+    /// A bare parameter (<c>x =&gt; x</c>) is not a column list, and used to translate to one
+    /// silently - the base visitor returns the node and nothing is appended, so the projection came
+    /// back empty. AUD-R33-010.
+    /// </summary>
+    protected override Expression VisitParameter(ParameterExpression node)
+        => throw new NotSupportedException(
+            $"'{node.Name}' is the whole entity, not a projection. Select the columns you want, or " +
+            "run the query without a Select to get the entity.");
+
     private string TranslateProjectionExpression(Expression expr)
     {
         // Recursively unwrap Convert and Quote
