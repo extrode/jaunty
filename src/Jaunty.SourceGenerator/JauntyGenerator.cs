@@ -94,6 +94,40 @@ public partial class JauntyGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    /// Reported when the generated mapper drops a property the reflection mapper maps, so referencing
+    /// the generator package silently changes which columns an entity has.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R34-030, from the round-33 carry-forward. Two skips in <c>BuildEntityModel</c> are
+    /// invisible divergences rather than agreed exclusions. An <c>init</c>-only setter cannot be
+    /// assigned by the post-construction <c>entity.Prop = value</c> this generator emits (CS8852),
+    /// and a setter that exists but is not accessible from the entity class gives CS0272
+    /// (AUD-R33-007) - so both have to be skipped here. Neither is a problem for the reflection
+    /// twin: <c>MetadataBuilder</c> tests <c>property.CanWrite</c>, which is true for both, and
+    /// <c>SetValue</c> reaches an init-only or non-public setter happily. The column is therefore
+    /// read, written and mapped under reflection and silently absent once the generator package is
+    /// referenced - the same silent-column-loss shape as the inherited-property defect AUD-R26
+    /// fixed, and not something a green test suite catches, because the entity still maps.
+    /// </para>
+    /// <para>
+    /// Warning rather than a fix on either side: closing the gap properly means emitting an object
+    /// initializer, which cannot express "leave the property alone when the column is NULL" (the
+    /// behaviour AUD-R33-009 settled on and the reflection twin shares), and dropping the property
+    /// from the reflection path instead would remove working behaviour from entities that never see
+    /// the generator. So the divergence stands and is made loud: <c>[Ignore]</c>/<c>[NotMapped]</c>
+    /// silences it and records that the exclusion is intended.
+    /// </para>
+    /// </remarks>
+    private static readonly DiagnosticDescriptor PropertyDroppedByGeneratorDescriptor = new(
+        id: "JAUNTYGEN005",
+        title: "Property is mapped by reflection but dropped by the generated mapper",
+        messageFormat: "Property '{0}.{1}' is not mapped by the generated mapper because {2}, but Jaunty's reflection mapper does map it - so referencing the generator package silently drops this column. Give it a plain accessible setter, or mark it [Ignore] to record that the exclusion is intended.",
+        category: "JauntySourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     /// <summary>The two <c>[Table]</c> attributes the generator recognizes, by metadata name.</summary>
     private const string JauntyTableAttribute = "Jaunty.Attributes.TableAttribute";
     private const string DataAnnotationsTableAttribute = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";
@@ -167,6 +201,18 @@ public partial class JauntyGenerator : IIncrementalGenerator
                     entity.ClassName,
                     entity.UnsupportedNestingReason));
                 return;
+            }
+
+            // AUD-R34-030: only once a mapper is actually emitted. If generation was skipped above,
+            // the reflection fallback maps the entity in full and there is no divergence to report.
+            foreach (DroppedPropertyInfo dropped in entity.DroppedProperties)
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(
+                    PropertyDroppedByGeneratorDescriptor,
+                    dropped.Location?.ToLocation() ?? entity.DiagnosticLocation?.ToLocation(),
+                    entity.ClassName,
+                    dropped.PropertyName,
+                    dropped.Reason));
             }
 
             var source = GenerateMapper(entity, spc.ReportDiagnostic);
@@ -381,6 +427,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         List<IPropertySymbol> allProperties = GetMappableProperties(classSymbol);
 
         var properties = new List<PropertyMetadata>();
+        var dropped = new List<DroppedPropertyInfo>();
         foreach (IPropertySymbol? prop in allProperties)
         {
             // Support [Ignore] and [NotMapped]
@@ -391,7 +438,19 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // `entity.Prop = value` assignments this generator emits in ReadEntity/CreateRowMapper/
             // the ColumnInfo and EntityColumnInfo setter lambdas. Either would emit an assignment
             // that fails to compile (CS0200/CS8852), so treat both as implicitly [Ignore]d.
-            if (prop.SetMethod is null || prop.SetMethod.IsInitOnly) continue;
+            if (prop.SetMethod is null) continue;
+
+            // AUD-R34-030: but init-only is a divergence, not an agreed exclusion - the reflection
+            // twin maps it, so the column is silently lost here. Reported rather than fixed; see
+            // PropertyDroppedByGeneratorDescriptor for why neither side can simply move.
+            if (prop.SetMethod.IsInitOnly)
+            {
+                dropped.Add(new DroppedPropertyInfo(
+                    prop.Name,
+                    "its setter is 'init'-only and the generated mapper assigns properties after construction",
+                    LocationInfo.From(prop.Locations.FirstOrDefault())));
+                continue;
+            }
 
             // AUD-R33-007: and a setter that exists but cannot be reached from the entity class is
             // the same defect one step along. Since GetMappableProperties walks base types (AUD-R26)
@@ -402,7 +461,16 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // assembly boundaries and InternalsVisibleTo - so ask the compilation, which is what
             // decides it. The reflection twin has no equivalent problem: MetadataBuilder tests
             // property.CanWrite, which is true here, and SetValue does reach a non-public setter.
-            if (!context.SemanticModel.Compilation.IsSymbolAccessibleWithin(prop.SetMethod, classSymbol)) continue;
+            if (!context.SemanticModel.Compilation.IsSymbolAccessibleWithin(prop.SetMethod, classSymbol))
+            {
+                // AUD-R34-030: same silent divergence as the init-only case above - CanWrite is true
+                // and SetValue reaches a non-public setter, so reflection maps this column.
+                dropped.Add(new DroppedPropertyInfo(
+                    prop.Name,
+                    "its setter is not accessible from the entity class, so the generated assignment would not compile",
+                    LocationInfo.From(prop.Locations.FirstOrDefault())));
+                continue;
+            }
 
             // Support [Column] from both
             AttributeData? columnAttr = GetAttribute(prop, "ColumnAttribute");
@@ -516,7 +584,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
             Properties: new EquatableArray<PropertyMetadata>(properties.ToImmutableArray()),
             DiagnosticLocation: LocationInfo.From(classSymbol.Locations.FirstOrDefault()),
             ContainingTypes: containingTypes,
-            UnsupportedNestingReason: unsupportedNesting);
+            UnsupportedNestingReason: unsupportedNesting,
+            DroppedProperties: new EquatableArray<DroppedPropertyInfo>(dropped.ToImmutableArray()));
     }
 
     /// <summary>
