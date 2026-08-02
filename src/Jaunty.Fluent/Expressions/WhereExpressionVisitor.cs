@@ -814,6 +814,70 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             "Conditional (ternary) expressions are not supported in WHERE predicates. " +
             "Use Sql.Case(...) for a CASE WHEN, or split the predicate into separate conditions.");
 
+    /// <summary>
+    /// AUD-R33-010. The rest of the sweep AUD-R32-002 started: a ternary was not the only node type
+    /// with no override here, only the one that had been noticed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// These are all reachable. <see cref="VisitBinary"/>'s no-column fallback visits both operands
+    /// through the base dispatcher, as does <see cref="VisitUnary"/> for a <c>Not</c> or
+    /// <c>Convert</c> operand - so <c>p =&gt; p.Category is Category</c>, or a <c>new Foo(...)</c>
+    /// sub-expression reached through a chained call, lands on <see cref="ExpressionVisitor"/>'s
+    /// descend-into-children default. That default appends nothing for the wrapping node itself,
+    /// only for whatever leaves hang off it, so the <c>is</c>-check or the constructor call is
+    /// silently dropped while fragments of its children still reach <c>_sql</c>. The caller gets a
+    /// plausible-looking query that asks a different question, which is worse than an exception by
+    /// exactly the margin that makes it hard to notice.
+    /// </para>
+    /// <para>
+    /// Every one of these throws rather than being translated because there is no SQL for them to
+    /// translate to: <c>is</c> has no relational equivalent over a column, and a constructor,
+    /// initializer, delegate invocation or indexer is a value the caller can compute themselves and
+    /// pass in as a constant.
+    /// </para>
+    /// </remarks>
+    protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        => throw new NotSupportedException(
+            "Type tests ('is', 'as') are not supported in WHERE predicates. There is no SQL " +
+            "equivalent of a CLR type test over a column; filter on a discriminator column instead.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitNew(NewExpression node)
+        => throw new NotSupportedException(
+            $"Constructing a '{node.Type.Name}' is not supported inside a WHERE predicate. " +
+            "Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitNewArray(NewArrayExpression node)
+        => throw new NotSupportedException(
+            "Array construction is not supported inside a WHERE predicate. Build the array before " +
+            "the query and pass it in - Contains over a local collection translates to IN.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitMemberInit(MemberInitExpression node)
+        => throw new NotSupportedException(
+            $"Object initializers ('new {node.Type.Name} {{ ... }}') are not supported inside a " +
+            "WHERE predicate. Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitListInit(ListInitExpression node)
+        => throw new NotSupportedException(
+            "Collection initializers are not supported inside a WHERE predicate. Build the " +
+            "collection before the query and pass it in.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitInvocation(InvocationExpression node)
+        => throw new NotSupportedException(
+            "Invoking a delegate or a nested lambda is not supported inside a WHERE predicate. " +
+            "Inline the predicate, or evaluate the delegate before the query.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitIndex(IndexExpression node)
+        => throw new NotSupportedException(
+            "Indexer access is not supported inside a WHERE predicate. Read the element before " +
+            "the query and compare against the value.");
+
     protected override Expression VisitConstant(ConstantExpression node)
     {
         switch (node.Value)
