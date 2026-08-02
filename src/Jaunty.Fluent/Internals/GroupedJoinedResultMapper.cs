@@ -152,12 +152,34 @@ internal static class GroupedJoinedResultMapper
                 int aliasIndex = order is null ? p : order[p];
                 int ordinal = ResolveOrdinal(reader, aliases, ordinals, aliasIndex);
 
+                Type targetType = parameters[p].ParameterType;
+
                 if (!reader.IsDBNull(ordinal))
                 {
                     object value = reader.GetValue(ordinal);
-                    Type targetType = parameters[p].ParameterType;
                     Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
                     values[p] = ConvertColumnValue(value, underlyingType);
+                }
+                else if (targetType.IsValueType && Nullable.GetUnderlyingType(targetType) is null)
+                {
+                    // AUD-R33-005. A NULL column against a non-nullable value-type parameter left
+                    // the slot null and reached Constructor.Invoke, which throws an opaque
+                    // ArgumentException naming neither the column nor the parameter - so the caller
+                    // saw a reflection error with nothing in it to act on.
+                    //
+                    // Substituting the type's default would match the property path, which simply
+                    // skips the assignment, but there is no way to box the default of an arbitrary
+                    // value type that survives AOT: Activator.CreateInstance trips IL2072 (its
+                    // PublicParameterlessConstructor annotation is not carried by ParameterType) and
+                    // Array.CreateInstance trips IL3050 (RequiresDynamicCode). Throwing is the
+                    // defined outcome that is available, and it is the better one here anyway - a
+                    // constructor parameter, unlike a settable property, is a value the type
+                    // declared it requires, so silently substituting a zero would be inventing data.
+                    throw new InvalidOperationException(
+                        $"Column '{aliases[aliasIndex]}' is NULL but constructor parameter " +
+                        $"'{parameters[p].Name}' of '{typeof(TResult).Name}' is the non-nullable " +
+                        $"value type '{targetType.Name}'. Make the parameter nullable, or project " +
+                        $"a non-NULL value for that column.");
                 }
             }
 
