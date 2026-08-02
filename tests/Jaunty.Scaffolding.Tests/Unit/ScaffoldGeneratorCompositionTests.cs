@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Reflection;
 
 using Jaunty.Scaffolding.Abstractions;
@@ -131,16 +131,25 @@ public class ScaffoldGeneratorCompositionTests
     }
 
     [Fact]
-    public void NonPartialOutput_StillFailsWithCS0260_WhichIsWhyItIsNoLongerTheDefault()
+    public void NonPartialOutput_GetsNoMapperAndJauntyGen004_WhichIsWhyItIsNoLongerTheDefault()
     {
         // Pins the consequence rather than just the default, so the reason the default changed
         // stays visible. Opting out is legitimate - it just must not be what happens silently.
+        //
+        // AUD-R34-028 changed what that consequence is: the generator used to emit a partial
+        // alongside a non-partial class and the consumer's build failed with CS0260 inside a .g.cs
+        // they cannot edit. It now skips the entity and says why. The entity still maps - by
+        // reflection - so this is a warning, and the class compiles.
         var options = new CodeGeneratorOptions { Namespace = "Scaffolded.Entities", GeneratePartialClasses = false };
         var code = _generator.GenerateEntity(SqliteShapedTable(), options);
 
-        (ImmutableArray<Diagnostic> diagnostics, _) = RunGeneratorAndCompile(code);
+        (ImmutableArray<Diagnostic> diagnostics, int generatedFiles) = RunGeneratorAndCompile(code);
 
-        Assert.Contains(diagnostics, d => d.Id == "CS0260");
+        Assert.Equal(0, generatedFiles);
+        Assert.Empty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+
+        Diagnostic skipped = Assert.Single(diagnostics, d => d.Id == "JAUNTYGEN004");
+        Assert.Contains("partial", skipped.GetMessage(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -195,11 +204,14 @@ public class ScaffoldGeneratorCompositionTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
             [new global::Jaunty.SourceGenerator.JauntyGenerator().AsSourceGenerator()],
             parseOptions: parseOptions);
-        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation output, out _);
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation, out Compilation output, out ImmutableArray<Diagnostic> generatorDiagnostics);
 
         GeneratorDriverRunResult result = driver.GetRunResult();
 
-        return (output.GetDiagnostics(), result.Results.Sum(r => r.GeneratedSources.Length));
+        // AUD-R34-028: the generator's own diagnostics as well as the compilation's. A skipped
+        // entity is now reported rather than emitted-and-failed, and that report arrives here.
+        return (output.GetDiagnostics().AddRange(generatorDiagnostics), result.Results.Sum(r => r.GeneratedSources.Length));
     }
 
     private static IEnumerable<MetadataReference> ReferenceAssemblies()

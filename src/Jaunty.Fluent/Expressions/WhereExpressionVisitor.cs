@@ -758,13 +758,25 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             return node;
         }
 
-        if (node.NodeType == ExpressionType.Convert)
+        if (node.NodeType is ExpressionType.Convert or ExpressionType.ConvertChecked)
         {
             Visit(node.Operand);
             return node;
         }
 
-        return base.VisitUnary(node);
+        // AUD-R34-020. Quote is load-bearing: it is how a compound `Sql.Case().When(x => a && b, ...)`
+        // condition gets re-entered (see the note above VisitLambda), and the base default - visit
+        // the body, which dispatches straight back to VisitBinary - is exactly right there.
+        if (node.NodeType == ExpressionType.Quote)
+            return base.VisitUnary(node);
+
+        // Everything else used to take that same tail, which visits the operand and appends nothing
+        // for the operator: `p => -p.UnitPrice > 5m` translated to `([unit_price] > @Value)`, the
+        // negation silently gone, so the caller got the opposite rows rather than an error. Negate,
+        // NegateChecked, TypeAs, OnesComplement, ArrayLength and UnaryPlus all took that route.
+        throw new NotSupportedException(
+            $"Unary operator '{node.NodeType}' is not supported in WHERE predicates. Compute the " +
+            "value before the query, or express the condition without it.");
     }
 
     protected override Expression VisitMember(MemberExpression node)
@@ -1024,8 +1036,33 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     // The name returned is now escaped, so callers must not escape it again. Unmapped property
     // names still fall through to EscapeColumnName inside CachedDialectMetadata.GetColumnName,
     // which is what the old code did too.
-    private string GetEscapedColumnName(MemberExpression member) =>
-        FluentMetadataCache.GetForDialect<T>(_dialect).GetColumnName(member.Member.Name);
+    private string GetEscapedColumnName(MemberExpression member)
+    {
+        RequireDirectColumnReference(member);
+        return FluentMetadataCache.GetForDialect<T>(_dialect).GetColumnName(member.Member.Name);
+    }
+
+    /// <summary>
+    /// AUD-R34-021. <see cref="IsParameterMember"/> walks the whole chain to the parameter and
+    /// <c>CachedDialectMetadata.GetColumnName</c> falls back to <c>EscapeColumnName(propertyName)</c>
+    /// for anything unmapped, so a nested member access over the parameter was emitted as a column
+    /// named after its leaf: the EF-shaped <c>o =&gt; o.OrderDate.Year == 1997</c> produced
+    /// <c>([Year] = @Year)</c>. Best case a provider error naming neither the entity nor the
+    /// limitation; if the entity happens to map a column called <c>Year</c>, <c>Date</c> or
+    /// <c>Day</c>, it silently filtered the wrong one. <c>string.Length</c> is the one nested shape
+    /// with a translation, and its callers unwrap to the direct inner member before arriving here.
+    /// </summary>
+    private static void RequireDirectColumnReference(MemberExpression member)
+    {
+        if (member.Expression is null or ParameterExpression)
+            return;
+
+        var leaf = member.Member.Name;
+        throw new NotSupportedException(
+            $"'{member}' is a member of a column, not a column. Jaunty does not translate " +
+            $"'{leaf}' into SQL - use the Sql.* helpers for the supported spellings " +
+            "(Sql.Year, Sql.Month, Sql.Day, Sql.Length, ...), or compute the value in memory.");
+    }
 
     // The unescaped name, for the two places a column reference feeds a generated parameter name
     // rather than SQL text. Same lookup, same cache - no linear scan.

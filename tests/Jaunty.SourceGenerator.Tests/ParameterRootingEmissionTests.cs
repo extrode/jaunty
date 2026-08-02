@@ -328,6 +328,141 @@ public class ParameterRootingEmissionTests
     // Harness
     // ------------------------------------------------------------------
 
+    // ------------------------------------------------------------------
+    // AUD-R34-025/026/027
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// The Fluent surface. <c>Set</c> and the three <c>*Raw</c> predicates all reach
+    /// <c>ParameterCache.Get(x.GetType())</c> and <c>prop.Getter(x)</c>, but the syntax predicate
+    /// admitted only <c>Values</c>, <c>Query*</c> and <c>Execute*</c> - so a consumer writing
+    /// <c>.Set(new { Name = "x" })</c> got a clean build, no JAUNTYGEN003, and a trimmed publish
+    /// that threw with an empty property list. The stubs live in a <c>Jaunty.Fluent</c> namespace
+    /// because that is the whole of <c>IsJauntyMethod</c>'s test.
+    /// </summary>
+    private static string FluentConsumer(string body) => $$"""
+        using System.Collections.Generic;
+        using System.Data;
+
+        using Jaunty;
+        using Jaunty.Fluent;
+
+        namespace Jaunty.Fluent
+        {
+            public static class FluentProbe
+            {
+                public static object Set(this object target, object values) => target;
+                public static object WhereRaw(this object target, string rawSql, object parameters) => target;
+                public static object AndRaw(this object target, string rawSql, object parameters) => target;
+                public static object OrRaw(this object target, string rawSql, object parameters) => target;
+            }
+        }
+
+        namespace RootProbe
+        {
+            public class FluentDataAccess
+            {
+                public void Run(IDbConnection connection)
+                {
+                    {{body}}
+                }
+            }
+        }
+        """;
+
+    [Theory]
+    [InlineData("""((object)connection).Set(new { Name = "x" });""")]
+    [InlineData("""((object)connection).WhereRaw("x = @X", new { Name = "x" });""")]
+    [InlineData("""((object)connection).AndRaw("x = @X", new { Name = "x" });""")]
+    [InlineData("""((object)connection).OrRaw("x = @X", new { Name = "x" });""")]
+    public void TheFluentParameterBindingCalls_AreRootedToo(string call)
+    {
+        var generated = RunGenerator(FluentConsumer(call)).Source;
+
+        Assert.Contains(
+            "global::Jaunty.JauntyAot.PreserveParameters(new { Name = default(string) });",
+            generated,
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// An array type is writable by name - <c>default(global::System.Int32[])</c> compiles - but
+    /// <c>IsNameableFrom</c> rejected every array outright, and one array-typed property made
+    /// <c>BuildAnonymousWitness</c> abandon the witness for the whole anonymous type. So
+    /// <c>new { Ids = ids }</c>, the idiomatic shape for Jaunty's own IN-clause expansion, rooted
+    /// nothing while the same object with a <c>List&lt;int&gt;</c> rooted fine.
+    /// </summary>
+    [Fact]
+    public void AnArrayTypedProperty_DoesNotAbandonTheWholeWitness()
+    {
+        var generated = RunGenerator(Consumer(
+            """connection.Execute("DELETE FROM t WHERE id IN @Ids", new { Id = 1, Ids = new[] { 1, 2 } });""")).Source;
+
+        Assert.Contains(
+            "new { Id = default(int), Ids = default(int[]) }",
+            generated,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AnArrayOfANamedType_IsRootedByName()
+    {
+        var generated = RunGenerator(Consumer(
+            """connection.Execute("DELETE FROM t WHERE id = @Id", new ProductQuery[0]);""",
+            "public class ProductQuery { public int Id { get; set; } }")).Source;
+
+        Assert.Contains(
+            "PreserveParameters<global::RootProbe.DataAccess.ProductQuery[]>();",
+            generated,
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>ExecuteBatch</c> passed the syntax predicate and then fell out of
+    /// <c>FindParametersParameter</c>, whose only accepted shape was an <c>object</c>-typed
+    /// parameter named <c>parameters</c>/<c>values</c>. Its parameter is
+    /// <c>IEnumerable&lt;object&gt; parameterSets</c>, and it is the element type that has to be
+    /// rooted.
+    /// </summary>
+    [Fact]
+    public void ExecuteBatch_RootsTheElementTypeOfTheParameterSets()
+    {
+        var generated = RunGenerator(Consumer(
+            """connection.ExecuteBatch("UPDATE t SET x = 1 WHERE id = @Id", new[] { new { Id = 1 }, new { Id = 2 } });""")).Source;
+
+        Assert.Contains(
+            "global::Jaunty.JauntyAot.PreserveParameters(new { Id = default(int) });",
+            generated,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExecuteBatch_RootsANamedElementTypeByName()
+    {
+        var generated = RunGenerator(Consumer(
+            """connection.ExecuteBatch("UPDATE t SET x = 1 WHERE id = @Id", new ProductQuery[0]);""",
+            "public class ProductQuery { public int Id { get; set; } }")).Source;
+
+        Assert.Contains(
+            "global::Jaunty.JauntyAot.PreserveParameters<global::RootProbe.DataAccess.ProductQuery>();",
+            generated,
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// And the shape that cannot be rooted from the call site is still excused rather than reported,
+    /// because the sequence is a forwarded parameter.
+    /// </summary>
+    [Fact]
+    public void ExecuteBatch_OverAForwardedSequence_IsNotReported()
+    {
+        (string _, ImmutableArray<Diagnostic> diagnostics, IEnumerable<Diagnostic> _) = RunGenerator(Consumer(
+            """connection.ExecuteBatch("UPDATE t SET x = 1 WHERE id = @Id", sets);""",
+            "").Replace("Run(IDbConnection connection)", "Run(IDbConnection connection, IEnumerable<object> sets)"));
+
+        Assert.Empty(diagnostics.Where(d => d.Id == "JAUNTYGEN003"));
+    }
+
     private static (string Source, ImmutableArray<Diagnostic> Diagnostics, IEnumerable<Diagnostic> CompileErrors) RunGenerator(string source)
     {
         var compilation = CSharpCompilation.Create(

@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -75,9 +77,21 @@ public interface ICteQueryClause<T> where T : new()
     List<T> Select();
 
     /// <summary>
+    /// Executes the CTE query using the specified <see cref="CommandOptions"/> (e.g. to run within
+    /// an explicit transaction). AUD-R34-017.
+    /// </summary>
+    List<T> Select(CommandOptions options);
+
+    /// <summary>
     /// Executes the CTE query asynchronously.
     /// </summary>
     Task<List<T>> SelectAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the CTE query asynchronously using the specified <see cref="CommandOptions"/>
+    /// (AUD-R34-017).
+    /// </summary>
+    Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Executes the CTE query and returns the first entity.
@@ -85,9 +99,21 @@ public interface ICteQueryClause<T> where T : new()
     T SelectFirst();
 
     /// <summary>
+    /// Executes the CTE query and returns the first entity, using the specified
+    /// <see cref="CommandOptions"/> (AUD-R34-017).
+    /// </summary>
+    T SelectFirst(CommandOptions options);
+
+    /// <summary>
     /// Executes the CTE query and returns the first entity or default.
     /// </summary>
     T? SelectFirstOrDefault();
+
+    /// <summary>
+    /// Executes the CTE query and returns the first entity or default, using the specified
+    /// <see cref="CommandOptions"/> (AUD-R34-017).
+    /// </summary>
+    T? SelectFirstOrDefault(CommandOptions options);
 
     /// <summary>
     /// Returns the generated SQL for debugging.

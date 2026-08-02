@@ -22,9 +22,44 @@ namespace Jaunty.Internals.Read;
 /// </remarks>
 internal static class MultiEntityMapperNGuard
 {
+    /// <summary>
+    /// Rejects a value-type entity before it can be mapped (AUD-R34-015).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>T1..T7</c> are constrained only to <c>new()</c>, so a struct entity compiles. It cannot
+    /// work: the N-ary apply closures are <c>(t, r) =&gt; delegates[i](t!, r)</c> over
+    /// <c>Action&lt;object, IDataRecord&gt;</c>, so the target is boxed and the setters run against
+    /// the throwaway box; arity 2 passes the struct by value and loses the writes the same way. The
+    /// caller's entity came back all-default with no exception and no wrong-looking SQL - the worst
+    /// shape a defect can take. <c>MultiEntityMapper.cs</c>'s own AUD-R26 remarks already describe
+    /// the boxed-copy behaviour for value types, so the possibility was known one file over.
+    /// </para>
+    /// <para>
+    /// Supporting struct entities properly means ref-passing apply delegates through both the core
+    /// and <c>Jaunty.Extensions.Reflection</c>, which <c>Action&lt;&gt;</c> cannot express. Until
+    /// that exists this fails loudly rather than returning zeroed entities.
+    /// </para>
+    /// </remarks>
+    public static void RequireReferenceTypes(Type[] types)
+    {
+        for (int i = 0; i < types.Length; i++)
+        {
+            if (!types[i].IsValueType) continue;
+
+            throw new NotSupportedException(
+                $"Multi-entity mapping requires reference-type entities, and '{types[i].Name}' " +
+                $"(entity {i + 1} of {types.Length}: {DescribeTypes(types)}) is a value type. A " +
+                "struct entity is populated through a copy, so every mapped value would be " +
+                "discarded and the entity returned all-default. Declare the entity as a class.");
+        }
+    }
+
     public static Action<object, IDataRecord>[] Resolve(
         Func<Type[], IDataReader, Action<object, IDataRecord>[]> resolver, Type[] types, IDataReader reader)
     {
+        RequireReferenceTypes(types);
+
         Action<object, IDataRecord>[]? delegates = resolver(types, reader);
 
         if (delegates is null)
@@ -95,8 +130,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -162,8 +201,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -234,8 +277,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -311,8 +358,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -393,8 +444,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }

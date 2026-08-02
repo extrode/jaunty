@@ -213,8 +213,11 @@ internal sealed class JoinedGroupByExpressionVisitor
         }
         else
         {
+            // AUD-R34-005: same omission as the single-entity visitor's else branch - the alias was
+            // reported but not emitted, so a bare g.Key / g.Count() projection mapped to 0 (value
+            // types) or threw IndexOutOfRangeException (constructor-bound types like string).
             (string sql, string alias) = TranslateExpression(body, "Value", groupingParam);
-            _selectColumns.Add(sql);
+            _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(alias)}");
             _columnAliases.Add(alias);
         }
 

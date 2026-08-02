@@ -129,7 +129,12 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
             return node;
         }
 
-        return base.VisitUnary(node);
+        // AUD-R34-019: the base implementation visits the operand and appends nothing for the
+        // operator, so `-p.UnitPrice` used to translate to a bare column - the negation silently
+        // gone from the emitted SQL. Negate, TypeAs, OnesComplement, ArrayLength and UnaryPlus all
+        // took that route.
+        throw new NotSupportedException(
+            $"Unary operator '{node.NodeType}' is not supported in JOIN expressions.");
     }
 
     private static bool IsNullValue(Expression expression)
@@ -178,6 +183,68 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         => throw new NotSupportedException(
             "Conditional (ternary) expressions are not supported in JOIN predicates. " +
             "Split the predicate into separate conditions, or filter with Where after the join.");
+
+    /// <summary>
+    /// AUD-R34-019. AUD-R32-002/R33-003 closed <see cref="ConditionalExpression"/> here, but every
+    /// other node type this class does not override still fell through to
+    /// <see cref="ExpressionVisitor"/>'s descend-into-children default, which appends each child's
+    /// fragment to the shared <c>_sql</c> builder with nothing joining them. A constructor call in
+    /// a predicate - <c>(p, c) =&gt; p.Created == new DateTime(2020, 1, 1)</c> - is ordinary C# and
+    /// used to emit <c>(p.[created] = @jp0@jp1@jp2)</c>. The rest emit their children bare, or
+    /// nothing at all, leaving a dangling operator. All of them now throw, like the rest of this
+    /// file.
+    /// </summary>
+    protected override Expression VisitNew(NewExpression node)
+        => throw new NotSupportedException(
+            $"Constructing a '{node.Type.Name}' is not supported inside a JOIN predicate. " +
+            "Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        => throw new NotSupportedException(
+            "Type tests ('is', 'as') are not supported in JOIN predicates. There is no SQL " +
+            "equivalent of a CLR type test over a column; join on a discriminator column instead.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitInvocation(InvocationExpression node)
+        => throw new NotSupportedException(
+            "Invoking a delegate or a nested lambda is not supported inside a JOIN predicate. " +
+            "Inline the condition.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitNewArray(NewArrayExpression node)
+        => throw new NotSupportedException(
+            "Array construction is not supported inside a JOIN predicate. Build the array before " +
+            "the query and pass it in.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitMemberInit(MemberInitExpression node)
+        => throw new NotSupportedException(
+            $"Object initializers ('new {node.Type.Name} {{ ... }}') are not supported inside a " +
+            "JOIN predicate. Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitListInit(ListInitExpression node)
+        => throw new NotSupportedException(
+            "Collection initializers are not supported inside a JOIN predicate. Build the " +
+            "collection before the query and pass it in.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitIndex(IndexExpression node)
+        => throw new NotSupportedException(
+            "Indexer access is not supported inside a JOIN predicate. Compute the value before " +
+            "the query and compare against it.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitDefault(DefaultExpression node)
+        => throw new NotSupportedException(
+            $"'default({node.Type.Name})' is not supported inside a JOIN predicate. Write the " +
+            "value out, or compute it before the query.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitParameter(ParameterExpression node)
+        => throw new NotSupportedException(
+            $"'{node.Name}' is a whole entity, not a condition. Compare its properties instead.");
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
