@@ -82,6 +82,10 @@ Every item here was reachable from caller-supplied input.
 
 ### Changed
 
+- **A non-generic `CommandOptions` now binds to the entity overload (2026-08-02).** Passing a
+  `CommandOptions` where an anonymous parameter object was expected bound to the parameters
+  overload and was serialised as a WHERE clause; the entity overload now wins. Source-compatible,
+  but **recompilation changes behaviour** for any call site that was relying on the old binding.
 - **CSV import rejects ragged rows** instead of silently dropping the extra fields.
 - **`ParameterBinder` throws** instead of silently dropping scalar parameters bound to
   stored procedures.
@@ -95,6 +99,11 @@ Every item here was reachable from caller-supplied input.
 
 ### Removed
 
+- **Breaking: the 13 obsolete multi-entity overloads (2026-08-02).** The `[Obsolete]`
+  `QueryMultiEntity`/`QueryMultiEntityAsync` entry points that reimplemented reader mapping
+  inline are gone. Every multi-table mapping route now runs through the shared core, and the
+  routes are test-pinned against one table pair. Callers still on the obsolete forms must move
+  to the supported overloads.
 - `MultiEntityCommandOptions.Mapper1..MapperN` — per-position custom mapper fields that
   were never wired to anything.
 - `WriteBackOptions`, which nothing constructed or consumed.
