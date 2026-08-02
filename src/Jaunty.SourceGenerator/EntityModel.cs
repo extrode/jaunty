@@ -43,7 +43,21 @@ internal sealed record EntityModel(
     EquatableArray<PropertyMetadata> Properties,
     LocationInfo? DiagnosticLocation,
     EquatableArray<ContainingTypeInfo> ContainingTypes = default,
-    string? UnsupportedNestingReason = null);
+    string? UnsupportedNestingReason = null,
+    EquatableArray<DroppedPropertyInfo> DroppedProperties = default);
+
+/// <summary>
+/// A property the generated mapper leaves out but the reflection mapper maps, with the reason.
+/// </summary>
+/// <remarks>
+/// AUD-R34-030 (round-33 carry-forward). Only the divergent skips are recorded: a get-only property
+/// is skipped by both paths (<c>MetadataBuilder</c> tests <c>property.CanWrite</c>), and an
+/// <c>[Ignore]</c>/<c>[NotMapped]</c> one is skipped on purpose by both. An init-only or
+/// inaccessible setter is different - <c>CanWrite</c> is true and <c>SetValue</c> reaches both, so
+/// the column is mapped under reflection and silently lost the moment the generator package is
+/// referenced.
+/// </remarks>
+internal readonly record struct DroppedPropertyInfo(string PropertyName, string Reason, LocationInfo? Location);
 
 /// <summary>
 /// One link in the chain of types enclosing a nested entity, outermost first.

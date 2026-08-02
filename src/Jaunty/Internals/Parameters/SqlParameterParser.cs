@@ -6,20 +6,27 @@ namespace Jaunty.Internals.Parameters;
 
 internal static class SqlParameterParser
 {
-    internal static string[] ExtractParameterNames(string sql)
+    /// <param name="sql">The SQL text to scan for parameter placeholders.</param>
+    /// <param name="backslashEscapes">
+    /// Whether a backslash escapes the next character inside a string literal (AUD-R34-014). True
+    /// only for MySQL/MariaDB, which accept backslash escapes by default; for every other engine a
+    /// literal ending in a backslash is complete, and applying the rule there would swallow its
+    /// terminator.
+    /// </param>
+    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false)
     {
         if (string.IsNullOrWhiteSpace(sql))
             return [];
 
 #if NET8_0_OR_GREATER
-        return ExtractParameterNamesSpan(sql.AsSpan());
+        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes);
 #else
-        return ExtractParameterNamesClassic(sql);
+        return ExtractParameterNamesClassic(sql, backslashEscapes);
 #endif
     }
 
 #if NET8_0_OR_GREATER
-    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql)
+    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes)
     {
         var names = new List<string>(JauntyConfig.ParameterParsingCapacity);
         var i = 0;
@@ -46,20 +53,20 @@ internal static class SqlParameterParser
             // Skip string literal (single quote)
             if (c == '\'')
             {
-                i = SkipQuoted(sql, i + 1, '\'');
+                i = SkipQuoted(sql, i + 1, '\'', backslashEscapes);
                 continue;
             }
 
             // Skip identifier (double quote or brackets)
             if (c == '"')
             {
-                i = SkipQuoted(sql, i + 1, '"');
+                i = SkipQuoted(sql, i + 1, '"', backslashEscapes);
                 continue;
             }
 
             if (c == '[')
             {
-                i = SkipQuoted(sql, i + 1, ']');
+                i = SkipQuoted(sql, i + 1, ']', backslashEscapes: false);
                 continue;
             }
 
@@ -68,7 +75,7 @@ internal static class SqlParameterParser
             // (losing every later parameter), and `@col` yields a parameter that does not exist.
             if (c == '`')
             {
-                i = SkipQuoted(sql, i + 1, '`');
+                i = SkipQuoted(sql, i + 1, '`', backslashEscapes: false);
                 continue;
             }
 
@@ -161,11 +168,19 @@ internal static class SqlParameterParser
         return len;
     }
 
-    private static int SkipQuoted(ReadOnlySpan<char> sql, int i, char terminator)
+    private static int SkipQuoted(ReadOnlySpan<char> sql, int i, char terminator, bool backslashEscapes)
     {
         int len = sql.Length;
         while (i < len)
         {
+            // AUD-R34-014: MySQL/MariaDB only, and inside string literals only - see the
+            // backslashEscapes parameter on ExtractParameterNames.
+            if (backslashEscapes && sql[i] == '\\' && i + 1 < len)
+            {
+                i += 2;
+                continue;
+            }
+
             if (sql[i] == terminator)
             {
                 // Handle escaped terminator (doubled)
@@ -198,7 +213,7 @@ internal static class SqlParameterParser
     }
 #endif
 
-    private static string[] ExtractParameterNamesClassic(string sql)
+    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes)
     {
         var names = new List<string>(JauntyConfig.ParameterParsingCapacity);
         var i = 0;
@@ -222,26 +237,26 @@ internal static class SqlParameterParser
 
             if (c == '\'')
             {
-                i = SkipQuotedClassic(sql, i + 1, len, '\'');
+                i = SkipQuotedClassic(sql, i + 1, len, '\'', backslashEscapes);
                 continue;
             }
 
             if (c == '"')
             {
-                i = SkipQuotedClassic(sql, i + 1, len, '"');
+                i = SkipQuotedClassic(sql, i + 1, len, '"', backslashEscapes);
                 continue;
             }
 
             if (c == '[')
             {
-                i = SkipQuotedClassic(sql, i + 1, len, ']');
+                i = SkipQuotedClassic(sql, i + 1, len, ']', backslashEscapes: false);
                 continue;
             }
 
             // See the span walker: backtick-quoted MySQL identifiers must be skipped too.
             if (c == '`')
             {
-                i = SkipQuotedClassic(sql, i + 1, len, '`');
+                i = SkipQuotedClassic(sql, i + 1, len, '`', backslashEscapes: false);
                 continue;
             }
 
@@ -318,10 +333,17 @@ internal static class SqlParameterParser
         return len;
     }
 
-    private static int SkipQuotedClassic(string sql, int i, int len, char terminator)
+    private static int SkipQuotedClassic(string sql, int i, int len, char terminator, bool backslashEscapes)
     {
         while (i < len)
         {
+            // AUD-R34-014: see the span twin.
+            if (backslashEscapes && sql[i] == '\\' && i + 1 < len)
+            {
+                i += 2;
+                continue;
+            }
+
             if (sql[i] == terminator)
             {
                 if (i + 1 < len && sql[i + 1] == terminator)

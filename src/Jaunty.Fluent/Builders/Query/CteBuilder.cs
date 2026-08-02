@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using System.Text;
 
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
@@ -181,10 +182,28 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         return _connection.Query<T>(sql, _parameters.ToParameterObject()!);
     }
 
+    /// <summary>
+    /// AUD-R34-017: a CTE query built inside a caller's transaction could not be enlisted in it -
+    /// there was no options overload anywhere on this builder, the same hole AUD-R26-060 and
+    /// AUD-R31-007 closed for the query and grouped builders.
+    /// </summary>
+    public List<T> Select(CommandOptions options)
+    {
+        var sql = BuildSql();
+        return _connection.Query<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public async Task<List<T>> SelectAsync(CancellationToken cancellationToken = default)
     {
         var sql = BuildSql();
         return await _connection.QueryAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>AUD-R34-017: see <see cref="Select(CommandOptions)"/>.</summary>
+    public async Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSql();
+        return await _connection.QueryAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public T SelectFirst()
@@ -201,6 +220,16 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!);
     }
 
+    /// <summary>AUD-R34-017: see <see cref="Select(CommandOptions)"/>.</summary>
+    public T SelectFirst(CommandOptions options)
+    {
+        var original = _takeCount;
+        _takeCount = 1;
+        var sql = BuildSql();
+        _takeCount = original;
+        return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public T? SelectFirstOrDefault()
     {
         var original = _takeCount;
@@ -209,6 +238,19 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         _takeCount = original;
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
+
+    /// <summary>AUD-R34-017: see <see cref="Select(CommandOptions)"/>.</summary>
+    public T? SelectFirstOrDefault(CommandOptions options)
+    {
+        var original = _takeCount;
+        _takeCount = 1;
+        var sql = BuildSql();
+        _takeCount = original;
+        return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
+        new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
 
     public string ToSql() => BuildSql();
 

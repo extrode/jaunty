@@ -51,6 +51,11 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
     public IJoinedQuery<TFrom, TJoin> On(string leftColumn, string rightColumn)
     {
+        // AUD-R34-022: see JoinColumnReference - this overload wins the overload resolution a
+        // string-valued On(condition, value) call meant for the generic one.
+        JoinColumnReference.Require(leftColumn, nameof(leftColumn));
+        JoinColumnReference.Require(rightColumn, nameof(rightColumn));
+
         string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery(condition);
     }

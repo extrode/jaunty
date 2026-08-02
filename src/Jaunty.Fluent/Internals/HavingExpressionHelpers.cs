@@ -32,7 +32,20 @@ internal static class HavingExpressionHelpers
             // TRUE/FALSE, and a bare 1/0 is not a boolean there - a projected or grouped bool
             // constant produced SQL PostgreSQL rejects. The dialect method exists for this.
             bool b => dialect.FormatBooleanLiteral(b),
-            DateTime dt => $"'{dt:yyyy-MM-dd HH:mm:ss}'",
+            DateTime dt => $"'{dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}'",
+            // AUD-R34-006: DateTime was the only quoted temporal type. Every other one implements
+            // IFormattable, so it fell into the generic arm below and came out bare. DateOnly is
+            // the silent case - `2026-08-02` unquoted is valid arithmetic in most dialects and
+            // computes 2016 rather than failing - while TimeSpan/DateTimeOffset/Guid produce a
+            // syntax error. char reached the ToString() fallback and came out as a bare identifier.
+            DateTimeOffset dto => $"'{dto.ToString("yyyy-MM-dd HH:mm:sszzz", CultureInfo.InvariantCulture)}'",
+            TimeSpan ts => $"'{ts.ToString("c", CultureInfo.InvariantCulture)}'",
+            Guid g => $"'{g.ToString("D", CultureInfo.InvariantCulture)}'",
+            char c => $"'{dialect.EscapeStringLiteral(c.ToString())}'",
+#if NET8_0_OR_GREATER
+            DateOnly d => $"'{d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}'",
+            TimeOnly t => $"'{t.ToString("HH:mm:ss", CultureInfo.InvariantCulture)}'",
+#endif
             // Numeric types (decimal/double/float/int/...) implement IFormattable - format with
             // the invariant culture so a comma-decimal culture (e.g. de-DE) doesn't corrupt the
             // generated SQL by rendering "1,5" instead of "1.5".

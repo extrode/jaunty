@@ -46,7 +46,11 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     {
         int fieldCount = reader.FieldCount;
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -80,6 +84,11 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     // itself keys on the type pair alone.
     private static MultiEntityMapper<T1, T2> CreateMapper(IDataReader reader)
     {
+        // AUD-R34-015: a struct entity is passed by value to the combined delegate, so its setters
+        // write to a copy and the caller gets an all-default entity back. Same rejection as the
+        // N-ary path - see MultiEntityMapperNGuard.RequireReferenceTypes.
+        MultiEntityMapperNGuard.RequireReferenceTypes(new[] { typeof(T1), typeof(T2) });
+
         if (JauntyConfig.ReflectionMultiMapperResolver?.Invoke(typeof(T1), typeof(T2)) is Action<T1, T2, IDataRecord> combined)
             return new MultiEntityMapper<T1, T2>(combined);
 

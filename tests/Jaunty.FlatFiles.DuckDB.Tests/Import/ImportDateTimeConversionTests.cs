@@ -109,6 +109,6 @@ public class ImportDateTimeConversionTests : IDisposable
     {
         var method = typeof(ImportExecutor).GetMethod("ConvertValue",
             BindingFlags.Static | BindingFlags.NonPublic);
-        return method?.Invoke(null, new[] { value, targetType });
+        return method?.Invoke(null, new object?[] { value, targetType, null });
     }
 }

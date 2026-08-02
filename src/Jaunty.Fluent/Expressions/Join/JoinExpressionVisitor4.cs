@@ -129,7 +129,12 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
             return node;
         }
 
-        return base.VisitUnary(node);
+        // AUD-R34-019: the base implementation visits the operand and appends nothing for the
+        // operator, so `-p.UnitPrice` used to translate to a bare column - the negation silently
+        // gone from the emitted SQL. Negate, TypeAs, OnesComplement, ArrayLength and UnaryPlus all
+        // took that route.
+        throw new NotSupportedException(
+            $"Unary operator '{node.NodeType}' is not supported in JOIN expressions.");
     }
 
     protected override Expression VisitMember(MemberExpression node)
@@ -158,6 +163,59 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
         => throw new NotSupportedException(
             "Conditional (ternary) expressions are not supported in JOIN predicates. " +
             "Split the predicate into separate conditions, or filter with Where after the join.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitNew(NewExpression node)
+        => throw new NotSupportedException(
+            $"Constructing a '{node.Type.Name}' is not supported inside a JOIN predicate. " +
+            "Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        => throw new NotSupportedException(
+            "Type tests ('is', 'as') are not supported in JOIN predicates. There is no SQL " +
+            "equivalent of a CLR type test over a column; join on a discriminator column instead.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitInvocation(InvocationExpression node)
+        => throw new NotSupportedException(
+            "Invoking a delegate or a nested lambda is not supported inside a JOIN predicate. " +
+            "Inline the condition.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitNewArray(NewArrayExpression node)
+        => throw new NotSupportedException(
+            "Array construction is not supported inside a JOIN predicate. Build the array before " +
+            "the query and pass it in.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitMemberInit(MemberInitExpression node)
+        => throw new NotSupportedException(
+            $"Object initializers ('new {node.Type.Name} {{ ... }}') are not supported inside a " +
+            "JOIN predicate. Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitListInit(ListInitExpression node)
+        => throw new NotSupportedException(
+            "Collection initializers are not supported inside a JOIN predicate. Build the " +
+            "collection before the query and pass it in.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitIndex(IndexExpression node)
+        => throw new NotSupportedException(
+            "Indexer access is not supported inside a JOIN predicate. Compute the value before " +
+            "the query and compare against it.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitDefault(DefaultExpression node)
+        => throw new NotSupportedException(
+            $"'default({node.Type.Name})' is not supported inside a JOIN predicate. Write the " +
+            "value out, or compute it before the query.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitParameter(ParameterExpression node)
+        => throw new NotSupportedException(
+            $"'{node.Name}' is a whole entity, not a condition. Compare its properties instead.");
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {

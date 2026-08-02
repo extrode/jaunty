@@ -93,6 +93,30 @@ public class ConfigurationGenerationTests : IDisposable
         public string? WidgetName { get; set; }
     }
 
+    [Table("multi_gen_left")]
+    public class MultiGenLeft
+    {
+        [Key]
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+
+    [Table("multi_gen_right")]
+    public class MultiGenRight
+    {
+        [Key]
+        public int RightId { get; set; }
+        public string? Label { get; set; }
+    }
+
+    [Table("multi_gen_third")]
+    public class MultiGenThird
+    {
+        [Key]
+        public int ThirdId { get; set; }
+        public string? Note { get; set; }
+    }
+
     [Table("steady_state")]
     public class SteadyStateWidget
     {
@@ -393,5 +417,88 @@ public class ConfigurationGenerationTests : IDisposable
 
         Assert.NotNull(after);
         Assert.NotSame(before, after);
+    }
+
+    // ------------------------------------------------------------------
+    // AUD-R34-023: the reflection multi-entity mappers.
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// <c>MultiEntityMapper&lt;T1,T2&gt;</c>'s schema cache was keyed on the reader's column names
+    /// alone and its per-reader memo compared field count and names only, so a
+    /// <c>ColumnNameResolver</c> change did not retire a mapper already built for that column
+    /// shape - and <c>JauntyReflectionExtensions.MultiMapperCache</c> above it, which <em>is</em>
+    /// generation-scoped, rebuilt a delegate that called straight back into the stale one.
+    /// </summary>
+    [Fact]
+    public void AResolverChangeIsObservedByTheArity2MultiEntityMapper()
+    {
+        using SqliteConnection connection = OpenWith(
+            "CREATE TABLE multi_gen (Id INTEGER, FullName TEXT, RightId INTEGER, Label TEXT);" +
+            "INSERT INTO multi_gen VALUES (1, 'Ada', 2, 'left');");
+
+        const string sql = "SELECT Id, FullName, RightId, Label FROM multi_gen";
+
+        (MultiGenLeft Left, MultiGenRight Right) before =
+            connection.Query<MultiGenLeft, MultiGenRight>(sql).Single();
+        Assert.Null(before.Left.Name);
+
+        JauntyConfig.ColumnNameResolver = static name => name == "Name" ? "FullName" : name;
+
+        (MultiGenLeft Left, MultiGenRight Right) after =
+            connection.Query<MultiGenLeft, MultiGenRight>(sql).Single();
+
+        Assert.Equal("Ada", after.Left.Name);
+        Assert.Equal("left", after.Right.Label);
+    }
+
+    /// <summary>
+    /// The arity 3-7 mappers in <c>MultiEntityMapperN.cs</c> have the identical
+    /// <c>BoundedCache&lt;string, ...&gt;</c> design and had the identical gap.
+    /// </summary>
+    [Fact]
+    public void AResolverChangeIsObservedByTheArity3MultiEntityMapper()
+    {
+        using SqliteConnection connection = OpenWith(
+            "CREATE TABLE multi_gen3 (Id INTEGER, FullName TEXT, RightId INTEGER, Label TEXT, ThirdId INTEGER, Note TEXT);" +
+            "INSERT INTO multi_gen3 VALUES (1, 'Grace', 2, 'left', 3, 'n');");
+
+        const string sql = "SELECT Id, FullName, RightId, Label, ThirdId, Note FROM multi_gen3";
+
+        (MultiGenLeft Left, MultiGenRight Right, MultiGenThird Third) before =
+            connection.Query<MultiGenLeft, MultiGenRight, MultiGenThird>(sql).Single();
+        Assert.Null(before.Left.Name);
+
+        JauntyConfig.ColumnNameResolver = static name => name == "Name" ? "FullName" : name;
+
+        (MultiGenLeft Left, MultiGenRight Right, MultiGenThird Third) after =
+            connection.Query<MultiGenLeft, MultiGenRight, MultiGenThird>(sql).Single();
+
+        Assert.Equal("Grace", after.Left.Name);
+        Assert.Equal("n", after.Third.Note);
+    }
+
+    /// <summary>
+    /// The per-reader memo short-circuits the schema-key cache entirely, so it carries the
+    /// generation too. Same reader instance, resolver changed between two reads of it.
+    /// </summary>
+    [Fact]
+    public void AResolverChangeIsObservedEvenWhenTheProviderRecyclesTheReader()
+    {
+        using SqliteConnection connection = OpenWith(
+            "CREATE TABLE multi_gen_memo (Id INTEGER, FullName TEXT, RightId INTEGER, Label TEXT);" +
+            "INSERT INTO multi_gen_memo VALUES (1, 'Alan', 2, 'left');" +
+            "INSERT INTO multi_gen_memo VALUES (2, 'Alonzo', 3, 'left');");
+
+        const string sql = "SELECT Id, FullName, RightId, Label FROM multi_gen_memo";
+
+        Assert.Null(connection.Query<MultiGenLeft, MultiGenRight>(sql).First().Item1.Name);
+
+        JauntyConfig.ColumnNameResolver = static name => name == "Name" ? "FullName" : name;
+
+        List<(MultiGenLeft, MultiGenRight)> rows =
+            connection.Query<MultiGenLeft, MultiGenRight>(sql).ToList();
+
+        Assert.Equal(["Alan", "Alonzo"], rows.Select(r => r.Item1.Name));
     }
 }
