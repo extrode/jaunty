@@ -80,6 +80,11 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     // itself keys on the type pair alone.
     private static MultiEntityMapper<T1, T2> CreateMapper(IDataReader reader)
     {
+        // AUD-R34-015: a struct entity is passed by value to the combined delegate, so its setters
+        // write to a copy and the caller gets an all-default entity back. Same rejection as the
+        // N-ary path - see MultiEntityMapperNGuard.RequireReferenceTypes.
+        MultiEntityMapperNGuard.RequireReferenceTypes(new[] { typeof(T1), typeof(T2) });
+
         if (JauntyConfig.ReflectionMultiMapperResolver?.Invoke(typeof(T1), typeof(T2)) is Action<T1, T2, IDataRecord> combined)
             return new MultiEntityMapper<T1, T2>(combined);
 
