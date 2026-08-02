@@ -220,12 +220,22 @@ public partial class JauntyGenerator
         if (name is null)
             return false;
 
-        // Fluent's Values(object) carries the parameters object as its only argument; everything in
-        // core takes the SQL first, so it needs at least two.
+        // Fluent's Values(object) and Set(object) carry the parameters object as their only
+        // argument; everything in core takes the SQL first, so it needs at least two.
+        //
+        // AUD-R34-025: Set and the three Raw predicates were missing. All of them reach
+        // ParameterCache.Get(x.GetType()) and prop.Getter(x) - InsertBuilder.cs:61,
+        // QueryBuilder.cs:1666/2053/2073 - i.e. exactly the reflection path this generator exists
+        // to protect, and a consumer writing .Set(new { Name = "x" }) got a clean build, no
+        // JAUNTYGEN003, and a trimmed publish that threw with an empty property list.
         return name.Equals("Values", StringComparison.Ordinal)
+            || name.Equals("Set", StringComparison.Ordinal)
             || (arity >= 2
                 && (name.StartsWith("Query", StringComparison.Ordinal)
-                    || name.StartsWith("Execute", StringComparison.Ordinal)));
+                    || name.StartsWith("Execute", StringComparison.Ordinal)
+                    || name.Equals("WhereRaw", StringComparison.Ordinal)
+                    || name.Equals("AndRaw", StringComparison.Ordinal)
+                    || name.Equals("OrRaw", StringComparison.Ordinal)));
     }
 
     /// <summary>
@@ -242,7 +252,7 @@ public partial class JauntyGenerator
         if (!IsJauntyMethod(method))
             return null;
 
-        if (FindParametersParameter(method) is not { } parameter)
+        if (FindParametersParameter(method, out bool isSequence) is not { } parameter)
             return null;
 
         if (FindArgumentFor(invocation, method, parameter) is not { } argument)
@@ -260,6 +270,17 @@ public partial class JauntyGenerator
 
         if (type is null || type.TypeKind == TypeKind.Error)
             return null;
+
+        // AUD-R34-027: a batch call site binds each element, so it is the element type that has to
+        // be rooted. An unknowable element type (`IEnumerable<object>` forwarded through) falls to
+        // the erasure branch below and is excused or reported there, same as the scalar case.
+        if (isSequence)
+        {
+            if (ElementTypeOf(type) is not { } element)
+                return null;
+
+            type = element;
+        }
 
         // The two shapes that reach no property reflection at all, so nothing has to be preserved:
         // a dictionary (bound by key) and a scalar (bound by the name in the SQL text).
@@ -376,20 +397,68 @@ public partial class JauntyGenerator
     }
 
     /// <summary>
-    /// Finds the <c>object</c>-typed parameter that carries the parameters object, by the two names
-    /// the library uses for it.
+    /// Finds the parameter that carries the parameters object, by the names the library uses for
+    /// it. <paramref name="isSequence"/> is set when the parameter carries a <em>sequence</em> of
+    /// parameter objects rather than one, in which case it is the element type that has to be
+    /// rooted.
     /// </summary>
-    private static IParameterSymbol? FindParametersParameter(IMethodSymbol method)
+    /// <remarks>
+    /// AUD-R34-027. <c>ExecuteBatch</c>/<c>ExecuteBatchAsync</c> pass the syntax predicate - the
+    /// name starts with <c>Execute</c> and the arity is >= 2 - and then fell out here, because
+    /// their parameter is <c>IEnumerable&lt;object&gt; parameterSets</c>: neither the type nor the
+    /// name matched. Every set in the batch is bound by property reflection through the same
+    /// <c>ParameterCache</c> path, and the element type is usually knowable at the call site
+    /// (<c>ExecuteBatch(sql, new[] { new { Id = 1 } })</c>), so the site was rootable in principle
+    /// and was instead silently skipped with no JAUNTYGEN003.
+    /// </remarks>
+    private static IParameterSymbol? FindParametersParameter(IMethodSymbol method, out bool isSequence)
     {
+        isSequence = false;
+
         foreach (IParameterSymbol parameter in method.Parameters)
         {
-            if (parameter.Type.SpecialType != SpecialType.System_Object)
-                continue;
-
-            if (parameter.Name.Equals("parameters", StringComparison.Ordinal)
-                || parameter.Name.Equals("values", StringComparison.Ordinal))
+            if (parameter.Type.SpecialType == SpecialType.System_Object
+                && (parameter.Name.Equals("parameters", StringComparison.Ordinal)
+                    || parameter.Name.Equals("values", StringComparison.Ordinal)))
             {
                 return parameter;
+            }
+
+            if (parameter.Name.Equals("parameterSets", StringComparison.Ordinal)
+                && ElementTypeOf(parameter.Type) is not null)
+            {
+                isSequence = true;
+                return parameter;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The element type of an array or of anything implementing <c>IEnumerable&lt;T&gt;</c>, or
+    /// <see langword="null"/> when the type is neither. AUD-R34-027.
+    /// </summary>
+    private static ITypeSymbol? ElementTypeOf(ITypeSymbol type)
+    {
+        if (type is IArrayTypeSymbol array)
+            return array.ElementType;
+
+        if (type is not INamedTypeSymbol named)
+            return null;
+
+        if (named.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T
+            && named.TypeArguments.Length == 1)
+        {
+            return named.TypeArguments[0];
+        }
+
+        foreach (INamedTypeSymbol iface in named.AllInterfaces)
+        {
+            if (iface.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T
+                && iface.TypeArguments.Length == 1)
+            {
+                return iface.TypeArguments[0];
             }
         }
 
@@ -489,7 +558,16 @@ public partial class JauntyGenerator
     /// </remarks>
     private static bool IsNameableFrom(ITypeSymbol type)
     {
-        if (type is IArrayTypeSymbol or IPointerTypeSymbol or ITypeParameterSymbol or IFunctionPointerTypeSymbol)
+        // AUD-R34-026: an array type IS writable by name - `default(global::System.Int32[])`
+        // compiles - and rejecting it made BuildAnonymousWitness abandon the witness for the whole
+        // anonymous type, so `new { Ids = ids }` (the idiomatic shape for Jaunty's own IN-clause
+        // expansion) was reported as JAUNTYGEN003 and nothing was rooted, while the same object
+        // with a List<int> rooted fine. Accessibility is the element type's question, and it is
+        // asked, exactly as TypeArguments already is below.
+        if (type is IArrayTypeSymbol array)
+            return IsNameableFrom(array.ElementType);
+
+        if (type is IPointerTypeSymbol or ITypeParameterSymbol or IFunctionPointerTypeSymbol)
             return false;
 
         if (type is not INamedTypeSymbol named)
