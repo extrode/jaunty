@@ -41,7 +41,23 @@ internal sealed record EntityModel(
     string TableName,
     string? SchemaName,
     EquatableArray<PropertyMetadata> Properties,
-    LocationInfo? DiagnosticLocation);
+    LocationInfo? DiagnosticLocation,
+    EquatableArray<ContainingTypeInfo> ContainingTypes = default,
+    string? UnsupportedNestingReason = null);
+
+/// <summary>
+/// One link in the chain of types enclosing a nested entity, outermost first.
+/// </summary>
+/// <remarks>
+/// AUD-R33-006: the generated partial has to be re-declared inside the same enclosing types as the
+/// entity, or it is a different type altogether. Only what the re-declaration needs is kept -
+/// the keyword (<c>class</c>, <c>record</c>, <c>struct</c>...) and the accessibility, both of which
+/// every part of a partial type must agree on, and the name.
+/// </remarks>
+internal readonly record struct ContainingTypeInfo(
+    string AccessibilityKeyword,
+    string Keyword,
+    string Name);
 
 /// <summary>
 /// Holds the resolved mapping metadata for a single property of an entity class.
