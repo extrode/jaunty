@@ -345,6 +345,13 @@ public static partial class Jaunty
 
     private static List<(T1, T2)> QueryMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryCore<(T1, T2)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -404,6 +411,13 @@ public static partial class Jaunty
 
     private static (T1, T2)? QueryFirstOrDefaultMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryFirstOrDefaultCore<(T1, T2)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -446,6 +460,13 @@ public static partial class Jaunty
 
     private static (T1, T2)? QuerySingleOrDefaultMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QuerySingleOrDefaultCore<(T1, T2)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -482,6 +503,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2)> QueryStreamMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2) mapped in QueryStreamCore<(T1, T2)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         if (connection is DbConnection dbConnection)
         {
             foreach ((T1, T2) item in QueryStreamMultiEntityCoreFast<T1, T2>(dbConnection, sql, parameters, options, mode))
@@ -539,6 +571,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2)> QueryStreamMultiEntityCoreFast<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2) mapped in QueryStreamCoreFast<(T1, T2)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -592,6 +635,13 @@ public static partial class Jaunty
 
     private static List<(T1, T2, T3)> QueryMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryCore<(T1, T2, T3)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -656,6 +706,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryFirstOrDefaultCore<(T1, T2, T3)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -704,6 +761,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QuerySingleOrDefaultCore<(T1, T2, T3)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -746,6 +810,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3) mapped in QueryStreamCore<(T1, T2, T3)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         if (connection is DbConnection dbConnection)
         {
             foreach ((T1, T2, T3) item in QueryStreamMultiEntityCoreFast<T1, T2, T3>(dbConnection, sql, parameters, options, mode))
@@ -806,6 +881,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCoreFast<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3) mapped in QueryStreamCoreFast<(T1, T2, T3)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -858,6 +944,13 @@ public static partial class Jaunty
 
     private static List<(T1, T2, T3, T4)> QueryMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryCore<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -926,6 +1019,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3, T4)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryFirstOrDefaultCore<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -978,6 +1078,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3, T4)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QuerySingleOrDefaultCore<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1024,6 +1131,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3, T4) mapped in QueryStreamCore<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         if (connection is DbConnection dbConnection)
         {
             foreach ((T1, T2, T3, T4) item in QueryStreamMultiEntityCoreFast<T1, T2, T3, T4>(dbConnection, sql, parameters, options, mode))
@@ -1086,6 +1204,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3, T4) mapped in QueryStreamCoreFast<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -1140,6 +1269,13 @@ public static partial class Jaunty
 
     private static List<(T1, T2, T3, T4, T5)> QueryMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryCore<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1212,6 +1348,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3, T4, T5)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryFirstOrDefaultCore<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1268,6 +1411,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3, T4, T5)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QuerySingleOrDefaultCore<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1318,6 +1468,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3, T4, T5) mapped in QueryStreamCore<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         if (connection is DbConnection dbConnection)
         {
             foreach ((T1, T2, T3, T4, T5) item in QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5>(dbConnection, sql, parameters, options, mode))
@@ -1382,6 +1543,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3, T4, T5) mapped in QueryStreamCoreFast<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -1438,6 +1610,13 @@ public static partial class Jaunty
 
     private static List<(T1, T2, T3, T4, T5, T6)> QueryMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryCore<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1514,6 +1693,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3, T4, T5, T6)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryFirstOrDefaultCore<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1574,6 +1760,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3, T4, T5, T6)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QuerySingleOrDefaultCore<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1628,6 +1821,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3, T4, T5, T6) mapped in QueryStreamCore<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         if (connection is DbConnection dbConnection)
         {
             foreach ((T1, T2, T3, T4, T5, T6) item in QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5, T6>(dbConnection, sql, parameters, options, mode))
@@ -1694,6 +1898,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3, T4, T5, T6) mapped in QueryStreamCoreFast<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -1752,6 +1967,13 @@ public static partial class Jaunty
 
     private static List<(T1, T2, T3, T4, T5, T6, T7)> QueryMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryCore<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1832,6 +2054,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3, T4, T5, T6, T7)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QueryFirstOrDefaultCore<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1896,6 +2125,13 @@ public static partial class Jaunty
 
     private static (T1, T2, T3, T4, T5, T6, T7)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+            return QuerySingleOrDefaultCore<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode);
+
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -1954,6 +2190,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3, T4, T5, T6, T7) mapped in QueryStreamCore<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         if (connection is DbConnection dbConnection)
         {
             foreach ((T1, T2, T3, T4, T5, T6, T7) item in QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5, T6, T7>(dbConnection, sql, parameters, options, mode))
@@ -2022,6 +2269,17 @@ public static partial class Jaunty
 
     private static IEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
+        // AUD-R33-004: options.Mapper was accepted and discarded on every multi-entity core.
+        // The tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so the single-entity core is the honouring path already written and
+        // tested - delegating to it is exact rather than a second implementation to keep in step.
+        if (options.Mapper is not null)
+        {
+            foreach ((T1, T2, T3, T4, T5, T6, T7) mapped in QueryStreamCoreFast<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode))
+                yield return mapped;
+            yield break;
+        }
+
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
