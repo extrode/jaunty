@@ -129,6 +129,59 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
+    // AUD-R34-004: the async twin of QueryCore.cs's MappedTuple cores. The multi-entity cores
+    // delegate here when options.Mapper is set, and QueryFirstOrDefaultCoreAsync /
+    // QuerySingleOrDefaultCoreAsync return T? over a type parameter constrained only by new() -
+    // for a ValueTuple that is the tuple itself, so an empty result set produced a non-null
+    // (default, default) rather than null. Constraining the tuple to struct restores the contract.
+    private static async ValueTask<TTuple?> QueryFirstOrDefaultMappedTupleCoreAsync<TTuple>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<TTuple> options, MappingMode mode, CancellationToken cancellationToken = default) where TTuple : struct
+    {
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            if (reader is DbDataReader dbReader)
+            {
+                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    return (TTuple?)null;
+                Func<DbDataReader, TTuple> map = DrDispatcher.Resolve(dbReader, options, mode);
+                return map(dbReader);
+            }
+
+            if (!reader.Read()) return (TTuple?)null;
+            ct.ThrowIfCancellationRequested();
+            Func<IDataReader, TTuple> mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            return mapFallback(reader);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    // describeType is only invoked on the more-than-one-row failure; see the sync twin for why it
+    // is passed rather than derived from typeof(TTuple).
+    private static async ValueTask<TTuple?> QuerySingleOrDefaultMappedTupleCoreAsync<TTuple>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<TTuple> options, MappingMode mode, Func<string> describeType, CancellationToken cancellationToken = default) where TTuple : struct
+    {
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            if (reader is DbDataReader dbReader)
+            {
+                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    return (TTuple?)null;
+
+                Func<DbDataReader, TTuple> map = DrDispatcher.Resolve(dbReader, options, mode);
+                TTuple entity = map(dbReader);
+                return await dbReader.ReadAsync(ct).ConfigureAwait(false)
+                    ? throw new InvalidOperationException($"Sequence contains more than one element of type '{describeType()}'.")
+                    : (TTuple?)entity;
+            }
+
+            if (!reader.Read()) return (TTuple?)null;
+            ct.ThrowIfCancellationRequested();
+            Func<IDataReader, TTuple> mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            TTuple entityFallback = mapFallback(reader);
+            ct.ThrowIfCancellationRequested();
+            return reader.Read()
+                ? throw new InvalidOperationException($"Sequence contains more than one element of type '{describeType()}'.")
+                : (TTuple?)entityFallback;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
     // Internal (not private) so tests can inject a custom DbCommand wrapper that deterministically
     // cancels the operation's CancellationToken from inside ExecuteScalarAsync, right before the
     // real exception it throws propagates into this method's finally-block cleanup. There is no
@@ -387,7 +440,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QueryFirstOrDefaultCoreAsync<(T1, T2)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -436,7 +489,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QuerySingleOrDefaultCoreAsync<(T1, T2)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name})", cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync<(T1, T2)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -637,7 +690,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QueryFirstOrDefaultCoreAsync<(T1, T2, T3)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -692,7 +745,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QuerySingleOrDefaultCoreAsync<(T1, T2, T3)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})", cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync<(T1, T2, T3)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -902,7 +955,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QueryFirstOrDefaultCoreAsync<(T1, T2, T3, T4)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -961,7 +1014,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QuerySingleOrDefaultCoreAsync<(T1, T2, T3, T4)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})", cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync<(T1, T2, T3, T4)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1181,7 +1234,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QueryFirstOrDefaultCoreAsync<(T1, T2, T3, T4, T5)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1244,7 +1297,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QuerySingleOrDefaultCoreAsync<(T1, T2, T3, T4, T5)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})", cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync<(T1, T2, T3, T4, T5)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1474,7 +1527,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QueryFirstOrDefaultCoreAsync<(T1, T2, T3, T4, T5, T6)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5, T6)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1541,7 +1594,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QuerySingleOrDefaultCoreAsync<(T1, T2, T3, T4, T5, T6)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5, T6)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})", cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync<(T1, T2, T3, T4, T5, T6)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1781,7 +1834,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QueryFirstOrDefaultCoreAsync<(T1, T2, T3, T4, T5, T6, T7)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5, T6, T7)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1852,7 +1905,7 @@ public static partial class Jaunty
         // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
         // other strategy, so that core is the honouring path already written and tested.
         if (options.Mapper is not null)
-            return await QuerySingleOrDefaultCoreAsync<(T1, T2, T3, T4, T5, T6, T7)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5, T6, T7)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})", cancellationToken).ConfigureAwait(false);
 
         return await ExecuteReaderAsync<(T1, T2, T3, T4, T5, T6, T7)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
