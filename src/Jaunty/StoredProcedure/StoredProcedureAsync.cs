@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
@@ -93,6 +93,20 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         return ExecuteStoredProcedureAsync<T>(connection, procedureName, parameters, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    {
+        return ExecuteStoredProcedureAsync<T>(connection, procedureName, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -231,6 +245,20 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, parameters, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureFirstAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    {
+        return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -383,6 +411,20 @@ public static partial class Jaunty
     }
 
     /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureFirstOrDefaultAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    {
+        return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, null, options, cancellationToken);
+    }
+
+    /// <summary>
     /// Asynchronously executes a stored procedure with parameters and options, returning the first result mapped to an entity of type <typeparamref name="T"/>, 
     /// or <see langword="null"/> if no results are found.
     /// </summary>
@@ -513,6 +555,20 @@ public static partial class Jaunty
     }
 
     /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureScalarAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default)
+    {
+        return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, null, options, cancellationToken);
+    }
+
+    /// <summary>
     /// Asynchronously executes a stored procedure with parameters and options, returning a scalar value of type <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The scalar type to return.</typeparam>
@@ -636,6 +692,20 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, parameters, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureNonQueryAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, null, options, cancellationToken);
     }
 
     /// <summary>

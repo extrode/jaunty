@@ -210,6 +210,23 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// nothing: the source type has no member for either. Round-tripping through the non-generic
     /// form still drops them - see the conversion above.
     /// </para>
+    /// <para>
+    /// <b>The two conversions are now mutually implicit, which constrains what can be added to this
+    /// API.</b> Neither type is a better common type than the other, so an expression that must pick
+    /// one is ambiguous: <c>cond ? CommandOptions.WithTimeout(1) : CommandOptions&lt;Row&gt;.WithMapper(m)</c>
+    /// is CS0172 and <c>new[] { genericOptions, nonGenericOptions }</c> is CS0826, where before this
+    /// operator both resolved to the non-generic form. Both are narrow source breaks with an obvious
+    /// remedy (annotate the type). The forward-looking constraint matters more: <b>an overload group
+    /// must not offer both <see cref="CommandOptions"/> and <see cref="CommandOptions{T}"/> at the
+    /// same argument position</b>, because a <c>default</c> argument there would be CS0121 with no
+    /// unique best target. No group in this library does.
+    /// </para>
+    /// <para>
+    /// Binary compatibility is unaffected - adding a conversion operator is additive, and compiled
+    /// consumers keep their existing bindings. On <i>recompile</i>, though, a call site that was
+    /// silently dropping a transaction or timeout starts honouring it with no source diff, so this
+    /// belongs in release notes as a behaviour change rather than a pure bug fix.
+    /// </para>
     /// </remarks>
     public static implicit operator CommandOptions<T>(CommandOptions options) => new(null, options.Transaction, options.CommandTimeout, options.CommandType);
 }
