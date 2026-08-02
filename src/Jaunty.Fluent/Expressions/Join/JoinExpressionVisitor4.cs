@@ -153,6 +153,12 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
         return node;
     }
 
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitConditional"/>
+    protected override Expression VisitConditional(ConditionalExpression node)
+        => throw new NotSupportedException(
+            "Conditional (ternary) expressions are not supported in JOIN predicates. " +
+            "Split the predicate into separate conditions, or filter with Where after the join.");
+
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         throw new NotSupportedException($"Method '{node.Method.Name}' is not supported in JOIN expressions.");

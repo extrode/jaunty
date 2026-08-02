@@ -211,6 +211,17 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         return base.VisitUnary(node);
     }
 
+    /// <summary>
+    /// AUD-R33-003. Same gap AUD-R32-002 closed in <c>WhereExpressionVisitor</c> and
+    /// <c>SelectExpressionVisitor</c>: with no override the base traversal walks Test/IfTrue/IfFalse
+    /// and each appends its own fragment to the shared <c>_sql</c> builder with nothing joining
+    /// them. Every other unsupported shape in this file throws, so this does too.
+    /// </summary>
+    protected override Expression VisitConditional(ConditionalExpression node)
+        => throw new NotSupportedException(
+            "Conditional (ternary) expressions are not supported in EXISTS correlation predicates. " +
+            "Split the predicate into separate conditions.");
+
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         throw new NotSupportedException($"Method '{node.Method.Name}' is not supported in EXISTS correlation predicates.");
