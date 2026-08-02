@@ -44,8 +44,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3>
 
     private static string BuildSchemaKey(IDataReader reader)
     {
+        // AUD-R34-023: the generation is part of the key. Without it a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset(), both of which call ConfigurationGeneration.Invalidate())
+        // left an already-built mapper in place for the process lifetime - MetadataCache<T> below
+        // rebuilt and JauntyReflectionExtensions.MultiMapperCache above is ConfigurationScoped, but
+        // the delegate that cache rebuilds calls straight back into this one, which returned the
+        // pre-change mapper for a column shape it had seen before.
         var parts = new string[reader.FieldCount + 1];
-        parts[0] = reader.FieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -96,8 +102,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4>
 
     private static string BuildSchemaKey(IDataReader reader)
     {
+        // AUD-R34-023: the generation is part of the key. Without it a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset(), both of which call ConfigurationGeneration.Invalidate())
+        // left an already-built mapper in place for the process lifetime - MetadataCache<T> below
+        // rebuilt and JauntyReflectionExtensions.MultiMapperCache above is ConfigurationScoped, but
+        // the delegate that cache rebuilds calls straight back into this one, which returned the
+        // pre-change mapper for a column shape it had seen before.
         var parts = new string[reader.FieldCount + 1];
-        parts[0] = reader.FieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -152,8 +164,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5>
 
     private static string BuildSchemaKey(IDataReader reader)
     {
+        // AUD-R34-023: the generation is part of the key. Without it a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset(), both of which call ConfigurationGeneration.Invalidate())
+        // left an already-built mapper in place for the process lifetime - MetadataCache<T> below
+        // rebuilt and JauntyReflectionExtensions.MultiMapperCache above is ConfigurationScoped, but
+        // the delegate that cache rebuilds calls straight back into this one, which returned the
+        // pre-change mapper for a column shape it had seen before.
         var parts = new string[reader.FieldCount + 1];
-        parts[0] = reader.FieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -212,8 +230,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6>
 
     private static string BuildSchemaKey(IDataReader reader)
     {
+        // AUD-R34-023: the generation is part of the key. Without it a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset(), both of which call ConfigurationGeneration.Invalidate())
+        // left an already-built mapper in place for the process lifetime - MetadataCache<T> below
+        // rebuilt and JauntyReflectionExtensions.MultiMapperCache above is ConfigurationScoped, but
+        // the delegate that cache rebuilds calls straight back into this one, which returned the
+        // pre-change mapper for a column shape it had seen before.
         var parts = new string[reader.FieldCount + 1];
-        parts[0] = reader.FieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -276,8 +300,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>
 
     private static string BuildSchemaKey(IDataReader reader)
     {
+        // AUD-R34-023: the generation is part of the key. Without it a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset(), both of which call ConfigurationGeneration.Invalidate())
+        // left an already-built mapper in place for the process lifetime - MetadataCache<T> below
+        // rebuilt and JauntyReflectionExtensions.MultiMapperCache above is ConfigurationScoped, but
+        // the delegate that cache rebuilds calls straight back into this one, which returned the
+        // pre-change mapper for a column shape it had seen before.
         var parts = new string[reader.FieldCount + 1];
-        parts[0] = reader.FieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }

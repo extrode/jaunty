@@ -46,7 +46,11 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     {
         int fieldCount = reader.FieldCount;
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }

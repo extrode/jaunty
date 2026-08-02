@@ -130,8 +130,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -197,8 +201,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -269,8 +277,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -346,8 +358,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
@@ -428,8 +444,12 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
         return string.Join("\u001F", parts);
     }
