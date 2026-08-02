@@ -29,13 +29,25 @@ internal static class GroupedJoinedResultMapper
             ConstructorInfo? constructor,
             ParameterInfo[]? constructorParameters,
             PropertyInfo?[]? properties,
-            int[]? parameterAliasOrder = null)
+            int[]? parameterAliasOrder = null,
+            bool isScalar = false)
         {
             Constructor = constructor;
             ConstructorParameters = constructorParameters;
             Properties = properties;
             ParameterAliasOrder = parameterAliasOrder;
+            IsScalar = isScalar;
         }
+
+        /// <summary>
+        /// AUD-R34-005. A single-column projection into a scalar result type - the shape of
+        /// <c>.Select(g =&gt; g.Count())</c> or <c>.Select(g =&gt; g.Key)</c> - has no member to bind
+        /// the column to. <see cref="int"/> declares no constructors and no <c>Value</c> property,
+        /// so it fell through to <c>Activator.CreateInstance</c> and every row mapped to 0; a
+        /// <see cref="string"/> instead matched one of its own arity-1 constructors and blew up
+        /// inside it. Reading the one column and converting it is what both of those shapes mean.
+        /// </summary>
+        public bool IsScalar { get; }
 
         public ConstructorInfo? Constructor { get; }
         public ParameterInfo[]? ConstructorParameters { get; }
@@ -73,6 +85,9 @@ internal static class GroupedJoinedResultMapper
         public static ResultMapperPlan Resolve<TResult>(string[] aliases)
         {
             Type resultType = typeof(TResult);
+
+            if (aliases.Length == 1 && IsScalarResult(resultType))
+                return new ResultMapperPlan(constructor: null, constructorParameters: null, properties: null, parameterAliasOrder: null, isScalar: true);
 
 #pragma warning disable IL2090 // Reflection on generic parameter for result mapping
             if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
@@ -140,6 +155,17 @@ internal static class GroupedJoinedResultMapper
     public static TResult MapResult<TResult>(System.Data.IDataReader reader, string[] aliases, in ResultMapperPlan plan)
     {
         int[] ordinals = plan.GetOrdinalBuffer(reader, aliases.Length);
+
+        if (plan.IsScalar)
+        {
+            int scalarOrdinal = ResolveOrdinal(reader, aliases, ordinals, 0);
+
+            if (reader.IsDBNull(scalarOrdinal))
+                return default!;
+
+            Type scalarType = Nullable.GetUnderlyingType(typeof(TResult)) ?? typeof(TResult);
+            return (TResult)ConvertColumnValue(reader.GetValue(scalarOrdinal), scalarType);
+        }
 
         if (plan.Constructor is not null)
         {
@@ -245,4 +271,29 @@ internal static class GroupedJoinedResultMapper
     /// </remarks>
     public static object ConvertColumnValue(object value, Type targetType) =>
         DbValueConversion.Convert(value, targetType);
+
+    /// <summary>
+    /// A result type that a single column maps to whole, rather than one whose members the
+    /// aliases bind to. Deliberately the same set <c>ParameterBinder.IsScalarType</c> treats as a
+    /// bare parameter value, so "what counts as a scalar" means one thing across the codebase;
+    /// it is private there, and this assembly needs no more than the predicate.
+    /// </summary>
+    private static bool IsScalarResult(Type type)
+    {
+        Type underlying = Nullable.GetUnderlyingType(type) ?? type;
+        return underlying.IsPrimitive
+            || underlying.IsEnum
+            || underlying == typeof(string)
+            || underlying == typeof(decimal)
+            || underlying == typeof(DateTime)
+            || underlying == typeof(DateTimeOffset)
+            || underlying == typeof(TimeSpan)
+            || underlying == typeof(Guid)
+            || underlying == typeof(byte[])
+#if NET8_0_OR_GREATER
+            || underlying == typeof(DateOnly)
+            || underlying == typeof(TimeOnly)
+#endif
+            ;
+    }
 }
