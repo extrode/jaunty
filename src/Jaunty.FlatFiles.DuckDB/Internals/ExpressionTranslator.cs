@@ -132,21 +132,22 @@ internal static class ExpressionTranslator
             return $"({left} {op} {right})";
         }
 
-        (string? columnName, object? value) = ExtractColumnAndValue(binary);
+        (string? columnName, object? value, bool swapped) = ExtractColumnAndValue(binary);
+        ExpressionType nodeType = swapped ? Mirror(binary.NodeType) : binary.NodeType;
 
         if (value is null)
         {
             // A relational comparison (<, <=, >, >=) against NULL is UNKNOWN in SQL and false
             // for C#'s lifted operators - never true either way - so it becomes a match-nothing
             // predicate; only ==/!= translate to the IS NULL forms.
-            if (binary.NodeType is not (ExpressionType.Equal or ExpressionType.NotEqual))
+            if (nodeType is not (ExpressionType.Equal or ExpressionType.NotEqual))
                 return "1 = 0";
 
-            var nullOp = binary.NodeType == ExpressionType.Equal ? "IS NULL" : "IS NOT NULL";
+            var nullOp = nodeType == ExpressionType.Equal ? "IS NULL" : "IS NOT NULL";
             return $"\"{EscapeColumnName(columnName!)}\" {nullOp}";
         }
 
-        var sqlOp = binary.NodeType switch
+        var sqlOp = nodeType switch
         {
             ExpressionType.Equal => "=",
             ExpressionType.NotEqual => "!=",
@@ -329,7 +330,14 @@ internal static class ExpressionTranslator
         return expr;
     }
 
-    private static (string ColumnName, object? Value) ExtractColumnAndValue(BinaryExpression binary)
+    /// <summary>
+    /// AUD-R33-001: also reports whether the operands were swapped. The caller emits
+    /// <c>"column" op $n</c>, so when the entity member is on the right - <c>1000 &lt; x.Revenue</c> -
+    /// the column and the value change places and the operator has to be mirrored with them.
+    /// <c>=</c> and <c>!=</c> are symmetric and unaffected; <c>&lt;</c> <c>&lt;=</c> <c>&gt;</c>
+    /// <c>&gt;=</c> all produced the exact inverse of the predicate before this.
+    /// </summary>
+    private static (string ColumnName, object? Value, bool Swapped) ExtractColumnAndValue(BinaryExpression binary)
     {
         MemberExpression? leftMember = ExtractMemberExpression(binary.Left);
         MemberExpression? rightMember = ExtractMemberExpression(binary.Right);
@@ -338,18 +346,28 @@ internal static class ExpressionTranslator
         {
             var columnName = ResolveColumnFromMember(leftMember);
             var value = EvaluateExpression(binary.Right);
-            return (columnName, value);
+            return (columnName, value, false);
         }
 
         if (rightMember != null && IsEntityMember(rightMember))
         {
             var columnName = ResolveColumnFromMember(rightMember);
             var value = EvaluateExpression(binary.Left);
-            return (columnName, value);
+            return (columnName, value, true);
         }
 
         throw new NotSupportedException("Binary comparison must have at least one property access on the entity.");
     }
+
+    /// <summary>Mirrors a relational comparison so it reads correctly with the operands reversed.</summary>
+    private static ExpressionType Mirror(ExpressionType nodeType) => nodeType switch
+    {
+        ExpressionType.LessThan => ExpressionType.GreaterThan,
+        ExpressionType.LessThanOrEqual => ExpressionType.GreaterThanOrEqual,
+        ExpressionType.GreaterThan => ExpressionType.LessThan,
+        ExpressionType.GreaterThanOrEqual => ExpressionType.LessThanOrEqual,
+        _ => nodeType
+    };
 
     private static bool IsEntityMember(MemberExpression member)
     {

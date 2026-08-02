@@ -167,6 +167,18 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         return node;
     }
 
+    /// <summary>
+    /// AUD-R33-003. The AUD-R32-002 fix reached <c>WhereExpressionVisitor</c> and
+    /// <c>SelectExpressionVisitor</c> but never the JOIN and EXISTS visitors, which have the same
+    /// gap: with no override the base traversal walks Test/IfTrue/IfFalse and each appends its own
+    /// fragment to the shared <c>_sql</c> builder with nothing joining them. Every other
+    /// unsupported shape in this file throws, so this does too.
+    /// </summary>
+    protected override Expression VisitConditional(ConditionalExpression node)
+        => throw new NotSupportedException(
+            "Conditional (ternary) expressions are not supported in JOIN predicates. " +
+            "Split the predicate into separate conditions, or filter with Where after the join.");
+
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         throw new NotSupportedException($"Method '{node.Method.Name}' is not supported in JOIN expressions.");
