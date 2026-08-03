@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace Jaunty.FlatFiles.Internals;
 
 /// <summary>
@@ -39,4 +41,20 @@ internal static class FilePathValidator
                     $"File path at index {i} must not be null.");
         }
     }
+
+    /// <summary>
+    /// Returns a read-only defensive copy of <paramref name="filePaths"/> for a source to expose
+    /// as its <c>FilePaths</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-234. Every source validated the array and then stored it by reference, so the
+    /// caller kept a live handle: <c>arr[1] = null</c> after construction re-opened exactly the
+    /// failure <see cref="ThrowIfInvalid"/> was written to close, and the declared
+    /// <c>IReadOnlyList&lt;string&gt;</c> was castable straight back to <c>string[]</c>. The clone
+    /// closes the first hole and the <c>ReadOnlyCollection&lt;string&gt;</c> wrapper closes the
+    /// second. Paths themselves are strings, so nothing deeper needs copying.
+    /// </remarks>
+    /// <param name="filePaths">The caller-supplied paths, already validated.</param>
+    public static IReadOnlyList<string> Snapshot(string[] filePaths)
+        => new ReadOnlyCollection<string>((string[])filePaths.Clone());
 }

@@ -67,7 +67,7 @@ public sealed class JsonFileSource : IFileSource
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         FilePathValidator.ThrowIfInvalid(filePaths, nameof(filePaths));
-        FilePaths = filePaths;
+        FilePaths = FilePathValidator.Snapshot(filePaths);
         FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
