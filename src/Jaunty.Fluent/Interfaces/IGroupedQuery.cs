@@ -18,6 +18,15 @@ namespace Jaunty.Fluent;
 ///   .Select(g =&gt; new { g.Key, Count = g.Count() });
 /// </code>
 /// </example>
+/// <remarks>
+/// AUD-R35-207. The type-parameter order here is the entity first, while the
+/// <see cref="IGrouping{TKey, T}"/> this interface's own members hand back puts the key first -
+/// that one matches the BCL's <c>IGrouping&lt;TKey, TElement&gt;</c>, and this one matches the rest
+/// of the fluent surface, where <c>T</c> is always the entity being queried. Both are defensible;
+/// the cost is that a caller naming either type explicitly has to remember which convention applies
+/// where. No behavioural effect, and reordering either is a breaking public-API change - the entry
+/// in <c>work/todo.md</c> carries it as the owner's call.
+/// </remarks>
 public interface IGroupedQuery<T, TKey> where T : new()
 {
     /// <summary>
