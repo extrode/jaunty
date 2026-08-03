@@ -176,7 +176,28 @@ public sealed class BulkCopyOptions
 
     /// <summary>
     /// Gets or sets the transaction to use for the bulk copy operation.
-    /// If null, a new transaction will be created.
     /// </summary>
+    /// <remarks>
+    /// AUD-R35-051: this used to say "if null, a new transaction will be created", which is true
+    /// on exactly one of the three providers. Every other property on this type carries a
+    /// per-provider list (AUD-R25-024 / AUD-R26-061); this was the one still making an
+    /// unqualified promise, and the one where the promise is about atomicity.
+    /// <list type="bullet">
+    /// <item><description>
+    /// <strong>MySQL</strong>: a transaction is begun when this is null, so the copy is
+    /// all-or-nothing.
+    /// </description></item>
+    /// <item><description>
+    /// <strong>SQL Server</strong>: the value is passed straight to <c>SqlBulkCopy</c>, null
+    /// included, and <c>SqlBulkCopyOptions.UseInternalTransaction</c> is not set - so a null
+    /// transaction means each batch commits on its own and a mid-copy failure leaves the rows
+    /// already written in place. Pass a transaction to make the copy atomic.
+    /// </description></item>
+    /// <item><description>
+    /// <strong>PostgreSQL</strong>: the value is validated against the connection and nothing is
+    /// begun. Same consequence as SQL Server for a null.
+    /// </description></item>
+    /// </list>
+    /// </remarks>
     public IDbTransaction? Transaction { get; set; }
 }

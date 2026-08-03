@@ -269,6 +269,60 @@ public class AsyncTransactionValidatorWiringTests : IDisposable
         realTransaction.Rollback();
     }
 
+    // AUD-R35-053: the four-argument UpsertAsync overload had no test anywhere in tests/. Every
+    // UpsertAsync call site used the three-argument form, so UpsertCoreDirectAsync's
+    // unconditional command.Transaction = AsyncTransactionValidator.RequireDbTransaction(...)
+    // was never exercised with a real DbTransaction or with a non-DbTransaction IDbTransaction,
+    // while the sync twin had both tests immediately above. Open in rounds 33, 34 and 35.
+
+    [Fact]
+    public async Task UpsertAsync_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var category = new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Upserted" };
+        int rows = await _connection.UpsertAsync(category, CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public async Task UpsertAsync_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var category = new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Upserted" };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            async () => await _connection.UpsertAsync(category, CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    /// <summary>
+    /// The row really is inside the transaction rather than merely accepted: rolling back must
+    /// undo it. Without this the test above would pass on a command whose transaction was
+    /// silently dropped.
+    /// </summary>
+    [Fact]
+    public async Task UpsertAsync_WithRealDbTransaction_IsUndoneByARollback()
+    {
+        using (var transaction = _connection.BeginTransaction())
+        {
+            var inserted = new Category { CategoryId = 99, CategoryName = "Ephemeral", Description = "Gone" };
+            await _connection.UpsertAsync(inserted, CommandOptions.WithTransaction(transaction));
+
+            transaction.Rollback();
+        }
+
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM categories WHERE category_id = 99";
+        Assert.Equal(0L, (long)cmd.ExecuteScalar()!);
+    }
+
     [Fact]
     public void ExecuteBatch_WithRealDbTransaction_ExecutesWithinTransaction()
     {
