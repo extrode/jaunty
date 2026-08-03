@@ -18,7 +18,7 @@ namespace Jaunty.Fluent;
 /// <summary>
 /// Main query builder implementation. Implements all fluent interfaces.
 /// </summary>
-internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderByClause<T>, IDistinctClause<T>, ISetClause<T>, IUpdateWhereClause<T>
+internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderByClause<T>, IDistinctClause<T>, ISetClause<T>, IUpdateWhereClause<T>
     where T : new()
 {
     /// <summary>
@@ -608,10 +608,10 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     #region Take/Skip
 
-    IFromClause<T> IFromClause<T>.Take(int count) { _take = count; return this; }
-    IFromClause<T> IFromClause<T>.Skip(int count) { _skip = count; return this; }
-    IWhereClause<T> IWhereClause<T>.Take(int count) { _take = count; return this; }
-    IWhereClause<T> IWhereClause<T>.Skip(int count) { _skip = count; return this; }
+    IPagedClause<T> IFromClause<T>.Take(int count) { _take = count; return this; }
+    IPagedClause<T> IFromClause<T>.Skip(int count) { _skip = count; return this; }
+    IPagedWhereClause<T> IWhereClause<T>.Take(int count) { _take = count; return this; }
+    IPagedWhereClause<T> IWhereClause<T>.Skip(int count) { _skip = count; return this; }
     IOrderByClause<T> IOrderByClause<T>.Take(int count) { _take = count; return this; }
     IOrderByClause<T> IOrderByClause<T>.Skip(int count) { _skip = count; return this; }
     IDistinctClause<T> IDistinctClause<T>.Take(int count) { _take = count; return this; }
