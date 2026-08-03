@@ -1297,6 +1297,8 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public string ToSql() => BuildSelectSql(GetAllColumnNames());
 
+    public string ToDeleteSql() => BuildDeleteSql();
+
     public string ToSql(params string[] columns)
         => BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
 
