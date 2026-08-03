@@ -66,6 +66,23 @@ internal sealed class ColumnMetadata
     public bool IsComputed { get; }
 
     /// <summary>
+    /// Gets the <see cref="EnumStorage"/> declared by an <see cref="EnumStorageAttribute"/> on the
+    /// property, when resolved from source-generated metadata. <see langword="null"/> when the
+    /// property carries no attribute, and always <see langword="null"/> on the reflection path,
+    /// which reads the attribute off <see cref="Property"/> instead.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35: the source-generated path leaves <see cref="Property"/> null, so every
+    /// <c>ApplyTypeHandlerIfNeeded(value, col.Property)</c> call fell through to
+    /// <c>JauntyConfig.DefaultEnumStorage</c> and silently ignored a property-level
+    /// <c>[EnumStorage(EnumStorage.String)]</c>. The generated binders baked the override in, so
+    /// <c>Insert</c>/<c>Update</c> wrote <c>"Active"</c> while <c>Upsert</c>, <c>Get</c> and the
+    /// IN-clause expansion wrote <c>1</c> into the same column. Carrying the storage here rather
+    /// than re-deriving it keeps the AOT path reflection-free.
+    /// </remarks>
+    public EnumStorage? EnumStorageOverride { get; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ColumnMetadata"/> class from a
     /// reflection-resolved <see cref="PropertyInfo"/>.
     /// </summary>
@@ -96,7 +113,8 @@ internal sealed class ColumnMetadata
     /// <param name="isComputed">Whether the column is database-computed.</param>
     /// <param name="getter">A compiled, reflection-free getter for this column's value.</param>
     /// <param name="setter">A compiled, reflection-free setter for this column's value.</param>
-    public ColumnMetadata(string propertyName, Type propertyType, string columnName, bool isPrimaryKey, bool isIdentity, bool isComputed, Func<object, object?> getter, Action<object, object?> setter)
+    /// <param name="enumStorageOverride">The storage declared by an <c>[EnumStorage]</c> attribute on the property, or <see langword="null"/> when it carries none.</param>
+    public ColumnMetadata(string propertyName, Type propertyType, string columnName, bool isPrimaryKey, bool isIdentity, bool isComputed, Func<object, object?> getter, Action<object, object?> setter, EnumStorage? enumStorageOverride = null)
     {
         PropertyName = propertyName;
         PropertyType = propertyType;
@@ -106,5 +124,6 @@ internal sealed class ColumnMetadata
         IsComputed = isComputed;
         Getter = getter;
         Setter = setter;
+        EnumStorageOverride = enumStorageOverride;
     }
 }

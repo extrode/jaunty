@@ -24,6 +24,9 @@
   <ItemGroup>
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <!-- AUD-R35-006: the Take/Skip write terminals are a *compile* error, which only a real
+         compilation can assert. Same version as the other Roslyn-hosting test projects. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
   </ItemGroup>
 
   <ItemGroup>
