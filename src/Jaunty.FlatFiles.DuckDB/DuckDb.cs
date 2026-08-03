@@ -90,6 +90,11 @@ public sealed partial class DuckDb : IFlatFile
             if (options.AutoOpen)
                 _connection.Open();
 
+            // AUD-R35-072: FlatFileOptions.AddUnique only guards the AddXxx APIs; Sources is a
+            // public mutable list, so options.Sources.Add(duplicate) reached the last-wins
+            // _sources dictionary and CREATE OR REPLACE VIEW with the guard never consulted.
+            options.EnsureSourceTableNamesAreUnique();
+
             foreach (IFileSource source in options.Sources)
                 RegisterSource(source);
         }

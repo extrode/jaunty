@@ -80,22 +80,46 @@ public sealed class FlatFileOptions
     /// </exception>
     private void AddUnique(IFileSource source)
     {
-        for (int i = 0; i < Sources.Count; i++)
+        ThrowIfTableNameTaken(Sources, Sources.Count, source);
+        Sources.Add(source);
+    }
+
+    /// <summary>
+    /// Throws when any two sources in <see cref="Sources"/> share a table name.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-072. <see cref="AddUnique"/> is the guard AUD-R26-009 added against two sources
+    /// silently sharing a table name, but <see cref="Sources"/> is a public mutable list, so
+    /// <c>options.Sources.Add(duplicate)</c> reached <c>DuckDb</c>'s last-wins <c>_sources</c>
+    /// dictionary and <c>CREATE OR REPLACE VIEW</c> with the guard never consulted - the exact
+    /// silent-data-loss path AUD-R26-009 documents as measured. The library's own
+    /// <c>FlatFile.Open(string)</c> takes that route, which is harmless there (fresh options, one
+    /// source) but shows the bypass is the natural way to write it. <c>DuckDb</c>'s constructor
+    /// calls this before registering, so the guard no longer depends on which API the caller used.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown when two sources share a table name.</exception>
+    public void EnsureSourceTableNamesAreUnique()
+    {
+        for (int i = 1; i < Sources.Count; i++)
+            ThrowIfTableNameTaken(Sources, i, Sources[i]);
+    }
+
+    private static void ThrowIfTableNameTaken(List<IFileSource> sources, int count, IFileSource source)
+    {
+        for (int i = 0; i < count; i++)
         {
-            if (!string.Equals(Sources[i].TableName, source.TableName, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(sources[i].TableName, source.TableName, StringComparison.OrdinalIgnoreCase))
                 continue;
 
             throw new InvalidOperationException(
                 $"A file source for table '{source.TableName}' is already registered " +
-                $"(entity '{Sources[i].EntityType.Name}', path '{Sources[i].FilePath}'). " +
+                $"(entity '{sources[i].EntityType.Name}', path '{sources[i].FilePath}'). " +
                 "Two sources cannot share a table name - the second would silently replace the " +
                 "first. To read several files as one table, pass them to the source's multi-path " +
                 "constructor instead, e.g. new CsvFileSource(tableName, new[] { pathA, pathB }, " +
                 "typeof(TEntity)). To map a second file to a different table, give its entity a " +
                 "distinct [Table(\"...\")] name.");
         }
-
-        Sources.Add(source);
     }
 
     /// <summary>
