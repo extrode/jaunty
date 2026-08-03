@@ -20,8 +20,14 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
     // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
     // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    // AUD-R35-108 (round-35 batch 04a): StringComparer.Ordinal, matching the core mappers in
+    // src/Jaunty/Internals/Read. This side used OrdinalIgnoreCase, with neither side saying why,
+    // so two result sets differing only in column-name casing shared one cached mapper here and
+    // got two entries there. Immaterial either way - the mapper binds by the ordinal position of
+    // the key's column list - but the cache key is a contract, and Ordinal is the one that never
+    // merges two schemas a provider would call distinct.
     private static readonly BoundedCache<string, MultiEntityMapper<T1, T2>> Cache =
-        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     // Per-reader-instance memoization: GetTypedMultiMapper's delegate calls Get(reader) on every
     // row of a result set, and the same IDataReader instance is passed for every row of that
