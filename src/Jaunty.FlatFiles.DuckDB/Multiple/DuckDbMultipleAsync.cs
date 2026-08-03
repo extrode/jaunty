@@ -41,7 +41,19 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
-        return await ExecuteQueryMultipleAsync(sql, null, cancellationToken).ConfigureAwait(false);
+        return await ExecuteQueryMultipleAsync(sql, null, default, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc cref="QueryMultiple(string, CommandOptions)"/>
+    /// <param name="sql">The SQL query to execute. Can contain multiple SELECT statements separated by semicolons.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    public async ValueTask<GridReader> QueryMultipleAsync(string sql, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        return await ExecuteQueryMultipleAsync(sql, null, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -67,15 +79,28 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
-        return await ExecuteQueryMultipleAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
+        return await ExecuteQueryMultipleAsync(sql, parameters, default, cancellationToken).ConfigureAwait(false);
     }
 
-    private ValueTask<GridReader> ExecuteQueryMultipleAsync(string sql, object? parameters, CancellationToken cancellationToken)
+    /// <inheritdoc cref="QueryMultiple(string, CommandOptions)"/>
+    /// <param name="sql">The SQL query to execute. Can contain multiple SELECT statements separated by semicolons.</param>
+    /// <param name="parameters">Parameters for the query.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    public async ValueTask<GridReader> QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        return await ExecuteQueryMultipleAsync(sql, parameters, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private ValueTask<GridReader> ExecuteQueryMultipleAsync(string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)
         => CommandObservation.ExecuteAsync(
             sql, parameters, _connection, DuckDbObservation.Text,
-            () => ExecuteQueryMultipleDirectAsync(sql, parameters, cancellationToken), cancellationToken);
+            () => ExecuteQueryMultipleDirectAsync(sql, parameters, options, cancellationToken), cancellationToken);
 
-    private async ValueTask<GridReader> ExecuteQueryMultipleDirectAsync(string sql, object? parameters, CancellationToken cancellationToken)
+    private async ValueTask<GridReader> ExecuteQueryMultipleDirectAsync(string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
         CommandObservation.Log(sql, parameters);
 
@@ -83,6 +108,7 @@ public sealed partial class DuckDb
         try
         {
             cmd.CommandText = sql;
+            NonQueryExecutor.ApplyOptions(cmd, options);
 
             if (parameters != null)
             {
