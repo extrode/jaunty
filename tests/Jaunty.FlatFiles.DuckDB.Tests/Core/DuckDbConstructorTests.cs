@@ -26,6 +26,38 @@ public class DuckDbConstructorTests
         Assert.Contains("open connection", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// AUD-R35-072: <c>FlatFileOptions.AddUnique</c> guards the <c>AddXxx</c> APIs, but
+    /// <c>Sources</c> is a public mutable list, so a duplicate added straight to it reached the
+    /// last-wins <c>_sources</c> dictionary and <c>CREATE OR REPLACE VIEW</c> - only the second
+    /// source's rows survived, with no exception and no warning.
+    /// </summary>
+    [Fact]
+    public void Constructor_ADuplicateTableNameAddedThroughTheList_Throws()
+    {
+        var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
+        var options = new FlatFileOptions();
+        options.AddCsv<SalesRecord>(csvPath);
+        options.Sources.Add(new FileSources.CsvFileSource(options.Sources[0].TableName, csvPath, typeof(SalesRecord)));
+
+        var ex = Assert.Throws<InvalidOperationException>(() => new DuckDb(options));
+
+        Assert.Contains("already registered", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Constructor_DistinctTableNamesAddedThroughTheList_StillRegister()
+    {
+        var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
+        var options = new FlatFileOptions();
+        options.AddCsv<SalesRecord>(csvPath);
+        options.Sources.Add(new FileSources.CsvFileSource("sales_copy", csvPath, typeof(SalesRecord)));
+
+        using var db = new DuckDb(options);
+
+        Assert.NotEmpty(db.Query<SalesRecord>("SELECT * FROM sales_copy"));
+    }
+
     [Fact]
     public void Constructor_AutoOpenFalse_NoSources_LeavesConnectionClosed()
     {
