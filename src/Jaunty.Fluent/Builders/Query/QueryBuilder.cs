@@ -53,6 +53,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     private bool _distinct;
     private int? _take;
     private int? _skip;
+    private bool _aliasReferencedInConditions;
 
     internal QueryBuilder(IDbConnection connection, string? alias = null)
     {
@@ -60,7 +61,37 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _dialect = SqlDialectFactory.GetDialect(connection);
         _metadata = FluentMetadataCache.GetMetadata<T>();
         _cache = FluentMetadataCache.GetForDialect<T>(_dialect);
+
+        // AUD-R35: the alias is interpolated into SQL text verbatim (here, and as the outer
+        // prefix handed to ExistsExpressionVisitor), so it is validated at the boundary.
+        if (alias is not null)
+            SqlIdentifierValidator.Validate(alias, nameof(alias));
+
         _alias = alias;
+    }
+
+    /// <summary>
+    /// AUD-R35: appends the FROM/UPDATE target, declaring <see cref="_alias"/> when
+    /// <c>From&lt;T&gt;(alias)</c> supplied one.
+    /// </summary>
+    /// <remarks>
+    /// The alias used to be stored and read in exactly one place - <see cref="BuildExistsClause"/>,
+    /// which hands it to <see cref="ExistsExpressionVisitor{T, TSubquery}"/> as the prefix for every
+    /// outer column reference. No builder ever declared it, so
+    /// <c>From&lt;Category&gt;("c").WhereExists&lt;Product&gt;(...)</c> emitted a correlation on
+    /// <c>c.category_id</c> against a bare <c>FROM "categories"</c> and failed at execution with
+    /// "multi-part identifier could not be bound". Only the un-joined path was affected: the join
+    /// builders read the <see cref="Alias"/> property and emit <c>FROM table alias</c> themselves.
+    /// </remarks>
+    private void AppendAliasedTable(StringBuilder sb)
+    {
+        sb.Append(_cache.EscapedTableName);
+
+        if (_alias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_alias);
+        }
     }
 
     internal IDbConnection Connection => _connection;
@@ -669,6 +700,27 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
                 "cannot tell whether you meant to group only the paged rows or to page the groups, " +
                 "and the two return different results. Remove the Take/Skip from before the " +
                 "GroupBy, or page the source explicitly and group the result.");
+        }
+    }
+
+    /// <summary>
+    /// AUD-R35. DELETE and UPDATE cannot portably declare a table alias - the syntax differs
+    /// across every dialect Jaunty targets - so <see cref="AppendAliasedTable"/> is deliberately
+    /// not used by <see cref="BuildDeleteSql"/> or <see cref="BuildUpdateSql"/>. That is correct
+    /// only while nothing in the statement references the alias. A correlated EXISTS built from
+    /// an aliased query does reference it, and the resulting DELETE/UPDATE names an alias it never
+    /// declares. Fail with that explanation rather than letting the database report an unbound
+    /// identifier.
+    /// </summary>
+    private void ThrowIfAliasReferencedByWrite(string statement)
+    {
+        if (_aliasReferencedInConditions)
+        {
+            throw new NotSupportedException(
+                $"A correlated EXISTS built from From<T>(\"{_alias}\") references the alias, and " +
+                $"{statement} cannot declare a table alias portably. Drop the alias from the " +
+                $"From<T>(...) call - an un-aliased outer table correlates just as well when the " +
+                $"subquery entity differs - or run the {statement} without the EXISTS correlation.");
         }
     }
 
@@ -1408,7 +1460,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // FROM
         sb.Append(" FROM ");
-        sb.Append(_cache.EscapedTableName);
+        AppendAliasedTable(sb);
 
         // WHERE
         if (_conditions.Count > 0)
@@ -1529,7 +1581,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // FROM
         sb.Append(" FROM ");
-        sb.Append(_cache.EscapedTableName);
+        AppendAliasedTable(sb);
 
         // WHERE
         if (_conditions.Count > 0)
@@ -1572,7 +1624,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // FROM
         sb.Append(" FROM ");
-        sb.Append(_cache.EscapedTableName);
+        AppendAliasedTable(sb);
 
         // WHERE
         if (_conditions.Count > 0)
@@ -1600,7 +1652,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // FROM
         sb.Append(" FROM ");
-        sb.Append(_cache.EscapedTableName);
+        AppendAliasedTable(sb);
 
         // WHERE
         if (_conditions.Count > 0)
@@ -1737,6 +1789,12 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // Use ExistsExpressionVisitor to translate the correlation predicate
         var visitor = new ExistsExpressionVisitor<T, TSubquery>(_dialect, _metadata, subqueryMetadata, _alias, subqueryAlias, _whereParamCounts);
+
+        // AUD-R35: the outer prefix is the alias whenever one was supplied, so from here on the
+        // conditions name it and any write terminal has to declare it - which DELETE/UPDATE cannot.
+        if (_alias is not null)
+            _aliasReferencedInConditions = true;
+
         (string? whereClause, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _parameters.AddRange(parameters);
 
@@ -1909,6 +1967,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private string BuildDeleteSql()
     {
+        ThrowIfAliasReferencedByWrite("DELETE");
+
         var sb = new StringBuilder(128);
         sb.Append("DELETE FROM ");
         sb.Append(_cache.EscapedTableName);
@@ -2500,6 +2560,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private string BuildUpdateSql()
     {
+        ThrowIfAliasReferencedByWrite("UPDATE");
+
         var sb = new StringBuilder(256);
         sb.Append("UPDATE ");
         sb.Append(_cache.EscapedTableName);
