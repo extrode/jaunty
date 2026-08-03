@@ -50,20 +50,20 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
 
     public string EscapeTableName(string? schemaName, string tableName)
     {
-        SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        SqlIdentifierValidator.Validate(tableName, nameof(tableName), SqlIdentifierFlavor.MySql);
         var escapedTable = IsKeyword(tableName) ? $"`{tableName}`" : tableName;
 
         if (string.IsNullOrWhiteSpace(schemaName))
             return escapedTable;
 
-        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName));
+        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName), SqlIdentifierFlavor.MySql);
         var escapedSchema = IsKeyword(schemaName!) ? $"`{schemaName}`" : schemaName;
         return $"{escapedSchema}.{escapedTable}";
     }
 
     public string EscapeColumnName(string columnName)
     {
-        SqlIdentifierValidator.Validate(columnName, nameof(columnName));
+        SqlIdentifierValidator.Validate(columnName, nameof(columnName), SqlIdentifierFlavor.MySql);
         return IsKeyword(columnName) ? $"`{columnName}`" : columnName;
     }
 

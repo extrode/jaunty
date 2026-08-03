@@ -38,20 +38,20 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
 
     public string EscapeTableName(string? schemaName, string tableName)
     {
-        SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        SqlIdentifierValidator.Validate(tableName, nameof(tableName), SqlIdentifierFlavor.PostgreSql);
         var escapedTable = IsKeyword(tableName) ? $"\"{tableName}\"" : tableName;
 
         if (string.IsNullOrWhiteSpace(schemaName))
             return escapedTable;
 
-        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName));
+        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName), SqlIdentifierFlavor.PostgreSql);
         var escapedSchema = IsKeyword(schemaName!) ? $"\"{schemaName}\"" : schemaName;
         return $"{escapedSchema}.{escapedTable}";
     }
 
     public string EscapeColumnName(string columnName)
     {
-        SqlIdentifierValidator.Validate(columnName, nameof(columnName));
+        SqlIdentifierValidator.Validate(columnName, nameof(columnName), SqlIdentifierFlavor.PostgreSql);
         return IsKeyword(columnName) ? $"\"{columnName}\"" : columnName;
     }
 
