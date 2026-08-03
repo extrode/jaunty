@@ -1442,8 +1442,44 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// literal and produce invalid or semantically different generated code.
     /// </summary>
     /// <param name="value">The raw value to escape.</param>
+    /// <remarks>
+    /// AUD-R35-024: this escaped backslash and double quote only, which is the same too-narrow
+    /// escape AUD-R26-015 fixed in the twin (<c>EntityCodeGenerator.EscapeStringLiteral</c>); the
+    /// fix was never carried across. A regular C# string literal cannot span a line, and a quoted
+    /// identifier may contain one, so a name holding a line terminator was emitted raw and the
+    /// generated <c>.g.cs</c> failed with CS1010 - in a file the consumer cannot open. The two
+    /// implementations now cover the same set: the whole control range plus U+0085/U+2028/U+2029,
+    /// which the C# lexer also treats as line terminators.
+    /// </remarks>
     private static string EscapeStringLiteral(string value)
-        => value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    {
+        var sb = new StringBuilder(value.Length);
+
+        foreach (char c in value)
+        {
+            switch (c)
+            {
+                case '\\': sb.Append("\\\\"); break;
+                case '"': sb.Append("\\\""); break;
+                case '\0': sb.Append("\\0"); break;
+                case '\a': sb.Append("\\a"); break;
+                case '\b': sb.Append("\\b"); break;
+                case '\f': sb.Append("\\f"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\r': sb.Append("\\r"); break;
+                case '\t': sb.Append("\\t"); break;
+                case '\v': sb.Append("\\v"); break;
+                default:
+                    if (char.IsControl(c) || c is '\u0085' or '\u2028' or '\u2029')
+                        sb.Append("\\u").Append(((int)c).ToString("x4", System.Globalization.CultureInfo.InvariantCulture));
+                    else
+                        sb.Append(c);
+                    break;
+            }
+        }
+
+        return sb.ToString();
+    }
 
     /// <summary>
     /// Resolves the table name and optional schema name for an entity class from its

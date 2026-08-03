@@ -73,6 +73,69 @@ public class GeneratedStringLiteralEscapingTests
     }
 
     /// <summary>
+    /// AUD-R35-024. A regular C# string literal cannot span a line, and a quoted identifier may
+    /// contain one - <c>CREATE TABLE t ("line1[LF]line2" TEXT)</c> is accepted by SQLite and by SQL
+    /// Server in bracket form. The generator escaped backslash and double quote only, so such a name
+    /// was emitted raw and the <c>.g.cs</c> failed with CS1010 in a file the consumer cannot open.
+    /// The twin, <c>EntityCodeGenerator.EscapeStringLiteral</c>, has escaped the whole control range
+    /// since AUD-R26-015; the fix was never carried across.
+    /// </summary>
+    [Theory]
+    [InlineData("line1\\nline2")]
+    [InlineData("line1\\rline2")]
+    [InlineData("carriage\\r\\nreturn")]
+    [InlineData("tab\\there")]
+    [InlineData("nul\\0here")]
+    [InlineData("bell\\ahere")]
+    [InlineData("vertical\\vtab")]
+    [InlineData("next\\u0085line")]
+    [InlineData("line\\u2028separator")]
+    [InlineData("para\\u2029separator")]
+    [InlineData("unit\\u001fseparator")]
+    public void AColumnNameContainingAControlCharacter_StillCompiles(string columnName)
+    {
+        (ImmutableArray<string> sources, _, ImmutableArray<Diagnostic> compileErrors) =
+            GeneratorHarness.RunAndCompile(EntityWithColumnNamed(columnName));
+
+        Assert.Single(sources);
+        Assert.Empty(compileErrors);
+    }
+
+    [Fact]
+    public void ATableNameContainingANewline_StillCompiles()
+    {
+        (ImmutableArray<string> sources, _, ImmutableArray<Diagnostic> compileErrors) =
+            GeneratorHarness.RunAndCompile("""
+                using Jaunty.Attributes;
+
+                namespace EscapeProbe;
+
+                [Table("or\nders")]
+                public partial class Order
+                {
+                    [Key]
+                    public int Id { get; set; }
+                }
+                """);
+
+        Assert.Single(sources);
+        Assert.Empty(compileErrors);
+    }
+
+    /// <summary>
+    /// Lossless as well as safe: the escaped name still has to be the name the reader is asked for.
+    /// </summary>
+    [Fact]
+    public void AnEscapedControlCharacterRoundTrips()
+    {
+        (ImmutableArray<string> sources, _, _) =
+            GeneratorHarness.RunAndCompile(EntityWithColumnNamed("line1\\nline2"));
+
+        Assert.Contains("line1\\nline2", sources[0]);
+        Assert.DoesNotContain("line1\nline2", sources[0]);
+    }
+
+    /// <summary>
     /// The same hazard through the table name, which reaches a different set of call sites.
     /// </summary>
     [Fact]
