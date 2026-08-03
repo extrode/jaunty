@@ -241,6 +241,74 @@ public class WriteObservabilityTests : IDisposable
     }
 
     /// <summary>
+    /// AUD-R35-127. The description string was asserted for <c>BulkInsert</c> and
+    /// <c>ExecuteBatch</c>; the other five families were asserted only to have fired at all, and no
+    /// test read <c>Operation</c>, <c>EntityType</c> or <c>RowCount</c> off the reported object.
+    /// An interceptor that switches on the operation name rather than parsing the description had
+    /// nothing pinning it - a core reporting the wrong name or a stale count stayed green.
+    /// <para>
+    /// The async twin of each family reports the *sync* name deliberately: an audit trail records
+    /// which operation touched which rows, and the caller's threading model is not part of that.
+    /// Pinning the pair here is what stops one half drifting into a second name.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("BulkInsert", "BulkInsert")]
+    [InlineData("BulkInsertAsync", "BulkInsert")]
+    [InlineData("BulkUpdate", "BulkUpdate")]
+    [InlineData("BulkUpdateAsync", "BulkUpdate")]
+    [InlineData("BulkDelete", "BulkDelete")]
+    [InlineData("BulkDeleteAsync", "BulkDelete")]
+    public async Task EveryBulkFamily_ReportsItsOwnNameTheEntityTypeAndTheRowCount(string operation, string reportedAs)
+    {
+        List<Widget> widgets = operation.StartsWith("BulkInsert", StringComparison.Ordinal) ? Widgets(4) : Seed(4);
+
+        switch (operation)
+        {
+            case "BulkInsert":
+                _connection.BulkInsert(widgets);
+                break;
+            case "BulkInsertAsync":
+                await _connection.BulkInsertAsync(widgets, TestContext.Current.CancellationToken);
+                break;
+            case "BulkUpdate":
+                _connection.BulkUpdate(widgets);
+                break;
+            case "BulkUpdateAsync":
+                await _connection.BulkUpdateAsync(widgets, TestContext.Current.CancellationToken);
+                break;
+            case "BulkDelete":
+                _connection.BulkDelete(widgets);
+                break;
+            case "BulkDeleteAsync":
+                await _connection.BulkDeleteAsync(widgets, TestContext.Current.CancellationToken);
+                break;
+        }
+
+        var reported = Assert.IsType<global::Jaunty.Internals.Write.BulkOperationParameters>(
+            Assert.Single(_interceptor.Executing).Parameters);
+
+        Assert.Equal(reportedAs, reported.Operation);
+        Assert.Equal(nameof(Widget), reported.EntityType);
+        Assert.Equal(4, reported.RowCount);
+    }
+
+    [Fact]
+    public void ExecuteBatch_ReportsNoEntityType_BecauseItTakesArbitraryObjects()
+    {
+        _connection.ExecuteBatch(
+            "INSERT INTO write_obs_widgets (Name, Quantity) VALUES (@Name, @Quantity)",
+            [new { Name = "a", Quantity = 1 }, new { Name = "b", Quantity = 2 }]);
+
+        var reported = Assert.IsType<global::Jaunty.Internals.Write.BulkOperationParameters>(
+            Assert.Single(_interceptor.Executing).Parameters);
+
+        Assert.Equal("ExecuteBatch", reported.Operation);
+        Assert.Null(reported.EntityType);
+        Assert.Equal(2, reported.RowCount);
+    }
+
+    /// <summary>
     /// The SQL reported is the statement the operation runs, not a placeholder - an interceptor
     /// filtering or redacting by command text has to have something real to match on.
     /// </summary>
