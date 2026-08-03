@@ -194,11 +194,22 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                 dataType.Equals("INTEGER", StringComparison.OrdinalIgnoreCase) &&
                 !isWithoutRowId;
 
+            // AUD-R35-044: SQLite is the only provider where "primary key" does not imply NOT
+            // NULL, and this used to force every key column non-nullable regardless of what
+            // PRAGMA table_info reported. In a rowid table only INTEGER PRIMARY KEY - the rowid
+            // alias - is NULL-proof; `CREATE TABLE t (id TEXT PRIMARY KEY)` accepts NULL into id
+            // and always has. Scaffolding those as non-nullable produced `string Id =
+            // string.Empty;`, so a genuine NULL came back as "" through the reflection path and
+            // as a null-assignment into a non-nullable property through the generated one -
+            // a key silently changing value on read. WITHOUT ROWID tables are the exception
+            // SQLite does enforce, so they keep the non-nullable treatment.
+            bool keyIsNullProof = isPk && (isIdentity || isWithoutRowId);
+
             columns.Add(new ColumnSchema
             {
                 ColumnName = columnName,
                 DataType = dataType,
-                IsNullable = !notNull && !isPk,
+                IsNullable = !notNull && !keyIsNullProof,
                 IsPrimaryKey = isPk,
                 IsIdentity = isIdentity,
                 IsComputed = false, // SQLite doesn't have computed columns in the same way

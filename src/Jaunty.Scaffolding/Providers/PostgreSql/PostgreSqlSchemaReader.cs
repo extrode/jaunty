@@ -168,30 +168,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
             ? await ReadForeignKeysAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false)
             : [];
 
-        if (primaryKey != null)
-        {
-            for (int i = 0; i < columns.Count; i++)
-            {
-                ColumnSchema col = columns[i];
-                if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
-                {
-                    columns[i] = new ColumnSchema
-                    {
-                        ColumnName = col.ColumnName,
-                        DataType = col.DataType,
-                        IsNullable = col.IsNullable,
-                        IsPrimaryKey = true,
-                        IsIdentity = col.IsIdentity,
-                        IsComputed = col.IsComputed,
-                        MaxLength = col.MaxLength,
-                        Precision = col.Precision,
-                        Scale = col.Scale,
-                        DefaultValue = col.DefaultValue,
-                        OrdinalPosition = col.OrdinalPosition
-                    };
-                }
-            }
-        }
+        SchemaReaderHelpers.MarkPrimaryKeyColumns(columns, primaryKey);
 
         return new TableSchema
         {

@@ -93,7 +93,11 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         WHERE kc.type = 'PK' AND s.name = @SchemaName AND t.name = @TableName
         ORDER BY ic.key_ordinal";
 
-    private const string ForeignKeysSql = @"
+    /// <summary>
+    /// AUD-R35-046: <c>internal</c> so the ordering below can be asserted without a live server,
+    /// matching <c>PostgreSqlSchemaReader.ForeignKeysSql</c>.
+    /// </summary>
+    internal const string ForeignKeysSql = @"
         SELECT
             fk.name AS ConstraintName,
             COL_NAME(fkc.parent_object_id, fkc.parent_column_id) AS ForeignKeyColumn,
@@ -104,7 +108,10 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         INNER JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
         INNER JOIN sys.tables t ON fk.parent_object_id = t.object_id
         INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
-        WHERE s.name = @SchemaName AND t.name = @TableName";
+        WHERE s.name = @SchemaName AND t.name = @TableName
+        -- AUD-R35-046: a composite foreign key's columns pair positionally with the referenced
+        -- ones, so an unordered read pairs them by whatever order the engine happened to pick.
+        ORDER BY fk.name, fkc.constraint_column_id";
 
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
@@ -218,34 +225,12 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         };
     }
 
-    internal static void MarkPrimaryKeyColumns(List<ColumnSchema> columns, PrimaryKeyInfo? primaryKey)
-    {
-        if (primaryKey == null)
-            return;
-
-        for (var index = 0; index < columns.Count; index++)
-        {
-            ColumnSchema col = columns[index];
-            if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
-            {
-                // Re-create with IsPrimaryKey set (since ColumnSchema is init-only)
-                columns[index] = new ColumnSchema
-                {
-                    ColumnName = col.ColumnName,
-                    DataType = col.DataType,
-                    IsNullable = col.IsNullable,
-                    IsPrimaryKey = true,
-                    IsIdentity = col.IsIdentity,
-                    IsComputed = col.IsComputed,
-                    MaxLength = col.MaxLength,
-                    Precision = col.Precision,
-                    Scale = col.Scale,
-                    DefaultValue = col.DefaultValue,
-                    OrdinalPosition = col.OrdinalPosition
-                };
-            }
-        }
-    }
+    /// <summary>
+    /// AUD-R35-043: delegates to the shared helper. Kept as an internal member because tests
+    /// address it by this name; the clone itself now lives in exactly one place.
+    /// </summary>
+    internal static void MarkPrimaryKeyColumns(List<ColumnSchema> columns, PrimaryKeyInfo? primaryKey) =>
+        SchemaReaderHelpers.MarkPrimaryKeyColumns(columns, primaryKey);
 
     private static async Task<List<ColumnSchema>> ReadColumnsAsync(
         DbConnection connection,
