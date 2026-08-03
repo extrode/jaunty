@@ -296,7 +296,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     /// </summary>
     private static string BuildCopyCommand(string? schemaName, string tableName, IDataReader data)
     {
-        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName), global::Jaunty.Dialects.SqlIdentifierFlavor.PostgreSql);
 
         string qualifiedTableName;
         if (schemaName is null || schemaName.Length == 0)
@@ -305,7 +305,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         }
         else
         {
-            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName));
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName), global::Jaunty.Dialects.SqlIdentifierFlavor.PostgreSql);
             qualifiedTableName = $"\"{schemaName}\".\"{tableName}\"";
         }
 
@@ -313,7 +313,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         for (int i = 0; i < data.FieldCount; i++)
         {
             string columnName = data.GetName(i);
-            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(columnName, nameof(data));
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(columnName, nameof(data), global::Jaunty.Dialects.SqlIdentifierFlavor.PostgreSql);
             columnNames.Add($"\"{columnName}\"");
         }
 

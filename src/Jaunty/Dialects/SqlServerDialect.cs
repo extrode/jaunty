@@ -47,20 +47,20 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect
 
     public string EscapeTableName(string? schemaName, string tableName)
     {
-        SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        SqlIdentifierValidator.Validate(tableName, nameof(tableName), SqlIdentifierFlavor.SqlServer);
         var escapedTable = IsKeyword(tableName) ? $"[{tableName}]" : tableName;
 
         if (string.IsNullOrWhiteSpace(schemaName))
             return escapedTable;
 
-        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName));
+        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName), SqlIdentifierFlavor.SqlServer);
         var escapedSchema = IsKeyword(schemaName!) ? $"[{schemaName}]" : schemaName;
         return $"{escapedSchema}.{escapedTable}";
     }
 
     public string EscapeColumnName(string columnName)
     {
-        SqlIdentifierValidator.Validate(columnName, nameof(columnName));
+        SqlIdentifierValidator.Validate(columnName, nameof(columnName), SqlIdentifierFlavor.SqlServer);
         return IsKeyword(columnName) ? $"[{columnName}]" : columnName;
     }
 
@@ -175,7 +175,7 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect
         // - CS = Case Sensitive
         // - AS = Accent Sensitive
         // This matches C# string comparison behavior
-        return $"{columnName} LIKE {parameterName} COLLATE Latin1_General_CS_AS ESCAPE '{escapeChar}'";
+        return $"{columnName} LIKE {parameterName} COLLATE Latin1_General_CS_AS ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     /// <inheritdoc cref="GenerateCaseSensitiveLike"/>
@@ -185,7 +185,7 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect
         // Latin1_General_CI_AS is the default for most SQL Server installations
         // - CI = Case Insensitive
         // - AS = Accent Sensitive
-        return $"{columnName} LIKE {parameterName} COLLATE Latin1_General_CI_AS ESCAPE '{escapeChar}'";
+        return $"{columnName} LIKE {parameterName} COLLATE Latin1_General_CI_AS ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     /// <inheritdoc cref="GenerateCaseSensitiveLike"/>

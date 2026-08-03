@@ -74,34 +74,53 @@ public class ExpressionCachingTests : IDisposable
         Assert.Equal(42, result2);
     }
 
+    // AUD-R35-008: this was a wall-clock threshold - 100 queries under 1500ms - already skipped on
+    // CI as "pure noise on shared runners" and intermittently red locally under a parallel run. A
+    // timing budget is not an assertion about behaviour, and there is no cache here to assert
+    // against (see the AUD-R7 note above). What repetition can actually establish is that repeated
+    // translation of the same expression stays correct: same SQL, same rows, every iteration.
     [Fact]
-    public void ExpressionCaching_ImprovesQueryPerformance()
+    public void RepeatedTranslationOfTheSameExpressionIsStable()
     {
-        // Wall-clock threshold: a useful canary on a developer machine,
-        // pure noise on shared CI runners (observed 2358ms against the
-        // 1500ms budget on a loaded Actions runner).
-        if (Environment.GetEnvironmentVariable("CI") == "true")
-            Assert.Skip("Wall-clock performance thresholds are unreliable on shared CI runners.");
-
-        // Warm up
-        _db.Connection.From<SalesRecord>()
+        string firstSql = _db.Connection.From<SalesRecord>()
             .Where(x => x.Revenue > 1000m)
-            .Select();
+            .ToSql();
 
-        // Act - Measure repeated query performance
-        var stopwatch = Stopwatch.StartNew();
+        List<SalesRecord> first = _db.Connection.From<SalesRecord>()
+            .Where(x => x.Revenue > 1000m)
+            .Select()
+            .ToList();
+
+        Assert.NotEmpty(first);
+
         for (int i = 0; i < 100; i++)
         {
-            _db.Connection.From<SalesRecord>()
+            Assert.Equal(firstSql, _db.Connection.From<SalesRecord>()
                 .Where(x => x.Revenue > 1000m)
-                .Select();
-        }
-        stopwatch.Stop();
+                .ToSql());
 
-        // Assert - Should be reasonably fast with caching
-        // Threshold set generously to account for system load variations
-        Assert.True(stopwatch.ElapsedMilliseconds < 1500,
-            $"Repeated queries took {stopwatch.ElapsedMilliseconds}ms, expected < 1500ms");
+            Assert.Equal(
+                first.Select(r => r.Id),
+                _db.Connection.From<SalesRecord>()
+                    .Where(x => x.Revenue > 1000m)
+                    .Select()
+                    .Select(r => r.Id));
+        }
+    }
+
+    // The closure case the AUD-R7 note names: two chains that stringify identically but capture
+    // different values must not collapse into one another.
+    [Fact]
+    public void ADifferentCapturedValueTranslatesToADifferentResult()
+    {
+        decimal threshold = 1000m;
+        List<SalesRecord> low = _db.Connection.From<SalesRecord>().Where(x => x.Revenue > threshold).Select().ToList();
+
+        threshold = 6000m;
+        List<SalesRecord> high = _db.Connection.From<SalesRecord>().Where(x => x.Revenue > threshold).Select().ToList();
+
+        Assert.NotEqual(low.Count, high.Count);
+        Assert.All(high, r => Assert.True(r.Revenue > 6000m));
     }
 
     private object? InvokeEvaluateExpression(Expression expr)

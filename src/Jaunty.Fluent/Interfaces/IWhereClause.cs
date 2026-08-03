@@ -189,13 +189,13 @@ public interface IWhereClause<T> : IQueryTerminal<T> where T : new()
     /// Limits the number of rows returned.
     /// </summary>
     /// <param name="count">The maximum number of rows to return.</param>
-    IWhereClause<T> Take(int count);
+    IPagedWhereClause<T> Take(int count);
 
     /// <summary>
     /// Skips the specified number of rows.
     /// </summary>
     /// <param name="count">The number of rows to skip.</param>
-    IWhereClause<T> Skip(int count);
+    IPagedWhereClause<T> Skip(int count);
 
     // GROUP BY
     /// <summary>

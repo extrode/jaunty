@@ -2,6 +2,7 @@ using System.ComponentModel;
 
 using Jaunty.Attributes;
 using Jaunty.Configuration;
+using Jaunty.Internals.Read;
 using Jaunty.TypeHandlers;
 
 namespace Jaunty.Core;
@@ -59,5 +60,66 @@ public static class GeneratedBindingSupport
         return (storage ?? JauntyConfig.DefaultEnumStorage) == EnumStorage.String
             ? value.ToString()
             : value;
+    }
+
+    /// <summary>
+    /// Whether any type handler is registered at all. Read once per row by the generated read
+    /// path so the no-handler case - which is nearly every case - costs a static field load and a
+    /// predictable branch rather than a generic call per column.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35: the generated <em>write</em> path consults <see cref="TypeHandlerRegistry"/> via
+    /// <see cref="ToDbValue"/> (AUD-R30-002), and the reflection read path re-resolves the registry
+    /// on every call (<c>MetadataCache.CreateSetter</c>), but the generated <em>read</em> path
+    /// never consulted it - emitted <c>ReadEntity</c>/<c>CreateRowMapper</c> went straight to typed
+    /// getters or <c>ReadFallback&lt;T&gt;</c>. Since <c>DrDispatcher.Resolve</c> prefers the
+    /// generated mapper, referencing the generator package left a registered handler applied on
+    /// write and skipped on read for the same entity: a value converted going in and not coming
+    /// back out. AUD-R30-002 fixed the binders only and did not touch the read side.
+    /// </remarks>
+    public static bool HasHandlers => TypeHandlerRegistry.HasHandlers;
+
+    /// <summary>
+    /// Whether a handler is registered for <typeparamref name="T"/> specifically. The generated
+    /// read path checks this before reaching for <see cref="FromDbValue{T}"/>, so a handler
+    /// registered for some unrelated type leaves every other property on the entity reading
+    /// through the emitted fast path byte for byte - the two conversions are deliberately not
+    /// interchangeable (the emitted <c>ReadFallback&lt;T&gt;</c> accepts provider shapes, such as a
+    /// <c>DateTime</c> for a <c>TimeOnly</c> column, that the shared converter does not).
+    /// </summary>
+    public static bool HasHandlerFor<T>()
+        => TypeHandlerRegistry.TryGetHandler(typeof(T), out ITypeHandler? handler) && handler is not null;
+
+    /// <summary>
+    /// Read-path counterpart to <see cref="ToDbValue"/>, mirroring the handler branch of
+    /// <c>MetadataCache.CreateSetter</c>: a handler registered for <typeparamref name="T"/> parses
+    /// the raw value; otherwise the shared <c>DbValueConversion</c> applies, which is what the
+    /// generated fast path would have produced.
+    /// </summary>
+    /// <remarks>
+    /// The lookup key is <typeparamref name="T"/>, and the generator passes the property's
+    /// <em>underlying</em> (non-nullable) type - the same key the reflection twin uses. Only
+    /// reached when <see cref="HasHandlers"/> is true, so a handler registered for some other type
+    /// costs the lookup and the conversion but still returns the fast path's answer. NULL columns
+    /// never reach here: both the generated read path and the reflection twin's
+    /// <c>PropertySetter.Set</c> skip a DBNull column before the setter runs.
+    /// </remarks>
+    public static T FromDbValue<T>(object dbValue)
+    {
+        if (TypeHandlerRegistry.TryGetHandler(typeof(T), out ITypeHandler? handler) && handler is not null)
+        {
+            try
+            {
+                object? converted = handler.Parse(dbValue);
+                return converted is null ? default! : (T)converted;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Type handler '{handler.GetType().Name}' failed to parse the value read for '{typeof(T).Name}'.", ex);
+            }
+        }
+
+        return dbValue is T typed ? typed : (T)DbValueConversion.Convert(dbValue, typeof(T));
     }
 }
