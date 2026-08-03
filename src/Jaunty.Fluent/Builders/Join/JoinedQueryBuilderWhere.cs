@@ -30,12 +30,21 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return this;
     }
 
-    public IJoinedQuery<TFrom, TJoin> Where(string column, object value)
+    public IJoinedQuery<TFrom, TJoin> Where(string column, object? value)
     {
         // AUD-R35-014: uniquified and sanitized, so filtering one column twice is a range filter
         // rather than a duplicate-parameter throw. See ParameterCollection.CreateUniqueName.
         string paramName = _parameters.CreateUniqueName(_dialect.ParameterPrefix, column);
         string escapedColumn = EscapeQualifiedColumn(column);
+
+        // AUD-R35-184: a null is IS NULL, as on the single-table twin, not a null-bound = comparison
+        // that is UNKNOWN in SQL and matches nothing.
+        if (value is null)
+        {
+            _conditions.Add(WhereCondition.Column($"{escapedColumn} IS NULL", LogicalOperator.None));
+            return this;
+        }
+
         _conditions.Add(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.None));
         _parameters.Add(paramName, value);
         return this;
