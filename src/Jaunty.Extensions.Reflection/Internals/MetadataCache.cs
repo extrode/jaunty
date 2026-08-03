@@ -594,14 +594,14 @@ public readonly struct PropertyContext<T>
     public bool IsNonNullable { get; }
 
     /// <summary>
-    /// Initializes a new instance of the  class.
+    /// Initializes a new instance of the <see cref="PropertyContext{T}"/> struct.
     /// </summary>
-    /// The  for the property this context describes.
-    /// A delegate that sets the property value from an  using a column ordinal.
-    /// A delegate that gets the property value from the target instance.
-    /// The CLR property name.
-    /// The database column name mapped to the property.
-    /// True if the property is non-nullable; false if the property accepts nulls.
+    /// <param name="property">The <see cref="PropertyInfo"/> for the property this context describes.</param>
+    /// <param name="setter">A delegate that sets the property value from an <see cref="IDataRecord"/> using a column ordinal.</param>
+    /// <param name="getter">A delegate that gets the property value from the target instance.</param>
+    /// <param name="propertyName">The CLR property name.</param>
+    /// <param name="columnName">The database column name mapped to the property.</param>
+    /// <param name="isNonNullable">True if the property is non-nullable; false if the property accepts nulls.</param>
     public PropertyContext(PropertyInfo property, Action<T, IDataRecord, int> setter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
     {
         Property = property;
@@ -619,9 +619,11 @@ public readonly struct PropertyContext<T>
 /// <typeparam name="T">The entity type containing the property.</typeparam>
 public readonly struct PropertySetter<T>
 {
-    /// 
-    /// Initializes a new instance of the  struct.
-    /// 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PropertySetter{T}"/> struct.
+    /// </summary>
+    /// <param name="context">The <see cref="PropertyContext{T}"/> describing the property and its setter.</param>
+    /// <param name="ordinal">The zero-based ordinal of the column the setter reads from.</param>
     public PropertySetter(PropertyContext<T> context, int ordinal)
     {
         Context = context;
