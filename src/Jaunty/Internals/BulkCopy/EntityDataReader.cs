@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Linq.Expressions;
@@ -13,7 +12,7 @@ namespace Jaunty.Internals.BulkCopy;
 /// Uses compiled property getters cached per type for zero-reflection performance.
 /// </summary>
 /// <typeparam name="T">The entity type.</typeparam>
-internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : new()
+internal sealed class EntityDataReader<T> : IDataReader where T : new()
 {
     private readonly IEnumerator<T> _enumerator;
     private readonly ColumnMetadata[] _columns;
@@ -73,17 +72,31 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// AUD-R35-110, first filed round 27. This wrote <c>_columns.Length</c> elements without
+    /// consulting <c>values.Length</c>, so a caller passing a shorter array - which
+    /// <see cref="IDataRecord.GetValues"/> explicitly allows, specifying a partial copy and a
+    /// returned count - got <see cref="IndexOutOfRangeException"/> instead.
+    /// </remarks>
     public int GetValues(object[] values)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(values);
+#else
+        if (values is null) throw new ArgumentNullException(nameof(values));
+#endif
+
         if (_enumerator.Current is null)
             return 0;
 
-        for (int i = 0; i < _columns.Length; i++)
+        int count = values.Length < _columns.Length ? values.Length : _columns.Length;
+
+        for (int i = 0; i < count; i++)
         {
             values[i] = _getters[i](_enumerator.Current) ?? DBNull.Value;
         }
 
-        return _columns.Length;
+        return count;
     }
 
     /// <inheritdoc/>
@@ -112,7 +125,14 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     public object this[string name] => GetValue(GetOrdinal(name));
 
     /// <inheritdoc/>
-    public void Close() { }
+    /// <remarks>
+    /// AUD-R35-109, first filed round 9. This was an empty body while <see cref="IsClosed"/>
+    /// reported <c>_disposed</c>, so after <c>Close()</c> the reader still said it was open and the
+    /// enumerator was still undisposed - <see cref="IDataReader"/> requires <c>IsClosed</c> to be
+    /// true once <c>Close</c> has been called. Close and Dispose do the same thing here, which is
+    /// the shape every ADO.NET reader has.
+    /// </remarks>
+    public void Close() => Dispose();
 
     /// <inheritdoc/>
     public void Dispose()
@@ -175,8 +195,12 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     /// <inheritdoc/>
     public string GetDataTypeName(int i) => GetFieldType(i).Name;
 
-    /// <inheritdoc/>
-    IEnumerator IEnumerable.GetEnumerator() => _enumerator;
+    // AUD-R35-111, first filed round 9 and again in round 34. This type used to implement
+    // IEnumerable, whose explicit GetEnumerator returned the same _enumerator instance Read()
+    // advances rather than a fresh one over the source - so any consumer that enumerated after a
+    // Read() resumed mid-stream, and the two surfaces interleaved on one cursor. Nothing needed the
+    // interface: the three bulk-copy providers consume this only as IDataReader. Removed rather
+    // than fixed, which is what both earlier reports recommended.
 
     /// <inheritdoc/>
     IDataReader IDataRecord.GetData(int i) => throw new NotSupportedException();
