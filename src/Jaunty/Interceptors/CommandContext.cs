@@ -85,14 +85,45 @@ public sealed class CommandContext
     public Exception? Exception { get; }
 
     /// <summary>
-    /// Gets the database provider name (e.g., "System.Data.SqlClient", "Npgsql").
+    /// Gets the connection type's name (for example <c>"SqlConnection"</c>, <c>"NpgsqlConnection"</c>,
+    /// <c>"SqliteConnection"</c>).
     /// </summary>
+    /// <remarks>
+    /// AUD-R35-166. This used to be documented with the examples <c>"System.Data.SqlClient"</c> and
+    /// <c>"Npgsql"</c> - ADO.NET <em>invariant provider names</em>, which is not what it returns and
+    /// never was. An interceptor or telemetry consumer written against the documented values matched
+    /// nothing. The implementation is the intended behaviour, pinned by
+    /// <c>JauntyDiagnosticListenerTests</c>; the documentation was the wrong half.
+    /// </remarks>
     public string ProviderName => Connection.GetType().Name;
 
     /// <summary>
-    /// Gets the database name if available, or "(unknown)" if not.
+    /// Gets the database name if available, or <c>"(unknown)"</c> if not.
     /// </summary>
-    public string DatabaseName => Connection.Database ?? "(unknown)";
+    /// <remarks>
+    /// AUD-R35-167. Two defects, one shape. The provider's <c>Database</c> getter was read with no
+    /// guard at all, so a disposed or partially initialised connection - the shape the repo's own
+    /// <c>ThrowingDbConnection</c> helper models - made this property throw from inside an
+    /// interceptor's failure-logging path, replacing a logged failure with a second, unrelated
+    /// exception. And the <c>?? "(unknown)"</c> caught only null, so a provider returning
+    /// <c>""</c> for a closed connection yielded an empty string rather than the documented text.
+    /// </remarks>
+    public string DatabaseName
+    {
+        get
+        {
+            try
+            {
+                string? database = Connection.Database;
+
+                return string.IsNullOrEmpty(database) ? "(unknown)" : database!;
+            }
+            catch (Exception)
+            {
+                return "(unknown)";
+            }
+        }
+    }
 
     /// <summary>
     /// Gets the connection string with sensitive values (such as passwords) redacted.
@@ -104,7 +135,30 @@ public sealed class CommandContext
     /// unconditionally; it does not rely on the provider itself withholding sensitive data.
     /// If the connection string cannot be parsed, "(unknown)" is returned instead of the raw value.
     /// </remarks>
-    public string ConnectionString => SanitizeConnectionString(Connection.ConnectionString);
+    /// <remarks>
+    /// AUD-R35-167. <see cref="SanitizeConnectionString"/>'s <c>catch (ArgumentException)</c> covers
+    /// only the parse; the <c>Connection.ConnectionString</c> access that produces its argument is
+    /// evaluated first and was outside every guard, so a provider whose getter throws took the whole
+    /// property down. Reading it is now inside the same try as everything else.
+    /// </remarks>
+    public string ConnectionString
+    {
+        get
+        {
+            string? connectionString;
+
+            try
+            {
+                connectionString = Connection.ConnectionString;
+            }
+            catch (Exception)
+            {
+                return "(unknown)";
+            }
+
+            return SanitizeConnectionString(connectionString);
+        }
+    }
 
     // R28: an exact-match list ("Password", "Pwd", "User Password") let every other
     // credential-bearing key through - "Access Token", "Client Secret", "ApiKey", Npgsql's
