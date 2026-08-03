@@ -223,6 +223,13 @@ public static partial class Jaunty
     /// <para>
     /// This overload automatically disposes the <see cref="GridReader"/> after the callback completes.
     /// </para>
+    /// <para>
+    /// <strong>Do not return a deferred sequence from the callback.</strong> <see cref="GridReader.ReadStream{T}"/>,
+    /// <see cref="GridReader.ReadPartialStream{T}"/> and their async twins return lazy iterators over the
+    /// underlying reader, which this overload has already disposed by the time the caller enumerates what
+    /// came back. Materialise inside the callback - <c>ToList()</c> - or use the overload that hands you the
+    /// <see cref="GridReader"/> to dispose yourself.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -323,6 +330,13 @@ public static partial class Jaunty
     /// <para>
     /// This overload automatically disposes the <see cref="GridReader"/> after the callback completes.
     /// </para>
+    /// <para>
+    /// <strong>Do not return a deferred sequence from the callback.</strong> <see cref="GridReader.ReadStream{T}"/>,
+    /// <see cref="GridReader.ReadPartialStream{T}"/> and their async twins return lazy iterators over the
+    /// underlying reader, which this overload has already disposed by the time the caller enumerates what
+    /// came back. Materialise inside the callback - <c>ToList()</c> - or use the overload that hands you the
+    /// <see cref="GridReader"/> to dispose yourself.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -390,7 +404,7 @@ public static partial class Jaunty
     ///     new { Id = 1, CategoryId = 5 });
     /// </code>
     /// </example>
-    /// <seealso cref="QueryMultipleAsync{TResult}(IDbConnection, string, Func{GridReader, Task{TResult}}, object?, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="QueryMultiple{TResult}(IDbConnection, string, Func{GridReader, TResult}, object?, CommandOptions)"/>
     public static async ValueTask<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, Task<TResult>> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
