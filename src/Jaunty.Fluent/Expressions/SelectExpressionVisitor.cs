@@ -465,8 +465,13 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     // HashSet lookup, both per column reference per query build. CachedDialectMetadata holds an
     // OrdinalIgnoreCase dictionary of property name to already-escaped column name, built once per
     // (entity, dialect) pair; QueryBuilder, CteBuilder and InsertBuilder already used it.
-    private string GetEscapedColumnName(MemberExpression member) =>
-        FluentMetadataCache.GetForDialect<T>(_dialect).GetColumnName(member.Member.Name);
+    // AUD-R35-019: the SELECT twin of the WHERE guard AUD-R34-021 added. Without it
+    // .Select(o => new { o.OrderDate.Year }) projected a column called [Year].
+    private string GetEscapedColumnName(MemberExpression member)
+    {
+        ColumnReference.RequireDirect(member);
+        return FluentMetadataCache.GetForDialect<T>(_dialect).GetColumnName(member.Member.Name);
+    }
 
     // AUD-R25: this was one of eight byte-identical private copies. Kept as a one-line forwarder
     // rather than rewriting every call site, so the shared implementation - including its

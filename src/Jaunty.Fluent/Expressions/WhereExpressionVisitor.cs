@@ -1052,17 +1052,13 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     /// <c>Day</c>, it silently filtered the wrong one. <c>string.Length</c> is the one nested shape
     /// with a translation, and its callers unwrap to the direct inner member before arriving here.
     /// </summary>
-    private static void RequireDirectColumnReference(MemberExpression member)
-    {
-        if (member.Expression is null or ParameterExpression)
-            return;
-
-        var leaf = member.Member.Name;
-        throw new NotSupportedException(
-            $"'{member}' is a member of a column, not a column. Jaunty does not translate " +
-            $"'{leaf}' into SQL - use the Sql.* helpers for the supported spellings " +
-            "(Sql.Year, Sql.Month, Sql.Day, Sql.Length, ...), or compute the value in memory.");
-    }
+    /// <remarks>
+    /// AUD-R35-019 moved the implementation to <see cref="ColumnReference.RequireDirect"/> so the
+    /// SELECT visitor and <c>PropertyExtractor</c> - which had the identical hole and no guard -
+    /// share it rather than growing a second and third copy.
+    /// </remarks>
+    private static void RequireDirectColumnReference(MemberExpression member) =>
+        ColumnReference.RequireDirect(member);
 
     // The unescaped name, for the two places a column reference feeds a generated parameter name
     // rather than SQL text. Same lookup, same cache - no linear scan.

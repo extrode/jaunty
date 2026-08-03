@@ -55,8 +55,20 @@ internal static class PropertyExtractor
             {
                 // Look at the parent member expression
                 if (member.Expression is MemberExpression parentMember && parentMember.Member is PropertyInfo)
+                {
+                    // The unwrapped receiver is the column; it still has to be one read directly
+                    // off the parameter, so p => p.OrderDate.Value is rejected the same way
+                    // p => p.OrderDate.Year is.
+                    ColumnReference.RequireDirect(parentMember);
                     return parentMember.Member;
+                }
             }
+
+            // AUD-R35-019: the third copy of the AUD-R34-021 defect, on the path feeding join
+            // keys, ORDER BY and INSERT column lists. Without this, p => p.OrderDate.Year yielded
+            // "Year", which a column lookup that falls back to escaping the name itself turned
+            // into a real-looking column reference.
+            ColumnReference.RequireDirect(member);
             return member.Member;
         }
 
