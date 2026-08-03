@@ -93,6 +93,41 @@ public class JsonFileSourceTests
         Assert.Contains("format = 'newline_delimited'", fn);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-5)]
+    public void MaxDepth_NonPositive_Throws(int depth)
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object));
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => source.MaxDepth = depth);
+
+        Assert.Equal(depth, ex.ActualValue);
+        Assert.Null(source.MaxDepth);
+        Assert.DoesNotContain("maximum_depth", source.GenerateReadFunction("'f.json'"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MaxDepth_Null_IsAccepted()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { MaxDepth = 5 };
+
+        source.MaxDepth = null;
+
+        Assert.Null(source.MaxDepth);
+        Assert.DoesNotContain("maximum_depth", source.GenerateReadFunction("'f.json'"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MaxDepth_One_IsAccepted()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { MaxDepth = 1 };
+
+        Assert.Equal(1, source.MaxDepth);
+        Assert.Contains("maximum_depth = 1", source.GenerateReadFunction("'f.json'"), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void GenerateReadFunction_WithMaxDepth_IncludesMaximumDepthParam()
     {
