@@ -220,4 +220,54 @@ public class ReadCoreInterceptorTests : IDisposable
         Assert.Equal(1, interceptor.ExecutingCount);
         Assert.Equal(1, interceptor.ExecutedCount);
     }
+
+    // AUD-R35-098 (round-35 batch 02b): QueryCoreList/QueryCoreListAsync route through
+    // InterceptorPipeline when CommandObservation.Observer is non-null, and no test took that
+    // branch - all 20 files calling QueryPartialList/QueryPartialListAsync register neither an
+    // interceptor nor a diagnostics subscriber, so deleting the branch left the suite green. This
+    // is the un-actioned remainder of the gap recorded when those overloads were added; the
+    // CommandOptions and transaction half was closed by QueryPartialList{,Async}Tests.
+
+    [Fact]
+    public void QueryPartialList_WithRegisteredInterceptor_InvokesInterceptor()
+    {
+        JauntyConfig.ClearInterceptors();
+        var interceptor = new RecordingInterceptor();
+        JauntyConfig.AddInterceptor(interceptor);
+
+        var rows = _connection.QueryPartialList("SELECT * FROM read_intercept_test");
+
+        Assert.Single(rows);
+        Assert.Equal("Row1", rows[0]["name"]);
+        Assert.Equal(1, interceptor.ExecutingCount);
+        Assert.Equal(1, interceptor.ExecutedCount);
+    }
+
+    [Fact]
+    public async Task QueryPartialListAsync_WithRegisteredInterceptor_InvokesInterceptor()
+    {
+        JauntyConfig.ClearInterceptors();
+        var interceptor = new RecordingInterceptor();
+        JauntyConfig.AddInterceptor(interceptor);
+
+        var rows = await _connection.QueryPartialListAsync("SELECT * FROM read_intercept_test");
+
+        Assert.Single(rows);
+        Assert.Equal("Row1", rows[0]["name"]);
+        Assert.Equal(1, interceptor.ExecutingCount);
+        Assert.Equal(1, interceptor.ExecutedCount);
+    }
+
+    // Control: with nothing watching, the direct branch runs and returns the same rows, so the two
+    // tests above are a statement about the pipeline rather than about QueryPartialList working.
+    [Fact]
+    public void QueryPartialList_WithNoInterceptor_StillReturnsTheRows()
+    {
+        JauntyConfig.ClearInterceptors();
+
+        var rows = _connection.QueryPartialList("SELECT * FROM read_intercept_test");
+
+        Assert.Single(rows);
+        Assert.Equal("Row1", rows[0]["name"]);
+    }
 }
