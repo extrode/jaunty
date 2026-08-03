@@ -6,6 +6,7 @@ using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
 using System.Globalization;
 using Jaunty.Internals;
+using Jaunty.Internals.Read;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -99,9 +100,24 @@ public sealed partial class DuckDb
         DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         await using var readerDisposer = reader.ConfigureAwait(false);
 
-        var columnOrdinals = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
+        // AUD-R35-075: a repeated column name used to overwrite here, so for `SELECT s.*, c.*`
+        // over two tables that both have Id, an Id property was filled from the RIGHTMOST Id with
+        // no diagnostic. Core's QueryCoreListDirect routes the same situation through
+        // DuplicateColumnNames.Disambiguate, which keeps the first occurrence under its bare name
+        // and suffixes later ones _N so no value is lost - the same entity type and the same SQL
+        // otherwise mapped differently depending on whether it was read through DuckDb.Query<T>
+        // or connection.Query<T>. Distinct from the ColumnMappingCache last-wins collapse
+        // (AUD-R26), which is two properties claiming one column name; this is two columns
+        // claiming one name.
+        var readerColumnNames = new string[reader.FieldCount];
         for (int i = 0; i < reader.FieldCount; i++)
-            columnOrdinals[reader.GetName(i)] = i;
+            readerColumnNames[i] = reader.GetName(i);
+
+        string[] uniqueColumnNames = DuplicateColumnNames.Disambiguate(readerColumnNames);
+
+        var columnOrdinals = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < uniqueColumnNames.Length; i++)
+            columnOrdinals[uniqueColumnNames[i]] = i;
 
         IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(T));
         var mappingList = mappings.Values.ToList();
