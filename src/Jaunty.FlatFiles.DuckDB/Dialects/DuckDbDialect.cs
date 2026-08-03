@@ -143,14 +143,14 @@ public sealed class DuckDbDialect : IFlatFileDialect, ISubstringToEndDialect
     public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar)
     {
         // DuckDB: LIKE is case-sensitive by default (like PostgreSQL)
-        return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"{columnName} LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     /// <inheritdoc />
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)
     {
         // DuckDB supports ILIKE (like PostgreSQL)
-        return $"{columnName} ILIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"{columnName} ILIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     /// <inheritdoc />
