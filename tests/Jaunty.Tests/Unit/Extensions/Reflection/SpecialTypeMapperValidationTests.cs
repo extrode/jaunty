@@ -81,6 +81,34 @@ public class SpecialTypeMapperValidationTests
     public void ValueTupleNarrowerThanTheResultSet_IsAccepted() =>
         Assert.NotNull(Resolver()(typeof(ValueTuple<int, int>), new StubReader(["a", "b", "c"])));
 
+    // AUD-R35-226: the two untyped-row mappers disagree on key case sensitivity, and the
+    // divergence is ExpandoObject's rather than either mapper's - its IDictionary is ordinal
+    // case-sensitive and takes no comparer.
+
+    [Fact]
+    public void ADictionaryRow_ResolvesAKeyRegardlessOfCase()
+    {
+        var reader = new StubReader(["CustomerID"]);
+        var mapper = (Func<IDataReader, object>)Resolver()(typeof(Dictionary<string, object>), reader);
+
+        var row = (Dictionary<string, object?>)mapper(reader);
+
+        Assert.True(row.ContainsKey("CustomerID"));
+        Assert.True(row.ContainsKey("customerid"));
+    }
+
+    [Fact]
+    public void AnExpandoRow_ResolvesAKeyOnlyByItsExactCase()
+    {
+        var reader = new StubReader(["CustomerID"]);
+        var mapper = (Func<IDataReader, object>)Resolver()(typeof(object), reader);
+
+        var row = (IDictionary<string, object?>)mapper(reader);
+
+        Assert.True(row.ContainsKey("CustomerID"));
+        Assert.False(row.ContainsKey("customerid"));
+    }
+
     [Fact]
     public void AnUnrelatedType_ResolvesToNothing() =>
         Assert.Null(Resolver()(typeof(SpecialTypeMapperValidationTests), new StubReader(["a"])));
