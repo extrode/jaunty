@@ -152,25 +152,41 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         var createSql = await GetCreateTableSqlAsync(connection, tableName, cancellationToken).ConfigureAwait(false);
         var isWithoutRowId = createSql != null && IsWithoutRowId(createSql);
 
-        // Use PRAGMA table_info to get column information
+        // AUD-R35-078: table_xinfo, not table_info. table_info omits generated columns entirely -
+        // verified against SQLite: for
+        //   CREATE TABLE g(a TEXT, b TEXT GENERATED ALWAYS AS (a||'x') STORED,
+        //                          c TEXT GENERATED ALWAYS AS (a||'y') VIRTUAL)
+        // table_info returns only `a`, while table_xinfo returns all three with hidden 3 and 2. So
+        // a readable column was dropped from the scaffolded entity with no warning, where the
+        // SQL Server twin reads c.is_computed and EntityCodeGenerator emits a computed annotation
+        // for it. The "SQLite doesn't have computed columns in the same way" comment this replaces
+        // has been stale since SQLite 3.31 added GENERATED ALWAYS AS.
         using DbCommand cmd = connection.CreateCommand();
-        cmd.CommandText = $"PRAGMA table_info('{EscapeForPragmaLiteral(tableName)}')";
+        cmd.CommandText = $"PRAGMA table_xinfo('{EscapeForPragmaLiteral(tableName)}')";
 
-        var rows = new List<(string ColumnName, string DataType, bool NotNull, string? DefaultValue, int PkOrdinal)>();
+        var rows = new List<(string ColumnName, string DataType, bool NotNull, string? DefaultValue, int PkOrdinal, bool IsComputed)>();
         using (DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
         {
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                // PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
+                // PRAGMA table_xinfo returns: cid, name, type, notnull, dflt_value, pk, hidden.
                 // pk is 0 for non-key columns and the 1-based position within the primary key
                 // otherwise - keep the ordinal rather than collapsing it to a bool, so composite
                 // keys can be reported in declaration order.
+                //
+                // hidden: 0 ordinary, 1 a virtual table's hidden column, 2 VIRTUAL generated,
+                // 3 STORED generated. 1 is skipped because such a column is not part of the
+                // table's logical row - table_info omits it too, so scaffolding it would be a
+                // behaviour change beyond the generated-column gap this fixes.
+                var hidden = reader.GetInt32(6);
+                if (hidden == 1) continue;
+
                 var columnName = reader.GetString(1);
                 var dataType = reader.IsDBNull(2) ? "TEXT" : reader.GetString(2);
                 var notNull = reader.GetInt32(3) != 0;
                 var defaultValue = reader.IsDBNull(4) ? null : reader.GetString(4);
                 var pkOrdinal = reader.GetInt32(5);
-                rows.Add((columnName, dataType, notNull, defaultValue, pkOrdinal));
+                rows.Add((columnName, dataType, notNull, defaultValue, pkOrdinal, hidden is 2 or 3));
             }
         }
 
@@ -182,7 +198,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
             .Select(r => r.ColumnName)
             .ToList();
 
-        foreach ((string columnName, string dataType, bool notNull, string? defaultValue, int pkOrdinal) in rows)
+        foreach ((string columnName, string dataType, bool notNull, string? defaultValue, int pkOrdinal, bool isComputed) in rows)
         {
             var isPk = pkOrdinal != 0;
 
@@ -212,7 +228,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                 IsNullable = !notNull && !keyIsNullProof,
                 IsPrimaryKey = isPk,
                 IsIdentity = isIdentity,
-                IsComputed = false, // SQLite doesn't have computed columns in the same way
+                IsComputed = isComputed,
                 DefaultValue = defaultValue,
                 OrdinalPosition = columns.Count + 1
             });
