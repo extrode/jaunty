@@ -77,12 +77,21 @@ internal static class CrudSqlCache
             if (metadata.PrimaryKeys[i].IsIdentity)
                 identityColumnNames[identityCount++] = dialect.EscapeColumnName(metadata.PrimaryKeys[i].ColumnName);
         }
-        string lastInsertIdSql = dialect.GetLastInsertIdSql(System.Array.Empty<string>());
+        // AUD-R35-128: this used to build the no-identity form first and unconditionally, then throw
+        // it away and rebuild from the trimmed array whenever identityCount > 0 - a wasted string
+        // build on every cache miss for exactly the entities that have an identity key, which is the
+        // common case, and it read as though the empty-array call were load-bearing when it is only
+        // the placeholder for entities that have no identity column at all.
+        string lastInsertIdSql;
         if (identityCount > 0)
         {
             var trimmed = new string[identityCount];
             System.Array.Copy(identityColumnNames, 0, trimmed, 0, identityCount);
             lastInsertIdSql = dialect.GetLastInsertIdSql(trimmed);
+        }
+        else
+        {
+            lastInsertIdSql = dialect.GetLastInsertIdSql(System.Array.Empty<string>());
         }
 
         return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, selectByIdSql, selectAllSql, metadata, dialect.SupportsUpsert);
