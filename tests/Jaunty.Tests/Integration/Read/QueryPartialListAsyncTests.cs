@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Data.SQLite;
 
 using Jaunty.Core;
+using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
@@ -165,6 +166,9 @@ public class QueryPartialListAsyncTests : IClassFixture<DialectFixture>
         txn.Rollback();
     }
 
+    // AUD-R35-054: RecordingDbConnection/RecordingDbCommand used to be declared at the bottom of
+    // this file. They now live in Helpers/, shared with the multi-entity option-plumbing tests,
+    // and additionally record CommandTimeout and Transaction as they were at execution time.
     // AUD-R12: QueryCoreListDirectAsync never assigned command.CommandType from options.CommandType,
     // so CommandOptions.AsStoredProcedure() was silently ignored and the command always executed
     // as CommandType.Text. RecordingDbConnection intercepts the CommandType setter (SQLite itself
@@ -183,127 +187,5 @@ public class QueryPartialListAsyncTests : IClassFixture<DialectFixture>
         Assert.Empty(results);
         Assert.NotNull(connection.LastCommand);
         Assert.Equal(CommandType.StoredProcedure, connection.LastCommand!.AppliedCommandType);
-    }
-}
-
-/// <summary>
-/// A real <see cref="DbConnection"/> wrapper whose commands record the <see cref="CommandType"/>
-/// Jaunty applies without forwarding it to the inner SQLite command (which rejects
-/// <see cref="CommandType.StoredProcedure"/>), so tests can observe propagation without needing a
-/// server that actually supports stored procedures.
-/// </summary>
-internal sealed class RecordingDbConnection : DbConnection
-{
-    private readonly DbConnection _inner;
-
-    public RecordingDbConnection(DbConnection inner) => _inner = inner;
-
-    public RecordingDbCommand? LastCommand { get; private set; }
-
-#pragma warning disable CS8765
-    public override string ConnectionString
-    {
-        get => _inner.ConnectionString;
-        set => _inner.ConnectionString = value;
-    }
-#pragma warning restore CS8765
-
-    public override string Database => _inner.Database;
-    public override string DataSource => _inner.DataSource;
-    public override string ServerVersion => _inner.ServerVersion;
-    public override ConnectionState State => _inner.State;
-
-    public override void ChangeDatabase(string databaseName) => _inner.ChangeDatabase(databaseName);
-    public override void Close() => _inner.Close();
-    public override void Open() => _inner.Open();
-
-    protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel) => _inner.BeginTransaction(isolationLevel);
-
-    protected override DbCommand CreateDbCommand() => LastCommand = new RecordingDbCommand(_inner.CreateCommand(), this);
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-            _inner.Dispose();
-
-        base.Dispose(disposing);
-    }
-}
-
-internal sealed class RecordingDbCommand : DbCommand
-{
-    private readonly DbCommand _inner;
-    private readonly RecordingDbConnection _owner;
-
-    public RecordingDbCommand(DbCommand inner, RecordingDbConnection owner)
-    {
-        _inner = inner;
-        _owner = owner;
-    }
-
-    public CommandType AppliedCommandType { get; private set; } = CommandType.Text;
-
-#pragma warning disable CS8765
-    public override string CommandText
-    {
-        get => _inner.CommandText;
-        set => _inner.CommandText = value;
-    }
-#pragma warning restore CS8765
-
-    public override int CommandTimeout
-    {
-        get => _inner.CommandTimeout;
-        set => _inner.CommandTimeout = value;
-    }
-
-    public override CommandType CommandType
-    {
-        get => _inner.CommandType;
-        set => AppliedCommandType = value;
-    }
-
-    public override bool DesignTimeVisible
-    {
-        get => _inner.DesignTimeVisible;
-        set => _inner.DesignTimeVisible = value;
-    }
-
-    public override UpdateRowSource UpdatedRowSource
-    {
-        get => _inner.UpdatedRowSource;
-        set => _inner.UpdatedRowSource = value;
-    }
-
-    protected override DbConnection? DbConnection
-    {
-        get => _owner;
-        set { /* fixed to the owning wrapper */ }
-    }
-
-    protected override DbParameterCollection DbParameterCollection => _inner.Parameters;
-
-    protected override DbTransaction? DbTransaction
-    {
-        get => _inner.Transaction;
-        set => _inner.Transaction = value;
-    }
-
-    public override void Cancel() => _inner.Cancel();
-    protected override DbParameter CreateDbParameter() => _inner.CreateParameter();
-    public override void Prepare() { }
-    public override int ExecuteNonQuery() => _inner.ExecuteNonQuery();
-    public override object? ExecuteScalar() => _inner.ExecuteScalar();
-    protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior) => _inner.ExecuteReader(behavior);
-
-    protected override Task<DbDataReader> ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) =>
-        _inner.ExecuteReaderAsync(behavior, cancellationToken);
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-            _inner.Dispose();
-
-        base.Dispose(disposing);
     }
 }
