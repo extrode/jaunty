@@ -46,6 +46,20 @@ internal static class MetadataCache<T>
         Current().GetSetters(reader, mode);
 
     /// <summary>
+    /// Whether <see cref="GetSetters"/> would bind a reader column named
+    /// <paramref name="columnName"/> to <paramref name="context"/>'s property.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-022. Exists so a caller rebinding a setter to a different ordinal can ask the same
+    /// question <c>BuildSetters</c> asked, rather than re-deriving one of the three names it
+    /// matches on. See <c>MultiEntityMapperCore.FindNextUnclaimedOrdinal</c>.
+    /// </remarks>
+    /// <param name="columnName">The reader column name to test.</param>
+    /// <param name="context">The property context the setter carries.</param>
+    public static bool ColumnBindsTo(string columnName, in PropertyContext<T> context) =>
+        Current().ColumnBindsTo(columnName, context);
+
+    /// <summary>
     /// The metadata for the configuration as it stands, rebuilt if it has moved since this was
     /// built.
     /// </summary>
@@ -161,6 +175,18 @@ internal static class MetadataCache<T>
 
             Properties = contexts.ToArray();
             ColumnToIndex = nameToIndex;
+        }
+
+        /// <inheritdoc cref="MetadataCache{T}.ColumnBindsTo"/>
+        public bool ColumnBindsTo(string columnName, in PropertyContext<T> context)
+        {
+            if (ColumnToIndex.TryGetValue(columnName, out int propIndex))
+                return ReferenceEquals(Properties[propIndex].Property, context.Property);
+
+            Dictionary<string, int>? resolverIndex = BuildResolverIndex(JauntyConfig.ColumnNameResolver);
+            return resolverIndex is not null
+                && resolverIndex.TryGetValue(columnName, out propIndex)
+                && ReferenceEquals(Properties[propIndex].Property, context.Property);
         }
 
         public PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
