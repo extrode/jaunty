@@ -26,8 +26,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3>
     // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
     // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
     // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    // AUD-R35-108 (round-35 batch 04a): StringComparer.Ordinal, matching the core mappers in
+    // src/Jaunty/Internals/Read. This side used OrdinalIgnoreCase, with neither side saying why,
+    // so two result sets differing only in column-name casing shared one cached mapper here and
+    // got two entries there. Immaterial either way - the mapper binds by the ordinal position of
+    // the key's column list - but the cache key is a contract, and Ordinal is the one that never
+    // merges two schemas a provider would call distinct.
     private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3>> Cache =
-        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;
@@ -83,8 +89,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4>
     // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
     // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
     // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    // AUD-R35-108 (round-35 batch 04a): StringComparer.Ordinal, matching the core mappers in
+    // src/Jaunty/Internals/Read. This side used OrdinalIgnoreCase, with neither side saying why,
+    // so two result sets differing only in column-name casing shared one cached mapper here and
+    // got two entries there. Immaterial either way - the mapper binds by the ordinal position of
+    // the key's column list - but the cache key is a contract, and Ordinal is the one that never
+    // merges two schemas a provider would call distinct.
     private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4>> Cache =
-        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;
@@ -144,8 +156,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5>
     // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
     // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
     // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    // AUD-R35-108 (round-35 batch 04a): StringComparer.Ordinal, matching the core mappers in
+    // src/Jaunty/Internals/Read. This side used OrdinalIgnoreCase, with neither side saying why,
+    // so two result sets differing only in column-name casing shared one cached mapper here and
+    // got two entries there. Immaterial either way - the mapper binds by the ordinal position of
+    // the key's column list - but the cache key is a contract, and Ordinal is the one that never
+    // merges two schemas a provider would call distinct.
     private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5>> Cache =
-        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;
@@ -209,8 +227,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6>
     // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
     // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
     // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    // AUD-R35-108 (round-35 batch 04a): StringComparer.Ordinal, matching the core mappers in
+    // src/Jaunty/Internals/Read. This side used OrdinalIgnoreCase, with neither side saying why,
+    // so two result sets differing only in column-name casing shared one cached mapper here and
+    // got two entries there. Immaterial either way - the mapper binds by the ordinal position of
+    // the key's column list - but the cache key is a contract, and Ordinal is the one that never
+    // merges two schemas a provider would call distinct.
     private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6>> Cache =
-        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;
@@ -278,8 +302,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>
     // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
     // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
     // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    // AUD-R35-108 (round-35 batch 04a): StringComparer.Ordinal, matching the core mappers in
+    // src/Jaunty/Internals/Read. This side used OrdinalIgnoreCase, with neither side saying why,
+    // so two result sets differing only in column-name casing shared one cached mapper here and
+    // got two entries there. Immaterial either way - the mapper binds by the ordinal position of
+    // the key's column list - but the cache key is a contract, and Ordinal is the one that never
+    // merges two schemas a provider would call distinct.
     private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> Cache =
-        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;

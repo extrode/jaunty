@@ -20,6 +20,11 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     private readonly Func<T, object?>[] _getters;
     private bool _disposed;
 
+    // See GetValue: one slot of memo so IsDBNull-then-GetValue invokes the getter once. -1 means
+    // "nothing memoised", and Read() resets it because the memo is scoped to a single row.
+    private int _memoOrdinal = -1;
+    private object? _memoValue;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="EntityDataReader{T}"/> class.
     /// </summary>
@@ -37,13 +42,34 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// AUD-R35-106 (round-35 batch 04a). One slot of memo, reset by <see cref="Read"/>. A consumer
+    /// following the standard ADO.NET <c>IsDBNull</c>-then-<c>GetValue</c> pattern used to invoke
+    /// the compiled getter and box its result twice per nullable cell, because
+    /// <see cref="IsDBNull"/> is implemented on top of this method; now the second call reads the
+    /// slot. No in-tree provider takes that route - all three consume the reader through
+    /// <c>GetValue</c>/<c>FieldCount</c> only - but this object is handed to <c>SqlBulkCopy</c>,
+    /// whose per-cell access pattern Jaunty does not control. That is the same third-party-contract
+    /// argument the <see cref="GetOrdinal"/> fix was made on (AUD-R25 B3-4).
+    /// <para>
+    /// The cost on the plain path is an int compare and two field writes per cell, against a saved
+    /// delegate invocation and box per <c>IsDBNull</c>. The memo is scoped to the current row and
+    /// the current ordinal, so it holds unless the caller mutates the entity between two reads of
+    /// the same cell in the same row, which no bulk-copy consumer does.
+    /// </para>
+    /// </remarks>
     public object GetValue(int i)
     {
         if (_enumerator.Current is null)
             return DBNull.Value;
 
-        var value = _getters[i](_enumerator.Current);
-        return value ?? DBNull.Value;
+        if (_memoOrdinal == i)
+            return _memoValue!;
+
+        object value = _getters[i](_enumerator.Current) ?? DBNull.Value;
+        _memoOrdinal = i;
+        _memoValue = value;
+        return value;
     }
 
     /// <inheritdoc/>
@@ -61,7 +87,11 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     }
 
     /// <inheritdoc/>
-    public bool Read() => _enumerator.MoveNext();
+    public bool Read()
+    {
+        _memoOrdinal = -1;
+        return _enumerator.MoveNext();
+    }
 
     /// <inheritdoc/>
     public int Depth => 0;
