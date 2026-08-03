@@ -109,6 +109,35 @@ public class JsonFileSourceTests
         Assert.Null(source.GenerateCopyToOptions());
     }
 
+    // AUD-R35-074: JsonFormat was honoured on the read path and dropped on the write path, so a
+    // source configured Array exported newline-delimited JSON and then failed to read its own file
+    // back. ARRAY true/false measured against the pinned DuckDB 1.3.0.
+
+    [Fact]
+    public void GenerateCopyToOptions_Array_AsksForAnArray()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { JsonFormat = JsonFileFormat.Array };
+
+        Assert.Equal("ARRAY true", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_NewlineDelimited_AsksForOneObjectPerLine()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { JsonFormat = JsonFileFormat.NewlineDelimited };
+
+        Assert.Equal("ARRAY false", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_Auto_ConstrainsNeitherSide()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { JsonFormat = JsonFileFormat.Auto };
+
+        Assert.Null(source.GenerateCopyToOptions());
+        Assert.DoesNotContain("format", source.GenerateReadFunction("'f.json'"), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void IsPromotedToTable_CanBeSet()
     {
