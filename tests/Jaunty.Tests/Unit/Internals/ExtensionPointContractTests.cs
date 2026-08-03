@@ -189,7 +189,7 @@ public class ExtensionPointContractTests
         connection.Open();
 
         var exception = Assert.Throws<InvalidOperationException>(
-            () => ForeignKeyToggleCoordinator.DisableSync(connection, new DisagreeingDialect(), null));
+            () => ForeignKeyToggleCoordinator.DisableSync(connection, new DisagreeingDialect(), null, null));
 
         Assert.Contains("DisagreeingDialect", exception.Message, StringComparison.Ordinal);
         Assert.Contains("SupportsForeignKeyToggle", exception.Message, StringComparison.Ordinal);
@@ -203,7 +203,7 @@ public class ExtensionPointContractTests
         connection.Open();
 
         var exception = Assert.Throws<InvalidOperationException>(
-            () => ForeignKeyToggleCoordinator.EnableSync(connection, new DisagreeingDialect(), null));
+            () => ForeignKeyToggleCoordinator.EnableSync(connection, new DisagreeingDialect(), null, null));
 
         Assert.Contains("GetEnableForeignKeyChecksSql", exception.Message, StringComparison.Ordinal);
     }
@@ -221,7 +221,7 @@ public class ExtensionPointContractTests
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         Assert.True(dialect.SupportsForeignKeyToggle);
 
-        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
-        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null);
+        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null, null);
+        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null, null);
     }
 }
