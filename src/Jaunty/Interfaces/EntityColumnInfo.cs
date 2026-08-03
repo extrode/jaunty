@@ -27,8 +27,37 @@ public readonly struct EntityColumnInfo
     /// <param name="getter">A compiled, reflection-free getter for this column's value.</param>
     /// <param name="setter">A compiled, reflection-free setter for this column's value.</param>
     /// <param name="enumStorageOverride">The storage declared by an <c>[EnumStorage]</c> attribute on the property, or <see langword="null"/> when it carries none.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Any of <paramref name="columnName"/>, <paramref name="propertyName"/>,
+    /// <paramref name="propertyType"/>, <paramref name="getter"/> or <paramref name="setter"/> is
+    /// <see langword="null"/>.
+    /// </exception>
+    /// <remarks>
+    /// AUD-R35-171. This validated nothing, although five of its eight parameters are non-nullable
+    /// reference types. <see cref="IEntityMetadataSource"/> is public and its remarks present this
+    /// struct as the public transport shape, so a hand-written implementer is a supported scenario -
+    /// and <c>SourceGeneratedMetadataResolver.TryBuild&lt;T&gt;</c> copies these values straight into
+    /// <c>ColumnMetadata</c> without checking them either, so a null <c>ColumnName</c> or
+    /// <c>Getter</c> surfaced as a <see cref="NullReferenceException"/> from inside SQL generation or
+    /// parameter binding, arbitrarily far from the mistake. The sibling public transport type
+    /// <c>CommandContext</c> has always thrown for exactly this class of input.
+    /// </remarks>
     public EntityColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, bool isComputed, Type propertyType, Func<object, object?> getter, Action<object, object?> setter, EnumStorage? enumStorageOverride = null)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(columnName);
+        ArgumentNullException.ThrowIfNull(propertyName);
+        ArgumentNullException.ThrowIfNull(propertyType);
+        ArgumentNullException.ThrowIfNull(getter);
+        ArgumentNullException.ThrowIfNull(setter);
+#else
+        if (columnName is null) throw new ArgumentNullException(nameof(columnName));
+        if (propertyName is null) throw new ArgumentNullException(nameof(propertyName));
+        if (propertyType is null) throw new ArgumentNullException(nameof(propertyType));
+        if (getter is null) throw new ArgumentNullException(nameof(getter));
+        if (setter is null) throw new ArgumentNullException(nameof(setter));
+#endif
+
         ColumnName = columnName;
         PropertyName = propertyName;
         IsPrimaryKey = isPrimaryKey;

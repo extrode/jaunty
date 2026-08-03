@@ -229,12 +229,21 @@ public sealed class InterceptorPipeline
         if (!IsObserved)
             return await executeFunc().ConfigureAwait(false);
 
-        var stopwatch = Stopwatch.StartNew();
+        // AUD-R35-170. The stopwatch used to start here, before the executing hooks ran, so the
+        // TimeSpan every OnCommandExecuted and OnCommandFailed hook received included the time spent
+        // inside every interceptor's own executing hook. CommandContext.Elapsed is documented as the
+        // command's execution time and LoggingInterceptor compares it against SlowQueryThreshold, so
+        // one slow audit or tracing interceptor inflated every command's reported duration and could
+        // trip the slow-query warning for a command that was never slow. It is started immediately
+        // before the command instead; if an executing hook throws, the failure hooks see Zero, which
+        // is the truth - the command never ran.
+        var stopwatch = new Stopwatch();
         try
         {
             // Before execution
             await InvokeExecutingAsync(commandText, parameters, connection, commandType, cancellationToken).ConfigureAwait(false);
 
+            stopwatch.Start();
             var result = await executeFunc().ConfigureAwait(false);
             stopwatch.Stop();
 
@@ -275,12 +284,21 @@ public sealed class InterceptorPipeline
             return;
         }
 
-        var stopwatch = Stopwatch.StartNew();
+        // AUD-R35-170. The stopwatch used to start here, before the executing hooks ran, so the
+        // TimeSpan every OnCommandExecuted and OnCommandFailed hook received included the time spent
+        // inside every interceptor's own executing hook. CommandContext.Elapsed is documented as the
+        // command's execution time and LoggingInterceptor compares it against SlowQueryThreshold, so
+        // one slow audit or tracing interceptor inflated every command's reported duration and could
+        // trip the slow-query warning for a command that was never slow. It is started immediately
+        // before the command instead; if an executing hook throws, the failure hooks see Zero, which
+        // is the truth - the command never ran.
+        var stopwatch = new Stopwatch();
         try
         {
             // Before execution
             await InvokeExecutingAsync(commandText, parameters, connection, commandType, cancellationToken).ConfigureAwait(false);
 
+            stopwatch.Start();
             await executeFunc().ConfigureAwait(false);
             stopwatch.Stop();
 
@@ -437,12 +455,21 @@ public sealed class InterceptorPipeline
         if (!IsObserved)
             return executeFunc();
 
-        var stopwatch = Stopwatch.StartNew();
+        // AUD-R35-170. The stopwatch used to start here, before the executing hooks ran, so the
+        // TimeSpan every OnCommandExecuted and OnCommandFailed hook received included the time spent
+        // inside every interceptor's own executing hook. CommandContext.Elapsed is documented as the
+        // command's execution time and LoggingInterceptor compares it against SlowQueryThreshold, so
+        // one slow audit or tracing interceptor inflated every command's reported duration and could
+        // trip the slow-query warning for a command that was never slow. It is started immediately
+        // before the command instead; if an executing hook throws, the failure hooks see Zero, which
+        // is the truth - the command never ran.
+        var stopwatch = new Stopwatch();
         try
         {
             // Before execution
             InvokeExecuting(commandText, parameters, connection, commandType);
 
+            stopwatch.Start();
             var result = executeFunc();
             stopwatch.Stop();
 
@@ -457,5 +484,39 @@ public sealed class InterceptorPipeline
             InvokeFailed(commandText, parameters, connection, commandType, stopwatch.Elapsed, ex);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Executes a non-returning command with full interceptor lifecycle support.
+    /// </summary>
+    /// <param name="commandText">The SQL command text.</param>
+    /// <param name="parameters">The command parameters.</param>
+    /// <param name="connection">The database connection.</param>
+    /// <param name="commandType">The command type.</param>
+    /// <param name="executeAction">The action that executes the command.</param>
+    /// <remarks>
+    /// AUD-R35-172. The async surface has both a returning and a non-returning wrapper; the sync
+    /// surface had only the generic one, so a void-returning caller had to invent a throwaway return
+    /// value to enter the pipeline. This is the missing half, delegating to the generic overload so
+    /// there is one ordering of the hooks and one stopwatch, not two.
+    /// </remarks>
+    public void ExecuteWithInterception(
+        string commandText,
+        object? parameters,
+        IDbConnection connection,
+        CommandType commandType,
+        Action executeAction)
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(executeAction);
+#else
+        if (executeAction is null) throw new ArgumentNullException(nameof(executeAction));
+#endif
+
+        ExecuteWithInterception<object?>(commandText, parameters, connection, commandType, () =>
+        {
+            executeAction();
+            return null;
+        });
     }
 }
