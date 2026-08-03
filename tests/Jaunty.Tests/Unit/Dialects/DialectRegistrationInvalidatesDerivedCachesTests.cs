@@ -109,9 +109,56 @@ public class DialectRegistrationInvalidatesDerivedCachesTests : IDisposable
         Assert.Equal("{x}", SqlDialectFactory.GetDialect(_connection).EscapeColumnName("x"));
     }
 
+    // -----------------------------------------------------------------------------
+    // AUD-R35-128: how many times the identity SQL is built per cache miss
+    // -----------------------------------------------------------------------------
+
+    [Table("identity_widgets")]
+    public class IdentityWidget
+    {
+        [Key]
+        [Column("id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Column("name")]
+        public string Name { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// AUD-R35-128. <c>BuildCachedSql</c> built the no-identity form unconditionally and then threw
+    /// it away and rebuilt from the trimmed column array whenever the entity had an identity key -
+    /// two string builds per cache miss for the common case, and a call that read as load-bearing
+    /// when it was only the no-identity placeholder.
+    /// </summary>
+    [Fact]
+    public void AnEntityWithAnIdentityKey_BuildsTheIdentitySqlOnce_FromItsOwnColumns()
+    {
+        var dialect = new QuotingDialect('<', '>');
+        SqlDialectFactory.RegisterDialect<FakeConnection>(dialect);
+
+        CrudSqlCache.GetSql<IdentityWidget>(_connection);
+
+        string[] columns = Assert.Single(dialect.LastInsertIdCalls);
+        Assert.Equal(["<id>"], columns);
+    }
+
+    [Fact]
+    public void AnEntityWithNoIdentityKey_StillGetsThePlaceholderForm()
+    {
+        var dialect = new QuotingDialect('<', '>');
+        SqlDialectFactory.RegisterDialect<FakeConnection>(dialect);
+
+        CrudSqlCache.GetSql<Widget>(_connection);
+
+        Assert.Empty(Assert.Single(dialect.LastInsertIdCalls));
+    }
+
     private sealed class QuotingDialect(char open, char close) : ISqlDialect
     {
         private readonly SQLiteDialect _inner = new();
+
+        internal List<string[]> LastInsertIdCalls { get; } = [];
 
         public bool SupportsNativeBulkCopy => false;
         public IBulkCopyProvider? CreateBulkCopyProvider() => null;
@@ -126,7 +173,11 @@ public class DialectRegistrationInvalidatesDerivedCachesTests : IDisposable
             schemaName is null ? Quote(tableName) : Quote(schemaName) + "." + Quote(tableName);
         public string EscapeColumnName(string columnName) => Quote(columnName);
         public string EscapeStringLiteral(string value) => _inner.EscapeStringLiteral(value);
-        public string GetLastInsertIdSql(params string[] columnNames) => _inner.GetLastInsertIdSql(columnNames);
+        public string GetLastInsertIdSql(params string[] columnNames)
+        {
+            LastInsertIdCalls.Add(columnNames);
+            return _inner.GetLastInsertIdSql(columnNames);
+        }
         public string GetPagingSql(string baseSql, int offset, int fetchNext) => _inner.GetPagingSql(baseSql, offset, fetchNext);
         public bool IsKeyword(string identifier) => _inner.IsKeyword(identifier);
         public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar) => _inner.GenerateCaseSensitiveLike(columnName, parameterName, escapeChar);
