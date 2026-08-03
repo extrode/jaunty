@@ -143,18 +143,27 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     // containing one of these words (toplevel, limits) is therefore not flagged.
     private static readonly string[] PagingKeywords = ["ORDER BY", "LIMIT", "OFFSET", "FETCH", "TOP"];
 
+    // AUD-R35-191. The scan used to run over the raw text, so a parameter-free operand whose SQL
+    // merely contained one of these words inside a string literal, a quoted identifier or a comment -
+    // WHERE product_name = 'Top Gun', LIKE '%order by%' - was rejected for ordering it does not have.
+    // The word-boundary check AUD-R31-003 added defends against toplevel/limits, not against
+    // literals. SqlServerDialect.HasTopLevelOrderBy already solves this in the same repository by
+    // masking the uninteresting regions first; this does the same, then runs the existing
+    // whole-word search over the masked copy so the boundary rule and the keyword list are unchanged.
     private static bool CustomOperandHasOrderingOrPaging(string sql)
     {
+        string scannable = MaskLiteralsAndComments(sql);
+
         foreach (string keyword in PagingKeywords)
         {
             int from = 0;
-            while (from <= sql.Length - keyword.Length)
+            while (from <= scannable.Length - keyword.Length)
             {
-                int at = sql.IndexOf(keyword, from, StringComparison.OrdinalIgnoreCase);
+                int at = scannable.IndexOf(keyword, from, StringComparison.OrdinalIgnoreCase);
                 if (at < 0)
                     break;
 
-                if (IsWordBoundary(sql, at - 1) && IsWordBoundary(sql, at + keyword.Length))
+                if (IsWordBoundary(scannable, at - 1) && IsWordBoundary(scannable, at + keyword.Length))
                     return true;
 
                 from = at + 1;
@@ -162,6 +171,96 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Replaces the contents of string literals, quoted identifiers and comments with spaces.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-191. Length is preserved so offsets still line up with the original; only the
+    /// characters change. Handles single-quoted literals with the doubled-quote escape, double-quoted
+    /// and bracketed identifiers, <c>--</c> line comments and <c>/* */</c> block comments. Backticks
+    /// are included because a custom operand may be hand-written MySQL.
+    /// </remarks>
+    private static string MaskLiteralsAndComments(string sql)
+    {
+        char[] masked = sql.ToCharArray();
+
+        for (int i = 0; i < masked.Length; i++)
+        {
+            char c = masked[i];
+
+            if (c == '\'' || c == '"' || c == '`')
+            {
+                char quote = c;
+                i++;
+
+                while (i < masked.Length)
+                {
+                    if (masked[i] == quote)
+                    {
+                        if (i + 1 < masked.Length && masked[i + 1] == quote)
+                        {
+                            masked[i] = ' ';
+                            masked[i + 1] = ' ';
+                            i += 2;
+                            continue;
+                        }
+
+                        break;
+                    }
+
+                    masked[i] = ' ';
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (c == '[')
+            {
+                i++;
+
+                while (i < masked.Length && masked[i] != ']')
+                {
+                    masked[i] = ' ';
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (c == '-' && i + 1 < masked.Length && masked[i + 1] == '-')
+            {
+                while (i < masked.Length && masked[i] != '\n')
+                {
+                    masked[i] = ' ';
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (c == '/' && i + 1 < masked.Length && masked[i + 1] == '*')
+            {
+                while (i < masked.Length && !(masked[i] == '*' && i + 1 < masked.Length && masked[i + 1] == '/'))
+                {
+                    masked[i] = ' ';
+                    i++;
+                }
+
+                if (i + 1 < masked.Length)
+                {
+                    masked[i] = ' ';
+                    masked[i + 1] = ' ';
+                    i++;
+                }
+
+                continue;
+            }
+        }
+
+        return new string(masked);
     }
 
     private static bool IsWordBoundary(string sql, int index)
@@ -304,75 +403,79 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return _connection.Query<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
+    /// <summary>
+    /// Builds the combined statement with <c>_take</c> temporarily clamped to <paramref name="take"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-190. The sixteen First/Single terminals each inlined "save <c>_take</c>, set it to 1
+    /// or 2, call <see cref="ToSql"/>, restore" with no <c>try</c>/<c>finally</c>. <c>ToSql</c> can
+    /// throw on a reachable path - <c>EscapeColumnName</c> runs <c>SqlIdentifierValidator</c>, so a
+    /// bad string column handed to the <c>OrderBy(string)</c>/<c>ThenBy(string)</c> overloads throws
+    /// from inside the guarded region - and the throw left <c>_take</c> at 1 or 2 permanently, so a
+    /// later <c>Select()</c> on the same builder silently returned at most one or two rows of the
+    /// combined result. The save/restore pattern itself says a terminal must not mutate the builder.
+    /// Same defect and same fix as AUD-R35-187 on <c>QueryBuilder</c>.
+    /// </remarks>
+    private string ToSqlTaking(int take)
+    {
+        int? original = _take;
+        _take = take;
+
+        try
+        {
+            return ToSql();
+        }
+        finally
+        {
+            _take = original;
+        }
+    }
+
     public T SelectFirst()
     {
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return _connection.QueryFirst<T>(sql, GetAllParameters().ToParameterObject()!);
     }
 
     public T SelectFirst(CommandOptions options)
     {
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return _connection.QueryFirst<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectFirstOrDefault()
     {
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return _connection.QueryFirstOrDefault<T>(sql, GetAllParameters().ToParameterObject()!);
     }
 
     public T? SelectFirstOrDefault(CommandOptions options)
     {
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return _connection.QueryFirstOrDefault<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T SelectSingle()
     {
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return _connection.QuerySingle<T>(sql, GetAllParameters().ToParameterObject()!);
     }
 
     public T SelectSingle(CommandOptions options)
     {
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return _connection.QuerySingle<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectSingleOrDefault()
     {
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return _connection.QuerySingleOrDefault<T>(sql, GetAllParameters().ToParameterObject()!);
     }
 
     public T? SelectSingleOrDefault(CommandOptions options)
     {
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return _connection.QuerySingleOrDefault<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
@@ -403,10 +506,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
@@ -415,10 +515,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
@@ -427,10 +524,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
@@ -439,10 +533,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
@@ -451,10 +542,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
@@ -463,10 +551,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
@@ -475,10 +560,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
@@ -487,10 +569,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
