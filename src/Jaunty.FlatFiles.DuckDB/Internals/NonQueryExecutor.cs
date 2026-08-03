@@ -33,13 +33,27 @@ internal static class NonQueryExecutor
     /// <param name="options">Command options (transaction, timeout) to apply.</param>
     /// <returns>The number of rows affected.</returns>
     public static int Execute(DuckDBConnection connection, string sql, List<DuckDBParameter> parameters, CommandOptions options)
-        => CommandObservation.Execute(
-            sql, DuckDbObservation.Describe(parameters), connection, DuckDbObservation.Text,
-            () => ExecuteDirect(connection, sql, parameters, options));
-
-    private static int ExecuteDirect(DuckDBConnection connection, string sql, List<DuckDBParameter> parameters, CommandOptions options)
     {
-        CommandObservation.Log(sql, DuckDbObservation.Describe(parameters));
+        // AUD-R35-251: described once and shared by the pipeline and the logger. Both hooks want
+        // the same parameter set, and Describe allocates a Dictionary sized to the parameter list,
+        // so calling it in both places allocated two identical dictionaries per non-query. The
+        // logger and an interceptor now see the same instance, which is also what the sync and
+        // async paths in core already do.
+        object described = DuckDbObservation.Describe(parameters);
+
+        return CommandObservation.Execute(
+            sql, described, connection, DuckDbObservation.Text,
+            () => ExecuteDirect(connection, sql, parameters, described, options));
+    }
+
+    private static int ExecuteDirect(
+        DuckDBConnection connection,
+        string sql,
+        List<DuckDBParameter> parameters,
+        object described,
+        CommandOptions options)
+    {
+        CommandObservation.Log(sql, described);
 
         using DuckDBCommand cmd = connection.CreateCommand();
         cmd.CommandText = sql;
@@ -80,18 +94,25 @@ internal static class NonQueryExecutor
         List<DuckDBParameter> parameters,
         CommandOptions options,
         CancellationToken cancellationToken)
-        => CommandObservation.ExecuteAsync(
-            sql, DuckDbObservation.Describe(parameters), connection, DuckDbObservation.Text,
-            () => ExecuteDirectAsync(connection, sql, parameters, options, cancellationToken), cancellationToken);
+    {
+        // AUD-R35-251: see Execute.
+        object described = DuckDbObservation.Describe(parameters);
+
+        return CommandObservation.ExecuteAsync(
+            sql, described, connection, DuckDbObservation.Text,
+            () => ExecuteDirectAsync(connection, sql, parameters, described, options, cancellationToken),
+            cancellationToken);
+    }
 
     private static async ValueTask<int> ExecuteDirectAsync(
         DuckDBConnection connection,
         string sql,
         List<DuckDBParameter> parameters,
+        object described,
         CommandOptions options,
         CancellationToken cancellationToken)
     {
-        CommandObservation.Log(sql, DuckDbObservation.Describe(parameters));
+        CommandObservation.Log(sql, described);
 
         DuckDBCommand cmd = connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
