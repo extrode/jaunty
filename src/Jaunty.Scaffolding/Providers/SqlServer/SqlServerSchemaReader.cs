@@ -40,11 +40,30 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     /// wants - and reports every system type under its own name. Note the CLR types above are
     /// <i>system</i> types (<c>is_user_defined</c> = 0), so they take the <c>ty.name</c> arm.
     /// </para>
+    /// <para>
+    /// AUD-R35-042: <c>sysname</c> needs its own arm. It is the one alias type SQL Server ships, and
+    /// it is flagged as a <i>system</i> type - verified against a live instance: <c>sys.types</c>
+    /// reports <c>name = sysname</c>, <c>system_type_id</c> 231, <c>user_type_id</c> 256,
+    /// <c>is_user_defined</c> 0, <c>max_length</c> 256 - so the <c>is_user_defined = 1</c> arm above,
+    /// written for exactly this shape, does not reach it and it fell to <c>ELSE ty.name</c>. The
+    /// pre-AUD-R33-008 <c>TYPE_NAME(231)</c> resolved it to <c>nvarchar</c>, which was right.
+    /// Reporting the literal <c>"sysname"</c> cost two things at once:
+    /// <c>SqlServerTypeMapper.MapToCSharpType</c> has no arm for it, so the column scaffolded as
+    /// <c>object</c> instead of <c>string</c>; and <see cref="NormalizeMaxLength"/> halves only for
+    /// <c>nchar</c>/<c>nvarchar</c>, so the byte length 256 was reported as a 256-character column
+    /// instead of 128. Resolving it here rather than widening the condition to
+    /// <c>system_type_id &lt;&gt; user_type_id</c>, because the CLR types differ that way too and
+    /// must keep their own names.
+    /// </para>
     /// </remarks>
     private const string ColumnsSql = @"
         SELECT
             c.name AS ColumnName,
-            CASE WHEN ty.is_user_defined = 1 THEN TYPE_NAME(ty.system_type_id) ELSE ty.name END AS DataType,
+            CASE
+                WHEN ty.is_user_defined = 1 THEN TYPE_NAME(ty.system_type_id)
+                WHEN ty.name = 'sysname' THEN 'nvarchar'
+                ELSE ty.name
+            END AS DataType,
             c.is_nullable AS IsNullable,
             c.is_identity AS IsIdentity,
             c.is_computed AS IsComputed,
