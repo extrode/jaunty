@@ -336,11 +336,20 @@ internal static class MetadataCache<T> where T : new()
 // ConcurrentDictionary for dynamic caching
 internal static class SqlParameterParserCache
 {
-    private static readonly ConcurrentDictionary<string, string[]> _cache = new();
-    
-    public static string[] GetParameterNames(string sql)
+    // Size-capped: callers that embed literals or build SQL dynamically would otherwise leak
+    // memory through an ever-growing set of distinct SQL-text keys.
+    private static readonly BoundedCache<string, string[]> Cache = new(StringComparer.Ordinal);
+
+    // AUD-R34-014: the same SQL text parses differently under MySQL/MariaDB, where a backslash
+    // escapes the next character inside a string literal. Two caches rather than one composite
+    // key, because the flag is fixed per engine.
+    private static readonly BoundedCache<string, string[]> BackslashEscapedCache = new(StringComparer.Ordinal);
+
+    public static string[] GetOrAdd(string sql, bool backslashEscapes = false)
     {
-        return _cache.GetOrAdd(sql, SqlParameterParser.ExtractParameterNames);
+        return backslashEscapes
+            ? BackslashEscapedCache.GetOrAdd(sql, static s => SqlParameterParser.ExtractParameterNames(s, backslashEscapes: true))
+            : Cache.GetOrAdd(sql, static s => SqlParameterParser.ExtractParameterNames(s));
     }
 }
 ```
