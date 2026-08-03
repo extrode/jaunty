@@ -190,6 +190,27 @@ public static T QuerySingle<T>(this IDbConnection connection, string sql, Comman
 **Exceptions:**
 - `InvalidOperationException`: If the result set is empty or contains more than one element
 
+### QuerySingle&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)
+
+Executes a parameterised query with command options and returns the single entity from the result set. Throws an exception if the result set is empty or contains more than one element.
+
+**Signature:**
+```csharp
+public static T QuerySingle<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
+```
+
+**Parameters:**
+- `connection`: The database connection
+- `sql`: The SQL query to execute
+- `parameters`: Parameters for the query
+- `options`: Command options (transaction, timeout, custom mapper)
+
+**Returns:**
+- `T`: The single entity of type T from the result set
+
+**Exceptions:**
+- `InvalidOperationException`: If the result set is empty or contains more than one element
+
 ### QuerySingleOrDefault&lt;T&gt;(string sql)
 
 Executes a query and returns the single entity from the result set or the default value if the result set is empty. Throws an exception if the result set contains more than one element.

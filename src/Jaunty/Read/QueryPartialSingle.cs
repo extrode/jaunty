@@ -42,17 +42,13 @@ public static partial class Jaunty
     /// 
     /// // Get single product (expects exactly one match)
     /// var product = connection.QueryPartialSingle&lt;Product&gt;(
-    ///     "SELECT id, name FROM products WHERE id = @Id", 
-    ///     new { Id = 1 });
+    ///     "SELECT id, name FROM products WHERE id = 1");
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the query returns no results or more than one result. This method uses partial/projection mapping, so properties without matching columns are left at their default value rather than throwing.
     /// </exception>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the number of provided parameters doesn't match the SQL.
-    /// </exception>
-    /// <seealso cref="QueryPartialSingle{T}(IDbConnection, string)"/>
+    /// <seealso cref="QueryPartialSingle{T}(IDbConnection, string, object)"/>
     /// <seealso cref="QueryPartialSingleOrDefault{T}(IDbConnection, string)"/>
     /// <seealso cref="QuerySingle{T}(IDbConnection, string)"/>
     public static T QueryPartialSingle<T>(this IDbConnection connection, string sql) where T : new()
