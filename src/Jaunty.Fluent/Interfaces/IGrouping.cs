@@ -19,6 +19,18 @@ namespace Jaunty.Fluent;
 ///   });
 /// </code>
 /// </example>
+/// <remarks>
+/// AUD-R35-206. This name collides with <c>System.Linq.IGrouping&lt;TKey, TElement&gt;</c>, which
+/// <c>ImplicitUsings</c> brings into every file of a consuming project. Lambda-inferred usage - the
+/// documented style, and the only style the examples show - is unaffected, but a consumer that names
+/// the type explicitly, in a variable declaration or a helper method's parameter, gets
+/// <c>CS0104: 'IGrouping&lt;,&gt;' is an ambiguous reference</c>, and the resolution (qualify as
+/// <c>Jaunty.Fluent.IGrouping&lt;TKey, T&gt;</c>, or add a <c>using</c> alias) is not discoverable
+/// from the message. No in-repo site can see it: every one sits inside or under the
+/// <c>Jaunty.Fluent</c> namespace, where enclosing-namespace lookup beats the using directive.
+/// Recorded rather than renamed - renaming a public interface is the owner's call, and the entry in
+/// <c>work/todo.md</c> carries the options.
+/// </remarks>
 public interface IGrouping<TKey, T> where T : new()
 {
     /// <summary>

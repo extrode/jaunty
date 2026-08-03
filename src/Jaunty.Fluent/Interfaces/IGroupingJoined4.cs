@@ -6,6 +6,25 @@ namespace Jaunty.Fluent;
 /// Marker interface representing a grouping for aggregate expressions over a 4-way joined
 /// query. Sibling to <see cref="IGroupingJoined{TKey,TFrom,TJoin}"/> for the 4-entity case.
 /// </summary>
+/// <typeparam name="TKey">The type of the grouping key.</typeparam>
+/// <typeparam name="T1">The primary (From) entity type.</typeparam>
+/// <typeparam name="T2">The first joined entity type.</typeparam>
+/// <typeparam name="T3">The second joined entity type.</typeparam>
+/// <typeparam name="T4">The third joined entity type.</typeparam>
+/// <example>
+/// <code>
+/// db.From&lt;Product&gt;()
+///   .InnerJoin&lt;Category&gt;().On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
+///   .InnerJoin&lt;Supplier&gt;().On(p =&gt; p.SupplierId, s =&gt; s.SupplierId)
+///   .InnerJoin&lt;OrderDetail&gt;().On(p =&gt; p.ProductId, d =&gt; d.ProductId)
+///   .GroupBy((p, c, s, d) =&gt; c.CategoryName)
+///   .Select(g =&gt; new {
+///       Category = g.Key,
+///       Count = g.Count(),
+///       Cheapest = g.Min((p, c, s, d) =&gt; p.UnitPrice)
+///   });
+/// </code>
+/// </example>
 public interface IGroupingJoined4<TKey, T1, T2, T3, T4>
     where T1 : new()
     where T2 : new()
