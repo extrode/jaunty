@@ -955,6 +955,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        {");
         sb.AppendLine("            var ord = OrdinalMap.Resolve(reader);");
         sb.AppendLine($"            var entity = new {className}();");
+        sb.AppendLine($"            bool {TypeHandlerFlagLocal} = global::Jaunty.Core.GeneratedBindingSupport.HasHandlers;");
         sb.AppendLine("            bool isDbReader = reader is DbDataReader;");
         sb.AppendLine("            if (isDbReader)");
         sb.AppendLine("            {");
@@ -1041,6 +1042,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"                        return new {className}().ReadEntity(r);");
         sb.AppendLine("        #endif");
         sb.AppendLine($"                    var entity = new {className}();");
+        sb.AppendLine($"                    bool {TypeHandlerFlagLocal} = global::Jaunty.Core.GeneratedBindingSupport.HasHandlers;");
         for (int i = 0; i < properties.Count; i++)
         {
             PropertyMetadata p = properties[i];
@@ -1070,6 +1072,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"                    return new {className}().ReadEntity(r);");
         sb.AppendLine("        #endif");
         sb.AppendLine($"                var entity = new {className}();");
+        sb.AppendLine($"                bool {TypeHandlerFlagLocal} = global::Jaunty.Core.GeneratedBindingSupport.HasHandlers;");
         for (int i = 0; i < properties.Count; i++)
         {
             PropertyMetadata p = properties[i];
@@ -1552,6 +1555,37 @@ public partial class JauntyGenerator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// The local the emitted read blocks hold <c>GeneratedBindingSupport.HasHandlers</c> in, read
+    /// once per row. See <see cref="WrapForTypeHandler"/>.
+    /// </summary>
+    private const string TypeHandlerFlagLocal = "__jauntyHasHandlers";
+
+    /// <summary>
+    /// AUD-R35: routes a read through a registered <c>ITypeHandler</c> when one exists.
+    /// </summary>
+    /// <remarks>
+    /// The generated write path has consulted <c>TypeHandlerRegistry</c> since AUD-R30-002 and the
+    /// reflection read path re-resolves it per call, but the generated read path never did - so a
+    /// registered handler converted a value on the way in and not on the way out, for the same
+    /// entity, as soon as the generator package was referenced. The registry is mutable process
+    /// state, so the flag is read per row rather than captured; when it is false - nearly always -
+    /// this costs one local read and a predictable branch, and the typed getter below is reached
+    /// unchanged. The second, per-type check matters: <c>ReadFallback&lt;T&gt;</c> accepts provider
+    /// shapes the shared converter behind <c>FromDbValue</c> does not, so a handler registered for
+    /// one type must not divert every other property on the entity away from the fast path.
+    /// </remarks>
+    private static string WrapForTypeHandler(string fastExpression, string typeArgument, string readerVariable, int ordinalIndex)
+        => $"({TypeHandlerFlagLocal} && global::Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<{typeArgument}>() " +
+           $"? global::Jaunty.Core.GeneratedBindingSupport.FromDbValue<{typeArgument}>({readerVariable}.GetValue(ord[{ordinalIndex}])) " +
+           $": {fastExpression})";
+
+    private static string ReadExpression(
+        ReaderTypeInfo typeInfo, string typeArgument, string readerVariable, int ordinalIndex, bool isDbDataReader, bool isEnum)
+        => WrapForTypeHandler(
+            FastReadExpression(typeInfo, typeArgument, readerVariable, ordinalIndex, isDbDataReader, isEnum),
+            typeArgument, readerVariable, ordinalIndex);
+
+    /// <summary>
     /// Builds the expression that reads one column into a property, for a given reader variable.
     /// </summary>
     /// <remarks>
@@ -1572,7 +1606,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// <c>GetFieldValue&lt;T&gt;</c>.
     /// </param>
     /// <param name="isEnum">Whether the property's type (or its nullable underlying type) is an enum.</param>
-    private static string ReadExpression(
+    private static string FastReadExpression(
         ReaderTypeInfo typeInfo, string typeArgument, string readerVariable, int ordinalIndex, bool isDbDataReader, bool isEnum)
     {
         // Typed getters are unchanged - GetInt32, GetString and friends were never in question.
