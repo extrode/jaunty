@@ -11,6 +11,15 @@ internal sealed class ParameterCollection
     private readonly List<(string Name, object? Value)> _parameters = new();
     private readonly HashSet<string> _names = new();
 
+    // AUD-R35-201. The duplicate guard keys on the raw name, but ToParameterObject strips one
+    // leading sigil before writing the expando, so "@p0" and "p0" passed Add, bound as two distinct
+    // parameters through BindTo, and then collapsed onto a single "p0" key with the last value
+    // winning - the exact silent-overwrite-versus-provider-throw split Add's own doc says the guard
+    // removed. Keying the guard on the same stripped name ToParameterObject uses closes the half it
+    // left open. _names stays keyed on the raw name because Contains and CreateUniqueName are asked
+    // about placeholder text as it appears in SQL, sigil included.
+    private readonly HashSet<string> _strippedNames = new();
+
     public int Count => _parameters.Count;
 
     /// <summary>
@@ -24,6 +33,14 @@ internal sealed class ParameterCollection
     {
         if (!_names.Add(name))
             throw new ArgumentException($"A parameter named '{name}' has already been added.", nameof(name));
+
+        if (!_strippedNames.Add(StripSigil(name)))
+        {
+            _names.Remove(name);
+            throw new ArgumentException(
+                $"A parameter named '{name}' collides with one already added - two names that " +
+                "differ only by their sigil bind to the same parameter.", nameof(name));
+        }
 
         _parameters.Add((name, value));
     }
@@ -134,18 +151,25 @@ internal sealed class ParameterCollection
         for (int i = 0; i < _parameters.Count; i++)
         {
             (string? name, object? value) = _parameters[i];
-            // Strip parameter prefix (@, $, or :) if present
-            var key = name.Length > 0 && name[0] is '@' or '$' or ':' ? name.Substring(1) : name;
-            dict[key] = value;
+            dict[StripSigil(name)] = value;
         }
 
         return expando;
     }
 
+    /// <summary>
+    /// The parameter's name without one leading sigil, which is the name a parameter object's key
+    /// and the duplicate guard both use. One sigil, not all of them: a name like <c>@@rowcount</c>
+    /// keeps its second one, as <c>ParameterRenamer</c> and <c>JoinParameterName.Qualify</c> do.
+    /// </summary>
+    private static string StripSigil(string name) =>
+        name.Length > 0 && name[0] is '@' or '$' or ':' ? name.Substring(1) : name;
+
     public void Clear()
     {
         _parameters.Clear();
         _names.Clear();
+        _strippedNames.Clear();
     }
 
     /// <summary>
@@ -161,6 +185,7 @@ internal sealed class ParameterCollection
         var clone = new ParameterCollection();
         clone._parameters.AddRange(_parameters);
         clone._names.UnionWith(_names);
+        clone._strippedNames.UnionWith(_strippedNames);
         return clone;
     }
 }
