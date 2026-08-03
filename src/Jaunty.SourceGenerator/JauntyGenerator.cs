@@ -539,7 +539,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 underlyingType.TypeKind == TypeKind.Enum,
                 isIdentityInferred,
-                enumStorageOverride));
+                enumStorageOverride,
+                // AUD-R35-069: the generated twin of PropertyContext.IsNonNullable. Nullable<T> is
+                // itself a value type, so the Nullable check is what makes this mean "a NULL cannot
+                // be represented here", rather than merely "not a reference type".
+                prop.Type.IsValueType
+                    && prop.Type is not INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }));
         }
 
         // AUD-R25: the implicit-identity inference applies only to a single-key entity.
@@ -981,31 +986,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
-            var needsNullCheck = typeInfo.NeedsNullCheck;
 
             // DbDataReader path: direct typed getters (no generic dispatch);
             // ReadFallback<T> over GetValue for the catch-all types (TimeSpan/DateTimeOffset/
             // enums/unknown) - see the AUD-R25 note on the emitted helper above.
             var dbValue = ReadExpression(typeInfo, typeForGetFieldValue, "dbReader", i, isDbDataReader: true, p.IsEnum);
-            if (needsNullCheck)
-            {
-                // AUD-R33-009: this used to be
-                // `entity.P = dbReader.IsDBNull(ord[i]) ? default(T)! : value;`, which is not what
-                // the IDataReader branch twenty lines below does, nor what the reflection twin
-                // (MetadataCache's PropertyAccessor.Set) does - both leave the property untouched.
-                // For a property with an initializer or constructor default
-                // (`public string Name { get; set; } = "";`) a NULL column therefore reset it to
-                // null on one path and preserved it on the other, for the same entity and the same
-                // row, decided by nothing the caller can see - which of the two reader interfaces
-                // their provider happens to implement. Skipping is the behaviour that agrees with
-                // both of the other two implementations, so it is the one kept.
-                sb.AppendLine($"                if (!dbReader.IsDBNull(ord[{i}]))");
-                sb.AppendLine($"                    entity.{p.PropertyName} = {dbValue};");
-            }
-            else
-            {
-                sb.AppendLine($"                entity.{p.PropertyName} = {dbValue};");
-            }
+            AppendPropertyRead(sb, "                ", p, typeInfo, "dbReader", i, dbValue);
         }
         sb.AppendLine("            }");
         sb.AppendLine("            else");
@@ -1019,18 +1005,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // cast, which is where enums threw InvalidCastException on every provider - see the
             // AUD-R25 note on the emitted helper above.
             var value = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "reader", i, isDbDataReader: false, p.IsEnum);
-            var needsNullCheck = typeInfo.NeedsNullCheck;
 
             // Fallback IDataReader path
-            if (needsNullCheck)
-            {
-                sb.AppendLine($"                if (!reader.IsDBNull(ord[{i}]))");
-                sb.AppendLine($"                    entity.{p.PropertyName} = {value};");
-            }
-            else
-            {
-                sb.AppendLine($"                entity.{p.PropertyName} = {value};");
-            }
+            AppendPropertyRead(sb, "                ", p, typeInfo, "reader", i, value);
         }
         sb.AppendLine("            }");
         sb.AppendLine("            return entity;");
@@ -1064,17 +1041,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "rr", i, isDbDataReader: true, p.IsEnum);
-            if (typeInfo.NeedsNullCheck)
-            {
-                // AUD-R33-009, as in ReadEntity above: skip rather than reset, matching the plain
-                // IDataReader closure below and the reflection twin.
-                sb.AppendLine($"                    if (!rr.IsDBNull(ord[{i}]))");
-                sb.AppendLine($"                        entity.{p.PropertyName} = {rowValue};");
-            }
-            else
-            {
-                sb.AppendLine($"                    entity.{p.PropertyName} = {rowValue};");
-            }
+            AppendPropertyRead(sb, "                    ", p, typeInfo, "rr", i, rowValue);
         }
         sb.AppendLine("                    return entity;");
         sb.AppendLine("                };");
@@ -1094,15 +1061,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "r", i, isDbDataReader: false, p.IsEnum);
-            if (typeInfo.NeedsNullCheck)
-            {
-                sb.AppendLine($"                if (!r.IsDBNull(ord[{i}]))");
-                sb.AppendLine($"                    entity.{p.PropertyName} = {rowValue};");
-            }
-            else
-            {
-                sb.AppendLine($"                entity.{p.PropertyName} = {rowValue};");
-            }
+            AppendPropertyRead(sb, "                ", p, typeInfo, "r", i, rowValue);
         }
         sb.AppendLine("                return entity;");
         sb.AppendLine("            };");
@@ -1531,6 +1490,58 @@ public partial class JauntyGenerator : IIncrementalGenerator
         }
 
         return (tableName, schemaName);
+    }
+
+    /// <summary>
+    /// AUD-R35-069. Emits the read of one property, including what happens when the column is NULL.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NULL into a non-nullable property used to behave three different ways, decided by the
+    /// property's type and by whether the generator package was referenced at all. The reflection
+    /// twin is uniform: <c>PropertySetter&lt;T&gt;.Set</c> throws
+    /// <c>InvalidOperationException("Cannot assign NULL to non-nullable property 'X'")</c> for every
+    /// non-nullable value type. The generated mapper instead emitted (a) an unguarded typed getter
+    /// for int/long/bool/decimal/double/float/short/byte/DateTime/Guid, so the caller got a
+    /// provider-specific <c>InvalidCastException</c>/<c>SqlNullValueException</c> rather than the
+    /// named error, and (b) for every catch-all type - enum, DateOnly, TimeOnly, char, uint, ulong,
+    /// sbyte, ushort - a skip, because <c>GetReaderTypeInfo</c>'s <c>_</c> arm hardcodes
+    /// <c>NeedsNullCheck: true</c> regardless of nullability. So a non-nullable enum column that
+    /// went NULL produced a loud named error under reflection and a quietly wrong entity once the
+    /// generator package was added.
+    /// </para>
+    /// <para>
+    /// Distinct from AUD-R33-009, which settled skip-versus-reset for <em>nullable</em> properties;
+    /// that behaviour is unchanged here.
+    /// </para>
+    /// </remarks>
+    private static void AppendPropertyRead(
+        StringBuilder sb,
+        string indent,
+        PropertyMetadata property,
+        ReaderTypeInfo typeInfo,
+        string readerLocal,
+        int ordinalIndex,
+        string valueExpression)
+    {
+        if (property.IsNonNullableValueType)
+        {
+            sb.AppendLine($"{indent}if ({readerLocal}.IsDBNull(ord[{ordinalIndex}]))");
+            sb.AppendLine($"{indent}    throw new global::System.InvalidOperationException(\"Cannot assign NULL to non-nullable property '{property.PropertyName}'.\");");
+            sb.AppendLine($"{indent}entity.{property.PropertyName} = {valueExpression};");
+            return;
+        }
+
+        if (typeInfo.NeedsNullCheck)
+        {
+            // AUD-R33-009: skip rather than reset, matching the reflection twin - a property with an
+            // initializer keeps it when the column is NULL.
+            sb.AppendLine($"{indent}if (!{readerLocal}.IsDBNull(ord[{ordinalIndex}]))");
+            sb.AppendLine($"{indent}    entity.{property.PropertyName} = {valueExpression};");
+            return;
+        }
+
+        sb.AppendLine($"{indent}entity.{property.PropertyName} = {valueExpression};");
     }
 
     /// <summary>

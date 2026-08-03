@@ -340,31 +340,58 @@ public static class JauntyReflectionExtensions
         return fallback(value);
     }
 
-    private static (string ParamName, PropertyInfo Property, Func<object?, object?> Convert)[] BuildColumnConverters(IReadOnlyList<ColumnMetadata> columns)
+    /// <summary>
+    /// AUD-R35-068. The three write binders read each value with
+    /// <see cref="PropertyInfo.GetValue(object)"/>, once per column per entity, on the hot
+    /// insert/update/delete path this package exists to serve. This package already compiles an
+    /// expression-tree getter for every column of every entity at snapshot-build time
+    /// (<c>MetadataCache.CreateGetter</c>, exposed as <c>PropertyContext&lt;T&gt;.Getter</c>) - and
+    /// nothing in <c>src/</c> or <c>tests/</c> ever read it, so the compile cost was paid and the
+    /// benefit never collected. Core Jaunty already treats reflection <c>GetValue</c> as the
+    /// fallback and the compiled getter as the fast path in the equivalent write code
+    /// (<c>WriteParameterCache</c>, <c>Upsert</c>, <c>InsertBuilder</c>); this package was the one
+    /// write path that never took it. A column whose property is somehow absent from the snapshot
+    /// keeps the reflection getter rather than failing.
+    /// </summary>
+    private static (string ParamName, Func<T, object?> Get, Func<object?, object?> Convert)[] BuildColumnConverters<T>(IReadOnlyList<ColumnMetadata> columns)
+        where T : new()
     {
-        var result = new (string, PropertyInfo, Func<object?, object?>)[columns.Count];
+        PropertyContext<T>[] contexts = MetadataCache<T>.Properties;
+
+        var result = new (string, Func<T, object?>, Func<object?, object?>)[columns.Count];
         for (int i = 0; i < columns.Count; i++)
         {
             PropertyInfo property = columns[i].Property!;
-            result[i] = ("@" + columns[i].ColumnName, property, BuildValueConverter(property));
+            result[i] = ("@" + columns[i].ColumnName, ResolveGetter(contexts, property), BuildValueConverter(property));
         }
         return result;
     }
 
+    private static Func<T, object?> ResolveGetter<T>(PropertyContext<T>[] contexts, PropertyInfo property)
+    {
+        for (int i = 0; i < contexts.Length; i++)
+        {
+            if (contexts[i].Property == property)
+                return contexts[i].Getter;
+        }
+
+        return entity => property.GetValue(entity);
+    }
+
     private static Action<IDbCommand, object> GetTypedInsertBinder<T>() where T : new()
     {
-        var converters = BuildColumnConverters(MetadataCache<T>.Metadata.InsertColumns);
+        var converters = BuildColumnConverters<T>(MetadataCache<T>.Metadata.InsertColumns);
 
         return (cmd, entityObj) =>
         {
             if (entityObj is not T entity)
                 throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
 
-            foreach ((string paramName, PropertyInfo property, Func<object?, object?> convert) in converters)
+            foreach ((string paramName, Func<T, object?> get, Func<object?, object?> convert) in converters)
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = paramName;
-                object? propValue = property.GetValue(entity);
+                object? propValue = get(entity);
                 p.Value = convert(propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
@@ -374,28 +401,28 @@ public static class JauntyReflectionExtensions
     private static Action<IDbCommand, object> GetTypedUpdateBinder<T>() where T : new()
     {
         EntityMetadata meta = MetadataCache<T>.Metadata;
-        var updateConverters = BuildColumnConverters(meta.UpdateColumns);
-        var keyConverters = BuildColumnConverters(meta.PrimaryKeys);
+        var updateConverters = BuildColumnConverters<T>(meta.UpdateColumns);
+        var keyConverters = BuildColumnConverters<T>(meta.PrimaryKeys);
 
         return (cmd, entityObj) =>
         {
             if (entityObj is not T entity)
                 throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
 
-            foreach ((string paramName, PropertyInfo property, Func<object?, object?> convert) in updateConverters)
+            foreach ((string paramName, Func<T, object?> get, Func<object?, object?> convert) in updateConverters)
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = paramName;
-                object? propValue = property.GetValue(entity);
+                object? propValue = get(entity);
                 p.Value = convert(propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
 
-            foreach ((string paramName, PropertyInfo property, Func<object?, object?> convert) in keyConverters)
+            foreach ((string paramName, Func<T, object?> get, Func<object?, object?> convert) in keyConverters)
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = paramName;
-                object? propValue = property.GetValue(entity);
+                object? propValue = get(entity);
                 p.Value = convert(propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
@@ -404,18 +431,18 @@ public static class JauntyReflectionExtensions
 
     private static Action<IDbCommand, object> GetTypedDeleteBinder<T>() where T : new()
     {
-        var converters = BuildColumnConverters(MetadataCache<T>.Metadata.DeleteColumns);
+        var converters = BuildColumnConverters<T>(MetadataCache<T>.Metadata.DeleteColumns);
 
         return (cmd, entityObj) =>
         {
             if (entityObj is not T entity)
                 throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
 
-            foreach ((string paramName, PropertyInfo property, Func<object?, object?> convert) in converters)
+            foreach ((string paramName, Func<T, object?> get, Func<object?, object?> convert) in converters)
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = paramName;
-                object? propValue = property.GetValue(entity);
+                object? propValue = get(entity);
                 p.Value = convert(propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }

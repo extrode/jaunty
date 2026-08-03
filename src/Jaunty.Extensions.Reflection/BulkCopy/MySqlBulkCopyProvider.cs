@@ -226,7 +226,14 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
         IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;
-        if (options.Timeout > 0)
+        // AUD-R35-067: this guarded on > 0, so Timeout = 0 - documented on BulkCopyOptions as "use 0
+        // for no timeout" - never reached the command and the chunk kept the ADO.NET default of 30
+        // seconds. A caller who asked for an untimed bulk load got a 30-second cap, and a slow chunk
+        // aborted the copy. SqlServerBulkCopyProvider assigns unconditionally, where 0 does mean no
+        // timeout, so the same option value meant opposite things on the two providers. 0 is the
+        // documented value and IDbCommand.CommandTimeout reads it the same way; only a negative,
+        // which CommandTimeout rejects outright, is still skipped.
+        if (options.Timeout >= 0)
             command.CommandTimeout = options.Timeout;
 
         string qualifiedTableName = schemaName is null || schemaName.Length == 0
