@@ -41,7 +41,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2>
     public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
-        CommandTimeout = commandTimeout;
+        CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
         CommandType = commandType;
         ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
@@ -88,7 +88,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3>
     public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
-        CommandTimeout = commandTimeout;
+        CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
         CommandType = commandType;
         ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
@@ -136,7 +136,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4>
     public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
-        CommandTimeout = commandTimeout;
+        CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
         CommandType = commandType;
         ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
@@ -185,7 +185,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5>
     public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
-        CommandTimeout = commandTimeout;
+        CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
         CommandType = commandType;
         ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
@@ -235,7 +235,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6>
     public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
-        CommandTimeout = commandTimeout;
+        CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
         CommandType = commandType;
         ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
@@ -286,7 +286,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6, T7>
     public MultiEntityCommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
     {
         Transaction = transaction;
-        CommandTimeout = commandTimeout;
+        CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
         CommandType = commandType;
         ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
