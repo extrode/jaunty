@@ -144,4 +144,66 @@ public class BoundedCacheTests
         Assert.All(results, r => Assert.Equal("value", r));
         Assert.Equal(1, cache.Count);
     }
+
+    // AUD-R35-107 (round-35 batch 04a). Three members had no direct test: the Get(TKey) accessor,
+    // the comparer constructor and the maxEntries <= 0 fallback in both constructors. The comparer
+    // one matters most - most adopters use it, and a cache silently keyed by the default comparer
+    // would have passed every test in this file.
+
+    [Fact]
+    public void Get_ReturnsTheValueOnAHitAndNullOnAMiss()
+    {
+        var cache = new BoundedCache<string, string>(maxEntries: 4);
+        cache.TryAdd("present", "value");
+
+        Assert.Equal("value", cache.Get("present"));
+        Assert.Null(cache.Get("absent"));
+    }
+
+    [Fact]
+    public void TheComparerConstructor_HonoursTheComparerOnLookups()
+    {
+        var cache = new BoundedCache<string, string>(StringComparer.OrdinalIgnoreCase, maxEntries: 4);
+
+        Assert.True(cache.TryAdd("Key", "value"));
+
+        Assert.Equal("value", cache.Get("KEY"));
+        Assert.True(cache.TryGetValue("key", out string? found));
+        Assert.Equal("value", found);
+        Assert.False(cache.TryAdd("kEy", "other"));
+        Assert.Equal(1, cache.Count);
+    }
+
+    // The control: without the comparer, the same four keys are four distinct entries. If the test
+    // above passed because string keys happen to compare case-insensitively somewhere, this fails.
+    [Fact]
+    public void TheDefaultConstructor_KeysCaseSensitively()
+    {
+        var cache = new BoundedCache<string, string>(maxEntries: 8);
+
+        Assert.True(cache.TryAdd("Key", "value"));
+        Assert.True(cache.TryAdd("KEY", "value"));
+
+        Assert.Null(cache.Get("key"));
+        Assert.Equal(2, cache.Count);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void ANonPositiveCap_FallsBackToTheDefault_OnBothConstructors(int maxEntries)
+    {
+        var plain = new BoundedCache<string, string>(maxEntries);
+        var withComparer = new BoundedCache<string, string>(StringComparer.Ordinal, maxEntries);
+
+        // A cap of 0 or less taken literally would evict every insert immediately, leaving Count 0.
+        for (int i = 0; i < 100; i++)
+        {
+            plain.TryAdd($"k{i}", "v");
+            withComparer.TryAdd($"k{i}", "v");
+        }
+
+        Assert.Equal(100, plain.Count);
+        Assert.Equal(100, withComparer.Count);
+    }
 }

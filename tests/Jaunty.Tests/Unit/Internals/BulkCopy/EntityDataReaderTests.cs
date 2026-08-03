@@ -431,6 +431,98 @@ public class EntityDataReaderTests : IDisposable
         Assert.Throws<IndexOutOfRangeException>(() => reader.GetOrdinal("nonexistent"));
     }
 
+    // AUD-R35-106 (round-35 batch 04a): GetValue memoises one (ordinal, value) slot per row so a
+    // consumer using the standard IsDBNull-then-GetValue pattern invokes the compiled getter once
+    // rather than twice. These pin what the memo must not break.
+
+    private sealed class CountingEntity
+    {
+        public int Reads;
+
+        private string? _name;
+
+        public int Id { get; set; }
+
+        public string? Name
+        {
+            get { Reads++; return _name; }
+            set => _name = value;
+        }
+    }
+
+    private static EntityMetadata CountingMetadata()
+    {
+        var idProp = typeof(CountingEntity).GetProperty(nameof(CountingEntity.Id))!;
+        var nameProp = typeof(CountingEntity).GetProperty(nameof(CountingEntity.Name))!;
+
+        return new EntityMetadata("counting", null,
+        [
+            new ColumnMetadata(idProp, idProp.Name, isPrimaryKey: true, databaseGeneratedOption: null),
+            new ColumnMetadata(nameProp, nameProp.Name, isPrimaryKey: false, databaseGeneratedOption: null),
+        ]);
+    }
+
+    [Fact]
+    public void IsDBNullThenGetValue_InvokesTheGetterOnce()
+    {
+        var entity = new CountingEntity { Id = 1, Name = "kept" };
+        using var reader = new EntityDataReader<CountingEntity>([entity], CountingMetadata());
+
+        Assert.True(reader.Read());
+        entity.Reads = 0;
+
+        Assert.False(reader.IsDBNull(1));
+        Assert.Equal("kept", reader.GetValue(1));
+
+        Assert.Equal(1, entity.Reads);
+    }
+
+    [Fact]
+    public void TheMemo_DoesNotLeakAcrossRows()
+    {
+        var entities = new List<CountingEntity>
+        {
+            new() { Id = 1, Name = "first" },
+            new() { Id = 2, Name = null },
+            new() { Id = 3, Name = "third" },
+        };
+        using var reader = new EntityDataReader<CountingEntity>(entities, CountingMetadata());
+
+        var seen = new List<object>();
+        while (reader.Read())
+        {
+            reader.IsDBNull(1);
+            seen.Add(reader.GetValue(1));
+        }
+
+        Assert.Equal(["first", DBNull.Value, "third"], seen);
+    }
+
+    [Fact]
+    public void TheMemo_DoesNotLeakAcrossOrdinals()
+    {
+        var entity = new CountingEntity { Id = 7, Name = "seven" };
+        using var reader = new EntityDataReader<CountingEntity>([entity], CountingMetadata());
+
+        Assert.True(reader.Read());
+
+        Assert.Equal(7, reader.GetValue(0));
+        Assert.Equal("seven", reader.GetValue(1));
+        Assert.Equal(7, reader.GetValue(0));
+    }
+
+    [Fact]
+    public void IsDBNull_StillReportsANullColumn()
+    {
+        var entity = new CountingEntity { Id = 1, Name = null };
+        using var reader = new EntityDataReader<CountingEntity>([entity], CountingMetadata());
+
+        Assert.True(reader.Read());
+
+        Assert.True(reader.IsDBNull(1));
+        Assert.False(reader.IsDBNull(0));
+    }
+
     private static EntityMetadata CreateReorderedSubsetMetadata()
     {
         var nameProp = typeof(TestEntity).GetProperty(nameof(TestEntity.Name))!;

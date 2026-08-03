@@ -59,9 +59,22 @@ public sealed class BulkCopyOptions
     public int BatchSize { get; set; } = 10000;
 
     /// <summary>
-    /// Gets or sets the timeout in seconds for the bulk copy operation.
-    /// Default is 30 seconds. Use 0 for no timeout.
+    /// Gets or sets the timeout in seconds for the bulk copy operation. Default is 30 seconds.
     /// </summary>
+    /// <remarks>
+    /// AUD-R35-105 (round-35 batch 04a). This used to say "Use 0 for no timeout" without
+    /// qualification, which is true on exactly one of the three providers.
+    /// <list type="bullet">
+    /// <item><description><b>SQL Server:</b> assigned unconditionally to
+    /// <c>SqlBulkCopy.BulkCopyTimeout</c>, where 0 does mean no timeout.</description></item>
+    /// <item><description><b>MySQL:</b> assigned when non-negative, so 0 means no timeout here too.
+    /// It guarded on <c>&gt; 0</c> until AUD-R35-067, which is what made the old sentence wrong on
+    /// this provider; only a negative - which <c>CommandTimeout</c> rejects outright - is
+    /// skipped.</description></item>
+    /// <item><description><b>PostgreSQL:</b> not read at all; the binary COPY writer takes its
+    /// timeout from the connection string.</description></item>
+    /// </list>
+    /// </remarks>
     public int Timeout { get; set; } = 30;
 
     /// <summary>
