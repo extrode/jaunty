@@ -642,16 +642,37 @@ public class SqlDialectTests
 
     #region MySQL Dialect - String Functions
 
+    // AUD-R35: these two asserted ESCAPE '\' - a single backslash inside the literal. Under
+    // MySQL's default sql_mode that backslash escapes its own closing quote and the statement
+    // does not parse; MySQL needs ESCAPE '\\'. The text assertion preserved the defect.
     [Fact]
     public void MySql_GenerateCaseSensitiveLike_UsesCollate()
     {
-        Assert.Equal("col COLLATE utf8mb4_bin LIKE @param ESCAPE '\\'", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.Equal("col COLLATE utf8mb4_bin LIKE @param ESCAPE '\\\\'", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
     }
 
     [Fact]
     public void MySql_GenerateCaseInsensitiveLike_UsesLike()
     {
-        Assert.Equal("col LIKE @param ESCAPE '\\'", _mySql.GenerateCaseInsensitiveLike("col", "@param", "\\"));
+        Assert.Equal("col LIKE @param ESCAPE '\\\\'", _mySql.GenerateCaseInsensitiveLike("col", "@param", "\\"));
+    }
+
+    [Theory]
+    [InlineData("\\")]
+    [InlineData("'")]
+    public void MySql_GenerateLike_EscapeCharGoesThroughEscapeStringLiteral(string escapeChar)
+    {
+        string expected = $"ESCAPE '{_mySql.EscapeStringLiteral(escapeChar)}'";
+
+        Assert.EndsWith(expected, _mySql.GenerateCaseSensitiveLike("col", "@param", escapeChar));
+        Assert.EndsWith(expected, _mySql.GenerateCaseInsensitiveLike("col", "@param", escapeChar));
+    }
+
+    [Fact]
+    public void MySql_GenerateLike_BackslashEscapeCharIsDoubled()
+    {
+        Assert.DoesNotContain("ESCAPE '\\'", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.DoesNotContain("ESCAPE '\\'", _mySql.GenerateCaseInsensitiveLike("col", "@param", "\\"));
     }
 
     [Fact]

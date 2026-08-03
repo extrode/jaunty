@@ -91,7 +91,12 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
         // We need to use a case-sensitive collation
         // utf8mb4_bin provides binary comparison (case-sensitive)
         // This works for both utf8 and utf8mb4 character sets
-        return $"{columnName} COLLATE utf8mb4_bin LIKE {parameterName} ESCAPE '{escapeChar}'";
+        //
+        // AUD-R35: the escape char goes through EscapeStringLiteral because it lands inside a
+        // string literal like every other value here. The only production caller passes a single
+        // backslash, and under MySQL's default sql_mode `ESCAPE '\'` has the backslash escape its
+        // own closing quote, so the statement does not parse - MySQL needs `ESCAPE '\\'`.
+        return $"{columnName} COLLATE utf8mb4_bin LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
 
         // Alternative using BINARY keyword (also works but less explicit):
         // return $"BINARY {columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
@@ -102,7 +107,8 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
         // MySQL: Default LIKE is already case-insensitive
         // Just use standard LIKE without any collation
         // This uses the column's default collation (typically utf8mb4_general_ci)
-        return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
+        // AUD-R35: see GenerateCaseSensitiveLike - the escape char must be string-literal escaped.
+        return $"{columnName} LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
