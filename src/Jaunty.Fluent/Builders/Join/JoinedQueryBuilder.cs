@@ -303,6 +303,48 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal void AddParameter<TValue>(string name, TValue value) =>
         _parameters.Add(name, value);
 
+    /// <summary>
+    /// Binds the operands a grouped-join HAVING predicate produced, renaming them against this
+    /// query's parameter collection, and returns the rewritten HAVING text.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-016, the joined half. <c>JoinedGroupByExpressionVisitor</c> mints
+    /// <c>"{prefix}jhp0".."jhpN"</c> from a per-visitor counter, and the three grouped-join
+    /// builders pushed those names straight into <em>this</em> builder's collection - which every
+    /// grouped builder derived from it shares. Two groupings off one join, each with a bound
+    /// HAVING operand, therefore added <c>@jhp0</c> twice and the second threw a duplicate-name
+    /// error the caller could not have caused. This is the same renumbering
+    /// <see cref="RegisterExpressionParameters"/> already applies to the <c>jp</c> sequence, which
+    /// collides for exactly the same reason; the <c>jhp</c> sequence never got it.
+    /// <para>
+    /// Renames are collected first and applied in one pass, for the reason spelled out on
+    /// <see cref="RegisterExpressionParameters"/>: a one-at-a-time rewrite lets a new name capture
+    /// an old occurrence that has not been rewritten yet.
+    /// </para>
+    /// </remarks>
+    internal string RegisterHavingParameters(string havingSql, List<(string Name, object? Value)> parameters)
+    {
+        if (parameters.Count == 0)
+            return havingSql;
+
+        var renames = new Dictionary<string, string>(parameters.Count, StringComparer.Ordinal);
+        for (int i = 0; i < parameters.Count; i++)
+        {
+            (string oldName, object? value) = parameters[i];
+            string newName = _parameters.CreateUniqueName(_dialect.ParameterPrefix, "jhp");
+            renames[oldName] = newName;
+            _parameters.Add(newName, value);
+        }
+
+        // The minted names are "<prefix>jhp<n>"; the replacements are "<prefix>jhp_<n>", which this
+        // pattern does not match, so a rewritten name cannot be rewritten again.
+        Regex renameRegex = HavingParameterRenameRegexes.Cache.GetOrAdd(_dialect.ParameterPrefix,
+            static prefix => new Regex(Regex.Escape(prefix) + @"jhp\d+(?!\w)", RegexOptions.Compiled));
+
+        return renameRegex.Replace(havingSql,
+            m => renames.TryGetValue(m.Value, out string? renamed) ? renamed : m.Value);
+    }
+
     internal bool HasParameter(string name) => _parameters.Contains(name);
 
     /// <summary>
@@ -557,6 +599,16 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
 /// builder would re-create the cache (and its compiled regexes) once per entity pair.
 /// </summary>
 internal static class JoinParameterRenameRegexes
+{
+    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Text.RegularExpressions.Regex> Cache = new();
+}
+
+/// <summary>
+/// Per-parameter-prefix cache for the grouped-join HAVING rename pattern. Separate from
+/// <see cref="JoinParameterRenameRegexes"/> because the two sequences use different tokens and one
+/// pattern matching both would let a <c>jp</c> rename rewrite a <c>jhp</c> operand.
+/// </summary>
+internal static class HavingParameterRenameRegexes
 {
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Text.RegularExpressions.Regex> Cache = new();
 }
