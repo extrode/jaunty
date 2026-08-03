@@ -39,7 +39,17 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
         "TINYBLOB", "TINYINT", "TINYTEXT", "TO", "TRAILING", "TRIGGER", "TRUE", "UNDO", "UNION",
         "UNIQUE", "UNLOCK", "UNSIGNED", "UPDATE", "USAGE", "USE", "USING", "UTC_DATE", "UTC_TIME",
         "UTC_TIMESTAMP", "VALUES", "VARBINARY", "VARCHAR", "VARCHARACTER", "VARYING", "WHEN",
-        "WHERE", "WHILE", "WITH", "WRITE", "XOR", "YEAR_MONTH", "ZEROFILL", "ORDER", "USER"
+        "WHERE", "WHILE", "WITH", "WRITE", "XOR", "YEAR_MONTH", "ZEROFILL", "ORDER", "USER",
+
+        // AUD-R35-018. Everything above predates MySQL 8.0; none of the words 8.0 reserved were
+        // here. EscapeTableName/EscapeColumnName backtick only what IsKeyword recognises, so an
+        // entity mapped to a column called `rank`, `system`, `rows` or `groups` - all perfectly
+        // legal names before 8.0, and so present in real schemas being upgraded - was emitted bare
+        // and every statement touching it failed to parse on MySQL 8. SqlIdentifierValidator does
+        // not compensate: it validates an identifier's shape, not its reservedness.
+        "CUME_DIST", "DENSE_RANK", "EMPTY", "EXCEPT", "FIRST_VALUE", "GROUPING", "GROUPS",
+        "JSON_TABLE", "LAG", "LAST_VALUE", "LATERAL", "LEAD", "NTH_VALUE", "NTILE", "OF", "OVER",
+        "PERCENT_RANK", "RANK", "RECURSIVE", "ROW", "ROWS", "ROW_NUMBER", "SYSTEM", "WINDOW",
     };
 
     public string ParameterPrefix => "@";
@@ -87,19 +97,23 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
 
     public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar)
     {
-        // MySQL: Default LIKE is case-insensitive
-        // We need to use a case-sensitive collation
-        // utf8mb4_bin provides binary comparison (case-sensitive)
-        // This works for both utf8 and utf8mb4 character sets
+        // MySQL's default LIKE is case-insensitive, so a case-sensitive comparison has to be
+        // asked for explicitly.
+        //
+        // AUD-R35-017: this used to say `COLLATE utf8mb4_bin`, and the comment claimed it "works
+        // for both utf8 and utf8mb4 character sets". It does not. A collation is only valid for
+        // the character set it belongs to, so applied to a latin1 or utf8mb3 column - both still
+        // ordinary in existing schemas - MySQL raises error 1253, "COLLATION 'utf8mb4_bin' is not
+        // valid for CHARACTER SET 'latin1'", and the query fails outright rather than comparing
+        // case-sensitively. Casting to BINARY asks for the same byte-wise comparison without
+        // naming a character set, so it holds for every column. CAST(... AS BINARY) rather than
+        // the `BINARY expr` operator, which MySQL deprecated in 8.0.27.
         //
         // AUD-R35: the escape char goes through EscapeStringLiteral because it lands inside a
         // string literal like every other value here. The only production caller passes a single
         // backslash, and under MySQL's default sql_mode `ESCAPE '\'` has the backslash escape its
         // own closing quote, so the statement does not parse - MySQL needs `ESCAPE '\\'`.
-        return $"{columnName} COLLATE utf8mb4_bin LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
-
-        // Alternative using BINARY keyword (also works but less explicit):
-        // return $"BINARY {columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"CAST({columnName} AS BINARY) LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)
@@ -113,9 +127,13 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
 
     public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
     {
-        // MySQL: Default = is case-insensitive for most collations
-        // Use utf8mb4_general_ci to be explicit
-        return $"{columnName} COLLATE utf8mb4_general_ci = {parameterName}";
+        // AUD-R35-017: `COLLATE utf8mb4_general_ci` was error 1253 on any column that is not
+        // utf8mb4, for the reason spelled out on GenerateCaseSensitiveLike. LOWER() on both sides
+        // is charset-independent and is what PostgreSqlDialect and SQLiteDialect already emit for
+        // this method, so the three now agree. It is no worse for indexing than the collation
+        // form was: a comparison under a collation other than the column's own cannot use an
+        // index on that column either.
+        return $"LOWER({columnName}) = LOWER({parameterName})";
     }
 
     public string FormatContainsPattern(string value) => $"%{EscapeLikeWildcards(value)}%";
