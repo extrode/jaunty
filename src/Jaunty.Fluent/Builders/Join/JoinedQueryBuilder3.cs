@@ -24,6 +24,10 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
     private readonly string? _alias;
     private readonly EntityMetadata _metadata;
 
+    // AUD-R35-179. The join this clause builder has already contributed to the shared root. A second
+    // On(...) on the same instance redefines it rather than appending a duplicate.
+    private JoinInfo? _addedJoin;
+
     public JoinClause3Builder(JoinedQueryBuilder<T1, T2> parent, JoinType joinType, string? alias)
     {
         _parent = parent;
@@ -108,7 +112,13 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
             _alias,
             onCondition);
 
-        _parent.AddJoin(joinInfo);
+        if (_addedJoin is JoinInfo previous)
+            _parent.ReplaceJoin(previous, joinInfo);
+        else
+            _parent.AddJoin(joinInfo);
+
+        _addedJoin = joinInfo;
+
         return new JoinedQuery3Builder<T1, T2, T3>(_parent);
     }
 
@@ -516,8 +526,17 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
             }
             finally
             {
+                // AUD-R35-178. Was a blocking Close() at the end of a fully async read, on a
+                // connection this method opened asynchronously three lines above. dbConnection is
+                // already the DbConnection the async open went through, so CloseAsync is available
+                // without a cast; on a provider whose close does network I/O the old call blocked
+                // the calling thread.
                 if (wasClosed)
-                    _parent.Connection.Close();
+#if NET8_0_OR_GREATER
+                    await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                    await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
+#endif
             }
 
             return results;

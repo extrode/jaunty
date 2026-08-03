@@ -80,6 +80,11 @@ internal sealed class NpgsqlConnection : DbConnection
 
     public string? LastCommandText { get; private set; }
     public bool ExecuteScalarCalled { get; private set; }
+
+    // AUD-R35-181. The scalar the fake command hands back for the identity-retrieval statement.
+    // Defaults to the 1L every pre-existing test here expects; a test that needs the DBNull a real
+    // SCOPE_IDENTITY()/RETURNING produces when nothing was generated sets it.
+    public object? ScalarResult { get; set; } = 1L;
     public bool ExecuteNonQueryCalled { get; private set; }
 
     [AllowNull]
@@ -146,7 +151,7 @@ internal sealed class FakeNpgsqlCommand : DbCommand
     public override object? ExecuteScalar()
     {
         _owner.RecordScalarExecution(CommandText);
-        return 1L;
+        return _owner.ScalarResult;
     }
 
     public override void Prepare() { }
