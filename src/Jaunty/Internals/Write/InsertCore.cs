@@ -76,10 +76,22 @@ public static partial class Jaunty
             if (cached.HasIdentityKey)
             {
                 var result = command.ExecuteScalar();
-                long id = result is null or DBNull ? 0 : ScalarConverter<long>.Convert(result);
 
-                if (id > 0)
-                    WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
+                // AUD-R35-133: the write-back used to be gated on `id > 0`, which conflated "no key
+                // came back" with "the key that came back was not positive". A negative identity is
+                // ordinary - IDENTITY(-2147483648, 1) is the standard wide-range-key seed on SQL
+                // Server - and under the old test such an insert returned the real key to the caller
+                // while leaving entity.Id at its default, so the row existed under a key the object
+                // in hand did not carry. The `> 0` test is right for the row-counting use AUD-R24
+                // adopted it for, where a suppressed insert must not be counted; that argument says
+                // nothing about whether to populate the entity. The null/DBNull case still returns 0
+                // without writing back, so an insert that yields no key never clobbers an id the
+                // caller had already set.
+                if (result is null or DBNull)
+                    return 0;
+
+                long id = ScalarConverter<long>.Convert(result);
+                WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
 
                 return id;
             }
@@ -151,10 +163,14 @@ public static partial class Jaunty
             if (cached.HasIdentityKey)
             {
                 var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                long id = result is null or DBNull ? 0 : ScalarConverter<long>.Convert(result);
 
-                if (id > 0)
-                    WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
+                // AUD-R35-133, the async twin. See InsertCoreDirect for why the gate is now
+                // "a key came back" rather than "the key is positive".
+                if (result is null or DBNull)
+                    return 0;
+
+                long id = ScalarConverter<long>.Convert(result);
+                WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
 
                 return id;
             }

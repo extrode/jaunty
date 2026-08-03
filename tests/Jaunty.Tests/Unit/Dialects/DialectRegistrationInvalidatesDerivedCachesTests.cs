@@ -4,6 +4,7 @@ using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Dialects;
 using Jaunty.Interfaces;
+using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
 using Xunit;
@@ -152,6 +153,34 @@ public class DialectRegistrationInvalidatesDerivedCachesTests : IDisposable
         CrudSqlCache.GetSql<Widget>(_connection);
 
         Assert.Empty(Assert.Single(dialect.LastInsertIdCalls));
+    }
+
+    /// <summary>
+    /// AUD-R35-135. <c>MultiRowInsertCache</c> is the same shape as <c>CrudSqlCache</c> - keyed on
+    /// (entity type, connection type, batch size), holding SQL built entirely from the dialect, and
+    /// invalidated only by the configuration generation. It had no test that a dialect registration
+    /// retires it, so the mechanism AUD-R35-013 installed was covered for one cache and assumed for
+    /// the other.
+    /// </summary>
+    [Fact]
+    public void MultiRowInsertSql_IsRebuiltAfterADialectRegistration()
+    {
+        var metadata = new EntityMetadata("widgets", null,
+        [
+            new ColumnMetadata("Name", typeof(string), "name", isPrimaryKey: false, isIdentity: false,
+                isComputed: false, getter: _ => "n", setter: (_, _) => { })
+        ]);
+
+        SqlDialectFactory.RegisterDialect<FakeConnection>(new QuotingDialect('<', '>'));
+        string first = MultiRowInsertCache.GetOrBuild(
+            typeof(Widget), typeof(FakeConnection), 2, metadata, SqlDialectFactory.GetDialect(_connection));
+
+        SqlDialectFactory.RegisterDialect<FakeConnection>(new QuotingDialect('{', '}'));
+        string second = MultiRowInsertCache.GetOrBuild(
+            typeof(Widget), typeof(FakeConnection), 2, metadata, SqlDialectFactory.GetDialect(_connection));
+
+        Assert.Contains("<widgets>", first, StringComparison.Ordinal);
+        Assert.Contains("{widgets}", second, StringComparison.Ordinal);
     }
 
     private sealed class QuotingDialect(char open, char close) : ISqlDialect
