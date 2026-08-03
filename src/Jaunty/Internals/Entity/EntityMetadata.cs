@@ -71,7 +71,14 @@ internal sealed class EntityMetadata
         TableName = tableName;
         SchemaName = schemaName;
 
-        List<ColumnMetadata> colList = columns is List<ColumnMetadata> list ? list : columns.ToList();
+        // AUD-R35-114 (round-35 batch 04b). This used to adopt the caller's list by reference when it
+        // already was a List<ColumnMetadata>, and Columns is a ReadOnlyCollection *view* over it while
+        // PrimaryKeys, NonPrimaryKeyColumns, NonIdentityColumns, InsertColumns, UpdateColumns,
+        // DeleteColumns and ParameterMap are all snapshots taken below. A caller mutating its list
+        // afterwards therefore desynchronised Columns from every derived collection and slipped past
+        // ThrowIfDuplicateColumnNames, which runs once here. Metadata is built once per entity type
+        // and cached, so the copy costs one allocation per type and buys immutability outright.
+        var colList = new List<ColumnMetadata>(columns);
 
         Columns = colList.AsReadOnly();
 
