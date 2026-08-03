@@ -85,8 +85,20 @@ internal readonly record struct PropertyMetadata(
     string TypeName,
     bool IsEnum,
     bool IsIdentityInferred,
-    int? EnumStorageOverride)
+    int? EnumStorageOverride,
+    bool IsNonNullableValueType)
 {
+    /// <summary>
+    /// AUD-R35-069. Whether the property's type is a value type that is not <c>Nullable&lt;T&gt;</c>,
+    /// which is exactly the condition the reflection twin's <c>PropertyContext.IsNonNullable</c>
+    /// tests before throwing "Cannot assign NULL to non-nullable property 'X'". The generated
+    /// mapper had no equivalent: the reader table's <c>NeedsNullCheck</c> answers a different
+    /// question - whether a DBNull check is needed to <em>read</em> the column - and it is
+    /// <see langword="false"/> for the typed-getter primitives and hardcoded
+    /// <see langword="true"/> for every catch-all type regardless of nullability.
+    /// </summary>
+    public bool IsNonNullableValueType { get; init; } = IsNonNullableValueType;
+
     /// <summary>
     /// AUD-R25: whether the property's type - or, for a nullable value type, its underlying
     /// type - is an enum. Enums are the one catch-all type that cannot be read through

@@ -210,6 +210,67 @@ public class MySqlBulkCopyProviderTests
         Assert.Equal(1, connection.CreatedCommands[1].ParameterCount);
     }
 
+    // AUD-R35-067: BuildChunkCommand guarded the assignment with `if (options.Timeout > 0)`, so
+    // Timeout = 0 - documented on BulkCopyOptions as "use 0 for no timeout" - never reached the
+    // command and the chunk kept the ADO.NET default. SqlServerBulkCopyProvider assigns
+    // unconditionally, so the same option value meant opposite things on the two providers.
+
+    [Fact]
+    public void CopyToServer_TimeoutZero_MeansNoTimeout_NotTheProviderDefault()
+    {
+        using var inner = CreateSpyInnerConnection();
+        var connection = new SpyingDbConnection(inner);
+        using var reader = new IntSequenceReader(rowCount: 2);
+
+        new MySqlBulkCopyProvider().CopyToServer(
+            connection, null, "widgets", reader, new BulkCopyOptions { Timeout = 0 });
+
+        Assert.Equal(0, connection.CreatedCommands[0].AssignedTimeout);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_TimeoutZero_MeansNoTimeout_NotTheProviderDefault()
+    {
+        using var inner = CreateSpyInnerConnection();
+        var connection = new SpyingDbConnection(inner);
+        using var reader = new IntSequenceReader(rowCount: 2);
+
+        await new MySqlBulkCopyProvider().CopyToServerAsync(
+            connection, null, "widgets", reader, new BulkCopyOptions { Timeout = 0 }, CancellationToken.None);
+
+        Assert.Equal(0, connection.CreatedCommands[0].AssignedTimeout);
+    }
+
+    [Fact]
+    public void CopyToServer_APositiveTimeout_StillReachesTheCommand()
+    {
+        using var inner = CreateSpyInnerConnection();
+        var connection = new SpyingDbConnection(inner);
+        using var reader = new IntSequenceReader(rowCount: 2);
+
+        new MySqlBulkCopyProvider().CopyToServer(
+            connection, null, "widgets", reader, new BulkCopyOptions { Timeout = 77 });
+
+        Assert.Equal(77, connection.CreatedCommands[0].AssignedTimeout);
+    }
+
+    /// <summary>
+    /// A negative is the one value still skipped: CommandTimeout rejects it, and the option has no
+    /// documented meaning for it.
+    /// </summary>
+    [Fact]
+    public void CopyToServer_ANegativeTimeout_IsNotAssigned()
+    {
+        using var inner = CreateSpyInnerConnection();
+        var connection = new SpyingDbConnection(inner);
+        using var reader = new IntSequenceReader(rowCount: 2);
+
+        new MySqlBulkCopyProvider().CopyToServer(
+            connection, null, "widgets", reader, new BulkCopyOptions { Timeout = -1 });
+
+        Assert.Null(connection.CreatedCommands[0].AssignedTimeout);
+    }
+
     [Fact]
     public async Task CopyToServerAsync_RespectsBatchSizeOption_ChunksRowsAccordingly()
     {
@@ -347,10 +408,20 @@ internal sealed class SpyingDbCommand : DbCommand
     }
 #pragma warning restore CS8765
 
+    /// <summary>
+    /// AUD-R35-067: recorded on assignment, and never cleared, so a test can tell "the provider set
+    /// it to 0" apart from "the provider never set it and the ADO.NET default happens to be 0".
+    /// </summary>
+    public int? AssignedTimeout { get; private set; }
+
     public override int CommandTimeout
     {
         get => _inner.CommandTimeout;
-        set => _inner.CommandTimeout = value;
+        set
+        {
+            AssignedTimeout = value;
+            _inner.CommandTimeout = value;
+        }
     }
 
     public override CommandType CommandType
