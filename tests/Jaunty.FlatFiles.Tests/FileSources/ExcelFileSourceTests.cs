@@ -168,6 +168,67 @@ public class ExcelFileSourceTests
         Assert.Null(source.GenerateCopyToOptions());
     }
 
+    // AUD-R35-073: SheetName and HasHeader were honoured on the read side and dropped on the write
+    // side, so a configured source did not round-trip - the export landed on the default sheet with
+    // a header row, and re-reading it through the same source ate the first data row as column
+    // names. SHEET (not SHEET_NAME) is the spelling that works on the pinned DuckDB.
+
+    [Fact]
+    public void GenerateCopyToOptions_WithSheetName_NamesTheSheet()
+    {
+        var source = new ExcelFileSource("t", "f.xlsx", typeof(SalesRow)) { SheetName = "Data" };
+
+        Assert.Equal("SHEET 'Data'", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_SheetNameWithAQuote_IsEscaped()
+    {
+        var source = new ExcelFileSource("t", "f.xlsx", typeof(SalesRow)) { SheetName = "O'Brien" };
+
+        Assert.Equal("SHEET 'O''Brien'", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_HasHeaderFalse_WritesNoHeaderRow()
+    {
+        var source = new ExcelFileSource("t", "f.xlsx", typeof(SalesRow)) { HasHeader = false };
+
+        Assert.Equal("HEADER false", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_HasHeaderTrue_LeavesTheDefaultAlone()
+    {
+        var source = new ExcelFileSource("t", "f.xlsx", typeof(SalesRow)) { HasHeader = true };
+
+        Assert.Null(source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_BothOptions_AreEmittedTogether()
+    {
+        var source = new ExcelFileSource("t", "f.xlsx", typeof(SalesRow))
+        {
+            SheetName = "Data",
+            HasHeader = false,
+        };
+
+        Assert.Equal("SHEET 'Data', HEADER false", source.GenerateCopyToOptions());
+    }
+
+    /// <summary>
+    /// Range selects a sub-rectangle of an existing sheet, which has no meaning for a file being
+    /// created from scratch - so it is deliberately not written back.
+    /// </summary>
+    [Fact]
+    public void GenerateCopyToOptions_Range_IsNotWrittenBack()
+    {
+        var source = new ExcelFileSource("t", "f.xlsx", typeof(SalesRow)) { Range = "A1:D100" };
+
+        Assert.Null(source.GenerateCopyToOptions());
+    }
+
     // ------------------------------------------------------------------
     // DuckDbFormatName / IsPromotedToTable / IsPreloaded
     // ------------------------------------------------------------------
