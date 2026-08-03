@@ -432,11 +432,14 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
 
     // ==================== SELECT PARTIAL ====================
 
-    public List<IDictionary<string, object?>> SelectPartial(string columns)
-    {
-        string sql = _parent.BuildSelectPartialSql(columns);
-        return _parent.Connection.QueryPartialList(sql, _parent.GetParameters().ToParameterObject()!);
-    }
+    // AUD-R35-063: this used to build the SQL here and run it through the core
+    // Connection.QueryPartialList, whose row builder is an OrdinalIgnoreCase dictionary filled by
+    // assignment - a duplicate column name resolved silently last-wins, and lookups were
+    // case-insensitive. Every other member of the family delegates to _parent, whose
+    // MapToDictionary is case-sensitive and throws on a duplicate. Selecting a caller-written
+    // column list over a three-table join is exactly where a duplicate name arises, and this is the
+    // overload callers reach first. Delegating also puts both halves on the same parameter binder.
+    public List<IDictionary<string, object?>> SelectPartial(string columns) => _parent.SelectPartial(columns);
 
     // AUD-R12: same fetch-all-then-take-first/single issue as the SelectFirst/SelectSingle
     // family above - delegate to _parent, which already applies GetPagingSql(0, 1)/(0, 2).
@@ -563,11 +566,9 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         return await _parent.Connection.QueryScalarAsync<long>(sql, _parent.GetParameters().ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
-    {
-        string sql = _parent.BuildSelectPartialSql(columns);
-        return await _parent.Connection.QueryPartialListAsync(sql, _parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-    }
+    // AUD-R35-063: the async twin of the same split; see SelectPartial above.
+    public Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
+        => _parent.SelectPartialAsync(columns, cancellationToken);
 
     // AUD-R12: same fetch-all-then-take-first issue - delegate to _parent, which already
     // applies GetPagingSql(0, 1).

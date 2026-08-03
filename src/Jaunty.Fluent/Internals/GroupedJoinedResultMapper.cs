@@ -161,7 +161,25 @@ internal static class GroupedJoinedResultMapper
             int scalarOrdinal = ResolveOrdinal(reader, aliases, ordinals, 0);
 
             if (reader.IsDBNull(scalarOrdinal))
+            {
+                // AUD-R35-065. This returned default! unconditionally, so
+                // .Select(g => g.Max(x => x.Price)) typed as a non-nullable decimal/int yielded 0
+                // for a group whose aggregate is NULL - inventing data, and indistinguishable from
+                // a real zero. The constructor path immediately below decided the opposite for
+                // exactly this case (AUD-R33-005), so the two paths in this one method disagreed on
+                // what NULL into a non-nullable value-type target means. A NULL aggregate is what
+                // MAX/MIN/SUM return over an all-NULL group, so the case is reachable, not
+                // theoretical. Reference types and Nullable<T> keep returning null.
+                if (typeof(TResult).IsValueType && Nullable.GetUnderlyingType(typeof(TResult)) is null)
+                {
+                    throw new InvalidOperationException(
+                        $"Column '{aliases[0]}' is NULL but the projection type is the non-nullable " +
+                        $"value type '{typeof(TResult).Name}'. Project to a nullable type, or use a " +
+                        $"NULL-handling function such as Sql.Coalesce so the aggregate cannot be NULL.");
+                }
+
                 return default!;
+            }
 
             Type scalarType = Nullable.GetUnderlyingType(typeof(TResult)) ?? typeof(TResult);
             return (TResult)ConvertColumnValue(reader.GetValue(scalarOrdinal), scalarType);
