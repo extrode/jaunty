@@ -15,6 +15,10 @@ public class TableNameResolverTests
     {
     }
 
+    public class EntityDerivedFromJauntyTable : EntityWithTableAttribute
+    {
+    }
+
     public class EntityWithoutAttribute
     {
         public int Id { get; set; }
@@ -73,5 +77,17 @@ public class TableNameResolverTests
     {
         var name = TableNameResolver.Resolve<EntityDerivedFromDataAnnotationsTable>();
         Assert.Equal("da_products", name);
+    }
+
+    // AUD-R35-242: the one inheritance shape left unpinned, and the one whose result surprises.
+    // Jaunty's TableAttribute is [AttributeUsage(..., Inherited = false)], so a derived entity does
+    // not inherit it and falls through to the class-name default - the mirror image of the
+    // DataAnnotations case directly above, which does inherit. Core's MetadataBuilder reads the
+    // attribute the same way, so this is the attribute's declaration, not a FlatFiles divergence.
+    [Fact]
+    public void Resolve_WithInheritedJauntyTableAttribute_FallsBackToTheClassName()
+    {
+        var name = TableNameResolver.Resolve<EntityDerivedFromJauntyTable>();
+        Assert.Equal("entityderivedfromjauntytable", name);
     }
 }
