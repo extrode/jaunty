@@ -21,6 +21,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Unit;
 /// tests pin that this assembly now uses it.
 /// </para>
 /// </summary>
+[Collection(GlobalInterceptorStateCollection.Name)]
 public class DuckDbObservabilityTests : IDisposable
 {
     private readonly string _dataDir = Path.Combine(Path.GetTempPath(), $"jaunty_observability_{Guid.NewGuid():N}");
