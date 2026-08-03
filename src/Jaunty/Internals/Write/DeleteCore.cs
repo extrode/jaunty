@@ -423,7 +423,7 @@ public static partial class Jaunty
         ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         IDbDataParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
-        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property) ?? DBNull.Value;
+        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property, primaryKey.EnumStorageOverride) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
 
@@ -432,7 +432,7 @@ public static partial class Jaunty
         ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         DbParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
-        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property) ?? DBNull.Value;
+        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property, primaryKey.EnumStorageOverride) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
 }
