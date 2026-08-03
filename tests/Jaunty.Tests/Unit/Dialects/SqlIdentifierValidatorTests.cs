@@ -4,6 +4,15 @@ namespace Jaunty.Tests.Unit.Dialects;
 
 public class SqlIdentifierValidatorTests
 {
+    // Enum.GetValues<T>() is net5.0+; this suite also targets net472.
+    private static readonly SqlIdentifierFlavor[] AllFlavors = new[]
+    {
+        SqlIdentifierFlavor.Common,
+        SqlIdentifierFlavor.SqlServer,
+        SqlIdentifierFlavor.MySql,
+        SqlIdentifierFlavor.PostgreSql,
+    };
+
     [Theory]
     [InlineData("ProductName")]
     [InlineData("_leading_underscore")]
@@ -11,7 +20,7 @@ public class SqlIdentifierValidatorTests
     [InlineData("A")]
     public void APlainIdentifierIsAcceptedByEveryFlavour(string identifier)
     {
-        foreach (SqlIdentifierFlavor flavor in Enum.GetValues<SqlIdentifierFlavor>())
+        foreach (SqlIdentifierFlavor flavor in AllFlavors)
             Assert.True(SqlIdentifierValidator.IsValid(identifier, flavor), $"{identifier} / {flavor}");
     }
 
@@ -22,7 +31,7 @@ public class SqlIdentifierValidatorTests
     [InlineData("Ναι")]
     public void ANonAsciiLetterIsAcceptedByEveryFlavour(string identifier)
     {
-        foreach (SqlIdentifierFlavor flavor in Enum.GetValues<SqlIdentifierFlavor>())
+        foreach (SqlIdentifierFlavor flavor in AllFlavors)
             Assert.True(SqlIdentifierValidator.IsValid(identifier, flavor), $"{identifier} / {flavor}");
     }
 
@@ -90,7 +99,7 @@ public class SqlIdentifierValidatorTests
     [InlineData("   ")]
     public void EveryFlavourRejectsWhatCouldBreakOutOfQuoting(string identifier)
     {
-        foreach (SqlIdentifierFlavor flavor in Enum.GetValues<SqlIdentifierFlavor>())
+        foreach (SqlIdentifierFlavor flavor in AllFlavors)
             Assert.False(SqlIdentifierValidator.IsValid(identifier, flavor), $"{identifier} / {flavor}");
     }
 
@@ -100,7 +109,7 @@ public class SqlIdentifierValidatorTests
     [InlineData("1 UNION SELECT password FROM users")]
     public void EveryFlavourRejectsAnInjectionPayload(string identifier)
     {
-        foreach (SqlIdentifierFlavor flavor in Enum.GetValues<SqlIdentifierFlavor>())
+        foreach (SqlIdentifierFlavor flavor in AllFlavors)
             Assert.False(SqlIdentifierValidator.IsValid(identifier, flavor), $"{identifier} / {flavor}");
     }
 
@@ -124,7 +133,7 @@ public class SqlIdentifierValidatorTests
     [Fact]
     public void NullIsRejected()
     {
-        foreach (SqlIdentifierFlavor flavor in Enum.GetValues<SqlIdentifierFlavor>())
+        foreach (SqlIdentifierFlavor flavor in AllFlavors)
             Assert.False(SqlIdentifierValidator.IsValid(null, flavor), flavor.ToString());
     }
 }
