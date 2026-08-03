@@ -43,8 +43,32 @@ public static partial class Jaunty
 
     private static T QueryFirstCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        T? entity = QueryFirstOrDefaultCore(connection, sql, parameters, options, mode);
-        return entity is null ? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.") : entity;
+        // AUD-R35-009. This used to delegate to QueryFirstOrDefaultCore and test `entity is null`.
+        // `T` is constrained only by `new()`, so for a value type - and `QueryFirst<(int, string)>`
+        // is an API the suite exercises - the empty-result sentinel is `default(T)`, which is never
+        // null: an empty result set returned `(0, null)` instead of throwing. The async twin
+        // (QueryCoreAsync.QueryFirstCoreAsync) reads the reader itself and throws directly; this
+        // now does the same, so the two agree for every T.
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                if (!reader.Read())
+                    throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+                return map(reader);
+            });
+        }
+
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+            return map(reader);
+        });
     }
 
     private static T? QueryFirstOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
