@@ -25,8 +25,15 @@ public static partial class Jaunty
     /// <returns>A list of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// This method uses <strong>strict mapping mode</strong>. All public writable properties on both 
-    /// <typeparamref name="T1"/> and <typeparamref name="T2"/> must have matching columns in the result set.
+    /// AUD-R35-048: this used to say the method uses <strong>strict mapping mode</strong> and that
+    /// all public writable properties on both <typeparamref name="T1"/> and
+    /// <typeparamref name="T2"/> must have matching columns. Neither is true. Multi-entity reads
+    /// always resolve each entity's setters in <strong>projection mode</strong>: a property whose
+    /// column is missing or misspelled in the SELECT list is left at its default value, silently.
+    /// The <c>MappingMode</c> argument threaded to <c>QueryMultiEntityCore</c> is ignored unless
+    /// <c>options.Mapper</c> is set, and <c>docs/01-api-reference/multi-entity-mapping.md</c> has
+    /// documented the real behaviour all along - so the prose docs and these XML docs contradicted
+    /// each other, and these are the ones a caller sees in IntelliSense.
     /// </para>
     /// <para>
     /// Columns are matched to entity properties using case-insensitive name matching. If a column name 
@@ -65,7 +72,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string, object)"/>
     /// <seealso cref="QueryFirst{T1, T2}(IDbConnection, string)"/>
@@ -96,7 +103,8 @@ public static partial class Jaunty
     /// <returns>A list of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// </remarks>
     /// <example>
@@ -110,7 +118,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -162,7 +170,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
@@ -212,7 +220,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -285,7 +293,8 @@ public static partial class Jaunty
     /// <returns>A tuple containing the first mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if no results are returned.</strong>
@@ -526,7 +535,8 @@ public static partial class Jaunty
     /// </returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// Returns <see langword="null"/> for empty result sets instead of throwing.
@@ -549,7 +559,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirst{T1, T2}(IDbConnection, string)"/>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
@@ -596,7 +606,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -648,7 +658,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirstOrDefault{T1, T2}(IDbConnection, string)"/>
     /// <seealso cref="CommandOptions{T}"/>
@@ -700,7 +710,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -773,7 +783,8 @@ public static partial class Jaunty
     /// <returns>A tuple containing the single mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if:</strong>
@@ -1019,7 +1030,8 @@ public static partial class Jaunty
     /// </returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if the query returns more than one result.</strong>
@@ -1274,7 +1286,8 @@ public static partial class Jaunty
     /// <returns>An enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Important:</strong> The connection stays open until enumeration completes. Use a <c>using</c> statement 
@@ -1293,7 +1306,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryStream{T1, T2}(IDbConnection, string, object)"/>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
@@ -1341,7 +1354,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -1394,7 +1407,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryStream{T1, T2}(IDbConnection, string)"/>
     /// <seealso cref="CommandOptions{T}"/>
@@ -1447,7 +1460,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.

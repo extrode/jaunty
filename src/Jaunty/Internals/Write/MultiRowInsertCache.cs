@@ -25,7 +25,41 @@ internal static class MultiRowInsertCache
     //
     // The generation on the entry closes it without a layout key: _getterCache already keys on the
     // layout, so the two agree by construction once a configuration change retires this entry.
-    private static readonly ConcurrentDictionary<(Type EntityType, Type ConnectionType, int BatchSize), ConfigurationScoped<string>> _cache = new();
+    //
+    // AUD-R35-058: bounded. The batch-size component of the key makes this grow with the *shapes of
+    // the caller's collections*, not with the application's type surface: BulkInsertMultiRow sends
+    // Math.Min(maxBatchSize, entityCount - offset), so every bulk insert whose row count is not an
+    // exact multiple of maxBatchSize leaves behind a permanent entry for its remainder size. With
+    // nothing evicting, a workload with varying collection sizes retains up to maxBatchSize distinct
+    // SQL strings per (entity type, connection type) pair, each O(columns x batchSize) characters -
+    // O(columns x maxBatchSize^2) in total, which is a few MB per entity type for a 10-column entity
+    // on SQL Server (maxBatchSize = (2100-1)/10 = 209) and tens of MB where maxBatchSize reaches its
+    // hard cap of 1000. AUD-R26-053 converted thirteen caller-shaped caches to BoundedCache and
+    // listed only _getterCache below as deliberately left alone, because it holds compiled delegates
+    // keyed on column metadata; neither half of that reasoning covers this one, which holds plain
+    // strings rebuilt by a StringBuilder loop under a caller-shaped key.
+    //
+    // 256 rather than the 4096 default: entries here are whole SQL statements rather than the small
+    // per-parameter records the default was chosen for, and a miss costs one StringBuilder pass.
+    private static readonly BoundedCache<(Type EntityType, Type ConnectionType, int BatchSize), CachedSql> _cache = new(BoundedCacheLimits.SchemaCacheMaxEntries);
+
+    /// <summary>
+    /// A generation-stamped SQL string. <see cref="ConfigurationScoped{TValue}"/> is a struct and
+    /// <see cref="BoundedCache{TKey, TValue}"/> requires a reference type, so this carries the same
+    /// two fields as a class.
+    /// </summary>
+    private sealed class CachedSql
+    {
+        internal CachedSql(int generation, string sql)
+        {
+            Generation = generation;
+            Sql = sql;
+        }
+
+        internal int Generation { get; }
+
+        internal string Sql { get; }
+    }
 
     // Keyed by (entity type, column layout) - not just entity type - so a second bulk insert of
     // the same T with a different column subset/order gets its own correctly-matching getters
@@ -92,11 +126,11 @@ internal static class MultiRowInsertCache
         // Read the generation before the lookup, never after: see ConfigurationGeneration.Current.
         int generation = ConfigurationGeneration.Current;
 
-        if (_cache.TryGetValue(key, out ConfigurationScoped<string> cached) && cached.Generation == generation)
-            return cached.Value;
+        if (_cache.Get(key) is { } cached && cached.Generation == generation)
+            return cached.Sql;
 
         string sql = Build(metadata, dialect, batchSize);
-        _cache[key] = new ConfigurationScoped<string>(generation, sql);
+        _cache.Set(key, new CachedSql(generation, sql));
         return sql;
     }
 

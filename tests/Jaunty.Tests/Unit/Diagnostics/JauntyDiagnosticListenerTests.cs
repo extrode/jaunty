@@ -277,6 +277,108 @@ public class JauntyDiagnosticListenerTests : IDisposable
 
     #region Helper Classes
 
+    #region AUD-R35-062: the subscriber's per-event predicate
+
+    // The three emit methods gated on the parameterless IsEnabled(), which only asks whether anyone
+    // is subscribed at all. DiagnosticSource.Write does not consult a subscriber's predicate -
+    // honouring it is the producer's job, via IsEnabled(eventName) - so a consumer filtering to one
+    // event received all three anyway, with a payload allocated per command to deliver each.
+
+    /// <summary>
+    /// A fresh listener per test: the fixture's own subscription is unfiltered, and a second
+    /// subscriber on the same listener would make IsEnabled(name) true for every name again.
+    /// </summary>
+    private static (JauntyDiagnosticListener Listener, TestDiagnosticObserver Observer) SubscribeFiltered(
+        Predicate<string> isEnabled)
+    {
+        var listener = new JauntyDiagnosticListener();
+        var observer = new TestDiagnosticObserver();
+        listener.Subscribe(observer, isEnabled);
+        return (listener, observer);
+    }
+
+    [Fact]
+    public void ASubscriberFilteredToFailures_DoesNotReceiveExecutingOrExecuted()
+    {
+        var (listener, observer) = SubscribeFiltered(name => name == JauntyDiagnosticListener.CommandFailedEventName);
+
+        using (listener)
+        {
+            var context = new CommandContext("SELECT 1", null, _connection, CommandType.Text);
+
+            listener.WriteCommandExecuting(context);
+            listener.WriteCommandExecuted(context);
+            listener.WriteCommandFailed(context, new InvalidOperationException("boom"));
+        }
+
+        Assert.Single(observer.Events);
+        Assert.Equal(JauntyDiagnosticListener.CommandFailedEventName, observer.Events[0].Key);
+    }
+
+    [Fact]
+    public void ASubscriberFilteredToExecuting_ReceivesOnlyExecuting()
+    {
+        var (listener, observer) = SubscribeFiltered(name => name == JauntyDiagnosticListener.CommandExecutingEventName);
+
+        using (listener)
+        {
+            var context = new CommandContext("SELECT 1", null, _connection, CommandType.Text);
+
+            listener.WriteCommandExecuting(context);
+            listener.WriteCommandExecuted(context);
+            listener.WriteCommandFailed(context, new InvalidOperationException("boom"));
+        }
+
+        Assert.Single(observer.Events);
+        Assert.Equal(JauntyDiagnosticListener.CommandExecutingEventName, observer.Events[0].Key);
+    }
+
+    /// <summary>
+    /// The control: an unfiltered subscriber still gets all three, so the gate narrowed nothing it
+    /// should not have.
+    /// </summary>
+    [Fact]
+    public void AnUnfilteredSubscriber_StillReceivesEveryEvent()
+    {
+        var listener = new JauntyDiagnosticListener();
+        var observer = new TestDiagnosticObserver();
+        listener.Subscribe(observer);
+
+        using (listener)
+        {
+            var context = new CommandContext("SELECT 1", null, _connection, CommandType.Text);
+
+            listener.WriteCommandExecuting(context);
+            listener.WriteCommandExecuted(context);
+            listener.WriteCommandFailed(context, new InvalidOperationException("boom"));
+        }
+
+        Assert.Equal(3, observer.Events.Count);
+    }
+
+    /// <summary>
+    /// A predicate that rejects everything is the strongest form of the same contract, and the one
+    /// where the payload allocation is pure waste.
+    /// </summary>
+    [Fact]
+    public void ASubscriberFilteringEverythingOut_ReceivesNothing()
+    {
+        var (listener, observer) = SubscribeFiltered(static _ => false);
+
+        using (listener)
+        {
+            var context = new CommandContext("SELECT 1", null, _connection, CommandType.Text);
+
+            listener.WriteCommandExecuting(context);
+            listener.WriteCommandExecuted(context);
+            listener.WriteCommandFailed(context, new InvalidOperationException("boom"));
+        }
+
+        Assert.Empty(observer.Events);
+    }
+
+    #endregion
+
     private class TestDiagnosticObserver : IObserver<KeyValuePair<string, object?>>
     {
         public List<KeyValuePair<string, object?>> Events { get; } = new();

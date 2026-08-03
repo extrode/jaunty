@@ -149,6 +149,63 @@ public class AsyncTransactionValidatorWiringTests : IDisposable
         realTransaction.Rollback();
     }
 
+    // AUD-R35-059: InsertCoreDirect's sync branch - the one that routes options.Transaction through
+    // AsyncTransactionValidator.RequireDbTransaction when the connection is a DbConnection - had no
+    // direct test, open since round 33. This file has sync _WithNonDbTransaction_ tests for Get,
+    // Upsert, ExecuteBatch, ExecuteScalar, QueryMultiple, QueryPartialList, BulkInsert, BulkUpdate
+    // and BulkDelete; for Insert it had only the async twin above. Reverting the branch to an
+    // unconditional assignment left the suite green.
+
+    [Fact]
+    public void Insert_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var category = new Category { CategoryName = "Condiments", Description = "Sauces and spices" };
+        long id = _connection.Insert(category, CommandOptions.WithTransaction(transaction));
+
+        Assert.True(id > 0);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void Insert_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfSilentlyDroppingTransaction()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var category = new Category { CategoryName = "Condiments", Description = "Sauces and spices" };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.Insert(category, CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    /// <summary>
+    /// The row really is inside the transaction rather than merely accepted: rolling back undoes it.
+    /// </summary>
+    [Fact]
+    public void Insert_WithRealDbTransaction_IsUndoneByARollback()
+    {
+        using (var transaction = _connection.BeginTransaction())
+        {
+            _connection.Insert(
+                new Category { CategoryName = "Ephemeral", Description = "Gone" },
+                CommandOptions.WithTransaction(transaction));
+
+            transaction.Rollback();
+        }
+
+        // By name, not by the returned value: Category's key is inferred by the name convention but
+        // not as an identity on the reflection path, so Insert returns rows affected here rather
+        // than a generated id - the divergence AUD-R35-050 documented on Insert.cs.
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM categories WHERE category_name = 'Ephemeral'";
+        Assert.Equal(0L, (long)cmd.ExecuteScalar()!);
+    }
+
     [Fact]
     public async Task UpdateAsync_WithRealDbTransaction_ExecutesWithinTransaction()
     {
@@ -267,6 +324,60 @@ public class AsyncTransactionValidatorWiringTests : IDisposable
 
         Assert.Contains("DbTransaction", ex.Message);
         realTransaction.Rollback();
+    }
+
+    // AUD-R35-053: the four-argument UpsertAsync overload had no test anywhere in tests/. Every
+    // UpsertAsync call site used the three-argument form, so UpsertCoreDirectAsync's
+    // unconditional command.Transaction = AsyncTransactionValidator.RequireDbTransaction(...)
+    // was never exercised with a real DbTransaction or with a non-DbTransaction IDbTransaction,
+    // while the sync twin had both tests immediately above. Open in rounds 33, 34 and 35.
+
+    [Fact]
+    public async Task UpsertAsync_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var category = new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Upserted" };
+        int rows = await _connection.UpsertAsync(category, CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public async Task UpsertAsync_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var category = new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Upserted" };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            async () => await _connection.UpsertAsync(category, CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    /// <summary>
+    /// The row really is inside the transaction rather than merely accepted: rolling back must
+    /// undo it. Without this the test above would pass on a command whose transaction was
+    /// silently dropped.
+    /// </summary>
+    [Fact]
+    public async Task UpsertAsync_WithRealDbTransaction_IsUndoneByARollback()
+    {
+        using (var transaction = _connection.BeginTransaction())
+        {
+            var inserted = new Category { CategoryId = 99, CategoryName = "Ephemeral", Description = "Gone" };
+            await _connection.UpsertAsync(inserted, CommandOptions.WithTransaction(transaction));
+
+            transaction.Rollback();
+        }
+
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM categories WHERE category_id = 99";
+        Assert.Equal(0L, (long)cmd.ExecuteScalar()!);
     }
 
     [Fact]

@@ -90,13 +90,13 @@ public sealed partial class DuckDb : IFlatFile
             if (options.AutoOpen)
                 _connection.Open();
 
-            foreach (IFileSource source in options.Sources)
-            {
-                if (options.PreloadIntoMemory && !source.IsPreloaded)
-                    source.IsPreloaded = true;
+            // AUD-R35-072: FlatFileOptions.AddUnique only guards the AddXxx APIs; Sources is a
+            // public mutable list, so options.Sources.Add(duplicate) reached the last-wins
+            // _sources dictionary and CREATE OR REPLACE VIEW with the guard never consulted.
+            options.EnsureSourceTableNamesAreUnique();
 
+            foreach (IFileSource source in options.Sources)
                 RegisterSource(source);
-            }
         }
         catch
         {
@@ -113,13 +113,18 @@ public sealed partial class DuckDb : IFlatFile
         ArgumentNullException.ThrowIfNull(source);
         EnsureExtensionsLoaded(source);
 
+        // AUD-R35-026: seeded once, from the caller's own opt-in, and never written back to the
+        // source - see PreloadRegistry.
+        if (_options.PreloadIntoMemory || source.IsPreloaded)
+            PreloadRegistry.Mark(_connection, source);
+
         // A file-backed catalog can already hold this object as a table: a previous instance's
         // mutation promoted the registration view, and the promotion persisted. Re-running the
         // unconditional CREATE OR REPLACE VIEW would be rejected by DuckDB ("Existing object is
         // of type Table, trying to replace with type View"), so the table - which holds the
         // mutated data - is left alone. Preloaded sources are exempt: their CREATE OR REPLACE
         // TABLE deliberately reloads from the file every time.
-        if (!source.IsPreloaded && ExistsAsTable(source.TableName))
+        if (!PreloadRegistry.IsPreloaded(_connection, source) && ExistsAsTable(source.TableName))
         {
             if (_options.ValidateSchema && source.EntityType != typeof(object))
                 ValidateSchema(source);
@@ -146,8 +151,12 @@ public sealed partial class DuckDb : IFlatFile
         ArgumentNullException.ThrowIfNull(source);
         await EnsureExtensionsLoadedAsync(source, cancellationToken).ConfigureAwait(false);
 
+        // Same seeding as RegisterSource; see the comment there.
+        if (_options.PreloadIntoMemory || source.IsPreloaded)
+            PreloadRegistry.Mark(_connection, source);
+
         // Same promoted-table guard as RegisterSource; see the comment there.
-        if (!source.IsPreloaded && await ExistsAsTableAsync(source.TableName, cancellationToken).ConfigureAwait(false))
+        if (!PreloadRegistry.IsPreloaded(_connection, source) && await ExistsAsTableAsync(source.TableName, cancellationToken).ConfigureAwait(false))
         {
             if (_options.ValidateSchema && source.EntityType != typeof(object))
                 await ValidateSchemaAsync(source, cancellationToken).ConfigureAwait(false);
@@ -294,7 +303,7 @@ public sealed partial class DuckDb : IFlatFile
                 return GenerateViewSqlWithDateTimeCasts(source, mappings);
         }
 
-        return source.IsPreloaded
+        return PreloadRegistry.IsPreloaded(_connection, source)
             ? _dialect.GenerateCreateTableAsSql(source)
             : _dialect.GenerateCreateViewSql(source);
     }
@@ -309,7 +318,7 @@ public sealed partial class DuckDb : IFlatFile
                 return await GenerateViewSqlWithDateTimeCastsAsync(source, mappings, cancellationToken).ConfigureAwait(false);
         }
 
-        return source.IsPreloaded
+        return PreloadRegistry.IsPreloaded(_connection, source)
             ? _dialect.GenerateCreateTableAsSql(source)
             : _dialect.GenerateCreateViewSql(source);
     }
@@ -354,7 +363,7 @@ public sealed partial class DuckDb : IFlatFile
                 sb.Append(_dialect.EscapeColumnName(col));
         }
 
-        string keyword = source.IsPreloaded ? "TABLE" : "VIEW";
+        string keyword = PreloadRegistry.IsPreloaded(_connection, source) ? "TABLE" : "VIEW";
 
         return $"CREATE OR REPLACE {keyword} {_dialect.EscapeTableName(null, source.TableName)} AS SELECT {sb} FROM {readFunction}";
     }
@@ -394,7 +403,7 @@ public sealed partial class DuckDb : IFlatFile
                 sb.Append(_dialect.EscapeColumnName(col));
         }
 
-        string keyword = source.IsPreloaded ? "TABLE" : "VIEW";
+        string keyword = PreloadRegistry.IsPreloaded(_connection, source) ? "TABLE" : "VIEW";
 
         return $"CREATE OR REPLACE {keyword} {_dialect.EscapeTableName(null, source.TableName)} AS SELECT {sb} FROM {readFunction}";
     }

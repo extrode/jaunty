@@ -49,17 +49,26 @@ public sealed class MySqlSchemaReader : ISchemaReader
           AND CONSTRAINT_NAME = 'PRIMARY'
         ORDER BY ORDINAL_POSITION";
 
-    private const string ForeignKeysSql = @"
+    internal const string ForeignKeysSql = @"
         SELECT
             CONSTRAINT_NAME AS ConstraintName,
             COLUMN_NAME AS ForeignKeyColumn,
-            '' AS ReferencedSchema,
+            -- AUD-R35-045: the referenced schema was hardcoded '', which is right only for the
+            -- common case. MySQL schemas are databases, and a foreign key may point at a table
+            -- in another one; reporting '' for those sent the generated navigation at a table
+            -- of the same name in the current database, or at nothing. Same-database keys keep
+            -- '' so they still match the '' this reader reports as every table's SchemaName.
+            IF(REFERENCED_TABLE_SCHEMA = DATABASE(), '', REFERENCED_TABLE_SCHEMA) AS ReferencedSchema,
             REFERENCED_TABLE_NAME AS ReferencedTable,
             REFERENCED_COLUMN_NAME AS ReferencedColumn
         FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
         WHERE TABLE_SCHEMA = DATABASE()
           AND TABLE_NAME = @TableName
-          AND REFERENCED_TABLE_NAME IS NOT NULL";
+          AND REFERENCED_TABLE_NAME IS NOT NULL
+        -- AUD-R35-046: the other three readers order by ordinal position; this one did not, so
+        -- a composite foreign key came back in whatever order the server chose and its columns
+        -- paired with the referenced ones by luck.
+        ORDER BY CONSTRAINT_NAME, ORDINAL_POSITION";
 
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
@@ -164,31 +173,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
             ? await ReadForeignKeysAsync(connection, tableName, cancellationToken).ConfigureAwait(false)
             : [];
 
-        if (primaryKey != null)
-        {
-            for (int i = 0; i < columns.Count; i++)
-            {
-                ColumnSchema col = columns[i];
-                if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
-                {
-                    columns[i] = new ColumnSchema
-                    {
-                        ColumnName = col.ColumnName,
-                        DataType = col.DataType,
-                        IsNullable = col.IsNullable,
-                        IsPrimaryKey = true,
-                        IsIdentity = col.IsIdentity,
-                        IsComputed = col.IsComputed,
-                        MaxLength = col.MaxLength,
-                        Precision = col.Precision,
-                        Scale = col.Scale,
-                        DefaultValue = col.DefaultValue,
-                        OrdinalPosition = col.OrdinalPosition,
-                        ColumnType = col.ColumnType
-                    };
-                }
-            }
-        }
+        SchemaReaderHelpers.MarkPrimaryKeyColumns(columns, primaryKey);
 
         return new TableSchema
         {

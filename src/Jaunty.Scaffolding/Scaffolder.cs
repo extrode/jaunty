@@ -181,9 +181,35 @@ public sealed class Scaffolder
     /// <param name="provider">Database provider (or AutoDetect).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of table names with their schemas.</returns>
-    public async Task<IReadOnlyList<(string Schema, string Table)>> ListTablesAsync(
+    public Task<IReadOnlyList<(string Schema, string Table)>> ListTablesAsync(
         string connectionString,
         DatabaseProvider provider = DatabaseProvider.AutoDetect,
+        CancellationToken cancellationToken = default)
+        => ListTablesAsync(connectionString, provider, null, cancellationToken);
+
+    /// <summary>
+    /// Lists tables in the database, reading only the tables the given filters select.
+    /// </summary>
+    /// <param name="connectionString">Database connection string.</param>
+    /// <param name="provider">Database provider (or AutoDetect).</param>
+    /// <param name="options">Filters to apply while reading. Null reads every table.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of table names with their schemas.</returns>
+    /// <remarks>
+    /// AUD-R35-079. The parameterless overload hard-coded <c>new SchemaReaderOptions()</c>, so a
+    /// caller that wanted one schema out of a large database - which is exactly what the CLI's
+    /// <c>--schemas</c> asks for - had no way to say so, and every table in every schema was read
+    /// in full (columns, keys, defaults) before the unwanted ones were discarded client-side.
+    /// <see cref="Abstractions.SchemaReaderOptions.IncludeSchemas"/> is applied in the readers'
+    /// table loops by the SQL Server, PostgreSQL and MySQL providers, so pushing it down here skips
+    /// the per-table reads rather than merely moving the filter. SQLite has no schemas and ignores
+    /// it, which is why <c>IncludeTables</c>/<c>ExcludeTables</c> are the filters that demonstrate
+    /// this path there.
+    /// </remarks>
+    public async Task<IReadOnlyList<(string Schema, string Table)>> ListTablesAsync(
+        string connectionString,
+        DatabaseProvider provider,
+        SchemaReaderOptions? options,
         CancellationToken cancellationToken = default)
     {
         DatabaseProvider resolvedProvider = provider == DatabaseProvider.AutoDetect
@@ -194,7 +220,7 @@ public sealed class Scaffolder
 
         DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
             connectionString,
-            new SchemaReaderOptions(),
+            options ?? new SchemaReaderOptions(),
             cancellationToken).ConfigureAwait(false);
 
         return schema.Tables

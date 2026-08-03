@@ -187,7 +187,10 @@ public class ImportTypeMappingTests : IDisposable
         var sqlServer = new SqlServerImportDialect();
         Assert.Equal("NVARCHAR(MAX)", sqlServer.MapClrTypeToSqlType(typeof(string)));
         Assert.Equal("INT", sqlServer.MapClrTypeToSqlType(typeof(int)));
-        Assert.Equal("DECIMAL(18,4)", sqlServer.MapClrTypeToSqlType(typeof(decimal)));
+        // AUD-R35-030 deliberately changed this one from DECIMAL(18,4), which silently rounded an
+        // imported 1.23456 to 1.2346 while the same column on PostgreSQL's unconstrained NUMERIC
+        // kept every digit. This assertion had locked that in.
+        Assert.Equal("DECIMAL(38,9)", sqlServer.MapClrTypeToSqlType(typeof(decimal)));
         Assert.Equal("VARBINARY(MAX)", sqlServer.MapClrTypeToSqlType(typeof(byte[])));
 
         var postgres = new PostgreSqlImportDialect();

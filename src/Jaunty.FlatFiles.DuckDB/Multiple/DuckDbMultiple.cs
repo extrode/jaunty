@@ -49,7 +49,30 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
-        return ExecuteQueryMultiple(sql, null);
+        return ExecuteQueryMultiple(sql, null, default);
+    }
+
+    /// <summary>
+    /// Executes a SQL query that returns multiple result sets, with command options.
+    /// </summary>
+    /// <param name="sql">The SQL query to execute. Can contain multiple SELECT statements separated by semicolons.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    /// <returns>A <see cref="GridReader"/> that can read multiple result sets from the query.</returns>
+    /// <remarks>
+    /// AUD-R35-076: none of the four <c>QueryMultiple</c>/<c>QueryMultipleAsync</c> entry points had
+    /// an options overload and neither <c>ExecuteQueryMultipleDirect</c> nor its async twin called
+    /// <c>NonQueryExecutor.ApplyOptions</c>, so a multi-result-set read could not be enlisted in the
+    /// transaction or given the timeout its <c>Insert</c>/<c>Update</c>/<c>Delete</c> neighbours
+    /// were given. <c>QueryMultiEntity</c> had this gap closed in AUD-R26-068 and <c>Query&lt;T&gt;</c>
+    /// in AUD-R32-009, both for the identical stated reason; <c>QueryMultiple</c> was the one read
+    /// surface still missing it.
+    /// </remarks>
+    public GridReader QueryMultiple(string sql, CommandOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        return ExecuteQueryMultiple(sql, null, options);
     }
 
     /// <summary>
@@ -74,15 +97,27 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
-        return ExecuteQueryMultiple(sql, parameters);
+        return ExecuteQueryMultiple(sql, parameters, default);
     }
 
-    private GridReader ExecuteQueryMultiple(string sql, object? parameters)
+    /// <inheritdoc cref="QueryMultiple(string, CommandOptions)"/>
+    /// <param name="sql">The SQL query to execute. Can contain multiple SELECT statements separated by semicolons.</param>
+    /// <param name="parameters">Parameters for the query.</param>
+    /// <param name="options">Command options - transaction, timeout.</param>
+    public GridReader QueryMultiple(string sql, object parameters, CommandOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        return ExecuteQueryMultiple(sql, parameters, options);
+    }
+
+    private GridReader ExecuteQueryMultiple(string sql, object? parameters, CommandOptions options)
         => CommandObservation.Execute(
             sql, parameters, _connection, DuckDbObservation.Text,
-            () => ExecuteQueryMultipleDirect(sql, parameters));
+            () => ExecuteQueryMultipleDirect(sql, parameters, options));
 
-    private GridReader ExecuteQueryMultipleDirect(string sql, object? parameters)
+    private GridReader ExecuteQueryMultipleDirect(string sql, object? parameters, CommandOptions options)
     {
         CommandObservation.Log(sql, parameters);
 
@@ -90,6 +125,7 @@ public sealed partial class DuckDb
         try
         {
             cmd.CommandText = sql;
+            NonQueryExecutor.ApplyOptions(cmd, options);
 
             if (parameters != null)
             {

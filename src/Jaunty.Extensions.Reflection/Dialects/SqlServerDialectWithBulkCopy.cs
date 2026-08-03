@@ -8,7 +8,7 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// SQL Server dialect with bulk copy support.
 /// Extends the base dialect to provide SqlBulkCopy provider.
 /// </summary>
-internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect, ISubstringToEndDialect, IDialectWrapper
+internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect, ISubstringToEndDialect, IFractionalAverageDialect, IDialectWrapper
 {
     private readonly SqlServerDialect _inner;
 
@@ -73,6 +73,12 @@ internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect, ISubstringToEn
     /// </summary>
     public string GenerateSubstringToEnd(string expression, string start)
         => SubstringToEnd.Generate(_inner, expression, start);
+    /// <summary>
+    /// Forwards to the wrapped dialect, for the same reason as GenerateSubstringToEnd above: a
+    /// wrapper that dropped it would make SQL Server look like a dialect that never truncates.
+    /// </summary>
+    public string GenerateFractionalAverage(string operand)
+        => FractionalAverage.Generate(_inner, operand);
     public string GenerateYear(string expression) => _inner.GenerateYear(expression);
     public string GenerateMonth(string expression) => _inner.GenerateMonth(expression);
     public string GenerateDay(string expression) => _inner.GenerateDay(expression);

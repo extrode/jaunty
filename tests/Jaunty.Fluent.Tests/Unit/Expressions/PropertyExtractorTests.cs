@@ -40,20 +40,19 @@ public class PropertyExtractorTests
     }
 
     [Fact]
-    public void ExtractPropertyName_NullableValueOnClosureField_FallsBackToValuePropertyName()
+    public void ExtractPropertyName_NullableValueOnClosureField_Throws()
     {
-        // The nullable-unwrap branch in GetMemberInfo only rewrites ".Value" to the underlying
-        // property name when the target of ".Value" is itself a member access on a PropertyInfo
-        // (e.g. p.CategoryId). When ".Value" is called on something else - here, a
-        // closure-captured local, which compiles to a FieldInfo member access rather than a
-        // PropertyInfo one - that rewrite doesn't apply, and the raw "Value" property name is
-        // returned instead of throwing or resolving to the outer entity's property.
+        // This used to return "Value", and the expression does not name a column of the entity at
+        // all: a closure-captured local compiles to a FieldInfo member access, so the nullable
+        // unwrap does not apply and the leaf name fell through. Downstream that name reaches a
+        // column lookup which escapes anything unmapped, so an ORDER BY or a join key built from
+        // it referenced a column called "Value". AUD-R35-019 rejects it instead.
         short? local = 7;
         Expression<Func<Product, short>> selector = p => local!.Value;
 
-        var name = PropertyExtractor.ExtractPropertyName(selector);
+        var ex = Assert.Throws<NotSupportedException>(() => PropertyExtractor.ExtractPropertyName(selector));
 
-        Assert.Equal("Value", name);
+        Assert.Contains("is a member of a column, not a column", ex.Message);
     }
 
     [Fact]
