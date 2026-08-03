@@ -597,16 +597,28 @@ public partial class JauntyGenerator
     /// </summary>
     private static bool IsDictionaryShape(ITypeSymbol type)
     {
-        if (type is INamedTypeSymbol { MetadataName: "IDictionary`2" or "Dictionary`2" or "IReadOnlyDictionary`2" })
+        // AUD-R35-057: the key type is checked now. The binder reads named values out of a
+        // dictionary by string key, so a Dictionary<int, string> is not a dictionary of named
+        // values however dictionary-shaped it is - it falls through to the property path and
+        // throws, and claiming it here suppressed the JAUNTYGEN003 warning that would have said so
+        // at build time.
+        if (type is INamedTypeSymbol { MetadataName: "IDictionary`2" or "Dictionary`2" or "IReadOnlyDictionary`2" } named
+            && HasStringKey(named))
+        {
             return true;
+        }
 
         foreach (INamedTypeSymbol iface in type.AllInterfaces)
         {
-            if (iface.MetadataName is "IDictionary`2" or "IReadOnlyDictionary`2")
+            if (iface.MetadataName is "IDictionary`2" or "IReadOnlyDictionary`2" && HasStringKey(iface))
                 return true;
         }
 
         return false;
+
+        static bool HasStringKey(INamedTypeSymbol dictionary) =>
+            dictionary.TypeArguments.Length == 2
+            && dictionary.TypeArguments[0].SpecialType == SpecialType.System_String;
     }
 
     /// <summary>
@@ -614,25 +626,49 @@ public partial class JauntyGenerator
     /// SQL text instead of from a property.
     /// </summary>
     /// <remarks>
-    /// Kept in step with <c>ParameterBinder.IsScalarType</c>. Being wrong in the permissive direction
-    /// costs a redundant rooting call, which is harmless; being wrong the other way would emit a
-    /// witness expression for a type that never needed one, which is equally harmless. Neither can
-    /// produce a wrong binding, so this does not have to be exact.
+    /// Kept in step with <c>ParameterBinder.IsScalarType</c>. AUD-R35-057: the remark here used to
+    /// say that being wrong either way was harmless because "neither can produce a wrong binding".
+    /// True of the binding, but a false positive also suppresses the JAUNTYGEN003 warning that
+    /// exists precisely to catch a parameters object the reflection binder cannot see through, so
+    /// the failure surfaces at runtime instead of at build. <c>System.Numerics.BigInteger</c> and -
+    /// via <c>SpecialType is not None</c> - <c>System.Array</c> were both accepted here and are both
+    /// rejected by <c>IsScalarType</c>.
     /// </remarks>
     private static bool IsScalarShape(ITypeSymbol type)
     {
         if (type.TypeKind == TypeKind.Enum)
             return true;
 
-        if (type.SpecialType is not SpecialType.None)
-            return type.SpecialType != SpecialType.System_Object;
-
         // Nullable<T> of a scalar is a scalar.
         if (type is INamedTypeSymbol { MetadataName: "Nullable`1" } nullable && nullable.TypeArguments.Length == 1)
             return IsScalarShape(nullable.TypeArguments[0]);
 
+        // An allowlist, not "anything with a SpecialType": SpecialType covers System.Object,
+        // System.Array, System.Void, IDisposable and the collection interfaces too, none of which
+        // IsScalarType accepts. Mirrors IsScalarType member for member.
+        if (type.SpecialType is not SpecialType.None)
+        {
+            return type.SpecialType is SpecialType.System_Boolean
+                or SpecialType.System_Char
+                or SpecialType.System_SByte
+                or SpecialType.System_Byte
+                or SpecialType.System_Int16
+                or SpecialType.System_UInt16
+                or SpecialType.System_Int32
+                or SpecialType.System_UInt32
+                or SpecialType.System_Int64
+                or SpecialType.System_UInt64
+                or SpecialType.System_IntPtr
+                or SpecialType.System_UIntPtr
+                or SpecialType.System_Single
+                or SpecialType.System_Double
+                or SpecialType.System_String
+                or SpecialType.System_Decimal
+                or SpecialType.System_DateTime;
+        }
+
         return type.ToDisplayString() is "System.DateTime" or "System.DateTimeOffset" or "System.TimeSpan"
-            or "System.Guid" or "System.DateOnly" or "System.TimeOnly" or "System.Numerics.BigInteger"
+            or "System.Guid" or "System.DateOnly" or "System.TimeOnly"
             or "byte[]";
     }
 

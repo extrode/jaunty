@@ -30,9 +30,10 @@ internal static class ParameterBinder
         // so SQL-text parsing/validation is not applicable. Bind all provided values.
         if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
         {
-            if (parameters is IDictionary<string, object?> dict)
+            IDictionary<string, object?>? sprocDict = AsNamedValues(parameters);
+            if (sprocDict is not null)
             {
-                BindAllFromDictionary(command, dict);
+                BindAllFromDictionary(command, sprocDict);
                 return;
             }
 
@@ -47,8 +48,20 @@ internal static class ParameterBinder
             return;
         }
 
-        // Handle IDictionary<string, object?> directly (e.g., ExpandoObject, Dictionary)
-        if (parameters is IDictionary<string, object?> dictParams)
+        // Handle a dictionary of named values directly (e.g., ExpandoObject, Dictionary).
+        // AUD-R35-057: this used to test `parameters is IDictionary<string, object?>` and nothing
+        // else, while the generator's ParameterRooting.IsDictionaryShape - which decides whether to
+        // emit rooting, and whether to suppress the JAUNTYGEN003 "the reflection binder cannot see
+        // through this" warning - returns true for IReadOnlyDictionary<,> and for any IDictionary<,>
+        // whatever its type arguments. TValue is invariant on IDictionary<,>, so a
+        // Dictionary<string, int> is not an IDictionary<string, object?>: it fell past this test,
+        // past IsScalarType, and into ParameterCache.Get, which reflected over Count/Keys/Values/
+        // Comparer and threw "No property found on type ... matching SQL parameter '@Id'" - with the
+        // build-time warning that exists to catch exactly that suppressed. The two predicates could
+        // not both be right; the runtime is the side that moved, because widening it turns a runtime
+        // failure into a working bind rather than merely reporting the failure earlier.
+        IDictionary<string, object?>? dictParams = AsNamedValues(parameters);
+        if (dictParams is not null)
         {
             BindFromDictionary(command, dictParams);
             return;
@@ -141,7 +154,7 @@ internal static class ParameterBinder
         if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
             return false;
 
-        if (parameters is IDictionary<string, object?> || IsScalarType(parameters.GetType()))
+        if (IsNamedValueDictionary(parameters) || IsScalarType(parameters.GetType()))
             return false;
 
         return TemplateCache.TryGetValue((command.CommandText, parameters.GetType(), command.GetType()), out CommandTemplate? template)
@@ -830,6 +843,57 @@ internal static class ParameterBinder
         public readonly object? Value = value;
         public readonly PropertyInfo? Property = property;
     }
+
+    /// <summary>
+    /// Returns the parameters object as a dictionary of named values, or <see langword="null"/> when
+    /// it is not a string-keyed dictionary at all. An <c>IDictionary&lt;string, object?&gt;</c> is
+    /// returned as-is; any other string-keyed shape is copied into one, which costs an allocation on
+    /// a path that would previously have thrown.
+    /// </summary>
+    private static IDictionary<string, object?>? AsNamedValues(object parameters)
+    {
+        if (parameters is IDictionary<string, object?> exact)
+            return exact;
+
+        if (parameters is IReadOnlyDictionary<string, object?> readOnly)
+        {
+            var copy = new Dictionary<string, object?>(readOnly.Count, StringComparer.Ordinal);
+            foreach (KeyValuePair<string, object?> pair in readOnly)
+                copy[pair.Key] = pair.Value;
+
+            return copy;
+        }
+
+        // Dictionary<string, TValue> for any other TValue: invariance means it is none of the
+        // interfaces above, but every BCL dictionary implements the non-generic IDictionary, so the
+        // entries can be read without reflecting over the element type.
+        if (parameters is IDictionary nonGeneric)
+        {
+            var copy = new Dictionary<string, object?>(nonGeneric.Count, StringComparer.Ordinal);
+            foreach (DictionaryEntry entry in nonGeneric)
+            {
+                // Keys are checked as they are read rather than by inspecting the closed generic
+                // interface: Type.GetInterfaces() is an IL2070 trim warning in this assembly, and
+                // reading the keys answers the same question without reflection. A non-string key
+                // means this is not a dictionary of named values, so fall back to the property path
+                // rather than bind a half-built dictionary.
+                if (entry.Key is not string key)
+                    return null;
+
+                copy[key] = entry.Value;
+            }
+
+            return copy;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The predicate half of <see cref="AsNamedValues"/>, for callers that only need the answer.
+    /// </summary>
+    private static bool IsNamedValueDictionary(object parameters) =>
+        parameters is IDictionary<string, object?> or IReadOnlyDictionary<string, object?> or IDictionary;
 
     private static bool IsScalarType(Type type)
     {
