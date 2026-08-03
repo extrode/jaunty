@@ -212,6 +212,20 @@ public class CsvFileSourceTests
     }
 
     [Fact]
+    public void GenerateCopyToOptions_WithHeaderFalse_WritesHeaderFalse()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { HasHeader = false };
+        Assert.Equal("HEADER false", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_WithHeaderFalseAndDelimiter_WritesBoth()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { HasHeader = false, Delimiter = ';' };
+        Assert.Equal("HEADER false, DELIMITER ';'", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
     public void GenerateCopyToOptions_WithNullString_IncludesNull()
     {
         var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { NullString = "NA" };

@@ -44,7 +44,30 @@ public sealed class JsonFileSource : IFileSource
     /// Gets or sets the maximum JSON nesting depth.
     /// Null means use the default.
     /// </summary>
-    public int? MaxDepth { get; set; }
+    /// <remarks>
+    /// AUD-R35-236: this was interpolated into <c>maximum_depth = {value}</c> unvalidated, so a
+    /// zero or negative value reached DuckDB and surfaced as a binder error at first query rather
+    /// than at the line that set it. Sibling options already guard the analogous case -
+    /// <c>SkipRows</c> on CSV/TSV is emitted only when positive, and <c>ImportOptions</c> rejects a
+    /// non-positive <c>batchSize</c> in its constructor (AUD-R26-064).
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not null and not positive.</exception>
+    public int? MaxDepth
+    {
+        get => _maxDepth;
+        set
+        {
+            if (value is <= 0)
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    value,
+                    "MaxDepth must be positive, or null to use DuckDB's default.");
+
+            _maxDepth = value;
+        }
+    }
+
+    private int? _maxDepth;
 
     /// <summary>
     /// Creates a new JSON file source.
