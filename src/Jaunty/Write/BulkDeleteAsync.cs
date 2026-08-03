@@ -247,6 +247,7 @@ public static partial class Jaunty
             return new ValueTask<int>(0);
 
         BulkEntityValidator.ThrowIfAnyNull(entityList, nameof(entities));
+        BulkCommandTypeValidator.ThrowIfNotText(options, "BulkDeleteAsync");
 
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
@@ -392,7 +393,11 @@ public static partial class Jaunty
                         try
                         {
     #if NET8_0_OR_GREATER
-                            await transaction!.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+                            // Null-conditional, not null-forgiving: when ownTransaction is true and
+                            // BeginTransactionAsync itself threw, transaction is still null. The sync twin
+                            // and this file's own netstandard branch already guard it this way.
+                            if (transaction is not null)
+                                await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
     #else
                             transaction?.Rollback();
     #endif

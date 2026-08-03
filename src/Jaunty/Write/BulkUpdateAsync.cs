@@ -239,6 +239,7 @@ public static partial class Jaunty
             return new ValueTask<int>(0);
 
         BulkEntityValidator.ThrowIfAnyNull(entityList, nameof(entities));
+        BulkCommandTypeValidator.ThrowIfNotText(options, "BulkUpdateAsync");
 
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
