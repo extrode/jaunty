@@ -102,17 +102,58 @@ public class ParameterBinderInternalsTests
     // B3-3: the un-expanded collection-property path
     // ------------------------------------------------------------------
 
+    // AUD-R35-012 rewrote this test. It used to assert 2 bound parameters, which pinned the defect:
+    // the null collection was skipped, `IN @Ids` was left unrewritten, and the SQL reached the
+    // provider verbatim as a syntax error. The count assertion could not see that, because it never
+    // executed the SQL. A null collection now behaves exactly as an empty one does.
     [Fact]
-    public void Bind_CollectionPropertyThatIsNull_StillBindsTheScalarParameters()
+    public void Bind_CollectionPropertyThatIsNull_ExpandsToTheEmptySetSubquery()
     {
-        // This shape routes through BindDynamic with the original SQL rather than a cached template,
-        // which is where the redundant re-parse lived. Behaviour must be unchanged.
         var command = new FakeCommand { CommandText = "SELECT * FROM T WHERE A = @A AND Id IN @Ids" };
 
         ParameterBinder.Bind(command, new NullableCollectionParams { A = 7, Ids = null });
 
-        Assert.Equal(2, command.Parameters.Count);
+        Assert.DoesNotContain("@Ids", command.CommandText);
+        Assert.Contains("IN (SELECT NULL WHERE 1 = 0)", command.CommandText);
+        Assert.Equal(1, command.Parameters.Count);
         Assert.Equal(7, ((IDbDataParameter)command.Parameters[0]!).Value);
+    }
+
+    [Fact]
+    public void Bind_CollectionPropertyThatIsNull_MatchesTheEmptyCollectionExactly()
+    {
+        const string Sql = "SELECT * FROM T WHERE A = @A AND Id IN @Ids";
+
+        var nullCase = new FakeCommand { CommandText = Sql };
+        ParameterBinder.Bind(nullCase, new NullableCollectionParams { A = 7, Ids = null });
+
+        var emptyCase = new FakeCommand { CommandText = Sql };
+        ParameterBinder.Bind(emptyCase, new NullableCollectionParams { A = 7, Ids = [] });
+
+        Assert.Equal(emptyCase.CommandText, nullCase.CommandText);
+        Assert.Equal(emptyCase.Parameters.Count, nullCase.Parameters.Count);
+    }
+
+    [Fact]
+    public void Bind_NullStringAndNullBlob_StillBindAsScalarDbNull()
+    {
+        // IsCollectionType excludes string and byte[], so the AUD-R35-012 branch must not claim
+        // them - a null string or blob is a legitimate scalar NULL, not an empty IN list.
+        var command = new FakeCommand { CommandText = "SELECT * FROM T WHERE Name = @Name AND Data = @Data" };
+
+        ParameterBinder.Bind(command, new NullScalarParams { Name = null, Data = null });
+
+        Assert.Contains("@Name", command.CommandText);
+        Assert.Contains("@Data", command.CommandText);
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Equal(DBNull.Value, ((IDbDataParameter)command.Parameters[0]!).Value);
+        Assert.Equal(DBNull.Value, ((IDbDataParameter)command.Parameters[1]!).Value);
+    }
+
+    private sealed class NullScalarParams
+    {
+        public string? Name { get; set; }
+        public byte[]? Data { get; set; }
     }
 
     [Fact]
