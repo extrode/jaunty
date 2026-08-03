@@ -32,7 +32,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public IJoinedQuery<TFrom, TJoin> Where(string column, object value)
     {
-        string paramName = $"{_dialect.ParameterPrefix}{column.Replace(".", "_")}";
+        // AUD-R35-014: uniquified and sanitized, so filtering one column twice is a range filter
+        // rather than a duplicate-parameter throw. See ParameterCollection.CreateUniqueName.
+        string paramName = _parameters.CreateUniqueName(_dialect.ParameterPrefix, column);
         string escapedColumn = EscapeQualifiedColumn(column);
         _conditions.Add(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.None));
         _parameters.Add(paramName, value);
