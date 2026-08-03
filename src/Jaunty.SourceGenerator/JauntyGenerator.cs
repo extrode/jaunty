@@ -132,6 +132,22 @@ public partial class JauntyGenerator : IIncrementalGenerator
     private const string JauntyTableAttribute = "Jaunty.Attributes.TableAttribute";
     private const string DataAnnotationsTableAttribute = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";
 
+    // AUD-R35-070. The rest of the recognized set, listed Jaunty-first because that is the
+    // precedence MetadataBuilder applies: it asks for Jaunty's typed attribute and only falls back
+    // to the DataAnnotations name when there is none. Matching by full name rather than simple name
+    // is what keeps a consumer's own ColumnAttribute/NotMappedAttribute - both names several
+    // libraries define - from renaming or dropping a column on the generated path while reflection
+    // maps it as declared. AUD-R34-031 fixed exactly this hazard for [Table] alone.
+    private const string JauntyColumnAttribute = "Jaunty.Attributes.ColumnAttribute";
+    private const string DataAnnotationsColumnAttribute = "System.ComponentModel.DataAnnotations.Schema.ColumnAttribute";
+    private const string JauntyKeyAttribute = "Jaunty.Attributes.KeyAttribute";
+    private const string DataAnnotationsKeyAttribute = "System.ComponentModel.DataAnnotations.KeyAttribute";
+    private const string JauntyIgnoreAttribute = "Jaunty.Attributes.IgnoreAttribute";
+    private const string DataAnnotationsNotMappedAttribute = "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute";
+    private const string JauntyDatabaseGeneratedAttribute = "Jaunty.Attributes.DatabaseGeneratedAttribute";
+    private const string DataAnnotationsDatabaseGeneratedAttribute = "System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute";
+    private const string JauntyEnumStorageAttribute = "Jaunty.Attributes.EnumStorageAttribute";
+
     /// <summary>The interface a hand-written mapper implements, by metadata name.</summary>
     private const string MappedInterfaceMetadataName = "IMapped`1";
 
@@ -434,7 +450,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         foreach (IPropertySymbol? prop in allProperties)
         {
             // Support [Ignore] and [NotMapped]
-            if (HasAttribute(prop, "IgnoreAttribute") || HasAttribute(prop, "NotMappedAttribute")) continue;
+            if (HasRecognizedAttribute(prop, JauntyIgnoreAttribute, DataAnnotationsNotMappedAttribute)) continue;
 
             // A get-only property has no SetMethod at all; an init-only property has one, but it
             // can only be assigned inside an object initializer, not via the post-construction
@@ -476,7 +492,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             }
 
             // Support [Column] from both
-            AttributeData? columnAttr = GetAttribute(prop, "ColumnAttribute");
+            AttributeData? columnAttr = GetRecognizedAttribute(prop, JauntyColumnAttribute, DataAnnotationsColumnAttribute);
             // AUD-R32-006: an empty [Column("")] falls back to the property name rather than
             // generating a mapping to "". The null-coalesce alone did not catch it, and the
             // reflection MetadataBuilder carries the matching guard so both modes agree.
@@ -484,10 +500,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
             var columnName = string.IsNullOrEmpty(columnAttrName) ? prop.Name : columnAttrName!;
 
             // Support [Key] from both, plus conventions
-            var isKey = HasAttribute(prop, "KeyAttribute") || prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals($"{className}Id", StringComparison.OrdinalIgnoreCase);
+            var isKey = HasRecognizedAttribute(prop, JauntyKeyAttribute, DataAnnotationsKeyAttribute) || prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals($"{className}Id", StringComparison.OrdinalIgnoreCase);
 
             // Support [DatabaseGenerated] from both
-            AttributeData? dbGenAttr = GetAttribute(prop, "DatabaseGeneratedAttribute");
+            AttributeData? dbGenAttr = GetRecognizedAttribute(prop, JauntyDatabaseGeneratedAttribute, DataAnnotationsDatabaseGeneratedAttribute);
             var isIdentity = false;
             var isComputed = false;
             if (dbGenAttr != null)
@@ -529,7 +545,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // type keeps the model free of Jaunty-assembly references.
             int? enumStorageOverride = null;
             if (underlyingType.TypeKind == TypeKind.Enum
-                && GetAttribute(prop, "EnumStorageAttribute")?.ConstructorArguments.FirstOrDefault().Value is int storageValue)
+                && GetRecognizedAttribute(prop, JauntyEnumStorageAttribute)?.ConstructorArguments.FirstOrDefault().Value is int storageValue)
             {
                 enumStorageOverride = storageValue;
             }
@@ -1369,22 +1385,60 @@ public partial class JauntyGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Returns <see langword="true"/> when the given symbol has an attribute whose class name
-    /// matches <paramref name="attributeName"/> (simple name comparison, no namespace).
+    /// Returns the first <see cref="AttributeData"/> on <paramref name="symbol"/> whose class is,
+    /// or derives from, one of <paramref name="recognizedFullNames"/>, or <see langword="null"/>
+    /// when the symbol carries none of them.
     /// </summary>
     /// <param name="symbol">The symbol to inspect.</param>
-    /// <param name="attributeName">The simple attribute class name (e.g. <c>"KeyAttribute"</c>).</param>
-    private static bool HasAttribute(ISymbol symbol, string attributeName)
-        => symbol.GetAttributes().Any(a => a.AttributeClass?.Name == attributeName);
+    /// <param name="recognizedFullNames">
+    /// The recognized attribute types by fully-qualified name, in precedence order - the first name
+    /// that matches wins, regardless of the order the attributes appear in source, so a type
+    /// carrying both Jaunty's attribute and the DataAnnotations one resolves the same way
+    /// <c>MetadataBuilder</c> resolves it.
+    /// </param>
+    /// <remarks>
+    /// AUD-R35-070. Replaces a pair of helpers that compared <c>AttributeClass?.Name</c>, the simple
+    /// class name, so any namespace's <c>[Column]</c>, <c>[NotMapped]</c>, <c>[Key]</c>,
+    /// <c>[DatabaseGenerated]</c> or <c>[EnumStorage]</c> was honoured. Base types are walked
+    /// because <c>PropertyInfo.GetCustomAttribute&lt;T&gt;</c> on the reflection side matches a
+    /// derived attribute too.
+    /// </remarks>
+    private static AttributeData? GetRecognizedAttribute(ISymbol symbol, params string[] recognizedFullNames)
+    {
+        ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+        foreach (string fullName in recognizedFullNames)
+        {
+            foreach (AttributeData attribute in attributes)
+            {
+                if (IsOrDerivesFrom(attribute.AttributeClass, fullName))
+                    return attribute;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
-    /// Returns the first <see cref="AttributeData"/> on <paramref name="symbol"/> whose class name
-    /// matches <paramref name="attributeName"/>, or <see langword="null"/> if none is found.
+    /// Returns <see langword="true"/> when <paramref name="symbol"/> carries one of
+    /// <paramref name="recognizedFullNames"/>. See <see cref="GetRecognizedAttribute"/>.
     /// </summary>
-    /// <param name="symbol">The symbol to inspect.</param>
-    /// <param name="attributeName">The simple attribute class name (e.g. <c>"ColumnAttribute"</c>).</param>
-    private static AttributeData? GetAttribute(ISymbol symbol, string attributeName)
-        => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
+    private static bool HasRecognizedAttribute(ISymbol symbol, params string[] recognizedFullNames)
+        => GetRecognizedAttribute(symbol, recognizedFullNames) is not null;
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="attributeClass"/> is
+    /// <paramref name="fullName"/> or inherits from it.
+    /// </summary>
+    private static bool IsOrDerivesFrom(INamedTypeSymbol? attributeClass, string fullName)
+    {
+        for (INamedTypeSymbol? type = attributeClass; type is not null; type = type.BaseType)
+        {
+            if (type.ToDisplayString() == fullName)
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// The <c>[Table]</c> attribute the generator recognizes - Jaunty's or DataAnnotations' - or
@@ -1394,7 +1448,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// AUD-R34-031 (round-33 carry-forward). Entity discovery keys on the two attributes by
     /// <em>fully-qualified metadata name</em> (<c>ForAttributeWithMetadataName</c>, narrowed in
     /// AUD-R25), but the two places that ask a symbol about its <c>[Table]</c> after discovery went
-    /// through <see cref="GetAttribute(ISymbol, string)"/>, which compares the simple name only. A
+    /// through a helper that compared the simple name only (since replaced by
+    /// <see cref="GetRecognizedAttribute"/>, AUD-R35-070). A
     /// consumer's own unrelated <c>TableAttribute</c> - the name is common enough that several
     /// libraries define one - therefore had two effects it should not have. On a hand-written
     /// <c>IMapped&lt;T&gt;</c> it suppressed the JAUNTYGEN002 warning, which exists precisely because
@@ -1404,11 +1459,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// table with nothing reported.
     /// </remarks>
     private static AttributeData? GetRecognizedTableAttribute(ISymbol symbol)
-        => symbol.GetAttributes().FirstOrDefault(static a =>
-        {
-            var name = a.AttributeClass?.ToDisplayString();
-            return name == JauntyTableAttribute || name == DataAnnotationsTableAttribute;
-        });
+        => GetRecognizedAttribute(symbol, JauntyTableAttribute, DataAnnotationsTableAttribute);
 
     /// <summary>
     /// Escapes a value for safe interpolation inside a generated C# string literal, doubling
