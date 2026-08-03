@@ -39,9 +39,48 @@ namespace Jaunty.Core;
 /// </example>
 /// <seealso cref="Jaunty.QueryMultiple(IDbConnection, string)"/>
 /// <seealso cref="Jaunty.QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>
-public sealed class GridReader(IDataReader reader, IDbConnection connection, bool closeConnection, IDbCommand? command = null) : IDisposable, IAsyncDisposable
+public sealed class GridReader : IDisposable, IAsyncDisposable
 {
+    private readonly IDataReader reader;
+    private readonly IDbConnection connection;
+    private readonly bool closeConnection;
+    private readonly IDbCommand? command;
+
     private bool _consumed;
+
+    /// <summary>
+    /// Initializes a new <see cref="GridReader"/> over an open reader.
+    /// </summary>
+    /// <param name="reader">The reader positioned on the first result set.</param>
+    /// <param name="connection">The connection the reader was opened on.</param>
+    /// <param name="closeConnection">Whether disposing this instance should close the connection.</param>
+    /// <param name="command">The command that produced the reader, disposed with this instance.</param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="reader"/> or <paramref name="connection"/> is <see langword="null"/>.
+    /// </exception>
+    /// <remarks>
+    /// AUD-R35-150. This was a primary constructor that validated nothing, on a <c>public sealed</c>
+    /// type: <c>new GridReader(null!, null!, false)</c> was accepted and failed later with a bare
+    /// <see cref="NullReferenceException"/> from <c>reader.Read()</c>, or from <c>connection.State</c>
+    /// during <see cref="Dispose"/> - which is the worse one, because it throws out of a
+    /// <c>using</c> block's implicit finally. Every other public entry point in the library opens
+    /// with <c>ThrowIfNull</c>; <c>ExecuteQueryMultiple</c> being the only in-repo caller does not
+    /// take the type off the public surface.
+    /// </remarks>
+    public GridReader(IDataReader reader, IDbConnection connection, bool closeConnection, IDbCommand? command = null)
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(connection);
+#else
+        if (reader is null) throw new ArgumentNullException(nameof(reader));
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+#endif
+        this.reader = reader;
+        this.connection = connection;
+        this.closeConnection = closeConnection;
+        this.command = command;
+    }
 
     /// <summary>
     /// Reads all rows from the current result set as a list of entities of type <typeparamref name="T"/>.
