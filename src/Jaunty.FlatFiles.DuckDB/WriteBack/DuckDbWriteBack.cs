@@ -111,9 +111,69 @@ public sealed partial class DuckDb
         var format = InferFormatFromExtension(outputPath);
         var fullPath = Path.GetFullPath(outputPath);
 
+        RequireNotTheSourceItself(source, fullPath);
+
         return string.Equals(format, source.Format, StringComparison.OrdinalIgnoreCase)
             ? _dialect.GenerateCopyToSql(source.TableName, fullPath, source)
             : _dialect.GenerateCopyToSql(source.TableName, fullPath, format);
+    }
+
+    /// <summary>
+    /// Rejects an output path that is one of <paramref name="source"/>'s own files.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-034. <c>Save&lt;T&gt;(string)</c> and <c>Export&lt;T&gt;(string)</c> both document
+    /// that the original file is not modified - <c>IFlatFile.Save&lt;T&gt;(string)</c> says "Saves
+    /// modified data to a new file (non-destructive). The original file is not modified." - and both
+    /// took the direct <c>COPY ... TO</c> route whatever path they were handed, so passing the
+    /// source's own path truncated it in place. Where the source is still an unmutated VIEW over the
+    /// file, the COPY is writing to the very path its scan is reading. That is precisely the hazard
+    /// <c>Save&lt;T&gt;(WriteBackMode.Overwrite)</c> spends a temp file and an atomic
+    /// <see cref="File.Move(string, string, bool)"/> to avoid, and the same-path case was silent:
+    /// no exception, the loss visible only in the file afterwards. AUD-R26-063 hardened the
+    /// <c>WriteBackMode</c> path and left this one.
+    ///
+    /// <para>
+    /// Every path is compared fully resolved, and every file of a multi-file source is checked, not
+    /// just <see cref="IFileSource.FilePath"/> - a glob or explicit list source has no single
+    /// original to overwrite, and clobbering any member of it is the same loss.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The source being written out.</param>
+    /// <param name="fullOutputPath">The already-resolved output path.</param>
+    /// <exception cref="ArgumentException">The output path is one of the source's own files.</exception>
+    private static void RequireNotTheSourceItself(IFileSource source, string fullOutputPath)
+    {
+        StringComparison comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        foreach (string sourcePath in source.FilePaths)
+        {
+            string fullSourcePath;
+
+            try
+            {
+                fullSourcePath = Path.GetFullPath(sourcePath);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                // A source path that cannot be resolved (a URL scheme such as s3:// among them)
+                // cannot collide with a local output path, so it is not this guard's business.
+                continue;
+            }
+
+            if (!string.Equals(fullSourcePath, fullOutputPath, comparison))
+                continue;
+
+            throw new ArgumentException(
+                $"'{fullOutputPath}' is the file source '{source.TableName}' reads from, and this " +
+                "overload is documented as non-destructive - writing there would truncate the " +
+                "original while it is still being read. Write to a different path, or call " +
+                "Save<T>(WriteBackMode.Overwrite), which replaces the file atomically through a " +
+                "temporary one.",
+                "outputPath");
+        }
     }
 
     private static string InferFormatFromExtension(string path)
