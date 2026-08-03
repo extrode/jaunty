@@ -71,7 +71,7 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <remarks>
     /// If null, the connection's default command timeout is used.
     /// </remarks>
-    public readonly int? CommandTimeout = commandTimeout;
+    public readonly int? CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
 
     /// <summary>
     /// Gets the type of command to execute.
@@ -127,8 +127,13 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <summary>
     /// Creates a new <see cref="CommandOptions{T}"/> with the specified timeout.
     /// </summary>
-    /// <param name="seconds">The command timeout in seconds.</param>
+    /// <param name="seconds">The command timeout in seconds. Zero means no timeout.</param>
     /// <returns>A new <see cref="CommandOptions{T}"/> instance with the specified timeout.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// AUD-R35-149. <paramref name="seconds"/> is negative. This used to be accepted here and to
+    /// surface as a provider-specific exception from inside command execution, naming nothing the
+    /// caller had written.
+    /// </exception>
     public static CommandOptions<T> WithTimeout(int seconds) => new(commandTimeout: seconds);
 
     /// <summary>
@@ -283,7 +288,7 @@ public readonly struct CommandOptions(IDbTransaction? transaction = null, int? c
     /// <summary>
     /// Gets the command timeout in seconds, if specified.
     /// </summary>
-    public readonly int? CommandTimeout = commandTimeout;
+    public readonly int? CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
 
     /// <summary>
     /// Gets the type of command to execute.
@@ -300,8 +305,9 @@ public readonly struct CommandOptions(IDbTransaction? transaction = null, int? c
     /// <summary>
     /// Creates a new <see cref="CommandOptions"/> with the specified timeout.
     /// </summary>
-    /// <param name="seconds">The command timeout in seconds.</param>
+    /// <param name="seconds">The command timeout in seconds. Zero means no timeout.</param>
     /// <returns>A new <see cref="CommandOptions"/> instance with the specified timeout.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">AUD-R35-149. <paramref name="seconds"/> is negative.</exception>
     public static CommandOptions WithTimeout(int seconds) => new(commandTimeout: seconds);
 
     /// <summary>
