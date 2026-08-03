@@ -547,6 +547,33 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         Assert.Throws<ArgumentException>(() => connection.ImportCsv("table", ""));
     }
 
+    // AUD-R35-100 (round-35 batch 03a). CsvImportOptions.Encoding is non-nullable with an unguarded
+    // public setter, so null is reachable; unvalidated it surfaced from deep inside the reader as an
+    // ArgumentNullException naming "encoding", with nothing tying it to CsvImportOptions.
+
+    [Fact]
+    public void ImportCsv_NullEncoding_ThrowsArgumentNullExceptionNamingTheOption()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        var options = new CsvImportOptions { Encoding = null! };
+
+        var ex = Assert.Throws<ArgumentNullException>(() => connection.ImportCsv(TableName, ResolveCsvPath(), options));
+
+        Assert.Contains("CsvImportOptions.Encoding", ex.Message);
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_NullEncoding_ThrowsArgumentNullExceptionNamingTheOption()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        var options = new CsvImportOptions { Encoding = null! };
+
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(
+            async () => await connection.ImportCsvAsync(TableName, ResolveCsvPath(), options));
+
+        Assert.Contains("CsvImportOptions.Encoding", ex.Message);
+    }
+
     [Fact]
     public void ImportCsv_NonExistentFile_ThrowsFileNotFoundException()
     {
