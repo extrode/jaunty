@@ -121,12 +121,33 @@ public sealed class GeneratedReadFallbackTests
             ReadWith("ref_id", "99999999-8888-7777-6666-555555555555").RefId);
     }
 
+    /// <summary>
+    /// AUD-R35-049. This used to be <c>AGuid_IsBuiltFromBytes</c>, asserting that the generated
+    /// path returns <c>new Guid(bytes)</c> - which round-trips a locally produced
+    /// <c>ToByteArray()</c> and so passed, while being wrong on every provider whose binary
+    /// layout is not SQL Server's. Cluster B: a test pinning the defect. The core converter
+    /// refuses a byte[] for a Guid on purpose and says why; the generated path now agrees.
+    /// </summary>
     [Fact]
-    public void AGuid_IsBuiltFromBytes()
+    public void AGuid_FromBytes_IsRefusedRatherThanGuessed()
     {
-        var expected = Guid.Parse("99999999-8888-7777-6666-555555555555");
+        var value = Guid.Parse("99999999-8888-7777-6666-555555555555");
 
-        Assert.Equal(expected, ReadWith("ref_id", expected.ToByteArray()).RefId);
+        var ex = Assert.Throws<InvalidCastException>(() => ReadWith("ref_id", value.ToByteArray()));
+
+        Assert.Contains("byte order", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("will not guess it", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A byte[] property is still read as a byte[] - the route the message points the caller at.
+    /// </summary>
+    [Fact]
+    public void AGuidAlreadyOfTheRightType_IsStillReturned()
+    {
+        var value = Guid.Parse("99999999-8888-7777-6666-555555555555");
+
+        Assert.Equal(value, ReadWith("ref_id", value).RefId);
     }
 
     /// <summary>
