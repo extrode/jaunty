@@ -114,7 +114,33 @@ public static class SqlDialectFactory
             if (cachedType.Name == connectionTypeName)
                 _dialectCache.TryRemove(cachedType, out _);
         }
+
+        InvalidateDialectDerivedCaches();
     }
+
+    /// <summary>
+    /// Marks every configuration-derived cache as superseded after a dialect registration change.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-013. Clearing <c>_dialectCache</c> makes the <em>next</em> resolution return the new
+    /// dialect, but it does nothing about what was already derived from the old one. The sharpest
+    /// case is <c>CrudSqlCache</c>, keyed on (entity type, connection type) and holding INSERT,
+    /// UPDATE, DELETE, SELECT, upsert and last-insert-id statements built entirely from the dialect
+    /// - quoting, upsert form, identity SQL, paging. One prior <c>Insert</c>/<c>Update</c>/
+    /// <c>Delete</c>/<c>Get</c> for that pair was enough to fix all of it, so registering a dialect
+    /// afterwards changed what <c>GetDialect</c> returned while every cached statement kept the
+    /// previous dialect's SQL for the life of the process - and the calls that used it succeeded,
+    /// quietly, against the wrong grammar.
+    /// <para>
+    /// This is the same failure mode <see cref="InvalidateResolvedDialects"/> was written to close
+    /// for <c>UseNativeBulkCopy</c>, closed at the dialect layer only and not at the layer caching
+    /// what the dialect produced. Bumping the generation is the layer-independent form: any cache
+    /// scoped to <c>ConfigurationGeneration</c> rebuilds on its next lookup, which is a handful of
+    /// rebuilds at registration time - registration being a startup or test-cleanup operation, not
+    /// a hot path.
+    /// </para>
+    /// </remarks>
+    private static void InvalidateDialectDerivedCaches() => Internals.ConfigurationGeneration.Invalidate();
 
     /// <summary>
     /// Drops every resolved-and-cached dialect so the next <see cref="GetDialect"/> re-runs
@@ -133,7 +159,11 @@ public static class SqlDialectFactory
     /// reason; enabling bulk copy needed the same treatment and did not have it.
     /// </para>
     /// </remarks>
-    internal static void InvalidateResolvedDialects() => _dialectCache.Clear();
+    internal static void InvalidateResolvedDialects()
+    {
+        _dialectCache.Clear();
+        InvalidateDialectDerivedCaches();
+    }
 
     /// <summary>
     /// Drops every custom dialect registration along with the resolved-dialect cache, returning
@@ -156,6 +186,7 @@ public static class SqlDialectFactory
     {
         _customDialects.Clear();
         _dialectCache.Clear();
+        InvalidateDialectDerivedCaches();
     }
 
     /// <summary>
@@ -170,6 +201,7 @@ public static class SqlDialectFactory
 
         var typeName = typeof(TConnection).Name;
         _customDialects[typeName] = dialect;
+        InvalidateDialectDerivedCaches();
 
         // AUD-R26: this wrote the raw dialect straight into the resolution cache, skipping the
         // bulk-copy enhancement step every built-in resolution goes through. Enhancement is a
