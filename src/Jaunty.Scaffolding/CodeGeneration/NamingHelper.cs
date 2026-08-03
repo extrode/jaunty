@@ -113,6 +113,36 @@ public static class NamingHelper
         ("aches", "ache"),
     ];
 
+    // AUD-R35-035: the same problem a third time, and the last of the closed classes. The
+    // "-ies -> -y" rule is right for the very large -y class (Categories, Companies, Entities,
+    // Cities) and wrong for the small class whose singular already ends in -ie and whose plural
+    // merely adds -s. It truncated every one of them: measured Movies -> "Movy",
+    // Cookies -> "Cooky", Calories -> "Calory", Zombies -> "Zomby", Rookies -> "Rooky",
+    // Series -> "Sery", Species -> "Specy". "Movies" is not an exotic table name.
+    //
+    // The shorter members (Ties, Pies, Lies) escaped only by accident, via the `word.Length > 4`
+    // guard on the -ies rule sending them to the generic -s rule; they are listed anyway rather
+    // than left depending on a length guard that says nothing about them.
+    //
+    // Series and Species are their own plurals, so their entries map to themselves - the table
+    // is the right place for them precisely because no shape rule can see it.
+    private static readonly (string Plural, string Singular)[] IeSingulars =
+    [
+        ("calories", "calorie"),
+        ("brownies", "brownie"),
+        ("cookies", "cookie"),
+        ("zombies", "zombie"),
+        ("rookies", "rookie"),
+        ("movies", "movie"),
+        ("genies", "genie"),
+        ("series", "series"),
+        ("species", "species"),
+        ("ties", "tie"),
+        ("pies", "pie"),
+        ("lies", "lie"),
+        ("dies", "die"),
+    ];
+
     /// <summary>
     /// Derives a generated entity class name from a table name, applying PascalCase
     /// conversion, optional singularization, prefix/suffix, and identifier escaping.
@@ -213,7 +243,15 @@ public static class NamingHelper
         if (IrregularPlurals.TryGetValue(word, out var singular))
             return singular;
 
-        // Rules in order of specificity
+        // Rules in order of specificity.
+        //
+        // AUD-R35-035: the closed class first, exactly as the sibilant and -che classes are
+        // checked before their shape rules below. The -ies rule truncates every -ie singular it
+        // reaches, so nothing in IeSingulars may reach it.
+        var ie = TrySingularizeBySuffix(word, IeSingulars);
+        if (ie != null)
+            return ie;
+
         // -ies -> -y (e.g., categories -> category)
         if (word.EndsWith("ies", StringComparison.OrdinalIgnoreCase) && word.Length > 4)
             return word[..^3] + "y";

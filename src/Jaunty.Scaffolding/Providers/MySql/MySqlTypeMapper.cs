@@ -68,9 +68,18 @@ public sealed class MySqlTypeMapper : ITypeMapper
 
             // Date/Time types
             "date" => new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true, RequiredUsing = "System" },
-            "time" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
+            // AUD-R35-039: TimeSpan, not TimeOnly. MySQL's TIME is a signed duration spanning
+            // -838:59:59 to 838:59:59, not a clock time, and MySqlConnector returns TimeSpan for it.
+            // Every value outside [00:00:00, 24:00:00) - which is the whole reason the type has that
+            // range - was unrepresentable, and the property type did not match what the driver hands
+            // back either way. The mapping reads as a copy of SqlServerTypeMapper's, where TimeOnly
+            // is right because SQL Server's time genuinely is a time of day.
+            "time" => new CSharpTypeInfo { TypeName = "TimeSpan", IsValueType = true, RequiredUsing = "System" },
             "datetime" or "timestamp" => new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true, RequiredUsing = "System" },
-            "year" => new CSharpTypeInfo { TypeName = "short", IsValueType = true },
+            // AUD-R35-040: int, not short. The 1901-2155 range fits either, but MySqlConnector
+            // surfaces YEAR columns as int, and the scaffolded property has to match what the driver
+            // returns - the same driver-agreement issue AUD-R26-017 fixed for the UNSIGNED family.
+            "year" => new CSharpTypeInfo { TypeName = "int", IsValueType = true },
 
             // Enum and Set (map to string)
             "enum" or "set" => new CSharpTypeInfo { TypeName = "string", IsValueType = false },
@@ -80,7 +89,11 @@ public sealed class MySqlTypeMapper : ITypeMapper
 
             // Spatial types - map to byte[] for now
             "geometry" or "point" or "linestring" or "polygon" or "multipoint" or
-            "multilinestring" or "multipolygon" or "geometrycollection" =>
+            // AUD-R35-041: "geomcollection" as well, MySQL 8's preferred spelling for the same
+            // type. INFORMATION_SCHEMA.COLUMNS.DATA_TYPE reports whichever spelling the column was
+            // declared with, so one declaration scaffolded to byte[] and the other fell through to
+            // the object catch-all.
+            "multilinestring" or "multipolygon" or "geometrycollection" or "geomcollection" =>
                 new CSharpTypeInfo { TypeName = "byte[]", IsValueType = false },
 
             // Default to object for unknown types

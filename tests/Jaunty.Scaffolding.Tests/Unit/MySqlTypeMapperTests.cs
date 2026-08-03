@@ -151,10 +151,13 @@ public class MySqlTypeMapperTests
 
     [Theory]
     [InlineData("date", "DateOnly")]
-    [InlineData("time", "TimeOnly")]
+    // AUD-R35-039: TimeSpan, not TimeOnly. MySQL's TIME is a signed interval spanning
+    // -838:59:59 to 838:59:59, which TimeOnly cannot represent; the connector returns TimeSpan.
+    [InlineData("time", "TimeSpan")]
     [InlineData("datetime", "DateTime")]
     [InlineData("timestamp", "DateTime")]
-    [InlineData("year", "short")]
+    // AUD-R35-040: int, not short. YEAR reaches 2155, which overflows short.
+    [InlineData("year", "int")]
     public void MapToCSharpType_DateTimeTypes_MapsCorrectly(string sqlType, string expected)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
@@ -192,6 +195,8 @@ public class MySqlTypeMapperTests
     [InlineData("multilinestring")]
     [InlineData("multipolygon")]
     [InlineData("geometrycollection")]
+    // AUD-R35-041: MySQL 8's preferred spelling for the same type.
+    [InlineData("geomcollection")]
     public void MapToCSharpType_SpatialTypes_ReturnsByteArray(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));

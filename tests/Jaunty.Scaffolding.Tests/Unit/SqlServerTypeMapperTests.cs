@@ -74,6 +74,8 @@ public class SqlServerTypeMapperTests
     [InlineData("nvarchar", "string")]
     [InlineData("ntext", "string")]
     [InlineData("xml", "string")]
+    // AUD-R35-042: sysname is nvarchar(128) NOT NULL, and the catch-all answered "object".
+    [InlineData("sysname", "string")]
     public void MapToCSharpType_StringTypes_ReturnsString(string sqlType, string expectedCSharpType)
     {
         var column = CreateColumn(sqlType);
