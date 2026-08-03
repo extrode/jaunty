@@ -93,6 +93,9 @@ public static partial class Jaunty
     /// <para>
     /// Uses <strong>partial mapping mode</strong> - only properties with matching columns are mapped.
     /// </para>
+    /// <para>
+    /// <strong>Important:</strong> The connection remains open until the async enumeration completes.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -147,6 +150,9 @@ public static partial class Jaunty
     /// <para>
     /// Use this overload when you need to execute the query within a transaction or with a specific timeout.
     /// </para>
+    /// <para>
+    /// <strong>Important:</strong> The connection remains open until the async enumeration completes.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -197,6 +203,9 @@ public static partial class Jaunty
     /// <remarks>
     /// <para>
     /// This is the most flexible overload, combining parameter binding with execution options.
+    /// </para>
+    /// <para>
+    /// <strong>Important:</strong> The connection remains open until the async enumeration completes.
     /// </para>
     /// </remarks>
     /// <example>
