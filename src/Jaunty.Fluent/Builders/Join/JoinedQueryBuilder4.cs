@@ -193,12 +193,20 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return this;
     }
 
-    public IJoinedQuery4<T1, T2, T3, T4> Where(string column, object value)
+    public IJoinedQuery4<T1, T2, T3, T4> Where(string column, object? value)
     {
         // AUD-R35-014: see ParameterCollection.CreateUniqueName.
         string paramName = _parent._parent.GetParameters()
             .CreateUniqueName(_parent._parent.Dialect.ParameterPrefix, column);
         string escapedColumn = EscapeQualifiedColumn(column);
+
+        // AUD-R35-184: a null is IS NULL. See JoinedQueryBuilderWhere.Where(string, object?).
+        if (value is null)
+        {
+            _parent._parent.AddWhereCondition(WhereCondition.Column($"{escapedColumn} IS NULL", LogicalOperator.None));
+            return this;
+        }
+
         _parent._parent.AddWhereCondition(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.None));
         _parent._parent.GetParameters().Add(paramName, value);
         return this;

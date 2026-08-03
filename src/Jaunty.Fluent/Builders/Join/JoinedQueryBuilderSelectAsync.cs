@@ -57,6 +57,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return await SelectWithMapperAsync(mapper, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<List<(TFrom From, TJoin Joined)>> SelectBothAsync(CancellationToken cancellationToken = default)
+        => await SelectBothInternalAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task<List<(T1, T2)>> SelectAsync<T1, T2>(CancellationToken cancellationToken = default)
         where T1 : new()
         where T2 : new()
