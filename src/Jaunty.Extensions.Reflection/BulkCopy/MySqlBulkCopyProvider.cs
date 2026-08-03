@@ -218,11 +218,11 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
     private static IDbCommand BuildChunkCommand(IDbConnection connection, IDbTransaction? transaction, string? schemaName, string tableName, string[] columnNames, int rows, BulkCopyOptions options)
     {
-        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName), global::Jaunty.Dialects.SqlIdentifierFlavor.MySql);
         if (schemaName is not null && schemaName.Length != 0)
-            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName));
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName), global::Jaunty.Dialects.SqlIdentifierFlavor.MySql);
         foreach (string columnName in columnNames)
-            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(columnName, nameof(columnNames));
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(columnName, nameof(columnNames), global::Jaunty.Dialects.SqlIdentifierFlavor.MySql);
 
         IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;

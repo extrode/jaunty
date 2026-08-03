@@ -151,11 +151,11 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     /// </summary>
     private static string QualifyTableName(string? schemaName, string tableName)
     {
-        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName), global::Jaunty.Dialects.SqlIdentifierFlavor.SqlServer);
         if (schemaName is null || schemaName.Length == 0)
             return tableName;
 
-        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName));
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName), global::Jaunty.Dialects.SqlIdentifierFlavor.SqlServer);
         return $"{schemaName}.{tableName}";
     }
 
