@@ -392,7 +392,23 @@ internal static class ParameterBinder
 
             var value = meta.Getter(parameters);
             if (value is null)
+            {
+                // AUD-R35-012. A null collection used to be skipped outright, so the placeholder
+                // was left unrewritten and `... WHERE Id IN @Ids` reached the provider verbatim -
+                // a syntax error naming neither Jaunty nor Ids. The empty collection two branches
+                // down is handled with care (an empty-set subquery), and null and empty are the
+                // two shapes a caller reaches by the same accident: a `List<int>?` left unset.
+                // They now behave identically. The declared type is what decides, since there is
+                // no value to inspect; IsCollectionType excludes string and byte[], so a null
+                // string or blob still binds as a DBNull scalar.
+                if (meta.Property is not null && IsCollectionType(meta.Property.PropertyType))
+                {
+                    expansions ??= new List<CollectionExpansion>(2);
+                    expansions.Add(new CollectionExpansion(sqlName, Array.Empty<object?>(), 0, meta.Property));
+                }
+
                 continue;
+            }
 
             if (IsCollection(value, out IEnumerable? items, out var count))
             {
