@@ -246,8 +246,22 @@ public sealed class FlatFileOptions
         where T : class, new()
         where TSource : IFileSource
     {
+        // AUD-R35-235: the sibling AddSource(IFileSource) throws ArgumentNullException for a null
+        // source; this overload guarded nothing, so a null factory threw NullReferenceException at
+        // the invocation and a factory returning null threw one from AddUnique's source.TableName.
+        // Both are documented custom-source extension points and they reported the same failure
+        // two different unnamed ways. A null return is not a null argument, so it gets
+        // InvalidOperationException naming the factory rather than a misattributed ArgumentNull.
+        if (factory is null)
+            throw new ArgumentNullException(nameof(factory));
+
         var tableName = TableNameResolver.Resolve<T>();
         TSource source = factory(tableName, filePath, typeof(T));
+
+        if (source is null)
+            throw new InvalidOperationException(
+                $"The factory passed to AddSource<{typeof(T).Name}, {typeof(TSource).Name}> returned null; it must return a file source.");
+
         configure?.Invoke(source);
         AddUnique(source);
         return this;
