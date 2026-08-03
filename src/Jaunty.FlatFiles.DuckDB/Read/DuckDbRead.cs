@@ -5,7 +5,6 @@ using DuckDB.NET.Data;
 using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.Fluent;
-using System.Globalization;
 using Jaunty.Internals;
 using Jaunty.Internals.Read;
 
@@ -68,6 +67,11 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
+        // AUD-R35-257: the sync path used to bind a null array and throw NullReferenceException
+        // from the binding loop; the async path threw ArgumentNullException from ToArray. Same
+        // mistake, two different failures, neither naming the argument at the call site.
+        ArgumentNullException.ThrowIfNull(parameters);
+
         return QueryInternal<T>(sql, parameters, default);
     }
 
@@ -80,17 +84,29 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
+        // AUD-R35-257: the sync path used to bind a null array and throw NullReferenceException
+        // from the binding loop; the async path threw ArgumentNullException from ToArray. Same
+        // mistake, two different failures, neither naming the argument at the call site.
+        ArgumentNullException.ThrowIfNull(parameters);
+
         return QueryInternal<T>(sql, parameters, options);
     }
 
     private List<T> QueryInternal<T>(string sql, (string Name, object? Value)[] parameters, CommandOptions options) where T : class, new()
-        => CommandObservation.Execute(
-            sql, DuckDbObservation.Describe(parameters), _connection, DuckDbObservation.Text,
-            () => QueryInternalDirect<T>(sql, parameters, options));
-
-    private List<T> QueryInternalDirect<T>(string sql, (string Name, object? Value)[] parameters, CommandOptions options) where T : class, new()
     {
-        CommandObservation.Log(sql, DuckDbObservation.Describe(parameters));
+        // AUD-R35-255: described once, as QueryInternalAsync already does. Describing separately
+        // for the interceptor and again for the logger allocated two identical dictionaries per
+        // read and let the audit record disagree with what was bound.
+        object described = DuckDbObservation.Describe(parameters);
+
+        return CommandObservation.Execute(
+            sql, described, _connection, DuckDbObservation.Text,
+            () => QueryInternalDirect<T>(sql, parameters, described, options));
+    }
+
+    private List<T> QueryInternalDirect<T>(string sql, (string Name, object? Value)[] parameters, object described, CommandOptions options) where T : class, new()
+    {
+        CommandObservation.Log(sql, described);
 
         using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = sql;

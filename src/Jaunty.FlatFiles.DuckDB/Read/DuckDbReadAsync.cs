@@ -4,7 +4,6 @@ using DuckDB.NET.Data;
 
 using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
-using System.Globalization;
 using Jaunty.Internals;
 using Jaunty.Internals.Read;
 
@@ -49,6 +48,11 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
+        // AUD-R35-257: the sync path used to bind a null array and throw NullReferenceException
+        // from the binding loop; the async path threw ArgumentNullException from ToArray. Same
+        // mistake, two different failures, neither naming the argument at the call site.
+        ArgumentNullException.ThrowIfNull(parameters);
+
         return await QueryInternalAsync<T>(sql, parameters, options, cancellationToken).ConfigureAwait(false);
     }
 
@@ -57,6 +61,11 @@ public sealed partial class DuckDb
     {
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        // AUD-R35-257: the sync path used to bind a null array and throw NullReferenceException
+        // from the binding loop; the async path threw ArgumentNullException from ToArray. Same
+        // mistake, two different failures, neither naming the argument at the call site.
+        ArgumentNullException.ThrowIfNull(parameters);
 
         return await QueryInternalAsync<T>(sql, parameters, default, cancellationToken).ConfigureAwait(false);
     }
