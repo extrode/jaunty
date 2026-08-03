@@ -115,6 +115,17 @@ public sealed partial class DuckDb
                 sb.Append('(');
                 T entity = entityList[chunkStart + row];
 
+                // AUD-R35-032: a null element used to surface as a bare NullReferenceException out
+                // of the compiled getter, naming neither the row nor the entity type. The
+                // single-entity overloads have guarded the same condition all along.
+                if (entity is null)
+                {
+                    throw new ArgumentException(
+                        $"The element at index {chunkStart + row} is null. A batch insert of " +
+                        $"{typeof(T).Name} cannot contain null entities.",
+                        nameof(entities));
+                }
+
                 for (int col = 0; col < mappingList.Count; col++)
                 {
                     if (col > 0) sb.Append(", ");
@@ -126,10 +137,14 @@ public sealed partial class DuckDb
             }
 
             var sql = $"INSERT INTO {_dialect.EscapeTableName(null, source.TableName)} ({columnsSql}) VALUES {sb}";
-            totalInserted += await NonQueryExecutor.ExecuteAsync(_connection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+            int chunkInserted = await NonQueryExecutor.ExecuteAsync(_connection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+            totalInserted += chunkInserted;
+
+            // AUD-R35-033: see the sync twin - marked per chunk so a cancellation at the check above
+            // cannot leave committed rows behind an unset flag.
+            if (chunkInserted > 0) _modified.TryAdd(typeof(T), true);
         }
 
-        if (totalInserted > 0) _modified.TryAdd(typeof(T), true);
         return totalInserted;
     }
 }
