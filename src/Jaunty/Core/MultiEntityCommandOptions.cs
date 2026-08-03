@@ -43,7 +43,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2>
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
-        ExpectedRowCount = expectedRowCount;
+        ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2)&gt; for use with the multi-entity query core.</summary>
@@ -90,7 +90,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3>
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
-        ExpectedRowCount = expectedRowCount;
+        ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3)&gt; for use with the multi-entity query core.</summary>
@@ -138,7 +138,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4>
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
-        ExpectedRowCount = expectedRowCount;
+        ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4)&gt; for use with the multi-entity query core.</summary>
@@ -187,7 +187,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5>
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
-        ExpectedRowCount = expectedRowCount;
+        ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5)&gt; for use with the multi-entity query core.</summary>
@@ -237,7 +237,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6>
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
-        ExpectedRowCount = expectedRowCount;
+        ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5, T6)&gt; for use with the multi-entity query core.</summary>
@@ -288,7 +288,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6, T7>
         Transaction = transaction;
         CommandTimeout = commandTimeout;
         CommandType = commandType;
-        ExpectedRowCount = expectedRowCount;
+        ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
     }
 
     /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5, T6, T7)&gt; for use with the multi-entity query core.</summary>

@@ -88,8 +88,17 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <remarks>
     /// This is a hint used to pre-size the internal list for better performance
     /// when the approximate result size is known. If not specified, a default capacity is used.
+    /// <para>
+    /// AUD-R35-122: normalised on the way in, so a hint can never abort the query it was meant to
+    /// speed up. A non-positive value reads as "no hint" and falls back to
+    /// <see cref="Configuration.JauntyConfig.QueryResultCapacity"/> - matching that property's own
+    /// setter, which clamps the same way - and anything above
+    /// <c>CapacityHint.MaxExpectedRowCount</c> (1,048,576) is capped, so a mistyped value cannot
+    /// allocate its way to <see cref="OutOfMemoryException"/> before the first row is read. The
+    /// value read back here is therefore the normalised one, not the one passed in.
+    /// </para>
     /// </remarks>
-    public readonly int? ExpectedRowCount = expectedRowCount;
+    public readonly int? ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
 
     /// <summary>
     /// Creates a new <see cref="CommandOptions{T}"/> with the specified mapper function.
