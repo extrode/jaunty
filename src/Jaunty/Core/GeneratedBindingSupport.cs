@@ -33,7 +33,9 @@ public static class GeneratedBindingSupport
         if (value is not null && TypeHandlerRegistry.HasHandlers
             && TypeHandlerRegistry.TryGetHandler(value.GetType(), out ITypeHandler? handler) && handler is not null)
         {
-            return handler.ToDbValue(value);
+            // AUD-R35-115: shared with ParameterBinder and the reflection binder, so a throwing
+            // handler names itself here too instead of escaping raw.
+            return TypeHandlerRegistry.ToDbValueOrThrow(handler, value);
         }
         return value;
     }
@@ -54,7 +56,7 @@ public static class GeneratedBindingSupport
         if (TypeHandlerRegistry.HasHandlers
             && TypeHandlerRegistry.TryGetHandler(value.GetType(), out ITypeHandler? handler) && handler is not null)
         {
-            return handler.ToDbValue(value);
+            return TypeHandlerRegistry.ToDbValueOrThrow(handler, value);
         }
 
         return (storage ?? JauntyConfig.DefaultEnumStorage) == EnumStorage.String

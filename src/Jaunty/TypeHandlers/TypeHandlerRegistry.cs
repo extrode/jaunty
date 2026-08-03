@@ -45,6 +45,35 @@ internal static class TypeHandlerRegistry
     }
 
     /// <summary>
+    /// Invokes <see cref="ITypeHandler.ToDbValue"/>, rewrapping anything it throws as an
+    /// <see cref="InvalidOperationException"/> naming the handler and the value type.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-115 (round-35 batch 04c). Three write paths call the same handler registry -
+    /// <c>ParameterBinder.ApplyTypeHandlerIfNeeded</c> for ad-hoc parameters,
+    /// <c>GeneratedBindingSupport.ToDbValue</c>/<c>ToDbEnumValue</c> for the source-generated
+    /// binders, and <c>JauntyReflectionExtensions.ConvertWithTypeHandlerOrElse</c> for the
+    /// reflection entity binders - and only the first wrapped a throwing handler. The same faulty
+    /// handler therefore produced a diagnosable error on one path and a raw handler-internal
+    /// exception naming neither Jaunty, the handler nor the value on the other two. One failure
+    /// mode, three call sites, so one contract: they all come through here now.
+    /// </remarks>
+    internal static object? ToDbValueOrThrow(ITypeHandler handler, object value)
+    {
+        try
+        {
+            return handler.ToDbValue(value);
+        }
+        catch (Exception ex)
+        {
+            // Surface conversion failures rather than silently binding unconverted data.
+            throw new InvalidOperationException(
+                $"Type handler '{handler.GetType().Name}' failed to convert a value of type '{value.GetType().Name}' to its database representation.",
+                ex);
+        }
+    }
+
+    /// <summary>
     /// Removes a registered type handler for the specified type.
     /// </summary>
     /// <typeparam name="T">The type to remove the handler for.</typeparam>
