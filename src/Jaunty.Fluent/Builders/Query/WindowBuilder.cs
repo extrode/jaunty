@@ -74,6 +74,18 @@ public sealed class WindowBuilder<TFrom, TResult>
 /// <summary>
 /// Types of window functions supported.
 /// </summary>
+/// <remarks>
+/// AUD-R35-189. Nothing constructs a <see cref="WindowBuilder{TFrom, TResult}"/> or a
+/// <see cref="WindowAggregateBuilder{TFrom, TResult}"/>, so no member of this enum is ever read.
+/// <c>SelectExpressionVisitor</c> recognises a window function by matching the
+/// <c>Sql.RowNumber</c>/<c>Sql.Rank</c>/... method name on the expression tree and emits the SQL
+/// from there; the two builders exist only to give those markers a chainable return type, and their
+/// <c>FunctionType</c>/<c>NTileBuckets</c> state is never populated or consulted. The type is
+/// nevertheless public API a consumer can see and reasonably expect to mean something. Removing it
+/// and the two internal constructors is a public-surface deletion and therefore the owner's call;
+/// it is recorded in <c>work/todo.md</c> with both options. Do not add a member here expecting it
+/// to change generated SQL - change the visitor's method matching instead.
+/// </remarks>
 public enum WindowFunctionType
 {
     /// <summary>
