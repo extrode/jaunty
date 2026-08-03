@@ -1147,6 +1147,8 @@ public static class CsvImportExtensions
             {
                 // Quoted field
                 var sb = new StringBuilder();
+                bool closed = false;
+                int quoteStart = i;
                 i++; // skip opening quote
                 while (i < len)
                 {
@@ -1160,6 +1162,7 @@ public static class CsvImportExtensions
                         else
                         {
                             i++; // skip closing quote
+                            closed = true;
                             break;
                         }
                     }
@@ -1169,6 +1172,20 @@ public static class CsvImportExtensions
                         i++;
                     }
                 }
+
+                // AUD-R35-010: the other half of the AUD-R30 violation. The loop above can also
+                // exit on i == len, having never seen a closing quote, and the field was then
+                // returned holding everything to the end of the record - the same RFC 4180 breach
+                // as characters-after-a-closing-quote, accepted in silence instead of thrown on.
+                // It compounds with ReadCsvRecord, which glues physical lines while the running
+                // quote count is odd: one stray quote absorbs the rest of the file into a single
+                // record, and the caller then sees either a record number that corresponds to no
+                // line in the file or a silently merged row.
+                if (!closed)
+                    throw new FormatException(
+                        $"Malformed CSV: a quoted field opened at position {quoteStart} is never closed. " +
+                        "A quoted field must end with a closing quote before the end of the record.");
+
                 fields.Add(sb.ToString());
 
                 // AUD-R30: anything between a closing quote and the next delimiter (e.g.
