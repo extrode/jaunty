@@ -646,9 +646,19 @@ public class SqlDialectTests
     // MySQL's default sql_mode that backslash escapes its own closing quote and the statement
     // does not parse; MySQL needs ESCAPE '\\'. The text assertion preserved the defect.
     [Fact]
-    public void MySql_GenerateCaseSensitiveLike_UsesCollate()
+    // AUD-R35-017 replaced COLLATE utf8mb4_bin with CAST(... AS BINARY): a collation is only valid
+    // for its own character set, so the utf8mb4 name was error 1253 on a latin1 or utf8mb3 column
+    // rather than a case-sensitive comparison.
+    public void MySql_GenerateCaseSensitiveLike_CastsToBinary()
     {
-        Assert.Equal("col COLLATE utf8mb4_bin LIKE @param ESCAPE '\\\\'", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.Equal("CAST(col AS BINARY) LIKE @param ESCAPE '\\\\'", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
+    }
+
+    [Fact]
+    public void MySql_GenerateCaseSensitiveLike_NamesNoCharacterSet()
+    {
+        Assert.DoesNotContain("utf8", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.DoesNotContain("COLLATE", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
     }
 
     [Fact]
@@ -676,9 +686,18 @@ public class SqlDialectTests
     }
 
     [Fact]
-    public void MySql_GenerateCaseInsensitiveEquals_UsesCollate()
+    // AUD-R35-017: LOWER() on both sides, charset-independent, and what PostgreSqlDialect and
+    // SQLiteDialect already emit for this method.
+    public void MySql_GenerateCaseInsensitiveEquals_FoldsBothSides()
     {
-        Assert.Equal("col COLLATE utf8mb4_general_ci = @param", _mySql.GenerateCaseInsensitiveEquals("col", "@param"));
+        Assert.Equal("LOWER(col) = LOWER(@param)", _mySql.GenerateCaseInsensitiveEquals("col", "@param"));
+    }
+
+    [Fact]
+    public void MySql_GenerateCaseInsensitiveEquals_NamesNoCharacterSet()
+    {
+        Assert.DoesNotContain("utf8", _mySql.GenerateCaseInsensitiveEquals("col", "@param"));
+        Assert.DoesNotContain("COLLATE", _mySql.GenerateCaseInsensitiveEquals("col", "@param"));
     }
 
     [Fact]
