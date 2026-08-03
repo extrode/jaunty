@@ -45,7 +45,13 @@ internal static class MetadataBuilder
         if (tableAttr is not null)
         {
             if (!string.IsNullOrEmpty(tableAttr.Name)) tableName = tableAttr.Name;
-            if (tableAttr.Schema is not null) schemaName = tableAttr.Schema;
+
+            // AUD-R35-221: this was `is not null`, so [Table("X", "")] set the schema to the empty
+            // string and discarded any configured JauntyConfig.SchemaNameResolver value. Every
+            // sibling guard tests IsNullOrEmpty - the table name one line above, the
+            // DataAnnotations branch below, the column-name guard from AUD-R32-006, and the
+            // generator's GetTableNameAndSchema.
+            if (!string.IsNullOrEmpty(tableAttr.Schema)) schemaName = tableAttr.Schema;
         }
         else
         {
@@ -64,7 +70,7 @@ internal static class MetadataBuilder
             }
         }
 
-        PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        PropertyInfo[] props = MostDerivedPerName(type.GetProperties(BindingFlags.Instance | BindingFlags.Public));
         var columns = new List<ColumnMetadata>();
 
         for (var i = 0; i < props.Length; i++)
@@ -179,6 +185,66 @@ internal static class MetadataBuilder
     /// <summary>
     /// Checks if a member has an attribute by type name without requiring a hard reference.
     /// </summary>
+    /// <summary>
+    /// Keeps one property per name, the most derived one, preserving declaration order.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-220. A type-changing <c>new</c> shadow - <c>class B { public string P { get; set; } }</c>
+    /// with <c>class D : B { public new int P { get; set; } }</c> - makes
+    /// <c>GetProperties(Instance | Public)</c> return two <c>PropertyInfo</c>s named <c>P</c> (a
+    /// same-signature <c>new</c> returns only the derived one, so only the type-changing case is
+    /// affected). Both used to reach <c>ColumnMetadata</c>, and <c>ThrowIfDuplicateColumnNames</c>
+    /// then reported <c>"'P' and 'P'"</c>, which reads as a nonsense diagnostic. The generator's
+    /// <c>GetMappableProperties</c> and <c>MappedPropertyFilter</c> in Jaunty.FlatFiles.DuckDB both
+    /// dedup by name already; the reflection path was the only one of the three that did not.
+    /// Indexers are passed through untouched rather than deduped: two of them - <c>this[int]</c>
+    /// and <c>this[string]</c> - both surface as <c>Item</c>, and the caller skips them by
+    /// <c>GetIndexParameters</c> rather than by name, so they must reach it unchanged.
+    /// </remarks>
+    private static PropertyInfo[] MostDerivedPerName(PropertyInfo[] properties)
+    {
+        var indexByName = new Dictionary<string, int>(properties.Length, StringComparer.Ordinal);
+        var kept = new List<PropertyInfo>(properties.Length);
+
+        for (var i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length > 0)
+            {
+                kept.Add(property);
+                continue;
+            }
+
+            if (!indexByName.TryGetValue(property.Name, out int index))
+            {
+                indexByName[property.Name] = kept.Count;
+                kept.Add(property);
+                continue;
+            }
+
+            if (IsMoreDerived(property, kept[index]))
+                kept[index] = property;
+        }
+
+        return kept.Count == properties.Length ? properties : kept.ToArray();
+    }
+
+    /// <summary>
+    /// True when <paramref name="candidate"/> is declared on a type derived from the one that
+    /// declares <paramref name="incumbent"/>.
+    /// </summary>
+    private static bool IsMoreDerived(PropertyInfo candidate, PropertyInfo incumbent)
+    {
+        Type? candidateType = candidate.DeclaringType;
+        Type? incumbentType = incumbent.DeclaringType;
+
+        return candidateType is not null
+            && incumbentType is not null
+            && candidateType != incumbentType
+            && incumbentType.IsAssignableFrom(candidateType);
+    }
+
     private static bool HasAttribute(MemberInfo member, string attributeTypeName)
     {
 
