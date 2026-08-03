@@ -112,6 +112,62 @@ public class CommandContextTests
 
     #endregion
 
+    #region AUD-R35-166 and AUD-R35-167: DatabaseName, ProviderName and the constructor guards
+
+    private static CommandContext CreateContext(IDbConnection connection) =>
+        new("SELECT 1", null, connection, CommandType.Text);
+
+    [Fact]
+    public void DatabaseName_ComesFromTheConnection()
+    {
+        Assert.Equal("TestDb", CreateContext(new TestDbConnection()).DatabaseName);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void DatabaseName_FallsBackWhenTheProviderHasNothingToSay(string? database)
+    {
+        var context = CreateContext(new HostileDbConnection { DatabaseValue = database });
+
+        Assert.Equal("(unknown)", context.DatabaseName);
+    }
+
+    [Fact]
+    public void DatabaseName_SurvivesAProviderWhoseGetterThrows()
+    {
+        var context = CreateContext(new HostileDbConnection { ThrowFromDatabase = true });
+
+        Assert.Equal("(unknown)", context.DatabaseName);
+    }
+
+    [Fact]
+    public void ConnectionString_SurvivesAProviderWhoseGetterThrows()
+    {
+        var context = CreateContext(new HostileDbConnection { ThrowFromConnectionString = true });
+
+        Assert.Equal("(unknown)", context.ConnectionString);
+    }
+
+    [Fact]
+    public void ProviderName_IsTheConnectionTypeName()
+    {
+        Assert.Equal(nameof(TestDbConnection), CreateContext(new TestDbConnection()).ProviderName);
+    }
+
+    [Fact]
+    public void TheConstructorRejectsNulls()
+    {
+        var connection = new TestDbConnection();
+
+        Assert.Throws<ArgumentNullException>("commandText",
+            () => new CommandContext(null!, null, connection, CommandType.Text));
+        Assert.Throws<ArgumentNullException>("connection",
+            () => new CommandContext("SELECT 1", null, null!, CommandType.Text));
+    }
+
+    #endregion
+
     #region Test Helper Classes
 
     private class TestDbConnection : IDbConnection
@@ -122,6 +178,37 @@ public class CommandContextTests
         public string DataSource => "InMemory";
         public IDbTransaction? Transaction { get; set; }
         public ConnectionState State => ConnectionState.Open;
+
+        public IDbCommand CreateCommand() => throw new NotSupportedException();
+        public IDbTransaction BeginTransaction() => throw new NotSupportedException();
+        public IDbTransaction BeginTransaction(IsolationLevel il) => throw new NotSupportedException();
+        public void ChangeDatabase(string databaseName) { }
+        public void Close() { }
+        public void Open() { }
+        public void Dispose() { }
+    }
+
+    private sealed class HostileDbConnection : IDbConnection
+    {
+        public bool ThrowFromConnectionString { get; set; }
+
+        public bool ThrowFromDatabase { get; set; }
+
+        public string? DatabaseValue { get; set; }
+
+        public string ConnectionString
+        {
+            get => ThrowFromConnectionString
+                ? throw new ObjectDisposedException(nameof(HostileDbConnection))
+                : "Data Source=:memory:";
+            set { }
+        }
+
+        public int ConnectionTimeout => 15;
+        public string Database => ThrowFromDatabase
+            ? throw new ObjectDisposedException(nameof(HostileDbConnection))
+            : DatabaseValue!;
+        public ConnectionState State => ConnectionState.Closed;
 
         public IDbCommand CreateCommand() => throw new NotSupportedException();
         public IDbTransaction BeginTransaction() => throw new NotSupportedException();
