@@ -185,7 +185,9 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
     public IJoinedQuery4<T1, T2, T3, T4> Where(string column, object value)
     {
-        string paramName = $"{_parent._parent.Dialect.ParameterPrefix}{column.Replace(".", "_")}";
+        // AUD-R35-014: see ParameterCollection.CreateUniqueName.
+        string paramName = _parent._parent.GetParameters()
+            .CreateUniqueName(_parent._parent.Dialect.ParameterPrefix, column);
         string escapedColumn = EscapeQualifiedColumn(column);
         _parent._parent.AddWhereCondition(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.None));
         _parent._parent.GetParameters().Add(paramName, value);
