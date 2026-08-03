@@ -118,9 +118,21 @@ internal static class MappedPropertyFilter
     /// this class's <see cref="GetMappedProperties"/> for the *filtering* half of the rule while
     /// each keeping its own copy of the *naming* half; the third was outside both. Same class of
     /// drift AUD-R25 created this type for, so the naming half lives here now as well.
+    /// <para>
+    /// AUD-R35-071: the null-coalesce alone is not the rule. <see cref="ColumnAttribute"/>'s
+    /// constructor rejects null but not <c>""</c>, so <c>[Column("")]</c> mapped the property to the
+    /// empty column name - the read path then never matched a file column and left the property
+    /// silently unset, and <c>TargetDdlGenerator</c> emitted an empty-named column into the
+    /// generated import DDL. AUD-R32-006 added the <c>IsNullOrEmpty</c> guard to
+    /// <c>MetadataBuilder</c> and the source generator carries it too; this was the third path,
+    /// which did not.
+    /// </para>
     /// </remarks>
-    public static string GetColumnName(PropertyInfo property) =>
-        property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+    public static string GetColumnName(PropertyInfo property)
+    {
+        string? name = property.GetCustomAttribute<ColumnAttribute>()?.Name;
+        return string.IsNullOrEmpty(name) ? property.Name : name!;
+    }
 
     /// <summary>
     /// Returns <see langword="true"/> when <paramref name="property"/> should be treated as a column.
