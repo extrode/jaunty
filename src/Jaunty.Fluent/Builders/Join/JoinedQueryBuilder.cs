@@ -196,6 +196,19 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Returns <typeparamref name="T"/>'s columns prefixed with the FROM alias.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-182. <typeparamref name="T"/> must be <typeparamref name="TFrom"/>. Nothing in the
+    /// signature says so, and nothing enforces it: the columns come from
+    /// <typeparamref name="T"/>'s metadata while the alias is always the FROM alias, so passing the
+    /// joined entity emits that entity's columns qualified by the wrong table - SQL that is
+    /// well-formed and wrong, or an "invalid column name" from the server. Every caller in the
+    /// solution passes <typeparamref name="TFrom"/>, so this is a trap for the next caller rather
+    /// than a live defect; the type parameter cannot simply be dropped because the
+    /// <c>where T : new()</c> constraint is what lets the metadata lookup resolve.
+    /// </remarks>
     internal string[] GetSelectColumns<T>() where T : new()
     {
         var metadata = FluentMetadataCache.GetMetadata<T>();
@@ -212,6 +225,31 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         => new JoinClause3Builder<TFrom, TJoin, T3>(this, JoinType.Right, alias);
 
     internal void AddJoin(JoinInfo join) => _joins.Add(join);
+
+    /// <summary>
+    /// Replaces a join this builder already holds, in place.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-179. The arity-3 and arity-4 clause builders mutate this shared root rather than
+    /// constructing a fresh builder the way the arity-2 one does, so calling <c>On(...)</c> twice on
+    /// one held clause builder appended the same join twice - two identical <c>INNER JOIN</c> clauses
+    /// in the generated SQL, a silently changed <c>Count</c>, and <c>Joins[1]</c> pointing at the
+    /// wrong join for arity-4 alias resolution. A clause builder describes one join, so re-calling
+    /// <c>On</c> redefines it instead of adding another. The shared root itself is unchanged: two
+    /// wrappers handed out by one clause builder still see one query, and the last <c>On</c> wins for
+    /// both. Making each call yield an independent builder means cloning the root's joins,
+    /// conditions, parameters and sequence counter, which is a redesign rather than a fix; it is on
+    /// the work-list.
+    /// </remarks>
+    internal void ReplaceJoin(JoinInfo existing, JoinInfo replacement)
+    {
+        int index = _joins.IndexOf(existing);
+
+        if (index >= 0)
+            _joins[index] = replacement;
+        else
+            _joins.Add(replacement);
+    }
 
     internal void AddWhereCondition(WhereCondition condition) => _conditions.Add(condition);
 
