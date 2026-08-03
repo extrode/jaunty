@@ -308,7 +308,7 @@ public static partial class Jaunty
                     // left foreign key enforcement off. The outer finally only disposes and closes,
                     // and the connection then goes back to the pool disabled.
                     if (ignoreConstraints && requiresAutocommit)
-                        await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
+                        await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, null, options.CommandTimeout, cancellationToken).ConfigureAwait(false);
 
                     if (ownTransaction)
                     {
@@ -320,7 +320,7 @@ public static partial class Jaunty
                     }
 
                     if (ignoreConstraints && !requiresAutocommit)
-                        await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
+                        await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, transaction, options.CommandTimeout, cancellationToken).ConfigureAwait(false);
 
     #if NET8_0_OR_GREATER
                     DbCommand command = connection.CreateCommand();
@@ -361,7 +361,7 @@ public static partial class Jaunty
                     }
 
                     if (ignoreConstraints && !requiresAutocommit)
-                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
+                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, options.CommandTimeout, cancellationToken).ConfigureAwait(false);
 
                     if (ownTransaction)
                     {
@@ -373,7 +373,7 @@ public static partial class Jaunty
                     }
 
                     if (ignoreConstraints && requiresAutocommit)
-                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
+                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, options.CommandTimeout, cancellationToken).ConfigureAwait(false);
 
                     return totalDeleted;
                 }
@@ -383,7 +383,7 @@ public static partial class Jaunty
                     {
                         try
                         {
-                            await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, CancellationToken.None).ConfigureAwait(false);
+                            await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, options.CommandTimeout, CancellationToken.None).ConfigureAwait(false);
                         }
                         catch { /* Best effort */ }
                     }
@@ -409,7 +409,7 @@ public static partial class Jaunty
                     {
                         try
                         {
-                            await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, CancellationToken.None).ConfigureAwait(false);
+                            await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, options.CommandTimeout, CancellationToken.None).ConfigureAwait(false);
                         }
                         catch { /* Best effort */ }
                     }

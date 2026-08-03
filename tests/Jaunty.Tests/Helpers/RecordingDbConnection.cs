@@ -42,8 +42,15 @@ public sealed class RecordingDbConnection : DbConnection
     /// <summary>The most recently created command, for tests that assert before disposal.</summary>
     public RecordingDbCommand? LastCommand { get; private set; }
 
+    /// <summary>
+    /// Every command that executed, in order, as (text, timeout). AUD-R35-131 needed to assert what
+    /// reached one particular command in a sequence rather than the last one.
+    /// </summary>
+    public List<(string CommandText, int CommandTimeout)> Executed { get; } = [];
+
     internal void Record(RecordingDbCommand command)
     {
+        Executed.Add((command.CommandText, command.CommandTimeout));
         ExecutedTimeout = command.CommandTimeout;
         ExecutedTransaction = command.Transaction;
         ExecutedCommandType = command.AppliedCommandType;
