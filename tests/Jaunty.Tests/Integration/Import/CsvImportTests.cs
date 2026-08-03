@@ -1257,4 +1257,27 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         var fields = CsvImportExtensions.ParseCsvLine("\"abc\",x", ',', '"');
         Assert.Equal(new[] { "abc", "x" }, fields);
     }
+
+    // AUD-R35-010: the other half of the same RFC 4180 violation. An unterminated quoted field
+    // used to be accepted in silence, holding everything to the end of the record.
+    [Theory]
+    [InlineData("\"abc")]
+    [InlineData("x,\"abc")]
+    [InlineData("x,\"abc,def")]
+    [InlineData("\"")]
+    [InlineData("\"abc\"\"")]
+    public void ParseCsvLine_UnterminatedQuotedField_ThrowsAsMalformed(string line)
+    {
+        var ex = Assert.Throws<FormatException>(() => CsvImportExtensions.ParseCsvLine(line, ',', '"'));
+        Assert.Contains("never closed", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("\"abc\"", new[] { "abc" })]
+    [InlineData("\"abc\"\"def\"", new[] { "abc\"def" })]
+    [InlineData("\"\"", new[] { "" })]
+    [InlineData("\"a\nb\"", new[] { "a\nb" })]
+    [InlineData("\"abc\",", new[] { "abc", "" })]
+    public void ParseCsvLine_ProperlyClosedQuotedField_StillParses(string line, string[] expected)
+        => Assert.Equal(expected, CsvImportExtensions.ParseCsvLine(line, ',', '"'));
 }

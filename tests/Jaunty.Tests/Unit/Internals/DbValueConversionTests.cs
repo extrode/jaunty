@@ -58,6 +58,13 @@ public class DbValueConversionTests
 
         Assert.Contains("System.Byte[]", ex.Message, StringComparison.Ordinal);
         Assert.Contains("System.Guid", ex.Message, StringComparison.Ordinal);
+
+        // AUD-R35-049: the generated path used to answer new Guid(bytes) here instead. It now
+        // refuses with this same message, and GeneratedReadFallbackTests pins these two
+        // phrases from the other side - so the two converters cannot drift apart again
+        // without one of the pair failing.
+        Assert.Contains("byte order", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("will not guess it", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -153,6 +160,66 @@ public class DbValueConversionTests
     public void TimeOnly_FromAString_Converts()
     {
         Assert.Equal(new TimeOnly(13, 45), DbValueConversion.Convert("13:45", typeof(TimeOnly)));
+    }
+
+    // ------------------------------------------------------------------
+    // AUD-R35-027: the source-generated converter (JauntyGenerator.cs) accepts DateTime for a
+    // DateOnly target and TimeSpan/DateTime for a TimeOnly target. This one only ever accepted a
+    // string, so the two metadata paths disagreed about every date and time column the mainstream
+    // providers surface as a CLR type rather than as text - SqlClient's DATE (DateTime) and TIME
+    // (TimeSpan), Npgsql's date, DuckDB's TIMESTAMP. Text-backed SQLite worked; nothing else did.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void DateOnly_FromADateTime_Converts()
+    {
+        Assert.Equal(
+            new DateOnly(2026, 7, 30),
+            DbValueConversion.Convert(new DateTime(2026, 7, 30, 13, 45, 0), typeof(DateOnly)));
+    }
+
+    [Fact]
+    public void DateOnly_FromADateTime_DiscardsTheTime()
+    {
+        Assert.Equal(
+            new DateOnly(2026, 7, 30),
+            DbValueConversion.Convert(new DateTime(2026, 7, 30, 23, 59, 59), typeof(DateOnly)));
+    }
+
+    [Fact]
+    public void NullableDateOnly_FromADateTime_Converts()
+    {
+        Assert.Equal(
+            new DateOnly(2026, 7, 30),
+            DbValueConversion.Convert(new DateTime(2026, 7, 30), typeof(DateOnly?)));
+    }
+
+    [Fact]
+    public void TimeOnly_FromATimeSpan_Converts()
+    {
+        Assert.Equal(new TimeOnly(13, 45, 30), DbValueConversion.Convert(new TimeSpan(13, 45, 30), typeof(TimeOnly)));
+    }
+
+    [Fact]
+    public void TimeOnly_FromADateTime_Converts()
+    {
+        Assert.Equal(
+            new TimeOnly(13, 45, 30),
+            DbValueConversion.Convert(new DateTime(2026, 7, 30, 13, 45, 30), typeof(TimeOnly)));
+    }
+
+    [Fact]
+    public void TimeOnly_FromAnIntervalLongerThanADay_Throws()
+    {
+        Assert.Throws<InvalidCastException>(
+            () => DbValueConversion.Convert(TimeSpan.FromHours(30), typeof(TimeOnly)));
+    }
+
+    [Fact]
+    public void TimeOnly_FromANegativeInterval_Throws()
+    {
+        Assert.Throws<InvalidCastException>(
+            () => DbValueConversion.Convert(TimeSpan.FromHours(-1), typeof(TimeOnly)));
     }
 #endif
 

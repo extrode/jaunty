@@ -56,6 +56,23 @@ internal static class ColumnMappingCache
                 };
             }
 
+            // AUD-R35-031: an entity with no mapped properties at all - every one [Ignore]d,
+            // [NotMapped] or get-only - reached every write site and failed there, differently each
+            // time and never naming the entity. The batch inserts divided by mappingList.Count and
+            // threw DivideByZeroException; the single-entity inserts emitted INSERT INTO "t" ()
+            // VALUES () and got a raw DuckDB parser error. Reads and generated DDL fared no better,
+            // producing empty objects and CREATE TABLE "t" () respectively. The condition is a
+            // property of the type, not of any one call, so it is caught once here where the type is
+            // first inspected - and, being inside the GetOrAdd factory, nothing is cached when it
+            // throws.
+            if (dict.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Entity type '{type.FullName}' has no mapped properties, so it cannot be read " +
+                    "from or written to a flat file. A property is mapped when it is public, has " +
+                    "both a getter and a setter, and carries neither [Ignore] nor [NotMapped].");
+            }
+
 #if NET8_0_OR_GREATER
             return dict.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 #else

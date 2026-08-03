@@ -441,132 +441,66 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
     private Expression HandleSqlFunction(MethodCallExpression node)
     {
+        _sql.Append(TranslateSqlFunction(node));
+        return node;
+    }
+
+    /// <summary>
+    /// AUD-R35-064. Each <c>Sql.*</c> function used to have its own <c>Handle*</c> that appended
+    /// straight to <c>_sql</c>, which is why a nested call could not be translated: an argument has
+    /// to become a <em>string</em> to be handed to the next <c>Generate*</c>. Producing the SQL
+    /// here instead lets <see cref="TranslateArgumentToSql"/> recurse, matching what the SELECT
+    /// visitor's <c>TranslateProjectionExpression</c> has always done.
+    /// </summary>
+    private string TranslateSqlFunction(MethodCallExpression node)
+    {
         var methodName = node.Method.Name;
 
         switch (methodName)
         {
             case "Coalesce":
-                return HandleCoalesce(node);
+                {
+                    var arguments = new string[node.Arguments.Count];
+                    for (int i = 0; i < node.Arguments.Count; i++)
+                        arguments[i] = TranslateArgumentToSql(node.Arguments[i]);
+
+                    return _dialect.GenerateCoalesce(arguments);
+                }
             case "IsNull":
-                return HandleIsNull(node);
+                return _dialect.GenerateIsNull(
+                    TranslateArgumentToSql(node.Arguments[0]),
+                    TranslateArgumentToSql(node.Arguments[1]));
             case "NullIf":
-                return HandleNullIf(node);
+                return _dialect.GenerateNullIf(
+                    TranslateArgumentToSql(node.Arguments[0]),
+                    TranslateArgumentToSql(node.Arguments[1]));
             // String functions
             case "Length":
-                return HandleLength(node);
+                return _dialect.GenerateLength(TranslateArgumentToSql(node.Arguments[0]));
             case "Upper":
-                return HandleUpper(node);
+                return _dialect.GenerateUpper(TranslateArgumentToSql(node.Arguments[0]));
             case "Lower":
-                return HandleLower(node);
+                return _dialect.GenerateLower(TranslateArgumentToSql(node.Arguments[0]));
             case "Trim":
-                return HandleTrim(node);
+                return _dialect.GenerateTrim(TranslateArgumentToSql(node.Arguments[0]));
             case "Substring":
-                return HandleSubstring(node);
+                return _dialect.GenerateSubstring(
+                    TranslateArgumentToSql(node.Arguments[0]),
+                    TranslateArgumentToSql(node.Arguments[1]),
+                    TranslateArgumentToSql(node.Arguments[2]));
             // Date functions
             case "Year":
-                return HandleYear(node);
+                return _dialect.GenerateYear(TranslateArgumentToSql(node.Arguments[0]));
             case "Month":
-                return HandleMonth(node);
+                return _dialect.GenerateMonth(TranslateArgumentToSql(node.Arguments[0]));
             case "Day":
-                return HandleDay(node);
+                return _dialect.GenerateDay(TranslateArgumentToSql(node.Arguments[0]));
             // CASE expression (shouldn't reach here - handled in VisitMethodCall)
             case "Case":
                 throw new NotSupportedException("Sql.Case() must be followed by .When() and .Else() or .End()");
             default:
                 throw new NotSupportedException($"SQL function '{methodName}' is not supported.");
         }
-    }
-
-    private Expression HandleCoalesce(MethodCallExpression node)
-    {
-        var arguments = new List<string>();
-
-
-        foreach (Expression? arg in node.Arguments)
-        {
-            arguments.Add(TranslateArgumentToSql(arg));
-        }
-
-        _sql.Append(_dialect.GenerateCoalesce(arguments.ToArray()));
-        return node;
-    }
-
-    private Expression HandleIsNull(MethodCallExpression node)
-    {
-        var valueArg = TranslateArgumentToSql(node.Arguments[0]);
-        var defaultArg = TranslateArgumentToSql(node.Arguments[1]);
-
-        _sql.Append(_dialect.GenerateIsNull(valueArg, defaultArg));
-        return node;
-    }
-
-    private Expression HandleNullIf(MethodCallExpression node)
-    {
-        var valueArg = TranslateArgumentToSql(node.Arguments[0]);
-        var compareArg = TranslateArgumentToSql(node.Arguments[1]);
-
-        _sql.Append(_dialect.GenerateNullIf(valueArg, compareArg));
-        return node;
-    }
-
-    // String function handlers
-    private Expression HandleLength(MethodCallExpression node)
-    {
-        var arg = TranslateArgumentToSql(node.Arguments[0]);
-        _sql.Append(_dialect.GenerateLength(arg));
-        return node;
-    }
-
-    private Expression HandleUpper(MethodCallExpression node)
-    {
-        var arg = TranslateArgumentToSql(node.Arguments[0]);
-        _sql.Append(_dialect.GenerateUpper(arg));
-        return node;
-    }
-
-    private Expression HandleLower(MethodCallExpression node)
-    {
-        var arg = TranslateArgumentToSql(node.Arguments[0]);
-        _sql.Append(_dialect.GenerateLower(arg));
-        return node;
-    }
-
-    private Expression HandleTrim(MethodCallExpression node)
-    {
-        var arg = TranslateArgumentToSql(node.Arguments[0]);
-        _sql.Append(_dialect.GenerateTrim(arg));
-        return node;
-    }
-
-    private Expression HandleSubstring(MethodCallExpression node)
-    {
-        var strArg = TranslateArgumentToSql(node.Arguments[0]);
-        var startArg = TranslateArgumentToSql(node.Arguments[1]);
-        var lengthArg = TranslateArgumentToSql(node.Arguments[2]);
-        _sql.Append(_dialect.GenerateSubstring(strArg, startArg, lengthArg));
-        return node;
-    }
-
-    // Date function handlers
-    private Expression HandleYear(MethodCallExpression node)
-    {
-        var arg = TranslateArgumentToSql(node.Arguments[0]);
-        _sql.Append(_dialect.GenerateYear(arg));
-        return node;
-    }
-
-    private Expression HandleMonth(MethodCallExpression node)
-    {
-        var arg = TranslateArgumentToSql(node.Arguments[0]);
-        _sql.Append(_dialect.GenerateMonth(arg));
-        return node;
-    }
-
-    private Expression HandleDay(MethodCallExpression node)
-    {
-        var arg = TranslateArgumentToSql(node.Arguments[0]);
-        _sql.Append(_dialect.GenerateDay(arg));
-        return node;
     }
 
     // CASE expression handler
@@ -729,16 +663,56 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         }
     }
 
+    /// <summary>
+    /// AUD-R35-064. This handled exactly two shapes - a <c>Convert</c> wrapper and a direct
+    /// parameter member - and sent everything else to <c>EvaluateExpression</c>. A nested
+    /// <c>Sql.*</c> call still references the lambda parameter, so
+    /// <c>Expression.Lambda(...).Compile()</c> threw
+    /// <c>variable 'p' of type 'Product' referenced from scope ''</c>: the exact opaque message
+    /// AUD-R26-056's guard exists to eliminate, and that guard sits in <c>VisitMethodCall</c>, which
+    /// <c>HandleSqlFunction</c> has already branched out of by this point. The SELECT visitor's
+    /// twin has always recursed, so <c>Sql.Upper(Sql.Trim(p.ProductName))</c> translated in a
+    /// projection and crashed in a WHERE. <c>Quote</c> and the <c>??</c> binary, both handled on the
+    /// SELECT side, were missing here too.
+    /// </summary>
     private string TranslateArgumentToSql(Expression arg)
     {
-        // Unwrap Convert expression
-        if (arg is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+        // Unwrap Convert and Quote, repeatedly - a nested call under a Convert under a Quote is one
+        // expression, not three shapes to enumerate.
+        while (arg is UnaryExpression unary
+            && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        {
             arg = unary.Operand;
+        }
 
         // If it's a member access on the parameter, translate to column
         if (arg is MemberExpression member && IsParameterMember(member))
         {
             return GetEscapedColumnName(member);
+        }
+
+        // A nested Sql.* call: translate it in place rather than trying to evaluate it.
+        if (arg is MethodCallExpression call && call.Method.DeclaringType == typeof(Sql))
+        {
+            return TranslateSqlFunction(call);
+        }
+
+        // The ?? operator, which the SELECT side renders as the dialect's IS NULL form.
+        if (arg is BinaryExpression coalesce && coalesce.NodeType == ExpressionType.Coalesce)
+        {
+            return _dialect.GenerateIsNull(
+                TranslateArgumentToSql(coalesce.Left),
+                TranslateArgumentToSql(coalesce.Right));
+        }
+
+        // Anything left that still references the lambda parameter cannot be evaluated as a
+        // constant; say so rather than letting Compile() report an undefined variable.
+        if (ReferencesLambdaParameter(arg))
+        {
+            throw new NotSupportedException(
+                $"Cannot translate '{arg}' to SQL as an argument to a Sql.* function. Only a mapped " +
+                "property, a nested Sql.* call, a ?? expression, or a value that does not reference " +
+                "the lambda parameter can appear there.");
         }
 
         // Otherwise, evaluate and create a parameter
@@ -1052,17 +1026,13 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     /// <c>Day</c>, it silently filtered the wrong one. <c>string.Length</c> is the one nested shape
     /// with a translation, and its callers unwrap to the direct inner member before arriving here.
     /// </summary>
-    private static void RequireDirectColumnReference(MemberExpression member)
-    {
-        if (member.Expression is null or ParameterExpression)
-            return;
-
-        var leaf = member.Member.Name;
-        throw new NotSupportedException(
-            $"'{member}' is a member of a column, not a column. Jaunty does not translate " +
-            $"'{leaf}' into SQL - use the Sql.* helpers for the supported spellings " +
-            "(Sql.Year, Sql.Month, Sql.Day, Sql.Length, ...), or compute the value in memory.");
-    }
+    /// <remarks>
+    /// AUD-R35-019 moved the implementation to <see cref="ColumnReference.RequireDirect"/> so the
+    /// SELECT visitor and <c>PropertyExtractor</c> - which had the identical hole and no guard -
+    /// share it rather than growing a second and third copy.
+    /// </remarks>
+    private static void RequireDirectColumnReference(MemberExpression member) =>
+        ColumnReference.RequireDirect(member);
 
     // The unescaped name, for the two places a column reference feeds a generated parameter name
     // rather than SQL text. Same lookup, same cache - no linear scan.

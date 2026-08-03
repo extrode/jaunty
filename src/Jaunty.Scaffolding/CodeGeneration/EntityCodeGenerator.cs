@@ -158,8 +158,20 @@ public sealed class EntityCodeGenerator : ICodeGenerator
                 attrs.Add("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Computed)]");
         }
 
-        // [Column] attribute (only when name differs)
-        if (options.GenerateColumnAttribute &&
+        // [Column] attribute (only when name differs).
+        //
+        // AUD-R35-036: emitted regardless of GenerateColumnAttribute when the name was
+        // disambiguated. ResolvePropertyName renames a colliding property (Name -> Name1), and the
+        // only thing that preserves the column mapping afterwards is this attribute. Under
+        // --no-column-attr the renamed property was emitted bare, so it mapped to a column "Name1"
+        // that does not exist - the reflection path leaves it unset and the generated path resolves
+        // a missing ordinal. The disambiguation is generator-internal, not something the caller
+        // asked for, so opting out of [Column] silently converted a compile error the generator was
+        // fixing into a runtime mapping fault. Opting out is a preference about names that already
+        // match; it cannot be a preference about names the generator itself changed.
+        bool wasDisambiguated = !string.Equals(propertyName, GetPropertyName(column.ColumnName), StringComparison.Ordinal);
+
+        if ((options.GenerateColumnAttribute || wasDisambiguated) &&
             !column.ColumnName.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
         {
             attrs.Add($"[Jaunty.Attributes.Column(\"{EscapeStringLiteral(column.ColumnName)}\")]");

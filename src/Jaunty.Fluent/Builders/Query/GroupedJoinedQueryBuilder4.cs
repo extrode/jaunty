@@ -40,12 +40,13 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         ];
 
         JoinedQueryBuilder<T1, T2> root = _parent._parent._parent;
+        // AUD-R35-015: see GroupedJoinTablePrefixes.Resolve.
         string[] tablePrefixes =
         [
-            root.FromAlias ?? _metadata[0].TableName,
-            root.Joins[0].Alias ?? _metadata[1].TableName,
-            root.Joins[1].Alias ?? _metadata[2].TableName,
-            root.Joins[2].Alias ?? _metadata[3].TableName
+            GroupedJoinTablePrefixes.Resolve(root.Dialect, root.FromAlias, _metadata[0]),
+            GroupedJoinTablePrefixes.Resolve(root.Dialect, root.Joins[0].Alias, _metadata[1]),
+            GroupedJoinTablePrefixes.Resolve(root.Dialect, root.Joins[1].Alias, _metadata[2]),
+            GroupedJoinTablePrefixes.Resolve(root.Dialect, root.Joins[2].Alias, _metadata[3]),
         ];
         CachedDialectMetadata[] cachedMetadata =
         [
@@ -60,9 +61,8 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
     public IGroupedJoinedQuery4<T1, T2, T3, T4, TKey> Having(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, bool>> predicate)
     {
         (string havingSql, List<(string Name, object? Value)> parameters) = _visitor.TranslateHavingPredicate(predicate);
-        _havingConditions.Add(havingSql);
-        foreach ((string name, object? value) in parameters)
-            _parent._parent._parent.AddParameter(name, value);
+        // AUD-R35-016: see JoinedQueryBuilder.RegisterHavingParameters.
+        _havingConditions.Add(_parent._parent._parent.RegisterHavingParameters(havingSql, parameters));
         return this;
     }
 

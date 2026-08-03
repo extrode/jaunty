@@ -89,7 +89,7 @@ internal static class MultiEntityMapperCore
                 continue;
             }
 
-            int replacement = FindNextUnclaimedOrdinal(reader, setter.Context.ColumnName, alreadyClaimed, claimedByThisType);
+            int replacement = FindNextUnclaimedOrdinal<T>(reader, setter.Context, alreadyClaimed, claimedByThisType);
             if (replacement >= 0)
             {
                 result.Add(new PropertySetter<T>(setter.Context, replacement));
@@ -107,15 +107,29 @@ internal static class MultiEntityMapperCore
     }
 
     /// <summary>
-    /// Finds the leftmost reader column ordinal whose name matches <paramref name="columnName"/>
-    /// (case-insensitive) that has not already been claimed by an earlier type or by this
-    /// same type earlier in its own property list.
+    /// Finds the leftmost still-unclaimed reader column that <c>MetadataCache&lt;T&gt;.BuildSetters</c>
+    /// would itself have bound to <paramref name="context"/>'s property.
     /// </summary>
-    private static int FindNextUnclaimedOrdinal(
+    /// <remarks>
+    /// AUD-R35-022. This used to compare the reader's column name against
+    /// <c>Context.ColumnName</c> alone, but <c>BuildSetters</c> binds on three names, not one: the
+    /// metadata column name, the property-name fallback alias registered in the second pass of
+    /// <c>Snapshot</c>'s constructor (so <c>Id [Column("ProductID")]</c> binds a reader column
+    /// literally named <c>Id</c>), and the <c>ColumnNameResolver</c> index - though that last one
+    /// is a second route to a name <c>MetadataBuilder</c> has already resolved, so only the alias
+    /// diverges in practice. A setter first bound through that alias, whose ordinal an earlier
+    /// type had already claimed, was
+    /// searched for under a name no column in the reader carries - so the rebind found nothing and
+    /// the property was silently left unmapped, which is exactly the case the left-to-right
+    /// claiming exists to handle. Asking the metadata the same question it asked when binding
+    /// cannot drift from it.
+    /// </remarks>
+    private static int FindNextUnclaimedOrdinal<T>(
         IDataReader reader,
-        string columnName,
+        in PropertyContext<T> context,
         HashSet<int> alreadyClaimed,
         HashSet<int> claimedByThisType)
+        where T : new()
     {
         for (int ord = 0; ord < reader.FieldCount; ord++)
         {
@@ -123,7 +137,7 @@ internal static class MultiEntityMapperCore
                 continue;
 
             string? candidateName = reader.GetName(ord);
-            if (candidateName is not null && candidateName.Equals(columnName, StringComparison.OrdinalIgnoreCase))
+            if (candidateName is not null && MetadataCache<T>.ColumnBindsTo(candidateName, context))
                 return ord;
         }
 

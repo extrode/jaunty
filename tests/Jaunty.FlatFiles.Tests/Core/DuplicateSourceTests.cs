@@ -96,6 +96,60 @@ public class DuplicateSourceTests
     }
 
     // ------------------------------------------------------------------
+    // AUD-R35-072: the bypass. Sources is a public mutable list, so the guard above is only as
+    // good as the caller's choice of API - and the library's own FlatFile.Open(string) takes the
+    // list route. DuckDb's constructor now re-checks, so the collision is caught wherever it came
+    // from rather than reaching the last-wins _sources dictionary.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void EnsureSourceTableNamesAreUnique_CatchesADuplicateAddedThroughTheList()
+    {
+        var options = new FlatFileOptions();
+        options.AddCsv<Sales>("a.csv");
+        options.Sources.Add(new CsvFileSource("sales", "b.csv", typeof(Sales)));
+
+        var ex = Assert.Throws<InvalidOperationException>(options.EnsureSourceTableNamesAreUnique);
+
+        Assert.Contains("already registered", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("a.csv", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EnsureSourceTableNamesAreUnique_IsCaseInsensitiveToo()
+    {
+        var options = new FlatFileOptions();
+        options.Sources.Add(new CsvFileSource("sales", "a.csv", typeof(Sales)));
+        options.Sources.Add(new CsvFileSource("SALES", "b.csv", typeof(Sales)));
+
+        Assert.Throws<InvalidOperationException>(options.EnsureSourceTableNamesAreUnique);
+    }
+
+    [Fact]
+    public void EnsureSourceTableNamesAreUnique_FindsACollisionPastTheFirstPair()
+    {
+        var options = new FlatFileOptions();
+        options.Sources.Add(new CsvFileSource("a", "a.csv", typeof(Sales)));
+        options.Sources.Add(new CsvFileSource("b", "b.csv", typeof(Sales)));
+        options.Sources.Add(new CsvFileSource("a", "c.csv", typeof(Sales)));
+
+        Assert.Throws<InvalidOperationException>(options.EnsureSourceTableNamesAreUnique);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void EnsureSourceTableNamesAreUnique_DistinctNames_DoNotThrow(int count)
+    {
+        var options = new FlatFileOptions();
+        for (int i = 0; i < count; i++)
+            options.Sources.Add(new CsvFileSource($"t{i}", $"{i}.csv", typeof(Sales)));
+
+        options.EnsureSourceTableNamesAreUnique();
+    }
+
+    // ------------------------------------------------------------------
     // What must still be accepted
     // ------------------------------------------------------------------
 

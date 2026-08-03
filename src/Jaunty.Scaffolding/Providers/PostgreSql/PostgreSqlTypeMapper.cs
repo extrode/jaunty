@@ -44,7 +44,11 @@ public sealed class PostgreSqlTypeMapper : ITypeMapper
             // Date/Time types
             "date" => new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true, RequiredUsing = "System" },
             "time" or "time without time zone" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
-            "time with time zone" or "timetz" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
+            // AUD-R35-037: DateTimeOffset, not TimeOnly. timetz carries a UTC offset that TimeOnly
+            // cannot hold, and Npgsql's default CLR type for it is DateTimeOffset - so the scaffolded
+            // property did not merely lose the zone, it failed to materialise. The unzoned "time"
+            // arm above is correct as it stands.
+            "time with time zone" or "timetz" => new CSharpTypeInfo { TypeName = "DateTimeOffset", IsValueType = true, RequiredUsing = "System" },
             "timestamp" or "timestamp without time zone" => new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true, RequiredUsing = "System" },
             "timestamp with time zone" or "timestamptz" => new CSharpTypeInfo { TypeName = "DateTimeOffset", IsValueType = true, RequiredUsing = "System" },
             "interval" => new CSharpTypeInfo { TypeName = "TimeSpan", IsValueType = true, RequiredUsing = "System" },
@@ -61,16 +65,27 @@ public sealed class PostgreSqlTypeMapper : ITypeMapper
             // XML
             "xml" => new CSharpTypeInfo { TypeName = "string", IsValueType = false },
 
-            // Network types
-            "inet" or "cidr" => new CSharpTypeInfo { TypeName = "string", IsValueType = false },
-            "macaddr" or "macaddr8" => new CSharpTypeInfo { TypeName = "string", IsValueType = false },
+            // Network types.
+            //
+            // AUD-R35-038: these mapped to string, which Npgsql does not return for any of them, so
+            // the scaffolded property threw on read rather than being merely imprecise. inet comes
+            // back as IPAddress and macaddr/macaddr8 as PhysicalAddress, both BCL types needing only
+            // a using. cidr is deliberately left alone: Npgsql returns NpgsqlCidr, a driver type, and
+            // emitting it would make every scaffolded entity depend on the Npgsql package - a call
+            // for the caller, not for this mapper. Same shape as AUD-R6-026's bit(1) fix, which
+            // corrected only the width-1 arm.
+            "inet" => new CSharpTypeInfo { TypeName = "IPAddress", IsValueType = false, RequiredUsing = "System.Net" },
+            "cidr" => new CSharpTypeInfo { TypeName = "string", IsValueType = false },
+            "macaddr" or "macaddr8" => new CSharpTypeInfo { TypeName = "PhysicalAddress", IsValueType = false, RequiredUsing = "System.Net.NetworkInformation" },
 
             // Bit strings - a single-bit bit(1)/bit varying(1) column follows the common
             // boolean-flag convention; wider bit strings hold more than one bit of data and
             // must not be collapsed to bool (mirrors MySqlTypeMapper's bit(1)/tinyint(1) handling)
             "bit" or "bit varying" or "varbit" when column.MaxLength == 1 =>
                 new CSharpTypeInfo { TypeName = "bool", IsValueType = true },
-            "bit" or "bit varying" or "varbit" => new CSharpTypeInfo { TypeName = "ulong", IsValueType = true },
+            // AUD-R35-038: BitArray, not ulong. Npgsql returns BitArray for any bit string wider
+            // than one, and a ulong cannot hold a bit(n) for n > 64 at all.
+            "bit" or "bit varying" or "varbit" => new CSharpTypeInfo { TypeName = "BitArray", IsValueType = false, RequiredUsing = "System.Collections" },
 
             // Geometric types - map to string for now
             "point" or "line" or "lseg" or "box" or "path" or "polygon" or "circle" =>

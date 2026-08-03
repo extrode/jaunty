@@ -106,11 +106,36 @@ internal static class DbValueConversion
             return TimeSpan.Parse(tsString, CultureInfo.InvariantCulture);
 
 #if NET8_0_OR_GREATER
-        if (underlyingType == typeof(DateOnly) && value is string dateOnlyString)
-            return DateOnly.Parse(dateOnlyString, CultureInfo.InvariantCulture);
+        if (underlyingType == typeof(DateOnly))
+        {
+            if (value is string dateOnlyString) return DateOnly.Parse(dateOnlyString, CultureInfo.InvariantCulture);
 
-        if (underlyingType == typeof(TimeOnly) && value is string timeOnlyString)
-            return TimeOnly.Parse(timeOnlyString, CultureInfo.InvariantCulture);
+            // AUD-R35-027: text was the only source handled, but text is not how the mainstream
+            // providers surface a date column. SqlClient returns a SQL Server DATE as DateTime,
+            // Npgsql returns a PostgreSQL date as DateTime, and DuckDB returns TIMESTAMP the same
+            // way - so a DateOnly property backed by an actual date column threw InvalidCastException
+            // on every one of them, while the same property backed by SQLite TEXT read fine.
+            if (value is DateTime dateOnlySource) return DateOnly.FromDateTime(dateOnlySource);
+        }
+
+        if (underlyingType == typeof(TimeOnly))
+        {
+            if (value is string timeOnlyString) return TimeOnly.Parse(timeOnlyString, CultureInfo.InvariantCulture);
+
+            // Same gap on the time side, and here the provider representation is TimeSpan: SqlClient
+            // returns SQL Server TIME as TimeSpan, MySqlConnector returns TIME the same way.
+            // FromTimeSpan throws outside [0, 24h), which SQL Server TIME cannot produce but a
+            // MySQL/PostgreSQL INTERVAL can, so that range is rejected by name rather than by an
+            // ArgumentOutOfRangeException from inside the conversion.
+            if (value is TimeSpan timeOnlySource)
+            {
+                return timeOnlySource >= TimeSpan.Zero && timeOnlySource < TimeSpan.FromDays(1)
+                    ? TimeOnly.FromTimeSpan(timeOnlySource)
+                    : throw NoConversion(value, underlyingType);
+            }
+
+            if (value is DateTime timeOnlyTimestamp) return TimeOnly.FromDateTime(timeOnlyTimestamp);
+        }
 #endif
 
         // CultureInfo.InvariantCulture, not the ambient CurrentCulture: providers routinely hand

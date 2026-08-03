@@ -112,6 +112,29 @@ internal sealed class BoundedCache<TKey, TValue>
         return false;
     }
 
+    /// <summary>
+    /// Adds the value, or overwrites the one already stored under <paramref name="key"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-058. For caches whose entries carry a <c>ConfigurationGeneration</c> stamp, a stale
+    /// entry has to be replaced rather than left in place, which <see cref="TryAdd"/> cannot do and
+    /// <see cref="GetOrAdd"/> would silently decline to do. An overwrite does not re-enqueue the
+    /// key: the entry is the same one, so its position in the eviction order is unchanged, and
+    /// enqueuing again would let one repeatedly-refreshed key push others out.
+    /// </remarks>
+    internal void Set(TKey key, TValue value)
+    {
+        if (_entries.TryAdd(key, value))
+        {
+            Interlocked.Increment(ref _count);
+            _insertionOrder.Enqueue(key);
+            Evict();
+            return;
+        }
+
+        _entries[key] = value;
+    }
+
     internal TValue GetOrAdd(TKey key, Func<TKey, TValue> factory)
     {
         if (_entries.TryGetValue(key, out TValue? existing))

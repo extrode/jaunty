@@ -377,8 +377,32 @@ internal static class ExpressionTranslator
         return current is ParameterExpression;
     }
 
+    /// <remarks>
+    /// AUD-R35-025. Only <see cref="ExtractColumnAndValue"/> checked <see cref="IsEntityMember"/>
+    /// before treating a member expression as a column; the three other sites that resolve one did
+    /// not, so a property read with nothing to do with the entity was emitted as a column
+    /// reference. <c>VisitBoolMember</c> turned <c>x =&gt; captured.Flag</c> or
+    /// <c>x =&gt; Settings.DebugMode</c> into <c>"Flag" = true</c>; <c>VisitMethodCall</c>'s string
+    /// branch turned <c>x =&gt; caption.StartsWith(x.Name)</c> into a LIKE over a column
+    /// <c>"caption"</c>; and <c>HandleInClause</c> took any member it could extract, so
+    /// <c>x =&gt; ids.Contains(threshold)</c> became <c>"threshold" IN (...)</c>. The registered
+    /// DuckDB view exposes every column in the file, so a name collision with a real column meant
+    /// the predicate silently filtered on file data instead of the caller's value; without one it
+    /// degraded into an opaque binder error. A captured <em>field</em> was caught incidentally by
+    /// the not-a-property throw below - it is properties, static or captured, that slipped through.
+    /// <para>
+    /// The check lives here rather than at each call site because every site resolving a column
+    /// goes through this method, and <see cref="ExtractColumnAndValue"/> reaches it only after
+    /// asking the same question itself, so its two-sided fall-through is unaffected.
+    /// </para>
+    /// </remarks>
     private static string ResolveColumnFromMember(MemberExpression member)
     {
+        if (!IsEntityMember(member))
+            throw new NotSupportedException(
+                $"'{member}' does not read a property of the entity, so it is not a column. " +
+                "Evaluate it before the query and compare against the value.");
+
         if (member.Member is not PropertyInfo prop)
             throw new NotSupportedException($"Member '{member.Member.Name}' is not a property.");
         return GetColumnName(prop);

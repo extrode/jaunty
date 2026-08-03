@@ -395,7 +395,7 @@ public static partial class Jaunty
                     DbParameter p = command.CreateParameter();
                     // Parameter name matches SQL generated in MultiRowInsertCache.Build()
                     p.ParameterName = insertableColumns[c].ColumnName + "_" + row;
-                    p.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[c](entity), insertableColumns[c].Property) ?? DBNull.Value;
+                    p.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[c](entity), insertableColumns[c].Property, insertableColumns[c].EnumStorageOverride) ?? DBNull.Value;
                     command.Parameters.Add(p);
                 }
             }

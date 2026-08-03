@@ -1640,15 +1640,19 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     {
         // columnName is already dialect-escaped - every call site passes the result of
         // GetColumnNameFromSelector, which is backed by the pre-escaped CachedDialectMetadata.
+        // AUD-R35-066: AVG takes its result type from its operand on SQL Server, so the average of
+        // an int column truncated in the engine before this method's declared double ever saw it.
+        // FractionalAverage holds the per-dialect decision; every other aggregate is emitted bare.
+        string aggregateExpression = aggregateFunction == "AVG"
+            ? FractionalAverage.Generate(_dialect, columnName)
+            : $"{aggregateFunction}({columnName})";
+
         if (ScalarNeedsDerivedTable)
-            return WrapScalarInDerivedTable($"{aggregateFunction}({columnName})");
+            return WrapScalarInDerivedTable(aggregateExpression);
 
         var sb = new StringBuilder(128);
         sb.Append("SELECT ");
-        sb.Append(aggregateFunction);
-        sb.Append('(');
-        sb.Append(columnName);
-        sb.Append(')');
+        sb.Append(aggregateExpression);
 
         // FROM
         sb.Append(" FROM ");
@@ -1693,25 +1697,13 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     private string GetColumnNameFromProperty(string propertyName) => _cache.GetColumnName(propertyName);
 
-    private string GetUniqueParamName(string baseName)
-    {
-        return $"{_dialect.ParameterPrefix}{SanitizeParamName(baseName)}_{_parameters.Count}";
-    }
-
-    // AUD-R22: baseName is the raw caller-supplied column name from the string-based
-    // Where/And/Or/Set overloads. A space or other character invalid in a SQL parameter
-    // identifier (e.g. Where("Order Date", value)) used to be interpolated unsanitized,
-    // producing a malformed placeholder (e.g. "@Order Date_0") that fails at execution time.
-    private static string SanitizeParamName(string name)
-    {
-        char[] chars = name.ToCharArray();
-        for (int i = 0; i < chars.Length; i++)
-        {
-            if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '_')
-                chars[i] = '_';
-        }
-        return new string(chars);
-    }
+    // AUD-R22 put the sanitisation here; AUD-R35-014 moved both it and the count suffix onto
+    // ParameterCollection, so the joined builders' string Where overloads - which had neither -
+    // share one implementation rather than a third copy. Names are unchanged in the common case;
+    // CreateUniqueName additionally steps past a candidate that is somehow already taken, which
+    // this form would have handed to Add to throw on.
+    private string GetUniqueParamName(string baseName) =>
+        _parameters.CreateUniqueName(_dialect.ParameterPrefix, baseName);
 
     private void AddParametersFromObject(object parameters)
     {

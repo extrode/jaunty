@@ -53,23 +53,44 @@ internal static class MappedPropertyFilter
         // AOT-SAFE: FlatFiles.DuckDB maps by reflection by design and is on no AOT publish path - no NativeAOT sample or the Scaffolding CLI references it. A trimmed consumer fails loudly at first map, not silently.
         PropertyInfo[] all = entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         var byName = new Dictionary<string, int>(all.Length, StringComparer.Ordinal);
-        var result = new List<PropertyInfo>(all.Length);
+        var candidates = new List<PropertyInfo>(all.Length);
 
+        // AUD-R35-028: the hide chain is collapsed FIRST and IsMapped applied to the survivor. The
+        // other order dropped the derived declaration and then admitted the base one, so
+        //
+        //     class Base    { public object Code { get; set; } }
+        //     class Derived : Base { [Ignore] public new string Code { get; set; } }
+        //
+        // mapped Base.Code as a column - the exact opposite of what the attribute asks for, and
+        // with the wrong CLR type on top. Same for [NotMapped], and for a `new` declaration that
+        // makes the property read-only over a read-write base. Only the most-derived declaration is
+        // the one C# binds, so it is the only one whose attributes have any say.
         for (int i = 0; i < all.Length; i++)
         {
             PropertyInfo property = all[i];
-            if (!IsMapped(property)) continue;
+
+            // Indexers are excluded before the name dictionary rather than by IsMapped below,
+            // because several of them share the name "Item" without being a hide chain.
+            if (property.GetIndexParameters().Length > 0) continue;
 
             if (byName.TryGetValue(property.Name, out int existingIndex))
             {
-                if (IsMoreDerivedThan(property, result[existingIndex]))
-                    result[existingIndex] = property;
+                if (IsMoreDerivedThan(property, candidates[existingIndex]))
+                    candidates[existingIndex] = property;
 
                 continue;
             }
 
-            byName[property.Name] = result.Count;
-            result.Add(property);
+            byName[property.Name] = candidates.Count;
+            candidates.Add(property);
+        }
+
+        var result = new List<PropertyInfo>(candidates.Count);
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            if (IsMapped(candidates[i]))
+                result.Add(candidates[i]);
         }
 
         return result;
@@ -97,9 +118,21 @@ internal static class MappedPropertyFilter
     /// this class's <see cref="GetMappedProperties"/> for the *filtering* half of the rule while
     /// each keeping its own copy of the *naming* half; the third was outside both. Same class of
     /// drift AUD-R25 created this type for, so the naming half lives here now as well.
+    /// <para>
+    /// AUD-R35-071: the null-coalesce alone is not the rule. <see cref="ColumnAttribute"/>'s
+    /// constructor rejects null but not <c>""</c>, so <c>[Column("")]</c> mapped the property to the
+    /// empty column name - the read path then never matched a file column and left the property
+    /// silently unset, and <c>TargetDdlGenerator</c> emitted an empty-named column into the
+    /// generated import DDL. AUD-R32-006 added the <c>IsNullOrEmpty</c> guard to
+    /// <c>MetadataBuilder</c> and the source generator carries it too; this was the third path,
+    /// which did not.
+    /// </para>
     /// </remarks>
-    public static string GetColumnName(PropertyInfo property) =>
-        property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+    public static string GetColumnName(PropertyInfo property)
+    {
+        string? name = property.GetCustomAttribute<ColumnAttribute>()?.Name;
+        return string.IsNullOrEmpty(name) ? property.Name : name!;
+    }
 
     /// <summary>
     /// Returns <see langword="true"/> when <paramref name="property"/> should be treated as a column.

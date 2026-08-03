@@ -185,7 +185,9 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
     public IJoinedQuery4<T1, T2, T3, T4> Where(string column, object value)
     {
-        string paramName = $"{_parent._parent.Dialect.ParameterPrefix}{column.Replace(".", "_")}";
+        // AUD-R35-014: see ParameterCollection.CreateUniqueName.
+        string paramName = _parent._parent.GetParameters()
+            .CreateUniqueName(_parent._parent.Dialect.ParameterPrefix, column);
         string escapedColumn = EscapeQualifiedColumn(column);
         _parent._parent.AddWhereCondition(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.None));
         _parent._parent.GetParameters().Add(paramName, value);
@@ -492,11 +494,14 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
     // ==================== SELECT PARTIAL ====================
 
-    public List<IDictionary<string, object?>> SelectPartial(string columns)
-    {
-        string sql = _parent._parent.BuildSelectPartialSql(columns);
-        return _parent._parent.Connection.QueryPartialList(sql, _parent._parent.GetParameters().ToParameterObject()!);
-    }
+    // AUD-R35-063: this used to build the SQL here and run it through the core
+    // Connection.QueryPartialList, whose row builder is an OrdinalIgnoreCase dictionary filled by
+    // assignment - a duplicate column name resolved silently last-wins, and lookups were
+    // case-insensitive. Every other member of the family delegates to _parent._parent, whose
+    // MapToDictionary is case-sensitive and throws on a duplicate. Selecting a caller-written
+    // column list over a four-table join is exactly where a duplicate name arises, and this is the
+    // overload callers reach first. Delegating also puts both halves on the same parameter binder.
+    public List<IDictionary<string, object?>> SelectPartial(string columns) => _parent._parent.SelectPartial(columns);
 
     // AUD-R12: same fetch-all-then-take-first/single issue as the SelectFirst/SelectSingle
     // family above - delegate to _parent._parent, which already applies GetPagingSql(0, 1)/(0, 2).
@@ -628,11 +633,9 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return await _parent._parent.Connection.QueryScalarAsync<long>(sql, _parent._parent.GetParameters().ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
-    {
-        string sql = _parent._parent.BuildSelectPartialSql(columns);
-        return await _parent._parent.Connection.QueryPartialListAsync(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-    }
+    // AUD-R35-063: the async twin of the same split; see SelectPartial above.
+    public Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialAsync(columns, cancellationToken);
 
     // AUD-R12: same fetch-all-then-take-first issue - delegate to _parent._parent, which
     // already applies GetPagingSql(0, 1).
