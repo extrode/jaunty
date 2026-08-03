@@ -572,10 +572,28 @@ public class SqlDialectTests
 
     #region PostgreSQL Dialect - String Functions
 
+    // AUD-R35-061: this used to assert the COLLATE "C" clause. PostgreSQL's LIKE is not
+    // collation-driven for case, so the clause asserted nothing about the semantics while making
+    // the column a non-simple operand no btree index can be seeked on.
     [Fact]
-    public void Postgres_GenerateCaseSensitiveLike_UsesCollate()
+    public void Postgres_GenerateCaseSensitiveLike_LeavesTheColumnUnwrapped()
     {
-        Assert.Equal("col COLLATE \"C\" LIKE @param ESCAPE '\\'", _postgres.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.Equal("col LIKE @param ESCAPE '\\'", _postgres.GenerateCaseSensitiveLike("col", "@param", "\\"));
+    }
+
+    [Fact]
+    public void Postgres_GenerateCaseSensitiveLike_DoesNotWrapTheColumnInCollate()
+    {
+        Assert.DoesNotContain("COLLATE", _postgres.GenerateCaseSensitiveLike("col", "@param", "\\"), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The counterpart: LOWER() on the column stays, because there the wrapping is the semantics.
+    /// </summary>
+    [Fact]
+    public void Postgres_GenerateCaseInsensitiveEquals_StillWrapsBothSides()
+    {
+        Assert.Equal("LOWER(col) = LOWER(@param)", _postgres.GenerateCaseInsensitiveEquals("col", "@param"));
     }
 
     [Fact]
