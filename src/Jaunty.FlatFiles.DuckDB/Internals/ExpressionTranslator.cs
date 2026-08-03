@@ -403,10 +403,45 @@ internal static class ExpressionTranslator
                 $"'{member}' does not read a property of the entity, so it is not a column. " +
                 "Evaluate it before the query and compare against the value.");
 
-        if (member.Member is not PropertyInfo prop)
-            throw new NotSupportedException($"Member '{member.Member.Name}' is not a property.");
+        // AUD-R35-248. IsEntityMember walks the whole chain to the ParameterExpression and accepts
+        // it, but only the leaf member was ever resolved - so `x => x.Score!.Value > 5` (Score is
+        // int?) emitted a column "Value", and `x => x.Child.Name == "a"` emitted "Name". Neither is
+        // translated correctly nor rejected: both reach the provider naming a column the caller
+        // never wrote. A lifted `.Value` is the one chain with an obvious meaning - it is the same
+        // column, asserted non-null - so it is unwrapped; everything else is a navigation this
+        // translator has no join to follow and is now refused by name.
+        MemberExpression resolved = UnwrapLiftedValue(member);
+
+        if (resolved.Expression is not ParameterExpression)
+        {
+            string hint = member.Member.Name == "HasValue"
+                ? " Write 'x => x.Prop != null' instead, which translates to IS NOT NULL."
+                : " Flat file predicates translate to a single view, so there is no join to follow.";
+
+            throw new NotSupportedException(
+                $"'{member}' reads through '{resolved.Expression}' rather than directly off the entity, " +
+                $"so it is not a column.{hint}");
+        }
+
+        if (resolved.Member is not PropertyInfo prop)
+            throw new NotSupportedException($"Member '{resolved.Member.Name}' is not a property.");
         return GetColumnName(prop);
     }
+
+    /// <summary>
+    /// Unwraps <c>x.Prop.Value</c> on a <see cref="Nullable{T}"/> property to <c>x.Prop</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-248. Reading <c>.Value</c> off a nullable column means "this column, and it is not
+    /// null" - the same column either way, since a SQL comparison against NULL is already false.
+    /// Only the one level is unwrapped: <c>Nullable&lt;T&gt;</c> does not nest.
+    /// </remarks>
+    private static MemberExpression UnwrapLiftedValue(MemberExpression member)
+        => member.Member.Name == "Value"
+            && member.Expression is MemberExpression inner
+            && Nullable.GetUnderlyingType(inner.Type) is not null
+                ? inner
+                : member;
 
     private static object? EvaluateExpression(Expression expression)
     {
