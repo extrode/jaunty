@@ -27,7 +27,7 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
         "SESSION_USER", "SETOF", "SIMILAR", "SMALLINT", "SOME", "SUBSTRING", "SYMMETRIC",
         "TABLE", "TABLESAMPLE", "THEN", "TIME", "TIMESTAMP", "TO", "TRAILING", "TREAT", "TRIM",
         "TRUE", "UNION", "UNIQUE", "USER", "USING", "VALUES", "VARCHAR", "VARIADIC", "VERBOSE",
-        "WHEN", "WHERE", "WINDOW", "WITH", "ORDER", "USER"
+        "WHEN", "WHERE", "WINDOW", "WITH"
     };
 
     public string ParameterPrefix => "@";
