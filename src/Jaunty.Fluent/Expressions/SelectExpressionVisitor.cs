@@ -1,6 +1,5 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 using Jaunty.Dialects;
 using Jaunty.Fluent.Internals;
@@ -73,17 +72,36 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
 
         foreach (MemberBinding? binding in node.Bindings)
         {
-            if (binding is MemberAssignment assignment)
+            // AUD-R35-196: a MemberMemberBinding (`p => new Dto { Nested = { X = p.A } }`) or a
+            // MemberListBinding (`p => new Dto { Items = { p.A } }`) - both legal in a C# expression
+            // tree - used to be skipped in silence, producing a projection with a column missing and
+            // no way to tell. The same gap was closed in the GROUP BY visitors as AUD-R35-195. Every
+            // other untranslatable shape in this class throws and names what it saw.
+            if (binding is not MemberAssignment assignment)
             {
-                var alias = assignment.Member.Name;
-                var sql = TranslateProjectionExpression(assignment.Expression);
-                _columns.Add(new SelectColumn(sql, alias));
+                throw new NotSupportedException(
+                    $"Member binding '{binding.BindingType}' is not supported in SELECT projections. " +
+                    "Only member assignments (Member = expression) can be translated.");
             }
+
+            var alias = assignment.Member.Name;
+            var sql = TranslateProjectionExpression(assignment.Expression);
+            _columns.Add(new SelectColumn(sql, alias));
         }
 
         return node;
     }
 
+    /// <summary>
+    /// AUD-R35-197. Unreachable as the class stands: <c>Translate</c>'s top-level switch names
+    /// <see cref="MemberExpression"/> and routes it through <c>TranslateProjectionExpression</c>
+    /// before <c>Visit</c> is ever called, <c>VisitNew</c>/<c>VisitMemberInit</c> translate their
+    /// children the same way rather than visiting them, and every other override throws. Its last
+    /// caller was the <c>NewArrayInit</c> hole AUD-R34-018 closed. It is kept rather than deleted
+    /// so that a member reaching <c>Visit</c> again has a defined outcome, but the branch that used
+    /// to return <c>node</c> having appended nothing - the silent-drop pattern the last three
+    /// rounds have been removing - now throws instead.
+    /// </summary>
     protected override Expression VisitMember(MemberExpression node)
     {
         // Single member selection: p => p.ProductName
@@ -91,8 +109,12 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         {
             var escapedColumn = GetEscapedColumnName(node);
             _columns.Add(new SelectColumn(escapedColumn, node.Member.Name));
+            return node;
         }
-        return node;
+
+        throw new NotSupportedException(
+            $"'{node.Member.Name}' is not a property of the entity being projected. " +
+            "Only entity properties and Sql.* functions can be translated in SELECT projections.");
     }
 
     /// <summary>
