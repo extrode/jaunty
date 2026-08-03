@@ -65,7 +65,7 @@ internal static class TablePromoter
     /// <param name="dialect">The DuckDB dialect for SQL generation.</param>
     public static void EnsurePromotedToTable(DuckDBConnection connection, IFileSource source, DuckDbDialect dialect)
     {
-        if (source.IsPreloaded)
+        if (PreloadRegistry.IsPreloaded(connection, source))
             return;
 
         ConnectionState state = States.GetValue(connection, static _ => new ConnectionState());
@@ -123,7 +123,7 @@ internal static class TablePromoter
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     public static async ValueTask EnsurePromotedToTableAsync(DuckDBConnection connection, IFileSource source, DuckDbDialect dialect, CancellationToken cancellationToken)
     {
-        if (source.IsPreloaded)
+        if (PreloadRegistry.IsPreloaded(connection, source))
             return;
 
         ConnectionState state = States.GetValue(connection, static _ => new ConnectionState());
