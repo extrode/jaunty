@@ -271,6 +271,51 @@ public class StoredProcedureOptionsOverloadTests
         Assert.Equal(97, connection.ExecutedTimeout);
     }
 
+    // AUD-R35-102 (round-35 batch 03b). Three members of the same family were skipped when this
+    // file was written: the CommandOptions<T>-only overloads of ExecuteStoredProcedureFirst and of
+    // both async First forms. A grep of tests/ for any ExecuteStoredProcedureFirst* call taking a
+    // CommandOptions returned nothing, so the exact defect AUD-R34-003 fixed would be invisible
+    // there. ExecuteStoredProcedureFirst throws on an empty reader, which the stub returns, so
+    // these assert on what reached the command and let the throw stand.
+
+    [Fact]
+    public void ExecuteStoredProcedureFirst_GivenOptionsAndNoParameters_AppliesTheTransaction()
+    {
+        using var connection = new RecordingConnection();
+        using IDbTransaction transaction = connection.BeginTransaction();
+
+        Assert.ThrowsAny<Exception>(() =>
+            connection.ExecuteStoredProcedureFirst<Row>("GetRow", CommandOptions<Row>.WithTransaction(transaction)));
+
+        Assert.Same(transaction, connection.ExecutedTransaction);
+        Assert.Equal(CommandType.StoredProcedure, connection.ExecutedCommandType);
+        Assert.Equal("GetRow", connection.ExecutedCommandText);
+    }
+
+    [Fact]
+    public async Task ExecuteStoredProcedureFirstAsync_GivenOptionsAndNoParameters_AppliesTheTimeout()
+    {
+        using var connection = new RecordingConnection();
+
+        await Assert.ThrowsAnyAsync<Exception>(
+            async () => await connection.ExecuteStoredProcedureFirstAsync<Row>("GetRow", CommandOptions<Row>.WithTimeout(97)));
+
+        Assert.Equal(97, connection.ExecutedTimeout);
+        Assert.Equal(CommandType.StoredProcedure, connection.ExecutedCommandType);
+    }
+
+    [Fact]
+    public async Task ExecuteStoredProcedureFirstOrDefaultAsync_GivenOptionsAndNoParameters_AppliesTheTimeout()
+    {
+        using var connection = new RecordingConnection();
+
+        await connection.ExecuteStoredProcedureFirstOrDefaultAsync<Row>("GetRow", CommandOptions<Row>.WithTimeout(97));
+
+        Assert.Equal(97, connection.ExecutedTimeout);
+        Assert.Equal(CommandType.StoredProcedure, connection.ExecutedCommandType);
+        Assert.Equal("GetRow", connection.ExecutedCommandText);
+    }
+
     /// <summary>
     /// The non-generic form reaches the new overloads through the AUD-R34-002 conversion, so this
     /// covers both fixes at once - and it is the shape the <c>CommandOptions</c> documentation gives
