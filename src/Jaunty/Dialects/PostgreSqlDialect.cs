@@ -80,7 +80,7 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
         // However, to be explicit and ensure consistency, we use COLLATE "C"
         // "C" collation provides byte-by-byte comparison (case-sensitive)
         // This is bulletproof and matches C# string.Contains() behavior
-        return $"{columnName} COLLATE \"C\" LIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"{columnName} COLLATE \"C\" LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)
@@ -88,7 +88,7 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
         // PostgreSQL: Use ILIKE for case-insensitive matching
         // ILIKE is PostgreSQL-specific and very efficient
         // Alternative: Use UPPER() or LOWER() but ILIKE is preferred
-        return $"{columnName} ILIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"{columnName} ILIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
