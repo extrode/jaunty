@@ -31,11 +31,13 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
         _parent = parent;
         _metadata = [FluentMetadataCache.GetMetadata<T1>(), FluentMetadataCache.GetMetadata<T2>(), FluentMetadataCache.GetMetadata<T3>()];
         CachedDialectMetadata[] cachedMetadata = [FluentMetadataCache.GetForDialect<T1>(_parent._parent.Dialect), FluentMetadataCache.GetForDialect<T2>(_parent._parent.Dialect), FluentMetadataCache.GetForDialect<T3>(_parent._parent.Dialect)];
+        // AUD-R35-015: see GroupedJoinTablePrefixes.Resolve.
+        Dialects.ISqlDialect dialect = _parent._parent.Dialect;
         string[] tablePrefixes =
         [
-            _parent._parent.FromAlias ?? _metadata[0].TableName,
-            _parent._parent.Joins[0].Alias ?? _metadata[1].TableName,
-            _parent._parent.Joins[1].Alias ?? _metadata[2].TableName
+            GroupedJoinTablePrefixes.Resolve(dialect, _parent._parent.FromAlias, _metadata[0]),
+            GroupedJoinTablePrefixes.Resolve(dialect, _parent._parent.Joins[0].Alias, _metadata[1]),
+            GroupedJoinTablePrefixes.Resolve(dialect, _parent._parent.Joins[1].Alias, _metadata[2]),
         ];
         _visitor = new JoinedGroupByExpressionVisitor(_parent._parent.Dialect, _metadata, cachedMetadata, tablePrefixes, keySelector);
     }
@@ -43,9 +45,8 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
     public IGroupedJoinedQuery3<T1, T2, T3, TKey> Having(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, bool>> predicate)
     {
         (string havingSql, List<(string Name, object? Value)> parameters) = _visitor.TranslateHavingPredicate(predicate);
-        _havingConditions.Add(havingSql);
-        foreach ((string name, object? value) in parameters)
-            _parent._parent.AddParameter(name, value);
+        // AUD-R35-016: see JoinedQueryBuilder.RegisterHavingParameters.
+        _havingConditions.Add(_parent._parent.RegisterHavingParameters(havingSql, parameters));
         return this;
     }
 
