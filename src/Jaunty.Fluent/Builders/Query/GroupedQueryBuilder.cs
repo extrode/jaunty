@@ -380,7 +380,14 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             if (body is MemberExpression memberExpr)
             {
                 string columnName = GetColumnName(memberExpr.Member.Name);
-                return $"{aggregate}({_dialect.EscapeColumnName(columnName)})";
+                string operand = _dialect.EscapeColumnName(columnName);
+
+                // AUD-R35-066: a truncated AVG changes which groups a HAVING keeps, not just the
+                // value reported - HAVING AVG(qty) > 12.5 is false for a group averaging 12.6 once
+                // the engine has floored it to 12.
+                return aggregate == "AVG"
+                    ? FractionalAverage.Generate(_dialect, operand)
+                    : $"{aggregate}({operand})";
             }
         }
 
