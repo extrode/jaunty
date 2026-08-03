@@ -1640,15 +1640,19 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     {
         // columnName is already dialect-escaped - every call site passes the result of
         // GetColumnNameFromSelector, which is backed by the pre-escaped CachedDialectMetadata.
+        // AUD-R35-066: AVG takes its result type from its operand on SQL Server, so the average of
+        // an int column truncated in the engine before this method's declared double ever saw it.
+        // FractionalAverage holds the per-dialect decision; every other aggregate is emitted bare.
+        string aggregateExpression = aggregateFunction == "AVG"
+            ? FractionalAverage.Generate(_dialect, columnName)
+            : $"{aggregateFunction}({columnName})";
+
         if (ScalarNeedsDerivedTable)
-            return WrapScalarInDerivedTable($"{aggregateFunction}({columnName})");
+            return WrapScalarInDerivedTable(aggregateExpression);
 
         var sb = new StringBuilder(128);
         sb.Append("SELECT ");
-        sb.Append(aggregateFunction);
-        sb.Append('(');
-        sb.Append(columnName);
-        sb.Append(')');
+        sb.Append(aggregateExpression);
 
         // FROM
         sb.Append(" FROM ");

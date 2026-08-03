@@ -7,7 +7,7 @@ namespace Jaunty.Dialects;
 /// Uses [brackets] only for SQL keywords.
 /// Default schema: "dbo"
 /// </summary>
-internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect
+internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IFractionalAverageDialect
 {
     // Common SQL Server reserved keywords
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
@@ -256,6 +256,16 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect
     /// </summary>
     public string GenerateSubstringToEnd(string expression, string start)
         => $"SUBSTRING({expression}, {start}, 2147483647)";
+
+    /// <summary>
+    /// AUD-R35-066. T-SQL takes AVG's result type from its operand, so AVG over an int column
+    /// truncates in the engine before the mapper ever sees it - and the fluent Avg is declared to
+    /// return double. FLOAT is the T-SQL double, and casting the operand rather than the result is
+    /// what makes the division itself fractional. NULL casts to NULL, so an all-NULL group still
+    /// averages to NULL rather than zero.
+    /// </summary>
+    public string GenerateFractionalAverage(string operand)
+        => $"AVG(CAST({operand} AS FLOAT))";
 
     // Date functions - SQL Server uses YEAR(), MONTH(), DAY()
     public string GenerateYear(string expression) => $"YEAR({expression})";

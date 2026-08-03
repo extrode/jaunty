@@ -346,6 +346,19 @@ internal sealed class JoinedGroupByExpressionVisitor
         throw new NotSupportedException($"Method '{methodName}' on type '{methodCall.Method.DeclaringType?.Name}' is not supported in GROUP BY Select.");
     }
 
+    /// <summary>
+    /// AUD-R35-066. AVG used to be emitted bare, like every other aggregate. On SQL Server AVG
+    /// takes its result type from its operand, so the average of an int column was truncated in the
+    /// engine and then widened to the double the fluent Avg is declared to return - 12.0 where the
+    /// true average is 12.6. The other three engines do not truncate, so they get the bare form
+    /// still; the decision lives in FractionalAverage rather than here, because this translator and
+    /// its joined twin held the same defect and would drift again.
+    /// </summary>
+    private string ApplyAggregate(string aggregate, string operand)
+        => aggregate == "AVG"
+            ? FractionalAverage.Generate(_dialect, operand)
+            : $"{aggregate}({operand})";
+
     private string BuildAggregateWithColumn(string aggregate, Expression? expr)
     {
         if (expr == null) return $"{aggregate}(*)";
@@ -371,12 +384,12 @@ internal sealed class JoinedGroupByExpressionVisitor
             {
                 int paramIndex = GetParameterIndex(memberExpr, lambda.Parameters);
                 string qualified = GetQualifiedColumnName(paramIndex, memberExpr.Member.Name);
-                return $"{aggregate}({qualified})";
+                return ApplyAggregate(aggregate, qualified);
             }
 
             if (body is ConstantExpression constant)
             {
-                return $"{aggregate}({HavingExpressionHelpers.FormatLiteral(constant.Value, _dialect)})";
+                return ApplyAggregate(aggregate, HavingExpressionHelpers.FormatLiteral(constant.Value, _dialect));
             }
         }
 
