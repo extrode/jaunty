@@ -523,6 +523,165 @@ public class EntityDataReaderTests : IDisposable
         Assert.False(reader.IsDBNull(0));
     }
 
+    // AUD-R35-109/110/111/112 (round-35 batch 04a re-reports, first filed in rounds 9, 27 and 34).
+
+    private sealed class TypedEntity
+    {
+        public bool Flag { get; set; }
+        public byte Small { get; set; }
+        public char Letter { get; set; }
+        public DateTime When { get; set; }
+        public decimal Money { get; set; }
+        public double Big { get; set; }
+        public float Middle { get; set; }
+        public Guid Key { get; set; }
+        public short Short { get; set; }
+        public int Number { get; set; }
+        public long Long { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private static EntityMetadata TypedMetadata() => new("typed", null,
+    [
+        .. typeof(TypedEntity).GetProperties()
+            .Select(p => new ColumnMetadata(p, p.Name, isPrimaryKey: false, databaseGeneratedOption: null)),
+    ]);
+
+    private static readonly Guid SampleKey = new("11112222-3333-4444-5555-666677778888");
+    private static readonly DateTime SampleWhen = new(2026, 8, 3, 4, 5, 6, DateTimeKind.Utc);
+
+    private static TypedEntity Sample() => new()
+    {
+        Flag = true,
+        Small = 7,
+        Letter = 'j',
+        When = SampleWhen,
+        Money = 12.34m,
+        Big = 1.5d,
+        Middle = 2.5f,
+        Key = SampleKey,
+        Short = 9,
+        Number = 42,
+        Long = 43L,
+        Text = "text",
+    };
+
+    private static int Ordinal(IDataReader reader, string name) => reader.GetOrdinal(name);
+
+    [Fact]
+    public void TheTypedAccessors_ReturnTheColumnValues()
+    {
+        using var reader = new EntityDataReader<TypedEntity>([Sample()], TypedMetadata());
+        Assert.True(reader.Read());
+
+        Assert.True(reader.GetBoolean(Ordinal(reader, nameof(TypedEntity.Flag))));
+        Assert.Equal((byte)7, reader.GetByte(Ordinal(reader, nameof(TypedEntity.Small))));
+        Assert.Equal('j', reader.GetChar(Ordinal(reader, nameof(TypedEntity.Letter))));
+        Assert.Equal(SampleWhen, reader.GetDateTime(Ordinal(reader, nameof(TypedEntity.When))));
+        Assert.Equal(12.34m, reader.GetDecimal(Ordinal(reader, nameof(TypedEntity.Money))));
+        Assert.Equal(1.5d, reader.GetDouble(Ordinal(reader, nameof(TypedEntity.Big))));
+        Assert.Equal(2.5f, reader.GetFloat(Ordinal(reader, nameof(TypedEntity.Middle))));
+        Assert.Equal(SampleKey, reader.GetGuid(Ordinal(reader, nameof(TypedEntity.Key))));
+        Assert.Equal((short)9, reader.GetInt16(Ordinal(reader, nameof(TypedEntity.Short))));
+        Assert.Equal(42, reader.GetInt32(Ordinal(reader, nameof(TypedEntity.Number))));
+        Assert.Equal(43L, reader.GetInt64(Ordinal(reader, nameof(TypedEntity.Long))));
+        Assert.Equal("text", reader.GetString(Ordinal(reader, nameof(TypedEntity.Text))));
+    }
+
+    [Fact]
+    public void GetDataTypeName_IsTheFieldTypeName()
+    {
+        using var reader = new EntityDataReader<TypedEntity>([Sample()], TypedMetadata());
+
+        int ordinal = Ordinal(reader, nameof(TypedEntity.Number));
+
+        Assert.Equal(typeof(int), reader.GetFieldType(ordinal));
+        Assert.Equal("Int32", reader.GetDataTypeName(ordinal));
+    }
+
+    [Fact]
+    public async Task TheProviderSpecificAndAsyncAccessors_MatchTheirSynchronousTwins()
+    {
+        using var reader = new EntityDataReader<TypedEntity>([Sample()], TypedMetadata());
+        Assert.True(reader.Read());
+
+        int ordinal = Ordinal(reader, nameof(TypedEntity.Number));
+
+        Assert.Equal(42, reader.GetProviderSpecificValue(ordinal));
+        Assert.False(await reader.IsDBNullAsync(ordinal, CancellationToken.None));
+
+        var values = new object[reader.FieldCount];
+        Assert.Equal(reader.FieldCount, reader.GetProviderSpecificValues(values));
+        Assert.Equal(42, values[ordinal]);
+    }
+
+    [Fact]
+    public void TheUnsupportedMembers_Throw()
+    {
+        using var reader = new EntityDataReader<TypedEntity>([Sample()], TypedMetadata());
+        Assert.True(reader.Read());
+
+        Assert.Throws<NotSupportedException>(() => reader.GetBytes(0, 0, null, 0, 0));
+        Assert.Throws<NotSupportedException>(() => reader.GetChars(0, 0, null, 0, 0));
+        Assert.Throws<NotSupportedException>(() => ((IDataRecord)reader).GetData(0));
+        Assert.Throws<NotSupportedException>(reader.GetSchemaTable);
+        Assert.False(reader.NextResult());
+    }
+
+    // AUD-R35-109, first filed round 9: Close() was an empty body while IsClosed reported _disposed,
+    // so the reader claimed to be open after Close and never disposed its enumerator.
+    [Fact]
+    public void Close_ClosesTheReader()
+    {
+        var reader = new EntityDataReader<TypedEntity>([Sample()], TypedMetadata());
+
+        Assert.False(reader.IsClosed);
+
+        reader.Close();
+
+        Assert.True(reader.IsClosed);
+
+        // Idempotent, as IDataReader.Close is specified to be - and as Dispose already was.
+        reader.Close();
+        reader.Dispose();
+        Assert.True(reader.IsClosed);
+    }
+
+    // AUD-R35-110, first filed round 27: GetValues wrote FieldCount elements whatever the array's
+    // length, so a short array raised IndexOutOfRangeException instead of copying what fits.
+    [Fact]
+    public void GetValues_WithAShortArray_CopiesWhatFitsAndReturnsTheCount()
+    {
+        using var reader = new EntityDataReader<TypedEntity>([Sample()], TypedMetadata());
+        Assert.True(reader.Read());
+
+        var values = new object[2];
+
+        Assert.Equal(2, reader.GetValues(values));
+        Assert.All(values, Assert.NotNull);
+    }
+
+    [Fact]
+    public void GetValues_WithALongArray_FillsOnlyTheColumns()
+    {
+        using var reader = new EntityDataReader<TypedEntity>([Sample()], TypedMetadata());
+        Assert.True(reader.Read());
+
+        var values = new object[reader.FieldCount + 3];
+
+        Assert.Equal(reader.FieldCount, reader.GetValues(values));
+        Assert.Null(values[reader.FieldCount]);
+    }
+
+    [Fact]
+    public void GetValues_WithANullArray_ThrowsArgumentNullException()
+    {
+        using var reader = new EntityDataReader<TypedEntity>([Sample()], TypedMetadata());
+        Assert.True(reader.Read());
+
+        Assert.Throws<ArgumentNullException>(() => reader.GetValues(null!));
+    }
+
     private static EntityMetadata CreateReorderedSubsetMetadata()
     {
         var nameProp = typeof(TestEntity).GetProperty(nameof(TestEntity.Name))!;
