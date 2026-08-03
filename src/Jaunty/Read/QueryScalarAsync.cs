@@ -40,7 +40,7 @@ public static partial class Jaunty
     ///     cts.Token);
     /// </code>
     /// </example>
-    /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
+    /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     /// <seealso cref="QueryScalar{T}(IDbConnection, string)"/>
     /// <seealso cref="ExecuteScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)

@@ -45,7 +45,7 @@ public static partial class Jaunty
     /// <exception cref="InvalidOperationException">
     /// Thrown when the query returns no results.
     /// </exception>
-    /// <seealso cref="QueryPartialFirst{T}(IDbConnection, string)"/>
+    /// <seealso cref="QueryPartialFirst{T}(IDbConnection, string, object)"/>
     /// <seealso cref="QueryPartialFirstOrDefault{T}(IDbConnection, string)"/>
     /// <seealso cref="QueryFirst{T}(IDbConnection, string)"/>
     public static T QueryPartialFirst<T>(this IDbConnection connection, string sql) where T : new()
