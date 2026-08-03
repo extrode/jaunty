@@ -62,6 +62,10 @@ public static partial class Jaunty
     /// }
     /// </code>
     /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// or when a non-nullable property receives a NULL value.
+    /// </exception>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     /// <seealso cref="QueryPartialStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
@@ -117,6 +121,10 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, object, CommandOptions{T}, CancellationToken)"/>
@@ -175,6 +183,10 @@ public static partial class Jaunty
     /// }
     /// </code>
     /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// or when a non-nullable property receives a NULL value.
+    /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
@@ -234,6 +246,10 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
