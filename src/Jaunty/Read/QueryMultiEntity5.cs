@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using Jaunty.Core;
 using Jaunty.Configuration;
-using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 
 namespace Jaunty;
