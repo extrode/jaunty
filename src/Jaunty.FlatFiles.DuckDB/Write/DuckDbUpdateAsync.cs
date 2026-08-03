@@ -33,7 +33,7 @@ public sealed partial class DuckDb
         var columnName = ExpressionTranslator.ResolveColumnName(column);
 
         var setParam = new DuckDBParameter { Value = value ?? DBNull.Value };
-        (string? whereSql, List<DuckDBParameter>? whereParams) = ExpressionTranslator.Translate<T>(predicate, paramOffset: 1);
+        (string whereSql, List<DuckDBParameter> whereParams) = ExpressionTranslator.Translate<T>(predicate, paramOffset: 1);
 
         var allParams = new List<DuckDBParameter>(whereParams.Count + 1) { setParam };
         allParams.AddRange(whereParams);
