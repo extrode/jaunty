@@ -67,6 +67,51 @@ public class MultiEntityMapperNGuardTests
         Assert.Contains("arity 3", exception.Message, StringComparison.Ordinal);
     }
 
+    // AUD-R35-119: an over-long array used to be accepted and the first N used. The likely cause
+    // of one is the same misalignment the guard exists to catch, so it now throws too.
+    [Fact]
+    public void Resolve_ResolverReturnsMoreDelegatesThanTypes_Throws()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using SqliteDataReader reader = OpenReader(connection);
+
+        Func<Type[], IDataReader, Action<object, IDataRecord>[]> resolver = (_, _) => new Action<object, IDataRecord>[]
+        {
+            (_, _) => { },
+            (_, _) => { },
+            (_, _) => { },
+            (_, _) => { },
+        };
+        Type[] types = { typeof(GuardT1), typeof(GuardT2), typeof(GuardT3) };
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => MultiEntityMapperNGuard.Resolve(resolver, types, reader));
+
+        Assert.Contains("returned 4 delegate(s)", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("arity 3", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("exactly one", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Resolve_ResolverReturnsExactlyOnePerType_Succeeds()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using SqliteDataReader reader = OpenReader(connection);
+
+        var expected = new Action<object, IDataRecord>[]
+        {
+            (_, _) => { },
+            (_, _) => { },
+            (_, _) => { },
+        };
+        Func<Type[], IDataReader, Action<object, IDataRecord>[]> resolver = (_, _) => expected;
+        Type[] types = { typeof(GuardT1), typeof(GuardT2), typeof(GuardT3) };
+
+        Assert.Same(expected, MultiEntityMapperNGuard.Resolve(resolver, types, reader));
+    }
+
     [Fact]
     public void Resolve_ResolverReturnsNullDelegateAtIndex_Throws()
     {
