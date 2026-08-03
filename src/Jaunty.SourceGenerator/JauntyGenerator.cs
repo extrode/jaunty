@@ -27,7 +27,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor DuplicateColumnNameDescriptor = new(
         id: "JAUNTYGEN001",
         title: "Duplicate mapped column name",
-        messageFormat: "Entity '{0}' has more than one property mapped to column '{1}'; only the first ('{2}') will be used in ParameterMap",
+        messageFormat: "Entity '{0}' has more than one property mapped to column '{1}'; ParameterMap keeps only the first ('{2}'), and the column is still emitted twice in InsertColumns/EntityColumns, so BindInsert/BindUpdate bind the same parameter name twice and the command fails at execution",
         category: "JauntySourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -247,7 +247,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(handWrittenMappers, static (spc, mapper) =>
         {
             if (mapper is { } m)
-                spc.ReportDiagnostic(Diagnostic.Create(HandWrittenMapperNotTrimSafeDescriptor, m.Location, m.TypeName));
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(
+                    HandWrittenMapperNotTrimSafeDescriptor,
+                    m.Location?.ToLocation() ?? Location.None,
+                    m.TypeName));
+            }
         });
 
         // Spec 011. Unlike everything above, this reads the consumer's *call sites* rather than their
@@ -263,21 +268,30 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// </summary>
     private readonly struct HandWrittenMapper : IEquatable<HandWrittenMapper>
     {
-        public HandWrittenMapper(string typeName, Location location)
+        public HandWrittenMapper(string typeName, LocationInfo? location)
         {
             TypeName = typeName;
             Location = location;
         }
 
         public string TypeName { get; }
-        public Location Location { get; }
+
+        /// <summary>
+        /// AUD-R35-230. This was a Roslyn <see cref="Microsoft.CodeAnalysis.Location"/>, which roots
+        /// the <c>SyntaxTree</c> it came from - the reason <see cref="LocationInfo"/> exists at all
+        /// (AUD-R25-031) and what every other cached model in this file already uses. This provider
+        /// is the one <c>CreateSyntaxProvider</c> left in the generator and it runs over every class
+        /// with a base list, so the rooted trees were held for the whole IDE session.
+        /// </summary>
+        public LocationInfo? Location { get; }
 
         public bool Equals(HandWrittenMapper other)
-            => TypeName == other.TypeName && Location.Equals(other.Location);
+            => TypeName == other.TypeName && Nullable.Equals(Location, other.Location);
 
         public override bool Equals(object? obj) => obj is HandWrittenMapper other && Equals(other);
 
-        public override int GetHashCode() => unchecked((TypeName?.GetHashCode() ?? 0) * 397) ^ Location.GetHashCode();
+        public override int GetHashCode()
+            => unchecked((TypeName?.GetHashCode() ?? 0) * 397) ^ (Location?.GetHashCode() ?? 0);
     }
 
     /// <summary>
@@ -311,7 +325,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 && i.ContainingNamespace?.ToDisplayString() == JauntyInterfacesNamespace))
             return null;
 
-        return new HandWrittenMapper(symbol.Name, ctx.Node.GetLocation());
+        return new HandWrittenMapper(symbol.Name, LocationInfo.From(ctx.Node.GetLocation()));
     }
 
     /// <summary>
@@ -496,7 +510,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // AUD-R32-006: an empty [Column("")] falls back to the property name rather than
             // generating a mapping to "". The null-coalesce alone did not catch it, and the
             // reflection MetadataBuilder carries the matching guard so both modes agree.
-            var columnAttrName = columnAttr?.ConstructorArguments.FirstOrDefault().Value?.ToString();
+            // AUD-R35-228: `is string`, not `?.ToString()`. A first constructor argument of any
+            // other type used to be stringified into a column name, so a foreign [Column(3)]-style
+            // ordinal attribute mapped the property to a column literally named "3". The reflection
+            // twin requires `nameArg is string` and falls back to the property name otherwise.
+            var columnAttrName = columnAttr?.ConstructorArguments.FirstOrDefault().Value as string;
             var columnName = string.IsNullOrEmpty(columnAttrName) ? prop.Name : columnAttrName!;
 
             // Support [Key] from both, plus conventions
@@ -822,8 +840,13 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // by column name (OrdinalIgnoreCase). A duplicate key there compiles but throws
         // ArgumentException at the entity's static-constructor time, so duplicates (including
         // case-variants) are reported as a diagnostic and only the first occurrence is kept for
-        // that emission - the other emissions below (ReadEntity, Bind*, InsertColumns/UpdateColumns/
-        // DeleteColumns/EntityColumns) are array/list-based and unaffected by the collision.
+        // that emission. AUD-R35-232: the other emissions below (ReadEntity, Bind*, InsertColumns/
+        // UpdateColumns/DeleteColumns/EntityColumns) are array/list-based, so they are unaffected in
+        // the sense that they still compile - but they keep *both* properties, which means the
+        // column appears twice and BindInsert/BindUpdate call AddParam twice with the same @name.
+        // SQL Server rejects that at execution. The diagnostic's message says so rather than
+        // reading as a ParameterMap-only truncation; the reflection path has the same duplicate
+        // mapping, so this is a message/behaviour mismatch and not a divergence between the two.
         var parameterMapProperties = new List<PropertyMetadata>();
         var seenColumnNames = new Dictionary<string, PropertyMetadata>(StringComparer.OrdinalIgnoreCase);
         foreach (PropertyMetadata p in properties)
@@ -1650,10 +1673,16 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // because nothing routed a Guid property through the helper. Same trade AUD-R25 made for
             // enums and DateTimeOffset: one boxed read on Guid columns, in exchange for the type
             // working on every provider instead of the ones that specialise the typed getter.
-            "global::System.Guid" => new("reader.GetValue", "Guid", false),
-            "global::System.DateTime" => new("reader.GetDateTime", "DateTime", false),
-            "global::System.TimeSpan" => new("reader.GetValue", "TimeSpan", false),
-            "global::System.DateTimeOffset" => new("reader.GetValue", "DateTimeOffset", false),
+            // AUD-R35-231: the type argument is emitted into GetFieldValue<T>/ReadFallback<T> in
+            // the consumer's namespace, so it has to be global::-qualified for the same reason
+            // PropertyMetadata.TypeName is FullyQualifiedFormat - an entity in a namespace that
+            // declares its own Guid, DateTime, TimeSpan or DateTimeOffset produced CS0426 in a
+            // .g.cs the consumer cannot edit. The `_` arm below already got this right by passing
+            // the qualified typeName straight through.
+            "global::System.Guid" => new("reader.GetValue", "global::System.Guid", false),
+            "global::System.DateTime" => new("reader.GetDateTime", "global::System.DateTime", false),
+            "global::System.TimeSpan" => new("reader.GetValue", "global::System.TimeSpan", false),
+            "global::System.DateTimeOffset" => new("reader.GetValue", "global::System.DateTimeOffset", false),
 
             // Nullable value types - needs null check
             "int?" => new("reader.GetInt32", "int", true),
@@ -1664,10 +1693,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
             "float?" => new("reader.GetFloat", "float", true),
             "short?" => new("reader.GetInt16", "short", true),
             "byte?" => new("reader.GetByte", "byte", true),
-            "global::System.Guid?" => new("reader.GetValue", "Guid", true),
-            "global::System.DateTime?" => new("reader.GetDateTime", "DateTime", true),
-            "global::System.TimeSpan?" => new("reader.GetValue", "TimeSpan", true),
-            "global::System.DateTimeOffset?" => new("reader.GetValue", "DateTimeOffset", true),
+            "global::System.Guid?" => new("reader.GetValue", "global::System.Guid", true),
+            "global::System.DateTime?" => new("reader.GetDateTime", "global::System.DateTime", true),
+            "global::System.TimeSpan?" => new("reader.GetValue", "global::System.TimeSpan", true),
+            "global::System.DateTimeOffset?" => new("reader.GetValue", "global::System.DateTimeOffset", true),
 
             // Reference types - needs null check
             "string" => new("reader.GetString", "string", true),
