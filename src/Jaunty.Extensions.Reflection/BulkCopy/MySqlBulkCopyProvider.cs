@@ -32,7 +32,12 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
     // max_allowed_packet regardless of column count.
     private const int MaxParametersPerStatement = 2000;
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Always true: this provider needs no optional package and no reflected member. It issues
+    /// chunked multi-row INSERTs over whatever ADO.NET connection it is handed, so unlike
+    /// <c>SqlServerBulkCopyProvider</c> and <c>PostgreSqlBulkCopyProvider</c> there is nothing that
+    /// can fail to resolve.
+    /// </summary>
     public bool IsSupported => true;
 
     /// <inheritdoc/>
@@ -113,8 +118,16 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
         }
         catch
         {
-            if (ownTransaction)
-                transaction?.Rollback();
+            // AUD-R35-215: the rollback is best-effort. The reachable case is a throwing Commit():
+            // control arrives here with an already-terminated transaction and MySQL's Rollback()
+            // throws on one, which would replace the real failure with a misleading one. Same idiom
+            // as BulkInsert.BulkInsertNativeCore.
+            if (ownTransaction && transaction is not null)
+            {
+                try { transaction.Rollback(); }
+                catch { /* Best effort - do not mask the original exception */ }
+            }
+
             throw;
         }
         finally
@@ -139,7 +152,17 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
             if (ownTransaction)
+            {
+                // AUD-R35-216: this whole method used the synchronous transaction and connection
+                // members inside an async method that awaits everything else. The repository's
+                // async bulk paths (BulkInsertAsync, BulkUpdateAsync, BulkDeleteAsync) all take the
+                // async counterpart under NET8_0_OR_GREATER with a netstandard2.0 fallback.
+#if NET8_0_OR_GREATER
+                transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+#else
                 transaction = connection.BeginTransaction();
+#endif
+            }
 
             int columnCount = data.FieldCount;
             var columnNames = new string[columnCount];
@@ -197,22 +220,54 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
             }
 
             if (ownTransaction)
+            {
+#if NET8_0_OR_GREATER
+                await transaction!.CommitAsync(cancellationToken).ConfigureAwait(false);
+#else
                 transaction!.Commit();
+#endif
+            }
 
             return total;
         }
         catch
         {
-            if (ownTransaction)
-                transaction?.Rollback();
+            // AUD-R35-215: best-effort rollback, and AUD-R35-216: the async counterpart where the
+            // framework has one. See the sync CopyToServer for why the rollback cannot be bare.
+            if (ownTransaction && transaction is not null)
+            {
+                try
+                {
+#if NET8_0_OR_GREATER
+                    await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+#else
+                    transaction.Rollback();
+#endif
+                }
+                catch { /* Best effort - do not mask the original exception */ }
+            }
+
             throw;
         }
         finally
         {
-            if (ownTransaction)
-                transaction?.Dispose();
+            if (ownTransaction && transaction is not null)
+            {
+#if NET8_0_OR_GREATER
+                await transaction.DisposeAsync().ConfigureAwait(false);
+#else
+                transaction.Dispose();
+#endif
+            }
+
             if (wasClosed && connection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await connection.CloseAsync().ConfigureAwait(false);
+#else
                 connection.Close();
+#endif
+            }
         }
     }
 
