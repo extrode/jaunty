@@ -60,6 +60,42 @@ public class DuckDbDialectTests
         Assert.Equal("\"ProductName\"", result);
     }
 
+    [Theory]
+    [InlineData("\"ProductName\"")]
+    [InlineData("\"a\"\"b\"")]
+    [InlineData("\"\"")]
+    [InlineData("\" UNION SELECT password FROM users --\"")]
+    public void EscapeColumnName_WellFormedQuotedIdentifier_PassesThroughUnchanged(string columnName)
+    {
+        Assert.Equal(columnName, _dialect.EscapeColumnName(columnName));
+    }
+
+    [Theory]
+    [InlineData("\"a\" AS x, (SELECT 1) AS \"b\"")]
+    [InlineData("\"a\", 1 AS \"b\"")]
+    [InlineData("\"a\" UNION ALL SELECT 1 --\"")]
+    public void EscapeColumnName_BreakoutAttempt_IsRequotedNotPassedThrough(string columnName)
+    {
+        string result = _dialect.EscapeColumnName(columnName);
+
+        Assert.NotEqual(columnName, result);
+        Assert.StartsWith("\"", result);
+        Assert.EndsWith("\"", result);
+        Assert.Equal(columnName, Unquote(result));
+    }
+
+    [Fact]
+    public void EscapeColumnName_IsIdempotent_ForNamesContainingQuotes()
+    {
+        string once = _dialect.EscapeColumnName("a\"b");
+
+        Assert.Equal("\"a\"\"b\"", once);
+        Assert.Equal(once, _dialect.EscapeColumnName(once));
+    }
+
+    private static string Unquote(string quoted)
+        => quoted.Substring(1, quoted.Length - 2).Replace("\"\"", "\"");
+
     [Fact]
     public void GetLastInsertIdSql_ReturnsReturningClause()
     {

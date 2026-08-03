@@ -1,5 +1,7 @@
 using System;
 
+using Jaunty.Attributes;
+
 namespace Jaunty.Interfaces;
 
 /// <summary>
@@ -24,7 +26,8 @@ public readonly struct EntityColumnInfo
     /// <param name="propertyType">The CLR property type.</param>
     /// <param name="getter">A compiled, reflection-free getter for this column's value.</param>
     /// <param name="setter">A compiled, reflection-free setter for this column's value.</param>
-    public EntityColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, bool isComputed, Type propertyType, Func<object, object?> getter, Action<object, object?> setter)
+    /// <param name="enumStorageOverride">The storage declared by an <c>[EnumStorage]</c> attribute on the property, or <see langword="null"/> when it carries none.</param>
+    public EntityColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, bool isComputed, Type propertyType, Func<object, object?> getter, Action<object, object?> setter, EnumStorage? enumStorageOverride = null)
     {
         ColumnName = columnName;
         PropertyName = propertyName;
@@ -34,6 +37,7 @@ public readonly struct EntityColumnInfo
         PropertyType = propertyType;
         Getter = getter;
         Setter = setter;
+        EnumStorageOverride = enumStorageOverride;
     }
 
     /// <summary>
@@ -55,6 +59,13 @@ public readonly struct EntityColumnInfo
     /// Gets a value indicating whether the column is an identity (database-generated) column.
     /// </summary>
     public bool IsIdentity { get; }
+
+    /// <summary>
+    /// Gets the storage declared by an <c>[EnumStorage]</c> attribute on the property, or
+    /// <see langword="null"/> when it carries none. Emitted by the source generator so the
+    /// AOT path can honour a property-level override without reflecting over the property.
+    /// </summary>
+    public EnumStorage? EnumStorageOverride { get; }
 
     /// <summary>
     /// Gets a value indicating whether the column is database-computed. Computed columns are

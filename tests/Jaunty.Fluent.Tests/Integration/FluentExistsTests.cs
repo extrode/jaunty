@@ -249,6 +249,67 @@ public class FluentExistsTests : IClassFixture<FluentDatabaseFixture>
         Assert.DoesNotContain("categories.category_id", sql);
     }
 
+    // AUD-R35: the assertion above is text-only and passed while the statement was unrunnable -
+    // the alias was referenced and never declared. These execute it.
+    [Fact]
+    public void WhereExists_WithOuterAlias_DeclaresTheAliasOnTheOuterTable()
+    {
+        var sql = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .ToSql();
+
+        Assert.Contains("categories c WHERE", sql);
+    }
+
+    [Fact]
+    public void WhereExists_WithOuterAlias_Executes()
+    {
+        var aliased = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .Select();
+
+        var unaliased = _fixture.Connection.From<Category>()
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .Select();
+
+        Assert.NotEmpty(aliased);
+        Assert.Equal(unaliased.Count, aliased.Count);
+    }
+
+    [Fact]
+    public void WhereExists_WithOuterAlias_CountAndAggregateExecute()
+    {
+        int count = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .Count();
+
+        int max = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .Max(c => c.CategoryId);
+
+        Assert.True(count > 0);
+        Assert.True(max > 0);
+    }
+
+    [Fact]
+    public void WhereExists_WithOuterAlias_DeleteThrowsRatherThanNamingAnUndeclaredAlias()
+    {
+        NotSupportedException ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Category>("c")
+                .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+                .Delete());
+        Assert.Contains("cannot declare a table alias", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("c\"; DROP TABLE categories --")]
+    [InlineData("a b")]
+    [InlineData("")]
+    public void From_InvalidAlias_IsRejected(string alias)
+    {
+        Assert.Throws<ArgumentException>(() => _fixture.Connection.From<Category>(alias));
+    }
+
     [Fact]
     public void WhereExists_SelfReferencing_UsesDistinctAliasesForBothSides()
     {

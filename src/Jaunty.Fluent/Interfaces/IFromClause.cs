@@ -135,14 +135,14 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     /// </summary>
     /// <param name="count">The maximum number of rows.</param>
     /// <returns>The query with the LIMIT clause applied.</returns>
-    IFromClause<T> Take(int count);
+    IPagedClause<T> Take(int count);
 
     /// <summary>
     /// Skips the specified number of rows.
     /// </summary>
     /// <param name="count">The number of rows to skip.</param>
     /// <returns>The query with the OFFSET clause applied.</returns>
-    IFromClause<T> Skip(int count);
+    IPagedClause<T> Skip(int count);
 
     /// <summary>
     /// Adds an INNER JOIN to another table.

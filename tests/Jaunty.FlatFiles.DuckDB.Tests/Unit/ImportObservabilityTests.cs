@@ -23,6 +23,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Unit;
 /// and firing the pipeline per row would swamp an auditor.
 /// </para>
 /// </summary>
+[Collection(GlobalInterceptorStateCollection.Name)]
 public class ImportObservabilityTests : IDisposable
 {
     private readonly string _dataDir = Path.Combine(Path.GetTempPath(), $"jaunty_import_observability_{Guid.NewGuid():N}");
