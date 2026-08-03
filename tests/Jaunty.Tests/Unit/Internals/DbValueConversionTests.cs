@@ -58,6 +58,13 @@ public class DbValueConversionTests
 
         Assert.Contains("System.Byte[]", ex.Message, StringComparison.Ordinal);
         Assert.Contains("System.Guid", ex.Message, StringComparison.Ordinal);
+
+        // AUD-R35-049: the generated path used to answer new Guid(bytes) here instead. It now
+        // refuses with this same message, and GeneratedReadFallbackTests pins these two
+        // phrases from the other side - so the two converters cannot drift apart again
+        // without one of the pair failing.
+        Assert.Contains("byte order", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("will not guess it", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]

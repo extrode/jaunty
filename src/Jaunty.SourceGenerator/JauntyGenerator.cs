@@ -937,8 +937,24 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine("            if (target == typeof(System.DateTimeOffset) && value is System.DateTime dateTime)");
             sb.AppendLine("                return (T)(object)new System.DateTimeOffset(dateTime);");
             sb.AppendLine();
-            sb.AppendLine("            if (target == typeof(System.Guid) && value is byte[] guidBytes)");
-            sb.AppendLine("                return (T)(object)new System.Guid(guidBytes);");
+            // AUD-R35-049: this used to be
+            //     if (target == typeof(System.Guid) && value is byte[] guidBytes)
+            //         return (T)(object)new System.Guid(guidBytes);
+            // which is the opposite of what the core converter decided. DbValueConversion
+            // refuses a byte[] for a Guid on purpose, and says why at length: the byte order of
+            // a binary GUID is provider-specific, so constructing one from the raw bytes
+            // produces a silently wrong Guid on every provider whose layout is not SQL
+            // Server's. The branch was unreachable until AUD-R34-034 routed Guid/Guid? through
+            // GetValue + ReadFallback, at which point a decision documented as settled became
+            // live and settled the other way on the generated IDataReader path - same column,
+            // same entity, reflection throwing and generated returning a wrong value. The
+            // generated path now refuses it with the same message the core path uses.
+            sb.AppendLine("            if (target == typeof(System.Guid) && value is byte[])");
+            sb.AppendLine("                throw new System.InvalidCastException(");
+            sb.AppendLine("                    $\"Cannot convert a value of type '{value.GetType().FullName}' to '{target.FullName}'. \" +");
+            sb.AppendLine("                    \"If the provider returns this column as a byte array, map the property as byte[] and \" +");
+            sb.AppendLine("                    \"convert it yourself - the byte order of a binary GUID is provider-specific and Jaunty \" +");
+            sb.AppendLine("                    \"will not guess it.\");");
             sb.AppendLine();
             sb.AppendLine("            return (T)System.Convert.ChangeType(value, target, System.Globalization.CultureInfo.InvariantCulture);");
             sb.AppendLine("        }");
