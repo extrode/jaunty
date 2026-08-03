@@ -167,7 +167,16 @@ internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDia
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
             sb.Append($"{QuoteIdentifier(name)} {ImportTypeMapping.MapForColumn(MapClrTypeToSqlType, name, clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
-            if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
+
+            // AUD-R35-029: NOT NULL is emitted for a non-nullable primary key too, unlike the
+            // PostgreSQL and SQL Server dialects. There PRIMARY KEY implies NOT NULL; on SQLite it
+            // does not. Outside an INTEGER PRIMARY KEY rowid alias - and inside a WITHOUT ROWID
+            // table even then - SQLite accepts NULLs in a PRIMARY KEY column, a documented
+            // long-standing bug it keeps for backwards compatibility. So a non-nullable
+            // string/Guid/ulong key got "TEXT PRIMARY KEY" and a source row with an empty key
+            // column imported as NULL. NOT NULL on an INTEGER PRIMARY KEY does not stop it being a
+            // rowid alias, so the rowid case is unaffected.
+            if (!isNullable) sb.Append(" NOT NULL");
         }
 
         sb.Append(')');

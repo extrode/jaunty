@@ -40,7 +40,14 @@ internal sealed class SqlServerImportDialect : IImportDialect, IQuotedIdentifier
         _ when clrType == typeof(byte) => "TINYINT",
         _ when clrType == typeof(float) => "REAL",
         _ when clrType == typeof(double) => "FLOAT",
-        _ when clrType == typeof(decimal) => "DECIMAL(18,4)",
+        // AUD-R35-030: was DECIMAL(18,4), which SQL Server silently rounds to - an imported 1.23456
+        // landed as 1.2346 with no error, while the same column against PostgreSQL's unconstrained
+        // NUMERIC kept every digit. (38,9) is the widest fixed choice that cannot overflow: 38-9=29
+        // integer digits covers decimal.MaxValue (7.9e28, 29 digits) in full, so the only remaining
+        // loss is beyond nine decimal places rather than beyond four. SQL Server has no
+        // unconstrained DECIMAL, so a fixed precision has to be picked; this is the one that loses
+        // least.
+        _ when clrType == typeof(decimal) => "DECIMAL(38,9)",
         _ when clrType == typeof(bool) => "BIT",
         _ when clrType == typeof(DateTime) => "DATETIME2",
         _ when clrType == typeof(DateTimeOffset) => "DATETIMEOFFSET",
