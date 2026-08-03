@@ -162,6 +162,15 @@ public static class SpecialTypeMappers
         // two Id columns silently kept only the last and dropped the first.
         columnNames = DuplicateColumnNames.Disambiguate(columnNames);
 
+        // AUD-R35-226: an ExpandoObject's IDictionary<string, object?> is ordinal case-*sensitive*
+        // and its comparer is not configurable, while CreateDictionaryMapper below builds its
+        // dictionaries with StringComparer.OrdinalIgnoreCase. So Query<Dictionary<string, object>>()
+        // ["customerid"] resolves against a CustomerID column and ((IDictionary<string, object?>)row)
+        // ["customerid"] on a Query<dynamic> row does not. This is not fixable in the mapper: the
+        // dynamic member access these rows exist for is case-sensitive anyway (C# is), so the only
+        // way to align the two would be to stop returning an ExpandoObject for dynamic, which is the
+        // documented contract. Recorded here so the pair is not read as an oversight - AUD-R34-024
+        // aligned their duplicate-column handling, and this is the half that cannot be aligned.
         return new Func<IDataReader, object>(r =>
         {
             IDictionary<string, object?> expando = new ExpandoObject();
