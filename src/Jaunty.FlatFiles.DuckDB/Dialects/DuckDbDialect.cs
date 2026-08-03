@@ -73,13 +73,49 @@ public sealed class DuckDbDialect : IFlatFileDialect, ISubstringToEndDialect
     /// <inheritdoc />
     public string EscapeColumnName(string columnName)
     {
-        // If already escaped (starts and ends with quotes), return as-is to prevent double-escaping.
-        // This is necessary because CachedDialectMetadata pre-escapes column names,
-        // and BuildSelectSql calls EscapeColumnName again on those cached values.
-        if (columnName.Length >= 2 && columnName[0] == '"' && columnName[^1] == '"')
+        // If already escaped, return as-is to prevent double-escaping. This is necessary because
+        // CachedDialectMetadata pre-escapes column names, and BuildSelectSql calls
+        // EscapeColumnName again on those cached values.
+        //
+        // AUD-R35: the test used to be "starts and ends with a double quote", which a
+        // data-controlled name such as `"a" AS x, (SELECT 1) AS "b"` also satisfies - it passed
+        // through unescaped and broke out of the identifier. DuckDb.GenerateViewSqlWithDateTimeCasts
+        // takes column names off the flat file's own header (reader.GetName(i)) and interpolates
+        // them into a CREATE OR REPLACE VIEW that is then executed, so the input is not trusted.
+        // Only a *well-formed* quoted identifier - every interior quote doubled - is passed
+        // through now; anything else is quoted from scratch.
+        if (IsWellFormedQuotedIdentifier(columnName))
             return columnName;
 
         return QuoteIdentifier(columnName);
+    }
+
+    /// <summary>
+    /// Determines whether <paramref name="identifier"/> is already a complete, well-formed
+    /// double-quoted DuckDB identifier: wrapped in double quotes, with every quote in the
+    /// interior doubled so that neither of the outer quotes can be terminated early.
+    /// </summary>
+    private static bool IsWellFormedQuotedIdentifier(string identifier)
+    {
+        if (identifier.Length < 2 || identifier[0] != '"' || identifier[identifier.Length - 1] != '"')
+            return false;
+
+        // Walk the interior only. A lone quote terminates the identifier and whatever follows it
+        // is SQL, not part of the name - that is exactly the break-out this rejects.
+        int end = identifier.Length - 1;
+
+        for (int i = 1; i < end; i++)
+        {
+            if (identifier[i] != '"')
+                continue;
+
+            if (i + 1 >= end || identifier[i + 1] != '"')
+                return false;
+
+            i++;
+        }
+
+        return true;
     }
 
     /// <inheritdoc />
