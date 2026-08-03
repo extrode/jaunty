@@ -26,7 +26,7 @@ namespace Jaunty.SourceGenerator.Tests;
 public sealed class GeneratedNonNullableNullTests
 {
     private static readonly string[] Columns =
-        ["id", "day", "moment", "duration", "occurred_at", "ref_id", "grade", "counter"];
+        ["id", "day", "moment", "duration", "occurred_at", "ref_id", "grade", "counter", "initial", "huge"];
 
     private static readonly object[] Defaults =
     [
@@ -37,7 +37,9 @@ public sealed class GeneratedNonNullableNullTests
         new DateTimeOffset(2024, 1, 15, 14, 30, 0, TimeSpan.Zero),
         Guid.Parse("11111111-2222-3333-4444-555555555555"),
         GenFallbackGrade.High,
-        7u
+        7u,
+        'x',
+        GenFallbackHuge.None
     ];
 
     private static NullableReader ReaderWithNull(string column)

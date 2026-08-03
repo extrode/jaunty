@@ -920,10 +920,23 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine();
             sb.AppendLine("            if (target.IsEnum)");
             sb.AppendLine("            {");
+            // AUD-R35-118: this used to widen through long (Convert.ToInt64) while the core
+            // converter widens through the enum's own underlying type. A ulong-backed enum with a
+            // member above long.MaxValue - the same class of value AUD-R34-029 had to fix for
+            // SQLite storage - round-trips on the core path and threw OverflowException here.
+            // Same column, same entity, two answers.
             sb.AppendLine("                return value is string enumText");
             sb.AppendLine("                    ? (T)System.Enum.Parse(target, enumText, true)");
-            sb.AppendLine("                    : (T)System.Enum.ToObject(target, System.Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture));");
+            sb.AppendLine("                    : (T)System.Enum.ToObject(target, System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(target), System.Globalization.CultureInfo.InvariantCulture));");
             sb.AppendLine("            }");
+            sb.AppendLine();
+            // AUD-R35-118: char had no arm here at all, so a blank-padded CHAR(n) column - or any
+            // multi-character string - read into a char succeeded under reflection ('' -> '\0',
+            // "abc" -> 'a') and threw FormatException ("String must be exactly one character
+            // long") under the generator, via Convert.ChangeType. char is a catch-all type in
+            // GetReaderTypeInfo, so every char property on the IDataReader path reaches here.
+            sb.AppendLine("            if (target == typeof(char) && value is string charText)");
+            sb.AppendLine("                return (T)(object)(charText.Length > 0 ? charText[0] : '\\0');");
             sb.AppendLine();
             sb.AppendLine("        #if NET6_0_OR_GREATER");
             sb.AppendLine("            if (target == typeof(System.DateOnly))");
