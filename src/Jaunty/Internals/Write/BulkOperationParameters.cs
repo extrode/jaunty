@@ -36,7 +36,20 @@ internal sealed class BulkOperationParameters
         RowCount = rowCount;
     }
 
-    /// <summary>The public API that was called, e.g. <c>"BulkInsert"</c>.</summary>
+    /// <summary>
+    /// The operation that was performed, e.g. <c>"BulkInsert"</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-127. This used to read "the public API that was called", which is not what any of the
+    /// four families report: <c>BulkInsertAsync</c> passes <c>"BulkInsert"</c>, and so do the update,
+    /// delete and <c>ExecuteBatch</c> async twins. That is the right string and the wrong sentence -
+    /// an audit trail records which operation touched which rows, and a synchronous and an
+    /// asynchronous bulk insert are the same write with the same effect. Splitting them would put
+    /// the caller's threading model into the audit record and force every interceptor filtering on
+    /// <c>"BulkInsert"</c> to match a second name for no gain. The behaviour is now pinned by
+    /// <c>WriteObservabilityTests.EveryBulkFamily_ReportsItsOwnNameTheEntityTypeAndTheRowCount</c>,
+    /// so the pair cannot drift apart.
+    /// </remarks>
     public string Operation { get; }
 
     /// <summary>The entity type name, e.g. <c>"Order"</c>, or <see langword="null"/> where the
