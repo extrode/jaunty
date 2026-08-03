@@ -188,16 +188,49 @@ public class PostgreSqlTypeMapperTests
     // Network / other types that map to string
     // ------------------------------------------------------------------
 
+    /// <summary>
+    /// AUD-R35-037. cidr stays string: Npgsql returns NpgsqlCidr, a driver type, and emitting it
+    /// would put a package reference into every scaffolded entity. That is the caller's decision,
+    /// not this mapper's, so string remains the lossless-round-trip fallback.
+    /// </summary>
     [Theory]
-    [InlineData("inet")]
     [InlineData("cidr")]
-    [InlineData("macaddr")]
-    [InlineData("macaddr8")]
     [InlineData("xml")]
-    public void MapToCSharpType_NetworkAndXmlTypes_ReturnsString(string sqlType)
+    public void MapToCSharpType_CidrAndXmlTypes_ReturnsString(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
         Assert.Equal("string", result.TypeName);
+    }
+
+    /// <summary>
+    /// AUD-R35-037. inet and macaddr came back as string, but Npgsql hands the reader an IPAddress
+    /// and a PhysicalAddress - both BCL types - so the scaffolded property threw on read rather
+    /// than being merely imprecise.
+    /// </summary>
+    [Theory]
+    [InlineData("inet", "IPAddress", "System.Net")]
+    [InlineData("macaddr", "PhysicalAddress", "System.Net.NetworkInformation")]
+    [InlineData("macaddr8", "PhysicalAddress", "System.Net.NetworkInformation")]
+    public void MapToCSharpType_NetworkTypes_ReturnsTheBclType(
+        string sqlType, string expected, string expectedUsing)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal(expected, result.TypeName);
+        Assert.False(result.IsValueType);
+        Assert.Equal(expectedUsing, result.RequiredUsing);
+    }
+
+    /// <summary>
+    /// AUD-R35-037. timetz carries a UTC offset that TimeOnly has nowhere to put.
+    /// </summary>
+    [Theory]
+    [InlineData("timetz")]
+    [InlineData("time with time zone")]
+    public void MapToCSharpType_TimeWithTimeZone_ReturnsDateTimeOffset(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("DateTimeOffset", result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     // ------------------------------------------------------------------
@@ -220,24 +253,27 @@ public class PostgreSqlTypeMapperTests
     [InlineData("bit")]
     [InlineData("bit varying")]
     [InlineData("varbit")]
-    public void MapToCSharpType_WiderBitStringTypes_ReturnsUlong(string sqlType)
+    public void MapToCSharpType_WiderBitStringTypes_ReturnsBitArray(string sqlType)
     {
-        // bit varying(64) etc. hold more than one bit and must not be collapsed to bool.
+        // AUD-R35-038: bit varying(64) etc. hold more than one bit and must not be collapsed to
+        // bool - but nor to ulong, which is what Npgsql never returns and which cannot hold a
+        // bit(n) for n > 64 at all.
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: 64));
-        Assert.Equal("ulong", result.TypeName);
-        Assert.True(result.IsValueType);
+        Assert.Equal("BitArray", result.TypeName);
+        Assert.False(result.IsValueType);
+        Assert.Equal("System.Collections", result.RequiredUsing);
     }
 
     [Theory]
     [InlineData("bit")]
     [InlineData("bit varying")]
     [InlineData("varbit")]
-    public void MapToCSharpType_BitStringWithoutMaxLength_ReturnsUlong(string sqlType)
+    public void MapToCSharpType_BitStringWithoutMaxLength_ReturnsBitArray(string sqlType)
     {
         // No MaxLength at all (e.g. unbounded "bit varying") must NOT be treated as bit(1).
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: null));
-        Assert.Equal("ulong", result.TypeName);
-        Assert.True(result.IsValueType);
+        Assert.Equal("BitArray", result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     // ------------------------------------------------------------------

@@ -200,7 +200,9 @@ public class FluentGroupByJoinTests : IClassFixture<FluentDatabaseFixture>
             .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
 
         Assert.DoesNotContain("> 2", sql);
-        Assert.Matches(@"HAVING COUNT\(\*\) > \S*jhp\d+", sql);
+        // AUD-R35-016 renamed the operand from "jhp<n>" to "jhp_<n>": the counter it came from was
+        // per grouped builder while the collection it was added to belongs to the query.
+        Assert.Matches(@"HAVING COUNT\(\*\) > \S*jhp_\d+", sql);
     }
 
     [Fact]

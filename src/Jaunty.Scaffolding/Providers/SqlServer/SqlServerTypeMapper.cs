@@ -33,7 +33,11 @@ public sealed class SqlServerTypeMapper : ITypeMapper
                 new CSharpTypeInfo { TypeName = "decimal", IsValueType = true },
 
             // String types
-            "char" or "varchar" or "text" or "nchar" or "nvarchar" or "ntext" or "xml" =>
+            // AUD-R35-042: "sysname" listed here as well as resolved to "nvarchar" in
+            // SqlServerSchemaReader's CASE. The reader is the only caller that should ever produce
+            // it, but a mapper that answers "object" for SQL Server's own identifier type is wrong
+            // on its own terms, and this is the arm it belongs in - sysname is nvarchar(128) NOT NULL.
+            "char" or "varchar" or "text" or "nchar" or "nvarchar" or "ntext" or "xml" or "sysname" =>
                 new CSharpTypeInfo { TypeName = "string", IsValueType = false },
 
             // Date/Time types

@@ -500,4 +500,156 @@ public class QueryMultiEntityN3Tests : IClassFixture<DialectFixture>
 
         Assert.Null(result);
     }
+    // ---------------------------------------------------------------------------
+    // AUD-R35-056. All six QueryStream<T1,T2,T3> overloads had no functional test: the only
+    // calls anywhere were the four guard assertions in QueryStreamEagerValidationTests, which
+    // never enumerate, so the iterator body had never run at arity 3 - unlike arities 4-7,
+    // which each have the six tests below. The no-options QueryFirst/QuerySingle overloads
+    // had no success-path test either; only their options-carrying siblings did.
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_ThreeEntities_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.QueryStream<Mm3Author, Mm3Book, Mm3Tag>(JoinSql).ToList();
+
+        Assert.Single(results);
+        Assert.Equal("Ada Lovelace", results[0].Item1.Name);
+        Assert.Equal("Notes on the Analytical Engine", results[0].Item2.Name);
+        Assert.Equal("history", results[0].Item3.Label);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_ThreeEntities_WithParameters_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.QueryStream<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }).ToList();
+
+        Assert.Single(results);
+        Assert.Equal("Ada Lovelace", results[0].Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_ThreeEntities_WithCommandOptions_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var results = connection.QueryStream<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options).ToList();
+
+        Assert.Single(results);
+        Assert.Equal("history", results[0].Item3.Label);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_ThreeEntities_WithParametersAndCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var results = connection.QueryStream<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_ThreeEntities_WithMultiEntityCommandOptions_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var results = connection.QueryStream<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options).ToList();
+
+        Assert.Single(results);
+        Assert.Equal("history", results[0].Item3.Label);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_ThreeEntities_WithParametersAndMultiEntityCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var results = connection.QueryStream<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options).ToList();
+
+        Assert.Single(results);
+    }
+
+    /// <summary>
+    /// Streaming is lazy: nothing runs until the sequence is enumerated, and disambiguation still
+    /// holds row by row. Without this, the six above would all pass on an implementation that
+    /// buffered everything up front.
+    /// </summary>
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_ThreeEntities_DoesNotExecuteUntilEnumerated(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var sequence = connection.QueryStream<Mm3Author, Mm3Book, Mm3Tag>("SELECT nonsense FROM nowhere");
+
+        Assert.ThrowsAny<Exception>(() => sequence.ToList());
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_ThreeEntities_NoOptions_ReturnsFirstRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, book, tag) = connection.QueryFirst<Mm3Author, Mm3Book, Mm3Tag>(JoinSql);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+        Assert.Equal("Notes on the Analytical Engine", book.Name);
+        Assert.Equal("history", tag.Label);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_ThreeEntities_WithParameters_ReturnsFirstRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, _) = connection.QueryFirst<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 });
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_ThreeEntities_NoOptions_ReturnsTheOnlyRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, book, tag) = connection.QuerySingle<Mm3Author, Mm3Book, Mm3Tag>(JoinSql);
+
+        Assert.Equal(1L, author.AuthorId);
+        Assert.Equal(1L, book.BookId);
+        Assert.Equal(1L, tag.TagId);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_ThreeEntities_WithParameters_ReturnsTheOnlyRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, _) = connection.QuerySingle<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 });
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
 }

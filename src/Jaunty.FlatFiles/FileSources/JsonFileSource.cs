@@ -97,5 +97,23 @@ public sealed class JsonFileSource : IFileSource
     }
 
     /// <inheritdoc />
-    public string? GenerateCopyToOptions() => null;
+    /// <remarks>
+    /// AUD-R35-074. <see cref="JsonFormat"/> was honoured on the read path and dropped on the write
+    /// path, so a source configured <c>JsonFormat = Array</c> exported a file that this same source
+    /// could not read back - DuckDB's <c>COPY ... TO ... (FORMAT JSON)</c> writes one object per
+    /// line unless told otherwise, and the next read passed <c>format = 'array'</c> against
+    /// newline-delimited content. Same round-trip-loss class as the already-fixed
+    /// <c>CsvFileSource</c> HEADER and <c>TsvFileSource</c> NullString items.
+    /// <para>
+    /// <c>ARRAY true</c>/<c>ARRAY false</c> measured against the pinned DuckDB 1.3.0: the first
+    /// writes <c>[\n\t{...}\n]</c>, the second one object per line. <see cref="JsonFileFormat.Auto"/>
+    /// emits nothing, because the read side does not constrain the format either.
+    /// </para>
+    /// </remarks>
+    public string? GenerateCopyToOptions() => JsonFormat switch
+    {
+        JsonFileFormat.Array => "ARRAY true",
+        JsonFileFormat.NewlineDelimited => "ARRAY false",
+        _ => null
+    };
 }

@@ -132,6 +132,22 @@ public partial class JauntyGenerator : IIncrementalGenerator
     private const string JauntyTableAttribute = "Jaunty.Attributes.TableAttribute";
     private const string DataAnnotationsTableAttribute = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";
 
+    // AUD-R35-070. The rest of the recognized set, listed Jaunty-first because that is the
+    // precedence MetadataBuilder applies: it asks for Jaunty's typed attribute and only falls back
+    // to the DataAnnotations name when there is none. Matching by full name rather than simple name
+    // is what keeps a consumer's own ColumnAttribute/NotMappedAttribute - both names several
+    // libraries define - from renaming or dropping a column on the generated path while reflection
+    // maps it as declared. AUD-R34-031 fixed exactly this hazard for [Table] alone.
+    private const string JauntyColumnAttribute = "Jaunty.Attributes.ColumnAttribute";
+    private const string DataAnnotationsColumnAttribute = "System.ComponentModel.DataAnnotations.Schema.ColumnAttribute";
+    private const string JauntyKeyAttribute = "Jaunty.Attributes.KeyAttribute";
+    private const string DataAnnotationsKeyAttribute = "System.ComponentModel.DataAnnotations.KeyAttribute";
+    private const string JauntyIgnoreAttribute = "Jaunty.Attributes.IgnoreAttribute";
+    private const string DataAnnotationsNotMappedAttribute = "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute";
+    private const string JauntyDatabaseGeneratedAttribute = "Jaunty.Attributes.DatabaseGeneratedAttribute";
+    private const string DataAnnotationsDatabaseGeneratedAttribute = "System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute";
+    private const string JauntyEnumStorageAttribute = "Jaunty.Attributes.EnumStorageAttribute";
+
     /// <summary>The interface a hand-written mapper implements, by metadata name.</summary>
     private const string MappedInterfaceMetadataName = "IMapped`1";
 
@@ -434,7 +450,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         foreach (IPropertySymbol? prop in allProperties)
         {
             // Support [Ignore] and [NotMapped]
-            if (HasAttribute(prop, "IgnoreAttribute") || HasAttribute(prop, "NotMappedAttribute")) continue;
+            if (HasRecognizedAttribute(prop, JauntyIgnoreAttribute, DataAnnotationsNotMappedAttribute)) continue;
 
             // A get-only property has no SetMethod at all; an init-only property has one, but it
             // can only be assigned inside an object initializer, not via the post-construction
@@ -476,7 +492,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             }
 
             // Support [Column] from both
-            AttributeData? columnAttr = GetAttribute(prop, "ColumnAttribute");
+            AttributeData? columnAttr = GetRecognizedAttribute(prop, JauntyColumnAttribute, DataAnnotationsColumnAttribute);
             // AUD-R32-006: an empty [Column("")] falls back to the property name rather than
             // generating a mapping to "". The null-coalesce alone did not catch it, and the
             // reflection MetadataBuilder carries the matching guard so both modes agree.
@@ -484,10 +500,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
             var columnName = string.IsNullOrEmpty(columnAttrName) ? prop.Name : columnAttrName!;
 
             // Support [Key] from both, plus conventions
-            var isKey = HasAttribute(prop, "KeyAttribute") || prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals($"{className}Id", StringComparison.OrdinalIgnoreCase);
+            var isKey = HasRecognizedAttribute(prop, JauntyKeyAttribute, DataAnnotationsKeyAttribute) || prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals($"{className}Id", StringComparison.OrdinalIgnoreCase);
 
             // Support [DatabaseGenerated] from both
-            AttributeData? dbGenAttr = GetAttribute(prop, "DatabaseGeneratedAttribute");
+            AttributeData? dbGenAttr = GetRecognizedAttribute(prop, JauntyDatabaseGeneratedAttribute, DataAnnotationsDatabaseGeneratedAttribute);
             var isIdentity = false;
             var isComputed = false;
             if (dbGenAttr != null)
@@ -529,7 +545,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // type keeps the model free of Jaunty-assembly references.
             int? enumStorageOverride = null;
             if (underlyingType.TypeKind == TypeKind.Enum
-                && GetAttribute(prop, "EnumStorageAttribute")?.ConstructorArguments.FirstOrDefault().Value is int storageValue)
+                && GetRecognizedAttribute(prop, JauntyEnumStorageAttribute)?.ConstructorArguments.FirstOrDefault().Value is int storageValue)
             {
                 enumStorageOverride = storageValue;
             }
@@ -539,7 +555,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 underlyingType.TypeKind == TypeKind.Enum,
                 isIdentityInferred,
-                enumStorageOverride));
+                enumStorageOverride,
+                // AUD-R35-069: the generated twin of PropertyContext.IsNonNullable. Nullable<T> is
+                // itself a value type, so the Nullable check is what makes this mean "a NULL cannot
+                // be represented here", rather than merely "not a reference type".
+                prop.Type.IsValueType
+                    && prop.Type is not INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }));
         }
 
         // AUD-R25: the implicit-identity inference applies only to a single-key entity.
@@ -937,8 +958,24 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine("            if (target == typeof(System.DateTimeOffset) && value is System.DateTime dateTime)");
             sb.AppendLine("                return (T)(object)new System.DateTimeOffset(dateTime);");
             sb.AppendLine();
-            sb.AppendLine("            if (target == typeof(System.Guid) && value is byte[] guidBytes)");
-            sb.AppendLine("                return (T)(object)new System.Guid(guidBytes);");
+            // AUD-R35-049: this used to be
+            //     if (target == typeof(System.Guid) && value is byte[] guidBytes)
+            //         return (T)(object)new System.Guid(guidBytes);
+            // which is the opposite of what the core converter decided. DbValueConversion
+            // refuses a byte[] for a Guid on purpose, and says why at length: the byte order of
+            // a binary GUID is provider-specific, so constructing one from the raw bytes
+            // produces a silently wrong Guid on every provider whose layout is not SQL
+            // Server's. The branch was unreachable until AUD-R34-034 routed Guid/Guid? through
+            // GetValue + ReadFallback, at which point a decision documented as settled became
+            // live and settled the other way on the generated IDataReader path - same column,
+            // same entity, reflection throwing and generated returning a wrong value. The
+            // generated path now refuses it with the same message the core path uses.
+            sb.AppendLine("            if (target == typeof(System.Guid) && value is byte[])");
+            sb.AppendLine("                throw new System.InvalidCastException(");
+            sb.AppendLine("                    $\"Cannot convert a value of type '{value.GetType().FullName}' to '{target.FullName}'. \" +");
+            sb.AppendLine("                    \"If the provider returns this column as a byte array, map the property as byte[] and \" +");
+            sb.AppendLine("                    \"convert it yourself - the byte order of a binary GUID is provider-specific and Jaunty \" +");
+            sb.AppendLine("                    \"will not guess it.\");");
             sb.AppendLine();
             sb.AppendLine("            return (T)System.Convert.ChangeType(value, target, System.Globalization.CultureInfo.InvariantCulture);");
             sb.AppendLine("        }");
@@ -965,31 +1002,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
-            var needsNullCheck = typeInfo.NeedsNullCheck;
 
             // DbDataReader path: direct typed getters (no generic dispatch);
             // ReadFallback<T> over GetValue for the catch-all types (TimeSpan/DateTimeOffset/
             // enums/unknown) - see the AUD-R25 note on the emitted helper above.
             var dbValue = ReadExpression(typeInfo, typeForGetFieldValue, "dbReader", i, isDbDataReader: true, p.IsEnum);
-            if (needsNullCheck)
-            {
-                // AUD-R33-009: this used to be
-                // `entity.P = dbReader.IsDBNull(ord[i]) ? default(T)! : value;`, which is not what
-                // the IDataReader branch twenty lines below does, nor what the reflection twin
-                // (MetadataCache's PropertyAccessor.Set) does - both leave the property untouched.
-                // For a property with an initializer or constructor default
-                // (`public string Name { get; set; } = "";`) a NULL column therefore reset it to
-                // null on one path and preserved it on the other, for the same entity and the same
-                // row, decided by nothing the caller can see - which of the two reader interfaces
-                // their provider happens to implement. Skipping is the behaviour that agrees with
-                // both of the other two implementations, so it is the one kept.
-                sb.AppendLine($"                if (!dbReader.IsDBNull(ord[{i}]))");
-                sb.AppendLine($"                    entity.{p.PropertyName} = {dbValue};");
-            }
-            else
-            {
-                sb.AppendLine($"                entity.{p.PropertyName} = {dbValue};");
-            }
+            AppendPropertyRead(sb, "                ", p, typeInfo, "dbReader", i, dbValue);
         }
         sb.AppendLine("            }");
         sb.AppendLine("            else");
@@ -1003,18 +1021,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // cast, which is where enums threw InvalidCastException on every provider - see the
             // AUD-R25 note on the emitted helper above.
             var value = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "reader", i, isDbDataReader: false, p.IsEnum);
-            var needsNullCheck = typeInfo.NeedsNullCheck;
 
             // Fallback IDataReader path
-            if (needsNullCheck)
-            {
-                sb.AppendLine($"                if (!reader.IsDBNull(ord[{i}]))");
-                sb.AppendLine($"                    entity.{p.PropertyName} = {value};");
-            }
-            else
-            {
-                sb.AppendLine($"                entity.{p.PropertyName} = {value};");
-            }
+            AppendPropertyRead(sb, "                ", p, typeInfo, "reader", i, value);
         }
         sb.AppendLine("            }");
         sb.AppendLine("            return entity;");
@@ -1048,17 +1057,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "rr", i, isDbDataReader: true, p.IsEnum);
-            if (typeInfo.NeedsNullCheck)
-            {
-                // AUD-R33-009, as in ReadEntity above: skip rather than reset, matching the plain
-                // IDataReader closure below and the reflection twin.
-                sb.AppendLine($"                    if (!rr.IsDBNull(ord[{i}]))");
-                sb.AppendLine($"                        entity.{p.PropertyName} = {rowValue};");
-            }
-            else
-            {
-                sb.AppendLine($"                    entity.{p.PropertyName} = {rowValue};");
-            }
+            AppendPropertyRead(sb, "                    ", p, typeInfo, "rr", i, rowValue);
         }
         sb.AppendLine("                    return entity;");
         sb.AppendLine("                };");
@@ -1078,15 +1077,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "r", i, isDbDataReader: false, p.IsEnum);
-            if (typeInfo.NeedsNullCheck)
-            {
-                sb.AppendLine($"                if (!r.IsDBNull(ord[{i}]))");
-                sb.AppendLine($"                    entity.{p.PropertyName} = {rowValue};");
-            }
-            else
-            {
-                sb.AppendLine($"                entity.{p.PropertyName} = {rowValue};");
-            }
+            AppendPropertyRead(sb, "                ", p, typeInfo, "r", i, rowValue);
         }
         sb.AppendLine("                return entity;");
         sb.AppendLine("            };");
@@ -1394,22 +1385,60 @@ public partial class JauntyGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Returns <see langword="true"/> when the given symbol has an attribute whose class name
-    /// matches <paramref name="attributeName"/> (simple name comparison, no namespace).
+    /// Returns the first <see cref="AttributeData"/> on <paramref name="symbol"/> whose class is,
+    /// or derives from, one of <paramref name="recognizedFullNames"/>, or <see langword="null"/>
+    /// when the symbol carries none of them.
     /// </summary>
     /// <param name="symbol">The symbol to inspect.</param>
-    /// <param name="attributeName">The simple attribute class name (e.g. <c>"KeyAttribute"</c>).</param>
-    private static bool HasAttribute(ISymbol symbol, string attributeName)
-        => symbol.GetAttributes().Any(a => a.AttributeClass?.Name == attributeName);
+    /// <param name="recognizedFullNames">
+    /// The recognized attribute types by fully-qualified name, in precedence order - the first name
+    /// that matches wins, regardless of the order the attributes appear in source, so a type
+    /// carrying both Jaunty's attribute and the DataAnnotations one resolves the same way
+    /// <c>MetadataBuilder</c> resolves it.
+    /// </param>
+    /// <remarks>
+    /// AUD-R35-070. Replaces a pair of helpers that compared <c>AttributeClass?.Name</c>, the simple
+    /// class name, so any namespace's <c>[Column]</c>, <c>[NotMapped]</c>, <c>[Key]</c>,
+    /// <c>[DatabaseGenerated]</c> or <c>[EnumStorage]</c> was honoured. Base types are walked
+    /// because <c>PropertyInfo.GetCustomAttribute&lt;T&gt;</c> on the reflection side matches a
+    /// derived attribute too.
+    /// </remarks>
+    private static AttributeData? GetRecognizedAttribute(ISymbol symbol, params string[] recognizedFullNames)
+    {
+        ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+        foreach (string fullName in recognizedFullNames)
+        {
+            foreach (AttributeData attribute in attributes)
+            {
+                if (IsOrDerivesFrom(attribute.AttributeClass, fullName))
+                    return attribute;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
-    /// Returns the first <see cref="AttributeData"/> on <paramref name="symbol"/> whose class name
-    /// matches <paramref name="attributeName"/>, or <see langword="null"/> if none is found.
+    /// Returns <see langword="true"/> when <paramref name="symbol"/> carries one of
+    /// <paramref name="recognizedFullNames"/>. See <see cref="GetRecognizedAttribute"/>.
     /// </summary>
-    /// <param name="symbol">The symbol to inspect.</param>
-    /// <param name="attributeName">The simple attribute class name (e.g. <c>"ColumnAttribute"</c>).</param>
-    private static AttributeData? GetAttribute(ISymbol symbol, string attributeName)
-        => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
+    private static bool HasRecognizedAttribute(ISymbol symbol, params string[] recognizedFullNames)
+        => GetRecognizedAttribute(symbol, recognizedFullNames) is not null;
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="attributeClass"/> is
+    /// <paramref name="fullName"/> or inherits from it.
+    /// </summary>
+    private static bool IsOrDerivesFrom(INamedTypeSymbol? attributeClass, string fullName)
+    {
+        for (INamedTypeSymbol? type = attributeClass; type is not null; type = type.BaseType)
+        {
+            if (type.ToDisplayString() == fullName)
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// The <c>[Table]</c> attribute the generator recognizes - Jaunty's or DataAnnotations' - or
@@ -1419,7 +1448,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// AUD-R34-031 (round-33 carry-forward). Entity discovery keys on the two attributes by
     /// <em>fully-qualified metadata name</em> (<c>ForAttributeWithMetadataName</c>, narrowed in
     /// AUD-R25), but the two places that ask a symbol about its <c>[Table]</c> after discovery went
-    /// through <see cref="GetAttribute(ISymbol, string)"/>, which compares the simple name only. A
+    /// through a helper that compared the simple name only (since replaced by
+    /// <see cref="GetRecognizedAttribute"/>, AUD-R35-070). A
     /// consumer's own unrelated <c>TableAttribute</c> - the name is common enough that several
     /// libraries define one - therefore had two effects it should not have. On a hand-written
     /// <c>IMapped&lt;T&gt;</c> it suppressed the JAUNTYGEN002 warning, which exists precisely because
@@ -1429,11 +1459,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// table with nothing reported.
     /// </remarks>
     private static AttributeData? GetRecognizedTableAttribute(ISymbol symbol)
-        => symbol.GetAttributes().FirstOrDefault(static a =>
-        {
-            var name = a.AttributeClass?.ToDisplayString();
-            return name == JauntyTableAttribute || name == DataAnnotationsTableAttribute;
-        });
+        => GetRecognizedAttribute(symbol, JauntyTableAttribute, DataAnnotationsTableAttribute);
 
     /// <summary>
     /// Escapes a value for safe interpolation inside a generated C# string literal, doubling
@@ -1442,8 +1468,44 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// literal and produce invalid or semantically different generated code.
     /// </summary>
     /// <param name="value">The raw value to escape.</param>
+    /// <remarks>
+    /// AUD-R35-024: this escaped backslash and double quote only, which is the same too-narrow
+    /// escape AUD-R26-015 fixed in the twin (<c>EntityCodeGenerator.EscapeStringLiteral</c>); the
+    /// fix was never carried across. A regular C# string literal cannot span a line, and a quoted
+    /// identifier may contain one, so a name holding a line terminator was emitted raw and the
+    /// generated <c>.g.cs</c> failed with CS1010 - in a file the consumer cannot open. The two
+    /// implementations now cover the same set: the whole control range plus U+0085/U+2028/U+2029,
+    /// which the C# lexer also treats as line terminators.
+    /// </remarks>
     private static string EscapeStringLiteral(string value)
-        => value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    {
+        var sb = new StringBuilder(value.Length);
+
+        foreach (char c in value)
+        {
+            switch (c)
+            {
+                case '\\': sb.Append("\\\\"); break;
+                case '"': sb.Append("\\\""); break;
+                case '\0': sb.Append("\\0"); break;
+                case '\a': sb.Append("\\a"); break;
+                case '\b': sb.Append("\\b"); break;
+                case '\f': sb.Append("\\f"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\r': sb.Append("\\r"); break;
+                case '\t': sb.Append("\\t"); break;
+                case '\v': sb.Append("\\v"); break;
+                default:
+                    if (char.IsControl(c) || c is '\u0085' or '\u2028' or '\u2029')
+                        sb.Append("\\u").Append(((int)c).ToString("x4", System.Globalization.CultureInfo.InvariantCulture));
+                    else
+                        sb.Append(c);
+                    break;
+            }
+        }
+
+        return sb.ToString();
+    }
 
     /// <summary>
     /// Resolves the table name and optional schema name for an entity class from its
@@ -1479,6 +1541,58 @@ public partial class JauntyGenerator : IIncrementalGenerator
         }
 
         return (tableName, schemaName);
+    }
+
+    /// <summary>
+    /// AUD-R35-069. Emits the read of one property, including what happens when the column is NULL.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NULL into a non-nullable property used to behave three different ways, decided by the
+    /// property's type and by whether the generator package was referenced at all. The reflection
+    /// twin is uniform: <c>PropertySetter&lt;T&gt;.Set</c> throws
+    /// <c>InvalidOperationException("Cannot assign NULL to non-nullable property 'X'")</c> for every
+    /// non-nullable value type. The generated mapper instead emitted (a) an unguarded typed getter
+    /// for int/long/bool/decimal/double/float/short/byte/DateTime/Guid, so the caller got a
+    /// provider-specific <c>InvalidCastException</c>/<c>SqlNullValueException</c> rather than the
+    /// named error, and (b) for every catch-all type - enum, DateOnly, TimeOnly, char, uint, ulong,
+    /// sbyte, ushort - a skip, because <c>GetReaderTypeInfo</c>'s <c>_</c> arm hardcodes
+    /// <c>NeedsNullCheck: true</c> regardless of nullability. So a non-nullable enum column that
+    /// went NULL produced a loud named error under reflection and a quietly wrong entity once the
+    /// generator package was added.
+    /// </para>
+    /// <para>
+    /// Distinct from AUD-R33-009, which settled skip-versus-reset for <em>nullable</em> properties;
+    /// that behaviour is unchanged here.
+    /// </para>
+    /// </remarks>
+    private static void AppendPropertyRead(
+        StringBuilder sb,
+        string indent,
+        PropertyMetadata property,
+        ReaderTypeInfo typeInfo,
+        string readerLocal,
+        int ordinalIndex,
+        string valueExpression)
+    {
+        if (property.IsNonNullableValueType)
+        {
+            sb.AppendLine($"{indent}if ({readerLocal}.IsDBNull(ord[{ordinalIndex}]))");
+            sb.AppendLine($"{indent}    throw new global::System.InvalidOperationException(\"Cannot assign NULL to non-nullable property '{property.PropertyName}'.\");");
+            sb.AppendLine($"{indent}entity.{property.PropertyName} = {valueExpression};");
+            return;
+        }
+
+        if (typeInfo.NeedsNullCheck)
+        {
+            // AUD-R33-009: skip rather than reset, matching the reflection twin - a property with an
+            // initializer keeps it when the column is NULL.
+            sb.AppendLine($"{indent}if (!{readerLocal}.IsDBNull(ord[{ordinalIndex}]))");
+            sb.AppendLine($"{indent}    entity.{property.PropertyName} = {valueExpression};");
+            return;
+        }
+
+        sb.AppendLine($"{indent}entity.{property.PropertyName} = {valueExpression};");
     }
 
     /// <summary>

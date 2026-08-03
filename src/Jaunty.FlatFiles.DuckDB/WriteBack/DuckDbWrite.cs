@@ -113,6 +113,17 @@ public sealed partial class DuckDb
                 sb.Append('(');
                 T entity = entityList[chunkStart + row];
 
+                // AUD-R35-032: a null element used to surface as a bare NullReferenceException out
+                // of the compiled getter, naming neither the row nor the entity type. The
+                // single-entity overloads have guarded the same condition all along.
+                if (entity is null)
+                {
+                    throw new ArgumentException(
+                        $"The element at index {chunkStart + row} is null. A batch insert of " +
+                        $"{typeof(T).Name} cannot contain null entities.",
+                        nameof(entities));
+                }
+
                 for (int col = 0; col < mappingList.Count; col++)
                 {
                     if (col > 0) sb.Append(", ");
@@ -124,10 +135,18 @@ public sealed partial class DuckDb
             }
 
             var sql = $"INSERT INTO {_dialect.EscapeTableName(null, source.TableName)} ({columnsSql}) VALUES {sb}";
-            totalInserted += NonQueryExecutor.Execute(_connection, sql, parameters, options);
+            int chunkInserted = NonQueryExecutor.Execute(_connection, sql, parameters, options);
+            totalInserted += chunkInserted;
+
+            // AUD-R35-033: marked per chunk, not once after the loop. DuckDB is in autocommit and
+            // each chunk is its own statement, so a throw - or a cancellation at the per-chunk check
+            // in the async twin - on a later chunk left the earlier chunks' rows committed while the
+            // flag stayed unset. IsModified<T>() then reported false for a table that had genuinely
+            // changed, and a caller driving Save/Export off that flag silently skipped the
+            // write-back. Only the chunked write can reach this; the single-statement sites cannot.
+            if (chunkInserted > 0) _modified.TryAdd(typeof(T), true);
         }
 
-        if (totalInserted > 0) _modified.TryAdd(typeof(T), true);
         return totalInserted;
     }
 }

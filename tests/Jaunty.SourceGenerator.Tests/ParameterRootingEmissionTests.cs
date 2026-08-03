@@ -252,6 +252,95 @@ public class ParameterRootingEmissionTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Id == "JAUNTYGEN003");
     }
 
+    // ------------------------------------------------------------------
+    // AUD-R35-057: the two shape predicates against what ParameterBinder actually does
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// A string-keyed dictionary really is bound by key, so claiming it here is right - and the
+    /// runtime now agrees for any TValue, not only <c>object</c>.
+    /// </summary>
+    [Fact]
+    public void AStringKeyedDictionary_IsTreatedAsBoundByKey()
+    {
+        var result = RunGenerator(Consumer("""
+            var p = new Dictionary<string, int> { ["Id"] = 1 };
+            connection.Execute("DELETE FROM t WHERE id = @Id", p);
+            """));
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Id == "JAUNTYGEN003");
+        Assert.DoesNotContain("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A dictionary with a non-string key is not a dictionary of named values: the binder has no
+    /// key to look up, so it falls through to the property path and throws. This used to be claimed
+    /// as a dictionary shape, which suppressed the diagnostic that would have said so at build time.
+    /// </summary>
+    [Fact]
+    public void ANonStringKeyedDictionary_IsNotTreatedAsBoundByKey()
+    {
+        var result = RunGenerator(Consumer("""
+            var p = new Dictionary<int, string> { [1] = "x" };
+            connection.Execute("DELETE FROM t WHERE id = @Id", p);
+            """));
+
+        Assert.Contains("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>BigInteger</c> was on the scalar list here and is not on <c>ParameterBinder.IsScalarType</c>'s,
+    /// so the binder reflects over its properties - the exact case rooting exists for.
+    /// </summary>
+    [Fact]
+    public void ABigInteger_IsNotTreatedAsAScalar()
+    {
+        var result = RunGenerator(Consumer("""
+            var p = new System.Numerics.BigInteger(1);
+            connection.Execute("DELETE FROM t WHERE id = @Id", p);
+            """));
+
+        Assert.Contains("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>System.Array</c> has a <c>SpecialType</c>, which is what the old predicate keyed on, and is
+    /// no more a scalar than <c>object</c> is.
+    /// </summary>
+    [Fact]
+    public void ASystemArrayTypedParameter_IsNotTreatedAsAScalar()
+    {
+        var result = RunGenerator(Consumer("""
+            System.Array p = new int[] { 1 };
+            connection.Execute("DELETE FROM t WHERE id = @Id", p);
+            """));
+
+        Assert.Contains("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The control for the four above: a genuine scalar still short-circuits, and a nullable one
+    /// still resolves through <c>Nullable&lt;T&gt;</c> - which the allowlist rewrite had to be
+    /// ordered carefully not to break.
+    /// </summary>
+    [Theory]
+    [InlineData("int p = 1;")]
+    [InlineData("int? p = 1;")]
+    [InlineData("string p = \"x\";")]
+    [InlineData("System.Guid p = System.Guid.Empty;")]
+    [InlineData("System.DateTime p = System.DateTime.UtcNow;")]
+    [InlineData("byte[] p = new byte[] { 1 };")]
+    public void AScalarParameter_IsStillTreatedAsAScalar(string declaration)
+    {
+        var result = RunGenerator(Consumer($"""
+            {declaration}
+            connection.Execute("DELETE FROM t WHERE id = @Id", p);
+            """));
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Id == "JAUNTYGEN003");
+        Assert.DoesNotContain("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
+    }
+
     /// <summary>
     /// A private nested type cannot be named from the generated file, which lives elsewhere in the
     /// assembly. Reporting it is the honest answer; emitting a name that does not resolve would break

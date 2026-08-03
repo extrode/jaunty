@@ -22,6 +22,20 @@ namespace Jaunty.Diagnostics;
 /// Subscribe using <see cref="DiagnosticListener.Subscribe(System.IObserver{System.Collections.Generic.KeyValuePair{string, object?}})"/> to receive events
 /// for integration with OpenTelemetry, Application Insights, or custom telemetry.
 /// </para>
+/// <para>
+/// AUD-R35-062: the three emit methods gate on <c>IsEnabled(eventName)</c>, not the parameterless
+/// <c>IsEnabled()</c>. The parameterless overload only asks whether anyone is subscribed at all, and
+/// <see cref="DiagnosticSource.Write"/> does not consult a subscriber's per-event predicate -
+/// honouring it is the producer's job. A consumer subscribing with
+/// <c>Subscribe(observer, name =&gt; name == CommandFailedEventName)</c>, which is the standard
+/// OpenTelemetry/Application Insights filtering pattern and the reason that overload exists, used to
+/// receive every Executing and Executed event anyway, with a payload object allocated per command to
+/// deliver each one. Distinct from AUD-R25-013, which fixed whether the listener fires at all.
+/// </para>
+/// <para>
+/// <c>CommandObservation</c> still gates on the parameterless overload, and that is correct: a
+/// subscriber filtered down to failures only still needs the pipeline to run in order to see one.
+/// </para>
 /// </remarks>
 public sealed class JauntyDiagnosticListener : DiagnosticListener, IDisposable
 {
@@ -85,7 +99,7 @@ public sealed class JauntyDiagnosticListener : DiagnosticListener, IDisposable
 #endif
     public void WriteCommandExecuting(Interceptors.CommandContext context)
     {
-        if (IsEnabled() && !_disposed)
+        if (IsEnabled(CommandExecutingEventName) && !_disposed)
         {
             Write(CommandExecutingEventName, new CommandExecutingPayload(context));
         }
@@ -109,7 +123,7 @@ public sealed class JauntyDiagnosticListener : DiagnosticListener, IDisposable
 #endif
     public void WriteCommandExecuted(Interceptors.CommandContext context)
     {
-        if (IsEnabled() && !_disposed)
+        if (IsEnabled(CommandExecutedEventName) && !_disposed)
         {
             Write(CommandExecutedEventName, new CommandExecutedPayload(context));
         }
@@ -135,7 +149,7 @@ public sealed class JauntyDiagnosticListener : DiagnosticListener, IDisposable
 #endif
     public void WriteCommandFailed(Interceptors.CommandContext context, Exception exception)
     {
-        if (IsEnabled() && !_disposed)
+        if (IsEnabled(CommandFailedEventName) && !_disposed)
         {
             Write(CommandFailedEventName, new CommandFailedPayload(context, exception));
         }

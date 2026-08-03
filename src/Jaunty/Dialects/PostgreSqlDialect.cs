@@ -74,13 +74,25 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
         return $"{baseSql} LIMIT {fetchNext} OFFSET {offset}";
     }
 
+    /// <remarks>
+    /// AUD-R35-061. This used to emit <c>{column} COLLATE "C" LIKE {parameter}</c>, "to be explicit
+    /// and ensure consistency". The clause was doing nothing and costing an index: PostgreSQL's
+    /// <c>LIKE</c> is not collation-driven for case - it compares characters directly, so it is
+    /// case-sensitive under every collation, <c>"C"</c> included - while wrapping the column in a
+    /// <c>COLLATE</c> expression makes it a non-simple operand that an ordinary btree index cannot
+    /// be seeked on, so even a <c>StartsWith</c> pattern (the one LIKE shape that can seek) forced a
+    /// scan. <see cref="SqlServerDialect.GenerateCaseSensitiveLike"/> was fixed for exactly this and
+    /// its siblings were left alone; MySQL's half went with AUD-R35-017.
+    /// <para>
+    /// <see cref="GenerateCaseInsensitiveEquals"/> keeps <c>LOWER(column)</c> deliberately. There the
+    /// wrapping is what produces the semantics, not a redundant assertion of them, and PostgreSQL
+    /// offers no parameter-side equivalent that is available on every installation - a functional
+    /// index on <c>LOWER(column)</c> is the answer, and that is the schema's call, not the driver's.
+    /// </para>
+    /// </remarks>
     public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar)
     {
-        // PostgreSQL: Standard LIKE is case-sensitive by default
-        // However, to be explicit and ensure consistency, we use COLLATE "C"
-        // "C" collation provides byte-by-byte comparison (case-sensitive)
-        // This is bulletproof and matches C# string.Contains() behavior
-        return $"{columnName} COLLATE \"C\" LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
+        return $"{columnName} LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)

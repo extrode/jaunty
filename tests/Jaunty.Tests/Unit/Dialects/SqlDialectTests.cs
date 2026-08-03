@@ -572,10 +572,28 @@ public class SqlDialectTests
 
     #region PostgreSQL Dialect - String Functions
 
+    // AUD-R35-061: this used to assert the COLLATE "C" clause. PostgreSQL's LIKE is not
+    // collation-driven for case, so the clause asserted nothing about the semantics while making
+    // the column a non-simple operand no btree index can be seeked on.
     [Fact]
-    public void Postgres_GenerateCaseSensitiveLike_UsesCollate()
+    public void Postgres_GenerateCaseSensitiveLike_LeavesTheColumnUnwrapped()
     {
-        Assert.Equal("col COLLATE \"C\" LIKE @param ESCAPE '\\'", _postgres.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.Equal("col LIKE @param ESCAPE '\\'", _postgres.GenerateCaseSensitiveLike("col", "@param", "\\"));
+    }
+
+    [Fact]
+    public void Postgres_GenerateCaseSensitiveLike_DoesNotWrapTheColumnInCollate()
+    {
+        Assert.DoesNotContain("COLLATE", _postgres.GenerateCaseSensitiveLike("col", "@param", "\\"), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The counterpart: LOWER() on the column stays, because there the wrapping is the semantics.
+    /// </summary>
+    [Fact]
+    public void Postgres_GenerateCaseInsensitiveEquals_StillWrapsBothSides()
+    {
+        Assert.Equal("LOWER(col) = LOWER(@param)", _postgres.GenerateCaseInsensitiveEquals("col", "@param"));
     }
 
     [Fact]
@@ -646,9 +664,19 @@ public class SqlDialectTests
     // MySQL's default sql_mode that backslash escapes its own closing quote and the statement
     // does not parse; MySQL needs ESCAPE '\\'. The text assertion preserved the defect.
     [Fact]
-    public void MySql_GenerateCaseSensitiveLike_UsesCollate()
+    // AUD-R35-017 replaced COLLATE utf8mb4_bin with CAST(... AS BINARY): a collation is only valid
+    // for its own character set, so the utf8mb4 name was error 1253 on a latin1 or utf8mb3 column
+    // rather than a case-sensitive comparison.
+    public void MySql_GenerateCaseSensitiveLike_CastsToBinary()
     {
-        Assert.Equal("col COLLATE utf8mb4_bin LIKE @param ESCAPE '\\\\'", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.Equal("CAST(col AS BINARY) LIKE @param ESCAPE '\\\\'", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
+    }
+
+    [Fact]
+    public void MySql_GenerateCaseSensitiveLike_NamesNoCharacterSet()
+    {
+        Assert.DoesNotContain("utf8", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.DoesNotContain("COLLATE", _mySql.GenerateCaseSensitiveLike("col", "@param", "\\"));
     }
 
     [Fact]
@@ -676,9 +704,18 @@ public class SqlDialectTests
     }
 
     [Fact]
-    public void MySql_GenerateCaseInsensitiveEquals_UsesCollate()
+    // AUD-R35-017: LOWER() on both sides, charset-independent, and what PostgreSqlDialect and
+    // SQLiteDialect already emit for this method.
+    public void MySql_GenerateCaseInsensitiveEquals_FoldsBothSides()
     {
-        Assert.Equal("col COLLATE utf8mb4_general_ci = @param", _mySql.GenerateCaseInsensitiveEquals("col", "@param"));
+        Assert.Equal("LOWER(col) = LOWER(@param)", _mySql.GenerateCaseInsensitiveEquals("col", "@param"));
+    }
+
+    [Fact]
+    public void MySql_GenerateCaseInsensitiveEquals_NamesNoCharacterSet()
+    {
+        Assert.DoesNotContain("utf8", _mySql.GenerateCaseInsensitiveEquals("col", "@param"));
+        Assert.DoesNotContain("COLLATE", _mySql.GenerateCaseInsensitiveEquals("col", "@param"));
     }
 
     [Fact]

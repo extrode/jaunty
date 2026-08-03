@@ -24,7 +24,6 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private readonly ParameterCollection _parameters;
     private readonly string[] _groupByColumns;
     private readonly List<string> _havingConditions = [];
-    private int _havingParamSeq;
 
     internal GroupedQueryBuilder(IDbConnection connection, ISqlDialect dialect, List<WhereCondition> whereConditions,
         ParameterCollection parameters, Expression<Func<T, TKey>> keySelector)
@@ -349,9 +348,19 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     /// instead of inlining it into the SQL text (which previously quote-doubled strings and
     /// left the value vulnerable to injection/culture-formatting bugs).
     /// </summary>
+    /// <remarks>
+    /// AUD-R35-016. The name used to be <c>{prefix}hp{_havingParamSeq++}</c> from an instance field
+    /// starting at 0, while <c>_parameters</c> is the <em>parent</em> <c>QueryBuilder</c>'s
+    /// collection, handed over by reference rather than cloned (<c>QueryBuilder.GroupBy</c>). Two
+    /// groupings off one query - each perfectly valid and independent - therefore both minted
+    /// <c>@hp0</c> into the same collection and the second threw
+    /// <c>ArgumentException: A parameter named '@hp0' has already been added</c>, on a name the
+    /// caller never chose. Deriving the name from the collection it is added to cannot collide by
+    /// construction; the counter could only ever be right for one builder at a time.
+    /// </remarks>
     private string AddHavingParameter(object? value)
     {
-        string name = $"{_dialect.ParameterPrefix}hp{_havingParamSeq++}";
+        string name = _parameters.CreateUniqueName(_dialect.ParameterPrefix, "hp");
         _parameters.Add(name, value);
         return name;
     }
@@ -371,7 +380,14 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             if (body is MemberExpression memberExpr)
             {
                 string columnName = GetColumnName(memberExpr.Member.Name);
-                return $"{aggregate}({_dialect.EscapeColumnName(columnName)})";
+                string operand = _dialect.EscapeColumnName(columnName);
+
+                // AUD-R35-066: a truncated AVG changes which groups a HAVING keeps, not just the
+                // value reported - HAVING AVG(qty) > 12.5 is false for a group averaging 12.6 once
+                // the engine has floored it to 12.
+                return aggregate == "AVG"
+                    ? FractionalAverage.Generate(_dialect, operand)
+                    : $"{aggregate}({operand})";
             }
         }
 

@@ -76,11 +76,31 @@ public class TablePromoterTests : IDisposable
     [Fact]
     public void EnsurePromotedToTable_Preloaded_NoOp()
     {
+        // AUD-R35-026: the authority for "preloaded" is now per-connection, so the source has to be
+        // recorded against this connection the way DuckDb.RegisterSource records it. The flag on
+        // the source is the caller's opt-in, read once at registration, not the decision itself.
         var source = new TestFileSource("test_view") { IsPreloaded = true };
+        PreloadRegistry.Mark(_connection, source);
 
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
 
         Assert.Equal("VIEW", TableTypeOf(_connection, "test_view"));
+    }
+
+    /// <summary>
+    /// AUD-R35-026. The flag alone no longer short-circuits: it used to be written by another
+    /// connection's <c>DuckDb</c> constructor and read here, so a source shared between two
+    /// <c>FlatFileOptions</c> skipped promotion on the second connection and the mutation then ran
+    /// against a view.
+    /// </summary>
+    [Fact]
+    public void EnsurePromotedToTable_PreloadedElsewhereButNotHere_StillPromotes()
+    {
+        var source = new TestFileSource("test_view") { IsPreloaded = true };
+
+        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
+
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
     }
 
     /// <summary>
