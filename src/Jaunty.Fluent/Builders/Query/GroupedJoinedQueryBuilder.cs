@@ -31,16 +31,22 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
         _parent = parent;
         _metadata = [FluentMetadataCache.GetMetadata<TFrom>(), FluentMetadataCache.GetMetadata<TJoin>()];
         CachedDialectMetadata[] cachedMetadata = [FluentMetadataCache.GetForDialect<TFrom>(_parent.Dialect), FluentMetadataCache.GetForDialect<TJoin>(_parent.Dialect)];
-        string[] tablePrefixes = [_parent.FromAlias ?? _metadata[0].TableName, _parent.Joins[0].Alias ?? _metadata[1].TableName];
+        // AUD-R35-015: the unaliased fallback is the escaped table name, not the raw one. See
+        // GroupedJoinTablePrefixes.Resolve.
+        string[] tablePrefixes =
+        [
+            GroupedJoinTablePrefixes.Resolve(_parent.Dialect, _parent.FromAlias, _metadata[0]),
+            GroupedJoinTablePrefixes.Resolve(_parent.Dialect, _parent.Joins[0].Alias, _metadata[1]),
+        ];
         _visitor = new JoinedGroupByExpressionVisitor(_parent.Dialect, _metadata, cachedMetadata, tablePrefixes, keySelector);
     }
 
     public IGroupedJoinedQuery<TFrom, TJoin, TKey> Having(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, bool>> predicate)
     {
         (string havingSql, List<(string Name, object? Value)> parameters) = _visitor.TranslateHavingPredicate(predicate);
-        _havingConditions.Add(havingSql);
-        foreach ((string name, object? value) in parameters)
-            _parent.AddParameter(name, value);
+        // AUD-R35-016: renamed against the query-wide collection, which every grouped builder off
+        // this join shares. See JoinedQueryBuilder.RegisterHavingParameters.
+        _havingConditions.Add(_parent.RegisterHavingParameters(havingSql, parameters));
         return this;
     }
 
