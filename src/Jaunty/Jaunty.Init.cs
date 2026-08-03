@@ -1,3 +1,5 @@
+using Jaunty.Configuration;
+
 using System.Reflection;
 #if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
@@ -56,7 +58,7 @@ public static partial class Jaunty
     [UnconditionalSuppressMessage("AOT", "IL2026", Justification = "Extension loading is wrapped in try-catch; NativeAOT users initialize manually.")]
     [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Extension loading is wrapped in try-catch; NativeAOT users initialize manually.")]
 #endif
-    private static void TryEnableReflectionMapping()
+    internal static void TryEnableReflectionMapping()
     {
         try
         {
@@ -66,7 +68,36 @@ public static partial class Jaunty
             Type? type = assembly.GetType("Jaunty.Extensions.Reflection.JauntyReflectionExtensions");
             // AOT-SAFE: optional probe for Jaunty.Extensions.Reflection; absent or trimmed is the expected source-gen-only case, caught below and recorded in ReflectionMappingInitializationError.
             MethodInfo? method = type?.GetMethod("UseReflectionMapping", BindingFlags.Public | BindingFlags.Static);
-            method?.Invoke(null, null);
+
+            if (method is null)
+                return;
+
+            // AUD-R35-099. This constructor does not run at startup: it runs on the first touch of
+            // any Jaunty static member, which is normally the caller's first query. Every hook below
+            // is public and documented as settable at any time, so anything the caller configured
+            // before that first query - a custom metadata resolver, a shimmed mapper - was
+            // overwritten here by UseReflectionMapping()'s unconditional assignments, silently, at a
+            // moment the caller has no way to observe. The symptom is "my resolver is never called".
+            //
+            // Only this auto-init path is guarded. An explicit UseReflectionMapping() call still
+            // installs all seven, because that is exactly what the caller asked for.
+            var mapper = JauntyConfig.ReflectionMapperResolver;
+            var insertBinder = JauntyConfig.ReflectionInsertBinderResolver;
+            var updateBinder = JauntyConfig.ReflectionUpdateBinderResolver;
+            var deleteBinder = JauntyConfig.ReflectionDeleteBinderResolver;
+            var tableMetadata = JauntyConfig.ReflectionTableMetadataResolver;
+            var multiMapper = JauntyConfig.ReflectionMultiMapperResolver;
+            var multiMapperN = JauntyConfig.ReflectionMultiMapperResolverN;
+
+            method.Invoke(null, null);
+
+            if (mapper is not null) JauntyConfig.ReflectionMapperResolver = mapper;
+            if (insertBinder is not null) JauntyConfig.ReflectionInsertBinderResolver = insertBinder;
+            if (updateBinder is not null) JauntyConfig.ReflectionUpdateBinderResolver = updateBinder;
+            if (deleteBinder is not null) JauntyConfig.ReflectionDeleteBinderResolver = deleteBinder;
+            if (tableMetadata is not null) JauntyConfig.ReflectionTableMetadataResolver = tableMetadata;
+            if (multiMapper is not null) JauntyConfig.ReflectionMultiMapperResolver = multiMapper;
+            if (multiMapperN is not null) JauntyConfig.ReflectionMultiMapperResolverN = multiMapperN;
         }
         catch (Exception ex) when (ex is FileNotFoundException or TypeLoadException or MissingMethodException)
         {
