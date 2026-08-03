@@ -102,6 +102,105 @@ internal static class ReaderValueConverter
             }
         }
 
+        // AUD-R35-027: none of the types below implement IConvertible, so Convert.ChangeType below
+        // cannot produce any of them from the representation a flat file actually carries. Only
+        // DateTimeOffset had a parsing branch, so a Guid/TimeSpan/DateOnly/TimeOnly property backed
+        // by a CSV or JSON column - text, always - threw InvalidCastException and could not be read
+        // at all, even though the import path writes those columns as text quite happily. Core's
+        // DbValueConversion.cs has carried these same branches since AUD-R29.
+        if (underlyingType == typeof(Guid) && value is string guidText)
+        {
+            if (!Guid.TryParse(guidText, out Guid parsedGuid))
+            {
+                converted = null;
+                return false;
+            }
+
+            converted = parsedGuid;
+            return true;
+        }
+
+        if (underlyingType == typeof(TimeSpan) && value is string timeSpanText)
+        {
+            if (!TimeSpan.TryParse(timeSpanText, CultureInfo.InvariantCulture, out TimeSpan parsedTimeSpan))
+            {
+                converted = null;
+                return false;
+            }
+
+            converted = parsedTimeSpan;
+            return true;
+        }
+
+        if (underlyingType == typeof(char) && value is string charText)
+        {
+            if (charText.Length != 1)
+            {
+                converted = null;
+                return false;
+            }
+
+            converted = charText[0];
+            return true;
+        }
+
+        if (underlyingType == typeof(DateOnly))
+        {
+            // The DATE case is handled above by the assignability check; this is the TIMESTAMP and
+            // VARCHAR case, which the reader hands back as DateTime and string respectively.
+            if (value is DateTime dateSource)
+            {
+                converted = DateOnly.FromDateTime(dateSource);
+                return true;
+            }
+
+            if (value is string dateText)
+            {
+                if (!DateOnly.TryParse(dateText, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly parsedDate))
+                {
+                    converted = null;
+                    return false;
+                }
+
+                converted = parsedDate;
+                return true;
+            }
+        }
+
+        if (underlyingType == typeof(TimeOnly))
+        {
+            if (value is TimeSpan timeSource)
+            {
+                // FromTimeSpan throws outside [0, 24h), and an INTERVAL column can hold either.
+                if (timeSource < TimeSpan.Zero || timeSource >= TimeSpan.FromDays(1))
+                {
+                    converted = null;
+                    return false;
+                }
+
+                converted = TimeOnly.FromTimeSpan(timeSource);
+                return true;
+            }
+
+            if (value is DateTime timeFromTimestamp)
+            {
+                converted = TimeOnly.FromDateTime(timeFromTimestamp);
+                return true;
+            }
+
+            if (value is string timeText)
+            {
+                if (!TimeOnly.TryParse(timeText, CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly parsedTime))
+                {
+                    converted = null;
+                    return false;
+                }
+
+                converted = parsedTime;
+                return true;
+            }
+        }
+
         if (underlyingType.IsEnum)
         {
             if (!convertEnums)
