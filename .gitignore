@@ -366,3 +366,7 @@ tools/native/sqlite-interop-osx-arm64/artifacts/
 
 # Git worktrees - never tracked
 .worktrees/
+
+# The repo's one scratch directory : probes, dumps, screenshots, patches.
+# Ignored before the first scratch file exists, not after one is committed.
+tmp/
