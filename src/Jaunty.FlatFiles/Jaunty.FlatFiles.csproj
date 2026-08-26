@@ -65,10 +65,10 @@
 	</ItemGroup>
 
 	<PropertyGroup>
-		<PackageId>Beparey.Jaunty.FlatFiles</PackageId>
+		<PackageId>Extrode.Jaunty.FlatFiles</PackageId>
 		<Authors>Syed Beparey</Authors>
 		<Description>Flat file abstractions for the Jaunty micro-ORM. Supports CSV, TSV, Parquet, JSON, Excel, Delta Lake, and Iceberg formats with extensible custom format registration.</Description>
-		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>
 		<ErrorReport>none</ErrorReport>
 		<PackageTags>$(PackageTags);flat-files;csv;parquet;json;duckdb</PackageTags>

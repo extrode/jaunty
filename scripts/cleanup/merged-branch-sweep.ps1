@@ -7,7 +7,7 @@
 $ErrorActionPreference = 'Stop'
 
 $execute = $args -contains '--execute' -or $args -contains '-e'
-$repo = 'C:\home\code\beparey.com\jaunty'
+$repo = 'C:\src\jaunty'
 Set-Location $repo
 
 # 1. Safety gate: only run from dev.
