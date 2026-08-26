@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CRUD Operations — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">CRUD Operations</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#insert-operations">Insert Operations</a><a class="toc-l3" href="#inserttt-entity">Insert&lt;T&gt;(T entity)</a><a class="toc-l3" href="#inserttt-entity-commandoptions-options">Insert&lt;T&gt;(T entity, CommandOptions options)</a><a class="toc-l2" href="#async-insert-operations">Async Insert Operations</a><a class="toc-l3" href="#insertasynctt-entity-cancellationtoken-cancellationtoken-default">InsertAsync&lt;T&gt;(T entity, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#insertasynctt-entity-commandoptions-options-cancellationtoken-cancellationtoken-default">InsertAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)</a><a class="toc-l2" href="#update-operations">Update Operations</a><a class="toc-l3" href="#updatett-entity">Update&lt;T&gt;(T entity)</a><a class="toc-l3" href="#updatett-entity-commandoptions-options">Update&lt;T&gt;(T entity, CommandOptions options)</a><a class="toc-l2" href="#async-update-operations">Async Update Operations</a><a class="toc-l3" href="#updateasynctt-entity-cancellationtoken-cancellationtoken-default">UpdateAsync&lt;T&gt;(T entity, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#updateasynctt-entity-commandoptions-options-cancellationtoken-cancellationtoken-default">UpdateAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)</a><a class="toc-l2" href="#delete-operations">Delete Operations</a><a class="toc-l3" href="#deletett-entity">Delete&lt;T&gt;(T entity)</a><a class="toc-l3" href="#deletett-entity-commandoptions-options">Delete&lt;T&gt;(T entity, CommandOptions options)</a><a class="toc-l3" href="#deletetobject-id">Delete&lt;T&gt;(object id)</a><a class="toc-l3" href="#deletetobject-id-commandoptions-options">Delete&lt;T&gt;(object id, CommandOptions options)</a><a class="toc-l2" href="#async-delete-operations">Async Delete Operations</a><a class="toc-l3" href="#deleteasynctt-entity-cancellationtoken-cancellationtoken-default">DeleteAsync&lt;T&gt;(T entity, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#deleteasynctt-entity-commandoptions-options-cancellationtoken-cancellationtoken-default">DeleteAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#deleteasynctobject-id-cancellationtoken-cancellationtoken-default">DeleteAsync&lt;T&gt;(object id, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#deleteasynctobject-id-commandoptions-options-cancellationtoken-cancellationtoken-default">DeleteAsync&lt;T&gt;(object id, CommandOptions options, CancellationToken cancellationToken = default)</a><a class="toc-l2" href="#real-world-example-transactional-crud">Real-World Example: Transactional CRUD</a><a class="toc-l2" href="#entity-mapping-conventions">Entity Mapping Conventions</a><a class="toc-l3" href="#primary-key-detection">Primary Key Detection</a><a class="toc-l3" href="#identity-columns">Identity Columns</a><a class="toc-l3" href="#column-mapping">Column Mapping</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">CRUD Operations</nav>
         <article>
@@ -203,7 +224,7 @@ Console.WriteLine($&quot;Inserted product <span class="tok-kw">with</span> ID: {
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;long&gt; InsertAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;long&gt; InsertAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -214,7 +235,7 @@ Console.WriteLine($&quot;Inserted product <span class="tok-kw">with</span> ID: {
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;long&gt;</code>: A task that resolves to the generated identity value, or 1 for non-identity inserts</li>
+<li><code>ValueTask&lt;long&gt;</code>: A task that resolves to the generated identity value, or 1 for non-identity inserts</li>
 </ul>
 <p><strong>Example:</strong></p>
 <div class="code-block">
@@ -234,7 +255,7 @@ Console.WriteLine($&quot;Inserted product <span class="tok-kw">with</span> ID: {
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;long&gt; InsertAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;long&gt; InsertAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -246,7 +267,7 @@ Console.WriteLine($&quot;Inserted product <span class="tok-kw">with</span> ID: {
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;long&gt;</code>: A task that resolves to the generated identity value, or 1 for non-identity inserts</li>
+<li><code>ValueTask&lt;long&gt;</code>: A task that resolves to the generated identity value, or 1 for non-identity inserts</li>
 </ul>
 <h2 id="update-operations">Update Operations</h2>
 <h3 id="updatett-entity">Update&lt;T&gt;(T entity)</h3>
@@ -310,7 +331,7 @@ Console.WriteLine($&quot;Updated {rowsAffected} rows&quot;);
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; UpdateAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; UpdateAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -321,7 +342,7 @@ Console.WriteLine($&quot;Updated {rowsAffected} rows&quot;);
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;int&gt;</code>: A task that resolves to the number of rows affected by the update</li>
+<li><code>ValueTask&lt;int&gt;</code>: A task that resolves to the number of rows affected by the update</li>
 </ul>
 <p><strong>Example:</strong></p>
 <div class="code-block">
@@ -341,7 +362,7 @@ Console.WriteLine($&quot;Updated {rowsAffected} rows&quot;);
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; UpdateAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; UpdateAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -353,7 +374,7 @@ Console.WriteLine($&quot;Updated {rowsAffected} rows&quot;);
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;int&gt;</code>: A task that resolves to the number of rows affected by the update</li>
+<li><code>ValueTask&lt;int&gt;</code>: A task that resolves to the number of rows affected by the update</li>
 </ul>
 <h2 id="delete-operations">Delete Operations</h2>
 <h3 id="deletett-entity">Delete&lt;T&gt;(T entity)</h3>
@@ -468,7 +489,7 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; DeleteAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; DeleteAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -479,7 +500,7 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;int&gt;</code>: A task that resolves to the number of rows affected by the delete</li>
+<li><code>ValueTask&lt;int&gt;</code>: A task that resolves to the number of rows affected by the delete</li>
 </ul>
 <p><strong>Example:</strong></p>
 <div class="code-block">
@@ -498,7 +519,7 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; DeleteAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; DeleteAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -510,7 +531,7 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;int&gt;</code>: A task that resolves to the number of rows affected by the delete</li>
+<li><code>ValueTask&lt;int&gt;</code>: A task that resolves to the number of rows affected by the delete</li>
 </ul>
 <h3 id="deleteasynctobject-id-cancellationtoken-cancellationtoken-default">DeleteAsync&lt;T&gt;(object id, CancellationToken cancellationToken = default)</h3>
 <p>Asynchronously deletes an entity by its primary key value. Only works for entities with a single primary key.</p>
@@ -520,7 +541,7 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; DeleteAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, object id, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; DeleteAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, object id, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -531,7 +552,7 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;int&gt;</code>: A task that resolves to the number of rows affected by the delete</li>
+<li><code>ValueTask&lt;int&gt;</code>: A task that resolves to the number of rows affected by the delete</li>
 </ul>
 <h3 id="deleteasynctobject-id-commandoptions-options-cancellationtoken-cancellationtoken-default">DeleteAsync&lt;T&gt;(object id, CommandOptions options, CancellationToken cancellationToken = default)</h3>
 <p>Asynchronously deletes an entity by its primary key value with command options. Only works for entities with a single primary key.</p>
@@ -541,7 +562,7 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; DeleteAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; DeleteAsync&lt;T&gt;(<span class="tok-kw">this</span> DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -553,7 +574,7 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;int&gt;</code>: A task that resolves to the number of rows affected by the delete</li>
+<li><code>ValueTask&lt;int&gt;</code>: A task that resolves to the number of rows affected by the delete</li>
 </ul>
 <h2 id="real-world-example-transactional-crud">Real-World Example: Transactional CRUD</h2>
 <div class="code-block">
@@ -635,9 +656,5 @@ Console.WriteLine($&quot;Deleted {rowsAffected} rows&quot;);
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

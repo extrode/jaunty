@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jaunty XML Documentation Style Guide — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Jaunty XML Documentation Style Guide</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html" class="active" aria-current="page">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html" class="active" aria-current="page">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#table-of-contents">Table of Contents</a><a class="toc-l2" href="#overview">Overview</a><a class="toc-l3" href="#purpose">Purpose</a><a class="toc-l3" href="#documentation-standards">Documentation Standards</a><a class="toc-l2" href="#required-documentation-elements">Required Documentation Elements</a><a class="toc-l3" href="#for-public-methods">For Public Methods</a><a class="toc-l3" href="#for-classestypes">For Classes/Types</a><a class="toc-l3" href="#for-properties">For Properties</a><a class="toc-l2" href="#xml-tag-reference">XML Tag Reference</a><a class="toc-l3" href="#core-tags">Core Tags</a><a class="toc-l3" href="#tag-usage-examples">Tag Usage Examples</a><a class="toc-l2" href="#documentation-structure">Documentation Structure</a><a class="toc-l3" href="#standard-order">Standard Order</a><a class="toc-l3" href="#example-structure">Example Structure</a><a class="toc-l2" href="#writing-style-guidelines">Writing Style Guidelines</a><a class="toc-l3" href="#tone-and-voice">Tone and Voice</a><a class="toc-l3" href="#sentence-structure">Sentence Structure</a><a class="toc-l3" href="#parameter-descriptions">Parameter Descriptions</a><a class="toc-l3" href="#type-references">Type References</a><a class="toc-l3" href="#emphasis-and-formatting">Emphasis and Formatting</a><a class="toc-l2" href="#code-examples">Code Examples</a><a class="toc-l3" href="#example-structure-1">Example Structure</a><a class="toc-l3" href="#basic-example-pattern">Basic Example Pattern</a><a class="toc-l3" href="#complete-example-pattern">Complete Example Pattern</a><a class="toc-l3" href="#multiple-example-pattern">Multiple Example Pattern</a><a class="toc-l3" href="#escaping-in-examples">Escaping in Examples</a><a class="toc-l2" href="#method-specific-patterns">Method-Specific Patterns</a><a class="toc-l3" href="#query-methods-read-operations">Query Methods (Read Operations)</a><a class="toc-l3" href="#write-methods-insertupdatedelete">Write Methods (Insert/Update/Delete)</a><a class="toc-l3" href="#async-methods">Async Methods</a><a class="toc-l3" href="#methods-with-options">Methods with Options</a><a class="toc-l2" href="#special-characters-and-escaping">Special Characters and Escaping</a><a class="toc-l3" href="#required-escaping">Required Escaping</a><a class="toc-l3" href="#common-patterns">Common Patterns</a><a class="toc-l2" href="#cross-references">Cross-References</a><a class="toc-l3" href="#method-references">Method References</a><a class="toc-l3" href="#type-references-1">Type References</a><a class="toc-l3" href="#in-text-references">In-Text References</a><a class="toc-l3" href="#type-parameter-references">Type Parameter References</a><a class="toc-l2" href="#exception-documentation">Exception Documentation</a><a class="toc-l3" href="#when-to-document">When to Document</a><a class="toc-l3" href="#exception-format">Exception Format</a><a class="toc-l3" href="#common-exception-patterns">Common Exception Patterns</a><a class="toc-l2" href="#templates">Templates</a><a class="toc-l3" href="#method-template">Method Template</a><a class="toc-l3" href="#class-template">Class Template</a><a class="toc-l3" href="#property-template">Property Template</a><a class="toc-l3" href="#interface-template">Interface Template</a><a class="toc-l2" href="#common-mistakes-to-avoid">Common Mistakes to Avoid</a><a class="toc-l3" href="#missing-angle-bracket-escaping">1. Missing Angle Bracket Escaping</a><a class="toc-l3" href="#vague-parameter-descriptions">2. Vague Parameter Descriptions</a><a class="toc-l3" href="#missing-exception-documentation">3. Missing Exception Documentation</a><a class="toc-l3" href="#incomplete-examples">4. Incomplete Examples</a><a class="toc-l3" href="#wrong-tag-order">5. Wrong Tag Order</a><a class="toc-l3" href="#missing-type-references">6. Missing Type References</a><a class="toc-l2" href="#quick-reference-card">Quick Reference Card</a><a class="toc-l3" href="#must-have-checklist">Must-Have Checklist</a><a class="toc-l3" href="#escaping-checklist">Escaping Checklist</a><a class="toc-l3" href="#style-checklist">Style Checklist</a><a class="toc-l2" href="#resources">Resources</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty XML Documentation Style Guide</nav>
         <article>
@@ -1280,7 +1301,10 @@ QueryAsync&amp;lt;Product&amp;gt;
 
         </article>
         <div class="page-nav" id="page-nav">
-          <div class="prev-next"><a class="pn-next" href="04-extensions-README.html">
+          <div class="prev-next"><a class="pn-prev" href="03-development-self-hosted-ci-runner.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Self hosted ci runner</span>
+</a><a class="pn-next" href="04-extensions-README.html">
   <span class="pn-label">next &#8594;</span>
   <span class="pn-title">README</span>
 </a></div>
@@ -1295,9 +1319,5 @@ QueryAsync&amp;lt;Product&amp;gt;
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>
