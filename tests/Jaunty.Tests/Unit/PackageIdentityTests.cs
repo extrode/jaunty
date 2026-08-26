@@ -15,6 +15,14 @@ public class PackageIdentityTests
     private const string ExpectedRepositoryUrl = "https://github.com/extrode/jaunty";
     private const string ExpectedIdPrefix = "Extrode.Jaunty";
     private const string ExpectedOwner = "Extrode LLC";
+    private const int ExpectedPackageCount = 7;
+
+    private static readonly string[] PackCriticalProperties =
+    [
+        "PackageId", "PackAsTool", "ToolCommandName", "RepositoryUrl", "PackageProjectUrl",
+        "Authors", "Company", "Copyright", "Description", "Version", "PackageVersion",
+        "PackageLicenseFile", "PackageReadmeFile", "PackageIcon",
+    ];
 
     [Fact]
     public void EveryDeclaredPackageIdCarriesTheExtrodePrefix()
@@ -36,25 +44,67 @@ public class PackageIdentityTests
     }
 
     [Fact]
-    public void EveryPackageIdIsDeclaredUnconditionally()
+    public void EveryPackCriticalPropertyIsDeclaredUnconditionally()
     {
         List<string> conditioned = new();
 
         foreach ((string project, XDocument document) in SourceProjects())
         {
-            foreach (XElement id in document.Descendants("PackageId"))
+            foreach (XElement property in document.Descendants()
+                         .Where(e => PackCriticalProperties.Contains(e.Name.LocalName) &&
+                                     e.Parent?.Name.LocalName == "PropertyGroup"))
             {
-                string? condition = (string?)id.Parent?.Attribute("Condition");
+                XElement? carrier = ConditioningAncestor(property);
 
-                if (!string.IsNullOrWhiteSpace(condition))
-                    conditioned.Add($"{project} (PropertyGroup Condition=\"{condition}\")");
+                if (carrier is not null)
+                {
+                    conditioned.Add(
+                        $"{project}: {property.Name.LocalName} under <{carrier.Name.LocalName} " +
+                        $"Condition=\"{(string?)carrier.Attribute("Condition")}\">");
+                }
             }
         }
 
         Assert.True(conditioned.Count == 0,
-            "PackageId must sit in an unconditional PropertyGroup. Pack evaluates a multi-targeted " +
-            "project with an empty $(TargetFramework), so a TFM-conditioned PackageId is dropped and " +
-            "the package silently takes the assembly name instead: " + string.Join(", ", conditioned));
+            "Pack metadata must sit in an unconditional PropertyGroup. Pack evaluates a multi-targeted " +
+            "project with an empty $(TargetFramework), so a TFM-conditioned property is dropped and the " +
+            "package silently falls back to a default - for PackageId, the assembly name: " +
+            string.Join(", ", conditioned));
+    }
+
+    [Fact]
+    public void EveryPackableProjectDeclaresAPackageId()
+    {
+        List<string> undeclared = new();
+        int declared = 0;
+
+        foreach ((string project, XDocument document) in SourceProjects())
+        {
+            if (!project.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            bool packable = !document.Descendants()
+                                     .Any(e => e.Name.LocalName == "IsPackable" &&
+                                               string.Equals(e.Value.Trim(), "false", StringComparison.OrdinalIgnoreCase));
+
+            if (!packable)
+                continue;
+
+            if (document.Descendants("PackageId").Any())
+                declared++;
+            else
+                undeclared.Add(project);
+        }
+
+        Assert.True(undeclared.Count == 0,
+            "A packable project that declares no PackageId packs under its assembly name, losing the " +
+            $"'{ExpectedIdPrefix}' prefix without any build error. Either declare a PackageId or set " +
+            "<IsPackable>false</IsPackable>: " + string.Join(", ", undeclared));
+
+        Assert.True(declared >= ExpectedPackageCount,
+            $"Expected at least {ExpectedPackageCount} packable projects declaring a PackageId but found " +
+            $"{declared}. Every other fact here iterates the elements it finds, so a mass deletion or " +
+            "rename would leave them green while shipping nothing.");
     }
 
     [Fact]
@@ -118,6 +168,15 @@ public class PackageIdentityTests
             yield return (relative, XDocument.Load(file));
         }
     }
+
+    /// <summary>
+    /// The nearest ancestor (or the element itself) carrying a <c>Condition</c>, or <c>null</c> when the
+    /// property is evaluated unconditionally. Checking only <c>Parent</c> misses an element-level
+    /// condition and a <c>Choose</c>/<c>When</c> wrapper, both of which drop the property just as silently.
+    /// </summary>
+    private static XElement? ConditioningAncestor(XElement property) =>
+        property.AncestorsAndSelf()
+                .FirstOrDefault(e => !string.IsNullOrWhiteSpace((string?)e.Attribute("Condition")));
 
     private static DirectoryInfo LocateRepositoryRoot()
     {
