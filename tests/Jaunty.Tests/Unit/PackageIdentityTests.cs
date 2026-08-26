@@ -13,6 +13,7 @@ namespace Jaunty.Tests.Unit;
 public class PackageIdentityTests
 {
     private const string ExpectedRepositoryUrl = "https://github.com/extrode/jaunty";
+    private const string ExpectedProjectUrl = "https://extrode.com/jaunty";
     private const string ExpectedIdPrefix = "Extrode.Jaunty";
     private const string ExpectedOwner = "Extrode LLC";
     private const int ExpectedPackageCount = 7;
@@ -107,23 +108,47 @@ public class PackageIdentityTests
             "rename would leave them green while shipping nothing.");
     }
 
+    /// <summary>
+    /// The two URLs are different things and must not drift back together: <c>RepositoryUrl</c> is
+    /// the source remote and feeds Source Link, while <c>PackageProjectUrl</c> is the product page
+    /// NuGet renders for buyers.
+    /// </summary>
     [Fact]
     public void EveryRepositoryAndProjectUrlPointsAtTheExtrodeRemote()
     {
         List<string> stale = new();
+        int repositoryUrls = 0;
+        int projectUrls = 0;
 
         foreach ((string project, XDocument document) in SourceProjects())
         {
             foreach (XElement url in document.Descendants()
                          .Where(e => e.Name.LocalName is "RepositoryUrl" or "PackageProjectUrl"))
             {
-                if (!string.Equals(url.Value, ExpectedRepositoryUrl, StringComparison.Ordinal))
-                    stale.Add($"{project} has {url.Name.LocalName} '{url.Value}'");
+                bool repository = url.Name.LocalName == "RepositoryUrl";
+                string expected = repository ? ExpectedRepositoryUrl : ExpectedProjectUrl;
+
+                if (repository)
+                    repositoryUrls++;
+                else
+                    projectUrls++;
+
+                if (!string.Equals(url.Value, expected, StringComparison.Ordinal))
+                    stale.Add($"{project} has {url.Name.LocalName} '{url.Value}', expected '{expected}'");
             }
         }
 
         Assert.True(stale.Count == 0,
-            $"Package metadata must point at '{ExpectedRepositoryUrl}': " + string.Join(", ", stale));
+            $"RepositoryUrl must be '{ExpectedRepositoryUrl}' and PackageProjectUrl must be " +
+            $"'{ExpectedProjectUrl}': " + string.Join(", ", stale));
+
+        Assert.True(repositoryUrls >= ExpectedPackageCount,
+            $"Expected at least {ExpectedPackageCount} RepositoryUrl declarations but found {repositoryUrls}.");
+
+        Assert.True(projectUrls >= 1,
+            "No PackageProjectUrl was found anywhere under src/. This fact only validates the elements " +
+            "it finds, so deleting the shared declaration would otherwise leave it green while every " +
+            "package shipped with no product page.");
     }
 
     [Fact]
