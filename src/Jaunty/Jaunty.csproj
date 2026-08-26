@@ -95,10 +95,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-		<PackageId>Beparey.Jaunty</PackageId>
+		<PackageId>Extrode.Jaunty</PackageId>
 		<Authors>Syed Beparey</Authors>
 		<Description>A strict, high-performance micro-ORM for .NET with source-generated mapping and NativeAOT support.</Description>
-		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>
 		<ErrorReport>none</ErrorReport>
 	</PropertyGroup>

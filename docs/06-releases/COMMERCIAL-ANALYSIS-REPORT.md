@@ -32,11 +32,11 @@ The project has genuine technical differentiators (strict mapping, positional pa
 **Test Projects:** 3 projects, 172 test files, 2,786+ tests
 
 **NuGet Packages (all v2026.01.01):**
-- `Beparey.Jaunty` -- Core
-- `Beparey.Jaunty.Extensions.Reflection` -- Reflection fallback
-- `Beparey.Jaunty.Fluent` -- Query builder
-- `Beparey.Jaunty.Scaffolding` -- Scaffolding library
-- `Beparey.Jaunty.Scaffolding.Cli` -- CLI tool
+- `Extrode.Jaunty` -- Core
+- `Extrode.Jaunty.Extensions.Reflection` -- Reflection fallback
+- `Extrode.Jaunty.Fluent` -- Query builder
+- `Extrode.Jaunty.Scaffolding` -- Scaffolding library
+- `Extrode.Jaunty.Scaffolding.Cli` -- CLI tool
 
 ---
 

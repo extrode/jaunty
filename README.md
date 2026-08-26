@@ -48,7 +48,7 @@ This catches mismatches at development time, not when a customer reports weird b
 ## Installation
 
 ```bash
-dotnet add package Beparey.Jaunty
+dotnet add package Extrode.Jaunty
 ```
 
 Targets `netstandard2.0` and `net8.0`. Works with any ADO.NET provider.

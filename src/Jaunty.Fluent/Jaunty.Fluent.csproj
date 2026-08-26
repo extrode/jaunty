@@ -38,10 +38,10 @@
 	</ItemGroup>
 
 	<PropertyGroup>
-		<PackageId>Beparey.Jaunty.Fluent</PackageId>
+		<PackageId>Extrode.Jaunty.Fluent</PackageId>
 		<Authors>Syed Beparey</Authors>
 		<Description>Type-safe fluent SQL query builder for Jaunty.</Description>
-		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 

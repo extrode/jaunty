@@ -17,7 +17,7 @@
   <!-- Common NuGet package metadata -->
   <PropertyGroup>
     <PackageTags>orm;micro-orm;sql;database;dapper-alternative;aot;nativeaot;source-generator</PackageTags>
-    <PackageProjectUrl>https://github.com/beparey/jaunty</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/extrode/jaunty</PackageProjectUrl>
     <!-- Binaries ship under the ISL-EULA (grant conditioned on an Order); the
          repository's LICENSE.md (ISL-R) covers source inspection only. -->
     <PackageLicenseFile>LICENSE-EULA.md</PackageLicenseFile>
@@ -25,7 +25,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <Copyright>Copyright (c) 2026 Syed Beparey</Copyright>
-    <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+    <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 

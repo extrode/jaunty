@@ -26,7 +26,7 @@ var products = connection.Query<Product>(
 
 ```bash
 # Clone the repository
-git clone https://github.com/beparey/jaunty.git
+git clone https://github.com/extrode/jaunty.git
 cd Jaunty
 
 # Build all targets
@@ -54,7 +54,7 @@ dotnet test --filter "FullyQualifiedName~QueryTests"
 ### 1. Add the Package
 
 ```bash
-dotnet add package Beparey.Jaunty
+dotnet add package Extrode.Jaunty
 ```
 
 ### 2. Create an Entity

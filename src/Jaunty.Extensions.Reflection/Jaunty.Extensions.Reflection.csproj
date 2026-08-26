@@ -3,10 +3,10 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <PackageId>Beparey.Jaunty.Extensions.Reflection</PackageId>
+    <PackageId>Extrode.Jaunty.Extensions.Reflection</PackageId>
     <Authors>Syed Beparey</Authors>
     <Description>Reflection-based mapping extension for Jaunty. Enables Dictionary, dynamic, and ValueTuple mapping.</Description>
-    <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+    <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
     <!-- Suppress AOT/trimming warnings - this project uses reflection by design.
          IL2060/IL2075 joined the list with net10: its trim analyzer flags MakeGenericMethod and
          PropertyType.GetMethod sites the net8 analyzer did not (010 T11, first net10 compile). -->
