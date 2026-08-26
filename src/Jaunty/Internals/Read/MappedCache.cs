@@ -122,7 +122,8 @@ internal static class MappedCache<T> where T : new()
         if (!typeof(IMapped<T>).IsAssignableFrom(typeof(T)))
             return null;
 
-        // AOT-SAFE: hand-written IMapped<T> fallback only; a source-generated T returned above via Accessors. The consumer roots CreateRowMapper or implements IGeneratedAccessors<T>; JAUNTYGEN002 warns at build. Spec 009.
+        // AOT rationale: hand-written IMapped<T> fallback only; a source-generated T returned above via Accessors. The consumer roots CreateRowMapper or implements IGeneratedAccessors<T>; JAUNTYGEN002 warns at build. Spec 009.
+        // The marker itself lives on the GetMethod call inside FindMappedMember, which is the reflection site.
         MethodInfo? method = FindMappedMember("CreateRowMapper", BindingFlags.Static, typeof(Func<IDataReader, T>));
         if (method != null)
         {
@@ -148,7 +149,8 @@ internal static class MappedCache<T> where T : new()
         {
             // On .NET 8+, source gen produces a static ReadEntity method.
 
-            // AOT-SAFE: hand-written IMapped<T> fallback only; a source-generated T returned above via Accessors. The consumer roots ReadEntity or implements IGeneratedAccessors<T>; JAUNTYGEN002 warns at build. Spec 009.
+            // AOT rationale: hand-written IMapped<T> fallback only; a source-generated T returned above via Accessors. The consumer roots ReadEntity or implements IGeneratedAccessors<T>; JAUNTYGEN002 warns at build. Spec 009.
+            // The marker itself lives on the GetMethod call inside FindMappedMember, which is the reflection site.
             MethodInfo? method = FindMappedMember("ReadEntity", BindingFlags.Static, typeof(T));
             // AUD-R35-120: the return type used to go unchecked here while ResolveMapperFactory
             // above checks its own before calling CreateDelegate. GetMethod with an explicit
@@ -166,7 +168,8 @@ internal static class MappedCache<T> where T : new()
 
             // Fallback for non-static ReadEntity
 
-            // AOT-SAFE: same population as the static lookup above - hand-written IMapped<T> with an instance ReadEntity; consumer-rooted, JAUNTYGEN002 warns. Spec 009.
+            // AOT rationale: same population as the static lookup above - hand-written IMapped<T> with an instance ReadEntity; consumer-rooted, JAUNTYGEN002 warns. Spec 009.
+            // The marker itself lives on the GetMethod call inside FindMappedMember, which is the reflection site.
             MethodInfo? instanceMethod = FindMappedMember("ReadEntity", BindingFlags.Instance, typeof(T));
             // AUD-R35-120: same return-type check as the static lookup above, for the same reason.
             if (instanceMethod != null)

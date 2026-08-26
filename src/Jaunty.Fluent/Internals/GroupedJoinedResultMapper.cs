@@ -102,6 +102,11 @@ internal static class GroupedJoinedResultMapper
             }
 
             var properties = new PropertyInfo?[aliases.Length];
+            // AOT-SAFE: same reflection over the caller's projection type that this path has always
+            // done - AUD-R35-199 replaced GetProperty(alias) with a scan of the same members, so the
+            // trimming exposure is unchanged and stays covered by the IL2090 pragma around it. The
+            // standing item to move this path behind source generation is parked on spec 009; this
+            // marker records that the site was reviewed, not that the projection type is rooted.
             PropertyInfo[] candidates = resultType.GetProperties();
 #pragma warning restore IL2090
 

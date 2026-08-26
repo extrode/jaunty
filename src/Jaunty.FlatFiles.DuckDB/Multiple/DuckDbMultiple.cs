@@ -25,9 +25,9 @@ public sealed partial class DuckDb
     /// <c>LoggingInterceptor</c>'s reflection loop both skip indexers for the same reason.
     /// </remarks>
     private static PropertyInfo[] GetCachedParameterProperties(Type parametersType)
-        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         => _multipleParameterPropertyCache.GetOrAdd(parametersType, static t =>
         {
+            // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
             PropertyInfo[] all = t.GetProperties();
             var bindable = new List<PropertyInfo>(all.Length);
 
