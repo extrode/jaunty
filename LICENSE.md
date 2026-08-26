@@ -2,7 +2,7 @@
 
 **Effective Date:** July 2026
 
-**Copyright (c) 2026 Syed. All rights reserved.**
+**Copyright (c) 2026 Extrode LLC. All rights reserved.**
 
 ---
 
@@ -42,7 +42,7 @@ transparency and inspection purposes only.
 **1.1 "Software"** means the source code, object code, documentation, and any associated
 files distributed under this License.
 
-**1.2 "Licensor"** means Syed and any authorized successors or assigns.
+**1.2 "Licensor"** means Extrode LLC and any authorized successors or assigns.
 
 **1.3 "Licensee"** means any individual, organization, company, government entity, or
 other legal person exercising rights under this License.
