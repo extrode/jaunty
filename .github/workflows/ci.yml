@@ -121,6 +121,17 @@ jobs:
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-fluent.trx"
 
+      # Split out of Jaunty.Fluent.Tests so that suite can run its collections in parallel.
+      # These tests mutate the process-global JauntyConfig; keep them in their own serial run.
+      - name: Test - Fluent config state
+        run: >-
+          dotnet test tests/Jaunty.Fluent.ConfigTests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-config.trx"
+
       # Named projects, not a solution-wide run: every test project needs its own step
       # here or it never executes in CI. Jaunty.Fluent.SourceGen.Tests and
       # Jaunty.Scaffolding.Cli.Tests had no step and ran nowhere until 2026-08-01.
@@ -195,6 +206,15 @@ jobs:
           --framework net10.0
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-fluent-net10.trx"
+
+      - name: Test - Fluent config state net10
+        run: >-
+          dotnet test tests/Jaunty.Fluent.ConfigTests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-config-net10.trx"
 
       - name: Test - Fluent source-gen net10 (no reflection package reference)
         run: >-
