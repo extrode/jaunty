@@ -16,7 +16,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-jaunty</ToolCommandName>
     <PackageId>Extrode.Jaunty.Scaffolding.Cli</PackageId>
-    <Authors>Syed Beparey</Authors>
+    <Authors>Extrode LLC</Authors>
     <Description>CLI tool to scaffold entity classes from database schema for Jaunty.</Description>
     <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
   </PropertyGroup>
