@@ -9,7 +9,7 @@
 
 | | |
 |---|---|
-| **Licensor** | Beparey LLC., 429 Old Dominion Ave. Herndon VA 20170 |
+| **Licensor** | Extrode LLC., 429 Old Dominion Ave. Herndon VA 20170 |
 | **Licensee** | [legal entity name], [address], [signatory name + title] |
 
 ## Products and license scope
