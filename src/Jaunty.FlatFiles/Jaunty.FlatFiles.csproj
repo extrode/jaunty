@@ -66,7 +66,7 @@
 
 	<PropertyGroup>
 		<PackageId>Extrode.Jaunty.FlatFiles</PackageId>
-		<Authors>Syed Beparey</Authors>
+		<Authors>Extrode LLC</Authors>
 		<Description>Flat file abstractions for the Jaunty micro-ORM. Supports CSV, TSV, Parquet, JSON, Excel, Delta Lake, and Iceberg formats with extensible custom format registration.</Description>
 		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>

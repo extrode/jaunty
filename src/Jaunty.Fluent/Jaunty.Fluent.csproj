@@ -39,7 +39,7 @@
 
 	<PropertyGroup>
 		<PackageId>Extrode.Jaunty.Fluent</PackageId>
-		<Authors>Syed Beparey</Authors>
+		<Authors>Extrode LLC</Authors>
 		<Description>Type-safe fluent SQL query builder for Jaunty.</Description>
 		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>

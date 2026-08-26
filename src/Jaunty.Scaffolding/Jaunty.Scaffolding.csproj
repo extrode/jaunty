@@ -21,7 +21,7 @@
 
   <PropertyGroup>
     <PackageId>Extrode.Jaunty.Scaffolding</PackageId>
-    <Authors>Syed Beparey</Authors>
+    <Authors>Extrode LLC</Authors>
     <Description>Database-first entity class scaffolding for Jaunty.</Description>
     <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
   </PropertyGroup>
