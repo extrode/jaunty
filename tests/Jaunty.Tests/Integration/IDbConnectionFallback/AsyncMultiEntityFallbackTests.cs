@@ -18,7 +18,7 @@ public class AsyncMultiEntityFallbackTests : IDisposable
 
     public AsyncMultiEntityFallbackTests()
     {
-        _realConnection = new SQLiteConnection("Data Source=../../../../../data/sqlite/Northwind.db");
+        _realConnection = new SQLiteConnection(NorthwindDatabase.ConnectionString);
         _wrapper = new IDbConnectionWrapper(_realConnection);
     }
 
