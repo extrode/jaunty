@@ -24,7 +24,8 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <Copyright>Copyright (c) 2026 Syed Beparey</Copyright>
+    <Copyright>Copyright (c) 2026 Extrode LLC</Copyright>
+    <Company>Extrode LLC</Company>
     <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
