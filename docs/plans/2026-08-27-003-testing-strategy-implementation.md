@@ -145,6 +145,38 @@ uncovered complexity it fails gate item 4 before a run is worth its CI minutes.
 Thresholds are `break: 0` — mutation score is an artifact to read, not a gate that fails a build,
 because a score drop is a prompt to look rather than a defect on its own.
 
+#### The `Jaunty.Tests` baseline is deferred to the nightly tier — measured, not dropped
+
+The first `tests/Jaunty.Tests` run was **abandoned after 4h20m** (PID 37720, 2,886 CPU-seconds,
+960 MB working set, started 01:42, killed 06:07) having produced **no report at all** — the output
+directory held nothing but its own `.gitignore`. It was still spawning fresh test processes when
+stopped, so it was progressing, not deadlocked. Simply too slow to finish.
+
+The cause is structural, not a misconfiguration:
+
+| Factor | Value |
+|---|---|
+| Tests in the initial run | 3,306 test attributes → 6,220 cases |
+| Live-database integration suites in that run | MariaDB, PostgreSQL, SQL Server, MySQL |
+| `TestTfmsInParallel` | `false` (deliberate — shared DB instances contend) |
+| Per-mutant cost | a further test run each |
+
+`mutate` narrows which **source** files get mutated; it does nothing to the **test** side. Stryker
+4.16 exposes no test filter — `--help` offers `--mutate`, `--since`, `--test-project`, and no
+equivalent of VSTest's `--test-case-filter` — so the live-DB integration suites cannot be excluded
+from the initial run or from any mutant's run. A mutation run over a suite that talks to four
+database engines is a nightly-tier activity by construction.
+
+**Consequence, stated rather than quietly absorbed:** the rank-1 target
+(`Internals/Parameters/**`) has **no mutation baseline**, so the Phase-1 success metric for it is
+the coverage and perturbation evidence recorded above, not a killed-mutant delta. The run moves to
+Phase 2's nightly Stryker matrix, where a multi-hour job is what the tier is for. Nothing about the
+scope was reduced — only where it runs.
+
+`Jaunty.Fluent.Tests` does not have this problem: SQLite only (no Npgsql or SqlClient reference),
+two TFMs, 1,632 test attributes, and a 10-file mutate scope. That baseline runs interactively and
+is the one that decides Phase 2 item 3.
+
 <!-- BASELINE TABLE: filled from the first completed run -->
 
 ## Phase 1 — improve existing tests in place
