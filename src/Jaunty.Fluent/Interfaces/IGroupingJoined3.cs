@@ -6,6 +6,23 @@ namespace Jaunty.Fluent;
 /// Marker interface representing a grouping for aggregate expressions over a 3-way joined
 /// query. Sibling to <see cref="IGroupingJoined{TKey,TFrom,TJoin}"/> for the 3-entity case.
 /// </summary>
+/// <typeparam name="TKey">The type of the grouping key.</typeparam>
+/// <typeparam name="T1">The primary (From) entity type.</typeparam>
+/// <typeparam name="T2">The first joined entity type.</typeparam>
+/// <typeparam name="T3">The second joined entity type.</typeparam>
+/// <example>
+/// <code>
+/// db.From&lt;Product&gt;()
+///   .InnerJoin&lt;Category&gt;().On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
+///   .InnerJoin&lt;Supplier&gt;().On(p =&gt; p.SupplierId, s =&gt; s.SupplierId)
+///   .GroupBy((p, c, s) =&gt; s.CompanyName)
+///   .Select(g =&gt; new {
+///       Supplier = g.Key,
+///       Count = g.Count(),
+///       Dearest = g.Max((p, c, s) =&gt; p.UnitPrice)
+///   });
+/// </code>
+/// </example>
 public interface IGroupingJoined3<TKey, T1, T2, T3>
     where T1 : new()
     where T2 : new()

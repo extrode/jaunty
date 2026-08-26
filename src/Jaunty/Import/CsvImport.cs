@@ -90,6 +90,7 @@ public static class CsvImportExtensions
         ValidateDelimiter(options.Delimiter);
         ValidateQuote(options.Quote);
         ValidateDelimiterQuoteDistinct(options.Delimiter, options.Quote);
+        ValidateEncoding(options.Encoding);
 
         // Unwrap before the type test: SqlDialectFactory.GetDialect runs every dialect through the
         // bulk-copy enhancement step, which after UseNativeBulkCopy() substitutes a wrapper that
@@ -166,6 +167,7 @@ public static class CsvImportExtensions
         ValidateDelimiter(options.Delimiter);
         ValidateQuote(options.Quote);
         ValidateDelimiterQuoteDistinct(options.Delimiter, options.Quote);
+        ValidateEncoding(options.Encoding);
 
         // See the sync overload: unwrap before the type test so the bulk-copy wrapper doesn't
         // make every supported engine fall through to NotSupportedException.
@@ -859,6 +861,18 @@ public static class CsvImportExtensions
             return dialect.EscapeTableName(tableName.Substring(0, dot), tableName.Substring(dot + 1));
 
         return dialect.EscapeTableName(null, tableName);
+    }
+
+    // R35 (batch 03a, low/consistency): Encoding is non-nullable with an unguarded public setter,
+    // and ThrowIfEncodingUnsupported already tests it for null - so null is reachable. Left to
+    // itself it surfaces from new StreamReader(filePath, encoding) as an ArgumentNullException
+    // naming "encoding", with nothing tying it back to CsvImportOptions. Every other option on that
+    // type is validated at the entry point; this one now is too.
+    private static void ValidateEncoding(Encoding encoding)
+    {
+        if (encoding is null)
+            throw new ArgumentNullException(nameof(encoding),
+                "CsvImportOptions.Encoding must not be null; leave it at its default of Encoding.UTF8 if you have no preference.");
     }
 
     private static void ValidateDelimiter(char delimiter)

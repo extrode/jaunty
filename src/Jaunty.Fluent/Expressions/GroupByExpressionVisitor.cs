@@ -112,13 +112,22 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
         foreach (MemberBinding? binding in memberInit.Bindings)
         {
-            if (binding is MemberAssignment assignment)
+            // AUD-R35-195: a MemberMemberBinding or MemberListBinding - `new Dto { Nested = { X = g.Key } }`,
+            // `new Dto { Items = { ... } }` - used to be skipped in silence: no column, no alias, no
+            // error. A projection made only of those emitted an empty SELECT list and failed at the
+            // server naming nothing the caller wrote. Every other unsupported shape in this
+            // translator throws and names the node.
+            if (binding is not MemberAssignment assignment)
             {
-                var memberName = assignment.Member.Name;
-                (string? sql, string _) = TranslateExpression(assignment.Expression, memberName);
-                _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(memberName)}");
-                _columnAliases.Add(memberName);
+                throw new NotSupportedException(
+                    $"Member binding '{binding.BindingType}' is not supported in GROUP BY Select. " +
+                    "Only member assignments (Member = expression) can be translated.");
             }
+
+            var memberName = assignment.Member.Name;
+            (string? sql, string _) = TranslateExpression(assignment.Expression, memberName);
+            _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(memberName)}");
+            _columnAliases.Add(memberName);
         }
     }
 
@@ -143,6 +152,23 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         // g.Key
         if (IsKeyAccess(expr))
         {
+            // AUD-R35-193: a composite key reaching here used to return _groupByColumns[0] and
+            // report one alias, so `.Select(g => new { g.Key, Count = g.Count() })` over a
+            // two-column key silently dropped the second column and bound the first one to a
+            // member typed as the whole key. TranslateSelect guards the bare `g => g.Key` body
+            // (it can emit every key column, because TResult is TKey itself), but a key nested
+            // inside a projection has no such remedy: GroupedJoinedResultMapper binds one alias
+            // to one member, so emitting both columns here would produce three aliases against a
+            // two-parameter constructor, fall to the property path, and fail inside
+            // Activator.CreateInstance on the anonymous type. Naming the shape is the honest
+            // outcome; g.Key.PropertyName is the form that works.
+            if (_groupByColumns.Length > 1)
+            {
+                throw new NotSupportedException(
+                    "A composite grouping key cannot be projected as a whole inside a projection. " +
+                    "Project its parts instead - g.Key.PropertyName - or select the bare key, g => g.Key.");
+            }
+
             // For single column key, just use the first grouping column
             return (_groupByColumns[0], defaultAlias);
         }
@@ -227,34 +253,33 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
     {
         if (expr == null) return $"{aggregate}(*)";
 
-        // Recursively unwrap the expression
-        while (true)
+        // AUD-R35-194: the unwrap loop used to strip LambdaExpression as well, then treat whatever
+        // was left as a column. IGrouping<TKey,T>.Sum takes an Expression<Func<T,TResult>>, so a
+        // caller may hand it a pre-built selector variable rather than an inline lambda -
+        // `g.Sum(selector)` - which survives the unwrap as a MemberExpression over the closure and
+        // was emitted as SUM([selector]), a column nobody wrote. Requiring the lambda and throwing
+        // otherwise is what JoinedGroupByExpressionVisitor.BuildAggregateWithColumn already did.
+        while (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+            expr = unary.Operand;
+
+        if (expr is LambdaExpression lambda)
         {
-            if (expr is LambdaExpression lambda)
+            Expression body = lambda.Body;
+
+            while (body is UnaryExpression unaryBody && (unaryBody.NodeType == ExpressionType.Convert || unaryBody.NodeType == ExpressionType.Quote))
+                body = unaryBody.Operand;
+
+            if (body is MemberExpression memberExpr)
             {
-                expr = lambda.Body;
-                continue;
+                var propertyName = memberExpr.Member.Name;
+                var columnName = GetColumnName(propertyName);
+                return ApplyAggregate(aggregate, _dialect.EscapeColumnName(columnName));
             }
 
-            if (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+            if (body is ConstantExpression constant)
             {
-                expr = unary.Operand;
-                continue;
+                return ApplyAggregate(aggregate, FormatConstant(constant.Value));
             }
-
-            break;
-        }
-
-        if (expr is MemberExpression memberExpr)
-        {
-            var propertyName = memberExpr.Member.Name;
-            var columnName = GetColumnName(propertyName);
-            return ApplyAggregate(aggregate, _dialect.EscapeColumnName(columnName));
-        }
-
-        if (expr is ConstantExpression constant)
-        {
-            return ApplyAggregate(aggregate, FormatConstant(constant.Value));
         }
 
         throw new NotSupportedException($"Cannot extract column from aggregate expression of type '{expr.NodeType}'.");

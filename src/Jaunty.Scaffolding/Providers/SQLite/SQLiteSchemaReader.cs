@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-using System.Text.RegularExpressions;
 
 using Jaunty.Scaffolding.Abstractions;
 using Jaunty.Scaffolding.Internals;
@@ -569,16 +568,62 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         return result;
     }
 
-    private static string ExtractDatabaseName(string connectionString)
+    /// <summary>
+    /// Names the database for <see cref="DatabaseSchema.DatabaseName"/>, from the file the
+    /// connection string points at.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-269. The three server readers use <c>connection.Database</c>; SQLite cannot, because
+    /// both providers report the fixed attachment name "main" there rather than anything about the
+    /// file. So the connection string is the only source - but it is parsed as a keyword/value
+    /// string here, not matched by regex over the raw text. The regex this replaces read
+    /// <c>Data Source=([^;]+)</c> anywhere in the string, values included, which is the pattern
+    /// AUD-R26 moved <c>Scaffolder.DetectProvider</c> off for the same reason. It also mishandled
+    /// the SQLite URI form the integration fixtures use: for
+    /// <c>Data Source=file:app.db?mode=memory&amp;cache=shared</c> it answered "file:app", the
+    /// query string having been taken for part of the extension.
+    /// </remarks>
+    internal static string ExtractDatabaseName(string connectionString)
     {
-        // Try to extract database name from connection string
-        Match match = Regex.Match(connectionString, @"Data Source=([^;]+)", RegexOptions.IgnoreCase);
-        if (match.Success)
+        string? dataSource = null;
+
+        try
         {
-            var path = match.Groups[1].Value;
-            return Path.GetFileNameWithoutExtension(path);
+            var builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
+
+            // Both spellings are accepted by Microsoft.Data.Sqlite and System.Data.SQLite, and
+            // DbConnectionStringBuilder treats them as two distinct (if case-insensitive) keys.
+            if (builder.TryGetValue("Data Source", out var value) ||
+                builder.TryGetValue("DataSource", out value) ||
+                builder.TryGetValue("Filename", out value))
+            {
+                dataSource = value as string;
+            }
+        }
+        catch (ArgumentException)
+        {
+            // Not a parseable keyword/value string. The connection itself will fail on it; this
+            // method only supplies a display name, so it answers the generic one.
+            return "SQLite";
         }
 
-        return "SQLite";
+        if (string.IsNullOrWhiteSpace(dataSource))
+            return "SQLite";
+
+        dataSource = dataSource.Trim();
+
+        if (string.Equals(dataSource, ":memory:", StringComparison.OrdinalIgnoreCase))
+            return "memory";
+
+        // The URI form: "file:" prefix, and everything from the first '?' is query, not path.
+        if (dataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+            dataSource = dataSource["file:".Length..];
+
+        var queryIndex = dataSource.IndexOf('?');
+        if (queryIndex >= 0)
+            dataSource = dataSource[..queryIndex];
+
+        var name = Path.GetFileNameWithoutExtension(dataSource);
+        return string.IsNullOrEmpty(name) ? "SQLite" : name;
     }
 }

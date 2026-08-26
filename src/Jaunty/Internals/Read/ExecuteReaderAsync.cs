@@ -84,9 +84,21 @@ public static partial class Jaunty
                         }
                         else
                         {
-                            // Fallback for non-DbConnection - use sync methods wrapped in Task.Run
+                            // AUD-R35-123: this used to wrap Open and Close in Task.Run and say it was
+                            // "to avoid blocking". ExecuteReader() below - by a wide margin the longest
+                            // blocking call of the three - was not wrapped, and neither is the row
+                            // reading the handler then does, so the property the comment claimed was
+                            // never delivered. What the wrapping did deliver was a thread hop and a lost
+                            // synchronization context per call, and a Task.Run around a blocking call
+                            // still blocks a thread-pool thread rather than freeing one. Either all
+                            // three move off the caller's thread or none do; none is cheaper and
+                            // honest. The token is checked directly, which is what Task.Run's token
+                            // argument was doing.
                             if (wasClosed)
-                                await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                                connection.Open();
+                            }
 
                             using IDbCommand command = connection.CreateCommand();
                             command.CommandText = sql;
@@ -118,9 +130,9 @@ public static partial class Jaunty
                             if (dbConnection is not null)
                                 await dbConnection.CloseAsync().ConfigureAwait(false);
                             else
-                                await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                                connection.Close();
 #else
-                            await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                            connection.Close();
 #endif
                         }
                     }
@@ -171,9 +183,13 @@ public static partial class Jaunty
             }
             else
             {
-                // Fallback for non-DbConnection - use sync methods wrapped in Task.Run to avoid blocking
+                // AUD-R35-123: see the interceptor branch above - the wrapping did not deliver
+                // what its comment claimed, so this path runs the sync members directly too.
                 if (wasClosed)
-                    await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    connection.Open();
+                }
 
                 using IDbCommand command = connection.CreateCommand();
                 command.CommandText = sql;
@@ -206,9 +222,9 @@ public static partial class Jaunty
                 if (dbConnection is not null)
                     await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                    connection.Close();
 #else
-                await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                connection.Close();
 #endif
             }
         }

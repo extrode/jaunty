@@ -86,7 +86,10 @@ public sealed class Scaffolder
             }
 
             // Generate code
-            var codeGenerator = new EntityCodeGenerator(typeMapper);
+            // AUD-R35-268: honour a caller-supplied generator. ICodeGenerator was public with no
+            // injection point anywhere, so the only thing a consumer could do with it was implement
+            // it and call it themselves - at which point they did not need the abstraction.
+            ICodeGenerator codeGenerator = options.CodeGenerator ?? new EntityCodeGenerator(typeMapper);
             CodeGeneratorOptions codeGenOptions = MapToCodeGenOptions(options);
             var generatedFiles = new List<string>();
 

@@ -16,9 +16,31 @@ public sealed partial class DuckDb
     // objects to avoid repeated reflection lookups on every call for the same parameters type.
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _multipleParameterPropertyCache = new();
 
+    /// <remarks>
+    /// AUD-R35-256: indexers and write-only properties are filtered out here rather than blowing up
+    /// at the <c>GetValue</c> call site. An indexer reached <c>prop.GetValue(parameters)</c> with no
+    /// index arguments and threw <c>TargetParameterCountException</c>; a write-only property threw
+    /// <c>ArgumentException</c>. Neither named the offending member, and neither is a parameter a
+    /// caller could have meant to bind. Core's <c>ParameterCache</c> and
+    /// <c>LoggingInterceptor</c>'s reflection loop both skip indexers for the same reason.
+    /// </remarks>
     private static PropertyInfo[] GetCachedParameterProperties(Type parametersType)
         // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
-        => _multipleParameterPropertyCache.GetOrAdd(parametersType, static t => t.GetProperties());
+        => _multipleParameterPropertyCache.GetOrAdd(parametersType, static t =>
+        {
+            PropertyInfo[] all = t.GetProperties();
+            var bindable = new List<PropertyInfo>(all.Length);
+
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i].GetIndexParameters().Length > 0 || !all[i].CanRead)
+                    continue;
+
+                bindable.Add(all[i]);
+            }
+
+            return bindable.ToArray();
+        });
 
     /// <summary>
     /// Executes a SQL query that returns multiple result sets and returns a <see cref="GridReader"/> to read them.

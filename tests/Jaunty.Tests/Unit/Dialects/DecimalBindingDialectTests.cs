@@ -173,4 +173,17 @@ public class DecimalBindingDialectTests
             Assert.Equal(decimal.MaxValue, (decimal)bound!);
         }
     }
+    /// <summary>
+    /// AUD-R35-162. The null-dialect guard was untested, so the netstandard2.0 arm of its
+    /// <c>#if</c> was never exercised. Its deliberate twin, <c>SubstringToEnd.Generate</c>, has had
+    /// the same assertion since it was written.
+    /// </summary>
+    [Fact]
+    public void ANullDialect_IsRejected()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() => DecimalParameterBinding.Normalize(null!, 1m));
+
+        Assert.Equal("dialect", ex.ParamName);
+        Assert.Throws<ArgumentNullException>(() => DecimalParameterBinding.Normalize(null!, null));
+    }
 }

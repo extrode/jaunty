@@ -190,6 +190,77 @@ public class TablePromoterTests : IDisposable
         Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
     }
 
+    /// <inheritdoc cref="EnsurePromotedToTable_Preloaded_NoOp"/>
+    [Fact]
+    public async Task EnsurePromotedToTableAsync_Preloaded_NoOp()
+    {
+        var source = new TestFileSource("test_view") { IsPreloaded = true };
+        PreloadRegistry.Mark(_connection, source);
+
+        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, default);
+
+        Assert.Equal("VIEW", TableTypeOf(_connection, "test_view"));
+    }
+
+    /// <inheritdoc cref="EnsurePromotedToTable_PreloadedElsewhereButNotHere_StillPromotes"/>
+    [Fact]
+    public async Task EnsurePromotedToTableAsync_PreloadedElsewhereButNotHere_StillPromotes()
+    {
+        var source = new TestFileSource("test_view") { IsPreloaded = true };
+
+        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, default);
+
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
+    }
+
+    /// <inheritdoc cref="EnsurePromotedToTable_TwiceOnOneConnection_PromotesOnce"/>
+    [Fact]
+    public async Task EnsurePromotedToTableAsync_TwiceOnOneConnection_PromotesOnce()
+    {
+        var source = new TestFileSource("test_view");
+
+        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, default);
+        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, default);
+
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
+    }
+
+    /// <inheritdoc cref="EnsurePromotedToTable_OneSourceTwoConnections_PromotesOnBoth"/>
+    [Fact]
+    public async Task EnsurePromotedToTableAsync_OneSourceTwoConnections_PromotesOnBoth()
+    {
+        var source = new TestFileSource("test_view");
+
+        using var second = new DuckDBConnection("DataSource=:memory:");
+        second.Open();
+        using (DuckDBCommand cmd = second.CreateCommand())
+        {
+            cmd.CommandText = "CREATE VIEW test_view AS SELECT 1 as id, 'test' as name";
+            cmd.ExecuteNonQuery();
+        }
+
+        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, default);
+        await TablePromoter.EnsurePromotedToTableAsync(second, source, _dialect, default);
+
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
+        Assert.Equal("BASE TABLE", TableTypeOf(second, "test_view"));
+    }
+
+    /// <summary>
+    /// The sync path promotes then records; the async path has to record against the same registry
+    /// or the two would each promote once on a connection that has already been promoted.
+    /// </summary>
+    [Fact]
+    public async Task EnsurePromotedToTable_ThenAsyncOnTheSameConnection_PromotesOnce()
+    {
+        var source = new TestFileSource("test_view");
+
+        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
+        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, default);
+
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
+    }
+
     private sealed class TestFileSource : IFileSource
     {
         public string TableName { get; }

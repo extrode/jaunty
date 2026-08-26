@@ -44,7 +44,15 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// <summary>
     /// Adds a WHERE clause using column name and value.
     /// </summary>
-    IJoinedQuery<TFrom, TJoin> Where(string column, object value);
+    /// <remarks>
+    /// AUD-R35-184. <paramref name="value"/> is nullable and a null means <c>IS NULL</c>, matching
+    /// the single-table twin <c>QueryBuilder.Where(string, object?)</c>. The parameter used to be
+    /// declared non-nullable while a null passed anyway - trivially reachable from a nullable
+    /// property or a dictionary lookup - was bound as a parameter, producing <c>col = @p</c> with a
+    /// null value. That is UNKNOWN in SQL, not false, so the filter silently matched nothing rather
+    /// than the rows the caller meant.
+    /// </remarks>
+    IJoinedQuery<TFrom, TJoin> Where(string column, object? value);
 
     // --- AND/OR ---
 
@@ -321,6 +329,18 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// Executes the query asynchronously and returns the specified entity type using a custom mapper.
     /// </summary>
     Task<List<T>> SelectAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns both entities as tuples.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-185. The async surface had no counterpart to the synchronous
+    /// <see cref="SelectBoth"/> - the only async route to the tuple list was
+    /// <see cref="SelectAsync{T1, T2}(CancellationToken)"/>, so translating a sync call meant
+    /// changing its shape rather than appending <c>Async</c>, while the neighbouring
+    /// <c>SelectFirstBoth</c> / <c>SelectFirstBothAsync</c> pair was already symmetric.
+    /// </remarks>
+    Task<List<(TFrom From, TJoin Joined)>> SelectBothAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Executes the query asynchronously and returns both entities as tuples.
@@ -742,7 +762,15 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     /// <summary>
     /// Adds a WHERE clause using column name and value.
     /// </summary>
-    IJoinedQuery3<T1, T2, T3> Where(string column, object value);
+    /// <remarks>
+    /// AUD-R35-184. <paramref name="value"/> is nullable and a null means <c>IS NULL</c>, matching
+    /// the single-table twin <c>QueryBuilder.Where(string, object?)</c>. The parameter used to be
+    /// declared non-nullable while a null passed anyway - trivially reachable from a nullable
+    /// property or a dictionary lookup - was bound as a parameter, producing <c>col = @p</c> with a
+    /// null value. That is UNKNOWN in SQL, not false, so the filter silently matched nothing rather
+    /// than the rows the caller meant.
+    /// </remarks>
+    IJoinedQuery3<T1, T2, T3> Where(string column, object? value);
 
     /// <summary>
     /// Adds an AND condition using a predicate expression.
@@ -1093,7 +1121,15 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     /// <summary>
     /// Adds a WHERE clause using column name and value.
     /// </summary>
-    IJoinedQuery4<T1, T2, T3, T4> Where(string column, object value);
+    /// <remarks>
+    /// AUD-R35-184. <paramref name="value"/> is nullable and a null means <c>IS NULL</c>, matching
+    /// the single-table twin <c>QueryBuilder.Where(string, object?)</c>. The parameter used to be
+    /// declared non-nullable while a null passed anyway - trivially reachable from a nullable
+    /// property or a dictionary lookup - was bound as a parameter, producing <c>col = @p</c> with a
+    /// null value. That is UNKNOWN in SQL, not false, so the filter silently matched nothing rather
+    /// than the rows the caller meant.
+    /// </remarks>
+    IJoinedQuery4<T1, T2, T3, T4> Where(string column, object? value);
 
     /// <summary>
     /// Adds an AND condition using a predicate expression.

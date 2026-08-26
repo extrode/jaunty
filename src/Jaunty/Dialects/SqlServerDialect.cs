@@ -36,7 +36,7 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
         "TEXTSIZE", "THEN", "TO", "TOP", "TRAN", "TRANSACTION", "TRIGGER", "TRUNCATE",
         "TRY_CONVERT", "TSEQUAL", "UNION", "UNIQUE", "UNPIVOT", "UPDATE", "UPDATETEXT",
         "USE", "USER", "VALUES", "VARYING", "VIEW", "WAITFOR", "WHEN", "WHERE", "WHILE",
-        "WITH", "WITHIN GROUP", "WRITETEXT", "ORDER", "USER"
+        "WITH", "WRITETEXT"
     };
 
     public string ParameterPrefix => "@";
@@ -140,13 +140,15 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
 
             if (c == ')')
             {
-                depth--;
+                // AUD-R35-163. Clamped: a raw fragment with an unmatched closing paren used to drive
+                // the depth negative, after which nothing was ever at depth 0 again and a real
+                // top-level ORDER BY went unseen.
+                if (depth > 0) depth--;
                 i++;
                 continue;
             }
 
-            if (depth == 0 && i + 8 <= len &&
-                string.Compare(sql, i, "ORDER BY", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+            if (depth == 0 && MatchesOrderByAt(sql, i))
             {
                 return true;
             }
@@ -156,6 +158,57 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
 
         return false;
     }
+
+    /// <summary>
+    /// Whether <paramref name="sql"/> has the two keywords <c>ORDER BY</c> starting at
+    /// <paramref name="i"/>, separated by any run of whitespace and bounded by non-identifier
+    /// characters.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-163. This used to be a literal <c>string.Compare(sql, i, "ORDER BY", ...)</c> - exactly
+    /// one space, and no boundary check on either end. SQL that separated the keywords with a newline,
+    /// a tab or two spaces was therefore classified as unordered, and <c>GetPagingSql</c> appended a
+    /// second <c>ORDER BY (SELECT NULL)</c> after the caller's real one: invalid T-SQL, produced by
+    /// the very check that exists to prevent it. Jaunty's own builders all emit single spaces, which
+    /// is why nothing caught it; a custom <c>ISqlDialect</c> consumer or any externally formatted SQL
+    /// reaches it. The trailing boundary matters too - a column called <c>order_bytes</c> would
+    /// otherwise have to be spelled with a leading space to avoid a false positive.
+    /// </remarks>
+    private static bool MatchesOrderByAt(string sql, int i)
+    {
+        const string Order = "ORDER";
+        const string By = "BY";
+
+        int len = sql.Length;
+
+        if (i + Order.Length > len ||
+            string.Compare(sql, i, Order, 0, Order.Length, StringComparison.OrdinalIgnoreCase) != 0)
+        {
+            return false;
+        }
+
+        if (i > 0 && IsIdentifierChar(sql[i - 1]))
+            return false;
+
+        int j = i + Order.Length;
+
+        if (j >= len || !char.IsWhiteSpace(sql[j]))
+            return false;
+
+        while (j < len && char.IsWhiteSpace(sql[j])) j++;
+
+        if (j + By.Length > len ||
+            string.Compare(sql, j, By, 0, By.Length, StringComparison.OrdinalIgnoreCase) != 0)
+        {
+            return false;
+        }
+
+        int after = j + By.Length;
+
+        return after >= len || !IsIdentifierChar(sql[after]);
+    }
+
+    private static bool IsIdentifierChar(char c) => char.IsLetterOrDigit(c) || c == '_';
 
     /// <remarks>
     /// The COLLATE clause is attached to the parameter, not the column, on purpose: SQL Server's

@@ -1,6 +1,7 @@
 using System.Data;
 
 using Jaunty.Configuration;
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Fluent;
 using Jaunty.Fluent.Tests.Entities;
@@ -275,6 +276,85 @@ public class FluentCteTests : IClassFixture<FluentDatabaseFixture>
         // Assert
         Assert.NotEmpty(products);
         Assert.All(products, p => Assert.True(p.UnitPrice > 30));
+    }
+
+    [Fact]
+    public async Task Cte_SelectFirstAsync_ReturnsTheSameRowAsItsSyncTwin()
+    {
+        var sync = _fixture.Connection.Cte<Product>("FirstAsyncProduct")
+            .As(q => q.Where(p => p.UnitPrice > 50))
+            .OrderByDescending(p => p.UnitPrice)
+            .SelectFirst();
+
+        var async = await _fixture.Connection.Cte<Product>("FirstAsyncProduct")
+            .As(q => q.Where(p => p.UnitPrice > 50))
+            .OrderByDescending(p => p.UnitPrice)
+            .SelectFirstAsync();
+
+        Assert.NotNull(async);
+        Assert.Equal(sync.ProductId, async.ProductId);
+    }
+
+    [Fact]
+    public async Task Cte_SelectFirstAsync_WithOptions_ReturnsTheFirstRow()
+    {
+        var product = await _fixture.Connection.Cte<Product>("FirstAsyncOptions")
+            .As(q => q.Where(p => p.UnitPrice > 50))
+            .OrderByDescending(p => p.UnitPrice)
+            .SelectFirstAsync(new CommandOptions(commandTimeout: 30));
+
+        Assert.NotNull(product);
+        Assert.True(product.UnitPrice > 50);
+    }
+
+    [Fact]
+    public async Task Cte_SelectFirstOrDefaultAsync_WithNoResults_ReturnsNull()
+    {
+        var product = await _fixture.Connection.Cte<Product>("NoAsyncProducts")
+            .As(q => q.Where(p => p.UnitPrice > 999999))
+            .SelectFirstOrDefaultAsync();
+
+        Assert.Null(product);
+    }
+
+    [Fact]
+    public async Task Cte_SelectFirstOrDefaultAsync_WithResults_ReturnsTheFirstRow()
+    {
+        var product = await _fixture.Connection.Cte<Product>("SomeAsyncProducts")
+            .As(q => q.Where(p => p.UnitPrice > 50))
+            .OrderByDescending(p => p.UnitPrice)
+            .SelectFirstOrDefaultAsync();
+
+        Assert.NotNull(product);
+        Assert.True(product.UnitPrice > 50);
+    }
+
+    [Fact]
+    public async Task Cte_SelectFirstOrDefaultAsync_WithOptions_ReturnsTheFirstRow()
+    {
+        var product = await _fixture.Connection.Cte<Product>("AsyncOptionsProducts")
+            .As(q => q.Where(p => p.UnitPrice > 50))
+            .OrderByDescending(p => p.UnitPrice)
+            .SelectFirstOrDefaultAsync(new CommandOptions(commandTimeout: 30));
+
+        Assert.NotNull(product);
+        Assert.True(product.UnitPrice > 50);
+    }
+
+    /// <summary>
+    /// The async terminals restore <c>_takeCount</c> the way the sync ones do (AUD-R34's reuse
+    /// case), so a later Select on the same held builder is not silently capped at one row.
+    /// </summary>
+    [Fact]
+    public async Task Cte_SelectFirstAsync_DoesNotCapALaterSelectOnTheSameBuilder()
+    {
+        var builder = _fixture.Connection.Cte<Product>("ReusedAsyncCte")
+            .As(q => q.Where(p => p.UnitPrice > 0));
+
+        await builder.SelectFirstAsync();
+        var all = builder.Select();
+
+        Assert.True(all.Count > 1);
     }
 
     #endregion

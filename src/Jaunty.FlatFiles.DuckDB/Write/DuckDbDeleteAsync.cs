@@ -27,7 +27,7 @@ public sealed partial class DuckDb
         IFileSource source = GetSourceOrThrow<T>();
         await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, cancellationToken).ConfigureAwait(false);
 
-        (string? whereSql, List<global::DuckDB.NET.Data.DuckDBParameter>? whereParams) = ExpressionTranslator.Translate<T>(predicate);
+        (string whereSql, List<global::DuckDB.NET.Data.DuckDBParameter> whereParams) = ExpressionTranslator.Translate<T>(predicate);
 
         var sql = $"DELETE FROM {_dialect.EscapeTableName(null, source.TableName)} WHERE {whereSql}";
         var result = await NonQueryExecutor.ExecuteAsync(_connection, sql, whereParams, options, cancellationToken).ConfigureAwait(false);

@@ -120,6 +120,20 @@ public class TsvFileSourceTests
     // reading a TSV was silently dropped when exporting via COPY TO, round-tripping the NULL
     // sentinel as literal text instead of an actual NULL.
     [Fact]
+    public void GenerateCopyToOptions_WithHeaderFalse_WritesHeaderFalse()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { HasHeader = false };
+        Assert.Equal("DELIMITER '	', HEADER false", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_WithHeaderFalseAndNullString_WritesBoth()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { HasHeader = false, NullString = "NA" };
+        Assert.Equal("DELIMITER '	', HEADER false, NULL 'NA'", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
     public void GenerateCopyToOptions_WithNullString_IncludesNull()
     {
         var source = new TsvFileSource("t", "f.tsv", typeof(object)) { NullString = "NA" };

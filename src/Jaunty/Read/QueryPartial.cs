@@ -64,9 +64,6 @@ public static partial class Jaunty
     ///     "SELECT id, name FROM products");
     /// </code>
     /// </example>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the number of provided parameters doesn't match the SQL.
-    /// </exception>
     /// <seealso cref="Query{T}(IDbConnection, string)"/>
     /// <seealso cref="QueryPartialAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryPartialFirst{T}(IDbConnection, string)"/>
@@ -143,8 +140,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
@@ -243,8 +240,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));

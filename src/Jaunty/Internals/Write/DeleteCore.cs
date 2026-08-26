@@ -56,6 +56,17 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteSql;
 
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
             // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
             // IDbTransaction through it throws an opaque InvalidCastException. Validate via
@@ -130,6 +141,17 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.DeleteSql;
 
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -190,6 +212,17 @@ public static partial class Jaunty
 
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteByIdSql;
+
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
             // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
@@ -262,6 +295,17 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.DeleteByIdSql;
 
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -322,6 +366,17 @@ public static partial class Jaunty
 
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteByIdSql;
+
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
             // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
@@ -393,6 +448,17 @@ public static partial class Jaunty
             using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.DeleteByIdSql;
+
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 

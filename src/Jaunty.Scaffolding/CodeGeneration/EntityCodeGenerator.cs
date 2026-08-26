@@ -113,7 +113,10 @@ public sealed class EntityCodeGenerator : ICodeGenerator
                 usings.Add(typeInfo.RequiredUsing);
         }
 
-        foreach (var u in usings.OrderBy(x => x))
+        // AUD-R35-265: ordinal, not Comparer<string>.Default. The default comparer is
+        // culture-sensitive, so the using block's order - and therefore the whole generated file -
+        // could differ between two machines running the same scaffold under different cultures.
+        foreach (var u in usings.OrderBy(x => x, StringComparer.Ordinal))
             sb.AppendLine($"using {u};");
     }
 

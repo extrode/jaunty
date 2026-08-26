@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Configuration;
 using Jaunty.Dialects;
 
 namespace Jaunty.Internals.Write;
@@ -29,23 +30,46 @@ internal static class ForeignKeyToggleCoordinator
     internal static bool RequiresPreTransactionToggle(bool ignoreConstraints, ISqlDialect dialect)
         => ignoreConstraints && dialect.RequiresAutocommitForForeignKeyToggle;
 
-    internal static void DisableSync(IDbConnection connection, ISqlDialect dialect, IDbTransaction? transaction)
+    /// <remarks>
+    /// AUD-R35-131. These four took no timeout and never assigned <c>CommandTimeout</c>, so the
+    /// disable/enable statements ran on the provider default - 30 seconds for SQL Server and MySQL -
+    /// while every other command the same bulk operation issues honours the caller's
+    /// <c>options.CommandTimeout</c>. A caller who raised the timeout because the session is
+    /// contended still got a 30-second cap on the statement that turns enforcement back on, and a
+    /// timeout there is exactly the failure that returns a pooled connection with foreign keys off -
+    /// the hole AUD-R34-008 was filed to close from the other direction.
+    /// </remarks>
+    /// <remarks>
+    /// AUD-R35-132. The statements are logged through <see cref="JauntyConfig.Logger"/> but are
+    /// deliberately not routed through <c>CommandObservation</c>/<c>InterceptorPipeline</c>: a bulk
+    /// operation reports exactly one interceptor event by design (see
+    /// <c>WriteObservabilityTests.ABulkOperation_IsReportedOnce_NotOncePerRow</c>), and emitting two
+    /// more for the toggle pair would change that contract for every interceptor that counts
+    /// commands. The log line is what an audit reader needs to see that enforcement was suspended;
+    /// carrying the fact into the interceptor payload instead is a `BulkOperationParameters` change
+    /// and a product decision, recorded in `work/todo.md`.
+    /// </remarks>
+    internal static void DisableSync(IDbConnection connection, ISqlDialect dialect, IDbTransaction? transaction, int? commandTimeout)
     {
         using IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = RequireToggleSql(dialect.GetDisableForeignKeyChecksSql(), dialect, nameof(ISqlDialect.GetDisableForeignKeyChecksSql));
+        ApplyTimeoutAndLog(command, commandTimeout);
         command.ExecuteNonQuery();
     }
 
-    internal static void EnableSync(IDbConnection connection, ISqlDialect dialect, IDbTransaction? transaction)
+    /// <inheritdoc cref="DisableSync"/>
+    internal static void EnableSync(IDbConnection connection, ISqlDialect dialect, IDbTransaction? transaction, int? commandTimeout)
     {
         using IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = RequireToggleSql(dialect.GetEnableForeignKeyChecksSql(), dialect, nameof(ISqlDialect.GetEnableForeignKeyChecksSql));
+        ApplyTimeoutAndLog(command, commandTimeout);
         command.ExecuteNonQuery();
     }
 
-    internal static async Task DisableAsync(DbConnection connection, ISqlDialect dialect, DbTransaction? transaction, CancellationToken cancellationToken)
+    /// <inheritdoc cref="DisableSync"/>
+    internal static async Task DisableAsync(DbConnection connection, ISqlDialect dialect, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         DbCommand command = connection.CreateCommand();
@@ -55,10 +79,12 @@ internal static class ForeignKeyToggleCoordinator
 #endif
         command.Transaction = transaction;
         command.CommandText = RequireToggleSql(dialect.GetDisableForeignKeyChecksSql(), dialect, nameof(ISqlDialect.GetDisableForeignKeyChecksSql));
+        ApplyTimeoutAndLog(command, commandTimeout);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    internal static async Task EnableAsync(DbConnection connection, ISqlDialect dialect, DbTransaction? transaction, CancellationToken cancellationToken)
+    /// <inheritdoc cref="DisableSync"/>
+    internal static async Task EnableAsync(DbConnection connection, ISqlDialect dialect, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         DbCommand command = connection.CreateCommand();
@@ -68,7 +94,16 @@ internal static class ForeignKeyToggleCoordinator
 #endif
         command.Transaction = transaction;
         command.CommandText = RequireToggleSql(dialect.GetEnableForeignKeyChecksSql(), dialect, nameof(ISqlDialect.GetEnableForeignKeyChecksSql));
+        ApplyTimeoutAndLog(command, commandTimeout);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void ApplyTimeoutAndLog(IDbCommand command, int? commandTimeout)
+    {
+        if (commandTimeout.HasValue)
+            command.CommandTimeout = commandTimeout.Value;
+
+        JauntyConfig.Logger?.Invoke(command.CommandText, null);
     }
 
     /// <summary>

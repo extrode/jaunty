@@ -21,12 +21,12 @@ public sealed class SQLiteTypeMapper : ITypeMapper
 
         return dataType switch
         {
-            // Integer types - SQLite stores all integers as 64-bit
-            "INT" or "INTEGER" or "TINYINT" or "SMALLINT" or "MEDIUMINT" or "INT2" or "INT8" =>
-                new CSharpTypeInfo { TypeName = "long", IsValueType = true },
-
-            // Explicitly use int for common names
-            "BIGINT" =>
+            // Integer types - SQLite stores all integers as 64-bit, so every spelling maps to long
+            // regardless of the width the declaration names. AUD-R35-270: BIGINT used to sit in an
+            // arm of its own under the comment "Explicitly use int for common names", which
+            // described neither the arm it labelled (it returns long) nor any decision this switch
+            // makes.
+            "INT" or "INTEGER" or "TINYINT" or "SMALLINT" or "MEDIUMINT" or "INT2" or "INT8" or "BIGINT" =>
                 new CSharpTypeInfo { TypeName = "long", IsValueType = true },
 
             // Real types

@@ -129,4 +129,52 @@ public class StreamAsyncFallbackTests : IDisposable
     }
 
     #endregion
+
+    #region QueryPartialUnbufferedAsync
+
+    [Fact]
+    public async Task QueryPartialUnbufferedAsync_ViaWrapper_ThrowsForNonDbConnection()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var _ in _wrapper.QueryPartialUnbufferedAsync<CategorySummary>(Sql))
+            {
+            }
+        });
+    }
+
+    [Fact]
+    public async Task QueryPartialUnbufferedAsync_WithParameters_ViaWrapper_ThrowsForNonDbConnection()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var _ in _wrapper.QueryPartialUnbufferedAsync<CategorySummary>(ParameterizedSql, new { Id = 1 }))
+            {
+            }
+        });
+    }
+
+    [Fact]
+    public async Task QueryPartialUnbufferedAsync_WithOptions_ViaWrapper_ThrowsForNonDbConnection()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var _ in _wrapper.QueryPartialUnbufferedAsync(Sql, default(CommandOptions<CategorySummary>)))
+            {
+            }
+        });
+    }
+
+    [Fact]
+    public async Task QueryPartialUnbufferedAsync_WithParametersAndOptions_ViaWrapper_ThrowsForNonDbConnection()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var _ in _wrapper.QueryPartialUnbufferedAsync(ParameterizedSql, new { Id = 1 }, default(CommandOptions<CategorySummary>)))
+            {
+            }
+        });
+    }
+
+    #endregion
 }

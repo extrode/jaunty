@@ -13,13 +13,19 @@ internal static class ScalarConverter<T>
 
     internal static T Convert(object value)
     {
+        // AUD-R35-126: this guard used to sit below the fast path, which made its own comment
+        // false. `value is T direct` matches DBNull.Value whenever T is object or DBNull, so
+        // ScalarConverter<object>.Convert(DBNull.Value) returned DBNull.Value while every other T
+        // returned default - the one shape a caller trusting "correct standalone" would get wrong.
+        // Neither current caller can reach it (ScalarExecution and GridReader both filter
+        // `null or DBNull` before calling in), so nothing observable changes today; the point is
+        // that the guard now means what it says for whoever calls next.
+        if (value is DBNull)
+            return default!;
+
         // Fast path: direct type match
         if (value is T direct)
             return direct;
-
-        // Defensive DBNull guard (callers already filter this out, but be correct standalone)
-        if (value is DBNull)
-            return default!;
 
         // AUD-R26-062: every branch that used to live here - enum, Guid/DateTimeOffset/TimeSpan/
         // DateOnly/TimeOnly from a string, and the InvariantCulture Convert.ChangeType fallback -

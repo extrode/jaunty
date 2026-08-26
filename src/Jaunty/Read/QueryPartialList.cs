@@ -22,8 +22,7 @@ public static partial class Jaunty
     /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
     /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
     /// whose names differ only by case - or two identically named columns, the usual
-    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
-    /// alias such columns in the SQL if you need both.
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - see the note below.
     /// <para>
     /// <strong>Duplicate column names.</strong> Keys are compared case-insensitively, so a result set
     /// with two columns of the same name - <c>SELECT o.Id, c.Id FROM Orders o JOIN Customers c ...</c>,
@@ -60,8 +59,7 @@ public static partial class Jaunty
     /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
     /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
     /// whose names differ only by case - or two identically named columns, the usual
-    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
-    /// alias such columns in the SQL if you need both.
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - see the note below.
     /// <para>
     /// <strong>Duplicate column names.</strong> Keys are compared case-insensitively, so a result set
     /// with two columns of the same name - <c>SELECT o.Id, c.Id FROM Orders o JOIN Customers c ...</c>,
@@ -75,8 +73,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
@@ -99,8 +97,7 @@ public static partial class Jaunty
     /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
     /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
     /// whose names differ only by case - or two identically named columns, the usual
-    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
-    /// alias such columns in the SQL if you need both.
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - see the note below.
     /// <para>
     /// <strong>Duplicate column names.</strong> Keys are compared case-insensitively, so a result set
     /// with two columns of the same name - <c>SELECT o.Id, c.Id FROM Orders o JOIN Customers c ...</c>,
@@ -139,8 +136,7 @@ public static partial class Jaunty
     /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
     /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
     /// whose names differ only by case - or two identically named columns, the usual
-    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
-    /// alias such columns in the SQL if you need both.
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - see the note below.
     /// <para>
     /// <strong>Duplicate column names.</strong> Keys are compared case-insensitively, so a result set
     /// with two columns of the same name - <c>SELECT o.Id, c.Id FROM Orders o JOIN Customers c ...</c>,
@@ -154,8 +150,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));

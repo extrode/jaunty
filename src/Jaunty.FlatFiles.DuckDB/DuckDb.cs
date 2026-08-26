@@ -275,10 +275,29 @@ public sealed partial class DuckDb : IFlatFile
             : source;
     }
 
+    /// <summary>
+    /// Counts base tables named <c>$name</c> <b>in the schema this connection's unqualified names
+    /// resolve to</b>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-244: the schema and catalog predicates used to be absent, so the query matched a
+    /// base table of that name anywhere in <c>information_schema.tables</c> - in <c>temp</c>, or in
+    /// any attached catalog - while every object this class creates is unqualified. An unrelated
+    /// same-named table elsewhere therefore sent <c>RegisterSource</c> down the "already promoted,
+    /// leave it alone" branch, the view was never created, and queries for that entity silently
+    /// read whatever the unqualified name resolved to instead of the registered file.
+    /// <c>current_schema()</c>/<c>current_database()</c> rather than the literal <c>main</c>,
+    /// because a caller is free to <c>USE</c> another schema before handing the connection over.
+    /// </remarks>
+    private const string ExistsAsTableSql =
+        "SELECT COUNT(*) FROM information_schema.tables " +
+        "WHERE table_name = $name AND table_type = 'BASE TABLE' " +
+        "AND table_schema = current_schema() AND table_catalog = current_database()";
+
     private bool ExistsAsTable(string tableName)
     {
         using DuckDBCommand cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = $name AND table_type = 'BASE TABLE'";
+        cmd.CommandText = ExistsAsTableSql;
         cmd.Parameters.Add(new DuckDBParameter("name", tableName));
         return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
     }
@@ -287,7 +306,7 @@ public sealed partial class DuckDb : IFlatFile
     {
         DuckDBCommand cmd = _connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
-        cmd.CommandText = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = $name AND table_type = 'BASE TABLE'";
+        cmd.CommandText = ExistsAsTableSql;
         cmd.Parameters.Add(new DuckDBParameter("name", tableName));
         object? count = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
         return Convert.ToInt64(count, CultureInfo.InvariantCulture) > 0;

@@ -63,10 +63,26 @@ internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IRea
         }
     }
 
-    public IEnumerator<T> GetEnumerator()
+    /// <summary>
+    /// Returns <see cref="ImmutableArray{T}"/>'s own struct enumerator, which <c>foreach</c> binds
+    /// to by pattern before it considers <see cref="IEnumerable{T}"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-225. This used to cast to <see cref="IEnumerable{T}"/> first, which boxes the struct
+    /// enumerator - one allocation per <c>foreach</c>, paid by every emit-time loop over an entity's
+    /// properties, containing types and dropped properties. The interface implementations below
+    /// still box, but only for callers that reach the type through an interface; nothing in
+    /// <c>JauntyGenerator</c> does. A default instance is materialised as empty rather than being
+    /// enumerated directly, which would throw.
+    /// </remarks>
+    public ImmutableArray<T>.Enumerator GetEnumerator()
+        => (_values.IsDefault ? ImmutableArray<T>.Empty : _values).GetEnumerator();
+
+    IEnumerator<T> IEnumerable<T>.GetEnumerator()
         => ((IEnumerable<T>)(_values.IsDefault ? ImmutableArray<T>.Empty : _values)).GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator()
+        => ((IEnumerable)(_values.IsDefault ? ImmutableArray<T>.Empty : _values)).GetEnumerator();
 
     public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) => left.Equals(right);
 

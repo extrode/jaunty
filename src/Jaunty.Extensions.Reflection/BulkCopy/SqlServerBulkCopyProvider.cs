@@ -42,8 +42,35 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly MethodInfo? WriteToServerMethod = SqlBulkCopyType?.GetMethod("WriteToServer", [typeof(IDataReader)]);
     private static readonly MethodInfo? WriteToServerAsyncMethod = SqlBulkCopyType?.GetMethod("WriteToServerAsync", [typeof(IDataReader), typeof(CancellationToken)]);
 
-    /// <inheritdoc/>
-    public bool IsSupported => SqlBulkCopyType != null;
+    /// <summary>
+    /// True when every reflected member both copy paths require resolved.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-219. This used to test <c>SqlBulkCopyType</c> alone, while the copy methods go on to
+    /// demand <c>SqlConnectionType</c>, a <c>WriteToServer</c>/<c>WriteToServerAsync</c> method and -
+    /// via <c>MapBulkCopyOptions</c> - <c>SqlBulkCopyOptionsType</c>. So the property could answer
+    /// true and the copy still throw, which is the one thing it exists to let callers avoid:
+    /// <c>BulkInsert</c> gates on it before committing to the native path and does not fall back to
+    /// the loop path afterwards. <c>PostgreSqlBulkCopyProvider.IsSupported</c> already conjoins both
+    /// types it needs. The two <c>WriteToServer</c> forms are OR-ed rather than AND-ed because
+    /// <c>CopyToServerAsync</c> deliberately falls back to the synchronous one; the residual case -
+    /// only the async form resolving, which no shipped SqlClient does - would still throw from the
+    /// synchronous <c>CopyToServer</c>, and requiring both here would instead report unsupported on
+    /// a client where copying works.
+    /// </remarks>
+    public bool IsSupported =>
+        AreMembersResolved(SqlBulkCopyType, SqlBulkCopyOptionsType, SqlConnectionType, WriteToServerMethod, WriteToServerAsyncMethod);
+
+    /// <summary>
+    /// The predicate behind <see cref="IsSupported"/>, taking its inputs as parameters so the
+    /// unresolved cases can be tested - the static fields resolve or not once per process, and on a
+    /// machine with SqlClient installed they always resolve.
+    /// </summary>
+    internal static bool AreMembersResolved(Type? bulkCopyType, Type? bulkCopyOptionsType, Type? connectionType, MethodInfo? writeToServer, MethodInfo? writeToServerAsync)
+        => bulkCopyType != null
+            && bulkCopyOptionsType != null
+            && connectionType != null
+            && (writeToServer != null || writeToServerAsync != null);
 
     /// <inheritdoc/>
     public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
