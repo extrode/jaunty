@@ -60,8 +60,8 @@ public sealed class DialectFixture : IDisposable
     {
         return dialect.Provider switch
         {
-            DialectProvider.SystemSqlite => new SQLiteConnection($"Data Source={ResolveNorthwindPath()}"),
-            DialectProvider.MicrosoftSqlite => new SqliteConnection($"Data Source={ResolveNorthwindPath()}"),
+            DialectProvider.SystemSqlite => new SQLiteConnection(NorthwindDatabase.ConnectionString),
+            DialectProvider.MicrosoftSqlite => new SqliteConnection(NorthwindDatabase.ConnectionString),
             DialectProvider.SqlServer => new SqlConnection(TestConfiguration.SqlServerConnectionString),
             DialectProvider.Postgres => new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString),
             DialectProvider.MariaDb => new MySqlConnection(TestConfiguration.MariaDbConnectionString),
@@ -156,29 +156,6 @@ END;
             cmd.ExecuteNonQuery();
             _sqlServerCompatInitialized = true;
         }
-    }
-
-    private static string ResolveNorthwindPath()
-    {
-        var dir = AppDomain.CurrentDomain.BaseDirectory;
-        for (var i = 0; i < 8; i++)
-        {
-            var candidate = Path.Combine(dir, "data", "sqlite", "Northwind.db");
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            var parent = Directory.GetParent(dir);
-            if (parent is null)
-            {
-                break;
-            }
-
-            dir = parent.FullName;
-        }
-
-        throw new FileNotFoundException("Could not locate data/sqlite/Northwind.db from test output directory.");
     }
 
     #region Write Context Support
