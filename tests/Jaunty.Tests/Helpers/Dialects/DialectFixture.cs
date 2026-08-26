@@ -12,10 +12,46 @@ using Npgsql;
 
 namespace Jaunty.Tests.Helpers.Dialects;
 
+/// <summary>
+/// Per-test-class database access.
+///
+/// <para>
+/// The SQLite dialects used to hand every class a connection straight to the repository's own
+/// <c>data/sqlite/Northwind.db</c>. One mutable file shared by all 110 classes had two costs: the
+/// suite could not run its collections in parallel, and the file came back modified after every
+/// run - a documented ritual of reverting it before committing, with its own lesson file and a
+/// precedent revert in <c>8caca2f</c>.
+/// </para>
+///
+/// <para>
+/// Each fixture instance now copies the seeded database to its own temporary file and serves
+/// connections to that copy, so classes cannot observe each other's writes and the checked-in
+/// fixture is never opened for writing. <c>IClassFixture&lt;DialectFixture&gt;</c> means one copy
+/// per test class, not per test.
+/// </para>
+///
+/// <para>
+/// The live SQL Server, PostgreSQL and MariaDB dialects still share one database per engine -
+/// those are the connection strings in <c>TestConfiguration</c>, and isolating them needs more
+/// than a file copy. Tests touching them keep their existing collections.
+/// </para>
+/// </summary>
 public sealed class DialectFixture : IDisposable
 {
     private static readonly object SqlServerCompatLock = new();
     private static bool _sqlServerCompatInitialized;
+
+    private readonly string _northwindPath;
+    private bool _disposed;
+
+    public DialectFixture()
+    {
+        _northwindPath = Path.Combine(
+            Path.GetTempPath(),
+            "jaunty_northwind_" + Guid.NewGuid().ToString("N") + ".db");
+
+        File.Copy(ResolveSeededNorthwindPath(), _northwindPath, overwrite: true);
+    }
 
     public IDbConnection GetClosedConnection(DialectInfo dialect)
     {
@@ -53,15 +89,35 @@ public sealed class DialectFixture : IDisposable
 
     public void Dispose()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
+        try
+        {
+            if (File.Exists(_northwindPath))
+                File.Delete(_northwindPath);
+        }
+        catch (IOException)
+        {
+            // A provider that still holds the handle leaves a file in the OS temp directory
+            // rather than failing the run. Pooling is disabled on both SQLite connection
+            // strings below so this should not happen, but a leaked temp file is not worth
+            // turning a green suite red.
+        }
+
         GC.SuppressFinalize(this);
     }
 
-    private static DbConnection CreateConnection(DialectInfo dialect)
+    private DbConnection CreateConnection(DialectInfo dialect)
     {
         return dialect.Provider switch
         {
-            DialectProvider.SystemSqlite => new SQLiteConnection($"Data Source={ResolveNorthwindPath()}"),
-            DialectProvider.MicrosoftSqlite => new SqliteConnection($"Data Source={ResolveNorthwindPath()}"),
+            // Pooling=False so the copy's handle is released when the connection closes and
+            // Dispose can delete it.
+            DialectProvider.SystemSqlite => new SQLiteConnection($"Data Source={_northwindPath};Pooling=False"),
+            DialectProvider.MicrosoftSqlite => new SqliteConnection($"Data Source={_northwindPath};Pooling=False"),
             DialectProvider.SqlServer => new SqlConnection(TestConfiguration.SqlServerConnectionString),
             DialectProvider.Postgres => new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString),
             DialectProvider.MariaDb => new MySqlConnection(TestConfiguration.MariaDbConnectionString),
@@ -158,7 +214,10 @@ END;
         }
     }
 
-    private static string ResolveNorthwindPath()
+    /// <summary>
+    /// Locates the checked-in seeded database. Callers read the copy, never this path.
+    /// </summary>
+    private static string ResolveSeededNorthwindPath()
     {
         var dir = AppDomain.CurrentDomain.BaseDirectory;
         for (var i = 0; i < 8; i++)
