@@ -23,7 +23,7 @@ demo video/livecoding                            invoice + license       version
 You need public marketing artifacts that don't give the product away:
 
 - **Public docs/marketing repo or site.** The private repo stays private; publish a
-  separate public repo (e.g. `beparey/jaunty-docs`) containing the README-grade docs,
+  separate public repo (e.g. `extrode/jaunty-docs`) containing the README-grade docs,
   the API reference (DocFX output from `tools/Jaunty.DocsGenerator`), the measured
   benchmark results (BENCHMARKS-2026-07-04.md), and the CHANGELOG. This is your
   storefront and your SEO.
@@ -47,7 +47,7 @@ Options, in order of recommendation:
    PAT scoped to package read, with a 30-day expiry. When the trial lapses, the
    token dies by itself — no revocation chores. Cheap to run, identical experience
    to the paid product.
-2. **Trial package on nuget.org.** Publish `Beparey.Jaunty.Trial` (or `-trial`
+2. **Trial package on nuget.org.** Publish `Extrode.Jaunty.Trial` (or `-trial`
    suffix versions) publicly with a built-in time bomb or nag. More reach, but you
    maintain a second package identity and trial code paths. Only worth it if
    inbound volume gets high.
@@ -75,7 +75,7 @@ done.** The mechanics, per option:
   ```xml
   <!-- nuget.config -->
   <packageSources>
-    <add key="jaunty" value="https://nuget.pkg.github.com/beparey/index.json" />
+    <add key="jaunty" value="https://nuget.pkg.github.com/extrode/index.json" />
   </packageSources>
   <packageSourceCredentials>
     <jaunty>
@@ -140,7 +140,7 @@ Also standard practice, three tiers — pick per deal size:
 
 ## 6. Concrete recommended setup for Jaunty (solo vendor, today)
 
-1. Keep `beparey/jaunty` private (product + source of truth).
+1. Keep `extrode/jaunty` private (product + source of truth).
 2. Create public `jaunty-docs` (docs site + benchmarks + changelog) and
    `jaunty-samples` — the storefront.
 3. Wire release.yml to GitHub Packages (`GITHUB_TOKEN`) — kills the NUGET_API_KEY

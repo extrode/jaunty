@@ -48,10 +48,10 @@
 	</ItemGroup>
 
 	<PropertyGroup>
-		<PackageId>Beparey.Jaunty.FlatFiles.DuckDB</PackageId>
+		<PackageId>Extrode.Jaunty.FlatFiles.DuckDB</PackageId>
 		<Authors>Syed Beparey</Authors>
 		<Description>DuckDB provider for Jaunty.FlatFiles. Enables SQL queries on CSV, TSV, Parquet, JSON, Excel, Delta Lake, and Iceberg sources, including remote files via S3, Azure, and HTTP.</Description>
-		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>
 		<ErrorReport>none</ErrorReport>
 		<PackageTags>$(PackageTags);flat-files;csv;parquet;json;duckdb</PackageTags>

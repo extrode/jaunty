@@ -20,10 +20,10 @@
   </Choose>-->
 
   <PropertyGroup>
-    <PackageId>Beparey.Jaunty.Scaffolding</PackageId>
+    <PackageId>Extrode.Jaunty.Scaffolding</PackageId>
     <Authors>Syed Beparey</Authors>
     <Description>Database-first entity class scaffolding for Jaunty.</Description>
-    <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+    <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

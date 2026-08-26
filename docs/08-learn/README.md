@@ -16,7 +16,7 @@ Create a new console project and add the packages:
 ```bash
 dotnet new console -n JauntyLearn
 cd JauntyLearn
-dotnet add package Beparey.Jaunty
+dotnet add package Extrode.Jaunty
 dotnet add package Microsoft.Data.Sqlite
 ```
 
