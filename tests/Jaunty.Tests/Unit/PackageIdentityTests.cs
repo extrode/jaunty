@@ -18,6 +18,8 @@ public class PackageIdentityTests
     private const string ExpectedOwner = "Extrode LLC";
     private const int ExpectedPackageCount = 7;
 
+    private static readonly string[] RetiredOwnerNames = ["Beparey LLC", "Beparey.com"];
+
     private static readonly string[] PackCriticalProperties =
     [
         "PackageId", "PackAsTool", "ToolCommandName", "RepositoryUrl", "PackageProjectUrl",
@@ -169,6 +171,32 @@ public class PackageIdentityTests
         Assert.True(misattributed.Count == 0,
             $"Shipped assembly and package attribution must name '{ExpectedOwner}' rather than an " +
             "individual: " + string.Join(", ", misattributed));
+    }
+
+    /// <summary>
+    /// The licensing documents name the same entity as the packages. They drift because nothing
+    /// compiles them: the order form is copied per customer and the ISL-R ships in the repo, so a
+    /// stale licensor there contradicts the copyright in every shipped assembly.
+    /// </summary>
+    [Theory]
+    [InlineData("LICENSE.md")]
+    [InlineData("docs/06-releases/order-form-template.md")]
+    public void EveryLicensingDocumentNamesTheCompanyAsLicensor(string relativePath)
+    {
+        string path = Path.Combine(LocateRepositoryRoot().FullName, relativePath);
+
+        Assert.True(File.Exists(path), $"'{relativePath}' is missing; this fact cannot pass vacuously.");
+
+        string text = File.ReadAllText(path);
+
+        Assert.True(text.IndexOf(ExpectedOwner, StringComparison.Ordinal) >= 0,
+            $"'{relativePath}' must name '{ExpectedOwner}' as licensor to match the package copyright.");
+
+        foreach (string retired in RetiredOwnerNames)
+        {
+            Assert.True(text.IndexOf(retired, StringComparison.OrdinalIgnoreCase) < 0,
+                $"'{relativePath}' still names the retired licensor '{retired}'.");
+        }
     }
 
     /// <summary>Every <c>.csproj</c> under <c>src/</c>, plus <c>src/Directory.Build.props</c>.</summary>
