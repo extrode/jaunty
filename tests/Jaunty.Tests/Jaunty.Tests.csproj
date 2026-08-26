@@ -18,7 +18,7 @@
     <Nullable>enable</Nullable>
     <!-- Suppress all warnings in test projects -->
     <NoWarn>$(NoWarn);CS1591;CS8618;CS8602;CS8603;CS8604;CS8625;CS8767;xUnit1026;xUnit1051;xUnit2009;xUnit2010;xUnit2013;xUnit2017</NoWarn>
-    <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
+    <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT;CSCHECK</DefineConstants>
   </PropertyGroup>
 
   <!-- net472-specific settings (loads netstandard2.0 assembly) -->
@@ -54,6 +54,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <!-- Property-based testing. Not referenced on net472: CsCheck ships no .NET Framework target.
+       Tests that use it are guarded with #if CSCHECK so the net472 leg still compiles. -->
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <PackageReference Include="CsCheck" Version="4.8.0" />
   </ItemGroup>
 
   <ItemGroup>
