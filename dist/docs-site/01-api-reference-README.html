@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>API Reference — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">API Reference</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#method-categories">Method Categories</a><a class="toc-l3" href="#query-methods-read">Query Methods (Read)</a><a class="toc-l3" href="#write-methods">Write Methods</a><a class="toc-l3" href="#advanced">Advanced</a><a class="toc-l3" href="#configuration">Configuration</a><a class="toc-l3" href="#fluent-api-optional">Fluent API (Optional)</a><a class="toc-l2" href="#quick-reference">Quick Reference</a><a class="toc-l3" href="#basic-query">Basic Query</a><a class="toc-l3" href="#async">Async</a><a class="toc-l3" href="#with-options">With Options</a><a class="toc-l3" href="#crud">CRUD</a><a class="toc-l3" href="#multiple-result-sets">Multiple Result Sets</a><a class="toc-l2" href="#mapping-modes">Mapping Modes</a><a class="toc-l2" href="#parameter-binding">Parameter Binding</a><a class="toc-l2" href="#error-handling">Error Handling</a><a class="toc-l2" href="#see-also">See Also</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">API Reference</nav>
         <article>
@@ -135,7 +156,7 @@
 <tr>
 <td><strong>Partial Mapping</strong></td>
 <td><code>QueryPartial&lt;T&gt;</code>, <code>QueryPartialFirst&lt;T&gt;</code>, <code>QueryPartialFirstOrDefault&lt;T&gt;</code>, <code>QueryPartialSingle&lt;T&gt;</code>, <code>QueryPartialSingleOrDefault&lt;T&gt;</code></td>
-<td><a href="01-api-reference-query-partial-methods.html"><code>query-partial-methods.md</code></a></td>
+<td><code>query-partial-methods.md</code></td>
 </tr>
 <tr>
 <td><strong>Scalar Values</strong></td>
@@ -162,12 +183,12 @@
 <tr>
 <td><strong>Individual</strong></td>
 <td><code>Insert&lt;T&gt;</code>, <code>Update&lt;T&gt;</code>, <code>Delete&lt;T&gt;</code></td>
-<td><a href="01-api-reference-write-methods.html"><code>write-methods.md</code></a></td>
+<td><code>write-methods.md</code></td>
 </tr>
 <tr>
 <td><strong>Bulk</strong></td>
 <td><code>BulkInsert&lt;T&gt;</code>, <code>BulkUpdate&lt;T&gt;</code>, <code>BulkDelete&lt;T&gt;</code></td>
-<td><a href="01-api-reference-write-methods.html"><code>write-methods.md</code></a></td>
+<td><code>write-methods.md</code></td>
 </tr>
 <tr>
 <td><strong>Bulk Copy</strong></td>
@@ -177,7 +198,7 @@
 <tr>
 <td><strong>Upsert</strong></td>
 <td><code>Upsert&lt;T&gt;</code></td>
-<td><a href="01-api-reference-write-methods.html"><code>write-methods.md</code></a></td>
+<td><code>write-methods.md</code></td>
 </tr>
 </tbody>
 </table>
@@ -204,7 +225,7 @@
 <tr>
 <td><strong>Special Types</strong></td>
 <td><code>Query&lt;Dictionary&gt;</code>, <code>Query&lt;ExpandoObject&gt;</code>, <code>Query&lt;KeyValuePair&gt;</code>, <code>Query&lt;ValueTuple&gt;</code></td>
-<td><a href="01-api-reference-special-types.html"><code>special-types.md</code></a></td>
+<td><code>special-types.md</code></td>
 </tr>
 </tbody>
 </table>
@@ -231,7 +252,7 @@
 <tr>
 <td><strong>CommandOptions</strong></td>
 <td>Transaction, timeout, custom mapper</td>
-<td><a href="01-api-reference-command-options.html"><code>command-options.md</code></a></td>
+<td><code>command-options.md</code></td>
 </tr>
 </tbody>
 </table>
@@ -429,9 +450,9 @@ connection.Query&lt;Product&gt;(
 <hr />
 <h2 id="see-also">See Also</h2>
 <ul>
-<li><a href="../../00-quick-start/README.md"><code>../../00-quick-start/README.md</code></a> - Quick start</li>
-<li><a href="../../02-architecture/README.md"><code>../../02-architecture/README.md</code></a> - Architecture</li>
-<li><a href="../../the coding standards"><code>../../the coding standards</code></a> - Development guidelines</li>
+<li><code>../../00-quick-start/README.md</code> - Quick start</li>
+<li><code>../../02-architecture/README.md</code> - Architecture</li>
+<li><code>../../the coding standards</code> - Development guidelines</li>
 </ul>
 
         </article>
@@ -454,9 +475,5 @@ connection.Query&lt;Product&gt;(
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>
