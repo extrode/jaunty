@@ -7,6 +7,12 @@ namespace Jaunty.FlatFiles.Import;
 /// </summary>
 public readonly struct ImportOptions
 {
+    // AUD-R35-238: the four public members below are readonly fields on a readonly struct, so none
+    // of them can be set after construction - their docs said "Gets or sets" and described an
+    // accessor that does not exist. Corrected to "Gets". The field-vs-property shape is left alone
+    // deliberately: BatchSize is a property and the rest of the public API exposes options as
+    // properties, so these are an outlier, but converting them is a binary-breaking change to a
+    // released package rather than a doc fix. Noted in work/todo.md.
     // Backing field is nullable so that default(ImportOptions) — which bypasses the constructor
     // and zero-initializes all value-type fields — can still be distinguished from an explicit
     // batchSize: 0. BatchSize below falls back to 1000 only when this is null (unset).
@@ -22,25 +28,25 @@ public readonly struct ImportOptions
     public int BatchSize => _batchSize ?? 1000;
 
     /// <summary>
-    /// Gets or sets how primary key conflicts are handled. Default: <see cref="ConflictStrategy.Error"/>.
+    /// Gets how primary key conflicts are handled. Default: <see cref="ConflictStrategy.Error"/>.
     /// </summary>
     public readonly ConflictStrategy OnConflict;
 
     /// <summary>
-    /// Gets or sets whether to create the target table if it does not exist.
+    /// Gets whether to create the target table if it does not exist.
     /// When true, the table is created from the entity's property-to-column mappings before import.
     /// Default: false.
     /// </summary>
     public readonly bool CreateTableIfMissing;
 
     /// <summary>
-    /// Gets or sets an optional progress callback invoked after each batch.
+    /// Gets the optional progress callback invoked after each batch.
     /// Parameters: (rowsImportedSoFar, totalRowsOrNull).
     /// </summary>
     public readonly Action<long, long?>? OnProgress;
 
     /// <summary>
-    /// Gets or sets a custom import dialect for generating database-specific DDL and INSERT SQL.
+    /// Gets the custom import dialect for generating database-specific DDL and INSERT SQL.
     /// When null, the import pipeline auto-detects the target database from the connection type.
     /// Set this when importing into a database engine that is not natively supported.
     /// </summary>

@@ -5,7 +5,8 @@ namespace Jaunty.Dialects;
 /// <summary>
 /// MySQL dialect.
 /// Uses `backticks` only for SQL keywords.
-/// Default schema: null (MySQL doesn't use schemas the same way)
+/// Default schema: the empty string (MySQL uses databases, not schemas). AUD-R35-159: this
+/// said "null" for as long as GetDefaultSchema has returned string.Empty.
 /// </summary>
 internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
 {
@@ -39,7 +40,7 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
         "TINYBLOB", "TINYINT", "TINYTEXT", "TO", "TRAILING", "TRIGGER", "TRUE", "UNDO", "UNION",
         "UNIQUE", "UNLOCK", "UNSIGNED", "UPDATE", "USAGE", "USE", "USING", "UTC_DATE", "UTC_TIME",
         "UTC_TIMESTAMP", "VALUES", "VARBINARY", "VARCHAR", "VARCHARACTER", "VARYING", "WHEN",
-        "WHERE", "WHILE", "WITH", "WRITE", "XOR", "YEAR_MONTH", "ZEROFILL", "ORDER", "USER",
+        "WHERE", "WHILE", "WITH", "WRITE", "XOR", "YEAR_MONTH", "ZEROFILL", "USER",
 
         // AUD-R35-018. Everything above predates MySQL 8.0; none of the words 8.0 reserved were
         // here. EscapeTableName/EscapeColumnName backtick only what IsKeyword recognises, so an

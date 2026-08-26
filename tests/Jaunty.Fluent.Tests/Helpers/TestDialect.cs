@@ -32,7 +32,7 @@ internal class TestDialect : ISqlDialect
 
     public string GetLastInsertIdSql(params string[] columnNames) => "SELECT SCOPE_IDENTITY()";
 
-    public string GetPagingSql(string baseSql, int offset, int fetchNext)
+    public virtual string GetPagingSql(string baseSql, int offset, int fetchNext)
     {
         return $"{baseSql} ORDER BY (SELECT NULL) OFFSET {offset} ROWS FETCH NEXT {fetchNext} ROWS ONLY";
     }

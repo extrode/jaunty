@@ -10,6 +10,16 @@ public enum GenFallbackGrade
 }
 
 /// <summary>
+/// AUD-R35-118. A ulong-backed enum with a member above long.MaxValue: the core converter widens
+/// through the enum's own underlying type, the generated helper used to widen through long.
+/// </summary>
+public enum GenFallbackHuge : ulong
+{
+    None = 0,
+    Max = ulong.MaxValue
+}
+
+/// <summary>
 /// AUD-R34-033. One property per type that lands in <c>GetReaderTypeInfo</c>'s catch-all arm, so the
 /// emitted <c>ReadFallback&lt;T&gt;</c> helper's conversion branches are all reachable from one
 /// entity and one reader. All four scaffolder type mappers emit <c>DateOnly</c> for a <c>date</c>
@@ -43,4 +53,10 @@ public partial class GenFallbackEntity : IMapped<GenFallbackEntity>
 
     [Column("counter")]
     public uint Counter { get; set; }
+
+    [Column("initial")]
+    public char Initial { get; set; }
+
+    [Column("huge")]
+    public GenFallbackHuge Huge { get; set; }
 }

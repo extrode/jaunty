@@ -253,13 +253,19 @@ internal sealed class JoinedGroupByExpressionVisitor
     {
         foreach (MemberBinding binding in memberInit.Bindings)
         {
-            if (binding is MemberAssignment assignment)
+            // AUD-R35-195, the joined copy - a non-assignment binding was skipped in silence,
+            // leaving no column, no alias and no error.
+            if (binding is not MemberAssignment assignment)
             {
-                var memberName = assignment.Member.Name;
-                (string sql, string _) = TranslateExpression(assignment.Expression, memberName, groupingParam);
-                _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(memberName)}");
-                _columnAliases.Add(memberName);
+                throw new NotSupportedException(
+                    $"Member binding '{binding.BindingType}' is not supported in GROUP BY Select. " +
+                    "Only member assignments (Member = expression) can be translated.");
             }
+
+            var memberName = assignment.Member.Name;
+            (string sql, string _) = TranslateExpression(assignment.Expression, memberName, groupingParam);
+            _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(memberName)}");
+            _columnAliases.Add(memberName);
         }
     }
 
@@ -283,6 +289,15 @@ internal sealed class JoinedGroupByExpressionVisitor
         // g.Key (single-column key)
         if (expr is MemberExpression keyMember && keyMember.Member.Name == "Key" && IsGroupingAccess(keyMember.Expression, groupingParam))
         {
+            // AUD-R35-193, the joined copy - see GroupByExpressionVisitor<T,TKey>.TranslateExpression
+            // for why a composite key nested inside a projection is refused rather than expanded.
+            if (_groupByColumns.Length > 1)
+            {
+                throw new NotSupportedException(
+                    "A composite grouping key cannot be projected as a whole inside a projection. " +
+                    "Project its parts instead - g.Key.PropertyName - or select the bare key, g => g.Key.");
+            }
+
             return (_groupByColumns[0], defaultAlias);
         }
 

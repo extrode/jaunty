@@ -102,11 +102,43 @@ internal static class GroupedJoinedResultMapper
             }
 
             var properties = new PropertyInfo?[aliases.Length];
-            for (int i = 0; i < aliases.Length; i++)
-                properties[i] = resultType.GetProperty(aliases[i]);
+            PropertyInfo[] candidates = resultType.GetProperties();
 #pragma warning restore IL2090
 
+            for (int i = 0; i < aliases.Length; i++)
+                properties[i] = FindProperty(candidates, aliases[i]);
+
             return new ResultMapperPlan(constructor: null, constructorParameters: null, properties);
+        }
+
+        /// <summary>
+        /// AUD-R35-199. This used to be <c>resultType.GetProperty(alias)</c>, whose default binding
+        /// flags are case-sensitive - while the constructor path's
+        /// <see cref="BuildParameterAliasOrder"/> matches aliases to parameter names with
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/>. So a DTO whose property casing differs
+        /// from the projection's alias bound fine through a matching-arity constructor and was
+        /// silently left at its default through the property path: no exception, no column.
+        /// <c>GetProperty(string)</c> also throws <see cref="System.Reflection.AmbiguousMatchException"/>
+        /// for a property re-declared with <c>new</c> in a derived result type, where the
+        /// constructor path would not. Scanning the declared properties settles both: an exact match
+        /// wins, a case-insensitive one is the fallback, and the first candidate is taken rather than
+        /// a shadowed pair being reported as ambiguous.
+        /// </summary>
+        private static PropertyInfo? FindProperty(PropertyInfo[] candidates, string alias)
+        {
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                if (string.Equals(candidates[i].Name, alias, StringComparison.Ordinal))
+                    return candidates[i];
+            }
+
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                if (string.Equals(candidates[i].Name, alias, StringComparison.OrdinalIgnoreCase))
+                    return candidates[i];
+            }
+
+            return null;
         }
 
         /// <summary>

@@ -67,11 +67,18 @@ internal static class MultiEntityMapperNGuard
                 $"JauntyConfig.ReflectionMultiMapperResolverN returned null for arity {types.Length} " +
                 $"({DescribeTypes(types)}). It must return one mapping delegate per entity type.");
 
-        if (delegates.Length < types.Length)
+        // AUD-R35-119: this used to be `<`, so a resolver returning too many delegates was accepted
+        // and the first N used. The error text below states the contract as one per entity type in
+        // the same order, which an over-long array breaks just as surely - and the likely cause of
+        // an over-long array is exactly the misalignment this guard exists to catch, a resolver that
+        // prepended or appended an entry. Accepting it maps entity 1 with the wrong delegate and
+        // returns wrong data silently, which is worse than the per-row IndexOutOfRangeException the
+        // guard replaced.
+        if (delegates.Length != types.Length)
             throw new InvalidOperationException(
                 $"JauntyConfig.ReflectionMultiMapperResolverN returned {delegates.Length} delegate(s) " +
-                $"for arity {types.Length} ({DescribeTypes(types)}). It must return one per entity " +
-                "type, in the same order as the type array it was given.");
+                $"for arity {types.Length} ({DescribeTypes(types)}). It must return exactly one per " +
+                "entity type, in the same order as the type array it was given.");
 
         for (int i = 0; i < types.Length; i++)
         {

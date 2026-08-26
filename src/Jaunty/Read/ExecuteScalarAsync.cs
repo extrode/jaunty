@@ -38,7 +38,7 @@ public static partial class Jaunty
     ///     cts.Token);
     /// </code>
     /// </example>
-    /// <seealso cref="ExecuteScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
+    /// <seealso cref="ExecuteScalarAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="ExecuteScalar{T}(IDbConnection, string)"/>
     public static ValueTask<T> ExecuteScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
@@ -95,8 +95,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
@@ -200,8 +200,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));

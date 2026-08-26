@@ -43,21 +43,37 @@ public sealed class ColumnSchema
     /// <summary>
     /// Precision for numeric types, or null if not applicable.
     /// </summary>
+    /// <remarks>
+    /// AUD-R35-271: read by nothing in <c>src/</c>. Reported by the SQL Server, PostgreSQL and
+    /// MySQL readers and carried for a consumer, the way <c>ForeignKeyInfo</c> is (AUD-R19-007);
+    /// <c>EntityCodeGenerator</c> emits <c>[MaxLength]</c> but has no attribute for decimal
+    /// precision and scale, so a scaffolded <c>decimal</c> does not state either.
+    /// </remarks>
     public int? Precision { get; init; }
 
     /// <summary>
     /// Scale for numeric types, or null if not applicable.
     /// </summary>
+    /// <remarks>See <see cref="Precision"/>: reader-populated, not yet consumed by the generator.</remarks>
     public int? Scale { get; init; }
 
     /// <summary>
     /// Default value expression, or null if none.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="Precision"/>: reader-populated (all four readers), not yet consumed by the
+    /// generator. The expression is the database's own text and is not translated to C#.
+    /// </remarks>
     public string? DefaultValue { get; init; }
 
     /// <summary>
     /// The ordinal position of the column in the table (1-based).
     /// </summary>
+    /// <remarks>
+    /// See <see cref="Precision"/>: reader-populated, not yet consumed by the generator - every
+    /// reader already returns its columns in ordinal order, so the generator reads the order from
+    /// the sequence rather than from this property.
+    /// </remarks>
     public int OrdinalPosition { get; init; }
 
     /// <summary>

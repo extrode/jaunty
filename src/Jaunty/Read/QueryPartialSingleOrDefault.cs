@@ -41,8 +41,7 @@ public static partial class Jaunty
     /// 
     /// // Get single product or null if not found
     /// var product = connection.QueryPartialSingleOrDefault&lt;Product&gt;(
-    ///     "SELECT id, name FROM products WHERE id = @Id", 
-    ///     new { Id = 999 });
+    ///     "SELECT id, name FROM products WHERE id = 999");
     /// 
     /// if (product == null)
     /// {
@@ -52,9 +51,6 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the query returns more than one result.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the number of provided parameters doesn't match the SQL.
     /// </exception>
     /// <seealso cref="QueryPartialSingle{T}(IDbConnection, string)"/>
     /// <seealso cref="QueryPartialFirstOrDefault{T}(IDbConnection, string)"/>
@@ -112,8 +108,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
@@ -215,8 +211,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));

@@ -71,7 +71,7 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <remarks>
     /// If null, the connection's default command timeout is used.
     /// </remarks>
-    public readonly int? CommandTimeout = commandTimeout;
+    public readonly int? CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
 
     /// <summary>
     /// Gets the type of command to execute.
@@ -88,8 +88,17 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <remarks>
     /// This is a hint used to pre-size the internal list for better performance
     /// when the approximate result size is known. If not specified, a default capacity is used.
+    /// <para>
+    /// AUD-R35-122: normalised on the way in, so a hint can never abort the query it was meant to
+    /// speed up. A non-positive value reads as "no hint" and falls back to
+    /// <see cref="Configuration.JauntyConfig.QueryResultCapacity"/> - matching that property's own
+    /// setter, which clamps the same way - and anything above
+    /// <c>CapacityHint.MaxExpectedRowCount</c> (1,048,576) is capped, so a mistyped value cannot
+    /// allocate its way to <see cref="OutOfMemoryException"/> before the first row is read. The
+    /// value read back here is therefore the normalised one, not the one passed in.
+    /// </para>
     /// </remarks>
-    public readonly int? ExpectedRowCount = expectedRowCount;
+    public readonly int? ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
 
     /// <summary>
     /// Creates a new <see cref="CommandOptions{T}"/> with the specified mapper function.
@@ -118,8 +127,13 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <summary>
     /// Creates a new <see cref="CommandOptions{T}"/> with the specified timeout.
     /// </summary>
-    /// <param name="seconds">The command timeout in seconds.</param>
+    /// <param name="seconds">The command timeout in seconds. Zero means no timeout.</param>
     /// <returns>A new <see cref="CommandOptions{T}"/> instance with the specified timeout.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// AUD-R35-149. <paramref name="seconds"/> is negative. This used to be accepted here and to
+    /// surface as a provider-specific exception from inside command execution, naming nothing the
+    /// caller had written.
+    /// </exception>
     public static CommandOptions<T> WithTimeout(int seconds) => new(commandTimeout: seconds);
 
     /// <summary>
@@ -274,7 +288,7 @@ public readonly struct CommandOptions(IDbTransaction? transaction = null, int? c
     /// <summary>
     /// Gets the command timeout in seconds, if specified.
     /// </summary>
-    public readonly int? CommandTimeout = commandTimeout;
+    public readonly int? CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
 
     /// <summary>
     /// Gets the type of command to execute.
@@ -291,8 +305,9 @@ public readonly struct CommandOptions(IDbTransaction? transaction = null, int? c
     /// <summary>
     /// Creates a new <see cref="CommandOptions"/> with the specified timeout.
     /// </summary>
-    /// <param name="seconds">The command timeout in seconds.</param>
+    /// <param name="seconds">The command timeout in seconds. Zero means no timeout.</param>
     /// <returns>A new <see cref="CommandOptions"/> instance with the specified timeout.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">AUD-R35-149. <paramref name="seconds"/> is negative.</exception>
     public static CommandOptions WithTimeout(int seconds) => new(commandTimeout: seconds);
 
     /// <summary>

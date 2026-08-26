@@ -88,17 +88,47 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
     /// under a concurrent write.
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// AUD-R35-151. This used to hand back the retained <see cref="AuditRecord"/> instances
+    /// themselves, and every property on them is settable - so a consumer reading the trail could
+    /// rewrite it in place, including <see cref="AuditRecord.Sequence"/>, which exists precisely so
+    /// the trail can be totally ordered and trimming made visible. When the snapshot was no longer
+    /// than <paramref name="count"/> the internal array was returned uncast as well, so
+    /// <c>(AuditRecord[])result</c> also let a reader replace elements wholesale. For a type whose
+    /// stated purpose is compliance auditing, a reader must not be able to reach the retained record
+    /// at all: each is copied, and the result is a read-only view over a private array. The setters
+    /// stay public - an <c>init</c>-only record would be a breaking change for consumers who build
+    /// these, and copying at the boundary is where the guarantee belongs.
+    /// </remarks>
     public IEnumerable<AuditRecord> GetRecentRecords(int count = 100)
     {
         if (count <= 0) return Array.Empty<AuditRecord>();
 
         AuditRecord[] snapshot = _auditLog.ToArray();
-        if (snapshot.Length <= count) return snapshot;
+        int take = snapshot.Length <= count ? snapshot.Length : count;
+        int start = snapshot.Length - take;
 
-        var recent = new AuditRecord[count];
-        Array.Copy(snapshot, snapshot.Length - count, recent, 0, count);
-        return recent;
+        var recent = new AuditRecord[take];
+        for (int i = 0; i < take; i++)
+            recent[i] = Copy(snapshot[start + i]);
+
+        return new System.Collections.ObjectModel.ReadOnlyCollection<AuditRecord>(recent);
     }
+
+    private static AuditRecord Copy(AuditRecord source) => new()
+    {
+        Timestamp = source.Timestamp,
+        Sequence = source.Sequence,
+        Phase = source.Phase,
+        CommandText = source.CommandText,
+        CommandType = source.CommandType,
+        Database = source.Database,
+        ConnectionState = source.ConnectionState,
+        ElapsedMilliseconds = source.ElapsedMilliseconds,
+        Success = source.Success,
+        ExceptionType = source.ExceptionType,
+        ExceptionMessage = source.ExceptionMessage,
+    };
 
     /// <summary>
     /// Clears all retained audit records.

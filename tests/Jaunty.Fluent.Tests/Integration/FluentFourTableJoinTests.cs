@@ -695,6 +695,48 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public async Task FourTableJoin_SelectPartialAsync_ReturnsProjectedRows()
+    {
+        var results = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .InnerJoin<Supplier>("s")
+            .On("p.supplier_id", "s.supplier_id")
+            .LeftJoin<Product, Category, Supplier, Order>("o")
+            .On("o.order_id > 0")
+            .SelectPartialAsync("p.product_name, c.category_name");
+
+        Assert.NotNull(results);
+        Assert.NotEmpty(results);
+        Assert.All(results, row =>
+        {
+            Assert.Equal(2, row.Count);
+            Assert.True(row.ContainsKey("product_name"));
+            Assert.True(row.ContainsKey("category_name"));
+        });
+    }
+
+    [Fact]
+    public async Task FourTableJoin_SelectPartialAsync_MatchesItsSynchronousTwin()
+    {
+        var query = () => _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .InnerJoin<Supplier>("s")
+            .On("p.supplier_id", "s.supplier_id")
+            .LeftJoin<Product, Category, Supplier, Order>("o")
+            .On("o.order_id > 0");
+
+        var sync = query().SelectPartial("p.product_name");
+        var async = await query().SelectPartialAsync("p.product_name");
+
+        Assert.Equal(sync.Count, async.Count);
+        Assert.Equal(
+            sync.Select(r => r["product_name"]?.ToString()),
+            async.Select(r => r["product_name"]?.ToString()));
+    }
+
+    [Fact]
     public async Task FourTableJoin_SelectPartialFirstAsync_ReturnsFirst()
     {
         var result = await _fixture.Connection.From<Product>("p")

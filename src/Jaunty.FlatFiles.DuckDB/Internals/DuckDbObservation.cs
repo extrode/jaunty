@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Data;
 
 using DuckDB.NET.Data;
@@ -34,7 +35,19 @@ namespace Jaunty.FlatFiles.DuckDB.Internals;
 internal static class DuckDbObservation
 {
     /// <summary>An empty parameter set, shared so a parameterless command allocates nothing.</summary>
-    private static readonly Dictionary<string, object?> None = new(0, StringComparer.OrdinalIgnoreCase);
+    /// <remarks>
+    /// AUD-R35-247: read-only, not a bare <see cref="Dictionary{TKey, TValue}"/>. This instance is
+    /// handed straight to user code as <c>CommandContext.Parameters</c> and to
+    /// <c>JauntyConfig.Logger</c>, so while it was mutable an interceptor that wrote to the
+    /// dictionary it received - or a logger that cached it and mutated it later - corrupted the
+    /// audit record of every subsequent parameterless command in the process. The allocation saving
+    /// only holds if the shared instance cannot be written to. <c>ReadOnlyDictionary</c> still
+    /// presents as <c>IDictionary&lt;string, object?&gt;</c>, which is what the binder and the
+    /// logger's parameter formatting look for; a write throws <see cref="NotSupportedException"/>
+    /// rather than silently landing in shared state.
+    /// </remarks>
+    private static readonly IReadOnlyDictionary<string, object?> None =
+        new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>(0, StringComparer.OrdinalIgnoreCase));
 
     public static object Describe(List<DuckDBParameter> parameters)
     {

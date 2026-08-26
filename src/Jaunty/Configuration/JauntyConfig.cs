@@ -4,7 +4,6 @@ using System.Data;
 using Jaunty.Attributes;
 using Jaunty.Interceptors;
 using Jaunty.Internals;
-using Jaunty.Configuration;
 using Jaunty.TypeHandlers;
 
 namespace Jaunty.Configuration;
@@ -312,18 +311,39 @@ public static class JauntyConfig
     /// Adds multiple interceptors to the pipeline.
     /// </summary>
     /// <param name="interceptors">The interceptors to add.</param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="interceptors"/> is <see langword="null"/>, or any element of it is.
+    /// </exception>
     /// <remarks>
     /// Interceptors are executed in registration order during command execution.
+    /// <para>
+    /// AUD-R35-142. The sequence was checked and its elements were not, while the singular
+    /// <see cref="AddInterceptor"/> rejects a null interceptor outright. A null element went into
+    /// the pipeline's array - <see cref="InterceptorPipeline"/>'s constructor guards the sequence
+    /// only - and surfaced as a <see cref="NullReferenceException"/> from inside command execution,
+    /// with nothing in the stack pointing back at the registration that put it there. The sequence
+    /// is materialised once so that a lazy one cannot yield different elements to the check and to
+    /// the pipeline.
+    /// </para>
     /// </remarks>
     public static void AddInterceptors(IEnumerable<ICommandInterceptor> interceptors)
     {
         if (interceptors is null)
             throw new ArgumentNullException(nameof(interceptors));
 
+        var added = new List<ICommandInterceptor>();
+        foreach (ICommandInterceptor interceptor in interceptors)
+        {
+            if (interceptor is null)
+                throw new ArgumentNullException(nameof(interceptors), "The interceptor sequence contains a null element.");
+
+            added.Add(interceptor);
+        }
+
         lock (InterceptorSync)
         {
             var existingInterceptors = _interceptorPipeline?.GetInterceptors() ?? Enumerable.Empty<ICommandInterceptor>();
-            _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(interceptors));
+            _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(added));
         }
     }
 
@@ -394,9 +414,16 @@ public static class JauntyConfig
         BulkCopyConfiguration.Reset();
         Dialects.SqlDialectFactory.ResetRegistrations();
 
-        // Last, not first: the individual field writes above each bump the generation already, but
-        // TypeHandlerRegistry and the two surfaces below do not, and a caller that reset
-        // configuration must not be handed an entry built moments earlier from what it just cleared.
+        // AUD-R35-141: this call is the only thing that retires the caches, and the comment that
+        // used to sit here said the opposite - that "the individual field writes above each bump the
+        // generation already" and this was a top-up for TypeHandlerRegistry and the two surfaces
+        // below. They do not: nine of the twelve resolver resets are direct writes to the backing
+        // fields, which bypass the property setters and their Invalidate() calls, and only the three
+        // written through properties bump anything. So a future edit that trusted the old comment and
+        // dropped this line would have silently reinstated AUD-R26's stale-cache bug - CrudSqlCache,
+        // MultiRowInsertCache, MetadataCache<T> and WriteParameterCache<T>'s bindings all keep
+        // serving entries built from the configuration Reset() just cleared. It stays last so that
+        // nothing rebuilt between the first field write and this line survives either.
         ConfigurationGeneration.Invalidate();
     }
 

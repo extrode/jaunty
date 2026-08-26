@@ -334,8 +334,9 @@ public static class JauntyReflectionExtensions
         if (value is null)
             return value;
 
+        // AUD-R35-115: shared contract with ParameterBinder and GeneratedBindingSupport.
         if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(value.GetType(), out ITypeHandler? handler) && handler is not null)
-            return handler.ToDbValue(value);
+            return TypeHandlerRegistry.ToDbValueOrThrow(handler, value);
 
         return fallback(value);
     }

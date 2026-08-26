@@ -249,6 +249,57 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
+    /// <summary>
+    /// The async twin of <see cref="SelectFirst()"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-186. The CTE builder had all four synchronous first-row terminals and no async one,
+    /// so an async caller wanting a single row had to materialise the whole CTE result and take the
+    /// first element. Every sibling terminal surface in the assembly carries the pair -
+    /// <c>SetOperationBuilder</c>, <c>QueryBuilder</c>, and the joined builders since AUD-R30. The
+    /// save-and-restore of <c>_takeCount</c> is the same one the sync terminals do, and for the same
+    /// reason: a CteBuilder is held and reused, so leaving it at 1 would silently cap a later
+    /// <c>Select()</c>.
+    /// </remarks>
+    public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
+    {
+        var original = _takeCount;
+        _takeCount = 1;
+        var sql = BuildSql();
+        _takeCount = original;
+        return await _connection.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
+    public async Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var original = _takeCount;
+        _takeCount = 1;
+        var sql = BuildSql();
+        _takeCount = original;
+        return await _connection.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
+    public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
+    {
+        var original = _takeCount;
+        _takeCount = 1;
+        var sql = BuildSql();
+        _takeCount = original;
+        return await _connection.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
+    public async Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var original = _takeCount;
+        _takeCount = 1;
+        var sql = BuildSql();
+        _takeCount = original;
+        return await _connection.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
         new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
 
