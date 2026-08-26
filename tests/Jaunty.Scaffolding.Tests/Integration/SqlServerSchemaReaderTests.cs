@@ -101,7 +101,8 @@ public class SqlServerSchemaReaderTests
                 shape GEOMETRY NULL,
                 node HIERARCHYID NULL,
                 code scaffold_test_code NULL,
-                anything SQL_VARIANT NULL
+                anything SQL_VARIANT NULL,
+                object_name SYSNAME NULL
             );
             """;
         cmd.ExecuteNonQuery();
@@ -142,6 +143,32 @@ public class SqlServerSchemaReaderTests
         var table = schema.Tables.Single();
 
         Assert.Equal("sql_variant", table.Columns.Single(c => c.ColumnName == "anything").DataType);
+    }
+
+    /// <summary>
+    /// AUD-R35-273, the coverage half of AUD-R35-042. <c>sysname</c> is the one alias type SQL
+    /// Server ships and it is
+    /// flagged a *system* type (sys.types: name sysname, system_type_id 231, user_type_id 256,
+    /// is_user_defined 0), so the AUD-R33-008 CASE's <c>is_user_defined = 1</c> arm never reached
+    /// it and it took <c>ELSE ty.name</c>. Nothing in tests/ named the type, which is why that
+    /// regression went unseen: DataType became the literal "sysname", the mapper had no arm for it
+    /// and answered <c>object</c>, and NormalizeMaxLength - which halves only for nchar/nvarchar -
+    /// reported the 256-byte length as 256 characters instead of 128.
+    /// </summary>
+    [Fact]
+    public async Task ReadSchemaAsync_ReportsASysnameColumnAsNvarchar()
+    {
+        using var conn = OpenOrSkip();
+        CreateTypeNameTable(conn);
+
+        var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_typenames"] });
+
+        var column = schema.Tables.Single().Columns.Single(c => c.ColumnName == "object_name");
+
+        Assert.Equal("nvarchar", column.DataType);
+        Assert.Equal(128, column.MaxLength);
+        Assert.Equal("string", new SqlServerTypeMapper().MapToCSharpType(column).TypeName);
     }
 
     [Fact]

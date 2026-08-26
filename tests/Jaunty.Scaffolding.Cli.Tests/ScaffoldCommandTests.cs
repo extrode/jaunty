@@ -61,6 +61,42 @@ public class ScaffoldCommandTests : IDisposable
         Assert.Equal("Generated.Entities", result.GetValue<string>("--namespace"));
     }
 
+    // AUD-R35-266: AutoDetect is the option's own default and was missing from the help text, so
+    // --help could not say what running without --provider would do.
+    [Fact]
+    public void ProviderOption_HelpText_NamesAutoDetectAndEveryOtherValue()
+    {
+        var command = new ScaffoldCommand();
+        Option provider = command.Options.Single(o => o.Name == "--provider");
+
+        Assert.NotNull(provider.Description);
+        foreach (var name in Enum.GetNames<DatabaseProvider>())
+            Assert.Contains(name, provider.Description, StringComparison.Ordinal);
+    }
+
+    // AUD-R35-267: Scaffolder.ScaffoldAsync re-throws OperationCanceledException (AUD-R22) rather
+    // than folding it into ScaffoldResult.Failed, and this action had no catch, so Ctrl-C printed a
+    // raw stack trace where list-tables printed "Error: ...".
+    [Fact]
+    public async Task Invoke_Cancelled_ReportsTheCancellation_WithoutThrowing()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir
+        ]);
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        (_, StringWriter errWriter) = RedirectConsole();
+        var exitCode = await result.InvokeAsync(cancellationToken: cts.Token);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Error: Operation canceled.", errWriter.ToString(), StringComparison.Ordinal);
+        Assert.False(Directory.Exists(_outputDir));
+    }
+
     [Fact]
     public async Task Invoke_DryRun_ReportsWouldGenerate_WithoutWritingFiles()
     {

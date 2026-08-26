@@ -17,7 +17,8 @@ internal sealed class ScaffoldCommand : Command
 
         var providerOption = new Option<DatabaseProvider>("--provider", "-p")
         {
-            Description = "Database provider (SqlServer, PostgreSql, MySql, SQLite)",
+            // AUD-R35-266: see ListTablesCommand - AutoDetect is the default and was not listed.
+            Description = "Database provider (AutoDetect, SqlServer, PostgreSql, MySql, SQLite); default AutoDetect",
             DefaultValueFactory = _ => DatabaseProvider.AutoDetect
         };
 
@@ -218,7 +219,23 @@ internal sealed class ScaffoldCommand : Command
             }
 
             var scaffolder = new Scaffolder();
-            ScaffoldResult result = await scaffolder.ScaffoldAsync(options, cancellationToken).ConfigureAwait(false);
+
+            // AUD-R35-267: Scaffolder.ScaffoldAsync already turns every failure except
+            // OperationCanceledException into ScaffoldResult.Failed, and AUD-R22 deliberately
+            // re-throws that one rather than reporting it as an error at the library layer. With no
+            // catch here, Ctrl-C during a scaffold printed a raw stack trace where list-tables
+            // printed "Error: ...". The catch is for cancellation only - anything else escaping
+            // ScaffoldAsync is a bug worth its stack trace.
+            ScaffoldResult result;
+            try
+            {
+                result = await scaffolder.ScaffoldAsync(options, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                Console.Error.WriteLine("Error: Operation canceled.");
+                return 1;
+            }
 
             if (result.Success)
             {

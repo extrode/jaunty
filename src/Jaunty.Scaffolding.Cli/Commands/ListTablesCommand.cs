@@ -17,7 +17,9 @@ internal sealed class ListTablesCommand : Command
 
         var providerOption = new Option<DatabaseProvider>("--provider", "-p")
         {
-            Description = "Database provider (SqlServer, PostgreSql, MySql, SQLite)",
+            // AUD-R35-266: AutoDetect belongs in the list. It is both a valid value and this
+            // option's own default, and omitting it left --help unable to say what the default was.
+            Description = "Database provider (AutoDetect, SqlServer, PostgreSql, MySql, SQLite); default AutoDetect",
             DefaultValueFactory = _ => DatabaseProvider.AutoDetect
         };
 
@@ -76,6 +78,14 @@ internal sealed class ListTablesCommand : Command
                 }
 
                 return 0;
+            }
+            // AUD-R35-267: cancellation named explicitly, so both commands report a Ctrl-C the same
+            // way and the message does not depend on which exception type the cancelled operation
+            // happened to throw.
+            catch (OperationCanceledException)
+            {
+                Console.Error.WriteLine("Error: Operation canceled.");
+                return 1;
             }
             catch (Exception ex)
             {
