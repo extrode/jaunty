@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quality &amp; Testing — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Quality &amp; Testing</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html" class="active" aria-current="page">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html" class="active" aria-current="page">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#reports">Reports</a><a class="toc-l2" href="#code-coverage">Code Coverage</a><a class="toc-l2" href="#test-organization">Test Organization</a><a class="toc-l2" href="#quality-standards">Quality Standards</a><a class="toc-l2" href="#for-contributors">For Contributors</a><a class="toc-l3" href="#before-submitting-prs">Before Submitting PRs</a><a class="toc-l3" href="#running-tests">Running Tests</a><a class="toc-l2" href="#see-also">See Also</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Quality &amp; Testing</nav>
         <article>
@@ -119,15 +140,15 @@
 <hr />
 <h2 id="reports">Reports</h2>
 <ul>
-<li><a href="reports-PRODUCTION-READINESS-2026-07-02.html"><code>reports/PRODUCTION-READINESS-2026-07-02.md</code></a> - Production readiness assessment (July 2026)</li>
+<li><code>reports/PRODUCTION-READINESS-2026-07-02.md</code> - Production readiness assessment (July 2026)</li>
 </ul>
 <h2 id="code-coverage">Code Coverage</h2>
 <ul>
-<li><a href="reports-COVERAGE-GAPS-2026-07-04.html"><code>reports/COVERAGE-GAPS-2026-07-04.md</code></a> - Coverage gap inventory (July 2026; older dotCover analysis archived under <code>../99-archive/2026-02-code-coverage/</code>)</li>
+<li><code>reports/COVERAGE-GAPS-2026-07-04.md</code> - Coverage gap inventory (July 2026; older dotCover analysis archived under <code>../99-archive/2026-02-code-coverage/</code>)</li>
 </ul>
 <h2 id="test-organization">Test Organization</h2>
 <ul>
-<li><a href="../../06-releases/tasklists/jaunty-reorganize-tests.md"><code>../../06-releases/tasklists/jaunty-reorganize-tests.md</code></a> - Test reorganization plan</li>
+<li><code>../../06-releases/tasklists/jaunty-reorganize-tests.md</code> - Test reorganization plan</li>
 </ul>
 <hr />
 <h2 id="quality-standards">Quality Standards</h2>
@@ -135,7 +156,7 @@
 <ol>
 <li><strong>High test coverage</strong> - Target: 90%+ line coverage</li>
 <li><strong>Performance benchmarks</strong> - Regular performance testing</li>
-<li><strong>Code review</strong> - All changes reviewed against <a href="../../03-development/code-review-checklist.md">CODE-REVIEW.md</a></li>
+<li><strong>Code review</strong> - All changes reviewed against CODE-REVIEW.md</li>
 <li><strong>Documentation</strong> - All public APIs documented</li>
 </ol>
 <hr />
@@ -178,7 +199,7 @@ dotnet test tests/Jaunty.Tests
 <td>Code review checklist</td>
 </tr>
 <tr>
-<td><a href="../06-releases/"><code>../06-releases/</code></a></td>
+<td><code>../06-releases/</code></td>
 <td>Release documentation</td>
 </tr>
 </tbody>
@@ -189,9 +210,9 @@ dotnet test tests/Jaunty.Tests
           <div class="prev-next"><a class="pn-prev" href="04-extensions-README.html">
   <span class="pn-label">&#8592; prev</span>
   <span class="pn-title">README</span>
-</a><a class="pn-next" href="06-releases-README.html">
+</a><a class="pn-next" href="05-quality-comprehensive-audit.html">
   <span class="pn-label">next &#8594;</span>
-  <span class="pn-title">README</span>
+  <span class="pn-title">Comprehensive audit</span>
 </a></div>
         </div>
       </div>
@@ -204,9 +225,5 @@ dotnet test tests/Jaunty.Tests
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

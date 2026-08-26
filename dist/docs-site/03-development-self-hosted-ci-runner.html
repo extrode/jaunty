@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Self-hosted CI runner — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Self-hosted CI runner</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html" class="active" aria-current="page">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#why">Why</a><a class="toc-l2" href="#how-it-is-wired">How it is wired</a><a class="toc-l2" href="#setup">Setup</a><a class="toc-l3" href="#enable-docker-desktops-wsl-integration-for-debian">1. Enable Docker Desktop's WSL integration for Debian</a><a class="toc-l3" href="#install-and-start-the-runner-service">2. Install and start the runner service</a><a class="toc-l2" href="#what-you-give-up">What you give up</a><a class="toc-l2" href="#runner-specific-workflow-changes">Runner-specific workflow changes</a><a class="toc-l2" href="#troubleshooting">Troubleshooting</a><a class="toc-l2" href="#related">Related</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Self-hosted CI runner</nav>
+        <article>
+<h1 id="self-hosted-ci-runner">Self-hosted CI runner</h1>
+<p>Why this exists, how it is wired, and what to do when it breaks.</p>
+<h2 id="why">Why</h2>
+<p>From 2026-07-29 GitHub stopped starting jobs on hosted runners:</p>
+<pre><code>The job was not started because recent account payments have failed
+or your spending limit needs to be increased.
+</code></pre>
+<p>Actions itself is still enabled on the repo (<code>gh api repos/extrode/jaunty/actions/permissions</code>
+returns <code>&quot;enabled&quot;: true</code>) — only the <strong>hosted</strong> minutes are blocked. GitHub does not bill minutes
+for self-hosted runners, so a runner on the dev machine sidesteps the block without touching a
+single workflow step.</p>
+<h2 id="how-it-is-wired">How it is wired</h2>
+<p><code>runs-on</code> is not hardcoded. Every job reads a repository variable:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">yaml</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="yaml"><code class="language-yaml">runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+</code></pre>
+</div>
+<table>
+<thead>
+<tr>
+<th><code>CI_RUNNER</code></th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>self-hosted</code></td>
+<td>jobs run on the WSL2 runner (current setting)</td>
+</tr>
+<tr>
+<td>unset / deleted</td>
+<td>jobs fall back to <code>ubuntu-latest</code> — no workflow edit needed</td>
+</tr>
+</tbody>
+</table>
+<p>So switching back once billing is fixed is one command:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">gh variable delete CI_RUNNER --repo extrode/jaunty
+</code></pre>
+</div>
+<p>The runner itself:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Name</td>
+<td><code>REDACTED-RUNNER</code></td>
+</tr>
+<tr>
+<td>Host</td>
+<td>WSL2 Debian on the Windows dev box</td>
+</tr>
+<tr>
+<td>Path</td>
+<td><code>~/actions-runner</code> inside the Debian distro</td>
+</tr>
+<tr>
+<td>Labels</td>
+<td><code>self-hosted</code>, <code>Linux</code>, <code>X64</code>, <code>jaunty-wsl</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="setup">Setup</h2>
+<p>Registration is done. Two steps remain, both needing a password this tooling cannot supply.</p>
+<h3 id="enable-docker-desktops-wsl-integration-for-debian">1. Enable Docker Desktop's WSL integration for Debian</h3>
+<p><strong>Required.</strong> The <code>build-and-test</code> job declares a SQL Server 2022 <strong>service container</strong>, which the
+runner starts with Docker. Debian currently resolves <code>docker</code> to the Windows binary under
+<code>/mnt/c/Program Files/...</code> and has no <code>/var/run/docker.sock</code>, so service containers cannot start.</p>
+<p>Docker Desktop → Settings → Resources → WSL Integration → enable <strong>Debian</strong> → Apply &amp; Restart.</p>
+<p>Verify:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">wsl -d Debian -- docker version --format '{{.Server.Version}}'
+</code></pre>
+</div>
+<h3 id="install-and-start-the-runner-service">2. Install and start the runner service</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">wsl -d Debian
+cd ~/actions-runner
+sudo ./svc.sh install
+sudo ./svc.sh start
+./svc.sh status
+</code></pre>
+</div>
+<p>systemd is enabled in this distro (<code>/etc/wsl.conf</code> has <code>systemd=true</code>), so the service survives a
+distro restart. Confirm GitHub sees it:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">gh api repos/extrode/jaunty/actions/runners --jq '.runners[] | &quot;\(.name) \(.status)&quot;'
+</code></pre>
+</div>
+<p><code>online</code> means the next push runs here.</p>
+<h2 id="what-you-give-up">What you give up</h2>
+<ul>
+<li><strong>CI only runs while this machine is on</strong> and the runner service is up. Jobs otherwise sit
+queued, and GitHub cancels a queued job after 24 hours. Hosted runners had no such dependency.</li>
+<li><strong>Never do this on a public repo.</strong> A self-hosted runner on a public repo executes arbitrary code
+from any fork's pull request, on the dev machine. This matters because &quot;public repo + branch
+protection&quot; is a live milestone — if the repo goes public, move the runner to a disposable VM or
+go back to hosted.</li>
+<li>The runner reuses one working directory across runs. It is not the clean VM a hosted runner gives
+you, so a job that leaves state behind can influence the next one. <code>actions/checkout</code> cleans the
+tree, but not Docker volumes or anything written outside the workspace.</li>
+<li><strong>CI competes with the local test suite for memory.</strong> A CI run adds a second SQL Server container
+on top of the four <code>torture-*</code> databases. On 2026-07-29 that combination OOM-killed all four
+(<code>docker ps -a</code> showed <code>Exited (137)</code>) in the middle of a local <code>dotnet test</code>, which then reported
+hundreds of MariaDB and Postgres failures that had nothing to do with the code. If a local run
+fails wholesale against one provider, check <code>docker ps</code> before believing it.</li>
+</ul>
+<h2 id="runner-specific-workflow-changes">Runner-specific workflow changes</h2>
+<p>Two things in the workflows exist only because of the self-hosted runner. Both are harmless on
+hosted runners, so there is nothing to undo when billing is restored.</p>
+<ul>
+<li><code>runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}</code> — see above.</li>
+<li><code>DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet</code> on every <code>actions/setup-dotnet</code> step.
+The action installs into <code>/usr/share/dotnet</code> by default. On this runner that path already holds
+Debian's root-owned .NET 10 SDK, so the unprivileged runner user cannot write to it and the step
+fails with a wall of <code>mkdir: Permission denied</code>. <code>runner.tool_cache</code> is writable on hosted and
+self-hosted alike.</li>
+<li>The <code>mssql</code> service container publishes <strong>1435</strong>, not 1433. A hosted runner gets a private VM, so
+1433 was free; this runner shares a Docker engine and a localhost with <code>torture-mssql</code>, which
+already owns 1433. With both on 1433 whichever starts second fails to bind, and Docker leaves the
+loser running with no host mapping at all — the container looks healthy while nothing can reach
+it. <code>JAUNTY_TEST_SQLSERVER</code> in the workflow points at <code>localhost,1435</code> to match.</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong>Runner shows <code>offline</code>.</strong> The service is not running. <code>wsl -d Debian -- bash -lc 'cd ~/actions-runner &amp;&amp; ./svc.sh status'</code>. WSL shuts distros down when idle; the systemd service starts
+with the distro, but the distro still has to be running.</p>
+<p><strong><code>build-and-test</code> fails to start the service container.</strong> Docker Desktop WSL integration is off —
+see step 1.</p>
+<p><strong>Jobs queue forever.</strong> Either no runner matches the labels, or <code>CI_RUNNER</code> names something that
+does not exist. <code>gh variable list --repo extrode/jaunty</code> and compare against the runner's labels.</p>
+<p><strong>A job passes here and would fail on hosted.</strong> The runner is Debian with the .NET 10 SDK already
+installed; hosted was <code>ubuntu-latest</code>. <code>actions/setup-dotnet</code> still pins 8.0.x and 9.0.x per the
+workflow, but anything relying on the ambient image differs. Treat a green self-hosted run as
+weaker evidence than a green hosted run until billing is restored.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li><code>.github/workflows/ci.yml</code>, <code>.github/workflows/release.yml</code>.</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-next" href="03-development-xml-documentation-style.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Xml documentation style</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

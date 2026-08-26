@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jaunty API Reference Summary — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Jaunty API Reference Summary</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#complete-api-overview">Complete API Overview</a><a class="toc-l2" href="#query-methods">Query Methods</a><a class="toc-l3" href="#basic-query-operations">Basic Query Operations</a><a class="toc-l3" href="#partial-query-operations">Partial Query Operations</a><a class="toc-l3" href="#single-result-query-operations">Single Result Query Operations</a><a class="toc-l3" href="#scalar-query-operations">Scalar Query Operations</a><a class="toc-l2" href="#async-query-methods">Async Query Methods</a><a class="toc-l3" href="#async-basic-query-operations">Async Basic Query Operations</a><a class="toc-l3" href="#async-single-result-operations">Async Single Result Operations</a><a class="toc-l3" href="#async-scalar-operations">Async Scalar Operations</a><a class="toc-l2" href="#streaming-methods">Streaming Methods</a><a class="toc-l3" href="#synchronous-streaming">Synchronous Streaming</a><a class="toc-l3" href="#asynchronous-streaming">Asynchronous Streaming</a><a class="toc-l3" href="#partial-streaming">Partial Streaming</a><a class="toc-l2" href="#multiple-result-set-methods">Multiple Result Set Methods</a><a class="toc-l3" href="#querymultiple">QueryMultiple</a><a class="toc-l3" href="#async-querymultiple">Async QueryMultiple</a><a class="toc-l2" href="#crud-operations">CRUD Operations</a><a class="toc-l3" href="#insert-operations">Insert Operations</a><a class="toc-l3" href="#update-operations">Update Operations</a><a class="toc-l3" href="#delete-operations">Delete Operations</a><a class="toc-l3" href="#upsert-operations">Upsert Operations</a><a class="toc-l2" href="#get-getall-and-execute-methods">Get, GetAll, and Execute Methods</a><a class="toc-l2" href="#multi-entity-mapping-methods">Multi-Entity Mapping Methods</a><a class="toc-l2" href="#stored-procedure-methods">Stored Procedure Methods</a><a class="toc-l3" href="#basic-stored-procedure-execution">Basic Stored Procedure Execution</a><a class="toc-l3" href="#single-result-stored-procedure-methods">Single Result Stored Procedure Methods</a><a class="toc-l3" href="#scalar-stored-procedure-methods">Scalar Stored Procedure Methods</a><a class="toc-l3" href="#non-query-stored-procedure-methods">Non-Query Stored Procedure Methods</a><a class="toc-l3" href="#async-stored-procedure-methods">Async Stored Procedure Methods</a><a class="toc-l3" href="#stored-procedure-methods-with-spparameters">Stored Procedure Methods with SpParameters</a><a class="toc-l2" href="#fluent-api">Fluent API</a><a class="toc-l3" href="#entry-point">Entry Point</a><a class="toc-l3" href="#fluent-query-methods">Fluent Query Methods</a><a class="toc-l3" href="#fluent-terminal-operations">Fluent Terminal Operations</a><a class="toc-l2" href="#configuration">Configuration</a><a class="toc-l3" href="#jauntyconfig-class">JauntyConfig Class</a><a class="toc-l3" href="#commandoptions-struct">CommandOptions Struct</a><a class="toc-l2" href="#attributes">Attributes</a><a class="toc-l3" href="#available-attributes">Available Attributes</a><a class="toc-l2" href="#gridreader-methods">GridReader Methods</a><a class="toc-l3" href="#gridreader-read-methods">GridReader Read Methods</a><a class="toc-l3" href="#async-gridreader-methods">Async GridReader Methods</a><a class="toc-l2" href="#key-concepts">Key Concepts</a><a class="toc-l3" href="#mapping-modes">Mapping Modes</a><a class="toc-l3" href="#connection-requirements">Connection Requirements</a><a class="toc-l3" href="#error-handling">Error Handling</a><a class="toc-l3" href="#performance-considerations">Performance Considerations</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty API Reference Summary</nav>
         <article>
@@ -260,7 +281,7 @@
 <ul>
 <li><code>List&lt;(T1,...,TN)&gt; Query&lt;T1,...,TN&gt;(string sql, ...)</code> for N = 2..7 - Map joined query rows into N entity types via left-to-right ordinal claiming</li>
 <li><code>QueryFirst&lt;T1,...,TN&gt;</code>, <code>QueryFirstOrDefault&lt;T1,...,TN&gt;</code>, <code>QuerySingle&lt;T1,...,TN&gt;</code>, <code>QuerySingleOrDefault&lt;T1,...,TN&gt;</code>, <code>QueryStream&lt;T1,...,TN&gt;</code> - Same arities, single-result and streaming variants</li>
-<li><code>MultiEntityCommandOptions&lt;T1,...,TN&gt;</code> - Per-position custom mapper delegates (<code>mapper1..mapperN</code>) to opt individual positions out of ordinal claiming</li>
+<li><code>MultiEntityCommandOptions&lt;T1,...,TN&gt;</code> - Transaction/CommandTimeout/CommandType options carrier for multi-entity queries (no per-position custom mapper support)</li>
 </ul>
 <h2 id="stored-procedure-methods">Stored Procedure Methods</h2>
 <h3 id="basic-stored-procedure-execution">Basic Stored Procedure Execution</h3>
@@ -423,9 +444,5 @@
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>
