@@ -103,6 +103,17 @@ jobs:
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-core.trx"
 
+      # The parallel half of Jaunty.Tests. No live engine and no global-config mutation, so it
+      # runs its collections concurrently and needs none of the service containers above.
+      - name: Test - Core unit (parallel)
+        run: >-
+          dotnet test tests/Jaunty.UnitTests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-core-unit.trx"
+
       - name: Test - Source Generator (shape safety)
         run: >-
           dotnet test tests/Jaunty.SourceGenerator.Tests
@@ -188,6 +199,15 @@ jobs:
           --framework net10.0
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-core-net10.trx"
+
+      - name: Test - Core unit net10 (parallel)
+        run: >-
+          dotnet test tests/Jaunty.UnitTests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-core-unit-net10.trx"
 
       - name: Test - Source Generator net10 (shape safety)
         run: >-
