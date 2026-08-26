@@ -9,6 +9,16 @@
 
     <!-- NativeAOT -->
     <PublishAot>true</PublishAot>
+
+    <!-- .NET Tool configuration. Unconditional: pack evaluates the outer build with an empty
+         $(TargetFramework), so a TFM-conditioned PackageId never applies and the package
+         silently falls back to the assembly name. -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dotnet-jaunty</ToolCommandName>
+    <PackageId>Extrode.Jaunty.Scaffolding.Cli</PackageId>
+    <Authors>Syed Beparey</Authors>
+    <Description>CLI tool to scaffold entity classes from database schema for Jaunty.</Description>
+    <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
@@ -23,14 +33,6 @@
          First-party IL diagnostics stay fatal - the IL2057 at SQLiteSchemaReader.cs:65 (T16) must
          NOT be added here. -->
     <WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>
-
-    <!-- .NET Tool configuration -->
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>dotnet-jaunty</ToolCommandName>
-    <PackageId>Beparey.Jaunty.Scaffolding.Cli</PackageId>
-    <Authors>Syed Beparey</Authors>
-    <Description>CLI tool to scaffold entity classes from database schema for Jaunty.</Description>
-    <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

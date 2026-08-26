@@ -10,7 +10,7 @@ not receive backported fixes.
 Please do **not** open a public GitHub issue for security vulnerabilities.
 
 Report privately via GitHub Security Advisories:
-<https://github.com/beparey/jaunty/security/advisories/new>
+<https://github.com/extrode/jaunty/security/advisories/new>
 
 Include:
 

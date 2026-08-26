@@ -137,6 +137,6 @@ dotnet test /p:CollectCoverage=true
 
 ---
 
-**Package**: `Beparey.Jaunty.FlatFiles.DuckDB`  
+**Package**: `Extrode.Jaunty.FlatFiles.DuckDB`  
 **Dependencies**: Jaunty core, DuckDB.NET.Data.Full  
 **NativeAOT**: Fully compatible

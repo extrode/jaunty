@@ -14,7 +14,7 @@ here is verification around that one step.
 2. Builds `Jaunty.slnx` in Release, runs the full test suite, packs the 7
    shippable packages (benchmarks/samples/SourceGenerator are IsPackable=false).
 3. Pushes `.nupkg`s to **GitHub Packages**
-   (`https://nuget.pkg.github.com/beparey/index.json`) using the workflow's
+   (`https://nuget.pkg.github.com/extrode/index.json`) using the workflow's
    own `GITHUB_TOKEN` — no secrets to manage.
 4. Creates a GitHub Release with the `.nupkg` + `.snupkg` files attached
    (GitHub Packages has no symbol server; symbols ship on the Release).
@@ -45,7 +45,7 @@ git push origin v1.0.0-rc.1
 Then watch the run: `gh run watch` (or Actions tab). On success verify:
 
 - `gh release view v1.0.0-rc.1` shows the Release with nupkg + snupkg assets.
-- Packages appear at github.com/beparey?tab=packages (7 packages, version
+- Packages appear at github.com/extrode?tab=packages (7 packages, version
   1.0.0-rc.1, marked pre-release by NuGet clients automatically because of
   the `-rc.1` suffix).
 - Smoke-consume from a scratch project (see next section).
@@ -62,7 +62,7 @@ lever the commercial flow relies on (see COMMERCIAL-DISTRIBUTION-FLOW.md).
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
-    <add key="jaunty" value="https://nuget.pkg.github.com/beparey/index.json" />
+    <add key="jaunty" value="https://nuget.pkg.github.com/extrode/index.json" />
   </packageSources>
   <packageSourceCredentials>
     <jaunty>
