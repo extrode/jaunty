@@ -17,7 +17,7 @@
   <!-- Common NuGet package metadata -->
   <PropertyGroup>
     <PackageTags>orm;micro-orm;sql;database;dapper-alternative;aot;nativeaot;source-generator</PackageTags>
-    <PackageProjectUrl>https://github.com/extrode/jaunty</PackageProjectUrl>
+    <PackageProjectUrl>https://extrode.com/jaunty</PackageProjectUrl>
     <!-- Binaries ship under the ISL-EULA (grant conditioned on an Order); the
          repository's LICENSE.md (ISL-R) covers source inspection only. -->
     <PackageLicenseFile>LICENSE-EULA.md</PackageLicenseFile>
