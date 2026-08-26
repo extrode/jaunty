@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- System.Data.SQLite ships no osx-arm64 native; see the targets file. No-op elsewhere. -->
+  <Import Project="..\..\tools\native\sqlite-interop-osx-arm64\SQLiteInteropOsxArm64.targets" />
+
+  <!--
+    Tests that mutate the process-global JauntyConfig static surface.
+
+    JauntyConfig.Reset() nulls ReflectionMapperResolver, the interceptor pipeline, the name
+    resolvers and the type-handler registry for the whole process. Jaunty.Fluent.Tests registers
+    the reflection mapper once from a [ModuleInitializer], so any test running concurrently with a
+    Reset() sees the configuration mid-wipe - measured as "No mapper found for type 'Product'" in
+    FluentOrderByTests and a missing LIMIT in an observability assertion.
+
+    xunit parallelizes across collections but has no way to say "this class runs exclusive of every
+    other class", so exclusivity has to be an assembly boundary. These 19 tests live here and run
+    serially; Jaunty.Fluent.Tests keeps the other 1,717 and runs its collections in parallel.
+    Splitting them took that project from 28s to 14s.
+
+    Keep this project serial. If a new test mutates JauntyConfig, it belongs here, not there.
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Jaunty.Fluent.Tests</RootNamespace>
+    <!-- Suppress all warnings in test projects -->
+    <NoWarn>$(NoWarn);CS1591;CS8618;CS8602;CS8603;CS8604;CS8625;IDE0078;xUnit1026;xUnit1051;xUnit2009;xUnit2010;xUnit2013;xUnit2017</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="coverlet.collector" Version="10.0.1" PrivateAssets="all" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+  </ItemGroup>
+
+  <!-- Shared with Jaunty.Fluent.Tests rather than duplicated: the entities and the database
+       fixture are the same ones the parallel suite uses, and a divergent copy would be a silent
+       drift between the two halves of what was one project. -->
+  <ItemGroup>
+    <Compile Include="..\Jaunty.Fluent.Tests\Entities\**\*.cs" LinkBase="Entities" />
+    <Compile Include="..\Jaunty.Fluent.Tests\Helpers\FluentDatabaseFixture.cs" LinkBase="Helpers" />
+    <Compile Include="..\Jaunty.Fluent.Tests\Helpers\TestInitializer.cs" LinkBase="Helpers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Content Include="..\Jaunty.Fluent.Tests\data\**\*.*" LinkBase="data">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" />
+    <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" />
+    <ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
