@@ -145,39 +145,67 @@ uncovered complexity it fails gate item 4 before a run is worth its CI minutes.
 Thresholds are `break: 0` — mutation score is an artifact to read, not a gate that fails a build,
 because a score drop is a prompt to look rather than a defect on its own.
 
-#### The `Jaunty.Tests` baseline is deferred to the nightly tier — measured, not dropped
+#### Why the first three attempts produced nothing, and what actually fixed it
 
-The first `tests/Jaunty.Tests` run was **abandoned after 4h20m** (PID 37720, 2,886 CPU-seconds,
-960 MB working set, started 01:42, killed 06:07) having produced **no report at all** — the output
-directory held nothing but its own `.gitignore`. It was still spawning fresh test processes when
-stopped, so it was progressing, not deadlocked. Simply too slow to finish.
+Three runs were abandoned before any report existed: `Jaunty.Tests` after **4h20m** (2,886
+CPU-seconds, 960 MB, output directory holding nothing but its own `.gitignore`), then two on
+`Jaunty.Fluent.Tests`. All were progressing, not deadlocked — just far too slow.
 
-The cause is structural, not a misconfiguration:
+The first diagnosis was that the live-database integration suites in `Jaunty.Tests` made mutation
+testing inherently a nightly-tier job. **That was wrong as the primary cause.** `Jaunty.Fluent.Tests`
+has no Npgsql or SqlClient reference at all and hit the same wall. Running with
+`--verbosity debug` to a file rather than through `| tail` — which had swallowed every line until
+exit — showed the real one:
 
-| Factor | Value |
-|---|---|
-| Tests in the initial run | 3,306 test attributes → 6,220 cases |
-| Live-database integration suites in that run | MariaDB, PostgreSQL, SQL Server, MySQL |
-| `TestTfmsInParallel` | `false` (deliberate — shared DB instances contend) |
-| Per-mutant cost | a further test run each |
+```
+[ERR] It looks like the test coverage capture failed. Disable coverage based optimisation.
+```
 
-`mutate` narrows which **source** files get mutated; it does nothing to the **test** side. Stryker
-4.16 exposes no test filter — `--help` offers `--mutate`, `--since`, `--test-project`, and no
-equivalent of VSTest's `--test-case-filter` — so the live-DB integration suites cannot be excluded
-from the initial run or from any mutant's run. A mutation run over a suite that talks to four
-database engines is a nightly-tier activity by construction.
+Stryker defaults to the **vstest** runner. These are xunit.v3 3.2.2 projects with
+`OutputType=Exe`, which run under Microsoft.Testing.Platform. Coverage capture failed silently, and
+with the optimisation off every mutant re-ran the entire suite:
 
-**Consequence, stated rather than quietly absorbed:** the rank-1 target
-(`Internals/Parameters/**`) has **no mutation baseline**, so the Phase-1 success metric for it is
-the coverage and perturbation evidence recorded above, not a killed-mutant delta. The run moves to
-Phase 2's nightly Stryker matrix, where a multi-hour job is what the tier is for. Nothing about the
-scope was reduced — only where it runs.
+| Measurement | Value |
+|---|---:|
+| Mutants created for `**/Expressions/**` | 6,698 |
+| Per-mutant test run | ~23 s |
+| Full Fluent suite, serialized | 22 s |
+| Configured concurrency / logical cores | 4 / 16 |
+| Extrapolated wall-clock | **≈ 10.7 h** |
 
-`Jaunty.Fluent.Tests` does not have this problem: SQLite only (no Npgsql or SqlClient reference),
-two TFMs, 1,632 test attributes, and a 10-file mutate scope. That baseline runs interactively and
-is the one that decides Phase 2 item 3.
+Per-mutant cost equalling full-suite cost is the signature: the selection was saving nothing.
+`--test-runner mtp` restores it (`Starting coverage capture for MTP runner`). Scoped to one
+visitor, the same work is **98 mutants in under 4 minutes**. Concurrency also raised 4 → 12.
+
+Two contributing factors are real but secondary, and both were fixed rather than worked around:
+`xunit.runner.json` serialized every test in both projects, and 29 % of mutants (1,933 of 6,698)
+are discarded as `CompileError` — Stryker retried compilation ten times with rollbacks on
+`JoinedGroupByExpressionVisitor.cs` before Safe Mode discarded every mutant in
+`ExtractGroupByColumns` and `TranslateMemberInit` (`CS0165`, unassigned local `assignment`). Those
+two methods get no mutation coverage regardless of runner.
+
+#### Mutation runs target `Jaunty.UnitTests`, not `Jaunty.Tests`
+
+Measured while a `Jaunty.Tests` mutation run was in flight: a concurrent ordinary test run failed
+**45 tests**, all on `dialect: SqlServer` — `There is already an object named 'bulk_test'`, plus
+row-count assertions off by one. Re-run with nothing else executing, the same suite was **0
+failed**. Stryker's 12 parallel test hosts were racing each other on the one shared SQL Server.
+
+That makes a mutation run against `Jaunty.Tests` not merely slow but **invalid**: mutants get
+recorded as killed by database collisions rather than by an assertion, so the score measures
+contention. `stryker-config.json` therefore lives in `tests/Jaunty.UnitTests`, which reaches no
+live engine and where concurrency 12 is safe.
 
 <!-- BASELINE TABLE: filled from the first completed run -->
+
+| Module | Scope | Tested | Killed | Survived | Timeout | Score |
+|---|---|---:|---:|---:|---:|---:|
+| `Jaunty.Fluent` | `Expressions/ExistsExpressionVisitor.cs` | 98 | 59 | 1 | 38 | **66.90 %** |
+
+The 38 timeouts are worth a look before the score is read as a verdict: on a visitor with loop
+constructs a timeout usually means an infinite loop the mutation introduced, which Stryker counts
+as killed, but 38 of 98 is high enough that some may be the suite's own slowness under a mutated
+build rather than genuine hangs.
 
 ## Phase 1 — improve existing tests in place
 
