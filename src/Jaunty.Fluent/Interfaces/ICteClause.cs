@@ -116,6 +116,32 @@ public interface ICteQueryClause<T> where T : new()
     T? SelectFirstOrDefault(CommandOptions options);
 
     /// <summary>
+    /// Executes the CTE query asynchronously and returns the first entity.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-186. This interface declared all four synchronous first-row terminals and no async
+    /// one, so an async caller wanting a single row had to materialise the whole CTE result.
+    /// </remarks>
+    Task<T> SelectFirstAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the CTE query asynchronously and returns the first entity, using the specified
+    /// <see cref="CommandOptions"/> (AUD-R35-186).
+    /// </summary>
+    Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the CTE query asynchronously and returns the first entity or default (AUD-R35-186).
+    /// </summary>
+    Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the CTE query asynchronously and returns the first entity or default, using the
+    /// specified <see cref="CommandOptions"/> (AUD-R35-186).
+    /// </summary>
+    Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the generated SQL for debugging.
     /// </summary>
     string ToSql();

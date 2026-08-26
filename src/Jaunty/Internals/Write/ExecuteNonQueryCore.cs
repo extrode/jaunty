@@ -128,7 +128,22 @@ public static partial class Jaunty
         }
     }
 
-    internal static async ValueTask<int> ExecuteNonQueryCoreAsync(IDbConnection connection, string sql, object? parameters, CommandOptions options, CommandType commandType, CancellationToken cancellationToken)
+    /// <remarks>
+    /// AUD-R35-130. This took an <see cref="IDbConnection"/> and carried a
+    /// "Fallback for non-DbConnection - use sync methods" arm in both the pipeline closure and the
+    /// fast path, neither of which could run: all five call sites - the four in
+    /// <c>ExecuteAsync.cs</c> and <c>ExecuteStoredProcedureNonQueryAsync</c> - already do
+    /// <c>connection is not DbConnection dbConnection ? throw ... : ExecuteNonQueryCoreAsync(dbConnection, ...)</c>.
+    /// The dead arms had also drifted: each assigned <c>command.Transaction = options.Transaction</c>
+    /// with none of the <see cref="AsyncTransactionValidator.RequireDbTransaction"/> checking that
+    /// AUD-R3-001 standardised, so the copy nobody could reach was the copy that had lost the guard -
+    /// which is the argument against keeping unreachable arms, not for it. Filed identically in
+    /// rounds 33 and 34 and never acted on. The parameter type now states the invariant, so the
+    /// compiler keeps it rather than a comment. The <c>Task.Run</c> wrapping around the pre-net8
+    /// <c>Close</c> went with them, for the AUD-R35-123 reason: a <c>Task.Run</c> around a blocking
+    /// call still blocks a thread-pool thread.
+    /// </remarks>
+    internal static async ValueTask<int> ExecuteNonQueryCoreAsync(DbConnection connection, string sql, object? parameters, CommandOptions options, CommandType commandType, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -139,8 +154,6 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-
-        var dbConnection = connection as DbConnection;
 
         // Use InterceptorPipeline if registered, otherwise execute directly
         // One resolution, one read: CommandObservation decides whether anything is watching
@@ -161,61 +174,32 @@ public static partial class Jaunty
 
                     try
                     {
-                        if (dbConnection is not null)
-                        {
-                            if (wasClosed)
-                                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        if (wasClosed)
+                            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-                            DbCommand command = dbConnection.CreateCommand();
-                            await using var commandDisposer = command.ConfigureAwait(false);
+                        DbCommand command = connection.CreateCommand();
+                        await using var commandDisposer = command.ConfigureAwait(false);
 #else
-                            using DbCommand command = dbConnection.CreateCommand();
+                        using DbCommand command = connection.CreateCommand();
 #endif
-                            command.CommandText = sql;
+                        command.CommandText = sql;
 
-                            // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
-                            if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
-                                command.CommandType = commandType;
+                        // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
+                        if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                            command.CommandType = commandType;
 
-                            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+                        command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-                            if (options.CommandTimeout.HasValue)
-                                command.CommandTimeout = options.CommandTimeout.Value;
+                        if (options.CommandTimeout.HasValue)
+                            command.CommandTimeout = options.CommandTimeout.Value;
 
-                            if (parameters is not null)
-                                ParameterBinder.Bind(command, parameters);
+                        if (parameters is not null)
+                            ParameterBinder.Bind(command, parameters);
 
-                            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-                            result = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            // Fallback for non-DbConnection - use sync methods
-                            if (wasClosed)
-                                await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
-
-                            using IDbCommand command = connection.CreateCommand();
-                            command.CommandText = sql;
-
-                            // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
-                            if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
-                                command.CommandType = commandType;
-
-                            if (options.Transaction is not null)
-                                command.Transaction = options.Transaction;
-
-                            if (options.CommandTimeout.HasValue)
-                                command.CommandTimeout = options.CommandTimeout.Value;
-
-                            if (parameters is not null)
-                                ParameterBinder.Bind(command, parameters);
-
-                            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
-
-                            result = command.ExecuteNonQuery();
-                        }
+                        result = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                         return result;
                     }
                     finally
@@ -223,12 +207,9 @@ public static partial class Jaunty
                         if (wasClosed && connection.State != ConnectionState.Closed)
                         {
 #if NET8_0_OR_GREATER
-                            if (dbConnection is not null)
-                                await dbConnection.CloseAsync().ConfigureAwait(false);
-                            else
-                                await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                            await connection.CloseAsync().ConfigureAwait(false);
 #else
-                            await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                            connection.Close();
 #endif
                         }
                     }
@@ -242,73 +223,41 @@ public static partial class Jaunty
 
         try
         {
-            if (dbConnection is not null)
-            {
-                if (wasClosed)
-                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed)
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-                DbCommand command = dbConnection.CreateCommand();
-                await using var commandDisposer = command.ConfigureAwait(false);
+            DbCommand command = connection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
-                using DbCommand command = dbConnection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
 #endif
-                command.CommandText = sql;
+            command.CommandText = sql;
 
-                // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
-                if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
-                    command.CommandType = commandType;
+            // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
+            if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = commandType;
 
-                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
 
-                if (parameters is not null)
-                    ParameterBinder.Bind(command, parameters);
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
 
-                JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-                return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                // Fallback for non-DbConnection - use sync methods
-                if (wasClosed)
-                    await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
-
-                using IDbCommand command = connection.CreateCommand();
-                command.CommandText = sql;
-
-                // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
-                if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
-                    command.CommandType = commandType;
-
-                if (options.Transaction is not null)
-                    command.Transaction = options.Transaction;
-
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                if (parameters is not null)
-                    ParameterBinder.Bind(command, parameters);
-
-                JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
-
-                return command.ExecuteNonQuery();
-            }
+            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
             if (wasClosed && connection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (dbConnection is not null)
-                    await dbConnection.CloseAsync().ConfigureAwait(false);
-                else
-                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                await connection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                connection.Close();
 #endif
             }
         }

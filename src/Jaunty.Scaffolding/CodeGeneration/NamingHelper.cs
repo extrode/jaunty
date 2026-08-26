@@ -33,6 +33,17 @@ public static class NamingHelper
         ["Vertices"] = "Vertex",
     };
 
+    // AUD-R35-264: the same closed class again, shaped for TrySingularizeBySuffix so a compound
+    // ending in an irregular plural is recognised the way OrderStatuses and BookShelves already
+    // are. Without it the two mechanisms in Singularize disagreed - OrderIndices fell through to
+    // the generic -s rule as "OrderIndice", AuditCriteria and CustomerChildren to no rule at all.
+    // Longest first, so CustomerWomen matches "Women" and not "Men".
+    private static readonly (string Plural, string Singular)[] IrregularPluralSuffixes =
+        [.. IrregularPlurals
+            .OrderByDescending(pair => pair.Key.Length)
+            .ThenBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => (pair.Key, pair.Value))];
+
     // The f/fe-alternating plurals are a closed class in English (knife/knives, leaf/leaves,
     // wolf/wolves, ...). R24: the previous -ves rule applied the alternation to *every* word
     // ending in -ves, mangling the far larger class of ordinary -ve nouns that pluralize
@@ -242,6 +253,13 @@ public static class NamingHelper
 
         if (IrregularPlurals.TryGetValue(word, out var singular))
             return singular;
+
+        // AUD-R35-264: the whole-word lookup above has already answered every bare irregular, so
+        // this pass only ever sees a compound (OrderIndices -> OrderIndex). It runs first because
+        // an irregular is the most specific thing a word can be.
+        var irregularCompound = TrySingularizeBySuffix(word, IrregularPluralSuffixes);
+        if (irregularCompound != null)
+            return irregularCompound;
 
         // Rules in order of specificity.
         //

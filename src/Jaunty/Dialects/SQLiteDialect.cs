@@ -5,7 +5,8 @@ namespace Jaunty.Dialects;
 /// <summary>
 /// SQLite dialect.
 /// Uses "quotes" only for SQL keywords.
-/// Default schema: null (SQLite doesn't support schemas)
+/// Default schema: the empty string (SQLite doesn't support schemas). AUD-R35-165: this said
+/// "null" while GetDefaultSchema has always returned string.Empty.
 /// </summary>
 internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDecimalBindingDialect
 {
@@ -25,7 +26,7 @@ internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDeci
         "RELEASE", "RENAME", "REPLACE", "RESTRICT", "RIGHT", "ROLLBACK", "ROW", "SAVEPOINT",
         "SELECT", "SET", "TABLE", "TEMP", "TEMPORARY", "THEN", "TO", "TRANSACTION", "TRIGGER",
         "UNION", "UNIQUE", "UPDATE", "USING", "VACUUM", "VALUES", "VIEW", "VIRTUAL", "WHEN",
-        "WHERE", "WITH", "WITHOUT", "ORDER", "USER"
+        "WHERE", "WITH", "WITHOUT", "USER"
     };
 
     public string ParameterPrefix => "@";

@@ -232,6 +232,7 @@ public static partial class Jaunty
             return 0;
 
         BulkEntityValidator.ThrowIfAnyNull(entityList, nameof(entities));
+        BulkCommandTypeValidator.ThrowIfNotText(options, "BulkUpdate");
 
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
@@ -301,13 +302,13 @@ public static partial class Jaunty
                     // left foreign key enforcement off. The outer finally only disposes and closes,
                     // and the connection then goes back to the pool disabled.
                     if (ignoreConstraints && requiresAutocommit)
-                        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
+                        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null, options.CommandTimeout);
 
                     if (ownTransaction)
                         transaction = connection.BeginTransaction();
 
                     if (ignoreConstraints && !requiresAutocommit)
-                        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
+                        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction, options.CommandTimeout);
 
                     using IDbCommand command = connection.CreateCommand();
                     command.Transaction = transaction;
@@ -342,13 +343,13 @@ public static partial class Jaunty
                     }
 
                     if (ignoreConstraints && !requiresAutocommit)
-                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction);
+                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction, options.CommandTimeout);
 
                     if (ownTransaction)
                         transaction!.Commit();
 
                     if (ignoreConstraints && requiresAutocommit)
-                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null);
+                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null, options.CommandTimeout);
 
                     return totalUpdated;
                 }
@@ -356,7 +357,7 @@ public static partial class Jaunty
                 {
                     if (ignoreConstraints && !requiresAutocommit)
                     {
-                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction); }
+                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction, options.CommandTimeout); }
                         catch { /* Best effort */ }
                     }
 
@@ -368,7 +369,7 @@ public static partial class Jaunty
 
                     if (ignoreConstraints && requiresAutocommit)
                     {
-                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null); }
+                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null, options.CommandTimeout); }
                         catch { /* Best effort */ }
                     }
 

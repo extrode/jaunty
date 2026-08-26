@@ -53,6 +53,37 @@ public class ListTablesCommandTests : IDisposable
         Assert.Equal(DatabaseProvider.AutoDetect, result.GetValue<DatabaseProvider>("--provider"));
     }
 
+    // AUD-R35-266: the twin of ScaffoldCommandTests' help-text check - both commands carried the
+    // identical string with the identical omission.
+    [Fact]
+    public void ProviderOption_HelpText_NamesAutoDetectAndEveryOtherValue()
+    {
+        var command = new ListTablesCommand();
+        Option provider = command.Options.Single(o => o.Name == "--provider");
+
+        Assert.NotNull(provider.Description);
+        foreach (var name in Enum.GetNames<DatabaseProvider>())
+            Assert.Contains(name, provider.Description, StringComparison.Ordinal);
+    }
+
+    // AUD-R35-267: cancellation is caught by name here, not swallowed by the catch-all, so both
+    // commands report a Ctrl-C the same way.
+    [Fact]
+    public async Task Invoke_Cancelled_ReportsTheCancellation()
+    {
+        var command = new ListTablesCommand();
+        ParseResult result = command.Parse(["--connection", _connectionString, "--provider", "SQLite"]);
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        (_, StringWriter errWriter) = RedirectConsole();
+        var exitCode = await result.InvokeAsync(cancellationToken: cts.Token);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Error: Operation canceled.", errWriter.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Parse_SchemasOption_AcceptsMultipleValues()
     {

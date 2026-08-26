@@ -1,5 +1,6 @@
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.Interfaces;
+using Jaunty.FlatFiles.Internals;
 
 namespace Jaunty.FlatFiles.FileSources;
 
@@ -66,7 +67,7 @@ public sealed class IcebergFileSource : IFileSource
         if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
         if (filePaths.Length > 1) throw new ArgumentException("IcebergFileSource does not support multiple paths: DuckDB's iceberg_scan function only accepts a single table location.", nameof(filePaths));
         if (filePaths[0] is null) throw new ArgumentNullException(nameof(filePaths), "File path must not be null.");
-        FilePaths = filePaths;
+        FilePaths = FilePathValidator.Snapshot(filePaths);
         FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }

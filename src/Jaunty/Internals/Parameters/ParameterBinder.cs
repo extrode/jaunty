@@ -24,6 +24,56 @@ internal static class ParameterBinder
     // no size cap is needed here (unlike TemplateCache above).
     private static readonly ConcurrentDictionary<PropertyInfo, EnumStorageAttribute?> EnumStorageAttributeCache = new();
 
+    /// <summary>
+    /// The two per-type answers <see cref="Bind"/>'s slow path needs beside
+    /// <see cref="ParameterCache"/>'s metadata: the name-to-metadata lookup, and whether this shape
+    /// can ever need IN-clause expansion.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-116 (round-35 batch 04c). A parameters type carrying a collection-typed property is
+    /// permanently excluded from <see cref="TemplateCache"/> - correctly, see the comment at the
+    /// exclusion - so every single bind of such a shape took the slow path and rebuilt the whole
+    /// lookup dictionary from the already-cached <see cref="ParameterMetadata"/> array, then re-ran
+    /// the collection scan over it. Both are pure functions of the <see cref="Type"/>, so they are
+    /// cached beside the metadata instead, which is the same argument AUD-R25's
+    /// <c>preParsedSqlParamNames</c> fix already made about this path. The lookup is only ever read
+    /// after construction - by <c>ExpandCollectionParameters</c>, <c>BindDynamic</c> and
+    /// <c>BuildTemplate</c>, all of which do <c>TryGetValue</c>/<c>Keys</c> and nothing else - so
+    /// sharing one instance across calls is safe. Keyed on the parameters type, which comes from the
+    /// application's own code rather than user input, so no size cap is needed (unlike
+    /// <see cref="TemplateCache"/> above).
+    /// </remarks>
+    private sealed class ParameterShape
+    {
+        internal ParameterShape(ParameterMetadata[] metadata)
+        {
+            Metadata = metadata;
+
+            var lookup = new Dictionary<string, ParameterMetadata>(metadata.Length, CommonConstants.OrdinalIgnoreCase);
+            for (int i = 0; i < metadata.Length; i++)
+                lookup[metadata[i].Name] = metadata[i];
+
+            Lookup = lookup;
+            HasCollectionTypedProperty = ComputeHasCollectionTypedProperty(metadata);
+        }
+
+        internal ParameterMetadata[] Metadata { get; }
+
+        internal Dictionary<string, ParameterMetadata> Lookup { get; }
+
+        internal bool HasCollectionTypedProperty { get; }
+    }
+
+    private static readonly ConcurrentDictionary<Type, ParameterShape> ShapeCache = new();
+
+    private static ParameterShape GetShape(Type type)
+    {
+        if (ShapeCache.TryGetValue(type, out ParameterShape? cached))
+            return cached;
+
+        return ShapeCache.GetOrAdd(type, new ParameterShape(ParameterCache.Get(type)));
+    }
+
     internal static void Bind(IDbCommand command, object parameters)
     {
         // Stored procedures/table-direct don't expose SQL parameter placeholders in CommandText,
@@ -92,14 +142,11 @@ internal static class ParameterBinder
         // Slow path: parse and bind, then cache if no collection expansion happened
         bool backslashEscapes = UsesBackslashEscapes(command.Connection);
         string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql, backslashEscapes);
-        ParameterMetadata[] meta = ParameterCache.Get(type);
-
-        // Build lookup from property names
-        var propertyLookup = new Dictionary<string, ParameterMetadata>(meta.Length, CommonConstants.OrdinalIgnoreCase);
-        for (int i = 0; i < meta.Length; i++)
-        {
-            propertyLookup[meta[i].Name] = meta[i];
-        }
+        // AUD-R35-116: metadata, the name lookup and the collection-typed answer are all pure
+        // functions of the parameters type, so they are resolved together and cached together.
+        ParameterShape shape = GetShape(type);
+        ParameterMetadata[] meta = shape.Metadata;
+        Dictionary<string, ParameterMetadata> propertyLookup = shape.Lookup;
 
         // Check for collection parameters and expand SQL if needed
         (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, HashSet<string>? expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters, command.Connection);
@@ -117,7 +164,7 @@ internal static class ParameterBinder
         // non-null collection requiring IN-clause expansion. Caching a plain scalar-binding
         // template here would permanently defeat that expansion, so route this shape through the
         // per-call dynamic binding path instead of caching.
-        if (HasCollectionTypedProperty(meta))
+        if (shape.HasCollectionTypedProperty)
         {
             BindDynamic(command, parameters, sql, expandedParams: null, propertyLookup, meta, expandedOriginalNames: null, preParsedSqlParamNames: sqlParamNames);
             return;
@@ -804,7 +851,7 @@ internal static class ParameterBinder
     // Type-based collection check (mirrors IsCollection's string/byte[] exclusion), used to decide
     // whether a (sql, type, commandType) shape can ever need IN-clause expansion, independent of
     // whether this particular call's value happened to be null.
-    private static bool HasCollectionTypedProperty(ParameterMetadata[] meta)
+    private static bool ComputeHasCollectionTypedProperty(ParameterMetadata[] meta)
     {
         for (int i = 0; i < meta.Length; i++)
         {
@@ -1104,17 +1151,10 @@ internal static class ParameterBinder
         // Check if there's a registered type handler first
         if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(valueType, out ITypeHandler? handler) && handler is not null)
         {
-            try
-            {
-                return handler.ToDbValue(value);
-            }
-            catch (Exception ex)
-            {
-                // Surface conversion failures rather than silently binding unconverted data.
-                throw new InvalidOperationException(
-                    $"Type handler '{handler.GetType().Name}' failed to convert a value of type '{valueType.Name}' to its database representation.",
-                    ex);
-            }
+            // AUD-R35-115: the try/catch that used to sit here now lives in
+            // TypeHandlerRegistry.ToDbValueOrThrow, so the generated and reflection write paths
+            // report a throwing handler the same way this one always has.
+            return TypeHandlerRegistry.ToDbValueOrThrow(handler, value);
         }
 
         // Handle enums based on storage strategy

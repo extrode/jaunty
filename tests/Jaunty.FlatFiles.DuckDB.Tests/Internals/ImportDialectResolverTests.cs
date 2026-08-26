@@ -160,7 +160,13 @@ public class ImportDialectResolverTests
         var ex = Assert.Throws<InvalidOperationException>(() => ImportDialectResolver.Resolve(conn, null));
 
         Assert.Contains(nameof(FallbackDbConnection), ex.Message, StringComparison.Ordinal);
-        Assert.Contains("Register", ex.Message, StringComparison.Ordinal);
+
+        // AUD-R35-249: the way out has to be one a caller outside this assembly can take.
+        // ImportDialectResolver is internal, so the old "Register(...)" advice compiled for the
+        // test project and nobody else.
+        Assert.Contains("ImportOptions.Dialect", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("IImportDialect", ex.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("ImportDialectResolver.Register", ex.Message, StringComparison.Ordinal);
     }
 
     /// <summary>An explicitly supplied dialect still short-circuits everything, unknown type or not.</summary>

@@ -1,8 +1,6 @@
 using System.Data;
 using System.Data.Common;
 
-using Jaunty.Configuration;
-
 namespace Jaunty.Configuration;
 
 /// <summary>

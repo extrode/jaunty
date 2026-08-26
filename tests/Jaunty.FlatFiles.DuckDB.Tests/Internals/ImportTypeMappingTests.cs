@@ -20,6 +20,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Internals;
 /// that caused it.
 /// </para>
 /// </summary>
+[Collection("JauntyConfig.DefaultEnumStorage")]
 public class ImportTypeMappingTests : IDisposable
 {
     private readonly EnumStorage _originalEnumStorage = JauntyConfig.DefaultEnumStorage;

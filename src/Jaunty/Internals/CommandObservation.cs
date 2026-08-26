@@ -100,19 +100,20 @@ internal static class CommandObservation
         return JauntyDiagnosticListener.Instance.IsEnabled() ? DiagnosticsOnlyPipeline.Value : null;
     }
 
-    /// <summary>
-    /// Whether anything is watching command execution - a registered
-    /// <see cref="ICommandInterceptor"/>, a "Jaunty" <see cref="System.Diagnostics.DiagnosticListener"/>
-    /// subscriber, or both.
-    /// </summary>
-    public static bool IsObserved => ResolveObserver() is not null;
+    // AUD-R35-104 (round-35 batch 04a). `IsObserved` used to sit here - a public-within-the-assembly
+    // predicate with no caller in src/ or tests/, in either case. Every guard site reads `Observer`
+    // and null-tests it, which is the right shape because it needs the pipeline instance anyway;
+    // calling the predicate first would resolve the observer twice. It was not free either: each
+    // read ran ResolveObserver, which can materialise JauntyDiagnosticListener.Instance and the
+    // DiagnosticsOnlyPipeline singleton, so the name promised a pure test it did not deliver.
+    // Removed rather than tested, because a test would have pinned a member nothing uses.
 
     /// <summary>
     /// Runs <paramref name="body"/> inside the interceptor pipeline when anything is observing, and
     /// directly otherwise.
     /// </summary>
     /// <remarks>
-    /// The <see cref="IsObserved"/> test is what keeps this free when nobody is listening: without
+    /// The <see cref="Observer"/> null test is what keeps this free when nobody is listening: without
     /// it every command would allocate the closure and enter the pipeline only to fall straight
     /// through.
     /// </remarks>

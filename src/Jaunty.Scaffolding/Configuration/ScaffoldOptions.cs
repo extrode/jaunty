@@ -128,4 +128,16 @@ public sealed class ScaffoldOptions
     /// Whether to show what would be generated without writing files. Default is false.
     /// </summary>
     public bool DryRun { get; set; }
+
+    /// <summary>
+    /// The code generator to render each table with. Default is null, meaning
+    /// <c>EntityCodeGenerator</c> over the provider's type mapper.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-268: this is <see cref="Abstractions.ICodeGenerator"/>'s injection point. Without
+    /// it the interface was public API that nothing in the library would ever call. A supplied
+    /// generator receives the same <c>CodeGeneratorOptions</c> the built-in one would, and is
+    /// responsible for its own type mapping - <see cref="Provider"/>'s mapper is not passed to it.
+    /// </remarks>
+    public Abstractions.ICodeGenerator? CodeGenerator { get; set; }
 }

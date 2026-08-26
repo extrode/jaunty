@@ -49,7 +49,34 @@ internal static class ReaderValueConverter
     /// Measured on SQLite: raw string stored <c>Closed</c>, boxed enum stored <c>1</c>.
     /// </param>
     public static bool TryConvert(object value, Type targetType, bool convertEnums, out object? converted)
+        => TryConvert(value, targetType, convertEnums, out converted, out _);
+
+    /// <summary>
+    /// <see cref="TryConvert(object, Type, bool, out object?)"/>, additionally reporting <em>why</em>
+    /// a conversion failed.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-252: <see cref="ConvertOrThrow"/> used to attribute every failure to a type mismatch
+    /// - "the source produced X but the property is Y" - but a value can also be the right shape and
+    /// out of range, or text in a format the target cannot parse. A <c>long</c> 99999 read into a
+    /// <c>byte</c> property is not a type mismatch, and telling the caller it is sends them to
+    /// change a property type that was never wrong. The real diagnostic used to be discarded by the
+    /// catch filter before the message was composed; it now travels back out.
+    /// </remarks>
+    /// <param name="value">The value read from the DuckDB reader. Must not be null or DBNull.</param>
+    /// <param name="targetType">The mapped property's type, which may be <see cref="Nullable{T}"/>.</param>
+    /// <param name="convertEnums">As on <see cref="TryConvert(object, Type, bool, out object?)"/>.</param>
+    /// <param name="converted">The converted value when this returns <see langword="true"/>.</param>
+    /// <param name="reason">
+    /// A sentence describing the failure when this returns <see langword="false"/>, or
+    /// <see langword="null"/> when the failure is a plain type mismatch and the caller's own
+    /// wording is the best available.
+    /// </param>
+    /// <returns><see langword="true"/> when the value was converted or already had the right type.</returns>
+    public static bool TryConvert(
+        object value, Type targetType, bool convertEnums, out object? converted, out string? reason)
     {
+        reason = null;
         Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
         if (value.GetType() == underlyingType)
@@ -94,9 +121,18 @@ internal static class ReaderValueConverter
                 return true;
             }
 
-            if (value is string offsetText
-                && DateTimeOffset.TryParse(offsetText, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTimeOffset parsedOffset))
+            if (value is string offsetText)
             {
+                if (!DateTimeOffset.TryParse(offsetText, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTimeOffset parsedOffset))
+                {
+                    // AUD-R35-252: an unparsable string used to fall through to Convert.ChangeType,
+                    // which cannot produce a DateTimeOffset at all, so the failure surfaced as a
+                    // type mismatch against a property whose type was never the problem.
+                    converted = null;
+                    reason = Unparsable(offsetText, typeof(DateTimeOffset));
+                    return false;
+                }
+
                 converted = parsedOffset;
                 return true;
             }
@@ -113,6 +149,7 @@ internal static class ReaderValueConverter
             if (!Guid.TryParse(guidText, out Guid parsedGuid))
             {
                 converted = null;
+                reason = Unparsable(guidText, typeof(Guid));
                 return false;
             }
 
@@ -125,6 +162,7 @@ internal static class ReaderValueConverter
             if (!TimeSpan.TryParse(timeSpanText, CultureInfo.InvariantCulture, out TimeSpan parsedTimeSpan))
             {
                 converted = null;
+                reason = Unparsable(timeSpanText, typeof(TimeSpan));
                 return false;
             }
 
@@ -137,6 +175,8 @@ internal static class ReaderValueConverter
             if (charText.Length != 1)
             {
                 converted = null;
+                reason = $"the source produced the {charText.Length}-character string '{charText}', " +
+                    "and a char property holds exactly one character.";
                 return false;
             }
 
@@ -159,6 +199,7 @@ internal static class ReaderValueConverter
                 if (!DateOnly.TryParse(dateText, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly parsedDate))
                 {
                     converted = null;
+                    reason = Unparsable(dateText, typeof(DateOnly));
                     return false;
                 }
 
@@ -175,6 +216,8 @@ internal static class ReaderValueConverter
                 if (timeSource < TimeSpan.Zero || timeSource >= TimeSpan.FromDays(1))
                 {
                     converted = null;
+                    reason = $"the source produced the interval {timeSource}, and a TimeOnly property " +
+                        "only holds a time of day - at least zero and under 24 hours.";
                     return false;
                 }
 
@@ -193,6 +236,7 @@ internal static class ReaderValueConverter
                 if (!TimeOnly.TryParse(timeText, CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly parsedTime))
                 {
                     converted = null;
+                    reason = Unparsable(timeText, typeof(TimeOnly));
                     return false;
                 }
 
@@ -206,10 +250,11 @@ internal static class ReaderValueConverter
             if (!convertEnums)
             {
                 converted = null;
+                reason = $"enum conversion is off on this path, so {underlyingType.Name} is left to the caller.";
                 return false;
             }
 
-            return TryConvertEnum(value, underlyingType, out converted);
+            return TryConvertEnum(value, underlyingType, out converted, out reason);
         }
 
         try
@@ -220,6 +265,7 @@ internal static class ReaderValueConverter
         catch (Exception ex) when (ex is InvalidCastException or FormatException or OverflowException or ArgumentException)
         {
             converted = null;
+            reason = Describe(ex, value, underlyingType);
             return false;
         }
     }
@@ -236,16 +282,19 @@ internal static class ReaderValueConverter
     /// <exception cref="InvalidOperationException">Thrown when the value cannot be converted.</exception>
     public static object? ConvertOrThrow(object value, in ColumnMapping mapping, Type entityType)
     {
-        if (TryConvert(value, mapping.PropertyType, convertEnums: true, out object? converted))
+        if (TryConvert(value, mapping.PropertyType, convertEnums: true, out object? converted, out string? reason))
             return converted;
 
         throw new InvalidOperationException(
             $"Cannot read column '{mapping.ColumnName}' into {entityType.Name}.{mapping.Property.Name}: " +
-            $"the source produced {value.GetType().Name} but the property is {DescribeType(mapping.PropertyType)}.");
+            (reason ?? $"the source produced {value.GetType().Name} but the property is " +
+                $"{DescribeType(mapping.PropertyType)}."));
     }
 
-    private static bool TryConvertEnum(object value, Type enumType, out object? converted)
+    private static bool TryConvertEnum(object value, Type enumType, out object? converted, out string? reason)
     {
+        reason = null;
+
         // A text column arrives as string; accept both the member name and its numeric form.
         if (value is string text)
         {
@@ -256,6 +305,8 @@ internal static class ReaderValueConverter
             }
 
             converted = null;
+            reason = $"the source produced '{text}', which is not a member of {enumType.Name} " +
+                $"({string.Join(", ", Enum.GetNames(enumType))}) nor its numeric form.";
             return false;
         }
 
@@ -273,9 +324,32 @@ internal static class ReaderValueConverter
         catch (Exception ex) when (ex is InvalidCastException or FormatException or OverflowException or ArgumentException)
         {
             converted = null;
+            reason = Describe(ex, value, enumType);
             return false;
         }
     }
+
+    /// <summary>AUD-R35-252: the failure sentence for a value the target could not parse.</summary>
+    private static string Unparsable(string text, Type targetType) =>
+        $"the source produced the string '{text}', which is not a {targetType.Name} " +
+        "in any format the invariant culture recognises.";
+
+    /// <summary>
+    /// AUD-R35-252: turns the exception <see cref="Convert.ChangeType(object, Type, IFormatProvider)"/>
+    /// threw into the sentence that names what actually went wrong. Only
+    /// <see cref="InvalidCastException"/> is a genuine type mismatch; the other two say the types
+    /// are compatible and this particular value is not, which is a different thing to go and fix.
+    /// </summary>
+    private static string? Describe(Exception ex, object value, Type targetType) => ex switch
+    {
+        OverflowException =>
+            $"the source produced {value.GetType().Name} {Convert.ToString(value, CultureInfo.InvariantCulture)}, " +
+            $"which is outside the range of {targetType.Name}.",
+        FormatException =>
+            $"the source produced '{Convert.ToString(value, CultureInfo.InvariantCulture)}', " +
+            $"which {targetType.Name} cannot parse.",
+        _ => null
+    };
 
     private static string DescribeType(Type type)
     {

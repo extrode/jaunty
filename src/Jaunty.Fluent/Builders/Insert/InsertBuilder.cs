@@ -158,7 +158,16 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         if (_columns.Count == 0)
             throw new InvalidOperationException("ToSql() requires at least one value to be specified.");
 
-        return BuildInsertSql();
+        string sql = BuildInsertSql();
+
+        // AUD-R35-180. This returned the bare INSERT, but for an identity entity the command that
+        // executes is BuildInsertWithIdentitySql - the INSERT plus "; SELECT SCOPE_IDENTITY()",
+        // "; SELECT last_insert_rowid()", or a trailing RETURNING on PostgreSQL. The member is
+        // documented as "the INSERT SQL that would be executed (for debugging)", and debugging an
+        // identity insert is exactly the case where the appended statement is the interesting half.
+        // Interceptors and CommandObservation.Log already see the full text, so this was the only
+        // surface showing something other than what runs.
+        return HasIdentityColumn() ? BuildInsertWithIdentitySql(sql) : sql;
     }
 
     #endregion
@@ -212,6 +221,23 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         return $"{insertSql}; {identitySql}";
     }
 
+    /// <summary>
+    /// Converts the identity-retrieval scalar into the generated key.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-181. Both executors used to call <c>Convert.ToInt64</c> on the raw
+    /// <c>ExecuteScalar</c> result with no <see cref="DBNull"/> check. <c>SCOPE_IDENTITY()</c>
+    /// returns NULL whenever the statement produced no identity value - the reachable case being an
+    /// entity whose primary key is marked identity in metadata but is not an identity column in the
+    /// database - and <c>Convert.ToInt64(DBNull.Value)</c> throws
+    /// <see cref="InvalidCastException"/>: "Object cannot be cast from DBNull to other types". The
+    /// caller got a cast error naming neither the table nor the column, after the INSERT had already
+    /// committed. <c>Convert.ToInt64(null)</c> returns 0, so only the DBNull shape was exposed; both
+    /// now return 0, meaning "the row went in and the database generated no key".
+    /// </remarks>
+    private static long ReadGeneratedKey(object? result) =>
+        result is null or DBNull ? 0L : Convert.ToInt64(result, CultureInfo.InvariantCulture);
+
     private long ExecuteInsert(string sql, CommandOptions options)
     {
         // If there's an identity column, the identity-retrieval SQL is appended to the same
@@ -241,7 +267,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 if (hasIdentity)
                 {
                     var result = command.ExecuteScalar();
-                    return Convert.ToInt64(result, CultureInfo.InvariantCulture);
+                    return ReadGeneratedKey(result);
                 }
 
                 command.ExecuteNonQuery();
@@ -285,7 +311,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 if (hasIdentity)
                 {
                     var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                    return Convert.ToInt64(result, CultureInfo.InvariantCulture);
+                    return ReadGeneratedKey(result);
                 }
 
                 await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -293,8 +319,15 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             }
             finally
             {
+                // AUD-R35-178. Was a blocking Close() at the end of a fully async operation, where
+                // every other async path in this folder awaits CloseAsync. On a provider whose close
+                // does network I/O that blocks the calling thread.
                 if (wasClosed && dbConnection.State != ConnectionState.Closed)
-                    dbConnection.Close();
+#if NET8_0_OR_GREATER
+                    await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                    await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
+#endif
             }
         }
     }

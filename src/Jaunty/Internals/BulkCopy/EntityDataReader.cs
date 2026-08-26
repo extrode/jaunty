@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Linq.Expressions;
@@ -13,12 +12,17 @@ namespace Jaunty.Internals.BulkCopy;
 /// Uses compiled property getters cached per type for zero-reflection performance.
 /// </summary>
 /// <typeparam name="T">The entity type.</typeparam>
-internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : new()
+internal sealed class EntityDataReader<T> : IDataReader where T : new()
 {
     private readonly IEnumerator<T> _enumerator;
     private readonly ColumnMetadata[] _columns;
     private readonly Func<T, object?>[] _getters;
     private bool _disposed;
+
+    // See GetValue: one slot of memo so IsDBNull-then-GetValue invokes the getter once. -1 means
+    // "nothing memoised", and Read() resets it because the memo is scoped to a single row.
+    private int _memoOrdinal = -1;
+    private object? _memoValue;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EntityDataReader{T}"/> class.
@@ -37,31 +41,70 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// AUD-R35-106 (round-35 batch 04a). One slot of memo, reset by <see cref="Read"/>. A consumer
+    /// following the standard ADO.NET <c>IsDBNull</c>-then-<c>GetValue</c> pattern used to invoke
+    /// the compiled getter and box its result twice per nullable cell, because
+    /// <see cref="IsDBNull"/> is implemented on top of this method; now the second call reads the
+    /// slot. No in-tree provider takes that route - all three consume the reader through
+    /// <c>GetValue</c>/<c>FieldCount</c> only - but this object is handed to <c>SqlBulkCopy</c>,
+    /// whose per-cell access pattern Jaunty does not control. That is the same third-party-contract
+    /// argument the <see cref="GetOrdinal"/> fix was made on (AUD-R25 B3-4).
+    /// <para>
+    /// The cost on the plain path is an int compare and two field writes per cell, against a saved
+    /// delegate invocation and box per <c>IsDBNull</c>. The memo is scoped to the current row and
+    /// the current ordinal, so it holds unless the caller mutates the entity between two reads of
+    /// the same cell in the same row, which no bulk-copy consumer does.
+    /// </para>
+    /// </remarks>
     public object GetValue(int i)
     {
         if (_enumerator.Current is null)
             return DBNull.Value;
 
-        var value = _getters[i](_enumerator.Current);
-        return value ?? DBNull.Value;
+        if (_memoOrdinal == i)
+            return _memoValue!;
+
+        object value = _getters[i](_enumerator.Current) ?? DBNull.Value;
+        _memoOrdinal = i;
+        _memoValue = value;
+        return value;
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// AUD-R35-110, first filed round 27. This wrote <c>_columns.Length</c> elements without
+    /// consulting <c>values.Length</c>, so a caller passing a shorter array - which
+    /// <see cref="IDataRecord.GetValues"/> explicitly allows, specifying a partial copy and a
+    /// returned count - got <see cref="IndexOutOfRangeException"/> instead.
+    /// </remarks>
     public int GetValues(object[] values)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(values);
+#else
+        if (values is null) throw new ArgumentNullException(nameof(values));
+#endif
+
         if (_enumerator.Current is null)
             return 0;
 
-        for (int i = 0; i < _columns.Length; i++)
+        int count = values.Length < _columns.Length ? values.Length : _columns.Length;
+
+        for (int i = 0; i < count; i++)
         {
             values[i] = _getters[i](_enumerator.Current) ?? DBNull.Value;
         }
 
-        return _columns.Length;
+        return count;
     }
 
     /// <inheritdoc/>
-    public bool Read() => _enumerator.MoveNext();
+    public bool Read()
+    {
+        _memoOrdinal = -1;
+        return _enumerator.MoveNext();
+    }
 
     /// <inheritdoc/>
     public int Depth => 0;
@@ -82,7 +125,14 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     public object this[string name] => GetValue(GetOrdinal(name));
 
     /// <inheritdoc/>
-    public void Close() { }
+    /// <remarks>
+    /// AUD-R35-109, first filed round 9. This was an empty body while <see cref="IsClosed"/>
+    /// reported <c>_disposed</c>, so after <c>Close()</c> the reader still said it was open and the
+    /// enumerator was still undisposed - <see cref="IDataReader"/> requires <c>IsClosed</c> to be
+    /// true once <c>Close</c> has been called. Close and Dispose do the same thing here, which is
+    /// the shape every ADO.NET reader has.
+    /// </remarks>
+    public void Close() => Dispose();
 
     /// <inheritdoc/>
     public void Dispose()
@@ -145,8 +195,12 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     /// <inheritdoc/>
     public string GetDataTypeName(int i) => GetFieldType(i).Name;
 
-    /// <inheritdoc/>
-    IEnumerator IEnumerable.GetEnumerator() => _enumerator;
+    // AUD-R35-111, first filed round 9 and again in round 34. This type used to implement
+    // IEnumerable, whose explicit GetEnumerator returned the same _enumerator instance Read()
+    // advances rather than a fresh one over the source - so any consumer that enumerated after a
+    // Read() resumed mid-stream, and the two surfaces interleaved on one cursor. Nothing needed the
+    // interface: the three bulk-copy providers consume this only as IDataReader. Removed rather
+    // than fixed, which is what both earlier reports recommended.
 
     /// <inheritdoc/>
     IDataReader IDataRecord.GetData(int i) => throw new NotSupportedException();

@@ -7,7 +7,7 @@ namespace Jaunty.Configuration;
 /// </summary>
 public sealed class LoggingConfiguration
 {
-    private ISet<string> _sensitiveParameterNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    private readonly SensitiveNameSet _sensitiveParameterNames = new();
 
     /// <summary>
     /// Gets or sets the minimum log level for Jaunty commands.
@@ -121,13 +121,20 @@ public sealed class LoggingConfiguration
         if (candidate.Count == 0)
             return false;
 
-        foreach (string sensitive in _sensitiveParameterNames)
-        {
-            List<string> needle = SplitWords(sensitive);
-            if (needle.Count == 0)
-                continue;
+        // AUD-R35-139 and AUD-R35-140. This used to re-split every configured name on every call -
+        // eight List/StringBuilder pairs per parameter with the seeded set, once per parameter per
+        // logged command - and it enumerated the live HashSet while doing it, so a
+        // WithSensitiveParameters() call on one thread threw InvalidOperationException out of a
+        // logging call on another. The set now splits each name once when it changes and publishes
+        // the result as an immutable snapshot; reading that snapshot is a single volatile read.
+        List<string>[] needles = _sensitiveParameterNames.SplitNames;
+        bool exact = SensitiveParameterMatching == SensitiveParameterMatching.Exact;
 
-            bool hit = SensitiveParameterMatching == SensitiveParameterMatching.Exact
+        for (int i = 0; i < needles.Length; i++)
+        {
+            List<string> needle = needles[i];
+
+            bool hit = exact
                 ? SequenceEqualsIgnoreCase(candidate, needle)
                 : ContainsSequence(candidate, needle);
 
@@ -296,5 +303,147 @@ public sealed class LoggingConfiguration
     {
         MinimumLogLevel = level;
         return this;
+    }
+
+    /// <summary>
+    /// The sensitive-name set, with each name pre-split into words.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-139 (performance) and AUD-R35-140 (thread safety), which are one fix because they
+    /// have one cause: the configuration handed out its live, non-thread-safe
+    /// <see cref="HashSet{T}"/> and then enumerated it on the hot path, re-splitting every name on
+    /// every call. A <see cref="LoggingConfiguration"/> is normally a DI singleton, so
+    /// <c>.Add(...)</c> from startup code racing a logged command on a request thread threw
+    /// <see cref="InvalidOperationException"/> out of the <c>foreach</c> - and the class documented
+    /// no thread-safety contract either way, so neither side was wrong.
+    /// <para>
+    /// Every mutation takes the lock and republishes <see cref="SplitNames"/> as a fresh array that
+    /// nothing subsequently modifies, so a reader either sees the state before the change or the
+    /// state after it and never a set being written. Enumeration and <see cref="CopyTo"/> likewise
+    /// hand back a snapshot rather than the live storage.
+    /// </para>
+    /// </remarks>
+    private sealed class SensitiveNameSet : ISet<string>
+    {
+        private readonly HashSet<string> _names = new(StringComparer.OrdinalIgnoreCase);
+        private readonly object _sync = new();
+        private volatile List<string>[] _splitNames = [];
+
+        /// <summary>Each configured name, split into words, as an array no one mutates in place.</summary>
+        internal List<string>[] SplitNames => _splitNames;
+
+        public int Count
+        {
+            get { lock (_sync) { return _names.Count; } }
+        }
+
+        public bool IsReadOnly => false;
+
+        private void Republish()
+        {
+            var split = new List<string>[_names.Count];
+            int next = 0;
+            foreach (string name in _names)
+            {
+                List<string> words = SplitWords(name);
+                if (words.Count > 0)
+                    split[next++] = words;
+            }
+
+            if (next != split.Length)
+            {
+                var trimmed = new List<string>[next];
+                Array.Copy(split, 0, trimmed, 0, next);
+                split = trimmed;
+            }
+
+            _splitNames = split;
+        }
+
+        private bool Mutate(Func<bool> change)
+        {
+            lock (_sync)
+            {
+                bool changed = change();
+                if (changed)
+                    Republish();
+                return changed;
+            }
+        }
+
+        public bool Add(string item) => Mutate(() => _names.Add(item));
+
+        void ICollection<string>.Add(string item) => Add(item);
+
+        public void Clear() => Mutate(() =>
+        {
+            bool had = _names.Count > 0;
+            _names.Clear();
+            return had;
+        });
+
+        public bool Remove(string item) => Mutate(() => _names.Remove(item));
+
+        public bool Contains(string item)
+        {
+            lock (_sync) { return _names.Contains(item); }
+        }
+
+        public void CopyTo(string[] array, int arrayIndex)
+        {
+            lock (_sync) { _names.CopyTo(array, arrayIndex); }
+        }
+
+        public void ExceptWith(IEnumerable<string> other) => Mutate(() => { _names.ExceptWith(other); return true; });
+
+        public void IntersectWith(IEnumerable<string> other) => Mutate(() => { _names.IntersectWith(other); return true; });
+
+        public void SymmetricExceptWith(IEnumerable<string> other) => Mutate(() => { _names.SymmetricExceptWith(other); return true; });
+
+        public void UnionWith(IEnumerable<string> other) => Mutate(() => { _names.UnionWith(other); return true; });
+
+        public bool IsProperSubsetOf(IEnumerable<string> other)
+        {
+            lock (_sync) { return _names.IsProperSubsetOf(other); }
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<string> other)
+        {
+            lock (_sync) { return _names.IsProperSupersetOf(other); }
+        }
+
+        public bool IsSubsetOf(IEnumerable<string> other)
+        {
+            lock (_sync) { return _names.IsSubsetOf(other); }
+        }
+
+        public bool IsSupersetOf(IEnumerable<string> other)
+        {
+            lock (_sync) { return _names.IsSupersetOf(other); }
+        }
+
+        public bool Overlaps(IEnumerable<string> other)
+        {
+            lock (_sync) { return _names.Overlaps(other); }
+        }
+
+        public bool SetEquals(IEnumerable<string> other)
+        {
+            lock (_sync) { return _names.SetEquals(other); }
+        }
+
+        public IEnumerator<string> GetEnumerator()
+        {
+            string[] snapshot;
+            lock (_sync)
+            {
+                snapshot = new string[_names.Count];
+                _names.CopyTo(snapshot, 0);
+            }
+
+            return ((IEnumerable<string>)snapshot).GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

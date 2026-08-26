@@ -65,38 +65,7 @@ public static class FlatFile
     {
         ArgumentNullException.ThrowIfNull(filePath);
 
-        string resolvedPath;
-        string extension;
-        string tableName;
-
-        if (IsRemoteUri(filePath, out var scheme))
-        {
-            if (!_allowedSchemes.Contains(scheme))
-                throw new ArgumentException(
-                    $"URI scheme '{scheme}://' is not allowed. Allowed schemes: {string.Join(", ", _allowedSchemes.OrderBy(s => s).Select(s => s + "://"))}.",
-                    nameof(filePath));
-
-            resolvedPath = filePath;
-            extension = Path.GetExtension(GetFileNameFromUri(filePath)).ToLowerInvariant();
-            tableName = SanitizeTableName(Path.GetFileNameWithoutExtension(GetFileNameFromUri(filePath)));
-        }
-        else if (IsGlobPattern(filePath))
-        {
-            // Glob patterns — DuckDB resolves them, so pass through as-is
-            resolvedPath = filePath;
-            extension = InferExtensionFromGlob(filePath);
-            tableName = SanitizeTableName(Path.GetFileNameWithoutExtension(filePath));
-        }
-        else
-        {
-            // Local file — validate existence
-            resolvedPath = Path.GetFullPath(filePath);
-            if (!File.Exists(resolvedPath))
-                throw new FileNotFoundException($"Flat file not found: {resolvedPath}", resolvedPath);
-
-            extension = Path.GetExtension(resolvedPath).ToLowerInvariant();
-            tableName = SanitizeTableName(Path.GetFileNameWithoutExtension(resolvedPath));
-        }
+        (string resolvedPath, string extension, string tableName) = ResolvePath(filePath, nameof(filePath));
 
         var options = new FlatFileOptions();
         IFileSource source = CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(object));
@@ -119,6 +88,53 @@ public static class FlatFile
         configure(options);
 
         return new DuckDb(options);
+    }
+
+    /// <summary>
+    /// Resolves a path string into the path DuckDB should read, the extension the source type is
+    /// chosen from, and a table name derived from the file name.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-245. This was inline in <see cref="Open(string)"/>, so <c>FlatFileImporter</c>'s
+    /// single-path overload - the other entry point that takes a path string over the same pipeline
+    /// - had its own <c>Path.GetFullPath</c> plus <c>File.Exists</c> and accepted neither a glob
+    /// nor any of the eight remote schemes, failing with a <c>FileNotFoundException</c> naming a
+    /// missing file rather than an unsupported path form. Shared here so the two path-string entry
+    /// points cannot accept different path languages again.
+    /// </remarks>
+    /// <param name="filePath">A local path, a glob pattern, or a remote URL.</param>
+    /// <param name="argumentName">The caller's parameter name, for the exceptions.</param>
+    internal static (string ResolvedPath, string Extension, string TableName) ResolvePath(string filePath, string argumentName)
+    {
+        if (IsRemoteUri(filePath, out var scheme))
+        {
+            if (!_allowedSchemes.Contains(scheme))
+                throw new ArgumentException(
+                    $"URI scheme '{scheme}://' is not allowed. Allowed schemes: {string.Join(", ", _allowedSchemes.OrderBy(s => s).Select(s => s + "://"))}.",
+                    argumentName);
+
+            string fileName = GetFileNameFromUri(filePath);
+            return (filePath,
+                Path.GetExtension(fileName).ToLowerInvariant(),
+                SanitizeTableName(Path.GetFileNameWithoutExtension(fileName)));
+        }
+
+        if (IsGlobPattern(filePath))
+        {
+            // Glob patterns - DuckDB resolves them, so pass through as-is
+            return (filePath,
+                InferExtensionFromGlob(filePath),
+                SanitizeTableName(Path.GetFileNameWithoutExtension(filePath)));
+        }
+
+        // Local file - validate existence
+        string fullPath = Path.GetFullPath(filePath);
+        if (!File.Exists(fullPath))
+            throw new FileNotFoundException($"Flat file not found: {fullPath}", fullPath);
+
+        return (fullPath,
+            Path.GetExtension(fullPath).ToLowerInvariant(),
+            SanitizeTableName(Path.GetFileNameWithoutExtension(fullPath)));
     }
 
     internal static IFileSource CreateSourceFromExtension(string extension, string tableName, string fullPath, Type entityType)

@@ -62,7 +62,11 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         if (!NpgsqlConnectionType.IsInstanceOfType(connection))
             throw new ArgumentException("Connection must be an NpgsqlConnection.", nameof(connection));
 
-        if (StartRowMethod == null || WriteGenericMethod == null || CompleteMethod == null || WriteNullMethod == null)
+        // AUD-R35-218: BeginBinaryImportMethod belongs in this guard with the other four. It used
+        // to be invoked null-conditionally further down, so an unresolvable BeginBinaryImport(string)
+        // - the exact Npgsql signature drift this reflection layer exists to survive - surfaced as
+        // "Failed to begin binary import.", which reads as a server or connection-state failure.
+        if (BeginBinaryImportMethod == null || StartRowMethod == null || WriteGenericMethod == null || CompleteMethod == null || WriteNullMethod == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter members could not be resolved via reflection.");
 
         ValidateTransaction(connection, options.Transaction);
@@ -91,7 +95,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         var copyCommand = BuildCopyCommand(schemaName, tableName, data);
 
         // Begin binary import — must be called on the actual NpgsqlConnection
-        var importer = BeginBinaryImportMethod?.Invoke(connection, new object[] { copyCommand });
+        var importer = BeginBinaryImportMethod.Invoke(connection, new object[] { copyCommand });
 
         if (importer == null)
             throw new InvalidOperationException("Failed to begin binary import.");

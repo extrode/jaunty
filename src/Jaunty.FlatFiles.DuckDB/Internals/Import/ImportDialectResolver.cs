@@ -8,8 +8,9 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 
 /// <summary>
 /// Resolves an <see cref="IImportDialect"/> from a <see cref="DbConnection"/> type.
-/// Supports auto-detection for SQLite, PostgreSQL, and SQL Server. Anything else must be
-/// registered via <see cref="Register"/> or passed explicitly - see <see cref="Resolve"/>.
+/// Supports auto-detection for SQLite, PostgreSQL, and SQL Server. Anything else is supplied by
+/// the caller as <c>ImportOptions.Dialect</c> - see <see cref="Resolve"/>. <see cref="Register"/>
+/// exists for this assembly and its test project only; it is not reachable from outside.
 /// </summary>
 internal static class ImportDialectResolver
 {
@@ -19,6 +20,13 @@ internal static class ImportDialectResolver
     /// Registers a custom import dialect for a connection type name (or substring).
     /// The key is matched against the connection's <c>GetType().FullName</c> using contains logic.
     /// </summary>
+    /// <remarks>
+    /// AUD-R35-249: <b>not</b> a public extension point. This class is <c>internal</c>, so only
+    /// <c>InternalsVisibleTo</c> assemblies - in practice the test project - can call this. A
+    /// consumer of the package supplies a custom dialect through <c>ImportOptions.Dialect</c>,
+    /// which is what <see cref="Resolve"/>'s unrecognised-provider message now names. Kept because
+    /// the built-in detection is written in terms of the same registry and the tests drive it.
+    /// </remarks>
     /// <param name="connectionTypeNameContains">A substring of the connection's full type name (e.g. "MySql", "Oracle").</param>
     /// <param name="dialect">The import dialect to use for matching connections.</param>
     public static void Register(string connectionTypeNameContains, IImportDialect dialect)
@@ -82,11 +90,15 @@ internal static class ImportDialectResolver
             typeName.Contains("Microsoft.Data.SqlClient", StringComparison.OrdinalIgnoreCase))
             return SqlServerImportDialect.Instance;
 
+        // AUD-R35-249: the message used to lead with ImportDialectResolver.Register(...), and
+        // Register's own doc presented it as the extension point for custom dialects - but this
+        // class is internal, so the only callers are InternalsVisibleTo assemblies. A user
+        // following that advice got a compile error, not a fix. ImportOptions.Dialect is the one
+        // remedy a real caller has, so it is the one the message names.
         throw new InvalidOperationException(
             $"No import dialect is registered for connection type '{typeName}'. Import auto-detects " +
-            "SQLite, PostgreSQL and SQL Server. Register one with " +
-            "ImportDialectResolver.Register(\"<part of the type name>\", dialect), or pass one " +
-            "explicitly through the import options.");
+            "SQLite, PostgreSQL and SQL Server. For anything else, implement IImportDialect and " +
+            "pass it as ImportOptions.Dialect: new ImportOptions(dialect: myDialect).");
     }
 
     /// <summary>

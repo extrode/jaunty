@@ -776,75 +776,80 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         return _connection.Query<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
+    /// <summary>
+    /// Builds the SELECT with <c>_take</c> temporarily clamped to <paramref name="take"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-187. The thirty-two First/Single terminals each inlined "save <c>_take</c>, set it to
+    /// 1 or 2, build, restore" with no <c>try</c>/<c>finally</c>. <see cref="BuildSelectSql(string[])"/> can
+    /// throw - <c>EscapeColumnName</c> runs <c>SqlIdentifierValidator</c> over every
+    /// <c>_orderByColumns</c> entry, and those entries include raw caller strings from the
+    /// <c>OrderBy(string)</c>/<c>ThenBy(string)</c> overloads - and a throw left the builder
+    /// permanently clamped, so a later <c>Select()</c> on the same instance silently returned one
+    /// row instead of the full set. A QueryBuilder is reusable by design (the same reason
+    /// <c>CteBuilder</c> restores at all, AUD-R34), so catching the first exception and carrying on
+    /// is an ordinary thing to do. The restore now happens on both paths, in one place.
+    /// </remarks>
+    private string BuildSelectSqlTaking(int take, string[] columns)
+    {
+        int? original = _take;
+        _take = take;
+
+        try
+        {
+            return BuildSelectSql(columns);
+        }
+        finally
+        {
+            _take = original;
+        }
+    }
+
     public T SelectFirst()
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, GetAllColumnNames());
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T SelectFirst(CommandOptions options)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, GetAllColumnNames());
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectFirstOrDefault()
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, GetAllColumnNames());
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T? SelectFirstOrDefault(CommandOptions options)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, GetAllColumnNames());
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T SelectSingle()
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, GetAllColumnNames());
         return _connection.QuerySingle<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T SelectSingle(CommandOptions options)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, GetAllColumnNames());
         return _connection.QuerySingle<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectSingleOrDefault()
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, GetAllColumnNames());
         return _connection.QuerySingleOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T? SelectSingleOrDefault(CommandOptions options)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, GetAllColumnNames());
         return _connection.QuerySingleOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
@@ -860,37 +865,25 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public T SelectPartialFirst(params string[] columns)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         return _connection.QueryPartialFirst<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T? SelectPartialFirstOrDefault(params string[] columns)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         return _connection.QueryPartialFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T SelectPartialSingle(params string[] columns)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         return _connection.QueryPartialSingle<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T? SelectPartialSingleOrDefault(params string[] columns)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         return _connection.QueryPartialSingleOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -908,40 +901,28 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     public T SelectPartialFirst(params Expression<Func<T, object?>>[] columns)
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(columnNames);
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, columnNames);
         return _connection.QueryPartialFirst<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T? SelectPartialFirstOrDefault(params Expression<Func<T, object?>>[] columns)
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(columnNames);
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, columnNames);
         return _connection.QueryPartialFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T SelectPartialSingle(params Expression<Func<T, object?>>[] columns)
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(columnNames);
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, columnNames);
         return _connection.QueryPartialSingle<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T? SelectPartialSingleOrDefault(params Expression<Func<T, object?>>[] columns)
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(columnNames);
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, columnNames);
         return _connection.QueryPartialSingleOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -1051,10 +1032,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1062,10 +1040,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
@@ -1073,10 +1048,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1084,10 +1056,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
@@ -1095,10 +1064,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T> SelectSingleAsync(CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QuerySingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1106,10 +1072,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QuerySingleAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
@@ -1117,10 +1080,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QuerySingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1128,10 +1088,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QuerySingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
@@ -1151,10 +1108,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T> SelectPartialFirstAsync(string[] columns, CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1162,10 +1116,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T?> SelectPartialFirstOrDefaultAsync(string[] columns, CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1173,10 +1124,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T> SelectPartialSingleAsync(string[] columns, CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1184,10 +1132,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
     public async Task<T?> SelectPartialSingleOrDefaultAsync(string[] columns, CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1209,10 +1154,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     public async Task<T> SelectPartialFirstAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default)
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(columnNames);
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, columnNames);
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1221,10 +1163,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     public async Task<T?> SelectPartialFirstOrDefaultAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default)
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
-        var original = _take;
-        _take = 1;
-        var sql = BuildSelectSql(columnNames);
-        _take = original;
+        var sql = BuildSelectSqlTaking(1, columnNames);
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1233,10 +1172,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     public async Task<T> SelectPartialSingleAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default)
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(columnNames);
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, columnNames);
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1245,10 +1181,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     public async Task<T?> SelectPartialSingleOrDefaultAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default)
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
-        var original = _take;
-        _take = 2;
-        var sql = BuildSelectSql(columnNames);
-        _take = original;
+        var sql = BuildSelectSqlTaking(2, columnNames);
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1363,6 +1296,8 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     #region SQL introspection
 
     public string ToSql() => BuildSelectSql(GetAllColumnNames());
+
+    public string ToDeleteSql() => BuildDeleteSql();
 
     public string ToSql(params string[] columns)
         => BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
@@ -1803,6 +1738,83 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Reports whether <paramref name="sql"/> carries a real parameter placeholder.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-188. The caller used to decide this with
+    /// <c>sql.IndexOf(_dialect.ParameterPrefix)</c>. Every dialect's prefix is <c>@</c>, so any
+    /// subquery SQL containing a literal <c>@</c> in a string constant or a comment - an email
+    /// pattern such as <c>WHERE email LIKE '%@example.com'</c> is the obvious one - was rejected
+    /// with a <see cref="NotSupportedException"/> describing a problem the caller did not have.
+    /// This skips single-quoted literals (including the doubled-quote escape), line comments and
+    /// block comments, and then requires the prefix to be followed by an identifier character, which
+    /// is what a placeholder actually looks like. The converse half of the original finding - a
+    /// custom terminal using positional <c>?</c> placeholders passes and is spliced in unbound - is
+    /// unchanged and is the safe direction, since there is no prefix to look for.
+    /// </remarks>
+    private static bool ContainsParameterPlaceholder(string sql, string parameterPrefix)
+    {
+        if (string.IsNullOrEmpty(parameterPrefix))
+            return false;
+
+        char prefix = parameterPrefix[0];
+
+        for (int i = 0; i < sql.Length; i++)
+        {
+            char c = sql[i];
+
+            if (c == '\'')
+            {
+                i++;
+
+                while (i < sql.Length)
+                {
+                    if (sql[i] == '\'')
+                    {
+                        // '' inside a literal is an escaped quote, not the end of it.
+                        if (i + 1 < sql.Length && sql[i + 1] == '\'')
+                            i++;
+                        else
+                            break;
+                    }
+
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (c == '-' && i + 1 < sql.Length && sql[i + 1] == '-')
+            {
+                while (i < sql.Length && sql[i] != '\n')
+                    i++;
+
+                continue;
+            }
+
+            if (c == '/' && i + 1 < sql.Length && sql[i + 1] == '*')
+            {
+                i += 2;
+
+                while (i + 1 < sql.Length && !(sql[i] == '*' && sql[i + 1] == '/'))
+                    i++;
+
+                i++;
+                continue;
+            }
+
+            if (c == prefix
+                && i + 1 < sql.Length
+                && (char.IsLetterOrDigit(sql[i + 1]) || sql[i + 1] == '_'))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private string BuildInSubqueryClause<TValue, TSubquery>(
         Expression<Func<T, TValue>> selector,
         Expression<Func<TSubquery, TValue>> subquerySelector,
@@ -1838,7 +1850,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
             // placeholders would end up unbound in the outer query, so fail loudly instead
             // of silently emitting broken SQL.
             subquerySql = subquery.ToSql();
-            if (subquerySql.IndexOf(_dialect.ParameterPrefix, StringComparison.Ordinal) >= 0)
+            if (ContainsParameterPlaceholder(subquerySql, _dialect.ParameterPrefix))
             {
                 throw new NotSupportedException(
                     $"WhereInSubquery/WhereNotInSubquery only supports merging parameters from " +

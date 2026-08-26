@@ -4,6 +4,7 @@ using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Dialects;
 using Jaunty.Interfaces;
+using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
 using Xunit;
@@ -109,9 +110,84 @@ public class DialectRegistrationInvalidatesDerivedCachesTests : IDisposable
         Assert.Equal("{x}", SqlDialectFactory.GetDialect(_connection).EscapeColumnName("x"));
     }
 
+    // -----------------------------------------------------------------------------
+    // AUD-R35-128: how many times the identity SQL is built per cache miss
+    // -----------------------------------------------------------------------------
+
+    [Table("identity_widgets")]
+    public class IdentityWidget
+    {
+        [Key]
+        [Column("id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Column("name")]
+        public string Name { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// AUD-R35-128. <c>BuildCachedSql</c> built the no-identity form unconditionally and then threw
+    /// it away and rebuilt from the trimmed column array whenever the entity had an identity key -
+    /// two string builds per cache miss for the common case, and a call that read as load-bearing
+    /// when it was only the no-identity placeholder.
+    /// </summary>
+    [Fact]
+    public void AnEntityWithAnIdentityKey_BuildsTheIdentitySqlOnce_FromItsOwnColumns()
+    {
+        var dialect = new QuotingDialect('<', '>');
+        SqlDialectFactory.RegisterDialect<FakeConnection>(dialect);
+
+        CrudSqlCache.GetSql<IdentityWidget>(_connection);
+
+        string[] columns = Assert.Single(dialect.LastInsertIdCalls);
+        Assert.Equal(["<id>"], columns);
+    }
+
+    [Fact]
+    public void AnEntityWithNoIdentityKey_StillGetsThePlaceholderForm()
+    {
+        var dialect = new QuotingDialect('<', '>');
+        SqlDialectFactory.RegisterDialect<FakeConnection>(dialect);
+
+        CrudSqlCache.GetSql<Widget>(_connection);
+
+        Assert.Empty(Assert.Single(dialect.LastInsertIdCalls));
+    }
+
+    /// <summary>
+    /// AUD-R35-135. <c>MultiRowInsertCache</c> is the same shape as <c>CrudSqlCache</c> - keyed on
+    /// (entity type, connection type, batch size), holding SQL built entirely from the dialect, and
+    /// invalidated only by the configuration generation. It had no test that a dialect registration
+    /// retires it, so the mechanism AUD-R35-013 installed was covered for one cache and assumed for
+    /// the other.
+    /// </summary>
+    [Fact]
+    public void MultiRowInsertSql_IsRebuiltAfterADialectRegistration()
+    {
+        var metadata = new EntityMetadata("widgets", null,
+        [
+            new ColumnMetadata("Name", typeof(string), "name", isPrimaryKey: false, isIdentity: false,
+                isComputed: false, getter: _ => "n", setter: (_, _) => { })
+        ]);
+
+        SqlDialectFactory.RegisterDialect<FakeConnection>(new QuotingDialect('<', '>'));
+        string first = MultiRowInsertCache.GetOrBuild(
+            typeof(Widget), typeof(FakeConnection), 2, metadata, SqlDialectFactory.GetDialect(_connection));
+
+        SqlDialectFactory.RegisterDialect<FakeConnection>(new QuotingDialect('{', '}'));
+        string second = MultiRowInsertCache.GetOrBuild(
+            typeof(Widget), typeof(FakeConnection), 2, metadata, SqlDialectFactory.GetDialect(_connection));
+
+        Assert.Contains("<widgets>", first, StringComparison.Ordinal);
+        Assert.Contains("{widgets}", second, StringComparison.Ordinal);
+    }
+
     private sealed class QuotingDialect(char open, char close) : ISqlDialect
     {
         private readonly SQLiteDialect _inner = new();
+
+        internal List<string[]> LastInsertIdCalls { get; } = [];
 
         public bool SupportsNativeBulkCopy => false;
         public IBulkCopyProvider? CreateBulkCopyProvider() => null;
@@ -126,7 +202,11 @@ public class DialectRegistrationInvalidatesDerivedCachesTests : IDisposable
             schemaName is null ? Quote(tableName) : Quote(schemaName) + "." + Quote(tableName);
         public string EscapeColumnName(string columnName) => Quote(columnName);
         public string EscapeStringLiteral(string value) => _inner.EscapeStringLiteral(value);
-        public string GetLastInsertIdSql(params string[] columnNames) => _inner.GetLastInsertIdSql(columnNames);
+        public string GetLastInsertIdSql(params string[] columnNames)
+        {
+            LastInsertIdCalls.Add(columnNames);
+            return _inner.GetLastInsertIdSql(columnNames);
+        }
         public string GetPagingSql(string baseSql, int offset, int fetchNext) => _inner.GetPagingSql(baseSql, offset, fetchNext);
         public bool IsKeyword(string identifier) => _inner.IsKeyword(identifier);
         public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar) => _inner.GenerateCaseSensitiveLike(columnName, parameterName, escapeChar);
