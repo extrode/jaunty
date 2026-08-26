@@ -14,6 +14,7 @@ public class PackageIdentityTests
 {
     private const string ExpectedRepositoryUrl = "https://github.com/extrode/jaunty";
     private const string ExpectedIdPrefix = "Extrode.Jaunty";
+    private const string ExpectedOwner = "Extrode LLC";
 
     [Fact]
     public void EveryDeclaredPackageIdCarriesTheExtrodePrefix()
@@ -73,6 +74,26 @@ public class PackageIdentityTests
 
         Assert.True(stale.Count == 0,
             $"Package metadata must point at '{ExpectedRepositoryUrl}': " + string.Join(", ", stale));
+    }
+
+    [Fact]
+    public void EveryAttributionNamesTheCompany()
+    {
+        List<string> misattributed = new();
+
+        foreach ((string project, XDocument document) in SourceProjects())
+        {
+            foreach (XElement element in document.Descendants()
+                         .Where(e => e.Name.LocalName is "Authors" or "Company" or "Copyright"))
+            {
+                if (element.Value.IndexOf(ExpectedOwner, StringComparison.Ordinal) < 0)
+                    misattributed.Add($"{project} has {element.Name.LocalName} '{element.Value}'");
+            }
+        }
+
+        Assert.True(misattributed.Count == 0,
+            $"Shipped assembly and package attribution must name '{ExpectedOwner}' rather than an " +
+            "individual: " + string.Join(", ", misattributed));
     }
 
     /// <summary>Every <c>.csproj</c> under <c>src/</c>, plus <c>src/Directory.Build.props</c>.</summary>

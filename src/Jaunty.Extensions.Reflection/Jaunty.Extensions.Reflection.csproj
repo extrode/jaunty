@@ -4,7 +4,7 @@
     <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <PackageId>Extrode.Jaunty.Extensions.Reflection</PackageId>
-    <Authors>Syed Beparey</Authors>
+    <Authors>Extrode LLC</Authors>
     <Description>Reflection-based mapping extension for Jaunty. Enables Dictionary, dynamic, and ValueTuple mapping.</Description>
     <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
     <!-- Suppress AOT/trimming warnings - this project uses reflection by design.
