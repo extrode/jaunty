@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dependency Injection Integration Design — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Dependency Injection Integration Design</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html" class="active" aria-current="page">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html" class="active" aria-current="page">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#current-state">Current State</a><a class="toc-l2" href="#design-goals">Design Goals</a><a class="toc-l2" href="#option-1-simple-connection-factory-recommended">Option 1: Simple Connection Factory (Recommended)</a><a class="toc-l3" href="#api-design">API Design</a><a class="toc-l3" href="#implementation-sketch">Implementation Sketch</a><a class="toc-l3" href="#pros">Pros</a><a class="toc-l3" href="#cons">Cons</a><a class="toc-l2" href="#option-2-direct-idbconnection-registration-keyed-services">Option 2: Direct IDbConnection Registration (Keyed Services)</a><a class="toc-l3" href="#api-design-1">API Design</a><a class="toc-l3" href="#implementation-sketch-1">Implementation Sketch</a><a class="toc-l3" href="#pros-1">Pros</a><a class="toc-l3" href="#cons-1">Cons</a><a class="toc-l2" href="#option-3-typed-connections-concrete-type-injection">Option 3: Typed Connections (Concrete Type Injection)</a><a class="toc-l3" href="#api-design-2">API Design</a><a class="toc-l3" href="#implementation-sketch-2">Implementation Sketch</a><a class="toc-l3" href="#pros-2">Pros</a><a class="toc-l3" href="#cons-2">Cons</a><a class="toc-l2" href="#option-4-polly-style-builder-pattern">Option 4: Polly-Style Builder Pattern</a><a class="toc-l3" href="#api-design-3">API Design</a><a class="toc-l3" href="#implementation-sketch-3">Implementation Sketch</a><a class="toc-l3" href="#pros-3">Pros</a><a class="toc-l3" href="#cons-3">Cons</a><a class="toc-l2" href="#comparison-matrix">Comparison Matrix</a><a class="toc-l2" href="#recommended-approach">Recommended Approach</a><a class="toc-l3" href="#hybrid-option-1-option-3">Hybrid: Option 1 + Option 3</a><a class="toc-l2" href="#open-design-questions">Open Design Questions</a><a class="toc-l3" href="#connection-lifetime">1. Connection Lifetime</a><a class="toc-l3" href="#interceptor-timing">2. Interceptor Timing</a><a class="toc-l3" href="#multiple-providers">3. Multiple Providers</a><a class="toc-l3" href="#connection-string-management">4. Connection String Management</a><a class="toc-l2" href="#implementation-checklist">Implementation Checklist</a><a class="toc-l2" href="#related-documents">Related Documents</a><a class="toc-l2" href="#decision-log">Decision Log</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Dependency Injection Integration Design</nav>
         <article>
@@ -737,9 +758,5 @@ services.AddJaunty&lt;SqlConnection&gt;(&quot;Default&quot;); <span class="tok-c
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Streaming Methods — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Streaming Methods</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#synchronous-streaming-methods">Synchronous Streaming Methods</a><a class="toc-l3" href="#querystreamtstring-sql">QueryStream&lt;T&gt;(string sql)</a><a class="toc-l3" href="#querystreamtstring-sql-object-parameters">QueryStream&lt;T&gt;(string sql, object parameters)</a><a class="toc-l3" href="#querystreamtstring-sql-commandoptionst-options">QueryStream&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)</a><a class="toc-l3" href="#querystreamtstring-sql-object-parameters-commandoptionst-options">QueryStream&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)</a><a class="toc-l2" href="#asynchronous-streaming-methods">Asynchronous Streaming Methods</a><a class="toc-l3" href="#querystreamasynctstring-sql-cancellationtoken-cancellationtoken-default">QueryStreamAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querystreamasynctstring-sql-object-parameters-cancellationtoken-cancellationtoken-default">QueryStreamAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querystreamasynctstring-sql-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryStreamAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querystreamasynctstring-sql-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryStreamAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</a><a class="toc-l2" href="#partial-mapping-streaming-methods">Partial Mapping Streaming Methods</a><a class="toc-l3" href="#querypartialstreamtstring-sql">QueryPartialStream&lt;T&gt;(string sql)</a><a class="toc-l3" href="#querypartialstreamtstring-sql-object-parameters">QueryPartialStream&lt;T&gt;(string sql, object parameters)</a><a class="toc-l3" href="#querypartialstreamtstring-sql-commandoptionst-options">QueryPartialStream&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)</a><a class="toc-l3" href="#querypartialstreamtstring-sql-object-parameters-commandoptionst-options">QueryPartialStream&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)</a><a class="toc-l2" href="#async-partial-mapping-streaming-methods">Async Partial Mapping Streaming Methods</a><a class="toc-l3" href="#querypartialstreamasynctstring-sql-cancellationtoken-cancellationtoken-default">QueryPartialStreamAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querypartialstreamasynctstring-sql-object-parameters-cancellationtoken-cancellationtoken-default">QueryPartialStreamAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querypartialstreamasynctstring-sql-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryPartialStreamAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querypartialstreamasynctstring-sql-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryPartialStreamAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</a><a class="toc-l2" href="#unbuffered-partial-mapping-streaming-methods">Unbuffered Partial Mapping Streaming Methods</a><a class="toc-l3" href="#querypartialunbufferedtstring-sql">QueryPartialUnbuffered&lt;T&gt;(string sql)</a><a class="toc-l3" href="#querypartialunbufferedtstring-sql-object-parameters">QueryPartialUnbuffered&lt;T&gt;(string sql, object parameters)</a><a class="toc-l3" href="#querypartialunbufferedtstring-sql-commandoptionst-options">QueryPartialUnbuffered&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)</a><a class="toc-l3" href="#querypartialunbufferedtstring-sql-object-parameters-commandoptionst-options">QueryPartialUnbuffered&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)</a><a class="toc-l2" href="#unbuffered-async-partial-mapping-streaming-methods">Unbuffered Async Partial Mapping Streaming Methods</a><a class="toc-l3" href="#querypartialunbufferedasynctstring-sql-cancellationtoken-cancellationtoken-default">QueryPartialUnbufferedAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querypartialunbufferedasynctstring-sql-object-parameters-cancellationtoken-cancellationtoken-default">QueryPartialUnbufferedAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querypartialunbufferedasynctstring-sql-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryPartialUnbufferedAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#querypartialunbufferedasynctstring-sql-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryPartialUnbufferedAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</a><a class="toc-l2" href="#notes">Notes</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Streaming Methods</nav>
         <article>
@@ -193,7 +214,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -227,7 +248,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="querystreamasynctstring-sql-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryStreamAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</h3>
@@ -238,7 +259,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="querystreamasynctstring-sql-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryStreamAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</h3>
@@ -249,7 +270,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h2 id="partial-mapping-streaming-methods">Partial Mapping Streaming Methods</h2>
@@ -319,7 +340,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="querypartialstreamasynctstring-sql-object-parameters-cancellationtoken-cancellationtoken-default">QueryPartialStreamAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</h3>
@@ -330,7 +351,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="querypartialstreamasynctstring-sql-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryPartialStreamAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</h3>
@@ -341,7 +362,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="querypartialstreamasynctstring-sql-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryPartialStreamAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</h3>
@@ -352,7 +373,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
@@ -363,6 +384,123 @@
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Only product_id and product_name are selected; partial mapping tolerates the missing columns</span>
 <span class="tok-kw">await</span> <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> connection.QueryPartialStreamAsync&lt;Product&gt;(&quot;SELECT product_id, product_name FROM products&quot;))
+{
+    <span class="tok-kw">await</span> ProcessProductAsync(product);
+}
+</code></pre>
+</div>
+<h2 id="unbuffered-partial-mapping-streaming-methods">Unbuffered Partial Mapping Streaming Methods</h2>
+<p>These overloads are functionally identical to the <code>QueryPartialStream</code> overloads above — results are streamed and not buffered in memory. They exist as an alias for callers who prefer the &quot;unbuffered&quot; naming to describe the streaming behavior.</p>
+<h3 id="querypartialunbufferedtstring-sql">QueryPartialUnbuffered&lt;T&gt;(string sql)</h3>
+<p>Executes a query and streams the results as entities of type T using partial mapping mode (unbuffered).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IEnumerable&lt;T&gt; QueryPartialUnbuffered&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="querypartialunbufferedtstring-sql-object-parameters">QueryPartialUnbuffered&lt;T&gt;(string sql, object parameters)</h3>
+<p>Executes a parameterized query and streams the results as entities of type T using partial mapping mode (unbuffered).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IEnumerable&lt;T&gt; QueryPartialUnbuffered&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="querypartialunbufferedtstring-sql-commandoptionst-options">QueryPartialUnbuffered&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)</h3>
+<p>Executes a query with command options and streams the results as entities of type T using partial mapping mode (unbuffered).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IEnumerable&lt;T&gt; QueryPartialUnbuffered&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="querypartialunbufferedtstring-sql-object-parameters-commandoptionst-options">QueryPartialUnbuffered&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)</h3>
+<p>Executes a parameterized query with command options and streams the results as entities of type T using partial mapping mode (unbuffered).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IEnumerable&lt;T&gt; QueryPartialUnbuffered&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Unbuffered stream - most memory efficient for large result sets</span>
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> connection.QueryPartialUnbuffered&lt;Product&gt;(&quot;SELECT id, name FROM products&quot;))
+{
+    Console.WriteLine($&quot;{product.Id}: {product.Name}&quot;);
+}
+</code></pre>
+</div>
+<h2 id="unbuffered-async-partial-mapping-streaming-methods">Unbuffered Async Partial Mapping Streaming Methods</h2>
+<h3 id="querypartialunbufferedasynctstring-sql-cancellationtoken-cancellationtoken-default">QueryPartialUnbufferedAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a query and streams the results as entities of type T using partial mapping mode (unbuffered).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialUnbufferedAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="querypartialunbufferedasynctstring-sql-object-parameters-cancellationtoken-cancellationtoken-default">QueryPartialUnbufferedAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized query and streams the results as entities of type T using partial mapping mode (unbuffered).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialUnbufferedAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="querypartialunbufferedasynctstring-sql-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryPartialUnbufferedAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a query with command options and streams the results as entities of type T using partial mapping mode (unbuffered).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialUnbufferedAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="querypartialunbufferedasynctstring-sql-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">QueryPartialUnbufferedAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized query with command options and streams the results as entities of type T using partial mapping mode (unbuffered).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; QueryPartialUnbufferedAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Unbuffered async stream - most memory efficient for large result sets</span>
+<span class="tok-kw">await</span> <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> connection.QueryPartialUnbufferedAsync&lt;Product&gt;(&quot;SELECT id, name FROM products&quot;))
 {
     <span class="tok-kw">await</span> ProcessProductAsync(product);
 }
@@ -398,9 +536,5 @@
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>
