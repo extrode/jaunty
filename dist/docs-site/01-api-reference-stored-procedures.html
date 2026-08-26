@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stored Procedures — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Stored Procedures</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#executing-stored-procedures">Executing Stored Procedures</a><a class="toc-l3" href="#executestoredproceduretstring-procedurename">ExecuteStoredProcedure&lt;T&gt;(string procedureName)</a><a class="toc-l3" href="#executestoredproceduretstring-procedurename-object-parameters">ExecuteStoredProcedure&lt;T&gt;(string procedureName, object? parameters)</a><a class="toc-l3" href="#executestoredproceduretstring-procedurename-object-parameters-commandoptionst-options">ExecuteStoredProcedure&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options)</a><a class="toc-l2" href="#single-result-stored-procedure-methods">Single Result Stored Procedure Methods</a><a class="toc-l3" href="#executestoredprocedurefirsttstring-procedurename">ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName)</a><a class="toc-l3" href="#executestoredprocedurefirsttstring-procedurename-object-parameters">ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName, object? parameters)</a><a class="toc-l3" href="#executestoredprocedurefirsttstring-procedurename-object-parameters-commandoptionst-options">ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options)</a><a class="toc-l2" href="#first-or-default-stored-procedure-methods">First or Default Stored Procedure Methods</a><a class="toc-l3" href="#executestoredprocedurefirstordefaulttstring-procedurename">ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName)</a><a class="toc-l3" href="#executestoredprocedurefirstordefaulttstring-procedurename-object-parameters">ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName, object? parameters)</a><a class="toc-l3" href="#executestoredprocedurefirstordefaulttstring-procedurename-object-parameters-commandoptionst-options">ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options)</a><a class="toc-l2" href="#scalar-stored-procedure-methods">Scalar Stored Procedure Methods</a><a class="toc-l3" href="#executestoredprocedurescalartstring-procedurename">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName)</a><a class="toc-l3" href="#executestoredprocedurescalartstring-procedurename-object-parameters">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters)</a><a class="toc-l3" href="#executestoredprocedurescalartstring-procedurename-object-parameters-commandoptions-options">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters, CommandOptions options)</a><a class="toc-l2" href="#non-query-stored-procedure-methods">Non-Query Stored Procedure Methods</a><a class="toc-l3" href="#executestoredprocedurenonquerystring-procedurename">ExecuteStoredProcedureNonQuery(string procedureName)</a><a class="toc-l3" href="#executestoredprocedurenonquerystring-procedurename-object-parameters">ExecuteStoredProcedureNonQuery(string procedureName, object? parameters)</a><a class="toc-l3" href="#executestoredprocedurenonquerystring-procedurename-object-parameters-commandoptions-options">ExecuteStoredProcedureNonQuery(string procedureName, object? parameters, CommandOptions options)</a><a class="toc-l2" href="#async-stored-procedure-methods">Async Stored Procedure Methods</a><a class="toc-l3" href="#executestoredprocedureasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedureasynctstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, object? parameters, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedureasynctstring-procedurename-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurefirstasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurefirstordefaultasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurescalarasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurescalarasynctstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, object? parameters, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurenonqueryasyncstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurenonqueryasyncstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, object? parameters, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurenonqueryasyncstring-procedurename-object-parameters-commandoptions-options-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)</a><a class="toc-l2" href="#working-with-output-parameters">Working with Output Parameters</a><a class="toc-l3" href="#creating-spparameters">Creating SpParameters</a><a class="toc-l3" href="#executestoredproceduretstring-procedurename-spparameters-parameters-commandoptionst-options-default">ExecuteStoredProcedure&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default)</a><a class="toc-l3" href="#executestoredprocedurefirsttstring-procedurename-spparameters-parameters-commandoptionst-options-default">ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default)</a><a class="toc-l3" href="#executestoredprocedurefirstordefaulttstring-procedurename-spparameters-parameters-commandoptionst-options-default">ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default)</a><a class="toc-l3" href="#executestoredprocedurescalartstring-procedurename-spparameters-parameters-commandoptions-options-default">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions options = default)</a><a class="toc-l3" href="#executestoredprocedurenonquerythis-idbconnection-connection-string-procedurename-spparameters-parameters-commandoptions-options-default">ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)</a><a class="toc-l2" href="#async-methods-with-output-parameters">Async Methods with Output Parameters</a><a class="toc-l3" href="#executestoredprocedureasynctstring-procedurename-spparameters-parameters-commandoptionst-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurefirstasynctstring-procedurename-spparameters-parameters-commandoptionst-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurefirstordefaultasynctstring-procedurename-spparameters-parameters-commandoptionst-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurescalarasynctstring-procedurename-spparameters-parameters-commandoptions-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#executestoredprocedurenonqueryasyncthis-idbconnection-connection-string-procedurename-spparameters-parameters-commandoptions-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)</a><a class="toc-l2" href="#spparameters-class">SpParameters Class</a><a class="toc-l3" href="#addinputstring-name-object-value">AddInput(string name, object? value)</a><a class="toc-l3" href="#addinputstring-name-object-value-dbtype-dbtype-int-size-null">AddInput(string name, object? value, DbType dbType, int? size = null)</a><a class="toc-l3" href="#addoutputstring-name-dbtype-dbtype-int-size-null">AddOutput(string name, DbType dbType, int? size = null)</a><a class="toc-l3" href="#addinputoutputstring-name-object-value-dbtype-dbtype-int-size-null">AddInputOutput(string name, object? value, DbType dbType, int? size = null)</a><a class="toc-l3" href="#addreturnvaluestring-name-return_value-dbtype-dbtype-dbtype.int32">AddReturnValue(string name = &quot;RETURN_VALUE&quot;, DbType dbType = DbType.Int32)</a><a class="toc-l3" href="#gettstring-name">Get&lt;T&gt;(string name)</a><a class="toc-l3" href="#getreturnvalue">GetReturnValue()</a><a class="toc-l3" href="#hasvaluestring-name">HasValue(string name)</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Stored Procedures</nav>
         <article>
@@ -367,7 +388,7 @@
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> count = connection.ExecuteStoredProcedureScalar&lt;int&gt;(&quot;GetProductCountByCategory&quot;, <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> });
 </code></pre>
 </div>
-<h3 id="executestoredprocedurescalartstring-procedurename-object-parameters-commandoptions-options">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters, CommandOptions options)</h3>
+<h3 id="executestoredprocedurescalartstring-procedurename-object-parameters-commandoptions-options">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters, CommandOptions<T> options)</h3>
 <p>Executes a parameterized stored procedure with command options and returns a scalar value.</p>
 <p><strong>Signature:</strong></p>
 <div class="code-block">
@@ -375,7 +396,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions options)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions&lt;T&gt; options)
 </code></pre>
 </div>
 <h2 id="non-query-stored-procedure-methods">Non-Query Stored Procedure Methods</h2>
@@ -439,7 +460,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="executestoredprocedureasynctstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, object? parameters, CancellationToken cancellationToken = default)</h3>
@@ -450,7 +471,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="executestoredprocedureasynctstring-procedurename-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</h3>
@@ -461,7 +482,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
@@ -482,7 +503,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureFirstAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; ExecuteStoredProcedureFirstAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="executestoredprocedurefirstordefaultasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</h3>
@@ -493,7 +514,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T?&gt; ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T?&gt; ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="executestoredprocedurescalarasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</h3>
@@ -504,7 +525,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <h3 id="executestoredprocedurescalarasynctstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, object? parameters, CancellationToken cancellationToken = default)</h3>
@@ -515,7 +536,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <h3 id="executestoredprocedurenonqueryasyncstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, CancellationToken cancellationToken = default)</h3>
@@ -526,7 +547,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <h3 id="executestoredprocedurenonqueryasyncstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, object? parameters, CancellationToken cancellationToken = default)</h3>
@@ -537,7 +558,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <h3 id="executestoredprocedurenonqueryasyncstring-procedurename-object-parameters-commandoptions-options-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)</h3>
@@ -548,7 +569,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <h2 id="working-with-output-parameters">Working with Output Parameters</h2>
@@ -626,7 +647,7 @@
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T? ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
-<h3 id="executestoredprocedurescalartstring-procedurename-spparameters-parameters-commandoptions-options-default">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions options = default)</h3>
+<h3 id="executestoredprocedurescalartstring-procedurename-spparameters-parameters-commandoptions-options-default">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions<T> options = default)</h3>
 <p>Executes a stored procedure with output parameters and returns a scalar value. Output parameter values can be retrieved after execution.</p>
 <p><strong>Signature:</strong></p>
 <div class="code-block">
@@ -634,7 +655,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <h3 id="executestoredprocedurenonquerythis-idbconnection-connection-string-procedurename-spparameters-parameters-commandoptions-options-default">ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)</h3>
@@ -657,7 +678,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="executestoredprocedurefirstasynctstring-procedurename-spparameters-parameters-commandoptionst-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
@@ -668,7 +689,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureFirstAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; ExecuteStoredProcedureFirstAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
 <h3 id="executestoredprocedurefirstordefaultasynctstring-procedurename-spparameters-parameters-commandoptionst-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
@@ -679,10 +700,10 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T?&gt; ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T?&gt; ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
 </code></pre>
 </div>
-<h3 id="executestoredprocedurescalarasynctstring-procedurename-spparameters-parameters-commandoptions-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)</h3>
+<h3 id="executestoredprocedurescalarasynctstring-procedurename-spparameters-parameters-commandoptions-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default)</h3>
 <p>Asynchronously executes a stored procedure with output parameters and returns a scalar value. Output parameter values can be retrieved after execution.</p>
 <p><strong>Signature:</strong></p>
 <div class="code-block">
@@ -690,7 +711,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <h3 id="executestoredprocedurenonqueryasyncthis-idbconnection-connection-string-procedurename-spparameters-parameters-commandoptions-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)</h3>
@@ -701,7 +722,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <h2 id="spparameters-class">SpParameters Class</h2>
@@ -846,9 +867,5 @@
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

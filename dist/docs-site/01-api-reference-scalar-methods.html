@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scalar Methods — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Scalar Methods</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#methods">Methods</a><a class="toc-l3" href="#queryscalartstring-sql">QueryScalar&lt;T&gt;(string sql)</a><a class="toc-l3" href="#queryscalartstring-sql-object-parameters">QueryScalar&lt;T&gt;(string sql, object parameters)</a><a class="toc-l3" href="#queryscalartstring-sql-commandoptions-options">QueryScalar&lt;T&gt;(string sql, CommandOptions options)</a><a class="toc-l3" href="#queryscalartstring-sql-object-parameters-commandoptions-options">QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions options)</a><a class="toc-l2" href="#provider-specific-behavior-count-return-type">Provider-specific behavior: COUNT(*) return type</a><a class="toc-l2" href="#async-variants">Async Variants</a><a class="toc-l3" href="#queryscalarasynctstring-sql-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#queryscalarasynctstring-sql-object-parameters-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#queryscalarasynctstring-sql-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, CommandOptions options, CancellationToken cancellationToken = default)</a><a class="toc-l3" href="#queryscalarasynctstring-sql-object-parameters-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Scalar Methods</nav>
         <article>
@@ -179,7 +200,7 @@
     <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> });
 </code></pre>
 </div>
-<h3 id="queryscalartstring-sql-commandoptions-options">QueryScalar&lt;T&gt;(string sql, CommandOptions options)</h3>
+<h3 id="queryscalartstring-sql-commandoptions-options">QueryScalar&lt;T&gt;(string sql, CommandOptions<T> options)</h3>
 <p>Executes a query with command options and returns the first column of the first row as a scalar value.</p>
 <p><strong>Signature:</strong></p>
 <div class="code-block">
@@ -187,7 +208,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions options)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options)
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -211,7 +232,7 @@
     CommandOptions.WithTimeout(<span class="tok-num">30</span>));
 </code></pre>
 </div>
-<h3 id="queryscalartstring-sql-object-parameters-commandoptions-options">QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions options)</h3>
+<h3 id="queryscalartstring-sql-object-parameters-commandoptions-options">QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions<T> options)</h3>
 <p>Executes a parameterized query with command options and returns the first column of the first row as a scalar value.</p>
 <p><strong>Signature:</strong></p>
 <div class="code-block">
@@ -219,7 +240,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions options)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options)
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -270,7 +291,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -281,7 +302,7 @@
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
+<li><code>ValueTask&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
 </ul>
 <p><strong>Example:</strong></p>
 <div class="code-block">
@@ -300,7 +321,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -312,9 +333,9 @@
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
+<li><code>ValueTask&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
 </ul>
-<h3 id="queryscalarasynctstring-sql-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, CommandOptions options, CancellationToken cancellationToken = default)</h3>
+<h3 id="queryscalarasynctstring-sql-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)</h3>
 <p>Asynchronously executes a query with command options and returns the first column of the first row as a scalar value.</p>
 <p><strong>Signature:</strong></p>
 <div class="code-block">
@@ -322,7 +343,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -334,9 +355,9 @@
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
+<li><code>ValueTask&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
 </ul>
-<h3 id="queryscalarasynctstring-sql-object-parameters-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)</h3>
+<h3 id="queryscalarasynctstring-sql-object-parameters-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)</h3>
 <p>Asynchronously executes a parameterized query with command options and returns the first column of the first row as a scalar value.</p>
 <p><strong>Signature:</strong></p>
 <div class="code-block">
@@ -344,7 +365,7 @@
     <span class="code-lang">C#</span>
     <button class="copy-btn" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -357,7 +378,7 @@
 </ul>
 <p><strong>Returns:</strong></p>
 <ul>
-<li><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
+<li><code>ValueTask&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
 </ul>
 <p><strong>Example:</strong></p>
 <div class="code-block">
@@ -393,9 +414,5 @@
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

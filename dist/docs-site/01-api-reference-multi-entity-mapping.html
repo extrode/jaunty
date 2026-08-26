@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Multi-Entity Mapping — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Multi-Entity Mapping</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#choosing-a-mapping-route">Choosing a Mapping Route</a><a class="toc-l3" href="#flat-dto-no-multi-entity-api-needed">Flat DTO — no multi-entity API needed</a><a class="toc-l3" href="#tuple-of-entities">Tuple of entities</a><a class="toc-l3" href="#nested-object-graph">Nested object graph</a><a class="toc-l3" href="#custom-shape-from-raw-columns">Custom shape from raw columns</a><a class="toc-l2" href="#how-ordinal-claiming-works">How Ordinal Claiming Works</a><a class="toc-l2" href="#resolving-ambiguous-column-names">Resolving Ambiguous Column Names</a><a class="toc-l2" href="#query-methods">Query Methods</a><a class="toc-l3" href="#queryt1-t2-and-t3.t7">Query&lt;T1, T2&gt; (and T3..T7)</a><a class="toc-l2" href="#multientitycommandoptions">MultiEntityCommandOptions</a><a class="toc-l2" href="#mapping-modes">Mapping Modes</a><a class="toc-l2" href="#best-practices">Best Practices</a><a class="toc-l3" href="#order-generic-type-parameters-to-match-column-order">1. Order generic type parameters to match column order</a><a class="toc-l3" href="#use-column-for-any-shared-property-names">2. Use [Column] for any shared property names</a><a class="toc-l3" href="#give-every-type-at-least-one-property-ordinal-claiming-can-bind">3. Give every type at least one property ordinal claiming can bind</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Multi-Entity Mapping</nav>
         <article>
@@ -118,6 +139,139 @@
 <h2 id="overview">Overview</h2>
 <p>Jaunty can map a single row from a joined query into two or more entity instances at once, without requiring a <code>SplitOn</code> column name like Dapper does. Instead, Jaunty uses <strong>left-to-right ordinal claiming</strong>: each type in the generic parameter list claims the result columns that match its own properties, in order, and later types can only claim columns not already claimed by an earlier type.</p>
 <p>Multi-entity mapping is supported for arities <code>T1..T2</code> through <code>T1..T7</code> via <code>Query</code>, <code>QueryFirst</code>, <code>QueryFirstOrDefault</code>, <code>QuerySingle</code>, <code>QuerySingleOrDefault</code>, and <code>QueryStream</code>, mirroring the single-entity method set.</p>
+<h2 id="choosing-a-mapping-route">Choosing a Mapping Route</h2>
+<p>Multi-entity mapping is one of several ways to get data out of a query that spans more than one table. Pick by the shape you want back, not by the number of tables in the <code>FROM</code> clause.</p>
+<table>
+<thead>
+<tr>
+<th>You want</th>
+<th>Use</th>
+<th>What your code sees</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>One flat DTO holding columns from several tables</td>
+<td><code>Query&lt;TDto&gt;(sql)</code></td>
+<td>columns, matched by name</td>
+</tr>
+<tr>
+<td>Each row as a pair/tuple of entities</td>
+<td><code>Query&lt;T1, T2&gt;(sql)</code></td>
+<td>two name-matched entities</td>
+</tr>
+<tr>
+<td>A nested object graph, or any custom shape, built from typed entities</td>
+<td><code>QueryStream&lt;T1, T2&gt;(sql)</code> + a <code>foreach</code></td>
+<td>two name-matched entities, one row at a time</td>
+</tr>
+<tr>
+<td>A custom shape built from raw columns</td>
+<td><code>CommandOptions&lt;T&gt;.WithMapper</code></td>
+<td>the <code>IDataReader</code>, read by ordinal</td>
+</tr>
+<tr>
+<td>The same, but with the query built for you</td>
+<td><a href="01-api-reference-fluent-api.html">Fluent API</a> joins</td>
+<td>depends on the <code>Select</code> overload</td>
+</tr>
+<tr>
+<td>Several independent result sets from one round trip</td>
+<td><a href="01-api-reference-multiple-result-sets.html"><code>QueryMultiple</code></a></td>
+<td>one <code>GridReader</code> per result set</td>
+</tr>
+</tbody>
+</table>
+<p>All examples below run against the same join:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">SELECT</span> p.product_id <span class="tok-kw">AS</span> ProductId, p.product_name <span class="tok-kw">AS</span> ProductName, p.unit_price <span class="tok-kw">AS</span> UnitPrice,
+       c.category_id <span class="tok-kw">AS</span> CategoryId, c.category_name <span class="tok-kw">AS</span> CategoryName
+<span class="tok-kw">FROM</span> products p
+<span class="tok-kw">JOIN</span> categories c <span class="tok-kw">ON</span> p.category_id = c.category_id
+</code></pre>
+</div>
+<h3 id="flat-dto-no-multi-entity-api-needed">Flat DTO — no multi-entity API needed</h3>
+<p>Column-name matching does not care which table a column came from, so a DTO spanning the join is an ordinary single-entity query:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductWithCategory
+{
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;;
+    <span class="tok-kw">public</span> decimal UnitPrice { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> int CategoryId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string CategoryName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;;
+}
+
+List&lt;ProductWithCategory&gt; rows = connection.Query&lt;ProductWithCategory&gt;(sql);
+</code></pre>
+</div>
+<p>Single-entity queries map in strict mode: every property must have a matching column, so alias anything the DTO expects.</p>
+<h3 id="tuple-of-entities">Tuple of entities</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">List&lt;(ProductInfo, CategoryInfo)&gt; rows = connection.Query&lt;ProductInfo, CategoryInfo&gt;(sql);
+
+<span class="tok-kw">foreach</span> ((ProductInfo product, CategoryInfo category) <span class="tok-kw">in</span> rows)
+{
+    <span class="tok-com">// ...</span>
+}
+</code></pre>
+</div>
+<h3 id="nested-object-graph">Nested object graph</h3>
+<p><code>QueryStream&lt;T1, T2&gt;</code> hands you both entities already name-matched, one row at a time, and never builds an intermediate list:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">List&lt;ProductInfo&gt; products = [];
+
+<span class="tok-kw">foreach</span> ((ProductInfo product, CategoryInfo category) <span class="tok-kw">in</span>
+         connection.QueryStream&lt;ProductInfo, CategoryInfo&gt;(sql))
+{
+    product.Category = category;
+    products.Add(product);
+}
+</code></pre>
+</div>
+<p>The same pattern produces any shape you like — a record, a projection, a scalar — by building it inside the loop instead of assigning a navigation property. <code>QueryStreamAsync&lt;T1, T2&gt;</code> is the <code>await foreach</code> equivalent.</p>
+<h3 id="custom-shape-from-raw-columns">Custom shape from raw columns</h3>
+<p>When the shape you want does not correspond to the entities at all, supply a mapper and read the row directly. This is the most flexible route and the most fragile one — the reads are by ordinal, so reordering the <code>SELECT</code> list silently changes the result:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">List&lt;ProductInfo&gt; products = connection.Query&lt;ProductInfo&gt;(sql,
+    CommandOptions&lt;ProductInfo&gt;.WithMapper(r =&gt; <span class="tok-kw">new</span> ProductInfo
+    {
+        ProductId = r.GetInt32(<span class="tok-num">0</span>),
+        ProductName = r.GetString(<span class="tok-num">1</span>),
+        UnitPrice = r.GetDecimal(<span class="tok-num">2</span>),
+        Category = <span class="tok-kw">new</span> CategoryInfo { CategoryId = r.GetInt32(<span class="tok-num">3</span>), CategoryName = r.GetString(<span class="tok-num">4</span>) },
+    }));
+</code></pre>
+</div>
+<p>A mapper supplied this way is honoured on the multi-entity overloads too — <code>Query&lt;T1, T2&gt;(sql, CommandOptions&lt;(T1, T2)&gt;.WithMapper(...))</code> replaces ordinal claiming for that call.</p>
+<blockquote>
+<p><strong>Removed in 1.0:</strong> earlier pre-release builds carried a combiner overload,
+<code>Query&lt;T1, T2, TResult&gt;(sql, Func&lt;T1, T2, TResult&gt; map, ...)</code>, which passed both mapped entities to
+a projection delegate. It was <code>[Obsolete]</code> from 2026-02-19 and has been removed along with the rest
+of the obsolete multi-entity surface. The <code>QueryStream</code> loop above is its direct replacement and
+allocates no more than the combiner did. See
+the decision record.</p>
+</blockquote>
 <h2 id="how-ordinal-claiming-works">How Ordinal Claiming Works</h2>
 <p>For <code>Query&lt;T1, T2, ..., TN&gt;</code>, Jaunty resolves setters for each type in order:</p>
 <ol>
@@ -207,9 +361,8 @@
 <li><code>QuerySingleOrDefault&lt;T1,...,TN&gt;</code> — returns the only tuple, or <code>default</code> if empty; throws if more than one row.</li>
 <li><code>QueryStream&lt;T1,...,TN&gt;</code> — returns <code>IEnumerable&lt;(T1,...,TN)&gt;</code>, lazily streaming one row at a time (see <a href="01-api-reference-streaming-methods.html">Streaming Methods</a> for the single-entity equivalent).</li>
 </ul>
-<h2 id="per-position-custom-mapper-delegates">Per-Position Custom Mapper Delegates</h2>
-<p><code>MultiEntityCommandOptions&lt;T1,...,TN&gt;</code> lets you supply a mapper delegate for any individual position. A type with a custom mapper is <strong>excluded entirely from ordinal claiming</strong> — it neither claims columns for itself nor blocks other positions from claiming columns it reads. This is Jaunty's own mechanism for the cases Dapper covers with <code>SplitOn</code> plus a custom mapper, and it also supports keyless/projection-only trailing types.</p>
-<p><strong>Signature (arity 3, representative):</strong></p>
+<h2 id="multientitycommandoptions">MultiEntityCommandOptions</h2>
+<p><code>MultiEntityCommandOptions&lt;T1,...,TN&gt;</code> (arities 2-7) carries the same execution-level settings as <code>CommandOptions&lt;T&gt;</code> for multi-entity queries: <code>Transaction</code>, <code>CommandTimeout</code>, and <code>CommandType</code>. It implicitly converts to the appropriate <code>CommandOptions</code>/<code>CommandOptions&lt;(T1,...,TN)&gt;</code> overload.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
@@ -219,42 +372,15 @@
     <span class="tok-kw">where</span> T1 : <span class="tok-kw">new</span>() <span class="tok-kw">where</span> T2 : <span class="tok-kw">new</span>() <span class="tok-kw">where</span> T3 : <span class="tok-kw">new</span>()
 {
     <span class="tok-kw">public</span> MultiEntityCommandOptions(
-        Func&lt;IDataReader, T1&gt;? mapper1 = <span class="tok-kw">null</span>,
-        Func&lt;IDataReader, T2&gt;? mapper2 = <span class="tok-kw">null</span>,
-        Func&lt;IDataReader, T3&gt;? mapper3 = <span class="tok-kw">null</span>,
         IDbTransaction? transaction = <span class="tok-kw">null</span>,
         int? commandTimeout = <span class="tok-kw">null</span>,
         CommandType commandType = CommandType.Text);
 }
 </code></pre>
 </div>
-<p>Every arity 3-7 has a matching <code>MultiEntityCommandOptions&lt;T1,...,TN&gt;</code> with one <code>mapperN</code> parameter per position, plus <code>Transaction</code>, <code>CommandTimeout</code>, and <code>CommandType</code>.</p>
-<p><strong>Example — keyless projection-only trailing type:</strong></p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Author { <span class="tok-kw">public</span> long Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } }
-<span class="tok-kw">public</span> <span class="tok-kw">class</span> Book   { <span class="tok-kw">public</span> long Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } }
-
-<span class="tok-com">// Intentionally keyless - has no properties Jaunty could auto-map, so it must</span>
-<span class="tok-com">// opt in via a custom mapper delegate rather than participating in ordinal claiming.</span>
-<span class="tok-kw">public</span> <span class="tok-kw">class</span> Metadata
-{
-    <span class="tok-kw">public</span> string Description { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
-}
-
-<span class="tok-kw">var</span> options = <span class="tok-kw">new</span> MultiEntityCommandOptions&lt;Author, Book, Metadata&gt;(
-    mapper1: <span class="tok-kw">null</span>,
-    mapper2: <span class="tok-kw">null</span>,
-    mapper3: reader =&gt; <span class="tok-kw">new</span> Metadata { Description = reader[&quot;description&quot;]?.ToString() ?? string.Empty }
-);
-
-<span class="tok-kw">var</span> results = connection.Query&lt;Author, Book, Metadata&gt;(sql, options);
-</code></pre>
-</div>
-<p>Leaving <code>mapper1</code>/<code>mapper2</code> as <code>null</code> means <code>Author</code> and <code>Book</code> still participate in automatic ordinal claiming as usual; only the position with a supplied delegate is handled manually.</p>
+<blockquote>
+<p><strong>No per-position custom mapper.</strong> Earlier pre-release builds carried <code>mapper1..mapperN</code> parameters on this type intended to let an individual position supply its own <code>Func&lt;IDataReader, TN&gt;</code> and opt out of ordinal claiming (for keyless or projection-only trailing types). That capability was never actually wired up end-to-end — the delegate was accepted but silently discarded before it reached the mapping engine — and has been removed rather than shipped as a working 1.0 API. There is currently no way to supply a custom mapper for an individual type position in a multi-entity query; every type in the tuple must have properties that ordinal claiming can bind directly. This is tracked as a possible future enhancement, not a currently-supported feature.</p>
+</blockquote>
 <h2 id="mapping-modes">Mapping Modes</h2>
 <p>Internally, multi-entity mapping always resolves individual entity property setters in <code>MappingMode.Projection</code> (each type maps only the columns it can claim, rather than requiring every property to have a matching column). The public <code>Query&lt;T1,...,TN&gt;</code> surface always operates this way — there is no separate strict/partial toggle for multi-entity queries, since ordinal claiming already implies a projection over the full result set.</p>
 <h2 id="best-practices">Best Practices</h2>
@@ -262,13 +388,14 @@
 <p>Since ordinal claiming is left-to-right, list your generic type parameters in the same left-to-right order as the columns appear in your <code>SELECT</code> list to avoid surprises when two types share property names.</p>
 <h3 id="use-column-for-any-shared-property-names">2. Use <code>[Column]</code> for any shared property names</h3>
 <p>If two mapped types share a property name (e.g. both have <code>Name</code> or <code>CreatedAt</code>), alias the columns distinctly in SQL and use <code>[Column(&quot;...&quot;)]</code> on at least one of the properties so claiming is unambiguous.</p>
-<h3 id="use-a-custom-mapper-for-keyless-or-computed-trailing-types">3. Use a custom mapper for keyless or computed trailing types</h3>
-<p>If a type in your tuple has no properties that map cleanly to columns (e.g. an aggregate or projection-only DTO), supply a <code>mapperN</code> delegate via <code>MultiEntityCommandOptions&lt;...&gt;</code> rather than trying to force it through ordinal claiming.</p>
+<h3 id="give-every-type-at-least-one-property-ordinal-claiming-can-bind">3. Give every type at least one property ordinal claiming can bind</h3>
+<p>Multi-entity mapping has no mechanism today for keyless or computed trailing types — each type in the tuple needs at least one property that matches an unclaimed result-set column, or it maps back as an empty (default-constructed) instance.</p>
 <h2 id="important-notes">Important Notes</h2>
 <div class="callout callout-warn"><ul>
-<li><strong>No SplitOn</strong>: Jaunty does not implement Dapper's <code>splitOn</code> parameter. Ambiguous column names are resolved with <code>[Column]</code>; keyless/projection types are resolved with per-position mapper delegates.</li>
+<li><strong>No SplitOn</strong>: Jaunty does not implement Dapper's <code>splitOn</code> parameter. Ambiguous column names are resolved with <code>[Column]</code>.</li>
 <li><strong>Left-to-right claiming</strong>: <code>T1</code> always claims before <code>T2</code>, <code>T2</code> before <code>T3</code>, and so on — order of generic type parameters is significant.</li>
-<li><strong>Custom mappers opt out of claiming</strong>: a position with a supplied <code>mapperN</code> delegate does not claim any ordinals, so it never blocks other positions from reading the same columns.</li>
+<li><strong>No per-position custom mapper</strong>: there is no way to supply a custom mapping delegate for an individual type position; see the note under <a href="#multientitycommandoptions">MultiEntityCommandOptions</a> above.</li>
+<li><strong>No combiner overload</strong>: <code>Query&lt;T1, T2, TResult&gt;(sql, map, ...)</code> was removed before 1.0; use the <code>QueryStream</code> loop shown under <a href="#nested-object-graph">Nested object graph</a>.</li>
 <li><strong>Arity range</strong>: <code>T1</code> through <code>T7</code> are supported (2 to 7 total types per row).</li>
 <li><strong>Performance</strong>: <code>Query&lt;T1,...,TN&gt;</code> uses the same <code>DbConnection</code>/<code>DbDataReader</code> fast path as single-entity queries when the connection is a concrete <code>DbConnection</code>, and <code>QueryStream&lt;T1,...,TN&gt;</code> streams lazily rather than materializing a list.</li>
 </ul></div>
@@ -293,9 +420,5 @@
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

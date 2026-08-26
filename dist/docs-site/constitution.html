@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Constitution — jaunty — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Constitution — jaunty</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html" class="active" aria-current="page">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html" class="active" aria-current="page">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#stack-constraints">Stack constraints</a><a class="toc-l2" href="#architecture-invariants">Architecture invariants</a><a class="toc-l2" href="#security-data">Security / data</a><a class="toc-l2" href="#testing">Testing</a><a class="toc-l2" href="#governance">Governance</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Constitution — jaunty</nav>
         <article>
@@ -118,31 +139,58 @@
 <p>Binding project rules. These are the WON'T-change decisions. These rules are binding;
 changing one is a deliberate governance act, not a casual edit. This is NOT lessons-learned
 (see docs/lessons/) and NOT mechanical conventions (see docs/conventions.md).</p>
-<p>Status: draft · Last reviewed: 2026-07-13</p>
+<p>Status: active · Last reviewed: 2026-07-29
+Content grafted from <code>docs/constitution.md</code> (version 2026-03) when the repo moved
+off the spec templates; the placeholder sections it replaces were never filled in.</p>
 <h2 id="stack-constraints">Stack constraints</h2>
 <ul>
-<li>(e.g. &quot;No React.&quot; / &quot;No Node.&quot; / &quot;NativeAOT — source-gen JSON only, no reflection.&quot;)</li>
+<li><strong>Zero dependencies in core.</strong> The <code>Jaunty</code> package has none. Extensions ship separately.
+Nothing is added to core.</li>
+<li><strong>NativeAOT-compatible.</strong> No runtime reflection in core hot paths. <code>[DynamicallyAccessedMembers]</code>
+where needed. Multi-targets <code>netstandard2.0</code> + <code>net8.0</code>.</li>
+<li><strong>ADO.NET only.</strong> All database integration goes through <code>IDbConnection</code> and <code>DbDataReader</code>.
+Dialects are implementations of <code>ISqlDialect</code>, never special cases in the core.</li>
 </ul>
 <h2 id="architecture-invariants">Architecture invariants</h2>
 <ul>
-<li>(e.g. &quot;Every mutating flow is an HTML form action; app works with JS disabled.&quot;)</li>
+<li><strong>Performance-first.</strong> Zero unnecessary allocations in hot paths, no LINQ in tight loops,
+aggressive caching of expressions, delegates and metadata. Benchmark before and after.</li>
+<li><strong>Strict mapping by default.</strong> Silent partial mapping is a bug: <code>Query&lt;T&gt;</code> requires every
+property mapped. Intentional partial shapes use <code>QueryPartial&lt;T&gt;</code>.</li>
+<li><code>ConfigureAwait(false)</code> everywhere. Pre-size collections. <code>ArgumentNullException.ThrowIfNull</code>
+for validation. XML docs on every public API.</li>
+<li>Source layout, with <code>tests/</code> mirroring it:</li>
 </ul>
+<pre><code>src/
+  Jaunty/                    # Core (netstandard2.0, net8.0)
+  Jaunty.Fluent/             # Fluent API
+  Jaunty.FlatFiles/          # Flat file interfaces
+  Jaunty.FlatFiles.DuckDB/   # DuckDB implementation (net8.0+)
+docs/specs/                  # Specifications, NNN-slug/NNN-spec.md
+</code></pre>
 <h2 id="security-data">Security / data</h2>
 <ul>
-<li>(e.g. &quot;AWS surface is SES+S3+SNS only.&quot; / rules for auth, input handling, data exposure)</li>
+<li>None recorded. jaunty is a library with no network surface, no credential handling and no
+data at rest of its own; connection strings belong to the consuming application.</li>
 </ul>
 <h2 id="testing">Testing</h2>
 <ul>
-<li>(e.g. &quot;Core is zero-dependency; tests may use Testcontainers.&quot;)</li>
+<li><strong>Tests before implementation.</strong> 90%+ coverage target.</li>
+<li>Integration tests run against real databases, not fakes.</li>
+<li>Performance benchmarks accompany any change to a critical path.</li>
 </ul>
 <h2 id="governance">Governance</h2>
 <ul>
 <li>Supersedes ad-hoc practices. To change a rule: record the change + date + why, right here.</li>
+<li><strong>Spec-first.</strong> No code without a spec and a plan under <code>docs/specs/NNN-slug/</code>. Each
+milestone carries entry and exit criteria; acceptance criteria are testable assertions.</li>
+<li>One commit per completed task, <code>type(component): T### — description</code>, including the test
+count. PRs verify compliance; a deviation is documented in the PR or it did not happen.</li>
 </ul>
 
         </article>
         <div class="page-nav" id="page-nav">
-          <div class="prev-next"><a class="pn-next" href="conventions.html">
+          <div class="prev-next"><span></span><a class="pn-next" href="conventions.html">
   <span class="pn-label">next &#8594;</span>
   <span class="pn-title">Conventions</span>
 </a></div>
@@ -157,9 +205,5 @@ changing one is a deliberate governance act, not a casual edit. This is NOT less
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>
