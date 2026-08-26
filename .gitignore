@@ -370,3 +370,6 @@ tools/native/sqlite-interop-osx-arm64/artifacts/
 # The repo's one scratch directory : probes, dumps, screenshots, patches.
 # Ignored before the first scratch file exists, not after one is committed.
 tmp/
+
+# Stryker.NET mutation reports (scripts/coverage.ps1 and tests/*/stryker-config.json)
+StrykerOutput/
