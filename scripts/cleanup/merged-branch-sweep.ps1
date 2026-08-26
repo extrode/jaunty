@@ -2,7 +2,8 @@
 # Produced by the 2026-07-31 session after the round-27 close-out. Dry run by default;
 # -e / --execute acts. Safe delete only (git branch -d): anything unmerged is skipped and listed,
 # never forced. Branches checked out in a worktree are skipped too - run
-# scripts/cleanup/round27-audit.ps1 -e first to release those.
+# scripts/cleanup/stale-audit-worktrees.ps1 -e -RemoveWorktreeDirectories first to release those
+# (2026-08-26: was round27-audit.ps1, which no longer holds any worktree).
 $ErrorActionPreference = 'Stop'
 
 $execute = $args -contains '--execute' -or $args -contains '-e'
@@ -25,7 +26,7 @@ $toDelete = @()
 $skipped = @()
 foreach ($b in $all) {
     if ($protected -contains $b) { $skipped += "$b (protected)" }
-    elseif ($inWorktree -contains $b) { $skipped += "$b (checked out in a worktree - run round27-audit.ps1 -e first)" }
+    elseif ($inWorktree -contains $b) { $skipped += "$b (checked out in a worktree - run stale-audit-worktrees.ps1 first)" }
     elseif ($merged -notcontains $b) { $skipped += "$b (NOT merged into dev)" }
     else { $toDelete += $b }
 }
