@@ -90,4 +90,4 @@ jobs:
             packout/*.snupkg
           generate_release_notes: true
           body: |
-            See [CHANGELOG.md](https://github.com/beparey/jaunty/blob/main/CHANGELOG.md) for details.
+            See [CHANGELOG.md](https://github.com/extrode/jaunty/blob/main/CHANGELOG.md) for details.

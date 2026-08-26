@@ -2,7 +2,7 @@
 
 **Jaunty.FlatFiles** is an extension to the Jaunty micro-ORM that adds flat file (CSV, TSV, Parquet, JSON) query, CRUD, and import capabilities. It provides a unified fluent API for querying both databases and files using the same patterns.
 
-[![NuGet](https://img.shields.io/nuget/v/Beparey.Jaunty.FlatFiles.svg)](https://www.nuget.org/packages/Beparey.Jaunty.FlatFiles)
+[![NuGet](https://img.shields.io/nuget/v/Extrode.Jaunty.FlatFiles.svg)](https://www.nuget.org/packages/Extrode.Jaunty.FlatFiles)
 
 ## Features
 
@@ -17,13 +17,13 @@
 ## Installation
 
 ```bash
-dotnet add package Beparey.Jaunty.FlatFiles
+dotnet add package Extrode.Jaunty.FlatFiles
 ```
 
 You'll also need the DuckDB engine package:
 
 ```bash
-dotnet add package Beparey.Jaunty.FlatFiles.DuckDB
+dotnet add package Extrode.Jaunty.FlatFiles.DuckDB
 ```
 
 ## Quick Start
