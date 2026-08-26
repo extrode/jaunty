@@ -25,8 +25,17 @@ $ErrorActionPreference = 'Stop'
 # Several checks below expect a non-zero exit from a native command rather than a throw.
 $PSNativeCommandUseErrorActionPreference = $false
 
-# Act on the repository this script lives in, not the caller's working directory.
-Set-Location (Split-Path -Parent $PSScriptRoot | Split-Path -Parent)
+# Act on the repository this script lives in, not the caller's working directory. Resolve the MAIN
+# worktree rather than walking up from $PSScriptRoot: this script is committed on a branch that only
+# the worktree it removes has checked out, so it is normally run from inside that worktree, where
+# walking up two directories lands in the worktree and every .worktrees/ path below misses.
+Set-Location $PSScriptRoot
+$mainRoot = (git worktree list --porcelain | Select-Object -First 1) -replace '^worktree ', ''
+if (-not $mainRoot) {
+    Write-Error 'Could not resolve the main worktree. Aborting rather than acting on a guess.'
+    exit 1
+}
+Set-Location $mainRoot
 
 git rev-parse --verify --quiet refs/heads/dev > $null
 if ($LASTEXITCODE -ne 0) {
@@ -41,23 +50,29 @@ if ($RemoveWorktreeDirectories -and -not $Execute) {
 
 $failed = $false
 $target = '.worktrees/fix-northwind-fixture-copy'
-$branch = 'fix/northwind-fixture-copy'
+
+# Two branches, because this script is itself committed on the second one: the worktree was created
+# for fix/northwind-fixture-copy and later moved to chore/northwind-cleanup-script, which is the
+# only branch carrying this file. Both must be on dev before anything is removed.
+$branches = @('fix/northwind-fixture-copy', 'chore/northwind-cleanup-script')
 
 Write-Host ''
-Write-Host '1. Confirm the branch is already on dev'
+Write-Host '1. Confirm the branches are already on dev'
 
 # Refuse to touch anything if the work is not merged. A worktree removed while its branch still
 # holds unmerged commits loses nothing immediately, but it hides the branch from view.
-$unmerged = git rev-list --count "dev..$branch"
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "  skip: $branch does not exist. Nothing to check."
-}
-elseif ([int]$unmerged -ne 0) {
-    Write-Error "$branch has $unmerged commit(s) not on dev. Merge it before cleaning up."
-    exit 1
-}
-else {
-    Write-Host "  ok: $branch is fully merged into dev"
+foreach ($branch in $branches) {
+    $unmerged = git rev-list --count "dev..$branch"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  skip: $branch does not exist. Nothing to check."
+    }
+    elseif ([int]$unmerged -ne 0) {
+        Write-Error "$branch has $unmerged commit(s) not on dev. Merge it before cleaning up."
+        exit 1
+    }
+    else {
+        Write-Host "  ok: $branch is fully merged into dev"
+    }
 }
 
 Write-Host ''
@@ -72,16 +87,23 @@ if (-not $registered) {
     Write-Host "  skip: $target is not a registered worktree"
 }
 else {
+    # Act on the absolute path git reported, never on $target: a relative .worktrees/ path only
+    # resolves from the main worktree, and this script usually runs from inside the tree it removes.
+    #
     # git worktree remove refuses a dirty tree. That refusal is the wanted behaviour: say so and
     # move on. Never --force - uncommitted work in there is work, not cruft.
-    $dirty = git -C $target status --porcelain
-    if ($dirty) {
+    $dirty = git -C $registered status --porcelain
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  skip: could not read the status of $registered. Left alone."
+        $failed = $true
+    }
+    elseif ($dirty) {
         Write-Host "  skip: $target has uncommitted changes. Left alone - inspect it by hand."
         $failed = $true
     }
     elseif ($RemoveWorktreeDirectories) {
-        Write-Host "  git worktree remove $target"
-        git worktree remove $target
+        Write-Host "  git worktree remove $registered"
+        git worktree remove $registered
         if ($LASTEXITCODE -ne 0) { Write-Host '  refused by git. Left in place.'; $failed = $true }
     }
     else {
@@ -102,9 +124,9 @@ else {
 }
 
 Write-Host ''
-Write-Host "4. The branch $branch"
-Write-Host '   Not deleted here. Once the tree is gone it is an ordinary merged branch, and'
-Write-Host '   scripts/cleanup/merged-branch-sweep.ps1 picks it up with the rest of the backlog.'
+Write-Host "4. The branches $($branches -join ', ')"
+Write-Host '   Not deleted here. Once the tree is gone they are ordinary merged branches, and'
+Write-Host '   scripts/cleanup/merged-branch-sweep.ps1 picks them up with the rest of the backlog.'
 
 Write-Host ''
 Write-Host 'Remaining state:'
