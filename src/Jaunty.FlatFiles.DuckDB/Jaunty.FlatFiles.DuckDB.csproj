@@ -49,7 +49,7 @@
 
 	<PropertyGroup>
 		<PackageId>Extrode.Jaunty.FlatFiles.DuckDB</PackageId>
-		<Authors>Syed Beparey</Authors>
+		<Authors>Extrode LLC</Authors>
 		<Description>DuckDB provider for Jaunty.FlatFiles. Enables SQL queries on CSV, TSV, Parquet, JSON, Excel, Delta Lake, and Iceberg sources, including remote files via S3, Azure, and HTTP.</Description>
 		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>
