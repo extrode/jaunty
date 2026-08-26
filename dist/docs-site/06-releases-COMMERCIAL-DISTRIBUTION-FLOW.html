@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Selling and Distributing Jaunty — The Complete Flow — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Selling and Distributing Jaunty — The Complete Flow</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#the-flow-at-a-glance">The flow at a glance</a><a class="toc-l2" href="#showing-the-product-off-pre-sale">1. Showing the product off (pre-sale)</a><a class="toc-l2" href="#trial-the-bridge-from-demo-to-sale">2. Trial (the bridge from demo to sale)</a><a class="toc-l2" href="#distribution-after-the-sale">3. Distribution after the sale</a><a class="toc-l3" href="#github-packages-recommended-youre-already-on-github">GitHub Packages (recommended — you're already on GitHub)</a><a class="toc-l3" href="#alternatives">Alternatives</a><a class="toc-l2" href="#source-access-for-customers">4. Source access for customers</a><a class="toc-l2" href="#license-enforcement-spectrum">5. License enforcement spectrum</a><a class="toc-l2" href="#concrete-recommended-setup-for-jaunty-solo-vendor-today">6. Concrete recommended setup for Jaunty (solo vendor, today)</a><a class="toc-l2" href="#decisions-still-open">Decisions still open</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Selling and Distributing Jaunty — The Complete Flow</nav>
         <article>
@@ -133,7 +154,7 @@ demo video/livecoding                            invoice + license       version
 <p>You need public marketing artifacts that don't give the product away:</p>
 <ul>
 <li><strong>Public docs/marketing repo or site.</strong> The private repo stays private; publish a
-separate public repo (e.g. <code>beparey/jaunty-docs</code>) containing the README-grade docs,
+separate public repo (e.g. <code>extrode/jaunty-docs</code>) containing the README-grade docs,
 the API reference (DocFX output from <code>tools/Jaunty.DocsGenerator</code>), the measured
 benchmark results (BENCHMARKS-2026-07-04.md), and the CHANGELOG. This is your
 storefront and your SEO.</li>
@@ -156,7 +177,7 @@ the repo make this nearly free).</li>
 PAT scoped to package read, with a 30-day expiry. When the trial lapses, the
 token dies by itself — no revocation chores. Cheap to run, identical experience
 to the paid product.</li>
-<li><strong>Trial package on nuget.org.</strong> Publish <code>Beparey.Jaunty.Trial</code> (or <code>-trial</code>
+<li><strong>Trial package on nuget.org.</strong> Publish <code>Extrode.Jaunty.Trial</code> (or <code>-trial</code>
 suffix versions) publicly with a built-in time bomb or nag. More reach, but you
 maintain a second package identity and trial code paths. Only worth it if
 inbound volume gets high.</li>
@@ -189,7 +210,7 @@ access. Better audit trail, more admin per head.</li>
   </div>
   <pre data-lang="xml"><code class="language-xml">&lt;!-- nuget.config --&gt;
 &lt;packageSources&gt;
-  &lt;add key=&quot;jaunty&quot; value=&quot;https://nuget.pkg.github.com/beparey/index.json&quot; /&gt;
+  &lt;add key=&quot;jaunty&quot; value=&quot;https://nuget.pkg.github.com/extrode/index.json&quot; /&gt;
 &lt;/packageSources&gt;
 &lt;packageSourceCredentials&gt;
   &lt;jaunty&gt;
@@ -255,7 +276,7 @@ environments and trivially bypassed for .NET anyway.</li>
 </ul>
 <h2 id="concrete-recommended-setup-for-jaunty-solo-vendor-today">6. Concrete recommended setup for Jaunty (solo vendor, today)</h2>
 <ol>
-<li>Keep <code>beparey/jaunty</code> private (product + source of truth).</li>
+<li>Keep <code>extrode/jaunty</code> private (product + source of truth).</li>
 <li>Create public <code>jaunty-docs</code> (docs site + benchmarks + changelog) and
 <code>jaunty-samples</code> — the storefront.</li>
 <li>Wire release.yml to GitHub Packages (<code>GITHUB_TOKEN</code>) — kills the NUGET_API_KEY
@@ -299,9 +320,5 @@ business calls, not wired into anything technical yet.</li>
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

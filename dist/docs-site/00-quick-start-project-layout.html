@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Project Layout — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Project Layout</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#root-directory-structure">Root Directory Structure</a><a class="toc-l2" href="#folder-details">Folder Details</a><a class="toc-l3" href="#core-folders">Core Folders</a><a class="toc-l3" href="#development-folders">Development Folders</a><a class="toc-l3" href="#configuration-folders">Configuration Folders</a><a class="toc-l3" href="#distribution-folders">Distribution Folders</a><a class="toc-l2" href="#source-code-structure-src">Source Code Structure (src/)</a><a class="toc-l2" href="#test-structure-tests">Test Structure (tests/)</a><a class="toc-l2" href="#documentation-structure-docs">Documentation Structure (docs/)</a><a class="toc-l2" href="#file-naming-conventions">File Naming Conventions</a><a class="toc-l2" href="#navigation-tips">Navigation Tips</a><a class="toc-l3" href="#finding-source-code">Finding Source Code</a><a class="toc-l3" href="#finding-tests">Finding Tests</a><a class="toc-l3" href="#finding-documentation">Finding Documentation</a><a class="toc-l2" href="#build-and-scripts">Build and Scripts</a><a class="toc-l3" href="#build-scripts">Build Scripts</a><a class="toc-l3" href="#running-tests">Running Tests</a><a class="toc-l2" href="#related-documents">Related Documents</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Project Layout</nav>
         <article>
@@ -118,7 +139,7 @@
 <p>Guide to the Jaunty repository structure and organization.</p>
 <hr />
 <h2 id="root-directory-structure">Root Directory Structure</h2>
-<pre><code>C:\home\Beparey\code\jaunty.beparey.com\
+<pre><code>C:\src\jaunty\
 │
 ├── Configuration Files
 │   ├── .editorconfig              # Editor configuration (formatting, naming)
@@ -134,12 +155,13 @@
 ├── Folders
 │   ├── .github/                   # GitHub configuration (workflows)
 │   ├── .idea/                     # JetBrains IDE settings
-│   ├── docs/                  # Specify tool configuration
 │   ├── .vs/                       # Visual Studio settings
 │   │
 │   ├── src/                       # Source code packages
 │   ├── tests/                     # Test projects
 │   ├── docs/                      # Documentation (Markdown source)
+│   │   └── specs/                 # Specifications, NNN-slug/NNN-spec.md
+│   ├── work/                      # The work underway (tasklist, status, todo)
 │   │
 │   ├── benchmarks/                # Performance benchmarks
 │   ├── samples/                   # Sample projects
@@ -173,6 +195,16 @@
 <td><code>docs/</code></td>
 <td>Documentation source</td>
 <td>Organized by topic (00-quick-start through 06-releases)</td>
+</tr>
+<tr>
+<td><code>docs/specs/</code></td>
+<td>Specifications</td>
+<td>One <code>NNN-slug/</code> per feature, files <code>NNN-spec.md</code> etc.</td>
+</tr>
+<tr>
+<td><code>work/</code></td>
+<td>The work underway</td>
+<td><code>tasklist.md</code>, <code>status/</code>, <code>todo.md</code>, <code>milestones.md</code></td>
 </tr>
 </tbody>
 </table>
@@ -232,11 +264,6 @@
 <td><code>.vs/</code></td>
 <td>Visual Studio settings</td>
 <td>VS-specific configuration</td>
-</tr>
-<tr>
-<td><code>docs/</code></td>
-<td>Specify tool</td>
-<td>Architecture specification tool</td>
 </tr>
 </tbody>
 </table>
@@ -332,7 +359,7 @@
 </tr>
 </tbody>
 </table>
-<p>See <a href="03-development-file-naming-convention.html"><code>03-development/file-naming-convention.md</code></a> for the complete standard.</p>
+<p>See <code>03-development/file-naming-convention.md</code> for the complete standard.</p>
 <hr />
 <h2 id="navigation-tips">Navigation Tips</h2>
 <h3 id="finding-source-code">Finding Source Code</h3>
@@ -396,19 +423,19 @@
 <tbody>
 <tr>
 <td>API reference</td>
-<td><a href="01-api-reference-README.html"><code>docs/01-api-reference/</code></a></td>
+<td><code>docs/01-api-reference/</code></td>
 </tr>
 <tr>
 <td>Architecture</td>
-<td><a href="02-architecture-README.html"><code>docs/02-architecture/</code></a></td>
+<td><code>docs/02-architecture/</code></td>
 </tr>
 <tr>
 <td>Development guides</td>
-<td><a href="03-development-README.html"><code>docs/03-development/</code></a></td>
+<td><code>docs/03-development/</code></td>
 </tr>
 <tr>
 <td>Historical docs</td>
-<td><a href="99-archive-README.html"><code>docs/99-archive/</code></a></td>
+<td><code>docs/99-archive/</code></td>
 </tr>
 </tbody>
 </table>
@@ -456,10 +483,10 @@ dotnet test /p:CollectCoverage=true
 <hr />
 <h2 id="related-documents">Related Documents</h2>
 <ul>
-<li><a href="../README.md"><code>README.md</code></a> - Project overview</li>
-<li><a href="../CONTRIBUTING.md"><code>CONTRIBUTING.md</code></a> - Contribution guide</li>
-<li><a href="../the coding standards"><code>the coding standards</code></a> - development guidelines</li>
-<li><a href="00-quick-start-build-and-test.html"><code>00-quick-start/build-and-test.md</code></a> - Build instructions</li>
+<li><code>README.md</code> - Project overview</li>
+<li><code>CONTRIBUTING.md</code> - Contribution guide</li>
+<li><code>the coding standards</code> - development guidelines</li>
+<li><code>00-quick-start/build-and-test.md</code> - Build instructions</li>
 </ul>
 <hr />
 <p><strong>Last Updated</strong>: March 2026<br />
@@ -485,9 +512,5 @@ dotnet test /p:CollectCoverage=true
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

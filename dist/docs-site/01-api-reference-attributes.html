@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Attributes — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Attributes</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#table-attribute">Table Attribute</a><a class="toc-l3" href="#tablestring-name-string-schema-null">[Table(string name, string? schema = null)]</a><a class="toc-l2" href="#column-attribute">Column Attribute</a><a class="toc-l3" href="#columnstring-name">[Column(string name)]</a><a class="toc-l2" href="#ignore-attribute">Ignore Attribute</a><a class="toc-l3" href="#ignore">[Ignore]</a><a class="toc-l2" href="#key-attribute">Key Attribute</a><a class="toc-l3" href="#key">[Key]</a><a class="toc-l2" href="#databasegenerated-attribute">DatabaseGenerated Attribute</a><a class="toc-l3" href="#databasegenerateddatabasegeneratedoption-option">[DatabaseGenerated(DatabaseGeneratedOption option)]</a><a class="toc-l2" href="#enumstorage-attribute">EnumStorage Attribute</a><a class="toc-l3" href="#enumstorageenumstorage-storage">[EnumStorage(EnumStorage storage)]</a><a class="toc-l2" href="#attribute-priority">Attribute Priority</a><a class="toc-l2" href="#examples">Examples</a><a class="toc-l3" href="#complete-entity-with-multiple-attributes">Complete Entity with Multiple Attributes</a><a class="toc-l3" href="#composite-primary-key-example">Composite Primary Key Example</a><a class="toc-l3" href="#using-attributes-with-configuration">Using Attributes with Configuration</a><a class="toc-l2" href="#best-practices">Best Practices</a><a class="toc-l3" href="#use-attributes-for-specific-overrides">1. Use Attributes for Specific Overrides</a><a class="toc-l3" href="#combine-with-global-configuration">2. Combine with Global Configuration</a><a class="toc-l3" href="#mark-computed-properties-as-ignored">3. Mark Computed Properties as Ignored</a><a class="toc-l3" href="#properly-mark-primary-keys">4. Properly Mark Primary Keys</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Attributes</nav>
         <article>
@@ -271,6 +292,99 @@
 <li>Identity values are returned by Insert operations and can be automatically populated</li>
 <li>Computed columns are typically read-only in insert/update operations</li>
 </ul>
+<p><strong>Write it explicitly — the two mapping paths infer differently without it.</strong></p>
+<p>If a key property is an <code>int</code> or <code>long</code> and carries no <code>[DatabaseGenerated]</code>, the two mapping
+paths disagree about whether the database generates its value, and therefore about whether the
+column appears in the generated <code>INSERT</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Mapping path</th>
+<th>Single <code>int</code>/<code>long</code> key, no <code>[DatabaseGenerated]</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Jaunty.SourceGenerator</code></td>
+<td>Treated as an identity column — <strong>omitted</strong> from the <code>INSERT</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.Extensions.Reflection</code></td>
+<td>Not an identity column — <strong>included</strong> in the <code>INSERT</code></td>
+</tr>
+</tbody>
+</table>
+<p>The source-generated mapper is preferred whenever one exists, so <em>adding or removing the
+<code>Jaunty.SourceGenerator</code> package reference changes the SQL</em> for such an entity — dropping a
+client-assigned key on one side, or overriding a real sequence on the other.</p>
+<p>Adding <code>[DatabaseGenerated(...)]</code> removes the ambiguity: both paths then honour exactly what you
+wrote. Do that for every <code>int</code>/<code>long</code> key, whichever way it should behave:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;orders&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">partial</span> <span class="tok-kw">class</span> Order
+{
+    <span class="tok-com">// Auto-increment / IDENTITY / SERIAL column: excluded from INSERT on both paths.</span>
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+[Table(&quot;tenants&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">partial</span> <span class="tok-kw">class</span> Tenant
+{
+    <span class="tok-com">// Client-assigned key: included in INSERT on both paths.</span>
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p>Composite keys are not affected: neither path infers identity for an entity with more than one key
+column, since no database has two identity columns. An explicit <code>[DatabaseGenerated]</code> on one part
+of a composite key is still honoured.</p>
+<p><strong>A property whose setter is <code>init</code>-only or inaccessible is mapped by reflection only.</strong></p>
+<p>The generated mapper assigns properties after construction (<code>entity.Name = ...</code>), so it cannot
+write an <code>init</code>-only setter, nor a setter declared on a base class that the entity itself cannot
+reach (<code>private set</code> on a base, or an <code>internal set</code> across an assembly boundary). The reflection
+mapper writes both without difficulty — <code>PropertyInfo.SetValue</code> is not bound by either rule.</p>
+<table>
+<thead>
+<tr>
+<th>Setter</th>
+<th><code>Jaunty.SourceGenerator</code></th>
+<th><code>Jaunty.Extensions.Reflection</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>set</code></td>
+<td>Mapped</td>
+<td>Mapped</td>
+</tr>
+<tr>
+<td><code>init</code></td>
+<td><strong>Not mapped</strong></td>
+<td>Mapped</td>
+</tr>
+<tr>
+<td>Inaccessible from the entity (e.g. base-class <code>private set</code>)</td>
+<td><strong>Not mapped</strong></td>
+<td>Mapped</td>
+</tr>
+<tr>
+<td>No setter at all</td>
+<td>Not mapped</td>
+<td>Not mapped</td>
+</tr>
+</tbody>
+</table>
+<p>The build reports <code>JAUNTYGEN005</code> for each such property, naming the entity, the property and the
+reason. Give the property a plain accessible setter to map it on both paths, or mark it <code>[Ignore]</code>
+to record that the exclusion is intended and silence the warning.</p>
 <h2 id="enumstorage-attribute">EnumStorage Attribute</h2>
 <h3 id="enumstorageenumstorage-storage">[EnumStorage(EnumStorage storage)]</h3>
 <p>Overrides how a single enum-typed property is stored in the database, taking precedence over the global <code>JauntyConfig.DefaultEnumStorage</code> setting (see <a href="01-api-reference-configuration.html">Configuration</a>).</p>
@@ -490,9 +604,5 @@ JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

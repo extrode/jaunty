@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report — jaunty docs</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
 </head>
 <body class="jt">
 <div class="jt-shell">
@@ -20,6 +31,15 @@
       <span class="brand-crumb">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</span>
     </div>
     <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
   </header>
 
   <!-- ===== body ===== -->
@@ -40,7 +60,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Overview</span>
   </div>
-  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -68,7 +88,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -82,7 +102,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -110,7 +130,8 @@
     </nav>
 
     <!-- content -->
-    <main class="jt-content" id="jt-content">
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#executive-summary">Executive Summary</a><a class="toc-l2" href="#part-1-project-inventory">Part 1: Project Inventory</a><a class="toc-l3" href="#ecosystem-overview">Ecosystem Overview</a><a class="toc-l2" href="#part-2-technical-capabilities-assessment">Part 2: Technical Capabilities Assessment</a><a class="toc-l3" href="#core-query-engine">2.1 Core Query Engine</a><a class="toc-l3" href="#object-mapping-architecture">2.2 Object Mapping Architecture</a><a class="toc-l3" href="#crud-operations">2.3 CRUD Operations</a><a class="toc-l3" href="#parameter-binding">2.4 Parameter Binding</a><a class="toc-l3" href="#database-dialect-support">2.5 Database Dialect Support</a><a class="toc-l3" href="#fluent-query-builder-jaunty.fluent">2.6 Fluent Query Builder (Jaunty.Fluent)</a><a class="toc-l3" href="#scaffolding-jaunty.scaffolding">2.7 Scaffolding (Jaunty.Scaffolding)</a><a class="toc-l3" href="#source-generator">2.8 Source Generator</a><a class="toc-l2" href="#part-3-testing-quality">Part 3: Testing &amp; Quality</a><a class="toc-l3" href="#test-suite-overview">3.1 Test Suite Overview</a><a class="toc-l3" href="#test-categories">3.2 Test Categories</a><a class="toc-l3" href="#coverage-gaps-priority-order">3.3 Coverage Gaps (Priority Order)</a><a class="toc-l2" href="#part-4-competitive-landscape">Part 4: Competitive Landscape</a><a class="toc-l3" href="#market-leaders">4.1 Market Leaders</a><a class="toc-l3" href="#feature-comparison-matrix">4.2 Feature Comparison Matrix</a><a class="toc-l3" href="#jauntys-unique-differentiators">4.3 Jaunty's Unique Differentiators</a><a class="toc-l2" href="#part-5-gap-analysis-for-commercial-product">Part 5: Gap Analysis for Commercial Product</a><a class="toc-l3" href="#critical-gaps-must-fix">5.1 Critical Gaps (Must Fix)</a><a class="toc-l3" href="#important-gaps-should-fix">5.2 Important Gaps (Should Fix)</a><a class="toc-l3" href="#nice-to-have-gaps-consider">5.3 Nice-to-Have Gaps (Consider)</a><a class="toc-l3" href="#known-limitations-documented">5.4 Known Limitations (Documented)</a><a class="toc-l2" href="#part-6-commercial-strategy">Part 6: Commercial Strategy</a><a class="toc-l3" href="#the-market-reality">6.1 The Market Reality</a><a class="toc-l3" href="#recommended-commercial-model">6.2 Recommended Commercial Model</a><a class="toc-l3" href="#go-to-market-roadmap">6.3 Go-to-Market Roadmap</a><a class="toc-l3" href="#positioning-statement">6.4 Positioning Statement</a><a class="toc-l3" href="#key-marketing-messages">6.5 Key Marketing Messages</a><a class="toc-l2" href="#part-7-technical-recommendations">Part 7: Technical Recommendations</a><a class="toc-l3" href="#architecture-improvements-pre-launch">7.1 Architecture Improvements (Pre-Launch)</a><a class="toc-l3" href="#testing-improvements">7.2 Testing Improvements</a><a class="toc-l3" href="#documentation-improvements">7.3 Documentation Improvements</a><a class="toc-l2" href="#part-8-risk-assessment">Part 8: Risk Assessment</a><a class="toc-l2" href="#part-9-swot-analysis">Part 9: SWOT Analysis</a><a class="toc-l3" href="#strengths">Strengths</a><a class="toc-l3" href="#weaknesses">Weaknesses</a><a class="toc-l3" href="#opportunities">Opportunities</a><a class="toc-l3" href="#threats">Threats</a><a class="toc-l2" href="#conclusion">Conclusion</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</nav>
         <article>
@@ -186,11 +207,11 @@ For current engineering readiness, use <code>docs/05-quality/reports/PRODUCTION-
 <p><strong>Test Projects:</strong> 3 projects, 172 test files, 2,786+ tests</p>
 <p><strong>NuGet Packages (all v2026.01.01):</strong></p>
 <ul>
-<li><code>Beparey.Jaunty</code> -- Core</li>
-<li><code>Beparey.Jaunty.Extensions.Reflection</code> -- Reflection fallback</li>
-<li><code>Beparey.Jaunty.Fluent</code> -- Query builder</li>
-<li><code>Beparey.Jaunty.Scaffolding</code> -- Scaffolding library</li>
-<li><code>Beparey.Jaunty.Scaffolding.Cli</code> -- CLI tool</li>
+<li><code>Extrode.Jaunty</code> -- Core</li>
+<li><code>Extrode.Jaunty.Extensions.Reflection</code> -- Reflection fallback</li>
+<li><code>Extrode.Jaunty.Fluent</code> -- Query builder</li>
+<li><code>Extrode.Jaunty.Scaffolding</code> -- Scaffolding library</li>
+<li><code>Extrode.Jaunty.Scaffolding.Cli</code> -- CLI tool</li>
 </ul>
 <hr />
 <h2 id="part-2-technical-capabilities-assessment">Part 2: Technical Capabilities Assessment</h2>
@@ -1276,9 +1297,5 @@ connection.Query&lt;Product&gt;(sql, cacheKey: &quot;products_active&quot;);
   </footer>
 </div>
 <script src="nav.js"></script>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
-</script>
 </body>
 </html>

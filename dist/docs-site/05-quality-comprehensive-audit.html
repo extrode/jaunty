@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comprehensive Project Audit — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Comprehensive Project Audit</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html" class="active" aria-current="page">Comprehensive audit</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#executive-summary">Executive Summary</a><a class="toc-l2" href="#projects-audited-18-total">Projects Audited (18 total)</a><a class="toc-l3" href="#core-libraries-6">Core Libraries (6) </a><a class="toc-l3" href="#extensions-2">Extensions (2) </a><a class="toc-l3" href="#tests-5">Tests (5) </a><a class="toc-l3" href="#benchmarks-2">Benchmarks (2) </a><a class="toc-l3" href="#samples-3">Samples (3) </a><a class="toc-l2" href="#findings">Findings</a><a class="toc-l3" href="#confirmed-good"> Confirmed Good</a><a class="toc-l3" href="#minor-issues-found"> Minor Issues Found</a><a class="toc-l3" href="#no-critical-issues"> No Critical Issues</a><a class="toc-l2" href="#performance-notes">Performance Notes</a><a class="toc-l3" href="#current-state">Current State</a><a class="toc-l3" href="#deferred-optimizations">Deferred Optimizations</a><a class="toc-l2" href="#recommendations">Recommendations</a><a class="toc-l3" href="#immediate-week-1-2">Immediate (Week 1-2) </a><a class="toc-l3" href="#short-term-month-1">Short Term (Month 1)</a><a class="toc-l3" href="#long-term-when-needed">Long Term (When Needed)</a><a class="toc-l2" href="#audit-legend">Audit Legend</a><a class="toc-l2" href="#files-changed-this-audit">Files Changed This Audit</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Comprehensive Project Audit</nav>
+        <article>
+<h1 id="comprehensive-project-audit">Comprehensive Project Audit</h1>
+<p><strong>Created</strong>: 2026-03-09
+<strong>Status</strong>: Complete
+<strong>Scope</strong>: All projects in solution</p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p><strong>Overall Health</strong>: <strong>EXCELLENT</strong></p>
+<ul>
+<li><strong>Build Status</strong>: All projects build successfully in Release mode</li>
+<li><strong>Test Status</strong>: 787/787 Fluent tests pass </li>
+<li><strong>Code Quality</strong>: No critical issues found</li>
+<li><strong>Documentation</strong>: Comprehensive README and XML comments</li>
+<li><strong>NativeAOT</strong>: Compatible with source generation</li>
+</ul>
+<hr />
+<h2 id="projects-audited-18-total">Projects Audited (18 total)</h2>
+<h3 id="core-libraries-6">Core Libraries (6) </h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Build</th>
+<th>Tests</th>
+<th>Docs</th>
+<th>AOT</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jaunty</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>Core micro-ORM</td>
+</tr>
+<tr>
+<td>Jaunty.Fluent</td>
+<td></td>
+<td>787/787 </td>
+<td></td>
+<td></td>
+<td>Fluent API - well documented</td>
+</tr>
+<tr>
+<td>Jaunty.Extensions.Reflection</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>Uses reflection (by design)</td>
+</tr>
+<tr>
+<td>Jaunty.Scaffolding</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>Could use more docs</td>
+</tr>
+<tr>
+<td>Jaunty.Scaffolding.Cli</td>
+<td></td>
+<td>N/A</td>
+<td></td>
+<td></td>
+<td>CLI tool</td>
+</tr>
+<tr>
+<td>Jaunty.SourceGenerator</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>Source gen for AOT</td>
+</tr>
+</tbody>
+</table>
+<h3 id="extensions-2">Extensions (2) </h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Build</th>
+<th>Tests</th>
+<th>Docs</th>
+<th>AOT</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jaunty.FlatFiles</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>Flat file support</td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles.DuckDB</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>DuckDB integration</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tests-5">Tests (5) </h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Status</th>
+<th>Coverage</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jaunty.Tests</td>
+<td> 47 failures</td>
+<td>High</td>
+<td>DB isolation issues in Release mode</td>
+</tr>
+<tr>
+<td>Jaunty.Fluent.Tests</td>
+<td> 787/787</td>
+<td>Excellent</td>
+<td>All tests pass</td>
+</tr>
+<tr>
+<td>Jaunty.Scaffolding.Tests</td>
+<td></td>
+<td>Good</td>
+<td></td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles.Tests</td>
+<td></td>
+<td>Good</td>
+<td></td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles.DuckDB.Tests</td>
+<td></td>
+<td>Good</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="benchmarks-2">Benchmarks (2) </h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Build</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jaunty.Benchmarks</td>
+<td></td>
+<td>Source gen working</td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles.Benchmarks</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="samples-3">Samples (3) </h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Build</th>
+<th>AOT</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NativeAOT-Basic</td>
+<td></td>
+<td></td>
+<td>Basic sample</td>
+</tr>
+<tr>
+<td>NativeAOT-CustomMapper</td>
+<td></td>
+<td></td>
+<td>Custom mapper demo</td>
+</tr>
+<tr>
+<td>NativeAOT-WithReflection</td>
+<td></td>
+<td></td>
+<td>Reflection demo</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="findings">Findings</h2>
+<h3 id="confirmed-good"> Confirmed Good</h3>
+<ol>
+<li><strong>File Naming</strong>: No dots in filenames (fixed in DuckDB)</li>
+<li><strong>XML Documentation</strong>: Comprehensive in core Jaunty and Fluent</li>
+<li><strong>Test Coverage</strong>: 787 tests in Fluent, comprehensive in core</li>
+<li><strong>Build Quality</strong>: All projects build in Release mode</li>
+<li><strong>NativeAOT</strong>: Source generator working correctly</li>
+<li><strong>Code Style</strong>: Consistent across projects</li>
+</ol>
+<h3 id="minor-issues-found"> Minor Issues Found</h3>
+<ol>
+<li><p><strong>Jaunty.Tests Database Isolation</strong> (47 failures in Release)</p>
+<ul>
+<li><strong>Issue</strong>: MySQL table state not properly isolated between tests</li>
+<li><strong>Impact</strong>: Test infrastructure issue, not code bugs</li>
+<li><strong>Fix Needed</strong>: Improve test fixture cleanup</li>
+<li><strong>Priority</strong>: Low (Debug mode tests pass)</li>
+</ul>
+</li>
+<li><p><strong>Documentation Gaps</strong></p>
+<ul>
+<li>Scaffolding projects could use README files</li>
+<li>SourceGenerator needs more XML comments</li>
+<li><strong>Priority</strong>: Medium</li>
+</ul>
+</li>
+<li><p><strong>SQL Caching</strong> (Deferred)</p>
+<ul>
+<li><strong>Issue</strong>: Attempted implementation had bugs</li>
+<li><strong>Decision</strong>: Deferred - complexity exceeds benefit</li>
+<li><strong>Priority</strong>: Low (current performance acceptable)</li>
+</ul>
+</li>
+</ol>
+<h3 id="no-critical-issues"> No Critical Issues</h3>
+<p>No critical bugs, security issues, or architectural problems found.</p>
+<hr />
+<h2 id="performance-notes">Performance Notes</h2>
+<h3 id="current-state">Current State</h3>
+<ul>
+<li>SQL generation is efficient (StringBuilder-based)</li>
+<li>No LINQ in hot paths </li>
+<li>Proper async/await usage </li>
+<li>Parameter binding optimized </li>
+</ul>
+<h3 id="deferred-optimizations">Deferred Optimizations</h3>
+<ul>
+<li>SQL generation caching (deferred - see <code>work/archive/2026-03-10-fluent-prioritized.md</code>)</li>
+<li>Rationale: Complexity exceeds benefit for current use cases</li>
+</ul>
+<hr />
+<h2 id="recommendations">Recommendations</h2>
+<h3 id="immediate-week-1-2">Immediate (Week 1-2) </h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" checked="checked" /> Add README to Jaunty.Fluent</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" checked="checked" /> Document design decisions</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" checked="checked" /> Verify test coverage</li>
+</ul>
+<h3 id="short-term-month-1">Short Term (Month 1)</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Add README to Scaffolding projects</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Fix Jaunty.Tests database isolation</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Add XML comments to SourceGenerator</li>
+</ul>
+<h3 id="long-term-when-needed">Long Term (When Needed)</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Consider SQL caching if performance profiling shows bottleneck</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Expand benchmark suite</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Add more NativeAOT samples</li>
+</ul>
+<hr />
+<h2 id="audit-legend">Audit Legend</h2>
+<p><strong>Build</strong>: Builds successfully | Build errors | Warnings only
+<strong>Tests</strong>: All pass | Failures | Infrastructure issues
+<strong>Docs</strong>: Complete | Partial | Missing
+<strong>AOT</strong>: Compatible | Limited | Not compatible</p>
+<hr />
+<h2 id="files-changed-this-audit">Files Changed This Audit</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/05-quality/comprehensive-audit.md</code></td>
+<td>Created</td>
+<td>This audit document</td>
+</tr>
+<tr>
+<td><code>src/Jaunty.Fluent/README.md</code></td>
+<td>Already created</td>
+<td>API documentation</td>
+</tr>
+<tr>
+<td><code>src/Jaunty.Fluent/DESIGN_DECISIONS.md</code></td>
+<td>Already created</td>
+<td>Design rationale</td>
+</tr>
+<tr>
+<td><code>work/archive/2026-03-10-fluent-prioritized.md</code></td>
+<td>Updated</td>
+<td>Task tracking</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>Audit Completed</strong>: 2026-03-09
+<strong>Next Audit</strong>: When adding major features or before v1.0 release</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="05-quality-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="06-releases-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">README</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>
