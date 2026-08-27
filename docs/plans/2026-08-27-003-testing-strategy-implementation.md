@@ -328,9 +328,84 @@ As predicted from `src/Directory.Build.props:11-12`, measured via
 `src/Jaunty`. `Jaunty.SourceGenerator` is a netstandard2.0 Roslyn analyzer that is never
 trimmed, so unset is correct there. The plan said verify and add nothing; nothing added.
 
-### 2, 4, 6
+### 2. Dialect boundary theories — **done, and it found a defect**
 
-Dialect boundary theories, allocation budgets and the Stryker re-run: pending.
+The decimal half was already closed by `Unit/Dialects/DecimalBindingBoundaryTests.cs` (227 lines,
+`eb7e4853`) alongside the pre-existing `DecimalBindingDialectTests.cs`. The open half was
+temporal, and there was no cross-dialect temporal round-trip coverage anywhere — only unit-level
+string-to-temporal conversion tests.
+
+`tests/Jaunty.Tests/Integration/Dialects/TemporalBoundaryTests.cs`, 13 theories, all passing.
+Writes go through `connection.Execute(sql, new { v = value })` — Jaunty's own binder — not raw
+ADO, so each assertion describes what Jaunty does rather than what a provider does. The first
+draft used raw `CreateParameter` and had to be redone for exactly that reason.
+
+**The defect.** Against a `DATETIME2(7)` column, whose floor is 0001-01-01 and whose resolution
+is 100ns:
+
+| case | MicrosoftSqlite | SystemSqlite | SqlServer |
+|---|---|---|---|
+| `DateTime.MinValue` | round-trips | round-trips | `SqlTypeException: must be between 1/1/1753 ... and 12/31/9999` |
+| sub-second ticks `…1234567` | preserved | preserved | stored as `…1233333` |
+
+Jaunty leaves the parameter type to `Microsoft.Data.SqlClient`'s inference, which maps a
+`DateTime` to the legacy `datetime` — 1753 floor, 1/300-second grid — **regardless of the column
+type**. The limit comes from the parameter, not the column. Every `DateTime` Jaunty writes to
+SQL Server silently loses up to 3.33ms. This is the temporal analogue of the decimal problem
+`IDecimalBindingDialect` already exists to solve, so the fix has an established shape; it is
+recorded in `work/todo.md` rather than made here, per the scope rule. The two SqlServer theories
+pin the current behaviour, so a fix has to update them deliberately.
+
+**RED-phase.** These theories discriminate by construction and were observed doing it: before
+the expectations were split per engine, the identical assertion body passed on both SQLite
+providers and failed on SqlServer in the same run (11 passed, 2 failed), with the overflow and
+the `639234351121234567` vs `639234351121233333` tick mismatch as the failure messages.
+
+**Coverage limit, stated rather than hidden.** Only SqlServer and the two SQLite providers carry
+attributes. Postgres and MariaDB are deliberately *absent* rather than attached-and-skipped: an
+assertion that has never executed is not evidence. Their connection strings are empty in the
+local `tests/Jaunty.Tests/appsettings.json` (only `SqlServer` is populated), which is also why
+1,616 tests skip in a full run — starting Docker does not change this, because availability is
+config-gated by `TestConfiguration`, not by container discovery. Extending these theories to
+Postgres and MariaDB needs those strings filled in against the ports in
+`appsettings.example.json` (5433, 3307, 3308).
+
+### 4. Allocation budgets — **done**
+
+`tests/Jaunty.UnitTests/Unit/AllocationBudgetTests.cs`, 6 budgets under
+`[Trait("Category", "AllocationBudget")]`, green on net8.0 and net10.0. The harness follows
+`TypedKeyGuardTests.Measure` including its lesson — warm up first, and sink the result into a
+static field so .NET 10's escape analysis cannot elide the allocation being measured.
+
+| path | measured bytes/call | budget |
+|---|---:|---:|
+| `CrudSqlCache.GetSql<T>` warm hit | **0** | 0 |
+| `ExtractParameterNames("")` | **0** | 0 |
+| `ExtractParameterNames("   ")` | **0** | 0 |
+| `ExtractParameterNames`, no parameters | 120 | 136 |
+| `ExtractParameterNames`, literals and comments | 184 | 200 |
+| `ExtractParameterNames`, 3 parameters | 264 | 280 |
+
+**The budgets are actual + 16 bytes, not the plan's ~50% headroom, and the plan was wrong here.**
+At 50% the mutation-check the plan itself demands quietly failed: an injected 88-byte allocation
+slipped under 2 of the 5 non-zero budgets undetected. Actuals are byte-identical on net8.0 and
+net10.0, so a tight bound is not flaky, and +16 catches any added object at all — the 64-bit
+minimum is 24 bytes. Re-checked by injecting a `new byte[8]` (32 bytes allocated) into both
+`ExtractParameterNames` and the `CrudSqlCache` hit branch: **6 of 6 fail**. `src/` restored from
+`tmp/*.bak` and confirmed clean by `git diff src/`.
+
+A first attempt at the injection put the sink field between the XML doc and the method, so the
+build failed with CS1572 and the run silently used the stale binary and "passed" — a reminder
+that a mutation-check must confirm its own build succeeded before believing a green result.
+
+Byproduct recorded in `work/todo.md`: parameterless SQL costs 120 bytes/call because
+`ExtractParameterNamesSpan` allocates `new List<string>(ParameterParsingCapacity)` before knowing
+whether the SQL holds a single sigil. Deferring the list to the first parameter found would take
+that case to zero.
+
+### 6
+
+Stryker re-run for the killed-mutant delta: pending.
 
 ## Phase 2 — new additive capabilities
 
