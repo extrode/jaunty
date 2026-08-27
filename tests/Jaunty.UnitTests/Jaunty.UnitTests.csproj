@@ -1,50 +1,51 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <!-- System.Data.SQLite ships no osx-arm64 native; see the targets file. No-op elsewhere. -->
   <Import Project="..\..\tools\native\sqlite-interop-osx-arm64\SQLiteInteropOsxArm64.targets" />
 
+  <!--
+    The parallel half of Jaunty.Tests.
+
+    Jaunty.Tests runs every test serially because its integration suites share one live database
+    per engine and its configuration suites mutate the process-global JauntyConfig statics. Neither
+    constraint applies to a unit test that talks to an in-memory SQLite connection or to no
+    database at all, but they all paid for it: one xunit.runner.json governs a whole assembly.
+
+    This project holds the unit tests that touch none of the shared surfaces - no DialectFixture,
+    no live-engine connection, no JauntyConfig mutation, no SqlDialectFactory or type-handler
+    registration, no environment or working-directory changes - and runs its collections in
+    parallel. Anything that touches one of those belongs in Jaunty.Tests, which stays serial.
+
+    RootNamespace matches Jaunty.Tests so the moved files keep their declared namespaces, and the
+    entities and helpers are shared by Compile link rather than copied, so the two halves cannot
+    drift apart.
+  -->
+
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0;net472</TargetFrameworks>
-    <!-- Run TFMs sequentially to avoid database contention on shared live MariaDB/Postgres instances -->
-    <TestTfmsInParallel>false</TestTfmsInParallel>
     <IsPackable>false</IsPackable>
     <OutputType>Exe</OutputType>
     <EnableAnalyzers>false</EnableAnalyzers>
-    <CodeAnalysisRuleSet Condition="Exists('None.ruleset')">None.ruleset</CodeAnalysisRuleSet>
+    <RootNamespace>Jaunty.Tests</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- Suppress all warnings in test projects -->
     <NoWarn>$(NoWarn);CS1591;CS8618;CS8602;CS8603;CS8604;CS8625;CS8767;xUnit1026;xUnit1051;xUnit2009;xUnit2010;xUnit2013;xUnit2017</NoWarn>
     <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT;CSCHECK</DefineConstants>
   </PropertyGroup>
 
-  <!-- net472-specific settings (loads netstandard2.0 assembly) -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net472'">
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <!-- SourceGear.sqlite3 (via SQLitePCLRaw.bundle_e_sqlite3 3.x pin) rejects AnyCPU without a RID on .NET Framework -->
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <!-- Keep the pre-RID output path: tests locate data/*.db via relative paths -->
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <!-- Suppress all warnings in test projects -->
     <NoWarn>$(NoWarn);CS1591;CS8618;CS8632;CS8669;CS8767;xUnit1026;xUnit1051;xUnit2009;xUnit2010;xUnit2013;xUnit2017</NoWarn>
-    <!-- ns2.0 assembly now exposes the same IAsyncEnumerable streaming API - test it on net472 too -->
     <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
   </PropertyGroup>
-
-  <!-- Async enumerable support (net8.0 Debug only) -->
-  <PropertyGroup Condition="'$(Configuration)'=='Debug' AND $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
-    <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="Integration\ARCHIVED-FOR-DELETION\**" />
-    <EmbeddedResource Remove="Integration\ARCHIVED-FOR-DELETION\**" />
-    <None Remove="Integration\ARCHIVED-FOR-DELETION\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
@@ -56,43 +57,45 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Property-based testing. Not referenced on net472: CsCheck ships no .NET Framework target.
-       Tests that use it are guarded with #if CSCHECK so the net472 leg still compiles. -->
+  <!-- Property-based testing. Not referenced on net472: CsCheck ships no .NET Framework target. -->
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <PackageReference Include="CsCheck" Version="4.8.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Database Providers -->
-    <!-- Npgsql: 10.x for .NET 8+, 8.x for .NET Framework -->
     <PackageReference Include="Npgsql" Version="10.0.1" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
     <PackageReference Include="Npgsql" Version="8.0.7" Condition="'$(TargetFramework)' == 'net472'" />
-    <!-- Microsoft.Data.SqlClient: 6.x for .NET 8+, 5.x for .NET Framework -->
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" Condition="'$(TargetFramework)' == 'net472'" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <!-- MySql.Data: 9.6 for .NET 8+, 9.1 for .NET Framework -->
     <PackageReference Include="MySql.Data" Version="9.6.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
     <PackageReference Include="MySql.Data" Version="9.1.0" Condition="'$(TargetFramework)' == 'net472'" />
-    <!-- Microsoft.Data.Sqlite: 10.x for .NET 8+, 8.x for .NET Framework -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" /><!-- pin: GHSA-2m69-gcr7-jv3q -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.13" Condition="'$(TargetFramework)' == 'net472'" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="xunit.runner.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="appsettings.json" Condition="Exists('appsettings.json')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.10" />
   </ItemGroup>
+
+  <!-- Shared with Jaunty.Tests rather than duplicated. -->
+  <ItemGroup>
+    <Compile Include="..\Jaunty.Tests\GlobalUsings.cs" LinkBase="Shared" />
+    <Compile Include="..\Jaunty.Tests\Entities\**\*.cs" LinkBase="Entities" />
+    <Compile Include="..\Jaunty.Tests\Helpers\**\*.cs" LinkBase="Helpers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\Jaunty.Tests\appsettings.json" Condition="Exists('..\Jaunty.Tests\appsettings.json')" Link="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
@@ -101,13 +104,8 @@
     <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net10.0" SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" SetTargetFramework="TargetFramework=net10.0" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <Compile Remove="Unit\Interceptors\JauntyLoggingExtensionsTests.cs" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
