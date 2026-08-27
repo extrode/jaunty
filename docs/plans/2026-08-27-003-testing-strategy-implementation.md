@@ -405,9 +405,9 @@ that case to zero.
 
 ### 6
 
-Stryker re-run: **started, killed before completion, partial delta recorded.** The run reached the
-end of coverage capture and was stopped there because it made the machine unusable to type on —
-see "Why the re-run was stopped" below.
+Stryker re-run: **attempted twice, cancelled both times, partial delta recorded.** Coverage capture
+completed and gave a reach number; mutant testing never finished, because the run makes the dev
+machine unusable — see "Why the re-run was stopped — twice" below.
 
 What the coverage-capture phase established, against the 2026-08-27 baseline:
 
@@ -423,12 +423,54 @@ metric — is **still unmeasured**. Do not quote the −77 as a score improvemen
 
 The 90.75% baseline score therefore still stands as the last complete measurement.
 
-#### Why the re-run was stopped
+#### Reach closed since, without a re-run
 
-`concurrency: 12` on a 16-thread box, with 49 `dotnet` processes live between Stryker's testhosts
-and MSBuild's node reuse. Committed as `14bfbfcb`: both configs now pin **4**, and the nightly
-overrides upward via `CI_MUTATION_CONCURRENCY` (default 8). Re-run at concurrency 4 to finish this
-item, or move it off the dev machine entirely — see "Where the slow tier should run".
+Two of the remaining NoCoverage clusters were closed by reading the baseline report rather than by
+re-running it — the mutants name their own file and line, which is enough to write the missing test:
+
+| Cluster | Status |
+| --- | --- |
+| `ReplaceParametersLiteralAware` (`ParameterBinder.cs:706-815`) | **Closed.** `ParameterBinderExpansionRewriteSkipsLiteralsTests`, 18 cases. The walker's main loop was covered; every *skip* branch was not, because the existing expansion tests all use plain SQL. RED-phase checked — perturbing the five skip branches fails 10 of the 18. |
+| `RegisterDialect` cache invalidation (`SqlDialectFactory.cs:114-118`) | **Not closed, and not closable here.** It is already covered — by `tests/Jaunty.Tests/Unit/Dialects/DialectRegistrationInvalidatesDerivedCachesTests.cs`, in the *serial* assembly, because it mutates process-wide state. Stryker's config names no `test-projects`, so it runs `Jaunty.UnitTests` alone and cannot see that test. |
+
+The second row generalises, and it qualifies the NoCoverage number: **NoCoverage here means "no
+`Jaunty.UnitTests` test reaches it", not "no test reaches it".** The mutate globs
+(`**/Internals/Parameters/**`, `**/Dialects/**`) cover code whose process-state tests live in
+`Jaunty.Tests` by design. Pointing Stryker at both assemblies would fix the accounting but would
+make the mutation run require live databases — a trade to decide with the runner question, not
+before it.
+
+#### Why the re-run was stopped — twice
+
+**First attempt**: `concurrency: 12` on a 16-thread box, with 49 `dotnet` processes live between
+Stryker's testhosts and MSBuild's node reuse. Committed as `14bfbfcb`: both configs now pin **4**,
+and the nightly overrides upward via `CI_MUTATION_CONCURRENCY` (default 8).
+
+**Second attempt, at concurrency 4: also cancelled, at 106 minutes.** Concurrency 4 was not enough
+— the owner reported the machine still occupied. Two measured facts came out of it:
+
+| | Measured |
+| --- | ---: |
+| Coverage capture (13,672 mutants created → 7,687 covered, 206 static) | **48 s** |
+| Mutant testing, 2,364 mutants at concurrency 4 | **>106 min, unfinished** |
+
+1. **The run is not observable when redirected.** Stryker's `progress` reporter writes ANSI to the
+   console, so `dotnet stryker > log 2>&1` captures everything *except* the completion percentage.
+   With no progress line there is no way to answer "how much longer" — which is what made the
+   cancel/continue call impossible to make on evidence. Any future local run needs
+   `--reporter json` or a TTY, not a plain redirect.
+2. **A local Stryker run blocks all other work in the repo.** A `dotnet test` launched while it ran
+   died with `MSB3027: Could not copy Jaunty.SourceGenerator.dll ... locked by ".NET Host"`, after
+   10 retries. The mutation tier is not merely expensive here, it is *exclusive*.
+
+**Policy, from this point: do not run the full mutation tier on the dev machine at all.** It is a
+nightly/weekly tier and it belongs on a runner — which is the deferred infrastructure decision
+under "Where the slow tier should run", and the strongest single argument for settling it. If a
+local run is ever unavoidable, scope it with Stryker's `--since` diff mode so it mutates only
+changed files rather than all 13,672.
+
+**Item 6 therefore closes as: reach measured, oracle not measured.** The −77 stands as a reach
+result; 90.75% stands as the last complete score.
 
 ## Phase 2 — new additive capabilities
 
