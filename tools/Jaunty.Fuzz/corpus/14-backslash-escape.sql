@@ -1,0 +1,1 @@
+SELECT 'ends here' , @id FROM t
