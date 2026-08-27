@@ -1,0 +1,1 @@
+/* @nope */ SELECT * FROM t WHERE id = @id
