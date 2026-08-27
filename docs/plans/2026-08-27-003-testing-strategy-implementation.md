@@ -269,10 +269,68 @@ RED-phase checked, both directions:
 43 → **50** on net10.0 (57 including the cache-split tests), net472 leg unaffected at 50 —
 the file is `#if CSCHECK`-guarded because CsCheck ships no .NET Framework target.
 
-### 2–6
+### 3. Streaming lifecycle — **done**
 
-Dialect boundary theories, streaming lifecycle, allocation budgets, trim-analyzer verification
-and the Stryker re-run: pending.
+`tests/Jaunty.Tests/Integration/Streaming/StreamingLifecycleTests.cs`, 8 theories over the
+five dialects (two SQLite-only), joining the `Get Operations` collection because it reuses
+that fixture's `get_test` table.
+
+The gap was not "streaming is untested" — `Integration/Streaming/` already held 35 methods
+covering empty results, early break, extra/missing columns and option plumbing. The gap was
+**cancellation had no oracle**. Both existing cancellation tests pass a token that is never
+cancelled:
+
+| existing test | what it actually asserts |
+|---|---|
+| `QueryStreamAsync_WithCancellationToken_Works` | the overload accepts a token; `CancellationTokenSource(10s)` never fires |
+| `GetAllStreamAsync_WithCancellation_ThrowsOrCompletes` | same, and the name's `Throws` branch is unreachable |
+
+Added, against `GetAllStreamAsync`: pre-cancelled token throws before yielding any row;
+cancel-after-first-row stops with `OperationCanceledException` having yielded exactly 1;
+cancel-mid-iteration and break-mid-iteration both leave the connection `Open` and able to
+serve a follow-up `COUNT(*)` (an undisposed reader is what this would catch); double
+`DisposeAsync` is idempotent; `MoveNextAsync` after dispose returns false; 20,000 rows yield
+in ascending id order; breaking at row 10 of 20,000 still releases the reader. The 20k rows
+are generated server-side with a recursive CTE rather than 20,000 round trips.
+
+**RED-phase check — the first perturbation was the wrong one.** Deleting
+`cancellationToken.ThrowIfCancellationRequested()` from `GetAllStreamCoreAsync` (GetAllCore.cs:344)
+changed nothing: 16 passed before, 16 after. On both SQLite providers the cancellation is
+caught one line later by `reader.ReadAsync(cancellationToken)`, so that guard is
+defence-in-depth for providers whose `ReadAsync` ignores its token — not the line under test.
+Perturbing the honest question instead — every `cancellationToken` inside
+`GetAllStreamCoreAsync` replaced with `CancellationToken.None`, i.e. the token ignored
+outright — failed all 6 cancellation variants (16 passed → 10). Non-vacuous. `src/` restored
+from `tmp/GetAllCore.cs.bak` and confirmed clean by `git diff src/`.
+
+Measured: 34 tests, 16 passed, 12 skipped (Postgres and MariaDB containers not running).
+The 6 SqlServer variants are unverified — the local `MSSQLSERVER` service is stopped, and
+these failed with `provider: Named Pipes Provider, error: 40`, a connection error rather than
+an assertion. They need a re-run once the service is up.
+
+### 5. Trim analyzer — **done, nothing changed**
+
+As predicted from `src/Directory.Build.props:11-12`, measured via
+`dotnet msbuild <proj> -getProperty:<prop> -p:TargetFramework=net10.0`:
+
+| project | EnableTrimAnalyzer | EnableAotAnalyzer |
+|---|---|---|
+| Jaunty | true | true |
+| Jaunty.Extensions.Reflection | true | true |
+| Jaunty.Fluent | true | true |
+| Jaunty.FlatFiles | true | true |
+| Jaunty.FlatFiles.DuckDB | true | true |
+| Jaunty.Scaffolding | true | true |
+| Jaunty.Scaffolding.Cli | true | true |
+| Jaunty.SourceGenerator | *unset* | true |
+
+`EnableSingleFileAnalyzer`, `IsTrimmable` and `IsAotCompatible` are likewise true on
+`src/Jaunty`. `Jaunty.SourceGenerator` is a netstandard2.0 Roslyn analyzer that is never
+trimmed, so unset is correct there. The plan said verify and add nothing; nothing added.
+
+### 2, 4, 6
+
+Dialect boundary theories, allocation budgets and the Stryker re-run: pending.
 
 ## Phase 2 — new additive capabilities
 
