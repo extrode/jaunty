@@ -9,6 +9,6 @@
     ],
     "reporters": ["progress", "html", "json"],
     "thresholds": { "high": 80, "low": 60, "break": 0 },
-    "concurrency": 12
+    "concurrency": 4
   }
 }
