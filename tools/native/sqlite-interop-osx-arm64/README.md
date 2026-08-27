@@ -10,9 +10,19 @@ On Apple silicon that means every test touching `System.Data.SQLite` fails with
 `Jaunty.Tests` and all 887 in `Jaunty.Fluent.Tests` had this single cause.
 
 ```sh
+export DOTNET_ROLL_FORWARD=LatestMajor   # only if no 8.0 runtime is installed — see below
 ./build.sh          # once per machine, ~1 min
 dotnet build tests/Jaunty.Tests tests/Jaunty.Fluent.Tests
 ```
+
+`MangleMap` targets `net8.0`, so on a machine with only the 10.0 runtime `build.sh` stops with
+`You must install or update .NET to run this application. Framework: 'Microsoft.NETCore.App',
+version '8.0.0'`. `DOTNET_ROLL_FORWARD=LatestMajor` runs it on 10.0 rather than installing a
+second runtime for one helper. Measured 2026-08-27 on macOS 26.5.2 / SDK 10.0.400: 193 aliases
+recovered from 203 mangled imports, the 3 unresolvable ones exactly the `sqlite3_win32_*` below.
+
+The first suite run after a fresh build is slow — 10 m 14 s against 17.7 s of summed test time,
+macOS verifying the new unsigned dylib. It is one-time; subsequent runs were 13 s.
 
 After that both suites pass locally: `Jaunty.Tests` 2,763 passed / 0 failed
 (2,447 skipped for want of a live SQL Server or PostgreSQL), `Jaunty.Fluent.Tests`
