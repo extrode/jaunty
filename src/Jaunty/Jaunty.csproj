@@ -75,6 +75,10 @@
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>Jaunty.Fluent.ConfigTests</_Parameter1>
 		</AssemblyAttribute>
+		<!-- libFuzzer harness over SqlParameterParser; tools/Jaunty.Fuzz, nightly only. -->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.Fuzz</_Parameter1>
+		</AssemblyAttribute>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>Jaunty.Fluent</_Parameter1>
 		</AssemblyAttribute>

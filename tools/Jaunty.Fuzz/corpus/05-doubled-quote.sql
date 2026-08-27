@@ -1,0 +1,1 @@
+SELECT 'it''s @nope' FROM t WHERE id = @id
