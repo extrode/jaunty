@@ -1,0 +1,1 @@
+SELECT * FROM t WHERE id = :id AND n = :n

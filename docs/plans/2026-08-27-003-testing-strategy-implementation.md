@@ -269,17 +269,242 @@ RED-phase checked, both directions:
 43 → **50** on net10.0 (57 including the cache-split tests), net472 leg unaffected at 50 —
 the file is `#if CSCHECK`-guarded because CsCheck ships no .NET Framework target.
 
-### 2–6
+### 3. Streaming lifecycle — **done**
 
-Dialect boundary theories, streaming lifecycle, allocation budgets, trim-analyzer verification
-and the Stryker re-run: pending.
+`tests/Jaunty.Tests/Integration/Streaming/StreamingLifecycleTests.cs`, 8 theories over the
+five dialects (two SQLite-only), joining the `Get Operations` collection because it reuses
+that fixture's `get_test` table.
+
+The gap was not "streaming is untested" — `Integration/Streaming/` already held 35 methods
+covering empty results, early break, extra/missing columns and option plumbing. The gap was
+**cancellation had no oracle**. Both existing cancellation tests pass a token that is never
+cancelled:
+
+| existing test | what it actually asserts |
+|---|---|
+| `QueryStreamAsync_WithCancellationToken_Works` | the overload accepts a token; `CancellationTokenSource(10s)` never fires |
+| `GetAllStreamAsync_WithCancellation_ThrowsOrCompletes` | same, and the name's `Throws` branch is unreachable |
+
+Added, against `GetAllStreamAsync`: pre-cancelled token throws before yielding any row;
+cancel-after-first-row stops with `OperationCanceledException` having yielded exactly 1;
+cancel-mid-iteration and break-mid-iteration both leave the connection `Open` and able to
+serve a follow-up `COUNT(*)` (an undisposed reader is what this would catch); double
+`DisposeAsync` is idempotent; `MoveNextAsync` after dispose returns false; 20,000 rows yield
+in ascending id order; breaking at row 10 of 20,000 still releases the reader. The 20k rows
+are generated server-side with a recursive CTE rather than 20,000 round trips.
+
+**RED-phase check — the first perturbation was the wrong one.** Deleting
+`cancellationToken.ThrowIfCancellationRequested()` from `GetAllStreamCoreAsync` (GetAllCore.cs:344)
+changed nothing: 16 passed before, 16 after. On both SQLite providers the cancellation is
+caught one line later by `reader.ReadAsync(cancellationToken)`, so that guard is
+defence-in-depth for providers whose `ReadAsync` ignores its token — not the line under test.
+Perturbing the honest question instead — every `cancellationToken` inside
+`GetAllStreamCoreAsync` replaced with `CancellationToken.None`, i.e. the token ignored
+outright — failed all 6 cancellation variants (16 passed → 10). Non-vacuous. `src/` restored
+from `tmp/GetAllCore.cs.bak` and confirmed clean by `git diff src/`.
+
+Measured: 34 tests, 16 passed, 12 skipped (Postgres and MariaDB containers not running).
+The 6 SqlServer variants are unverified — the local `MSSQLSERVER` service is stopped, and
+these failed with `provider: Named Pipes Provider, error: 40`, a connection error rather than
+an assertion. They need a re-run once the service is up.
+
+### 5. Trim analyzer — **done, nothing changed**
+
+As predicted from `src/Directory.Build.props:11-12`, measured via
+`dotnet msbuild <proj> -getProperty:<prop> -p:TargetFramework=net10.0`:
+
+| project | EnableTrimAnalyzer | EnableAotAnalyzer |
+|---|---|---|
+| Jaunty | true | true |
+| Jaunty.Extensions.Reflection | true | true |
+| Jaunty.Fluent | true | true |
+| Jaunty.FlatFiles | true | true |
+| Jaunty.FlatFiles.DuckDB | true | true |
+| Jaunty.Scaffolding | true | true |
+| Jaunty.Scaffolding.Cli | true | true |
+| Jaunty.SourceGenerator | *unset* | true |
+
+`EnableSingleFileAnalyzer`, `IsTrimmable` and `IsAotCompatible` are likewise true on
+`src/Jaunty`. `Jaunty.SourceGenerator` is a netstandard2.0 Roslyn analyzer that is never
+trimmed, so unset is correct there. The plan said verify and add nothing; nothing added.
+
+### 2. Dialect boundary theories — **done, and it found a defect**
+
+The decimal half was already closed by `Unit/Dialects/DecimalBindingBoundaryTests.cs` (227 lines,
+`eb7e4853`) alongside the pre-existing `DecimalBindingDialectTests.cs`. The open half was
+temporal, and there was no cross-dialect temporal round-trip coverage anywhere — only unit-level
+string-to-temporal conversion tests.
+
+`tests/Jaunty.Tests/Integration/Dialects/TemporalBoundaryTests.cs`, 13 theories, all passing.
+Writes go through `connection.Execute(sql, new { v = value })` — Jaunty's own binder — not raw
+ADO, so each assertion describes what Jaunty does rather than what a provider does. The first
+draft used raw `CreateParameter` and had to be redone for exactly that reason.
+
+**The defect.** Against a `DATETIME2(7)` column, whose floor is 0001-01-01 and whose resolution
+is 100ns:
+
+| case | MicrosoftSqlite | SystemSqlite | SqlServer |
+|---|---|---|---|
+| `DateTime.MinValue` | round-trips | round-trips | `SqlTypeException: must be between 1/1/1753 ... and 12/31/9999` |
+| sub-second ticks `…1234567` | preserved | preserved | stored as `…1233333` |
+
+Jaunty leaves the parameter type to `Microsoft.Data.SqlClient`'s inference, which maps a
+`DateTime` to the legacy `datetime` — 1753 floor, 1/300-second grid — **regardless of the column
+type**. The limit comes from the parameter, not the column. Every `DateTime` Jaunty writes to
+SQL Server silently loses up to 3.33ms. This is the temporal analogue of the decimal problem
+`IDecimalBindingDialect` already exists to solve, so the fix has an established shape; it is
+recorded in `work/todo.md` rather than made here, per the scope rule. The two SqlServer theories
+pin the current behaviour, so a fix has to update them deliberately.
+
+**RED-phase.** These theories discriminate by construction and were observed doing it: before
+the expectations were split per engine, the identical assertion body passed on both SQLite
+providers and failed on SqlServer in the same run (11 passed, 2 failed), with the overflow and
+the `639234351121234567` vs `639234351121233333` tick mismatch as the failure messages.
+
+**Coverage limit, stated rather than hidden.** Only SqlServer and the two SQLite providers carry
+attributes. Postgres and MariaDB are deliberately *absent* rather than attached-and-skipped: an
+assertion that has never executed is not evidence. Their connection strings are empty in the
+local `tests/Jaunty.Tests/appsettings.json` (only `SqlServer` is populated), which is also why
+1,616 tests skip in a full run — starting Docker does not change this, because availability is
+config-gated by `TestConfiguration`, not by container discovery. Extending these theories to
+Postgres and MariaDB needs those strings filled in against the ports in
+`appsettings.example.json` (5433, 3307, 3308).
+
+### 4. Allocation budgets — **done**
+
+`tests/Jaunty.UnitTests/Unit/AllocationBudgetTests.cs`, 6 budgets under
+`[Trait("Category", "AllocationBudget")]`, green on net8.0 and net10.0. The harness follows
+`TypedKeyGuardTests.Measure` including its lesson — warm up first, and sink the result into a
+static field so .NET 10's escape analysis cannot elide the allocation being measured.
+
+| path | measured bytes/call | budget |
+|---|---:|---:|
+| `CrudSqlCache.GetSql<T>` warm hit | **0** | 0 |
+| `ExtractParameterNames("")` | **0** | 0 |
+| `ExtractParameterNames("   ")` | **0** | 0 |
+| `ExtractParameterNames`, no parameters | 120 | 136 |
+| `ExtractParameterNames`, literals and comments | 184 | 200 |
+| `ExtractParameterNames`, 3 parameters | 264 | 280 |
+
+**The budgets are actual + 16 bytes, not the plan's ~50% headroom, and the plan was wrong here.**
+At 50% the mutation-check the plan itself demands quietly failed: an injected 88-byte allocation
+slipped under 2 of the 5 non-zero budgets undetected. Actuals are byte-identical on net8.0 and
+net10.0, so a tight bound is not flaky, and +16 catches any added object at all — the 64-bit
+minimum is 24 bytes. Re-checked by injecting a `new byte[8]` (32 bytes allocated) into both
+`ExtractParameterNames` and the `CrudSqlCache` hit branch: **6 of 6 fail**. `src/` restored from
+`tmp/*.bak` and confirmed clean by `git diff src/`.
+
+A first attempt at the injection put the sink field between the XML doc and the method, so the
+build failed with CS1572 and the run silently used the stale binary and "passed" — a reminder
+that a mutation-check must confirm its own build succeeded before believing a green result.
+
+Byproduct recorded in `work/todo.md`: parameterless SQL costs 120 bytes/call because
+`ExtractParameterNamesSpan` allocates `new List<string>(ParameterParsingCapacity)` before knowing
+whether the SQL holds a single sigil. Deferring the list to the first parameter found would take
+that case to zero.
+
+### 6
+
+Stryker re-run: **started, killed before completion, partial delta recorded.** The run reached the
+end of coverage capture and was stopped there because it made the machine unusable to type on —
+see "Why the re-run was stopped" below.
+
+What the coverage-capture phase established, against the 2026-08-27 baseline:
+
+| | Baseline | After Phase 1 | Delta |
+| --- | ---: | ---: | ---: |
+| NoCoverage | 233 | **156** | **−77** |
+| Mutants to be tested | 2,287 | **2,364** | **+77** |
+
+The two move by the same 77, which is the point: those are mutants no test previously reached, and
+Phase 1's tests now reach them. That is a *reach* result and it is real. The killed-mutant delta —
+whether reaching them also kills them, which is the *oracle* result and this plan's stated success
+metric — is **still unmeasured**. Do not quote the −77 as a score improvement; it is not one.
+
+The 90.75% baseline score therefore still stands as the last complete measurement.
+
+#### Why the re-run was stopped
+
+`concurrency: 12` on a 16-thread box, with 49 `dotnet` processes live between Stryker's testhosts
+and MSBuild's node reuse. Committed as `14bfbfcb`: both configs now pin **4**, and the nightly
+overrides upward via `CI_MUTATION_CONCURRENCY` (default 8). Re-run at concurrency 4 to finish this
+item, or move it off the dev machine entirely — see "Where the slow tier should run".
 
 ## Phase 2 — new additive capabilities
 
-SharpFuzz harness over `ExtractParameterNames` and a nightly workflow: pending. Unlike jauntyq —
-where the harness was written but never executed because libFuzzer is Linux-only and the machine
-is Windows — this repo has a self-hosted Linux runner (`vars.CI_RUNNER`), so the fuzz job can
-actually run.
+### 1 and 2 — fuzz harness and nightly workflow: DONE (`dcdd150f`)
+
+`tools/Jaunty.Fuzz` (csproj, `Program.cs`, 20-seed `corpus/`, `README.md`),
+`.github/workflows/nightly.yml`, the `Jaunty.Fuzz` `InternalsVisibleTo` entry in
+`src/Jaunty/Jaunty.csproj`, and the fuzz project registered in `Jaunty.slnx`.
+
+Verified: `dotnet build tools/Jaunty.Fuzz -c Release` succeeds under `TreatWarningsAsErrors`;
+`nightly.yml` parses to jobs `full-suite`, `fuzz`, `mutation`, `benchmarks` on triggers `schedule`
+and `workflow_dispatch`; `SolutionLayoutTests` still 2/2 with the fuzz project in the solution
+(both its rules scope to `tests/` only).
+
+**Not yet satisfied:** the verification protocol below requires the harness be *proven by an actual
+run*, not a clean build. That is still outstanding, and it is the same libFuzzer-is-Linux-only
+problem jauntyq hit — see below, because the premise recorded in the original plan turned out to
+be wrong.
+
+### 3 — Fluent command-model tests: **gate said no**
+
+The gate was: adopt an FsCheck/CsCheck command model over the fluent builder *only if* the Fluent
+Stryker baseline shows surviving mutants in ordering/state logic. It does not.
+
+The 66.90% baseline (216 mutants) decomposes as 59 Killed, 38 Timeout, 38 Ignored, 33 CompileError,
+and — the part that matters — **1 Survived and 47 NoCoverage, every one of them in a single file,
+`ExistsExpressionVisitor.cs`**.
+
+That is a **reach** deficit in one expression visitor, not an ordering or call-sequence deficit. A
+command model explores *sequences of calls* on a builder; it would never execute
+`ExistsExpressionVisitor` at all. The right instrument is ordinary unit tests for EXISTS expression
+translation, which is now the highest-value mutation work left in this repo.
+
+**Caveat that must travel with this verdict:** `tests/Jaunty.Fluent.Tests/stryker-config.json`
+scopes mutation to `**/Expressions/**`. The fluent *builder* — where ordering and state logic
+actually lives — was never in the mutated set, so this baseline could not have answered the gate
+affirmatively even if ordering bugs existed. The honest statement is "no evidence for it, and the
+evidence available was incapable of producing any", not "the builder is fine". Widening the Fluent
+`mutate` globs to cover the builder is the prerequisite for ever revisiting this.
+
+## Where the slow tier should run
+
+Researched 2026-08-27 after the mutation run made the dev machine unusable. Recorded here because
+the conclusion changes what this plan's nightly workflow costs and whether it can run at all.
+
+**The premise in Phase 2 above is wrong.** The plan says "this repo has a self-hosted Linux runner
+(`vars.CI_RUNNER`), so the fuzz job can actually run". That runner is `REDACTED-RUNNER` — **WSL2
+on the dev machine**. So every CI run and every nightly job lands on the developer's own CPU, which
+is the problem this plan's nightly would make worse, not better.
+
+Measured:
+
+| Fact | Value |
+| --- | --- |
+| jaunty CI runs, 30 days | 178 total, **119 executed** |
+| jaunty last green run | **33m22s**, self-hosted, 16 threads |
+| jauntyq CI runs, 30 days | **44, all on `ubuntu-latest`, succeeding** |
+| jauntyq per-run job time | **13m35s** (build-test 11m51, aot 1m00, pack 44s) |
+| Free allowance | **2,000 min/month per org**, not per repo |
+| jaunty billable | `"billable": {}` — self-hosted is not metered |
+
+Three findings that matter:
+
+1. **The reason jaunty is on a self-hosted runner no longer holds.** `self-hosted-ci-runner.md`
+   cites a 2026-07-29 hosted-minutes billing block. jauntyq has run on `ubuntu-latest` 44 times in
+   30 days, succeeding. Hosted works today; jaunty is the only repo in the org still pinned to
+   `CI_RUNNER=self-hosted`.
+2. **`mcr.microsoft.com/mssql/server` is amd64-only.** No ARM64 image exists. Any ARM runner —
+   cheapest managed tier, Apple Silicon, Ampere — cannot run `build-and-test` or `full-suite`.
+   The `mutation` job is exempt: `Jaunty.UnitTests` touches no live database.
+3. **The `mutation` job cannot run on a standard hosted runner.** 2,364 mutants at concurrency 2
+   exceeds the 6-hour job limit. It is the only job in `nightly.yml` with no free home, and it is
+   explicitly not a gate (`"break": 0`) — so **weekly, not nightly**, is the correct cadence and
+   cuts its cost 7×.
+
+Open decisions are logged in `work/todo.md`; none of them block the test work in this plan.
 
 ## Verification protocol
 

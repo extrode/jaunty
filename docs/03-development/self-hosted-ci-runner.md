@@ -2,7 +2,32 @@
 
 Why this exists, how it is wired, and what to do when it breaks.
 
-## Why
+## Status 2026-08-27: the reason below no longer holds
+
+**Hosted runners work again.** `extrode/jauntyq` runs every job on `ubuntu-latest` and has
+succeeded **44 times in the last 30 days**. The billing block described under "Why" was real in
+July; it is not what is happening now. `jaunty` is the only repo in the org still pinned to
+`CI_RUNNER=self-hosted`, and that is why it is the only one whose CI competes with the developer's
+keyboard.
+
+Two further corrections to the reasoning below:
+
+- **"GitHub does not bill minutes for self-hosted runners"** was true when written and is *still*
+  true, but only by reprieve. GitHub announced a $0.002/min platform charge on self-hosted minutes
+  in private repos effective 2026-03-01, then **postponed** it after backlash — "we're postponing
+  the announced billing change for self-hosted GitHub Actions to take time to re-evaluate our
+  approach". Postponed, not cancelled. Do not build a cost argument on it lasting.
+- Verified against this repo: a self-hosted run reports `"billable": {}` from
+  `/actions/runs/{id}/timing`, and the org usage report shows **no Actions line item for `jaunty`
+  in any month**. Nothing is being metered on this path today.
+
+The free allowance is **2,000 minutes/month per organization, not per repository** — so `jaunty`
+and `jauntyq` draw on the same pool.
+
+What has *not* changed is the warning under "What you give up": this runner shares a machine, and a
+Docker engine, with local development.
+
+## Why (July 2026 — see Status above)
 
 From 2026-07-29 GitHub stopped starting jobs on hosted runners:
 
@@ -116,6 +141,15 @@ hosted runners, so there is nothing to undo when billing is restored.
   it. `JAUNTY_TEST_SQLSERVER` in the workflow points at `localhost,1435` to match.
 
 ## Troubleshooting
+
+**`The runner has received a shutdown signal` mid-job.** The most common failure on this runner,
+and it is not a code problem. WSL stopped the distro underneath a running job. Observed three times
+on 2026-08-27 (runs `33040062673`, `33040749878`, `33041932044`), each time at ~10% of the
+**2.67 GB** NuGet cache restore running at **2.2 MB/s** — roughly a 20-minute download that gives
+WSL a long idle-looking window to reclaim. The job is lost and the run reports `failure`.
+
+Any replacement machine that sleeps — a second desktop, a laptop lid — reproduces this exactly.
+Uptime, not cores, is what this runner is actually short of.
 
 **Runner shows `offline`.** The service is not running. `wsl -d Debian -- bash -lc 'cd
 ~/actions-runner && ./svc.sh status'`. WSL shuts distros down when idle; the systemd service starts

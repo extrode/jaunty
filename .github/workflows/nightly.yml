@@ -1,0 +1,255 @@
+name: Nightly
+
+# The slow tier. Mutation testing runs tens of minutes per module, fuzzing is time-boxed by
+# design, and BenchmarkDotNet needs a quiet machine to mean anything. ci.yml stays the fast
+# gate on every push; this runs once a day and on demand.
+#
+# Caveat, and it is not a bug to chase: the self-hosted Debian runner idle-stops. A scheduled
+# run queues until the VM is booted, so a 03:00 UTC cron can report hours late or not at all
+# until someone starts it. Every job falls back to ubuntu-latest if CI_RUNNER is unset.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Everything ci.yml runs on two frameworks, run on all three, with no --framework filter.
+  full-suite:
+    name: Full suite (all frameworks)
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
+        ports:
+          - 1435:1433
+        volumes:
+          - ${{ github.workspace }}:${{ github.workspace }}
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 20s
+    env:
+      CI_SA_CRED: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Bootstrap SQL Server Northwind
+        run: |
+          docker cp data/sqlserver/create-northwind.sql ${{ job.services.mssql.id }}:/tmp/nw.sql
+          docker cp data/sqlserver/create-stored-procedures.sql ${{ job.services.mssql.id }}:/tmp/sp.sql
+          docker exec ${{ job.services.mssql.id }} /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$CI_SA_CRED" -C -i /tmp/nw.sql
+          docker exec ${{ job.services.mssql.id }} /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$CI_SA_CRED" -C -d Northwind -i /tmp/sp.sql
+
+      - name: Restore
+        run: dotnet restore Jaunty.slnx
+
+      - name: Build
+        run: dotnet build Jaunty.slnx -c Release --no-restore --no-incremental
+
+      - name: Test (every framework each project targets)
+        env:
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+        run: dotnet test Jaunty.slnx -c Release --no-build --logger "trx;LogFileName=nightly-full.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightly-test-results
+          path: '**/TestResults/*.trx'
+          if-no-files-found: ignore
+
+  fuzz:
+    name: Fuzz SqlParameterParser
+    # libFuzzer has no practical Windows driver, which is why this job exists here and not in
+    # ci.yml: the runner is Linux, so the harness is executed rather than only compiled.
+    #
+    # The harness must be launched BY the native libfuzzer-dotnet driver, never by `dotnet`
+    # directly. Fuzzer.LibFuzzer.Run needs the shared-memory and pipe environment variables the
+    # driver sets; without them SharpFuzz silently falls back to reading args[1] as a single
+    # input file, exits 0, and looks like a clean run that fuzzed nothing.
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish the harness
+        run: dotnet publish tools/Jaunty.Fuzz -c Release -o out/fuzz
+
+      - name: Install SharpFuzz
+        run: dotnet tool install --global SharpFuzz.CommandLine
+
+      # Instrument the library under test, not the harness that calls it.
+      - name: Instrument Jaunty
+        run: sharpfuzz out/fuzz/Jaunty.dll
+
+      - name: Fetch the libFuzzer driver
+        # Pinned by tag AND digest: a release asset can be re-uploaded under an unchanged tag,
+        # and this binary is handed our assembly and a shell.
+        run: |
+          curl -sSfL -o libfuzzer-dotnet \
+            https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2025.05.02.0904/libfuzzer-dotnet-ubuntu
+          echo "c2c2a90d94c409a4af339a0d4f244e0442c5a5d249be0f1252ba07871f285958  libfuzzer-dotnet" \
+            | sha256sum -c -
+          chmod +x libfuzzer-dotnet
+
+      # Coverage-guided fuzzing compounds only if the corpus outlives the run. github.run_id
+      # never hits, so the primary key always misses and restore-keys pulls the newest
+      # fuzz-corpus-* — the rolling-cache shape.
+      - name: Restore the fuzzing corpus
+        uses: actions/cache/restore@v6
+        with:
+          path: out/corpus
+          key: fuzz-corpus-${{ github.run_id }}
+          restore-keys: fuzz-corpus-
+
+      - name: Fuzz (time-boxed)
+        # Two corpus directories, and the order matters: libFuzzer writes new units to the
+        # FIRST one only and treats the rest as read-only seeds. So out/corpus accumulates
+        # across nights while the 20 committed seeds stay pristine.
+        run: |
+          mkdir -p out/corpus out/fuzz-findings
+          ./libfuzzer-dotnet \
+            -max_total_time=600 -timeout=25 -rss_limit_mb=2048 \
+            -artifact_prefix=out/fuzz-findings/ \
+            --target_path="$(command -v dotnet)" \
+            --target_arg=out/fuzz/Jaunty.Fuzz.dll \
+            out/corpus tools/Jaunty.Fuzz/corpus
+
+      - name: Minimise the corpus before caching it
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p out/corpus-min
+          ./libfuzzer-dotnet -merge=1 \
+            --target_path="$(command -v dotnet)" \
+            --target_arg=out/fuzz/Jaunty.Fuzz.dll \
+            out/corpus-min out/corpus tools/Jaunty.Fuzz/corpus
+          rm -rf out/corpus
+          mv out/corpus-min out/corpus
+          echo "corpus entries after merge: $(find out/corpus -type f | wc -l)"
+
+      - name: Save the fuzzing corpus
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: out/corpus
+          key: fuzz-corpus-${{ github.run_id }}
+
+      - name: Upload crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-findings
+          path: out/fuzz-findings/
+          if-no-files-found: ignore
+
+  mutation:
+    name: Mutate ${{ matrix.project }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - Jaunty.UnitTests
+          - Jaunty.Fluent.Tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Install Stryker.NET
+        run: dotnet tool install --global dotnet-stryker
+
+      # No score threshold: each stryker-config.json sets "break": 0 on purpose, so the run
+      # produces a report rather than a gate. A mutation score is a trend to read, not a
+      # number to fail a build on - a refactor that deletes dead code moves it either way.
+      # stryker-config.json pins concurrency 4, which is a desktop setting: 12 concurrent
+      # testhosts on the 16-thread dev box made it unusable to type on. A runner has nobody
+      # sitting at it, so override upward here rather than making the checked-in default hostile.
+      - name: Mutate
+        working-directory: tests/${{ matrix.project }}
+        run: dotnet stryker --concurrency ${{ vars.CI_MUTATION_CONCURRENCY || '8' }}
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: stryker-${{ matrix.project }}
+          path: tests/${{ matrix.project }}/StrykerOutput/**/reports/
+          if-no-files-found: ignore
+
+  benchmarks:
+    name: BenchmarkDotNet
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      # Informational, as the constitution has it: numbers from a shared CI VM are not a
+      # regression gate. The artifact exists so a suspected regression has something to compare
+      # against, and so the benchmarks are proven to still build and run.
+      - name: Run benchmarks
+        run: dotnet run --project benchmarks/Jaunty.Benchmarks -c Release -- --filter '*' --job short
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-results
+          path: BenchmarkDotNet.Artifacts/**
+          if-no-files-found: ignore
