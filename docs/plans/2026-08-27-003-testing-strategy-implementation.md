@@ -198,14 +198,40 @@ live engine and where concurrency 12 is safe.
 
 <!-- BASELINE TABLE: filled from the first completed run -->
 
-| Module | Scope | Tested | Killed | Survived | Timeout | Score |
-|---|---|---:|---:|---:|---:|---:|
-| `Jaunty.Fluent` | `Expressions/ExistsExpressionVisitor.cs` | 98 | 59 | 1 | 38 | **66.90 %** |
+| Module | Host | Scope | Tested | Killed | Survived | No coverage | Timeout | Score |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| `Jaunty` | `Jaunty.UnitTests` | `Internals/Parameters/**` + `Dialects/**` | 2,287 | 2,273 | **0** | 233 | 14 | **90.75 %** |
+| `Jaunty.Fluent` | `Jaunty.Fluent.Tests` | `Expressions/ExistsExpressionVisitor.cs` | 98 | 59 | 1 | — | 38 | 66.90 % |
 
-The 38 timeouts are worth a look before the score is read as a verdict: on a visitor with loop
-constructs a timeout usually means an infinite loop the mutation introduced, which Stryker counts
-as killed, but 38 of 98 is high enough that some may be the suite's own slowness under a mutated
-build rather than genuine hangs.
+The core run took 75 minutes (07:56 → 09:11) at concurrency 12; 212 further mutants were discarded
+as `CompileError`.
+
+**The headline is the zero.** Not one mutant that a test actually executed survived, in any file.
+The 9.25 % shortfall is entirely `NoCoverage` — mutations in code no test reaches at all. So the
+deficit here is reach, not oracle strength, which inverts the usual reading of a mutation score and
+inverts jauntyq's lesson quoted in Phase 1 item 6: there are no surviving mutants to turn into
+missing assertions, because there are none.
+
+| File | Killed | No coverage | Score |
+|---|---:|---:|---:|
+| `Internals/Parameters/ParameterBinder.cs` | 389 | **165** | 70.22 % |
+| `Dialects/SqlDialectFactory.cs` | 51 | **30** | 62.96 % |
+| `Dialects/PostgreSqlDialect.cs` | 285 | 13 | 95.64 % |
+| `Dialects/SQLiteDialect.cs` | 265 | 10 | 96.36 % |
+| `Dialects/MySqlDialect.cs` | 397 | 8 | 98.02 % |
+| `Dialects/SqlServerDialect.cs` | 532 | 7 | 98.70 % |
+| `Internals/Parameters/SqlParameterParser.cs` | 312 | 0 | **100 %** |
+
+Two files hold 195 of the 233 unreached mutants and are where Phase 1's remaining effort belongs:
+`ParameterBinder` and `SqlDialectFactory`.
+
+`SqlParameterParser` scoring **100 % with zero unreached mutants** is the rank-1 target from the
+coverage cross-reference, and it is the one file in this run that received new tests this session.
+Its 14 timeouts are loop mutations that fail to terminate, which Stryker counts as killed.
+
+The Fluent row is a narrower, weaker result and should not be read beside the core one: 38 of 98
+timeouts is high enough that some are likely the suite's own slowness under a mutated build rather
+than genuine hangs, and its single survivor has not been triaged.
 
 ## Phase 1 — improve existing tests in place
 
