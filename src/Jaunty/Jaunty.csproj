@@ -67,6 +67,14 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>Jaunty.Tests</_Parameter1>
 		</AssemblyAttribute>
+		<!-- The parallel half of Jaunty.Tests; same tests, split out so they can run concurrently. -->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.UnitTests</_Parameter1>
+		</AssemblyAttribute>
+		<!-- The serial half of Jaunty.Fluent.Tests; mutates the global JauntyConfig statics. -->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.Fluent.ConfigTests</_Parameter1>
+		</AssemblyAttribute>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>Jaunty.Fluent</_Parameter1>
 		</AssemblyAttribute>
