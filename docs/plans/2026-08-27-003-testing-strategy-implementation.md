@@ -405,23 +405,31 @@ that case to zero.
 
 ### 6
 
-Stryker re-run: **attempted twice, cancelled both times, partial delta recorded.** Coverage capture
-completed and gave a reach number; mutant testing never finished, because the run makes the dev
-machine unusable — see "Why the re-run was stopped — twice" below.
+Stryker re-run: **DONE.** Cancelled twice on the dev machine, then run to completion on the M1 Max
+over SSH — 2 h 10 m 39 s wall at concurrency 8, exit 0, report at
+`tests/Jaunty.UnitTests/StrykerOutput/2026-08-27.20-27-37/`.
 
-What the coverage-capture phase established, against the 2026-08-27 baseline:
-
-| | Baseline | After Phase 1 | Delta |
+| | Baseline (desktop) | After Phase 1 (M1) | Delta |
 | --- | ---: | ---: | ---: |
-| NoCoverage | 233 | **156** | **−77** |
-| Mutants to be tested | 2,287 | **2,364** | **+77** |
+| Mutants created | 13,672 | 13,672 | — |
+| Mutants tested | 2,287 | **2,424** | **+137** |
+| Killed | 2,273 | **2,423** | **+150** |
+| **Survived** | **0** | **0** | — |
+| NoCoverage | 233 | **96** | **−137** |
+| Timeout | 14 | 1 | −13 |
+| **Score** | **90.75 %** | **96.19 %** | **+5.44 pts** |
 
-The two move by the same 77, which is the point: those are mutants no test previously reached, and
-Phase 1's tests now reach them. That is a *reach* result and it is real. The killed-mutant delta —
-whether reaching them also kills them, which is the *oracle* result and this plan's stated success
-metric — is **still unmeasured**. Do not quote the −77 as a score improvement; it is not one.
+**Both halves of the metric land, and they land the same way.** Reach improved by 137 mutants —
+the NoCoverage drop and the tested-count rise are the same 137 — and every one of those newly
+reached mutants was *killed*: Survived is still 0. Phase 1's tests did not merely execute the code
+they added reach to, they assert enough to detect its mutation.
 
-The 90.75% baseline score therefore still stands as the last complete measurement.
+The 13 fewer timeouts are a host artifact, not a test change: timeouts are loop mutations that fail
+to terminate, and Stryker's timeout is derived from the baseline test-run duration, which differs
+between the two machines. Stryker counts timeouts as killed either way, so the score is unaffected.
+
+The remaining 3.81 % is entirely the 96 unreached mutants — and see below for why a chunk of those
+are an accounting artifact rather than untested code.
 
 #### Reach closed since, without a re-run
 
@@ -464,13 +472,40 @@ and the nightly overrides upward via `CI_MUTATION_CONCURRENCY` (default 8).
    10 retries. The mutation tier is not merely expensive here, it is *exclusive*.
 
 **Policy, from this point: do not run the full mutation tier on the dev machine at all.** It is a
-nightly/weekly tier and it belongs on a runner — which is the deferred infrastructure decision
-under "Where the slow tier should run", and the strongest single argument for settling it. If a
-local run is ever unavoidable, scope it with Stryker's `--since` diff mode so it mutates only
-changed files rather than all 13,672.
+nightly/weekly tier and it belongs on another machine. If a local run is ever unavoidable, scope it
+with Stryker's `--since` diff mode so it mutates only changed files rather than all 13,672.
 
-**Item 6 therefore closes as: reach measured, oracle not measured.** The −77 stands as a reach
-result; 90.75% stands as the last complete score.
+#### Where it did run: the M1 Max, over SSH
+
+The third attempt succeeded by moving the workload off the dev box entirely. Transfer was a
+`git bundle` of `dev` (41 MB) scp'd over and cloned on the far side, which carries the unpushed
+commits without needing GitHub credentials on the Mac.
+
+| | M1 Max | Dev desktop |
+| --- | --- | --- |
+| Cores | 8 performance + 2 efficiency | 16 threads |
+| RAM | 64 GB | 64 GB |
+| Uptime / sleep | **40 days, `pmset sleep 0`** | WSL distro idle-stops |
+| `Jaunty.UnitTests`, 1,464 tests | **13 s** wall (twice) | ~10 s |
+| Stryker coverage capture | 3 m 35 s | 48 s |
+| **Full mutation tier** | **2 h 10 m 39 s**, concurrency 8 | >106 min, cancelled unfinished |
+
+The M1 is the slower machine on every row, and that is beside the point: it finishes, and it does
+so without occupying the machine the owner types on. On the axis that has actually been failing —
+`The runner has received a shutdown signal`, WSL reclaiming the distro mid-job — 40 days of uptime
+with system sleep disabled is the opposite of the current runner.
+
+**It is eligible for the mutation tier only.** `Jaunty.UnitTests` needs no live database, which is
+the whole reason the mutation config points there. It cannot host `build-and-test` or `full-suite`:
+`mcr.microsoft.com/mssql/server` is amd64-only, and no container runtime is installed.
+
+Two prerequisites, both one-time and both now satisfied there: `tools/native/sqlite-interop-osx-arm64/build.sh`
+must be run once per machine (see that README, including the `DOTNET_ROLL_FORWARD` note), and the
+first suite run after building the fresh unsigned dylib took 10 m 14 s against 17.7 s of summed
+test time — macOS verifying the new binary, one-time, 13 s on every run since.
+
+**Item 6 therefore closes as: reach and oracle both measured, both positive.** 96.19 % is the
+current score and it supersedes the 90.75 % baseline.
 
 ## Phase 2 — new additive capabilities
 
