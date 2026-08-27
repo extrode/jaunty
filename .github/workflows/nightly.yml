@@ -208,9 +208,12 @@ jobs:
       # No score threshold: each stryker-config.json sets "break": 0 on purpose, so the run
       # produces a report rather than a gate. A mutation score is a trend to read, not a
       # number to fail a build on - a refactor that deletes dead code moves it either way.
+      # stryker-config.json pins concurrency 4, which is a desktop setting: 12 concurrent
+      # testhosts on the 16-thread dev box made it unusable to type on. A runner has nobody
+      # sitting at it, so override upward here rather than making the checked-in default hostile.
       - name: Mutate
         working-directory: tests/${{ matrix.project }}
-        run: dotnet stryker
+        run: dotnet stryker --concurrency ${{ vars.CI_MUTATION_CONCURRENCY || '8' }}
 
       - name: Upload report
         if: always()
