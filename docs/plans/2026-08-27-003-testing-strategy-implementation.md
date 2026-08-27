@@ -405,14 +405,106 @@ that case to zero.
 
 ### 6
 
-Stryker re-run for the killed-mutant delta: pending.
+Stryker re-run: **started, killed before completion, partial delta recorded.** The run reached the
+end of coverage capture and was stopped there because it made the machine unusable to type on —
+see "Why the re-run was stopped" below.
+
+What the coverage-capture phase established, against the 2026-08-27 baseline:
+
+| | Baseline | After Phase 1 | Delta |
+| --- | ---: | ---: | ---: |
+| NoCoverage | 233 | **156** | **−77** |
+| Mutants to be tested | 2,287 | **2,364** | **+77** |
+
+The two move by the same 77, which is the point: those are mutants no test previously reached, and
+Phase 1's tests now reach them. That is a *reach* result and it is real. The killed-mutant delta —
+whether reaching them also kills them, which is the *oracle* result and this plan's stated success
+metric — is **still unmeasured**. Do not quote the −77 as a score improvement; it is not one.
+
+The 90.75% baseline score therefore still stands as the last complete measurement.
+
+#### Why the re-run was stopped
+
+`concurrency: 12` on a 16-thread box, with 49 `dotnet` processes live between Stryker's testhosts
+and MSBuild's node reuse. Committed as `14bfbfcb`: both configs now pin **4**, and the nightly
+overrides upward via `CI_MUTATION_CONCURRENCY` (default 8). Re-run at concurrency 4 to finish this
+item, or move it off the dev machine entirely — see "Where the slow tier should run".
 
 ## Phase 2 — new additive capabilities
 
-SharpFuzz harness over `ExtractParameterNames` and a nightly workflow: pending. Unlike jauntyq —
-where the harness was written but never executed because libFuzzer is Linux-only and the machine
-is Windows — this repo has a self-hosted Linux runner (`vars.CI_RUNNER`), so the fuzz job can
-actually run.
+### 1 and 2 — fuzz harness and nightly workflow: DONE (`dcdd150f`)
+
+`tools/Jaunty.Fuzz` (csproj, `Program.cs`, 20-seed `corpus/`, `README.md`),
+`.github/workflows/nightly.yml`, the `Jaunty.Fuzz` `InternalsVisibleTo` entry in
+`src/Jaunty/Jaunty.csproj`, and the fuzz project registered in `Jaunty.slnx`.
+
+Verified: `dotnet build tools/Jaunty.Fuzz -c Release` succeeds under `TreatWarningsAsErrors`;
+`nightly.yml` parses to jobs `full-suite`, `fuzz`, `mutation`, `benchmarks` on triggers `schedule`
+and `workflow_dispatch`; `SolutionLayoutTests` still 2/2 with the fuzz project in the solution
+(both its rules scope to `tests/` only).
+
+**Not yet satisfied:** the verification protocol below requires the harness be *proven by an actual
+run*, not a clean build. That is still outstanding, and it is the same libFuzzer-is-Linux-only
+problem jauntyq hit — see below, because the premise recorded in the original plan turned out to
+be wrong.
+
+### 3 — Fluent command-model tests: **gate said no**
+
+The gate was: adopt an FsCheck/CsCheck command model over the fluent builder *only if* the Fluent
+Stryker baseline shows surviving mutants in ordering/state logic. It does not.
+
+The 66.90% baseline (216 mutants) decomposes as 59 Killed, 38 Timeout, 38 Ignored, 33 CompileError,
+and — the part that matters — **1 Survived and 47 NoCoverage, every one of them in a single file,
+`ExistsExpressionVisitor.cs`**.
+
+That is a **reach** deficit in one expression visitor, not an ordering or call-sequence deficit. A
+command model explores *sequences of calls* on a builder; it would never execute
+`ExistsExpressionVisitor` at all. The right instrument is ordinary unit tests for EXISTS expression
+translation, which is now the highest-value mutation work left in this repo.
+
+**Caveat that must travel with this verdict:** `tests/Jaunty.Fluent.Tests/stryker-config.json`
+scopes mutation to `**/Expressions/**`. The fluent *builder* — where ordering and state logic
+actually lives — was never in the mutated set, so this baseline could not have answered the gate
+affirmatively even if ordering bugs existed. The honest statement is "no evidence for it, and the
+evidence available was incapable of producing any", not "the builder is fine". Widening the Fluent
+`mutate` globs to cover the builder is the prerequisite for ever revisiting this.
+
+## Where the slow tier should run
+
+Researched 2026-08-27 after the mutation run made the dev machine unusable. Recorded here because
+the conclusion changes what this plan's nightly workflow costs and whether it can run at all.
+
+**The premise in Phase 2 above is wrong.** The plan says "this repo has a self-hosted Linux runner
+(`vars.CI_RUNNER`), so the fuzz job can actually run". That runner is `jaunty-wsl-debian` — **WSL2
+on the dev machine**. So every CI run and every nightly job lands on the developer's own CPU, which
+is the problem this plan's nightly would make worse, not better.
+
+Measured:
+
+| Fact | Value |
+| --- | --- |
+| jaunty CI runs, 30 days | 178 total, **119 executed** |
+| jaunty last green run | **33m22s**, self-hosted, 16 threads |
+| jauntyq CI runs, 30 days | **44, all on `ubuntu-latest`, succeeding** |
+| jauntyq per-run job time | **13m35s** (build-test 11m51, aot 1m00, pack 44s) |
+| Free allowance | **2,000 min/month per org**, not per repo |
+| jaunty billable | `"billable": {}` — self-hosted is not metered |
+
+Three findings that matter:
+
+1. **The reason jaunty is on a self-hosted runner no longer holds.** `self-hosted-ci-runner.md`
+   cites a 2026-07-29 hosted-minutes billing block. jauntyq has run on `ubuntu-latest` 44 times in
+   30 days, succeeding. Hosted works today; jaunty is the only repo in the org still pinned to
+   `CI_RUNNER=self-hosted`.
+2. **`mcr.microsoft.com/mssql/server` is amd64-only.** No ARM64 image exists. Any ARM runner —
+   cheapest managed tier, Apple Silicon, Ampere — cannot run `build-and-test` or `full-suite`.
+   The `mutation` job is exempt: `Jaunty.UnitTests` touches no live database.
+3. **The `mutation` job cannot run on a standard hosted runner.** 2,364 mutants at concurrency 2
+   exceeds the 6-hour job limit. It is the only job in `nightly.yml` with no free home, and it is
+   explicitly not a gate (`"break": 0`) — so **weekly, not nightly**, is the correct cadence and
+   cuts its cost 7×.
+
+Open decisions are logged in `work/todo.md`; none of them block the test work in this plan.
 
 ## Verification protocol
 
