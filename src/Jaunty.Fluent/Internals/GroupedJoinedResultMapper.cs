@@ -1,3 +1,4 @@
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -82,14 +83,19 @@ internal static class GroupedJoinedResultMapper
             return ordinals;
         }
 
-        public static ResultMapperPlan Resolve<TResult>(string[] aliases)
+        public static ResultMapperPlan Resolve<
+#if NET5_0_OR_GREATER
+            [DynamicallyAccessedMembers(
+                DynamicallyAccessedMemberTypes.PublicProperties
+                | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+            TResult>(string[] aliases)
         {
             Type resultType = typeof(TResult);
 
             if (aliases.Length == 1 && IsScalarResult(resultType))
                 return new ResultMapperPlan(constructor: null, constructorParameters: null, properties: null, parameterAliasOrder: null, isScalar: true);
 
-#pragma warning disable IL2090 // Reflection on generic parameter for result mapping
             if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
             {
                 ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
@@ -102,13 +108,24 @@ internal static class GroupedJoinedResultMapper
             }
 
             var properties = new PropertyInfo?[aliases.Length];
-            // AOT-SAFE: same reflection over the caller's projection type that this path has always
-            // done - AUD-R35-199 replaced GetProperty(alias) with a scan of the same members, so the
-            // trimming exposure is unchanged and stays covered by the IL2090 pragma around it. The
-            // standing item to move this path behind source generation is parked on spec 009; this
-            // marker records that the site was reviewed, not that the projection type is rooted.
+            // AOT-SAFE: TResult is rooted. Every route to this method - the four Select/SelectAsync
+            // overloads on IGroupedQuery and IGroupedJoinedQuery/3/4, the builders that implement
+            // them, and the private ExecuteQuery* methods in between - carries
+            // [DynamicallyAccessedMembers(PublicProperties | PublicConstructors)] on TResult, so the
+            // trimmer preserves what this reads and warns at the consumer's own call site when it
+            // cannot see the concrete type.
+            //
+            // This used to be an IL2090 pragma whose own marker admitted it "records that the site
+            // was reviewed, not that the projection type is rooted". Nothing rooted it: there were
+            // no DynamicallyAccessedMembers annotations anywhere in this assembly, and the generator
+            // roots parameters objects, never projection types. Under trimming GetProperties()
+            // returned empty, FindProperty returned null for every alias, and MapResult skipped each
+            // column - so every row came back fully defaulted with no exception and no diagnostic.
+            // The pragma suppressed the one warning that would have told the consumer.
+            //
+            // Moving this path behind source generation, which removes the reflection rather than
+            // annotating it, stays parked on spec 009.
             PropertyInfo[] candidates = resultType.GetProperties();
-#pragma warning restore IL2090
 
             for (int i = 0; i < aliases.Length; i++)
                 properties[i] = FindProperty(candidates, aliases[i]);
@@ -189,7 +206,13 @@ internal static class GroupedJoinedResultMapper
         }
     }
 
-    public static TResult MapResult<TResult>(System.Data.IDataReader reader, string[] aliases, in ResultMapperPlan plan)
+    public static TResult MapResult<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(System.Data.IDataReader reader, string[] aliases, in ResultMapperPlan plan)
     {
         int[] ordinals = plan.GetOrdinalBuffer(reader, aliases.Length);
 
@@ -267,9 +290,7 @@ internal static class GroupedJoinedResultMapper
             return (TResult)plan.Constructor.Invoke(values);
         }
 
-#pragma warning disable IL2091 // Activator.CreateInstance requires public parameterless constructor
         TResult? instance = Activator.CreateInstance<TResult>();
-#pragma warning restore IL2091
         PropertyInfo?[] properties = plan.Properties!;
 
         for (int i = 0; i < aliases.Length; i++)

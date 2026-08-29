@@ -1,3 +1,4 @@
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
@@ -43,22 +44,46 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return this;
     }
 
-    public List<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    public List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
         => Select(selector, default);
 
     // AUD-R26-060: this builder creates and executes its own command rather than delegating to
     // core, and until now that meant it silently ignored the caller's transaction and timeout -
     // there was no overload to pass them through at all. See FluentCommandOptions.
-    public List<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
+    public List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
     {
         var sql = BuildSelectSql(selector);
         return ExecuteQuery<TResult>(sql, selector, options);
     }
 
-    public Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken = default)
+    public Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken = default)
         => SelectAsync(selector, default, cancellationToken);
 
-    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    public async Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(selector);
         return await ExecuteQueryAsync<TResult>(sql, selector, options, cancellationToken).ConfigureAwait(false);
@@ -136,12 +161,24 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return sb.ToString();
     }
 
-    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
+    private List<TResult> ExecuteQuery<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
         => CommandObservation.Execute(
             sql, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
             () => ExecuteQueryDirect(sql, selector, options));
 
-    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
+    private List<TResult> ExecuteQueryDirect<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
     {
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
         (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
@@ -176,12 +213,24 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return results;
     }
 
-    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+    private async Task<List<TResult>> ExecuteQueryAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
         => await CommandObservation.ExecuteAsync(
             sql, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
             () => ExecuteQueryDirectAsync(sql, selector, options, cancellationToken), cancellationToken).ConfigureAwait(false);
 
-    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
