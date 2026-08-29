@@ -50,10 +50,24 @@ function Step {
 Write-Host ''
 Write-Host '== 1. merged work branch =='
 
-$target = 'feat/zero-dependency-core'
-if (-not (git rev-parse --verify --quiet "refs/heads/$target")) {
-    Write-Host "skip:  branch $target no longer exists"
-} else {
+$targets = @(
+    'feat/zero-dependency-core'
+    'docs/aot-and-package-docs'
+    'docs/cla-and-contributing'
+    'feat/continuous-audit'
+    'fix/the audit host-sync-glob'
+    'fix/audit-script-exec-bit'
+    'fix/audit-pipefail'
+    'fix/audit-api-surface-regex'
+    'docs/audit-triage-and-decisions'
+    'chore/zero-dependency-cleanup-script'
+)
+
+foreach ($target in $targets) {
+    if (-not (git rev-parse --verify --quiet "refs/heads/$target")) {
+        Write-Host "skip:  branch $target no longer exists"
+        continue
+    }
     Step "git branch -d $target" {
         git branch -d $target
         if ($LASTEXITCODE -ne 0) {
@@ -70,7 +84,10 @@ Write-Host '== 2. scratch pack output (needs -DeleteScratch) =='
 # nuspecs. Nothing here is an input to anything.
 $scratch = @(
     'tmp/packtest',
-    'tmp/packall'
+    'tmp/packall',
+    'tmp/publish-aot-net8',
+    'tmp/publish-aot-net10',
+    'tmp/audit-reports'
 )
 
 foreach ($path in $scratch) {
@@ -93,7 +110,30 @@ foreach ($path in $scratch) {
 }
 
 Write-Host ''
-Write-Host '== 3. build output this task rebuilt (NOT removed) =='
+Write-Host ''
+Write-Host '== 3. git bundles shipped to the audit host (needs -DeleteScratch) =='
+
+$bundles = Get-ChildItem 'tmp' -Filter 'jaunty-*.bundle' -ErrorAction SilentlyContinue
+if (-not $bundles) {
+    Write-Host 'skip:  no bundles under tmp/'
+} elseif (-not $DeleteScratch) {
+    foreach ($b in $bundles) {
+        Write-Host ("would: remove tmp/{0} ({1:N1} MB) - requires -DeleteScratch" -f $b.Name, ($b.Length / 1MB))
+    }
+} else {
+    foreach ($b in $bundles) {
+        Step ("remove tmp/{0}" -f $b.Name) { Remove-Item -Force $b.FullName }
+    }
+}
+
+Write-Host ''
+Write-Host '== 4. the audit host audit host (NOT removed) =='
+Write-Host 'note:  the audit checkout on the audit host holds the audit checkout, bundles and reports.'
+Write-Host '       It is the continuous audit loop and is meant to persist. To decommission it'
+Write-Host '       entirely:  ssh the audit host "rm -rf the audit checkout"  - run that by hand, deliberately.'
+
+Write-Host ''
+Write-Host '== 5. build output this task rebuilt (NOT removed) =='
 Write-Host 'note:  bin/ and obj/ under src/Jaunty.Extensions.Logging are ordinary build output.'
 Write-Host '       They are gitignored and are rebuilt on demand; this script leaves them alone.'
 
