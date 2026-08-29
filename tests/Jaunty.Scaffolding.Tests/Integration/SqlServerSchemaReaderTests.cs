@@ -18,6 +18,24 @@ namespace Jaunty.Scaffolding.Tests.Integration;
 /// </summary>
 public class SqlServerSchemaReaderTests
 {
+    /// <summary>
+    /// Fixture table names are suffixed with the process id. They used to be fixed, and every test
+    /// here drops and recreates them in the one shared database, so running the net8.0 and net10.0
+    /// legs of this suite concurrently made them race: measured on three consecutive combined runs,
+    /// 1-2 tests failed at random while each leg alone passed. CI runs the frameworks as separate
+    /// jobs, so CI was green either way and only a local combined run saw it.
+    /// <para>
+    /// The <c>scaffold_test_</c> prefix is kept so the SQL Server cleanup scripts'
+    /// <c>LIKE 'scaffold[_]test[_]%'</c> pattern still matches. The <c>scaffold_test_code</c> alias
+    /// type is deliberately NOT suffixed: it is created idempotently and never dropped by a test,
+    /// so it does not race, and leaving it alone keeps the scripts' exact-name TYPE drop valid.
+    /// </para>
+    /// </summary>
+    private static readonly string Products = $"scaffold_test_products_{Environment.ProcessId}";
+    private static readonly string Orders = $"scaffold_test_orders_{Environment.ProcessId}";
+    private static readonly string OrderItems = $"scaffold_test_order_items_{Environment.ProcessId}";
+    private static readonly string TypeNames = $"scaffold_test_typenames_{Environment.ProcessId}";
+
     private static SqlConnection OpenOrSkip()
     {
         if (!TestConfiguration.HasSqlServer)
@@ -41,18 +59,18 @@ public class SqlServerSchemaReaderTests
     private static void CreateProductsAndOrders(SqlConnection conn)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            DROP TABLE IF EXISTS scaffold_test_orders;
-            DROP TABLE IF EXISTS scaffold_test_products;
-            CREATE TABLE scaffold_test_products (
+        cmd.CommandText = $"""
+            DROP TABLE IF EXISTS {Orders};
+            DROP TABLE IF EXISTS {Products};
+            CREATE TABLE {Products} (
                 product_id INT IDENTITY(1,1) PRIMARY KEY,
                 product_name NVARCHAR(100) NOT NULL,
                 unit_price DECIMAL(10,2) NULL,
                 full_label AS (product_name + '!')
             );
-            CREATE TABLE scaffold_test_orders (
+            CREATE TABLE {Orders} (
                 order_id INT IDENTITY(1,1) PRIMARY KEY,
-                product_id INT NOT NULL REFERENCES scaffold_test_products(product_id)
+                product_id INT NOT NULL REFERENCES {Products}(product_id)
             );
             """;
         cmd.ExecuteNonQuery();
@@ -61,9 +79,9 @@ public class SqlServerSchemaReaderTests
     private static void CreateCompositeKeyTable(SqlConnection conn)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            DROP TABLE IF EXISTS scaffold_test_order_items;
-            CREATE TABLE scaffold_test_order_items (
+        cmd.CommandText = $"""
+            DROP TABLE IF EXISTS {OrderItems};
+            CREATE TABLE {OrderItems} (
                 order_id INT NOT NULL,
                 line_number INT NOT NULL,
                 quantity INT NOT NULL,
@@ -86,16 +104,16 @@ public class SqlServerSchemaReaderTests
         // type scaffold_test_code") even though the CREATE TYPE precedes it.
         using (var typeCmd = conn.CreateCommand())
         {
-            typeCmd.CommandText = """
-                DROP TABLE IF EXISTS scaffold_test_typenames;
+            typeCmd.CommandText = $"""
+                DROP TABLE IF EXISTS {TypeNames};
                 IF TYPE_ID('scaffold_test_code') IS NULL CREATE TYPE scaffold_test_code FROM NVARCHAR(20);
                 """;
             typeCmd.ExecuteNonQuery();
         }
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            CREATE TABLE scaffold_test_typenames (
+        cmd.CommandText = $"""
+            CREATE TABLE {TypeNames} (
                 id INT IDENTITY(1,1) PRIMARY KEY,
                 area GEOGRAPHY NULL,
                 shape GEOMETRY NULL,
@@ -115,7 +133,7 @@ public class SqlServerSchemaReaderTests
         CreateTypeNameTable(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_typenames"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [TypeNames] });
 
         var table = schema.Tables.Single();
 
@@ -138,7 +156,7 @@ public class SqlServerSchemaReaderTests
         CreateTypeNameTable(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_typenames"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [TypeNames] });
 
         var table = schema.Tables.Single();
 
@@ -162,7 +180,7 @@ public class SqlServerSchemaReaderTests
         CreateTypeNameTable(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_typenames"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [TypeNames] });
 
         var column = schema.Tables.Single().Columns.Single(c => c.ColumnName == "object_name");
 
@@ -178,7 +196,7 @@ public class SqlServerSchemaReaderTests
         CreateTypeNameTable(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_typenames"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [TypeNames] });
 
         var table = schema.Tables.Single();
 
@@ -192,10 +210,10 @@ public class SqlServerSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
 
         var table = Assert.Single(schema.Tables);
-        Assert.Equal("scaffold_test_products", table.TableName);
+        Assert.Equal(Products, table.TableName);
         Assert.Equal("dbo", table.SchemaName);
         Assert.Equal(4, table.Columns.Count);
         Assert.Contains(table.Columns, c => c.ColumnName == "product_name" && c.DataType == "nvarchar");
@@ -208,7 +226,7 @@ public class SqlServerSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
 
         var table = schema.Tables.Single();
         var idColumn = table.Columns.Single(c => c.ColumnName == "product_id");
@@ -226,7 +244,7 @@ public class SqlServerSchemaReaderTests
         CreateCompositeKeyTable(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_order_items"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [OrderItems] });
 
         var table = schema.Tables.Single();
         Assert.NotNull(table.PrimaryKey);
@@ -241,7 +259,7 @@ public class SqlServerSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
 
         var table = schema.Tables.Single();
         var computed = table.Columns.Single(c => c.ColumnName == "full_label");
@@ -258,7 +276,7 @@ public class SqlServerSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
-            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
 
         var nameColumn = schema.Tables.Single().Columns.Single(c => c.ColumnName == "product_name");
 
@@ -275,9 +293,9 @@ public class SqlServerSchemaReaderTests
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
             TestConfiguration.SqlServerConnectionString,
-            new SchemaReaderOptions { IncludeTables = ["scaffold_test_products", "scaffold_test_orders"] });
+            new SchemaReaderOptions { IncludeTables = [Products, Orders] });
 
-        Assert.Equal(2, schema.Tables.Count(t => t.TableName is "scaffold_test_products" or "scaffold_test_orders"));
+        Assert.Equal(2, schema.Tables.Count(t => t.TableName == Products || t.TableName == Orders));
     }
 
     [Fact]
@@ -288,13 +306,13 @@ public class SqlServerSchemaReaderTests
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
             TestConfiguration.SqlServerConnectionString,
-            new SchemaReaderOptions { IncludeTables = ["scaffold_test_orders"], IncludeForeignKeys = true });
+            new SchemaReaderOptions { IncludeTables = [Orders], IncludeForeignKeys = true });
 
-        var ordersTable = schema.Tables.Single(t => t.TableName == "scaffold_test_orders");
+        var ordersTable = schema.Tables.Single(t => t.TableName == Orders);
         var fk = Assert.Single(ordersTable.ForeignKeys);
 
         Assert.Equal("product_id", fk.ForeignKeyColumn);
-        Assert.Equal("scaffold_test_products", fk.ReferencedTable);
+        Assert.Equal(Products, fk.ReferencedTable);
         Assert.Equal("product_id", fk.ReferencedColumn);
     }
 
@@ -306,9 +324,9 @@ public class SqlServerSchemaReaderTests
 
         var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
             TestConfiguration.SqlServerConnectionString,
-            new SchemaReaderOptions { IncludeTables = ["scaffold_test_orders"], IncludeForeignKeys = false });
+            new SchemaReaderOptions { IncludeTables = [Orders], IncludeForeignKeys = false });
 
-        var ordersTable = schema.Tables.Single(t => t.TableName == "scaffold_test_orders");
+        var ordersTable = schema.Tables.Single(t => t.TableName == Orders);
         Assert.Empty(ordersTable.ForeignKeys);
     }
 }
