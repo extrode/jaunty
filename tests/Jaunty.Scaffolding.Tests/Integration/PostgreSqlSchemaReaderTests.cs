@@ -30,7 +30,7 @@ public class PostgreSqlSchemaReaderTests
     {
         if (!TestConfiguration.HasPostgreSql)
         {
-            Assert.Skip("PostgreSQL not configured. Set JAUNTY_TEST_POSTGRESQL or ConnectionStrings:PostgreSql.");
+            RequiredEngine.SkipOrFail(RequiredEngine.PostgreSql, "PostgreSQL not configured. Set JAUNTY_TEST_POSTGRESQL or ConnectionStrings:PostgreSql.");
         }
 
         var conn = new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString);
@@ -41,7 +41,7 @@ public class PostgreSqlSchemaReaderTests
         catch (Exception ex)
         {
             conn.Dispose();
-            Assert.Skip($"PostgreSQL not reachable: {ex.Message}");
+            RequiredEngine.SkipOrFail(RequiredEngine.PostgreSql, $"PostgreSQL not reachable: {ex.Message}");
         }
         return conn;
     }

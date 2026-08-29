@@ -28,7 +28,7 @@ public class MySqlSchemaReaderTests
     {
         if (!TestConfiguration.HasMySql)
         {
-            Assert.Skip("MySQL not configured. Set JAUNTY_TEST_MYSQL/JAUNTY_TEST_MARIADB or ConnectionStrings:MySql.");
+            RequiredEngine.SkipOrFail(RequiredEngine.MySql, "MySQL not configured. Set JAUNTY_TEST_MYSQL/JAUNTY_TEST_MARIADB or ConnectionStrings:MySql.");
         }
 
         var conn = new MySqlConnection(TestConfiguration.MySqlConnectionString);
@@ -39,7 +39,7 @@ public class MySqlSchemaReaderTests
         catch (Exception ex)
         {
             conn.Dispose();
-            Assert.Skip($"MySQL not reachable: {ex.Message}");
+            RequiredEngine.SkipOrFail(RequiredEngine.MySql, $"MySQL not reachable: {ex.Message}");
         }
         return conn;
     }
