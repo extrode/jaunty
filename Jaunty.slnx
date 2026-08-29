@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Jaunty.Extensions.Logging/Jaunty.Extensions.Logging.csproj" />
     <Project Path="src/Jaunty.Extensions.Reflection/Jaunty.Extensions.Reflection.csproj" />
     <Project Path="src/Jaunty.Fluent/Jaunty.Fluent.csproj" />
     <Project Path="src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj" />
