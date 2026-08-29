@@ -2,7 +2,7 @@
 
 **Branch**: `001-logging-interception`
 **Date**: 2026-03-10
-**Spec**: [spec.md](spec.md)
+**Spec**: [001-spec.md](001-spec.md)
 **Input**: `/specs/001-logging-interception/spec.md`
 
 ---

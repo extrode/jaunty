@@ -9,6 +9,10 @@ If you want the full API surface, see `README.md` at the repository root. This g
 uses APIs documented there (plus the two official samples under `samples/`), so anything you see
 here is safe to rely on.
 
+**Already using another ORM?** [Migrating to Jaunty](migrating/README.md) covers porting from Dapper
+or EF Core, and the [strict-mapping rule](migrating/strict-mapping.md) that catches people out in
+their first hour.
+
 ## Setup
 
 Create a new console project and add the packages:

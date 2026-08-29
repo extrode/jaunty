@@ -4,7 +4,7 @@
 
 - Full local validation on branch `dev` (commit `7b57cc0`): `dotnet build Jaunty.slnx -c Release`, full test suites per project, package metadata audit, dependency vulnerability scan, secrets scan, CI workflow review, documentation review.
 - Unlike the 2026-03-03 report (source/document review only), this assessment executed the build and the complete test suite.
-- Supersedes: [PRODUCTION-READINESS-2026-03-03.md](PRODUCTION-READINESS-2026-03-03.md).
+- Supersedes: [PRODUCTION-READINESS-2026-03-03.md](../../99-archive/PRODUCTION-READINESS-2026-03-03.md).
 
 ## Verdict
 
