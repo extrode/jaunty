@@ -2,6 +2,14 @@
 
 Why this exists, how it is wired, and what to do when it breaks.
 
+> **Retired, pending one command.** This repository is going public, and a self-hosted runner on a
+> public repository executes arbitrary code from any fork's pull request on the owner's machine.
+> The runner goes before the switch is flipped, not after:
+> `gh variable delete CI_RUNNER --repo extrode/jaunty`, then one green run on `ubuntu-latest`.
+> Tracked as **T16** in `docs/plans/2026-08-29-004-public-release.md`, which blocks **T20**.
+>
+> **Everything below is kept as history, not as instructions.** Do not re-provision from it.
+
 ## Status 2026-08-27: the reason below no longer holds
 
 **Hosted runners work again.** `extrode/jauntyq` runs every job on `ubuntu-latest` and has
