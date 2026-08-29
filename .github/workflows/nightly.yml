@@ -7,9 +7,17 @@ name: Nightly
 # Caveat, and it is not a bug to chase: the self-hosted Debian runner idle-stops. A scheduled
 # run queues until the VM is booted, so a 03:00 UTC cron can report hours late or not at all
 # until someone starts it. Every job falls back to ubuntu-latest if CI_RUNNER is unset.
+#
+# Two schedules, not one. The mutation tier is 2,364 mutants; measured at concurrency 2 it
+# exceeds a hosted runner's 6-hour job limit, and it is explicitly not a gate ("break": 0 in
+# every stryker-config.json), so a daily run buys a trend nobody reads seven times over. It
+# runs on the Sunday cron only. The weekday cron deliberately excludes Sunday: GitHub fires
+# each schedule entry as its own run, so two entries at the same minute would double the full
+# suite rather than merge. workflow_dispatch still runs everything, mutation included.
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '0 3 * * 1-6'
+    - cron: '0 3 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -179,8 +187,13 @@ jobs:
           path: out/fuzz-findings/
           if-no-files-found: ignore
 
+  # Weekly, not nightly - see the schedule block at the top for the measurement behind that.
+  # The condition names the Sunday cron literally; changing the cron string above without
+  # changing it here silently stops this job from ever running, which is what
+  # NightlyWorkflowCadenceTests exists to catch.
   mutation:
     name: Mutate ${{ matrix.project }}
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * 0'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
