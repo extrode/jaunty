@@ -51,7 +51,12 @@ This catches mismatches at development time, not when a customer reports weird b
 dotnet add package Extrode.Jaunty
 ```
 
-Targets `netstandard2.0` and `net8.0`. Works with any ADO.NET provider.
+Targets `netstandard2.0`, `net8.0` and `net10.0`. Works with any ADO.NET provider.
+
+`netstandard2.0` is there for consumers who cannot move off an older framework. It is the one
+target that carries extra package references — backports of types that are built into modern
+.NET — and each one is listed and explained in the dependency documentation rather than left as
+a surprise.
 
 ---
 
