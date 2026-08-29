@@ -127,14 +127,46 @@ reflection and no runtime SQL parsing. Neither product will silently map the wro
 catch it at different moments: JauntyQ at build time against a snapshot, Jaunty at the call site
 against the live result set.
 
-### The same task in each
+### The two directions, and what each one produces
 
-Products in one category, with the category name alongside each product.
+The distinction is easiest to see by looking at what you write and what comes out the other side.
+**With Jaunty you write C# and get SQL. With JauntyQ you write SQL and get C#.** Every listing below
+is real output, not an illustration.
 
-Jaunty, with the Fluent builder. No SQL string, column references checked by the compiler:
+#### Jaunty: C# in, SQL out
+
+The core API needs no query at all. The entity carries the mapping, and the source generator emits
+the SQL at build time:
 
 ```csharp
 using Jaunty;
+
+var all      = connection.GetAll<Product>();
+var one      = connection.Get<Product>(1);
+long newId   = connection.Insert(product);
+int updated  = connection.Update(product);
+int deleted  = connection.Delete(product);
+```
+
+What those five calls send to the database:
+
+```sql
+SELECT product_id, product_name, category_id, unit_price, units_in_stock, discontinued FROM products
+SELECT product_id, product_name, category_id, unit_price, units_in_stock, discontinued FROM products WHERE product_id = @product_id
+INSERT INTO products (product_name, category_id, unit_price, units_in_stock, discontinued) VALUES (@product_name, @category_id, @unit_price, @units_in_stock, @discontinued); SELECT last_insert_rowid();
+UPDATE products SET product_name = @product_name, category_id = @category_id, unit_price = @unit_price, units_in_stock = @units_in_stock, discontinued = @discontinued WHERE product_id = @product_id
+DELETE FROM products WHERE product_id = @product_id
+```
+
+Note what is *not* there: no `SELECT *`, so a column added to the table tomorrow cannot silently
+change the shape of your result. The identity fetch is dialect-specific: `last_insert_rowid()` on
+SQLite, `CAST(SCOPE_IDENTITY() AS BIGINT)` on SQL Server, `RETURNING` on PostgreSQL,
+`LAST_INSERT_ID()` on MySQL. Every value is a parameter, so SQL injection is not a thing you defend
+against per query.
+
+For anything past CRUD, the Fluent builder takes typed expressions:
+
+```csharp
 using Jaunty.Fluent;
 
 var rows = connection.From<Product>()
@@ -147,21 +179,36 @@ foreach (var (product, category) in rows)
     Console.WriteLine($"{product.ProductName} ({category.CategoryName})");
 ```
 
-Or with SQL, which is a first-class option here rather than an escape hatch. This one selects three
-columns rather than a whole `Product`, so it is a projection and `QueryPartial<T>` is the right
-method; `Query<T>` would throw on the properties with no column:
+and produces:
+
+```sql
+SELECT products.product_id AS f_product_id, products.product_name AS f_product_name,
+       products.category_id AS f_category_id, products.unit_price AS f_unit_price,
+       products.units_in_stock AS f_units_in_stock, products.discontinued AS f_discontinued,
+       categories.category_id AS j_category_id, categories.category_name AS j_category_name,
+       categories.description AS j_description
+FROM products
+INNER JOIN categories ON products.category_id = categories.category_id
+WHERE (products.category_id = @jp0)
+```
+
+The `f_`/`j_` aliases are why `SelectBoth()` can hand you both entities: `products.category_id` and
+`categories.category_id` would otherwise collide in one result set. `ToSql()` gives you that string
+without executing anything, so the SQL is reviewable rather than a black box.
+
+Raw SQL is a first-class option here, not an escape hatch. This one selects three columns rather
+than a whole `Product`, so it is a projection and `QueryPartial<T>` is the right method — `Query<T>`
+would throw on the properties with no matching column:
 
 ```csharp
 var products = connection.QueryPartial<Product>(
-    "SELECT p.ProductId, p.ProductName, p.UnitPrice " +
-    "FROM Products p " +
-    "INNER JOIN Categories c ON c.CategoryId = p.CategoryId " +
-    "WHERE p.CategoryId = @CategoryId",
+    "SELECT product_id, product_name, unit_price FROM products WHERE category_id = @CategoryId",
     new { CategoryId = 1 });
 ```
 
-JauntyQ, where the query is a file the build checks. This one ships as-is in
-`samples/JauntyQ.Northwind.Tests`:
+#### JauntyQ: SQL in, C# out
+
+You write the file. This one ships as-is in `samples/JauntyQ.Northwind.Tests`:
 
 ```sql
 -- db/tables/Products/GetByCategory.sql
@@ -171,6 +218,38 @@ join Categories c on p.CategoryId = c.CategoryId
 where p.CategoryId = @CategoryId
 ```
 
+The generator validates it against the committed schema snapshot and emits this, which is what your
+code calls:
+
+```csharp
+public class GetByCategory
+{
+    public required int ProductId { get; set; }
+    public required string ProductName { get; set; }
+    public required decimal? UnitPrice { get; set; }
+    public required short? UnitsInStock { get; set; }
+    public required string CategoryName { get; set; }
+}
+
+public List<Result.GetByCategory> GetByCategory(short? CategoryId)
+{
+    using var cmd = _conn.CreateCommand();
+    cmd.CommandText = @"select p.ProductId, ... where p.CategoryId = @CategoryId";
+
+    var p0 = cmd.CreateParameter();
+    p0.ParameterName = "@CategoryId";
+    p0.DbType = System.Data.DbType.Int16;
+    p0.Value = (object?)CategoryId ?? System.DBNull.Value;
+    cmd.Parameters.Add(p0);
+
+    using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
+    JauntyQShapeGuard.Validate(reader, __GetByCategoryColumns, "Products.GetByCategory");
+    ...
+}
+```
+
+so you call:
+
 ```csharp
 var db = new JauntyDb(connection);
 var rows = db.Products.GetByCategory(1);
@@ -179,8 +258,10 @@ foreach (var row in rows)
     Console.WriteLine($"{row.ProductName} ({row.CategoryName})");
 ```
 
-The row type is generated from that file: the five selected columns, read by ordinal, with the
-parameter typed `short?` because that is what the schema snapshot says `CategoryId` is.
+Three things the schema snapshot decided for you without being asked: the parameter is `short?`
+because `CategoryId` is a `smallint`, its `DbType` is `Int16` rather than left to provider
+inference, and `UnitPrice` is `decimal?` because the column is nullable. Values are read by ordinal.
+Rename `CategoryName` in the database, re-pull the snapshot, and this file stops compiling.
 
 ### Choose Jaunty if
 
