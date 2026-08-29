@@ -1,14 +1,14 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 #if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
 #endif
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
 using Jaunty.Configuration;
+using Jaunty.Import;
 using Jaunty.Dialects;
 using Jaunty.Internals;
 
@@ -49,10 +49,13 @@ public static class CsvImportExtensions
     /// the client driver, which requires the server to permit <c>local_infile</c>.
     /// </description></item>
     /// <item><description>
-    /// <b>PostgreSQL</b> - read <b>here</b> when Npgsql exposes <c>BeginTextImport</c>, which
-    /// streams <c>COPY ... FROM STDIN</c>. Where that is unavailable - a non-Npgsql provider, or a
-    /// trimmed build - it falls back to server-side <c>COPY ... FROM '&lt;path&gt;'</c>, and the
-    /// path is then the <b>server's</b>.
+    /// <b>PostgreSQL</b> - read <b>here</b> when a client-side copy provider is registered, which
+    /// streams <c>COPY ... FROM STDIN</c>. Install <c>Extrode.Jaunty.Extensions.Npgsql</c> and call
+    /// <c>JauntyNpgsql.Use()</c> to register one. Without a provider the import does not quietly
+    /// change machines: an Npgsql connection is rejected with an error naming the missing package,
+    /// because the server-side <c>COPY ... FROM '&lt;path&gt;'</c> fallback resolves the path on the
+    /// <b>server</b>, and silently switching which machine opens the file is a security and
+    /// correctness difference, not an implementation detail.
     /// </description></item>
     /// <item><description>
     /// <b>SQL Server</b> - read <b>on the database server</b>, always. <c>BULK INSERT ... FROM</c>
@@ -126,10 +129,13 @@ public static class CsvImportExtensions
     /// the client driver, which requires the server to permit <c>local_infile</c>.
     /// </description></item>
     /// <item><description>
-    /// <b>PostgreSQL</b> - read <b>here</b> when Npgsql exposes <c>BeginTextImport</c>, which
-    /// streams <c>COPY ... FROM STDIN</c>. Where that is unavailable - a non-Npgsql provider, or a
-    /// trimmed build - it falls back to server-side <c>COPY ... FROM '&lt;path&gt;'</c>, and the
-    /// path is then the <b>server's</b>.
+    /// <b>PostgreSQL</b> - read <b>here</b> when a client-side copy provider is registered, which
+    /// streams <c>COPY ... FROM STDIN</c>. Install <c>Extrode.Jaunty.Extensions.Npgsql</c> and call
+    /// <c>JauntyNpgsql.Use()</c> to register one. Without a provider the import does not quietly
+    /// change machines: an Npgsql connection is rejected with an error naming the missing package,
+    /// because the server-side <c>COPY ... FROM '&lt;path&gt;'</c> fallback resolves the path on the
+    /// <b>server</b>, and silently switching which machine opens the file is a security and
+    /// correctness difference, not an implementation detail.
     /// </description></item>
     /// <item><description>
     /// <b>SQL Server</b> - read <b>on the database server</b>, always. <c>BULK INSERT ... FROM</c>
@@ -425,9 +431,6 @@ public static class CsvImportExtensions
     // PostgreSQL: COPY FROM STDIN
     // =============================================
 
-#if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Npgsql BeginTextImport feature probe on the runtime connection type; the null check below handles a trimmed or non-Npgsql connection by falling back to server-side COPY FROM.")]
-#endif
     private static long ImportPostgreSql(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
@@ -441,51 +444,62 @@ public static class CsvImportExtensions
             // Use COPY ... FROM STDIN via raw SQL (works with all Npgsql versions)
             string copyCommand = $"COPY {escapedTable} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
 
-            // Use reflection to call BeginTextImport on NpgsqlConnection
-
-            // AOT-SAFE: Npgsql feature probe on the runtime connection type; null (trimmed or non-Npgsql) falls back to server-side COPY FROM below
-            MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
-            if (beginTextImport != null)
+            // The client-side COPY ... FROM STDIN path, supplied by a driver-specific package
+            // rather than found by reflection on the connection. See RequireCopyImportProvider.
+            ICopyImportWriter? copy = JauntyConfig.CopyImportFactory?.Invoke(connection, copyCommand);
+            if (copy is not null)
             {
                 // This branch streams the file from here, so its absence here is an error Jaunty
                 // can diagnose. The server-side fallback below is not gated on it - see
                 // RequireFileOnThisMachine.
                 RequireFileOnThisMachine(filePath);
 
-                using var writer = (IDisposable)beginTextImport.Invoke(connection, new object[] { copyCommand })!;
-                var textWriter = (TextWriter)writer;
+                using (copy)
+                {
+                    TextWriter textWriter = copy.Writer;
 
-                try
-                {
-                    // AUD-R34-010: this was a ReadLine/WriteLine loop, which re-terminates every
-                    // line with the writer's NewLine - Environment.NewLine by default. A newline
-                    // inside a quoted field (RFC 4180, and handled deliberately by ReadCsvRecord
-                    // below) was therefore rewritten to the host's newline on the way to the
-                    // server: an embedded LF arrived as CRLF on Windows, an embedded CRLF arrived
-                    // as LF on Linux. Same class of defect as AUD-R26's ROWTERMINATOR finding.
-                    // Copying characters through verbatim leaves the file's own bytes intact and
-                    // lets COPY apply its own rules.
-                    using var fileReader = new StreamReader(filePath, options.Encoding);
-                    char[] buffer = new char[CopyBufferChars];
-                    int read;
-                    while ((read = fileReader.Read(buffer, 0, buffer.Length)) > 0)
+                    try
                     {
-                        textWriter.Write(buffer, 0, read);
+                        // AUD-R34-010: this was a ReadLine/WriteLine loop, which re-terminates every
+                        // line with the writer's NewLine - Environment.NewLine by default. A newline
+                        // inside a quoted field (RFC 4180, and handled deliberately by ReadCsvRecord
+                        // below) was therefore rewritten to the host's newline on the way to the
+                        // server: an embedded LF arrived as CRLF on Windows, an embedded CRLF arrived
+                        // as LF on Linux. Same class of defect as AUD-R26's ROWTERMINATOR finding.
+                        // Copying characters through verbatim leaves the file's own bytes intact and
+                        // lets COPY apply its own rules.
+                        using var fileReader = new StreamReader(filePath, options.Encoding);
+                        char[] buffer = new char[CopyBufferChars];
+                        int read;
+                        while ((read = fileReader.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            textWriter.Write(buffer, 0, read);
+                        }
                     }
-                }
-                catch
-                {
-                    // AUD-R34-011: Npgsql's copy writer *completes* the COPY when disposed and
-                    // aborts it only on an explicit Cancel(). Without this, a failure part-way
-                    // through the file - a decoding error under a strict Encoding, an I/O error -
-                    // unwound through `using`, committed the rows written so far, and left the
-                    // caller with an exception and a silently partial import.
-                    CancelCopy(writer);
-                    throw;
+                    catch
+                    {
+                        // AUD-R34-011: the copy writer *completes* the COPY when disposed and
+                        // aborts it only on an explicit Cancel(). Without this, a failure part-way
+                        // through the file - a decoding error under a strict Encoding, an I/O error -
+                        // unwound through `using`, committed the rows written so far, and left the
+                        // caller with an exception and a silently partial import.
+                        //
+                        // This used to reach Cancel by reflection, so a trimmed build found no
+                        // method, cancelled nothing and committed the partial import anyway - the
+                        // defect this catch block exists to prevent, reintroduced by the mechanism
+                        // meant to fix it. ICopyImportWriter.Cancel is a compile-time call.
+                        //
+                        // A cancel that itself fails must not replace the original failure: the
+                        // caller needs to know why the import stopped, not why the abort did.
+                        try { copy.Cancel(); } catch { }
+                        throw;
+                    }
                 }
 
                 return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
             }
+
+            RequireCopyImportProvider(connection);
 
             // Fallback: Use COPY FROM with file path (requires server access to file).
             // Deliberately not preceded by RequireFileOnThisMachine: the server opens this one, so
@@ -511,9 +525,6 @@ public static class CsvImportExtensions
         }
     }
 
-#if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Npgsql BeginTextImport feature probe on the runtime connection type; the null check below handles a trimmed or non-Npgsql connection by falling back to server-side COPY FROM.")]
-#endif
     private static async ValueTask<long> ImportPostgreSqlAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
@@ -526,41 +537,46 @@ public static class CsvImportExtensions
 
             string copyCommand = $"COPY {escapedTable} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
 
-            // AOT-SAFE: Npgsql feature probe on the runtime connection type; null (trimmed or non-Npgsql) falls back to server-side COPY FROM below
-            MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
-            if (beginTextImport != null)
+            // See the sync sibling: a driver-specific package supplies this, so core needs no
+            // reflection on the connection and no dependency on the driver.
+            ICopyImportWriter? copy = JauntyConfig.CopyImportFactory?.Invoke(connection, copyCommand);
+            if (copy is not null)
             {
                 // This branch streams the file from here, so its absence here is an error Jaunty
                 // can diagnose. The server-side fallback below is not gated on it - see
                 // RequireFileOnThisMachine.
                 RequireFileOnThisMachine(filePath);
 
-                using var writer = (IDisposable)beginTextImport.Invoke(connection, new object[] { copyCommand })!;
-                var textWriter = (TextWriter)writer;
+                using (copy)
+                {
+                    TextWriter textWriter = copy.Writer;
 
-                try
-                {
-                    // AUD-R34-010: see the sync sibling - a ReadLine/WriteLine loop rewrote every
-                    // newline, including the ones inside quoted fields, to the host's newline.
-                    using var fileReader = new StreamReader(filePath, options.Encoding);
-                    char[] buffer = new char[CopyBufferChars];
-                    int read;
-                    while ((read = await fileReader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
+                    try
                     {
-                        await textWriter.WriteAsync(buffer, 0, read).ConfigureAwait(false);
+                        // AUD-R34-010: see the sync sibling - a ReadLine/WriteLine loop rewrote every
+                        // newline, including the ones inside quoted fields, to the host's newline.
+                        using var fileReader = new StreamReader(filePath, options.Encoding);
+                        char[] buffer = new char[CopyBufferChars];
+                        int read;
+                        while ((read = await fileReader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
+                        {
+                            await textWriter.WriteAsync(buffer, 0, read).ConfigureAwait(false);
+                        }
                     }
-                }
-                catch
-                {
-                    // AUD-R34-011: see the sync sibling - disposing the copy writer completes the
-                    // COPY, so a mid-file failure has to cancel it explicitly or the rows written
-                    // so far are committed behind the caller's back.
-                    await CancelCopyAsync(writer).ConfigureAwait(false);
-                    throw;
+                    catch
+                    {
+                        // AUD-R34-011: see the sync sibling - disposing the copy writer completes the
+                        // COPY, so a mid-file failure has to cancel it explicitly or the rows written
+                        // so far are committed behind the caller's back.
+                        try { await copy.CancelAsync().ConfigureAwait(false); } catch { }
+                        throw;
+                    }
                 }
 
                 return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
             }
+
+            RequireCopyImportProvider(connection);
 
             // AUD-R30: see the sync sibling - the server opens the file on this branch, so a
             // non-default Encoding must be rejected rather than silently discarded.
@@ -601,50 +617,45 @@ public static class CsvImportExtensions
     /// call <c>Cancel()</c> or the rows already written are committed. Reflected for the same
     /// reason <c>BeginTextImport</c> is - Jaunty does not reference Npgsql.
     /// </summary>
-#if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Npgsql copy-writer Cancel() probe on the runtime writer type; a missing method means there is nothing to cancel and the exception propagates unchanged.")]
-#endif
-    private static void CancelCopy(IDisposable writer)
-    {
-        try
-        {
-            // AOT-SAFE: Npgsql feature probe on the runtime writer type; null means no cancel to make
-            MethodInfo? cancel = writer.GetType().GetMethod("Cancel", Type.EmptyTypes);
-            cancel?.Invoke(writer, null);
-        }
-        catch
-        {
-            // The copy is already failing and the caller's exception is the one worth surfacing;
-            // a provider that refuses the cancel must not replace it with its own.
-        }
-    }
-
     /// <summary>
-    /// Async twin of <see cref="CancelCopy"/>, preferring Npgsql's <c>CancelAsync()</c>.
+    /// PostgreSQL only: fail loudly when the connection can stream a client-side COPY but no
+    /// provider is registered to do it.
     /// </summary>
-#if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Npgsql copy-writer CancelAsync()/Cancel() probe on the runtime writer type; a missing method means there is nothing to cancel and the exception propagates unchanged.")]
-#endif
-    private static async ValueTask CancelCopyAsync(IDisposable writer)
+    /// <remarks>
+    /// <para>
+    /// Core has no dependency on a database driver, so it cannot open a client-side
+    /// <c>COPY ... FROM STDIN</c> itself. It used to find Npgsql's by reflection, which meant that
+    /// merely having Npgsql on the path enabled the streaming path - and that a trimmed build
+    /// silently lost it, falling through to the server-side branch where the <em>database server</em>
+    /// opens the file. On any deployment where the server is not the client machine that fails, and
+    /// where it does not, it reads a file the caller did not mean to expose.
+    /// </para>
+    /// <para>
+    /// Falling back silently is the wrong answer either way, so this says what is missing. The type
+    /// name is compared as a string: it is not reflection over members, carries no trimming
+    /// exposure, and is the same check the driver's own connection string parsing would make.
+    /// </para>
+    /// </remarks>
+    // internal, not private, so the tests can reach the guard without a reachable server.
+    internal static void RequireCopyImportProvider(IDbConnection connection)
     {
-        try
-        {
-            // AOT-SAFE: Npgsql feature probe on the runtime writer type; null falls back to Cancel()
-            MethodInfo? cancelAsync = writer.GetType().GetMethod("CancelAsync", Type.EmptyTypes);
-            if (cancelAsync is not null && cancelAsync.Invoke(writer, null) is Task pending)
-            {
-                await pending.ConfigureAwait(false);
-                return;
-            }
+        if (JauntyConfig.CopyImportFactory is not null)
+            return;
 
-            // AOT-SAFE: as above, synchronous fallback
-            MethodInfo? cancel = writer.GetType().GetMethod("Cancel", Type.EmptyTypes);
-            cancel?.Invoke(writer, null);
-        }
-        catch
-        {
-            // See CancelCopy.
-        }
+        string typeName = connection.GetType().FullName ?? string.Empty;
+
+        if (!typeName.StartsWith("Npgsql.", StringComparison.Ordinal))
+            return;
+
+        throw new InvalidOperationException(
+            "CSV import over a PostgreSQL connection needs a client-side COPY provider, and none is " +
+            "registered. Install the Extrode.Jaunty.Extensions.Npgsql package and call " +
+            "JauntyNpgsql.Use() once at startup. " +
+            "Jaunty core declares no dependency on a database driver, so it cannot open " +
+            "COPY ... FROM STDIN itself; earlier versions reached Npgsql by reflection, which broke " +
+            "silently when trimmed. To use the server-side path instead - where the database server " +
+            "opens the file, not this process - set JauntyConfig.CopyImportFactory to a factory that " +
+            "returns null.");
     }
 
     // =============================================
