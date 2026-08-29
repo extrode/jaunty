@@ -35,6 +35,17 @@ certification is made or implied. This License is best described as a **source-a
 ethically restricted software license**. The source code is made available for
 transparency and inspection purposes only.
 
+## Notice on Reproducing This License
+
+This document (the text of this License) may be copied, reproduced, published, and
+distributed, verbatim and unmodified in its entirety, by any person and for any purpose —
+including to apply it to a work, to catalogue or reference it (e.g., in an SPDX license
+list or license-comparison resource), or to critique or compare it — without such
+reproduction, by itself, constituting a Prohibited Activity or being subject to Section 4
+or Section 5 of this License. This right extends only to the unmodified text of this
+License document; it does not extend to the Software distributed under it, and does not
+permit publishing a modified version of this text under an "ISL" name.
+
 ---
 
 ## 1. Definitions
@@ -158,7 +169,11 @@ propagation. It does not restrict individuals of any faith from using the Softwa
 their personal or professional capacity, nor does it restrict academic study, interfaith
 dialogue, or historical scholarship.
 
-### 4.2 Riba (Usury and Interest-Based Finance)
+### 4.2 Riba / Interest
+
+Interest (*riba*) is defined, per Islamic principles, as any surplus, increase, or
+excess charged, received, or paid over and above the original principal amount lent,
+exchanged, or advanced, in any form and under any name.
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) lending money at interest (*riba*);
@@ -281,9 +296,7 @@ The Software may not be used by any entity whose Primary Business involves:
 **Clarification:** This restriction does not apply to general healthcare providers,
 hospitals, or medical institutions that may offer such services among a broader range of
 medical care. It targets entities whose Primary Business is the activities described
-above. It does not restrict individuals from using the Software regardless of their
-personal identity.
-
+above.
 ### 4.11 Zina and Fahisha (Extra-Marital Relations, Lewdness, and Sexual Promiscuity)
 
 The Quran states:
