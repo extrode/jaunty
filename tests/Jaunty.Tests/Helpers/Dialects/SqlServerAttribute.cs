@@ -10,5 +10,11 @@ public sealed class SqlServerAttribute : DialectDataAttributeBase
 
     protected override bool IsAvailable => TestConfiguration.HasSqlServer;
 
+    protected override bool IsReachable => DialectReachability.IsSqlServerReachable;
+
+    protected override string? UnreachableReason => DialectReachability.SqlServerError;
+
+    protected override string RequireVariable => DialectReachability.RequireSqlServer;
+
     protected override DialectInfo Dialect => DialectInfo.SqlServer;
 }
