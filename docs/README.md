@@ -63,7 +63,9 @@ Documentation for Jaunty extension packages:
 
 - **[04-extensions/](04-extensions/README.md)**
   - [Jaunty.FlatFiles](04-extensions/flatfiles/) - Flat file support
+  - [Jaunty.Extensions.Logging](02-architecture/dependencies.md) - `ILogger` and DI integration; the package that keeps core dependency-free
   - Jaunty.Extensions.Reflection - _Coming soon_
+- **[Dependencies](02-architecture/dependencies.md)** - what every package pulls in, per target framework
 
 ### 5. Quality & Testing
 
