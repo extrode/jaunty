@@ -97,6 +97,34 @@ Three things here are deliberate and easy to break:
 SQL Server runs as a **service container**, with the workspace bind-mounted to the same path
 inside the container because `BULK INSERT` executes server-side and the CSV tests pass host paths.
 
+### Engines are skipped when absent, required in CI
+
+A dialect test decides for itself whether its engine is there. `TestConfiguration.Has*` only
+answers "is a connection string configured", so the three server dialects also probe: they open a
+connection once per process and cache the verdict, the same shape `MicrosoftSqliteAttribute` has
+always used for its native library. An engine that does not answer is **skipped**, with the
+provider's own error as the reason.
+
+That default is right on a developer box and wrong here. A service container that failed to start
+would skip silently and report a green leg that tested nothing, so each `Test - Core*` step sets:
+
+| Variable | Makes this engine's absence a failure |
+|---|---|
+| `JAUNTY_REQUIRE_SQLSERVER` | SQL Server |
+| `JAUNTY_REQUIRE_POSTGRESQL` | PostgreSQL |
+| `JAUNTY_REQUIRE_MYSQL` | MySQL **and** MariaDB — one name, because `TestConfiguration` already aliases the two connection strings onto each other |
+
+`0`, `false` and `no` read as off, so a job can disable one engine without deleting the line;
+anything else non-blank counts as on. The same variables work in `Jaunty.Scaffolding.Tests`, whose
+`OpenOrSkip` has always probed — the names are the contract between the two projects, which share
+no assembly and so carry a copy of the rule each.
+
+Setting one does **not** make the tests throw a tidier exception. It makes the attribute decline
+to skip, so the row runs and fails on connect. That is deliberate: a `DataAttribute` that throws
+fails the whole test method and takes every other dialect's row with it — measured as a total of
+11 rather than 55 on `Integration/Get/GetTests`. A red leg should still say whether anything else
+broke.
+
 ---
 
 ## 3. `nightly.yml` — two schedules, four jobs

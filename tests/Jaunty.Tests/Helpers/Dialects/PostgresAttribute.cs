@@ -10,5 +10,11 @@ public sealed class PostgresAttribute : DialectDataAttributeBase
 
     protected override bool IsAvailable => TestConfiguration.HasPostgreSql;
 
+    protected override bool IsReachable => DialectReachability.IsPostgreSqlReachable;
+
+    protected override string? UnreachableReason => DialectReachability.PostgreSqlError;
+
+    protected override string RequireVariable => DialectReachability.RequirePostgreSql;
+
     protected override DialectInfo Dialect => DialectInfo.Postgres;
 }
