@@ -14,7 +14,7 @@ Documentation for Jaunty quality assurance, testing strategies, and code coverag
 
 ## Test Organization
 
-- [`../../06-releases/tasklists/jaunty-reorganize-tests.md`](../../06-releases/tasklists/jaunty-reorganize-tests.md) - Test reorganization plan
+- [`../../06-releases/tasklists/jaunty-reorganize-tests.md`](../06-releases/tasklists/jaunty-reorganize-tests.md) - Test reorganization plan
 
 ---
 
@@ -24,7 +24,7 @@ Jaunty maintains high quality through:
 
 1. **High test coverage** - Target: 90%+ line coverage
 2. **Performance benchmarks** - Regular performance testing
-3. **Code review** - All changes reviewed against [CODE-REVIEW.md](../../03-development/code-review-checklist.md)
+3. **Code review** - All changes reviewed against [CODE-REVIEW.md](../03-development/code-review-checklist.md)
 4. **Documentation** - All public APIs documented
 
 ---

@@ -749,5 +749,5 @@ flowchart TD
 | [`metadata-system-spec.md`](metadata-system-spec.md) | Metadata caching system details |
 | [`parameter-binding-spec.md`](parameter-binding-spec.md) | Parameter binding details |
 | [`performance-spec.md`](performance-spec.md) | Performance optimization guide |
-| [`../../01-api-reference/README.md`](../../01-api-reference/README.md) | API documentation |
+| [`../../01-api-reference/README.md`](../01-api-reference/README.md) | API documentation |
 

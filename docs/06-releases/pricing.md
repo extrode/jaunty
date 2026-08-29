@@ -1,33 +1,84 @@
 # Pricing
 
-Jaunty and JauntyQ are commercial, source-available products. A subscription buys the license to use them in production, updates, and support; both products carry a 30-day full-featured trial.
+**Jaunty is free.** Free to use, including in commercial production, with no seat count, no Order and
+no expiry. What is sold is **support**.
 
-> **Jaunty's packages are public, and that is not the same as free.** Anyone can download them; the **ISL-EULA is the control, not feed access**, and using Jaunty in production requires a current Order. JauntyQ's packages ship from the private release feed.
+**JauntyQ is partly free.** A free core, with the migration and analysis capabilities and support
+sold on top.
 
-> **Launch pricing: 20% off the first year** for orders placed by **October 5, 2026**. Renewals at list price.
+> **Status: the model is decided, the numbers are not.** The tables below carry the figures from the
+> previous subscription model, repriced against what they now buy. They need the owner's sign-off
+> before this page is published. The JauntyQ free/paid boundary is not drawn yet - see
+> [decision 004](../decisions/2026-08-29-004-product-and-pricing-decision.md).
 
-| Tier | Jaunty | JauntyQ | Both (bundle) |
-|---|---|---|---|
-| **Individual** (1 developer) | ~~$129~~ **$103**/yr | ~~$179~~ **$143**/yr | ~~$249~~ **$199**/yr |
-| **Company** (per developer, 2-25 seats) | ~~$349~~ **$279**/dev/yr | ~~$449~~ **$359**/dev/yr | ~~$649~~ **$519**/dev/yr |
-| **Enterprise** (26+ seats or org-wide, from) | ~~$9,500~~ **$7,600**/yr | ~~$14,500~~ **$11,600**/yr | ~~$19,500~~ **$15,600**/yr |
+---
 
-## What each tier includes
+## Jaunty
 
-- **Individual** - a production-use license for one named developer, all updates during the term, community-channel support. For personal and solo-professional projects.
-- **Company** - a per-seat production-use license and priority email support. Seats are named developers and can be reassigned.
-- **Enterprise** - organization-wide license, source drop per release, an escrow and continuity rider (contingent internal build/patch rights if the vendor ceases operations), support SLA with response targets, named contact, and invoice terms. Priced per agreement; the figures above are starting points.
+| | |
+|---|---|
+| **Use it in production** | Free. Any company, any size, any number of developers |
+| **All packages** | Free, public on NuGet |
+| **Source** | Public and readable under ISL-R |
+| **Updates** | Free |
+| **Support** | Paid. See below |
+
+There is no trial, because there is nothing to trial. There is no lapse, because nothing expires.
+
+**The ethical restrictions still apply.** ISL sections 4 and 5 are conditions of the licence grant,
+not of payment. A user who pays nothing is bound by them exactly as a paying one is. Free changes the
+price; it does not change what the licence asks of you.
+
+## Support subscriptions
+
+What a support subscription buys is a response, not a right to run.
+
+| Tier | Price | What it includes |
+|---|---|---|
+| **Community** | Free | Public issue tracker, best effort, no commitment |
+| **Company** | *(pending - was $279/dev/yr as a licence)* | Priority email support, named contact, defect triage ahead of the public queue |
+| **Enterprise** | *(pending - from $7,600/yr as a licence)* | Response-time SLA, escrow and continuity rider, priority fixes and hotfix backports, invoice terms, an entity to hold to it |
+
+**The Enterprise agreement is the product.** It is what organisations buy from software they could
+otherwise use for nothing: someone answering the phone, a defined turnaround, and a continuity rider
+granting contingent internal build-and-patch rights if the vendor ceases operations. That rider is
+drafted (`continuity-rider-template.md`) and never depended on the price model.
+
+**Individual support is not offered.** A solo developer does not buy an SLA, and pretending otherwise
+puts a tier on the page that nobody purchases.
+
+## JauntyQ
+
+JauntyQ is a separate product: SQL-first, with an incremental compilation pipeline, rowversion
+optimistic concurrency, migration intelligence, a Roslyn performance analyzer and no-box Npgsql
+parameters.
+
+| | |
+|---|---|
+| **Free core** | Yes. Boundary not yet drawn |
+| **Paid** | Migration intelligence is the flagship. Schema diff, impact classification and plan analysis are the candidates around it |
+| **Roslyn analyzer** | Free |
+| **Support** | Paid, same shape as above |
+
+JauntyQ is not public and has no published prices. Nothing on this page commits to one.
 
 ## How licensing works
 
-- **Binaries** ship under the **Islamic Software End User License Agreement (ISL-EULA)**: the license grant is conditioned on your Order (seats, term, fees). The EULA travels inside every package and requires explicit acceptance.
-- **Source** is governed by the **Islamic Software License - Restricted (ISL-R)**: provided for transparency, inspection, and audit - not for modification or redistribution. Jaunty's source is public and readable by anyone on those terms; JauntyQ's is available to Enterprise, and to Company tiers at 10+ seats. Reading the source is not a license to run the product: that is the ISL-EULA above.
-- **Enterprise continuity** is a rider on the Order granting contingent, internal-only rights to build and patch, triggered only by defined events such as the vendor ceasing operations.
+- **Jaunty's packages and source** are governed by the **Islamic Software License - Restricted
+  (ISL-R)**. Section 2 grants a royalty-free right to use, including internal commercial use, to any
+  compliant licensee. That is the grant this page now matches.
+- **The instrument for free packages still needs settling.** ISL-EULA is written around an Order with
+  fees; shipping free binaries is either ISL-R directly or a zero-fee Order. This is a drafting
+  question for the same lawyer handling the CLA.
+- **JauntyQ's paid components** ship under the **ISL-EULA** with the grant conditioned on an Order.
+- **Enterprise continuity** is a rider on the support agreement granting contingent, internal-only
+  rights to build and patch, triggered only by defined events such as the vendor ceasing operations.
 
 ## Terms worth knowing
 
-- **Trial:** 30 days, full product, no card. Issued as a zero-cost evaluation Order.
-- **Lapse:** if a subscription ends, you keep the versions you have (perpetual-use fallback) but lose updates and support, and JauntyQ feed access.
-- **Seat:** one named developer. CI/build agents do not consume seats.
+- **Seat:** one named developer, for support tiers only. CI and build agents do not consume seats.
+- **Lapse:** a support subscription that ends stops the support. It does not stop the software - you
+  keep using Jaunty for free, as everyone does.
 
-To start a trial or place an order, contact Extrode LLC via <https://extrode.com/jaunty>.
+To arrange support or discuss an Enterprise agreement, contact Extrode LLC via
+<https://extrode.com/jaunty>.

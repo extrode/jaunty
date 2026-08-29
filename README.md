@@ -62,11 +62,19 @@ Comparison is against Dapper, the micro-ORM most people are choosing between Jau
 | Scaffolding CLI | no | `Extrode.Jaunty.Scaffolding.Cli` |
 | DuckDB and flat-file sources | no | `Extrode.Jaunty.FlatFiles.DuckDB` |
 | Dialect-aware SQL generation | no | SQL Server, PostgreSQL, MySQL, SQLite |
+| Built-in audit trail | no | `AuditInterceptor` — every command, phase, duration and failure, with no parameter values captured |
 
 **Strict-by-default mapping is the one to weigh first.** It is not a performance claim, so it holds
 whichever library benchmarks faster on a given path: a query that stops matching your entity fails
 at the call site rather than silently handing back a half-populated object. Every other row in the
 table is something you could assemble from packages; that row is a different default.
+
+**`QueryPartial<T>` is not a workaround.** Strict mapping is the default because entities and
+per-query DTOs should match their result set exactly, but projections legitimately do not — and for
+those, `QueryPartial<T>` is the right method, not a concession. [The two mapping
+modes](#the-two-mapping-modes) covers the distinction, and [migrating to
+Jaunty](docs/08-learn/migrating/README.md) covers how to port an existing lenient codebase without
+fighting it.
 
 ## When to Use Jaunty — and When Not To
 
@@ -858,6 +866,7 @@ BulkCopyConfiguration.DefaultTimeout = 30;
 
 For more detailed documentation, see:
 
+- [`docs/08-learn/migrating/`](docs/08-learn/migrating/README.md) - Migrating from Dapper or EF Core, and the strict-mapping rule to read first
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contributing guide
 - [`docs/03-development/api-design-guidelines.md`](docs/03-development/api-design-guidelines.md) - API design guidelines
 - [`docs/03-development/code-review-checklist.md`](docs/03-development/code-review-checklist.md) - Code review checklist
