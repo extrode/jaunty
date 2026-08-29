@@ -12,9 +12,19 @@ Release documentation, task lists, and planning documents for Jaunty.
 
 Prioritized task lists for Jaunty development:
 
-- [`tasklists/production-readiness-tasklist.md`](tasklists/production-readiness-tasklist.md) - Production readiness checklist
-- [`tasklists/commercial-tasklist.md`](tasklists/commercial-tasklist.md) - Commercial analysis action items
+- [`tasklists/PRODUCTION-READINESS-TASKLIST.md`](tasklists/PRODUCTION-READINESS-TASKLIST.md) - Production readiness checklist
+- [`tasklists/COMMERCIAL-TASKLIST.md`](tasklists/COMMERCIAL-TASKLIST.md) - Commercial analysis action items
+- [`tasklists/ENTERPRISE-READINESS-2026-07-04.md`](tasklists/ENTERPRISE-READINESS-2026-07-04.md) - Enterprise readiness assessment
 - [`tasklists/jaunty-reorganize-tests.md`](tasklists/jaunty-reorganize-tests.md) - Test reorganization plan
+
+## Commercial
+
+- [`pricing.md`](pricing.md) - The commercial model. **Jaunty is free; support is sold.** Decided 2026-08-29
+- [`order-form-template.md`](order-form-template.md) - Order form template
+- [`continuity-rider-template.md`](continuity-rider-template.md) - Escrow and continuity rider
+- [`feature-gap-analysis.md`](feature-gap-analysis.md) - Feature gaps against competing ORMs
+- [`COMMERCIAL-ANALYSIS-REPORT.md`](COMMERCIAL-ANALYSIS-REPORT.md) - Market analysis. Pricing sections superseded by [decision 004](../decisions/2026-08-29-004-product-and-pricing-decision.md)
+- [`COMMERCIAL-DISTRIBUTION-FLOW.md`](COMMERCIAL-DISTRIBUTION-FLOW.md) - **Stale.** Its premise is a private release feed and a paid Jaunty; both are retired. Awaiting the owner's call on rewrite or removal
 
 ## Reports
 
@@ -34,9 +44,10 @@ Prioritized task lists for Jaunty development:
 
 ### Version Numbering
 
-Jaunty uses date-based versioning: `YYYY.MM.PATCH`
+Jaunty uses **semantic versioning**. The current version is `1.0.0-rc.1`, set in
+`src/Directory.Build.props` and tagged `v1.0.0-rc.1`.
 
-Example: `2026.03.01` = March 2026, patch 1
+An earlier date-based scheme (`YYYY.MM.PATCH`) was documented here and never shipped.
 
 ---
 
@@ -65,4 +76,4 @@ Release notes are generated from:
 | Document | Purpose |
 |----------|---------|
 | [`../05-quality/README.md`](../05-quality/README.md) | Quality standards |
-| [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | Contribution guide |
+| [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) | Contribution guide |

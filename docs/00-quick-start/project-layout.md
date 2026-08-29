@@ -148,7 +148,7 @@ docs/
 | Special | `_prefix/` sorts first | `_assets/` |
 | Special | `99-prefix/` sorts last | `99-archive/` |
 
-See [`03-development/file-naming-convention.md`](03-development/file-naming-convention.md) for the complete standard.
+See [`03-development/file-naming-convention.md`](../03-development/file-naming-convention.md) for the complete standard.
 
 ---
 
@@ -176,10 +176,10 @@ See [`03-development/file-naming-convention.md`](03-development/file-naming-conv
 
 | You Want | Go To |
 |----------|-------|
-| API reference | [`docs/01-api-reference/`](01-api-reference/README.md) |
-| Architecture | [`docs/02-architecture/`](02-architecture/README.md) |
-| Development guides | [`docs/03-development/`](03-development/README.md) |
-| Historical docs | [`docs/99-archive/`](99-archive/README.md) |
+| API reference | [`docs/01-api-reference/`](../01-api-reference/README.md) |
+| Architecture | [`docs/02-architecture/`](../02-architecture/README.md) |
+| Development guides | [`docs/03-development/`](../03-development/README.md) |
+| Historical docs | [`docs/99-archive/`](../99-archive/) |
 
 ---
 
@@ -211,8 +211,8 @@ dotnet test /p:CollectCoverage=true
 ## Related Documents
 
 - [`README.md`](../README.md) - Project overview
-- [`CONTRIBUTING.md`](../CONTRIBUTING.md) - Contribution guide
-- [`00-quick-start/build-and-test.md`](00-quick-start/build-and-test.md) - Build instructions
+- [`CONTRIBUTING.md`](../../CONTRIBUTING.md) - Contribution guide
+- [`00-quick-start/build-and-test.md`](build-and-test.md) - Build instructions
 
 ---
 

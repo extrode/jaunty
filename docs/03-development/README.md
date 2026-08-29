@@ -6,11 +6,11 @@ Guides for developing and extending Jaunty.
 
 | Document | Purpose |
 |----------|---------|
-| [`coding-conventions.md`](coding-conventions.md) | C# coding standards and conventions |
+| [`coding-conventions.md`](xml-documentation-style.md) | C# coding standards and conventions |
 | [`file-naming-convention.md`](file-naming-convention.md) | Documentation file naming standard |
 | [`adding-new-methods.md`](adding-new-methods.md) | How to add new query methods |
 | [`multi-targeting.md`](multi-targeting.md) | Supporting netstandard2.0 and net8.0 |
-| [`performance-checklist.md`](performance-checklist.md) | Performance optimization checklist |
+| [`performance-checklist.md`](optimization-checklist.md) | Performance optimization checklist |
 | [`ci-architecture.md`](ci-architecture.md) | **Where CI, the nightly tiers and the audit loop run** — diagrams, hosts, open items |
 
 ## Quick Reference
@@ -164,6 +164,6 @@ Optional longer description.
 
 ## See Also
 
-- [`../../00-quick-start/build-and-test.md`](../../00-quick-start/build-and-test.md) - Build commands
+- [`../../00-quick-start/build-and-test.md`](../00-quick-start/build-and-test.md) - Build commands
 - [`../02-architecture/README.md`](../02-architecture/README.md) - Architecture overview
 
