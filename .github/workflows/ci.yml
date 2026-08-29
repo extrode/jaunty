@@ -10,6 +10,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege. Every step here is checkout / setup-dotnet / cache / upload-artifact, none of
+# which writes through GITHUB_TOKEN. This matters more once the repository is public: without an
+# explicit block the token inherits the repository default, which may be read/write.
+permissions:
+  contents: read
+
 # Every push to dev ran CI twice: once for the push, and once as a pull_request
 # sync of the standing dev -> main PR (#18), whose head branch is dev itself.
 # Concurrency cannot collapse the pair - github.ref is refs/heads/dev for one
