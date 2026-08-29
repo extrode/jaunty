@@ -67,8 +67,8 @@ public class PackageDependencyTests
         {
             // 'AsyncInterfaces' is the DefineConstants flag set by the netstandard2.0 PropertyGroup;
             // the fact below proves that flag cannot be set on any other target.
-            bool gated = condition.Contains("netstandard2.0", StringComparison.OrdinalIgnoreCase) ||
-                         condition.Contains("AsyncInterfaces", StringComparison.Ordinal);
+            bool gated = condition.IndexOf("netstandard2.0", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         condition.IndexOf("AsyncInterfaces", StringComparison.Ordinal) >= 0;
 
             if (!gated)
                 ungated.Add($"'{id}' (condition: {Describe(condition)})");
@@ -88,7 +88,7 @@ public class PackageDependencyTests
 
         foreach (XElement constants in document.Descendants("DefineConstants"))
         {
-            if (!constants.Value.Contains("AsyncInterfaces", StringComparison.Ordinal))
+            if (constants.Value.IndexOf("AsyncInterfaces", StringComparison.Ordinal) < 0)
                 continue;
 
             // ASYNC_ENUMERABLE_SUPPORT also contains the substring but is a different flag, and it
@@ -100,7 +100,7 @@ public class PackageDependencyTests
             declarations++;
             string condition = ConditionOf(constants);
 
-            if (!condition.Contains("netstandard2.0", StringComparison.OrdinalIgnoreCase))
+            if (condition.IndexOf("netstandard2.0", StringComparison.OrdinalIgnoreCase) < 0)
                 leaks.Add(Describe(condition));
         }
 

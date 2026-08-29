@@ -33,13 +33,34 @@ Reflection-based entity mapping for scenarios where source generation is not ava
 - Compatible with NativeAOT (with manual initialization)
 - Fallback for dynamic scenarios
 
+### Jaunty.Extensions.Logging
+
+`Microsoft.Extensions.Logging` and dependency-injection integration. This package exists so that
+Jaunty core can declare **no dependencies at all** on `net8.0` and `net10.0`; it carries
+`Microsoft.Extensions.Logging.Abstractions` and
+`Microsoft.Extensions.DependencyInjection.Abstractions` on its behalf.
+
+**Documentation**: [`../02-architecture/dependencies.md`](../02-architecture/dependencies.md)
+
+**Contains**:
+- `LoggingInterceptor` - logs SQL with level control, slow-query detection and parameter masking
+- `LoggingConfiguration` - its options, including the sensitive-parameter list
+- `AddJauntyLogging`, `AddJauntyInterceptor<T>`, `ApplyJauntyInterceptors` - `IServiceCollection` wiring
+
+Namespaces are unchanged from when these types lived in core, so adopting it is a package
+reference and no source edits.
+
 ---
 
 ## Extension Architecture
 
 Extensions follow the same design principles as Jaunty core:
 
-1. **Zero dependencies** - Extensions only depend on Jaunty core
+1. **Minimal dependencies** - an extension depends on Jaunty core and takes a package reference
+   only where the feature *is* that dependency: `Extensions.Logging` exists to hold the
+   Microsoft.Extensions packages, and `FlatFiles.DuckDB` cannot work without DuckDB. Everything
+   else stays dependency-free on `net8.0`/`net10.0`. See
+   [`../02-architecture/dependencies.md`](../02-architecture/dependencies.md) for the full list.
 2. **Consistent API** - Match Jaunty core patterns and naming
 3. **Performance-first** - Optimized for minimal allocations
 4. **NativeAOT compatible** - Support for AOT compilation scenarios

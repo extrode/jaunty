@@ -39,7 +39,7 @@
 	     referenced here on every TFM (an old comment claimed they were "built in on net8.0+" -
 	     they are not; they ship in the ASP.NET Core shared framework, which a class library never
 	     gets). They now live in src/Jaunty.Extensions.Logging, which is where the ILogger
-	     interceptor and the DI registration extensions moved. See docs/02-guides/dependencies.md. -->
+	     interceptor and the DI registration extensions moved. See docs/02-architecture/dependencies.md. -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.10" />
 	</ItemGroup>
