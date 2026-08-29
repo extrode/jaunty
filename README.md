@@ -1058,12 +1058,16 @@ For more detailed documentation, see:
 
 ## License
 
-Jaunty is a commercial, source-available product. Two documents apply:
+**Jaunty is free to use, including in commercial production.** No seat count, no Order, no expiry. What is sold is support. Two documents apply:
 
-- **Binaries** (NuGet packages) ship under the Islamic Software End User License Agreement (ISL-EULA), Version 1.0 - see [LICENSE-EULA.md](LICENSE-EULA.md). The license grant is conditioned on an Order (seats, term, fees); a 30-day evaluation Order is available.
-- **Source code** in this repository is covered by the Islamic Software License - Restricted (ISL-R), Version 1.0 - see [LICENSE.md](LICENSE.md): available for transparency and inspection only; no modification, redistribution, or derivative works.
+- **The Islamic Software License - Restricted (ISL-R), Version 1.0** - see [LICENSE.md](LICENSE.md) - governs both the source in this repository and the published packages. Section 2 grants a worldwide, royalty-free right to use the software for any lawful purpose, including internal commercial use, and to read the source. It does not grant modification, redistribution as a library, or derivative works.
+- **The Jaunty Redistribution Exception, Version 1.0** - see [LICENSE-DISTRIBUTION-EXCEPTION.md](LICENSE-DISTRIBUTION-EXCEPTION.md) - permits you to ship the unmodified packages inside your own application, container image, installer or hosted service. Without it, ISL-R's no-distribution clause would make deploying an application that references Jaunty impossible. It is royalty-free and does not expire.
 
-Neither is an open-source license. Pricing and tiers: [docs/06-releases/pricing.md](docs/06-releases/pricing.md).
+**The ethical restrictions in ISL-R Sections 4 and 5 are conditions of the grant, not of payment.** They bind a user who pays nothing exactly as they bind one who pays. They also travel with the redistributed binaries.
+
+This is not an open-source license. [LICENSE-EULA.md](LICENSE-EULA.md) is the instrument of the previous paid, Order-conditioned model; it is retained for the historical record and does not govern use under the free model.
+
+Support pricing: [docs/06-releases/pricing.md](docs/06-releases/pricing.md).
 
 ---
 
