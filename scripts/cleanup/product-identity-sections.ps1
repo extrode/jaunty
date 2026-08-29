@@ -15,7 +15,12 @@ $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $targets = @(
     (Join-Path $repoRoot 'tmp\sqlprobe'),
     (Join-Path $repoRoot 'tmp\product-identity-brief.md'),
-    (Join-Path $repoRoot 'tmp\jauntyq-pricing-brief.md')
+    (Join-Path $repoRoot 'tmp\jauntyq-pricing-brief.md'),
+    # Superseded 2026-08-29: this handoff was rewritten into the JauntyQ repo at
+    # docs/decisions/2026-08-29-003-commercial-state-and-enforceability.md, which is
+    # the version carrying the enforceability answer. Leaving both risks the stale
+    # copy being read as current.
+    (Join-Path $env:USERPROFILE 'private-archive.md')
 )
 
 foreach ($target in $targets) {
