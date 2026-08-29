@@ -1,14 +1,14 @@
 # Islamic Software End User License Agreement (ISL-EULA), Version 1.0
 
-**Product:** [PRODUCT NAME]
+**Product:** Jaunty
 
-**Licensor:** [LICENSOR]
+**Licensor:** Extrode LLC
 
 **Effective Date:** July 2026 (template version); the effective date as to a given
 Licensee is the date on which that Licensee accepts this Agreement or first installs,
 accesses, or uses the Software, whichever occurs first.
 
-**Copyright (c) 2026 [LICENSOR]. All rights reserved.**
+**Copyright (c) 2026 Extrode LLC. All rights reserved.**
 
 ---
 
@@ -27,7 +27,7 @@ and societies. The Quran states:
 > *"And whoever kills a soul — it is as if he had slain all of mankind. And whoever saves
 > one — it is as if he had saved all of mankind."* — Quran 5:32
 
-This is a End User License Agreement ("Agreement") between Licensee and Licensor governing
+This is an End User License Agreement ("Agreement") between Licensee and Licensor governing
 Licensee's use of the Software, which is distributed only in executable, object-code form.
 No source code is provided or licensed under this Agreement.
 
@@ -41,16 +41,27 @@ FSF endorsement, or "open source" certification is made or implied.
 BY THIS AGREEMENT. IF LICENSEE DOES NOT AGREE TO THESE TERMS, LICENSEE MUST NOT INSTALL,
 ACCESS, OR USE THE SOFTWARE, AND SHOULD PROMPTLY DELETE ANY COPY IN ITS POSSESSION.**
 
+## Notice on Reproducing This License
+
+This document (the text of this License) may be copied, reproduced, published, and
+distributed, verbatim and unmodified in its entirety, by any person and for any purpose —
+including to apply it to a work, to catalogue or reference it (e.g., in an SPDX license
+list or license-comparison resource), or to critique or compare it — without such
+reproduction, by itself, constituting a Prohibited Activity or being subject to Section 4
+or Section 5 of this License. This right extends only to the unmodified text of this
+License document; it does not extend to the Software distributed under it, and does not
+permit publishing a modified version of this text under an "ISL" name.
+
 ---
 
 ## 1. Definitions
 
-**1.1 "Software"** means the object code, executable, and binary form of [PRODUCT NAME]
+**1.1 "Software"** means the object code, executable, and binary form of Jaunty
 provided by Licensor, together with any accompanying Documentation, and any Updates
 Licensor makes available under this Agreement. "Software" does not include source code,
 which is not licensed, provided, or made available under this Agreement.
 
-**1.2 "Licensor"** means [LICENSOR], and any authorized successors or assigns.
+**1.2 "Licensor"** means Extrode LLC, and any authorized successors or assigns.
 
 **1.3 "Licensee"** or **"End User"** means the individual, organization, company,
 government entity, or other legal person that accepts this Agreement, and includes each
@@ -190,7 +201,11 @@ propagation. It does not restrict individuals of any faith from using the Softwa
 their personal or professional capacity, nor does it restrict academic study, interfaith
 dialogue, or historical scholarship.
 
-### 4.2 Riba (Usury and Interest-Based Finance)
+### 4.2 Riba / Interest
+
+Interest (*riba*) is defined, per Islamic principles, as any surplus, increase, or
+excess charged, received, or paid over and above the original principal amount lent,
+exchanged, or advanced, in any form and under any name.
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) lending money at interest (*riba*);
@@ -313,9 +328,7 @@ The Software may not be used by any entity whose Primary Business involves:
 **Clarification:** This restriction does not apply to general healthcare providers,
 hospitals, or medical institutions that may offer such services among a broader range of
 medical care. It targets entities whose Primary Business is the activities described
-above. It does not restrict individuals from using the Software regardless of their
-personal identity.
-
+above.
 ### 4.11 Zina and Fahisha (Extra-Marital Relations, Lewdness, and Sexual Promiscuity)
 
 The Quran states:
@@ -491,8 +504,8 @@ interpretation:
   - (d) **Al-yaqin la yazul bi'l-shakk** — Certainty is not overturned by doubt.
 
 **7.4 Governing Law.** This Agreement shall be governed by and construed in accordance
-with the laws of [JURISDICTION], without regard to conflict of law principles, and the
-parties consent to the exclusive jurisdiction of the courts located in [JURISDICTION] for
+with the laws of the Commonwealth of Virginia, United States of America, without regard to conflict of law principles, and the
+parties consent to the exclusive jurisdiction of the courts located in the Commonwealth of Virginia, United States of America for
 any dispute arising out of or relating to this Agreement.
 
 ---
@@ -612,9 +625,9 @@ bracketed placeholders below before use:
 ```
 SPDX-License-Identifier: LicenseRef-ISL-EULA-1.0
 
-Product: [PRODUCT NAME]
-Licensor: [LICENSOR]
-Governing Jurisdiction: [JURISDICTION]
+Product: Jaunty
+Licensor: Extrode LLC
+Governing Jurisdiction: the Commonwealth of Virginia, United States of America
 
 This Software is licensed, not sold, under the Islamic Software End User
 License Agreement (ISL-EULA), Version 1.0. No source code is provided.
