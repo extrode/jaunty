@@ -54,6 +54,14 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.InsertCommandText;
 
+            // AUD-R35-129's remainder: InsertCore reports options.CommandType to the interceptor
+            // pipeline above and never applied it here, so CommandOptions.AsStoredProcedure() told
+            // every auditor the command ran as StoredProcedure while the generated INSERT ran as
+            // Text. Same allow-list as DeleteCore - not `!= Text`, because a `default`
+            // CommandOptions carries CommandType 0, which providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
             // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
             // IDbTransaction through it throws an opaque InvalidCastException. Validate via
@@ -150,6 +158,10 @@ public static partial class Jaunty
             using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.InsertCommandText;
+
+            // AUD-R35-129's remainder, async twin. See InsertCoreDirect for the allow-list rationale.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
