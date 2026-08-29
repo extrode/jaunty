@@ -9,6 +9,81 @@ default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
 
+### Breaking changes since 1.0.0-rc.1
+
+Anyone on `1.0.0-rc.1` should read this section before upgrading. Each item is a change a
+recompile alone will not surface.
+
+- **Every package was renamed. `Beparey.Jaunty.*` → `Extrode.Jaunty.*` (2026-08-26).** The
+  assembly names, namespaces and public API are unchanged; only the NuGet package IDs moved, along
+  with the repository, to `github.com/extrode/jaunty`. A consumer still referencing
+  `Beparey.Jaunty` will never be offered an update, because nothing will ever be published under
+  that ID again.
+
+  | 1.0.0-rc.1 | Now |
+  |---|---|
+  | `Beparey.Jaunty` | `Extrode.Jaunty` |
+  | `Beparey.Jaunty.Fluent` | `Extrode.Jaunty.Fluent` |
+  | `Beparey.Jaunty.FlatFiles` | `Extrode.Jaunty.FlatFiles` |
+  | `Beparey.Jaunty.FlatFiles.DuckDB` | `Extrode.Jaunty.FlatFiles.DuckDB` |
+  | `Beparey.Jaunty.Extensions.Reflection` | `Extrode.Jaunty.Extensions.Reflection` |
+  | `Beparey.Jaunty.Scaffolding` | `Extrode.Jaunty.Scaffolding` |
+  | `Beparey.Jaunty.Scaffolding.Cli` | `Extrode.Jaunty.Scaffolding.Cli` |
+  | (did not exist) | `Extrode.Jaunty.Extensions.Logging` |
+  | (did not exist) | `Extrode.Jaunty.Extensions.Npgsql` |
+
+  The two new packages are not new functionality so much as relocated functionality:
+  `Extensions.Logging` holds the `ILogger` interceptor and the DI registration extensions that
+  used to force `Microsoft.Extensions.*` references onto core.
+
+- **Licensing changed, in the consumer's favour. Jaunty is free to use, including in commercial
+  production (2026-08-29).** rc.1 shipped a dual model - ISL-EULA for binaries, ISL-R for source -
+  under which use was conditioned on a paid Order. That is retired. Two documents now apply:
+  [`LICENSE.md`](LICENSE.md) (ISL-R) and
+  [`LICENSE-DISTRIBUTION-EXCEPTION.md`](LICENSE-DISTRIBUTION-EXCEPTION.md), a royalty-free rider
+  that permits shipping the unmodified packages inside your own application.
+
+  The rider is not a formality. ISL-R §2(b) forbids Distribution, and deploying an application
+  that references a .NET library distributes that library, so without it the free grant would not
+  have covered ordinary use. `LICENSE-EULA.md` is retained for the historical record and does not
+  govern use under the free model.
+
+  **The ethical restrictions in ISL-R sections 4 and 5 are conditions of the grant, not of
+  payment**, and are unchanged. What is sold now is support. See
+  [decision 007](docs/decisions/2026-08-29-007-jaunty-licence-instrument-and-support-pricing.md).
+
+- **`BulkInsert` now validates constraints on SQL Server above the native-copy threshold
+  (AUD-R26).** `BulkCopyConfiguration.DefaultCheckConstraints` defaulted to `false` in rc.1, which
+  routed large batches through `SqlBulkCopy` without its `CheckConstraints` option. Measured, the
+  same call with a CHECK-violating row threw at 50 rows and succeeded at 200 - so a plain
+  `BulkInsert` silently skipped validation, but only on one provider and only above 100 rows.
+
+  It now validates on every route. **This will surface violations that previously landed in the
+  table unreported, and it is slower.** To keep the old behaviour: per call use
+  `BulkInsertIgnoreConstraints`, whose name says what it does; globally set
+  `BulkCopyConfiguration.DefaultCheckConstraints = false`.
+
+- **Misconfigured timeouts and batch sizes now throw at the point they are set.** In rc.1
+  `CommandOptions.CommandTimeout` and the `BulkCopyConfiguration` properties were unvalidated
+  fields, so `WithTimeout(-1)` was accepted where it was written and surfaced much later as a
+  provider-specific exception naming nothing (AUD-R35-144, AUD-R35-149).
+
+  | Setting | Rejects | Zero means |
+  |---|---|---|
+  | `CommandOptions.CommandTimeout` | negative | no timeout |
+  | `BulkCopyConfiguration.DefaultTimeout` | negative | no timeout |
+  | `BulkCopyConfiguration.DefaultBatchSize` | zero and negative | - |
+  | `BulkCopyConfiguration.MinimumRowsForNativeBulkCopy` | negative | always take the native path |
+  | `BulkCopyConfiguration.DefaultIdentityMode` | undefined enum values | - |
+
+  `ExpectedRowCount` deliberately does **not** throw: it is a pre-sizing hint, so a bad value is
+  normalised (non-positive reads as no hint, anything above 1,048,576 is capped) rather than
+  failing the query it was meant to speed up.
+
+The two `Removed` entries below - the 13 obsolete multi-entity overloads and
+`MultiEntityCommandOptions.Mapper1..MapperN` - are also breaking and are recorded in their own
+section.
+
 ### .NET 10 migration (spec 010, 2026-07-30)
 
 Every project now targets `net8.0` + `net10.0` (ns2.0/net472 support unchanged), with 21
@@ -73,7 +148,8 @@ Every item here was reachable from caller-supplied input.
   Internally `ColumnMetadata` gained `PropertyName`/`PropertyType`/`Getter`/`Setter` so
   a column no longer requires a `PropertyInfo` (`Property` is now nullable) — it is
   `internal`, so this changes no public surface.
-- **Dual licensing:** ISL-EULA for binaries, ISL-R for source.
+- ~~**Dual licensing:** ISL-EULA for binaries, ISL-R for source.~~ Superseded before release by
+  the free-to-use model; see the breaking-changes section above.
 - **Span-based `array.Contains()`** is recognised for `IN`-clause detection, and `Sql`
   function comparisons to null translate to `IS NULL`/`IS NOT NULL`.
 - **Reference ports** preserved as samples: Conduit/RealWorld and eShopOnWeb migrated
