@@ -11,6 +11,7 @@ Guides for developing and extending Jaunty.
 | [`adding-new-methods.md`](adding-new-methods.md) | How to add new query methods |
 | [`multi-targeting.md`](multi-targeting.md) | Supporting netstandard2.0 and net8.0 |
 | [`performance-checklist.md`](performance-checklist.md) | Performance optimization checklist |
+| [`ci-architecture.md`](ci-architecture.md) | **Where CI, the nightly tiers and the audit loop run** — diagrams, hosts, open items |
 
 ## Quick Reference
 
