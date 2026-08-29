@@ -20,8 +20,8 @@ namespace Jaunty.Diagnostics;
 /// <item><description>Exception details on failure</description></item>
 /// </list>
 /// <para>
-/// Unlike <see cref="LoggingInterceptor"/>, this interceptor does not log parameter values
-/// to avoid capturing sensitive data in audit logs.
+/// Unlike <c>LoggingInterceptor</c> (in the optional Extrode.Jaunty.Extensions.Logging package),
+/// this interceptor does not log parameter values to avoid capturing sensitive data in audit logs.
 /// </para>
 /// </remarks>
 public sealed class AuditInterceptor : ISyncCommandInterceptor
