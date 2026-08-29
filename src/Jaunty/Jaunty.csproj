@@ -32,7 +32,14 @@
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.10" />
 	</ItemGroup>
 
-	<!-- For net8.0+, these are built-in but we need to include the package for compatibility.
+	<!-- These are NOT built-in on any target. Microsoft.Extensions.Logging.Abstractions and
+	     .DependencyInjection.Abstractions ship in the ASP.NET Core shared framework, which a class
+	     library does not get, so they are real package dependencies on every TFM. (An earlier
+	     comment here claimed they were built in on net8.0+ and referenced "for compatibility";
+	     that was wrong.) System.Diagnostics.DiagnosticSource above is the genuine case - it IS in
+	     Microsoft.NETCore.App from .NET Core 3.0 on, which is why it is netstandard2.0-only.
+	     Tracked for removal: docs/plans/2026-08-29-004-public-release.md T7 moves both of these
+	     out of the core assembly so src/Jaunty has zero dependencies on net8.0/net10.0.
 	     Was conditioned == net8.0; the first net10 leg compile (010 T11) failed with CS0234 on
 	     every Microsoft.Extensions using, because the condition silently dropped both packages. -->
 	<ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
