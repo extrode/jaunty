@@ -208,44 +208,27 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public T SelectFirst()
     {
-        // Save and restore rather than assign: a CteBuilder is exactly the kind of object a caller
-        // holds onto and reuses, since building the CTE definition is the expensive part. Leaving
-        // _takeCount at 1 meant a later Select()/ToSql() on the same instance silently returned one
-        // row. QueryBuilder's 24 first/single terminals and SetOperationBuilder's 18 all restore;
-        // these two were the only ones that didn't.
-        var original = _takeCount;
-        _takeCount = 1;
-        var sql = BuildSql();
-        _takeCount = original;
+        var sql = BuildSqlTakingOne();
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!);
     }
 
     /// <summary>AUD-R34-017: see <see cref="Select(CommandOptions)"/>.</summary>
     public T SelectFirst(CommandOptions options)
     {
-        var original = _takeCount;
-        _takeCount = 1;
-        var sql = BuildSql();
-        _takeCount = original;
+        var sql = BuildSqlTakingOne();
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectFirstOrDefault()
     {
-        var original = _takeCount;
-        _takeCount = 1;
-        var sql = BuildSql();
-        _takeCount = original;
+        var sql = BuildSqlTakingOne();
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
     /// <summary>AUD-R34-017: see <see cref="Select(CommandOptions)"/>.</summary>
     public T? SelectFirstOrDefault(CommandOptions options)
     {
-        var original = _takeCount;
-        _takeCount = 1;
-        var sql = BuildSql();
-        _takeCount = original;
+        var sql = BuildSqlTakingOne();
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
@@ -263,40 +246,28 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     /// </remarks>
     public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
-        var original = _takeCount;
-        _takeCount = 1;
-        var sql = BuildSql();
-        _takeCount = original;
+        var sql = BuildSqlTakingOne();
         return await _connection.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
     public async Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        var original = _takeCount;
-        _takeCount = 1;
-        var sql = BuildSql();
-        _takeCount = original;
+        var sql = BuildSqlTakingOne();
         return await _connection.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
     public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
-        var original = _takeCount;
-        _takeCount = 1;
-        var sql = BuildSql();
-        _takeCount = original;
+        var sql = BuildSqlTakingOne();
         return await _connection.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
     public async Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        var original = _takeCount;
-        _takeCount = 1;
-        var sql = BuildSql();
-        _takeCount = original;
+        var sql = BuildSqlTakingOne();
         return await _connection.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
@@ -326,6 +297,38 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         }
 
         return expr;
+    }
+
+    /// <summary>
+    /// Builds the CTE SELECT with <c>_takeCount</c> temporarily clamped to 1.
+    /// </summary>
+    /// <remarks>
+    /// Save and restore rather than assign: a CteBuilder is exactly the kind of object a caller
+    /// holds onto and reuses, since building the CTE definition is the expensive part. Leaving
+    /// <c>_takeCount</c> at 1 meant a later <c>Select()</c>/<c>ToSql()</c> on the same instance
+    /// silently returned one row (AUD-R34).
+    /// <para>
+    /// AUD-R35-187 sibling, fixed 2026-08-30. The eight first-row terminals each inlined that
+    /// save-set-build-restore with no <c>try</c>/<c>finally</c>, so a throw out of
+    /// <see cref="BuildSql"/> left the builder permanently clamped and a later <c>Select()</c>
+    /// silently returned one row instead of the full set - the same defect and the same fix as
+    /// <c>QueryBuilder.BuildSelectSqlTaking</c> (AUD-R35-187) and <c>SetOperationBuilder</c>
+    /// (AUD-R35-190). The restore now happens on both paths, in one place.
+    /// </para>
+    /// </remarks>
+    private string BuildSqlTakingOne()
+    {
+        int? original = _takeCount;
+        _takeCount = 1;
+
+        try
+        {
+            return BuildSql();
+        }
+        finally
+        {
+            _takeCount = original;
+        }
     }
 
     private string BuildSql()
