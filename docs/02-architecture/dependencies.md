@@ -106,6 +106,40 @@ in `LoggingInterceptor`, in the satellite package.
 
 ---
 
+## Optional: `Extrode.Jaunty.Extensions.Npgsql`
+
+PostgreSQL client-side `COPY ... FROM STDIN` for `ImportCsv`, and the only place in the Jaunty
+packages that references a database driver.
+
+| Target | Dependencies |
+|---|---|
+| `net8.0`, `net10.0` | `Npgsql` 10.0.1 |
+| `netstandard2.0` | `Npgsql` 8.0.7 — 10.x no longer targets it |
+
+Install it and call `JauntyNpgsql.Use()` once at startup if you import CSV into PostgreSQL:
+
+```csharp
+JauntyNpgsql.Use();
+connection.ImportCsv("products", "products.csv");
+```
+
+Core reached Npgsql's copy API by reflection until 2026-08-29 — five
+`connection.GetType().GetMethod(...)` probes. Under trimming they all returned null: the
+`BeginTextImport` probe fell through to server-side `COPY FROM '<path>'`, silently changing which
+machine opens the file, and the `Cancel` probes committed the rows written before a mid-file
+failure while the caller saw an exception saying the import had failed. Core now takes an
+`ICopyImportWriter` from `JauntyConfig.CopyImportFactory` and this package supplies one with
+direct, compile-time calls.
+
+**Without a provider, an Npgsql connection is rejected by name** rather than falling back quietly.
+To use the server-side path deliberately — where the database server opens the file, not your
+process — set `JauntyConfig.CopyImportFactory` to a factory that returns `null`. You can also
+register your own implementation for any driver with an equivalent API.
+
+Every other engine is unaffected: SQLite, MySQL/MariaDB and SQL Server never consult the factory.
+
+---
+
 ## Other packages
 
 Every extension depends on `Extrode.Jaunty` itself, which is not repeated below. "None" means no
@@ -117,6 +151,7 @@ Every extension depends on `Extrode.Jaunty` itself, which is not repeated below.
 | `Extrode.Jaunty.Fluent` | all three | none | `Microsoft.Bcl.AsyncInterfaces`, `Microsoft.CSharp` |
 | `Extrode.Jaunty.FlatFiles` | all three | none | `Microsoft.Bcl.AsyncInterfaces` |
 | `Extrode.Jaunty.Extensions.Logging` | all three | the two Microsoft.Extensions packages above | same |
+| `Extrode.Jaunty.Extensions.Npgsql` | all three | `Npgsql` 10.0.1 | `Npgsql` 8.0.7 |
 | `Extrode.Jaunty.Scaffolding` | `net8.0`, `net10.0` | none | n/a |
 | `Extrode.Jaunty.FlatFiles.DuckDB` | `net8.0`, `net10.0` | `DuckDB.NET.Data.Full` | n/a |
 | `Extrode.Jaunty.Scaffolding.Cli` | `net8.0`, `net10.0` | packed as a tool — see below | n/a |
