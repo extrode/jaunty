@@ -14,7 +14,8 @@ $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
 $targets = @(
     (Join-Path $repoRoot 'tmp\sqlprobe'),
-    (Join-Path $repoRoot 'tmp\product-identity-brief.md')
+    (Join-Path $repoRoot 'tmp\product-identity-brief.md'),
+    (Join-Path $repoRoot 'tmp\jauntyq-pricing-brief.md')
 )
 
 foreach ($target in $targets) {
