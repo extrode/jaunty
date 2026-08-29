@@ -18,7 +18,8 @@ Most micro-ORMs let you write SQL and get objects back. Jaunty does this too—b
 
 **The core philosophy:**
 - **Performant** — Compiled expression trees, not runtime reflection
-- **Efficient** — Minimal allocations, cached metadata, zero dependencies
+- **Efficient** — Minimal allocations, cached metadata, and no package dependencies at all on `net8.0`/`net10.0`
+- **AOT-ready** — Publishes under NativeAOT with no trim or AOT warnings from any Jaunty assembly
 - **Elegant** — Clean API that reads like intent, not ceremony
 
 ### Strict by Default
@@ -670,6 +671,36 @@ No surprises. No leaked connections.
 5. **Command Template Caching** — SQL parameter templates cached per query type.
 
 6. **Bulk Copy Optimization** — Native bulk copy APIs (SqlBulkCopy, NpgsqlBinaryImporter, chunked multi-row INSERT on MySQL/MariaDB) automatically used for 100+ rows via `Jaunty.Extensions.Reflection`. The gain depends on provider and batch size; measurement status is tracked in [BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md).
+
+### NativeAOT
+
+Jaunty is built to publish under NativeAOT. `IsTrimmable` and `IsAotCompatible` are set for every
+`net8.0`+ target, so the trim and AOT analyzers run on every build, and warnings are errors.
+
+Verified 2026-08-29 by publishing the scaffolding CLI on both legs:
+
+| Leg | Binary | Size |
+|---|---|---|
+| `net8.0` win-x64 (control) | produced, runs | 36.98 MB |
+| `net10.0` win-x64 | produced, `--help` exits 0 | **34.63 MB** |
+
+**No Jaunty assembly produces a trim or AOT warning.** The warnings that do appear all come from
+third-party ADO.NET drivers and BCL serialization assemblies pulled in by the CLI —
+`Microsoft.Data.SqlClient`, `MySqlConnector`, `Microsoft.IdentityModel.Tokens`,
+`System.Data.Common` — none of which are referenced by Jaunty core.
+
+`scripts/Verify-NativeAOT.ps1` additionally checks that every reflection site in the shipped
+assemblies carries a reviewed `AOT-SAFE` justification: **21 sites, all justified.**
+
+Two projects are deliberately excluded, because AOT does not apply to them:
+
+- **`Jaunty.Extensions.Reflection`** — reflection is its stated purpose. Referencing it is how a
+  consumer opts out of the AOT guarantee; the mapper ladder falls back to it only if you install it.
+- **`Jaunty.SourceGenerator`** — a `netstandard2.0` Roslyn component that runs inside the compiler
+  and is never published.
+
+For AOT, prefer source-generated mappers (`IMapped`, emitted by the bundled generator) and register
+interceptors directly via `JauntyConfig.AddInterceptor` rather than through a DI container.
 
 ### NULL Handling
 

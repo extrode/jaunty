@@ -46,7 +46,7 @@ C:\src\jaunty\
 
 | Folder | Purpose | Key Contents |
 |--------|---------|--------------|
-| `src/` | Source code for all packages | `Jaunty/`, `Jaunty.FlatFiles/`, `Jaunty.Fluent/` |
+| `src/` | Source code for all 8 packages | `Jaunty/`, `Jaunty.FlatFiles/`, `Jaunty.Fluent/` |
 | `tests/` | Test projects | `Jaunty.Tests/`, `Jaunty.FlatFiles.Tests/` |
 | `docs/` | Documentation source | Organized by topic (00-quick-start through 06-releases) |
 | `docs/specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
@@ -90,8 +90,14 @@ src/
 ├── Jaunty.FlatFiles/              # Flat file support (interfaces)
 ├── Jaunty.FlatFiles.DuckDB/       # DuckDB implementation
 ├── Jaunty.Extensions.Reflection/  # Reflection-based mapping
-└── Jaunty.Scaffolding/            # Database scaffolding
+├── Jaunty.Extensions.Logging/     # ILogger + DI integration (keeps core dependency-free)
+├── Jaunty.Scaffolding/            # Database scaffolding
+└── Jaunty.Scaffolding.Cli/        # dotnet tool; the NativeAOT publish target
 ```
+
+`Jaunty.Extensions.Logging` exists so that `src/Jaunty` can declare **no package dependencies** on
+`net8.0` and `net10.0`; it carries the `Microsoft.Extensions.*` references on core's behalf. See
+[`../02-architecture/dependencies.md`](../02-architecture/dependencies.md).
 
 ---
 
@@ -156,6 +162,7 @@ See [`03-development/file-naming-convention.md`](03-development/file-naming-conv
 | CRUD operations | `src/Jaunty/Write/` |
 | Flat file support | `src/Jaunty.FlatFiles.DuckDB/` |
 | Fluent API | `src/Jaunty.Fluent/` |
+| `ILogger` / DI integration | `src/Jaunty.Extensions.Logging/` |
 
 ### Finding Tests
 
