@@ -54,7 +54,10 @@ Then watch the run: `gh run watch` (or Actions tab). On success verify:
 
 GitHub Packages NuGet feeds are never anonymous — every consumer needs a PAT
 with `read:packages` (fine-grained: "Packages: read"). This is the access
-lever the commercial flow relies on (see COMMERCIAL-DISTRIBUTION-FLOW.md).
+lever the *old* commercial flow relied on. That flow is retired: Jaunty is free to use in
+commercial production and what is sold is support, so the feed token gates nothing commercial.
+[`COMMERCIAL-DISTRIBUTION-FLOW.md`](COMMERCIAL-DISTRIBUTION-FLOW.md) is kept for the historical
+record only and carries a staleness banner saying so.
 
 `nuget.config` next to the consumer's solution:
 
