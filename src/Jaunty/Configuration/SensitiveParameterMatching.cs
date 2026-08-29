@@ -1,7 +1,8 @@
 namespace Jaunty.Configuration;
 
 /// <summary>
-/// How a parameter name is compared against <see cref="LoggingConfiguration.SensitiveParameterNames"/>.
+/// How a parameter name is compared against <c>LoggingConfiguration.SensitiveParameterNames</c>
+/// in the optional Extrode.Jaunty.Extensions.Logging package.
 /// </summary>
 public enum SensitiveParameterMatching
 {

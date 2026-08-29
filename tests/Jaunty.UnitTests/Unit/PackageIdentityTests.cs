@@ -16,7 +16,7 @@ public class PackageIdentityTests
     private const string ExpectedProjectUrl = "https://extrode.com/jaunty";
     private const string ExpectedIdPrefix = "Extrode.Jaunty";
     private const string ExpectedOwner = "Extrode LLC";
-    private const int ExpectedPackageCount = 7;
+    private const int ExpectedPackageCount = 8;
 
     private static readonly string[] RetiredOwnerNames = ["Beparey LLC", "Beparey.com"];
 
