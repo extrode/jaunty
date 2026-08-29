@@ -583,6 +583,26 @@ Three findings that matter:
 
 Open decisions are logged in `work/todo.md`; none of them block the test work in this plan.
 
+### The cadence split landed 2026-08-29
+
+Finding 3 above is now implemented; findings 1 and 2 remain the owner's decision and are untouched.
+
+`nightly.yml` carries two schedules instead of one: `0 3 * * 1-6` for `full-suite`, `fuzz` and
+`benchmarks`, and `0 3 * * 0` which adds `mutation`. The weekday cron excludes Sunday on purpose —
+GitHub fires each schedule entry as its own workflow run, so two entries at the same minute would
+run the full suite twice that day rather than merge into one run. `mutation` is gated with
+`if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * 0'`, so a manual
+dispatch still runs everything.
+
+The gate couples a job condition to a cron string with nothing between them, and it fails silently:
+edit the cron, leave the condition, and the job simply never runs again — no error, and no skipped
+badge on the weekday runs it was already absent from. `NightlyWorkflowCadenceTests`
+(`tests/Jaunty.UnitTests/Unit/`) is the check, four facts, each RED-phase proven against a separate
+perturbation: restoring the single `0 3 * * *` cron fails two, deleting the `if:` fails two, and
+adding a schedule condition to `fuzz` fails the fourth. Its own first version was vacuous — the
+workflow is CRLF and `$` in .NET multiline mode matches before `\n` and not before `\r`, so every
+line-anchored pattern matched nothing; the endings are normalised on read now.
+
 ## Verification protocol
 
 - Every new test RED-phase-checked against a deliberately broken target before it is trusted.
