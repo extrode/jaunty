@@ -14,10 +14,13 @@ name: Nightly
 # runs on the Sunday cron only. The weekday cron deliberately excludes Sunday: GitHub fires
 # each schedule entry as its own run, so two entries at the same minute would double the full
 # suite rather than merge. workflow_dispatch still runs everything, mutation included.
+#
+# 05:00 rather than 03:00 to stagger against jauntyq, whose nightly fires at '0 3 * * *'. Both
+# repos ran at the same minute; jaunty moves because this is the repo the change is being made in.
 on:
   schedule:
-    - cron: '0 3 * * 1-6'
-    - cron: '0 3 * * 0'
+    - cron: '0 5 * * 1-6'
+    - cron: '0 5 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -193,7 +196,7 @@ jobs:
   # NightlyWorkflowCadenceTests exists to catch.
   mutation:
     name: Mutate ${{ matrix.project }}
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * 0'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 0'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     strategy:
       fail-fast: false

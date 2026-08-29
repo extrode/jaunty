@@ -16,8 +16,9 @@ namespace Jaunty.Tests.Unit;
 /// </summary>
 public class NightlyWorkflowCadenceTests
 {
-    private const string WeekdayCron = "0 3 * * 1-6";
-    private const string WeeklyCron = "0 3 * * 0";
+    // 05:00, not 03:00: jauntyq's nightly fires at '0 3 * * *' and the two were colliding.
+    private const string WeekdayCron = "0 5 * * 1-6";
+    private const string WeeklyCron = "0 5 * * 0";
 
     [Fact]
     public void TheNightlyWorkflowDeclaresBothSchedules()
