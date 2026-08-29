@@ -26,7 +26,7 @@ Most micro-ORMs let you write SQL and get objects back. Jaunty does this too—b
 
 ### Strict by Default
 
-When you call `Query<T>`, Jaunty requires that the entity and the result set agree **in both directions**: every property has a matching column, and every column has a matching property. This is intentional.
+When you call `Query<T>`, Jaunty requires that the entity and the result set agree: every property must have a matching column. Under the reflection mapper the check runs **in both directions**, so an extra column throws too. This is intentional. ([Which mapper enforces which direction](docs/01-api-reference/query-partial-methods.md#which-mapper-enforces-which-direction))
 
 ```csharp
 public class Product
@@ -364,13 +364,16 @@ var rows = connection.Upsert(product);  // Inserts if new, updates if exists
 
 ### `Query<T>` — Strict Mode
 
-The entity and the result set must agree **in both directions**. A property with no matching
-column throws, and so does a column with no matching property.
+The entity and the result set must agree. A property with no matching column throws on every
+path; a column with no matching property throws only under the reflection mapper.
 
-| Condition | Message |
-|---|---|
-| Property has no column | `Strict mapping failed: property 'Total' has no matching column in result set for type 'Order'.` |
-| Column has no property | `Mapping failed: Column 'shipped_on' does not map to any property of type 'Order'.` |
+| Condition | Reflection mapper | Source-generated mapper |
+|---|---|---|
+| Property has no column | `InvalidOperationException` — `Strict mapping failed: property 'Total' has no matching column in result set for type 'Order'.` | whatever the provider's `GetOrdinal` throws for an unknown name (`ArgumentOutOfRangeException` on SQLite, `IndexOutOfRangeException` on SqlClient) |
+| Column has no property | `InvalidOperationException` — `Mapping failed: Column 'shipped_on' does not map to any property of type 'Order'.` | **Ignored** — the generated `OrdinalMap` resolves the properties it knows and never enumerates the result columns |
+
+Which one runs is decided by `DrDispatcher`, which prefers the generated mapper in strict mode.
+[The full precedence order](docs/01-api-reference/query-partial-methods.md#which-mapper-enforces-which-direction).
 
 ```csharp
 public class Order
@@ -388,12 +391,12 @@ var orders = connection.Query<Order>(
 var orders = connection.Query<Order>(
     "SELECT order_id AS OrderId, order_date AS OrderDate FROM orders");
 
-// Extra 'shipped_on' - also throws; the check runs in both directions
+// Extra 'shipped_on' - throws under the reflection mapper; ignored by the generated one
 var orders = connection.Query<Order>(
     "SELECT order_id AS OrderId, order_date AS OrderDate, total AS Total, shipped_on FROM orders");
 ```
 
-Both checks run once per distinct result-set shape, not once per row.
+The checks run once per distinct result-set shape, not once per row.
 
 **Use strict mode when:** You expect complete entities. This is the default because it's the safer choice.
 
@@ -427,7 +430,7 @@ var summaries = connection.QueryPartial<OrderSummary>(
 
 | Method | Returns | Mapping | Description |
 |--------|---------|---------|-------------|
-| `Query<T>()` | `List<T>` | Strict | Properties and columns must match in both directions |
+| `Query<T>()` | `List<T>` | Strict | Every property needs a column; under reflection every column needs a property too |
 | `QueryPartial<T>()` | `List<T>` | Partial | Map only matching columns |
 | `QueryFirst<T>()` | `T` | Strict | First row, throws if empty |
 | `QueryFirstOrDefault<T>()` | `T?` | Strict | First row, null if empty |

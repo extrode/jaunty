@@ -4,7 +4,8 @@
 
 The `QueryPartial*` family maps a result set in **projection mode**: only properties that have a
 matching column are set, and everything else keeps its default value. The `Query*` family maps in
-**strict mode**, where the entity shape and the result-set shape have to agree in both directions.
+**strict mode**, where every property of the entity has to have a matching column - and, under the
+reflection mapper, every column has to have a matching property as well.
 
 Every partial method is a shape-for-shape twin of a strict one:
 
@@ -30,7 +31,8 @@ for the single-result family, in [`single-result-methods.md`](single-result-meth
 `MappingMode` (`src/Jaunty/Configuration/MappingMode.cs`) has two members, `Strict` and `Projection`.
 Partial methods request `Projection`; everything else requests `Strict`.
 
-Strict mapping fails in **both** directions, which is more than the name suggests:
+Under the reflection mapper, strict mapping fails in **both** directions, which is more than the
+name suggests:
 
 | Condition | Strict | Partial |
 |---|---|---|
@@ -38,8 +40,10 @@ Strict mapping fails in **both** directions, which is more than the name suggest
 | Property has no matching column | `InvalidOperationException`: *Strict mapping failed: property 'X' has no matching column in result set for type 'T'* | property left at its default |
 | Duplicate column name | first match wins, the rest are skipped | same |
 
-Both checks live in `MetadataCache<T>.BuildSetters`. They run once per distinct result-set shape,
-not once per row.
+Both checks live in `MetadataCache<T>.BuildSetters` (`src/Jaunty.Extensions.Reflection`). They run
+once per distinct result-set shape, not once per row. The source-generated mapper is a different
+implementation with different behaviour - see
+[Which mapper enforces which direction](#which-mapper-enforces-which-direction).
 
 So `SELECT id, name FROM products` into a `Product` with four properties throws under `Query<T>` and
 succeeds under `QueryPartial<T>`. That is the whole distinction.
@@ -99,6 +103,37 @@ public class ProductSummary
 
 var summaries = connection.Query<ProductSummary>("SELECT id, name FROM products");
 ```
+
+---
+
+## Which mapper enforces which direction
+
+Strict mode has two mapper implementations, and they do not fail the same way. Which one runs
+follows the precedence list above: the generated mapper wins when the entity is `[Table]`-attributed
+and the generator package is referenced; the reflection mapper runs otherwise.
+
+| Result set vs entity | Reflection mapper | Source-generated mapper |
+|---|---|---|
+| Property has no column | `InvalidOperationException`: *Strict mapping failed: property 'X' has no matching column in result set for type 'T'* | whatever the provider's `IDataReader.GetOrdinal` throws for an unknown name - `ArgumentOutOfRangeException` on Microsoft.Data.Sqlite, `IndexOutOfRangeException` on SqlClient |
+| Column has no property | `InvalidOperationException`: *Mapping failed: Column 'X' does not map to any property of type 'T'* | **ignored** - no error |
+
+The asymmetry is structural, not an oversight. The generated `OrdinalMap.Resolve` calls
+`reader.GetOrdinal(...)` once per mapped property and caches the resulting `int[]` against the
+reader; it never enumerates the result set's columns, so it has no way to notice one it was not
+looking for. `MetadataCache<T>.BuildSetters` walks the reader's fields instead, which is what lets
+it report an unmatched column.
+
+**What this means in practice:** adding a column to a `SELECT *` is caught by the reflection mapper
+and silently accepted by the generated one. Do not rely on strict mode to catch a widened result
+set in a NativeAOT or generator-only build.
+
+Both mappers agree on the direction that matters most - a property with no column always fails -
+and both resolve once per result-set shape rather than per row. The exception *type* differs though:
+catch code that expects `InvalidOperationException` will not catch the generated path's failure.
+
+`SqliteGeneratedMapperShapeTests` pins both halves against a real provider:
+`Query_ExtraAndReorderedColumns_MapsCorrectly` for the ignored column,
+`ReadEntity_SameReader_NextResult_MissingColumn_ThrowsInsteadOfStaleMapping` for the missing one.
 
 ---
 
