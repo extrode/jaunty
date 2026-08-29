@@ -55,4 +55,49 @@ Console.WriteLine($"Update: {updated} row(s) affected");
 int deleted = connection.Delete(newProduct);
 Console.WriteLine($"Delete: {deleted} row(s) affected");
 
+// Grouped projection into a DTO. This is the path GroupedJoinedResultMapper reflects over, and
+// until the projection type carried [DynamicallyAccessedMembers] nothing rooted it: published
+// NativeAOT, the trimmer removed PriceBand's setters, GetProperties() came back empty and every
+// row arrived fully defaulted - no exception, no diagnostic. The sample used to stop before this
+// line, so the one unrooted reflection site on an AOT publish path was the one no AOT binary ran.
+//
+// The assertions below are the point of including it. Printing the rows would look identical
+// whether the mapping worked or silently produced zeros.
+List<PriceBand> bands = connection.From<Product>()
+    .GroupBy(p => p.Discontinued)
+    .Select(g => new PriceBand
+    {
+        Discontinued = g.Key,
+        Count = g.Count(),
+        Highest = g.Max(p => p.UnitPrice)
+    });
+
+Console.WriteLine("\nGrouped projection into a DTO:");
+foreach (PriceBand band in bands)
+    Console.WriteLine($"  discontinued={band.Discontinued}  count={band.Count}  highest=${band.Highest:F2}");
+
+if (bands.Count != 2)
+    throw new InvalidOperationException($"expected 2 groups, got {bands.Count}");
+
+// Every group has rows and a non-zero price, so a defaulted instance is distinguishable from a
+// correctly mapped one. Under the old unrooted code this is what failed after publish.
+foreach (PriceBand band in bands)
+{
+    if (band.Count == 0 || band.Highest == 0m)
+        throw new InvalidOperationException(
+            $"grouped projection mapped to defaults (count={band.Count}, highest={band.Highest}) - " +
+            "the projection type's members were trimmed away");
+}
+
+// The anonymous-type form takes the constructor path rather than the property path, and fails
+// differently when trimmed: MissingMethodException instead of silent defaults. Both are covered.
+var anonymous = connection.From<Product>()
+    .GroupBy(p => p.Discontinued)
+    .Select(g => new { Key = g.Key, Total = g.Count() });
+
+if (anonymous.Count != 2 || anonymous.Any(a => a.Total == 0))
+    throw new InvalidOperationException("anonymous-type grouped projection did not map");
+
+Console.WriteLine($"Anonymous-type projection: {anonymous.Count} groups, {anonymous.Sum(a => a.Total)} rows total");
+
 Console.WriteLine("\nDone.");
