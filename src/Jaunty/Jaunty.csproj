@@ -25,26 +25,23 @@
 		</When>
 	</Choose>
 
-	<!-- Logging and Diagnostics - only needed for netstandard2.0 (net8.0 has these built-in) -->
-	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
-		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.10" />
-	</ItemGroup>
+	<!-- netstandard2.0 is the only target that carries package references, and both are backports
+	     of types that are built into modern .NET rather than third-party libraries:
 
-	<!-- These are NOT built-in on any target. Microsoft.Extensions.Logging.Abstractions and
-	     .DependencyInjection.Abstractions ship in the ASP.NET Core shared framework, which a class
-	     library does not get, so they are real package dependencies on every TFM. (An earlier
-	     comment here claimed they were built in on net8.0+ and referenced "for compatibility";
-	     that was wrong.) System.Diagnostics.DiagnosticSource above is the genuine case - it IS in
-	     Microsoft.NETCore.App from .NET Core 3.0 on, which is why it is netstandard2.0-only.
-	     Tracked for removal: docs/plans/2026-08-29-004-public-release.md T7 moves both of these
-	     out of the core assembly so src/Jaunty has zero dependencies on net8.0/net10.0.
-	     Was conditioned == net8.0; the first net10 leg compile (010 T11) failed with CS0234 on
-	     every Microsoft.Extensions using, because the condition silently dropped both packages. -->
-	<ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+	       System.Diagnostics.DiagnosticSource   in Microsoft.NETCore.App since .NET Core 3.0
+	       Microsoft.Bcl.AsyncInterfaces         (above) IAsyncEnumerable/IAsyncDisposable,
+	                                             in-box since .NET Core 3.0
+
+	     On net8.0 and net10.0 this project has NO package references at all. Nothing conditional,
+	     nothing transitive - that is the contract, and PackageDependencyTests asserts it.
+
+	     Microsoft.Extensions.Logging.Abstractions and .DependencyInjection.Abstractions used to be
+	     referenced here on every TFM (an old comment claimed they were "built in on net8.0+" -
+	     they are not; they ship in the ASP.NET Core shared framework, which a class library never
+	     gets). They now live in src/Jaunty.Extensions.Logging, which is where the ILogger
+	     interceptor and the DI registration extensions moved. See docs/02-architecture/dependencies.md. -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.10" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
@@ -97,6 +94,11 @@
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Jaunty.Extensions.Reflection</_Parameter1>
+    </AssemblyAttribute>
+    <!-- The ILogger interceptor and the DI registration extensions; split out so that core
+         carries no Microsoft.Extensions package references. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.Extensions.Logging</_Parameter1>
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Jaunty.FlatFiles</_Parameter1>

@@ -53,10 +53,24 @@ dotnet add package Extrode.Jaunty
 
 Targets `netstandard2.0`, `net8.0` and `net10.0`. Works with any ADO.NET provider.
 
-`netstandard2.0` is there for consumers who cannot move off an older framework. It is the one
-target that carries extra package references — backports of types that are built into modern
-.NET — and each one is listed and explained in the dependency documentation rather than left as
-a surprise.
+**On `net8.0` and `net10.0`, `Extrode.Jaunty` has no dependencies at all** — the dependency groups
+in the shipped `.nuspec` are empty.
+
+`netstandard2.0` is there for consumers who cannot move off an older framework, and it is the one
+target that carries package references:
+
+| Package | What it backports | In-box since |
+|---|---|---|
+| `Microsoft.Bcl.AsyncInterfaces` | `IAsyncEnumerable<T>`, `IAsyncDisposable` | .NET Core 3.0 |
+| `System.Diagnostics.DiagnosticSource` | `DiagnosticSource`, `DiagnosticListener`, `Activity` | .NET Core 3.0 |
+
+Both are Microsoft-published backports of types that are built into modern .NET, not third-party
+libraries. `Microsoft.Bcl.AsyncInterfaces` is what keeps the async streaming API the same shape on
+that target instead of absent from it.
+
+`ILogger` and dependency-injection integration are a separate opt-in package,
+`Extrode.Jaunty.Extensions.Logging`, which is why core needs neither. Every dependency of every
+package is listed in [`docs/02-architecture/dependencies.md`](docs/02-architecture/dependencies.md).
 
 ---
 
@@ -346,6 +360,14 @@ Jaunty provides built-in command interception for logging, auditing, and custom 
 
 Log SQL execution with configurable log levels, slow query detection, and parameter masking.
 
+> Ships in the optional `Extrode.Jaunty.Extensions.Logging` package, which is what keeps the
+> `ILogger` and dependency-injection references out of core:
+> `dotnet add package Extrode.Jaunty.Extensions.Logging`
+>
+> To keep core dependency-free, implement `ICommandInterceptor` against your own logger, or consume
+> the built-in `DiagnosticSource` events. See
+> [`docs/02-architecture/dependencies.md`](docs/02-architecture/dependencies.md).
+
 ```csharp
 using Microsoft.Extensions.Logging;
 using Jaunty.Interceptors;
@@ -498,7 +520,9 @@ public class TimingInterceptor : ICommandInterceptor
 
 ### Dependency Injection
 
-Register interceptors with `IServiceCollection`:
+Register interceptors with `IServiceCollection`. These extension methods ship in the optional
+`Extrode.Jaunty.Extensions.Logging` package — **Jaunty core requires no DI container**, and
+`JauntyConfig.AddInterceptor` registers an interceptor without one.
 
 ```csharp
 using Jaunty;
