@@ -93,7 +93,7 @@ var filtered = connection.Query<Product>(
 
 | Mode | Method | Behavior |
 |------|--------|----------|
-| **Strict** | `Query<T>()` | All properties must have columns or throws |
+| **Strict** | `Query<T>()` | Throws on an unmatched property **or** an unmatched column |
 | **Partial** | `QueryPartial<T>()` | Only maps existing columns, ignores rest |
 
 ### Connection Management

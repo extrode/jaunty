@@ -26,7 +26,7 @@ Most micro-ORMs let you write SQL and get objects back. Jaunty does this too—b
 
 ### Strict by Default
 
-When you call `Query<T>`, Jaunty requires that **every property** on your entity has a matching column in the result set. This is intentional.
+When you call `Query<T>`, Jaunty requires that the entity and the result set agree **in both directions**: every property has a matching column, and every column has a matching property. This is intentional.
 
 ```csharp
 public class Product
@@ -364,7 +364,13 @@ var rows = connection.Upsert(product);  // Inserts if new, updates if exists
 
 ### `Query<T>` — Strict Mode
 
-Every entity property must have a corresponding column. Missing columns throw immediately.
+The entity and the result set must agree **in both directions**. A property with no matching
+column throws, and so does a column with no matching property.
+
+| Condition | Message |
+|---|---|
+| Property has no column | `Strict mapping failed: property 'Total' has no matching column in result set for type 'Order'.` |
+| Column has no property | `Mapping failed: Column 'shipped_on' does not map to any property of type 'Order'.` |
 
 ```csharp
 public class Order
@@ -381,7 +387,13 @@ var orders = connection.Query<Order>(
 // Missing 'Total' - throws InvalidOperationException
 var orders = connection.Query<Order>(
     "SELECT order_id AS OrderId, order_date AS OrderDate FROM orders");
+
+// Extra 'shipped_on' - also throws; the check runs in both directions
+var orders = connection.Query<Order>(
+    "SELECT order_id AS OrderId, order_date AS OrderDate, total AS Total, shipped_on FROM orders");
 ```
+
+Both checks run once per distinct result-set shape, not once per row.
 
 **Use strict mode when:** You expect complete entities. This is the default because it's the safer choice.
 
@@ -415,7 +427,7 @@ var summaries = connection.QueryPartial<OrderSummary>(
 
 | Method | Returns | Mapping | Description |
 |--------|---------|---------|-------------|
-| `Query<T>()` | `List<T>` | Strict | All properties must have columns |
+| `Query<T>()` | `List<T>` | Strict | Properties and columns must match in both directions |
 | `QueryPartial<T>()` | `List<T>` | Partial | Map only matching columns |
 | `QueryFirst<T>()` | `T` | Strict | First row, throws if empty |
 | `QueryFirstOrDefault<T>()` | `T?` | Strict | First row, null if empty |
