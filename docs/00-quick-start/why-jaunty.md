@@ -12,7 +12,7 @@ Jaunty is a micro-ORM for .NET: you write SQL, it gives you objects back, and it
 
 **Slow bulk writes.** `Jaunty.Extensions.Reflection` routes 100+ row operations to native bulk APIs per provider: `SqlBulkCopy` on SQL Server, binary `COPY` on PostgreSQL, chunked multi-row `INSERT` on MySQL/MariaDB, and a prepared-statement loop on SQLite (where "clever" bulk paths measured slower than the simple one, so Jaunty does the simple one).
 
-**Observability as an afterthought.** Interceptors (`LoggingInterceptor`, `AuditInterceptor`, or your own), slow-query thresholds, and `DiagnosticSource` integration are built in - you can see every SQL statement, timing, and parameter without wrapping the library.
+**Observability as an afterthought.** Interceptors (`AuditInterceptor`, `LoggingInterceptor` from the optional `Extrode.Jaunty.Extensions.Logging` package, or your own), slow-query thresholds, and `DiagnosticSource` integration are built in - you can see every SQL statement, timing, and parameter without wrapping the library.
 
 ## The mapper resolution ladder
 
