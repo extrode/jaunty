@@ -1,4 +1,4 @@
-// Reports relative markdown links in docs/ and README.md that do not resolve to a file on disk.
+// Reports relative markdown links in docs/, README.md and CHANGELOG.md that do not resolve on disk.
 // Run from the repository root: node scripts/check-doc-links.mjs
 // Exits 1 when anything is broken, so it can gate a docs build.
 //
@@ -57,7 +57,7 @@ function markdownFiles() {
       else if (entry.endsWith('.md')) found.push(path);
     }
   })('docs');
-  found.push('README.md');
+  found.push('README.md', 'CHANGELOG.md');
   return found;
 }
 
