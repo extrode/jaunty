@@ -1,11 +1,9 @@
-using System.Collections.Concurrent;
-using System.Data;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+﻿using System.Data;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
 using Jaunty.Configuration;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Interceptors;
 
@@ -150,7 +148,6 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
         _ => commandType.ToString()
     };
 
-    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new();
 
     private string FormatParameters(object parameters)
     {
@@ -171,45 +168,28 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
         }
         else
         {
-            var properties = _propertyCache.GetOrAdd(parameters.GetType(), GetPublicProperties);
+            // The same metadata core binds the parameters from, rather than a second reflection
+            // pass over the same type. That removes this file's last reflection site, and with it
+            // the IL2070 suppression that stood in for a preservation mechanism it did not have.
+            //
+            // It also makes the log agree with the command. The old scan took every public instance
+            // property, so it logged members ParameterCache skips - and called GetValue on a
+            // set-only property, which throws. ParameterCache.Get already excludes indexers and
+            // set-only properties, for reasons recorded on BuildMetadata.
+            ParameterMetadata[] metadata = ParameterCache.Get(parameters.GetType());
 
             var first = true;
-            foreach (var property in properties)
+            foreach (ParameterMetadata parameter in metadata)
             {
-                if (property.GetIndexParameters().Length > 0)
-                    continue;
-
                 if (!first) sb.Append(", ");
                 first = false;
 
-                var value = FormatParameterValue(property.Name, property.GetValue(parameters));
-                sb.Append(property.Name).Append("=").Append(value);
+                var value = FormatParameterValue(parameter.Name, parameter.Getter(parameters));
+                sb.Append(parameter.Name).Append("=").Append(value);
             }
         }
 
         return sb.ToString();
-    }
-
-#if NET5_0_OR_GREATER
-    // AUD-R26-055 replaced a false justification here with a second one. It said "preservation comes
-    // from the [DynamicallyAccessedMembers(PublicProperties)] annotation on the type parameter" - but
-    // this is reached with parameters.GetType(), and a Type obtained that way carries no annotation,
-    // so nothing was propagated to preserve anything. The annotation's only effect was to move the
-    // warning to the caller. Spec 011 removed it and states where preservation actually comes from.
-    // The correction that matters: round 26 fixed the sentence about anonymous types and left the
-    // mechanism claim unexamined, which is the same mistake one layer in.
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType(), so no annotation can flow here and none is declared. Logging is also the benign case: if trimming has removed the getters this logs fewer parameters, where the same trimming makes ParameterCache fail the query outright. Preservation for both comes from the generated call-site rooting described on ParameterCache.BuildMetadata.")]
-#endif
-    private static PropertyInfo[] GetPublicProperties(Type type)
-    {
-        // Until spec 011 this line passed Verify-NativeAOT only because the file still carried a
-        // DynamicallyAccessedMembers attribute that the scanner's KeepPatterns match against
-        // whole-file content. It preserved nothing, so removing it was right, and this marker is
-        // what should have stood in for it in the same commit.
-        // Preservation comes from the generated call-site rooting described on
-        // ParameterCache.BuildMetadata, not from any annotation here.
-        // AOT-SAFE: reflects a runtime Type; rooted at the consumer's call sites, see spec 011.
-        return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 
     private string FormatParameterValue(string paramName, object? value)

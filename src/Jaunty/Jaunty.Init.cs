@@ -101,7 +101,7 @@ public static partial class Jaunty
             var assembly = load(new AssemblyName("Jaunty.Extensions.Reflection"));
 
             Type? type = assembly.GetType("Jaunty.Extensions.Reflection.JauntyReflectionExtensions");
-            // AOT-SAFE: optional probe for Jaunty.Extensions.Reflection; absent or trimmed is the expected source-gen-only case, caught below and recorded in ReflectionMappingInitializationError.
+            // AOT-SAFE: optional probe for Jaunty.Extensions.Reflection; absent or trimmed is the expected source-gen-only case and returns null unrecorded - only an unexpected exception reaches the catch-all that sets ReflectionMappingInitializationError.
             MethodInfo? method = type?.GetMethod("UseReflectionMapping", BindingFlags.Public | BindingFlags.Static);
 
             if (method is null)

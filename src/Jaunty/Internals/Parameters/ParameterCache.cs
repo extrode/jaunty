@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 #if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
 #endif
@@ -70,11 +70,11 @@ internal static class ParameterCache
     /// publish.
     /// </remarks>
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType() from an object, so no annotation can flow here and none is declared (spec 011 removed the one that used to be, because it produced three warnings and preserved nothing). Preservation is arranged at the consumer's call sites: the source generator emits JauntyAot.PreserveParameters<T>() for every parameters type it can see there. Call sites it cannot see are reported as JAUNTYGEN003 rather than left to fail at runtime.")]
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType() from an object, so no annotation can flow here and none is declared (spec 011 removed the one that used to be, because it produced three warnings and preserved nothing). Preservation is arranged at the consumer's call sites: the source generator emits JauntyAot.PreserveParameters<T>() for every parameters type it can see there. Call sites it cannot see are reported as JAUNTYGEN003 where the call site itself is visible; two shapes stay uncovered - a parameters object forwarded through an object-typed parameter into a helper that calls Query, and a Jaunty call made from inside a wrapper library the generator does not run over. Those preserve nothing and warn nothing, so a consumer with either must root the type itself.")]
 #endif
     private static ParameterMetadata[] BuildMetadata(Type type)
     {
-        // AOT-SAFE: preservation comes from generated call-site rooting - JauntyAot.PreserveParameters<T>() is emitted for every parameters type the generator can see; unseen call sites get JAUNTYGEN003 at build. Spec 011.
+        // AOT-SAFE: preservation comes from generated call-site rooting - JauntyAot.PreserveParameters<T>() is emitted for every parameters type the generator can see; a visible call site it cannot type gets JAUNTYGEN003 at build. Forwarded object arguments and calls made from a wrapper library are neither preserved nor warned; see docs/02-architecture/reflection-and-trimming.md. Spec 011.
         PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
         var result = new List<ParameterMetadata>(props.Length);
 
