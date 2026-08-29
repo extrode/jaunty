@@ -40,7 +40,7 @@ public class SqlServerSchemaReaderTests
     {
         if (!TestConfiguration.HasSqlServer)
         {
-            Assert.Skip("SQL Server not configured. Set JAUNTY_TEST_SQLSERVER or ConnectionStrings:SqlServer.");
+            RequiredEngine.SkipOrFail(RequiredEngine.SqlServer, "SQL Server not configured. Set JAUNTY_TEST_SQLSERVER or ConnectionStrings:SqlServer.");
         }
 
         var conn = new SqlConnection(TestConfiguration.SqlServerConnectionString);
@@ -51,7 +51,7 @@ public class SqlServerSchemaReaderTests
         catch (Exception ex)
         {
             conn.Dispose();
-            Assert.Skip($"SQL Server not reachable: {ex.Message}");
+            RequiredEngine.SkipOrFail(RequiredEngine.SqlServer, $"SQL Server not reachable: {ex.Message}");
         }
         return conn;
     }

@@ -14,7 +14,7 @@ public sealed class MariaDBAttribute : DialectDataAttributeBase
 
     protected override string? UnreachableReason => DialectReachability.MariaDbError;
 
-    protected override string RequireVariable => DialectReachability.RequireMariaDb;
+    protected override string RequireVariable => DialectReachability.RequireMySql;
 
     protected override DialectInfo Dialect => DialectInfo.MariaDb;
 }
