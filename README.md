@@ -2,7 +2,9 @@
 
 **The micro-ORM that respects your SQL and your time.**
 
-Jaunty is a high-performance data access library for .NET that does one thing exceptionally well: execute your SQL and map results to objects. No query builders. No LINQ translation. No magic. Just fast, predictable, type-safe data access.
+Jaunty is a high-performance data access library for .NET that does one thing exceptionally well: execute your SQL and map results to objects. No LINQ translation, no hidden query rewriting, no magic — the SQL that runs is the SQL you wrote.
+
+When you do want a builder, `Extrode.Jaunty.Fluent` is a separate, optional package that generates parameterized SQL from typed expressions. The core never depends on it.
 
 ```csharp
 var products = connection.Query<Product>(
@@ -45,6 +47,54 @@ var products = connection.Query<Product>(
 This catches mismatches at development time, not when a customer reports weird behavior in production.
 
 ---
+
+## What Jaunty Does That Others Don't
+
+Comparison is against Dapper, the micro-ORM most people are choosing between Jaunty and.
+
+| Capability | Dapper | Jaunty |
+|---|---|---|
+| **Strict-by-default mapping** — a missing column throws immediately | silent partial map | yes; `QueryPartial<T>` opts out per call |
+| Zero runtime dependencies on `net8.0`/`net10.0` | yes | yes |
+| NativeAOT via source generator | separate package (Dapper.AOT) | in the box, verified in CI on every build |
+| Fluent query builder | no | `Extrode.Jaunty.Fluent`, optional |
+| Bulk copy | paid add-on (Dapper Plus) | three providers, included |
+| Scaffolding CLI | no | `Extrode.Jaunty.Scaffolding.Cli` |
+| DuckDB and flat-file sources | no | `Extrode.Jaunty.FlatFiles.DuckDB` |
+| Dialect-aware SQL generation | no | SQL Server, PostgreSQL, MySQL, SQLite |
+
+**Strict-by-default mapping is the one to weigh first.** It is not a performance claim, so it holds
+whichever library benchmarks faster on a given path: a query that stops matching your entity fails
+at the call site rather than silently handing back a half-populated object. Every other row in the
+table is something you could assemble from packages; that row is a different default.
+
+## When to Use Jaunty — and When Not To
+
+**Reach for Jaunty when:**
+
+- You are publishing under **NativeAOT** or trimming aggressively, and want mapping generated at
+  build time with no reflection in the core.
+- **Dependency count matters** — a plugin, a library, a container you are keeping small. On
+  `net8.0` and `net10.0` the dependency groups in the shipped `.nuspec` are empty.
+- You want **SQL you can read in the source and find in the query log**, unchanged.
+- A **wrong result matters more than a fast one**: strict mapping turns a silent data bug into an
+  exception during development.
+- You need **bulk copy, scaffolding, or DuckDB and flat-file querying** without assembling three
+  more vendors.
+- You target **`net472` or `netstandard2.0`** alongside modern .NET from one codebase.
+
+**Do not reach for Jaunty when:**
+
+- You want **change tracking, a unit of work, lazy loading, or migrations**. That is EF Core's job
+  and Jaunty does not try to do it. Using both together is a reasonable architecture.
+- You want to **write LINQ and have a database translate it**. Jaunty executes SQL; the Fluent
+  package builds SQL from expressions but is not a LINQ provider.
+- **Team familiarity is the binding constraint.** Dapper is the thing your next hire already knows,
+  and that is a real cost worth pricing honestly.
+- You need a **database Jaunty has no dialect for**. Four are supported; anything else means core
+  execution works through ADO.NET but dialect-aware generation does not.
+- You want an **OSI-approved licence**. Jaunty is source-available under ISL-R, not open source —
+  see [License](#license) before adopting it.
 
 ## Installation
 
