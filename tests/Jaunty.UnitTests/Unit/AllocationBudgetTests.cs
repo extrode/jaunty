@@ -70,7 +70,7 @@ public class AllocationBudgetTests
 
         long perCall = MeasurePerCall(static () => Sink(SqlParameterParser.ExtractParameterNames(sql)));
 
-        AssertWithinBudget("ExtractParameterNames(no parameters)", perCall, 136);
+        AssertWithinBudget("ExtractParameterNames(no parameters)", perCall, 0);
     }
 
     [Fact]
