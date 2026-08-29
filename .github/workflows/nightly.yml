@@ -197,7 +197,19 @@ jobs:
   mutation:
     name: Mutate ${{ matrix.project }}
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 0'
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # The one job that does not follow CI_RUNNER. 2,364 mutants took 2 h 10 m on an M1 Max at
+    # concurrency 8; a 2-core hosted runner does not finish inside GitHub's limit at all, which is
+    # what public-release T18 exists to resolve. Blacksmith documents no maximum job duration.
+    #
+    # Its 3,000 free minutes are *2vCPU*-minutes, consumed proportionally, so a 16 vCPU run bills
+    # at 8x wall clock. That makes the tier a wall-clock choice rather than a cost one - ~2,400
+    # 2vCPU-min/month here against ~2,240 on 8 vCPU - and it is most of the org's free allowance,
+    # shared with jauntyq. Anything else moving to Blacksmith needs that number re-checked.
+    runs-on: ${{ vars.CI_MUTATION_RUNNER || 'blacksmith-16vcpu-ubuntu-2404' }}
+    # GitHub's default job timeout is 360 minutes and applies to every runner, Blacksmith included,
+    # so "no maximum duration" on their side is not by itself enough. 240 is generous against an
+    # estimated 70-90 minutes and still fails rather than burning the allowance on a hung run.
+    timeout-minutes: 240
     strategy:
       fail-fast: false
       matrix:
@@ -227,9 +239,14 @@ jobs:
       # stryker-config.json pins concurrency 4, which is a desktop setting: 12 concurrent
       # testhosts on the 16-thread dev box made it unusable to type on. A runner has nobody
       # sitting at it, so override upward here rather than making the checked-in default hostile.
+      #
+      # The number must be passed, not left to Stryker: Blacksmith runners expose the *host*
+      # machine's CPU count rather than the allocated vCPUs, so anything that sizes itself from
+      # Environment.ProcessorCount over-subscribes badly. 16 matches the 16 vCPU tier above; move
+      # the two together.
       - name: Mutate
         working-directory: tests/${{ matrix.project }}
-        run: dotnet stryker --concurrency ${{ vars.CI_MUTATION_CONCURRENCY || '8' }}
+        run: dotnet stryker --concurrency ${{ vars.CI_MUTATION_CONCURRENCY || '16' }}
 
       - name: Upload report
         if: always()
