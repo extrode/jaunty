@@ -10,6 +10,7 @@ Documentation for Jaunty quality assurance, testing strategies, and code coverag
 
 ## Code Coverage
 
+- [`code-coverage.md`](code-coverage.md) - **How to run coverage, what `coverage.runsettings` does, and the 2026-08-27 baseline**
 - [`reports/COVERAGE-GAPS-2026-07-04.md`](reports/COVERAGE-GAPS-2026-07-04.md) - Coverage gap inventory (July 2026; older dotCover analysis archived under `../99-archive/2026-02-code-coverage/`)
 
 ## Test Organization

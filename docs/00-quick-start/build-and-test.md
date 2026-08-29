@@ -80,6 +80,15 @@ dotnet test --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCol
 Coverage reports are generated in:
 - `TestResults/*/coverage.cobertura.xml`
 
+The repository has a configured coverage run that applies `coverage.runsettings` and lands
+cobertura reports in `tmp/coverage/`. Use it rather than the ad-hoc command above:
+
+```powershell
+pwsh -NoProfile -File scripts/coverage.ps1
+```
+
+See [`../05-quality/code-coverage.md`](../05-quality/code-coverage.md) for details, including why
+the settings file exists and what the current baseline measures.
 
 ## Test Infrastructure
 
@@ -157,5 +166,6 @@ dotnet run -c Release --project benchmarks/Jaunty.Benchmarks
 ## See Also
 
 - [`README.md`](README.md) - Quick start guide
-- [`../03-development/coding-conventions.md`](../03-development/coding-conventions.md) - Coding standards
-- [`../code-coverage/`](../code-coverage/) - Coverage documentation
+- [`../03-development/api-design-guidelines.md`](../03-development/api-design-guidelines.md) - Coding and API standards
+- [`../03-development/xml-documentation-style.md`](../03-development/xml-documentation-style.md) - Doc comment house style
+- [`../05-quality/code-coverage.md`](../05-quality/code-coverage.md) - Coverage documentation
