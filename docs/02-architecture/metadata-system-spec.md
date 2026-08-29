@@ -584,5 +584,5 @@ flowchart TD
 | [`architecture-specification.md`](architecture-specification.md) | Full architecture |
 | [`parameter-binding-spec.md`](parameter-binding-spec.md) | Parameter binding |
 | [`performance-spec.md`](performance-spec.md) | Performance optimization |
-| [`../../01-api-reference/attributes.md`](../../01-api-reference/attributes.md) | Mapping attributes |
-| [`../../01-api-reference/configuration.md`](../../01-api-reference/configuration.md) | JauntyConfig |
+| [`../../01-api-reference/attributes.md`](../01-api-reference/attributes.md) | Mapping attributes |
+| [`../../01-api-reference/configuration.md`](../01-api-reference/configuration.md) | JauntyConfig |

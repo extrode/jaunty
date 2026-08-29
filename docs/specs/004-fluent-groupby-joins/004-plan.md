@@ -2,7 +2,7 @@
 
 **Branch**: `004-fluent-groupby-joins`
 **Date**: 2026-07-07
-**Spec**: [spec.md](spec.md)
+**Spec**: [004-spec.md](004-spec.md)
 **Input**: `docs/specs/004-fluent-groupby-joins/004-spec.md`
 
 ---

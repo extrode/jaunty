@@ -2,7 +2,7 @@
 
 **Branch**: `003-fluent-nativeaot-metadata`
 **Date**: 2026-07-07
-**Spec**: [spec.md](spec.md)
+**Spec**: [003-spec.md](003-spec.md)
 **Input**: `docs/specs/003-fluent-nativeaot-metadata/003-spec.md`
 
 ---
