@@ -21,6 +21,7 @@ internal static class MappedPropertyFilter
     // Matched by full name rather than referenced: System.ComponentModel.DataAnnotations.Schema is
     // not a dependency of this package, and MetadataBuilder resolves it the same way.
     private const string NotMappedAttributeTypeName = "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute";
+    private const string ColumnAttributeTypeName = "System.ComponentModel.DataAnnotations.Schema.ColumnAttribute";
 
     /// <summary>
     /// Returns the mapped properties of <paramref name="entityType"/>, with hidden base declarations
@@ -131,7 +132,45 @@ internal static class MappedPropertyFilter
     public static string GetColumnName(PropertyInfo property)
     {
         string? name = property.GetCustomAttribute<ColumnAttribute>()?.Name;
+        if (!string.IsNullOrEmpty(name))
+            return name!;
+
+        name = DataAnnotationsColumnName(property);
         return string.IsNullOrEmpty(name) ? property.Name : name!;
+    }
+
+    /// <summary>
+    /// The name from <c>System.ComponentModel.DataAnnotations.Schema.ColumnAttribute</c>, or
+    /// <see langword="null"/>.
+    /// </summary>
+    /// <remarks>
+    /// Round 35 low, fixed 2026-08-30. This class read <see cref="ColumnAttribute"/> only, so an
+    /// entity annotated with the DataAnnotations attribute - which <c>MetadataBuilder</c> honours
+    /// and, since AUD-R35-070, <c>JauntyGenerator</c> does too - mapped by property name on the
+    /// DuckDB flat-file path while mapping by the attribute's name on every core path. Matched by
+    /// full name rather than referenced, for the same reason as
+    /// <see cref="NotMappedAttributeTypeName"/>. Precedence and the empty-name guard mirror
+    /// <c>MetadataBuilder</c>: Jaunty's attribute first, then the constructor argument.
+    /// <para>
+    /// Only the constructor argument, deliberately. <c>MetadataBuilder</c> falls back to a
+    /// <c>Name</c> named argument as well, but <c>ColumnAttribute.Name</c> is get-only, so
+    /// <c>[Column(Name = "x")]</c> does not compile (CS0617) and that fallback is unreachable.
+    /// A branch no test can reach is worse than no branch.
+    /// </para>
+    /// </remarks>
+    private static string? DataAnnotationsColumnName(PropertyInfo property)
+    {
+        foreach (CustomAttributeData attribute in property.GetCustomAttributesData())
+        {
+            if (attribute.AttributeType.FullName != ColumnAttributeTypeName)
+                continue;
+
+            return attribute.ConstructorArguments.Count > 0 && attribute.ConstructorArguments[0].Value is string positional
+                ? positional
+                : null;
+        }
+
+        return null;
     }
 
     /// <summary>
