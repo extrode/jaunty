@@ -1,3 +1,4 @@
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 using Jaunty.Core;
@@ -36,7 +37,13 @@ public interface IGroupedJoinedQuery<TFrom, TJoin, TKey> where TFrom : new() whe
     /// <typeparam name="TResult">The result type.</typeparam>
     /// <param name="selector">Expression defining the projection using g.Key and aggregate functions.</param>
     /// <returns>List of projected results.</returns>
-    List<TResult> Select<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector);
+    List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector);
 
     /// <summary>
     /// Projects the grouped results into a new type, using the supplied
@@ -48,18 +55,36 @@ public interface IGroupedJoinedQuery<TFrom, TJoin, TKey> where TFrom : new() whe
     /// without this there is no way to enlist a grouped joined query in a caller's transaction
     /// or give it a timeout.
     /// </remarks>
-    List<TResult> Select<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options);
+    List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options);
 
     /// <summary>
     /// Projects the grouped results into a new type asynchronously.
     /// </summary>
-    Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Projects the grouped results into a new type asynchronously, using the supplied
     /// <paramref name="options"/> for the command.
     /// </summary>
-    Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
+    Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the generated SQL for debugging purposes.

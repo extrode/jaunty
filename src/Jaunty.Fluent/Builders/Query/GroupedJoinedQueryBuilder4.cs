@@ -1,3 +1,4 @@
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
@@ -66,19 +67,43 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         return this;
     }
 
-    public List<TResult> Select<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
+    public List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
         => Select(selector, default);
 
-    public List<TResult> Select<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
+    public List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
     {
         var sql = BuildSelectSql(selector);
         return ExecuteQuery<TResult>(sql, selector, options);
     }
 
-    public Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CancellationToken cancellationToken = default)
+    public Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CancellationToken cancellationToken = default)
         => SelectAsync(selector, default, cancellationToken);
 
-    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    public async Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(selector);
         return await ExecuteQueryAsync<TResult>(sql, selector, options, cancellationToken).ConfigureAwait(false);
@@ -126,12 +151,24 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         return sb.ToString();
     }
 
-    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
+    private List<TResult> ExecuteQuery<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
         => CommandObservation.Execute(
             sql, _parent._parent._parent.DescribeParameters(), _parent._parent._parent.Connection, FluentCommandOptions.Describe(options),
             () => ExecuteQueryDirect(sql, selector, options));
 
-    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
+    private List<TResult> ExecuteQueryDirect<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
@@ -166,12 +203,24 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         return results;
     }
 
-    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+    private async Task<List<TResult>> ExecuteQueryAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
         => await CommandObservation.ExecuteAsync(
             sql, _parent._parent._parent.DescribeParameters(), _parent._parent._parent.Connection, FluentCommandOptions.Describe(options),
             () => ExecuteQueryDirectAsync(sql, selector, options, cancellationToken), cancellationToken).ConfigureAwait(false);
 
-    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
     {
         IDbConnection connection = _parent._parent._parent.Connection;
         if (connection is not DbConnection dbConn)
