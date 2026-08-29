@@ -104,6 +104,107 @@ fighting it.
 - You want an **OSI-approved licence**. Jaunty is source-available under ISL-R, not open source —
   see [License](#license) before adopting it.
 
+## Jaunty or JauntyQ?
+
+**Jaunty starts from C#. [JauntyQ](https://github.com/extrode/jauntyq) starts from SQL.** They are two
+products, not two modes of one product, and the split is a question about you rather than about your
+database.
+
+Jaunty is the traditional ORM of the pair. You solve the problem in the language you are already
+writing: typed expressions through the optional `Extrode.Jaunty.Fluent` builder, attribute-mapped
+entities, `Insert`/`Update`/`Delete` against a POCO, and a raw SQL string on the occasions where SQL
+is the clearer tool. What Jaunty takes off your hands is the part you should not have to think
+about. Values are parameterized by construction, so SQL injection is not a thing you defend against
+per query. Results map strictly, so `Query<T>` throws when an entity property has no matching column
+instead of handing you a half-populated object. Fluent is expression-first, not a LINQ provider: it
+builds SQL from typed expressions and does not translate arbitrary `IQueryable`.
+
+JauntyQ is for the developer whose position is: *I know SQL, I know what I want to run, validate it
+and otherwise stay out of my way.* It takes that seriously. Every query is a real `.sql` file you
+wrote, versioned next to the code; the generator validates it at build time against a committed
+schema snapshot and emits ADO.NET that reads by ordinal with explicit `DbType` binding, no
+reflection and no runtime SQL parsing. Neither product will silently map the wrong thing. They just
+catch it at different moments: JauntyQ at build time against a snapshot, Jaunty at the call site
+against the live result set.
+
+### The same task in each
+
+Products in one category, with the category name alongside each product.
+
+Jaunty, with the Fluent builder. No SQL string, column references checked by the compiler:
+
+```csharp
+using Jaunty;
+using Jaunty.Fluent;
+
+var rows = connection.From<Product>()
+    .InnerJoin<Category>()
+    .On(p => p.CategoryId, c => c.CategoryId)
+    .Where((p, c) => p.CategoryId == 1)
+    .SelectBoth();                       // List<(Product From, Category Joined)>
+
+foreach (var (product, category) in rows)
+    Console.WriteLine($"{product.ProductName} ({category.CategoryName})");
+```
+
+Or with SQL, which is a first-class option here rather than an escape hatch. This one selects three
+columns rather than a whole `Product`, so it is a projection and `QueryPartial<T>` is the right
+method; `Query<T>` would throw on the properties with no column:
+
+```csharp
+var products = connection.QueryPartial<Product>(
+    "SELECT p.ProductId, p.ProductName, p.UnitPrice " +
+    "FROM Products p " +
+    "INNER JOIN Categories c ON c.CategoryId = p.CategoryId " +
+    "WHERE p.CategoryId = @CategoryId",
+    new { CategoryId = 1 });
+```
+
+JauntyQ, where the query is a file the build checks. This one ships as-is in
+`samples/JauntyQ.Northwind.Tests`:
+
+```sql
+-- db/tables/Products/GetByCategory.sql
+select p.ProductId, p.ProductName, p.UnitPrice, p.UnitsInStock, c.CategoryName
+from Products p
+join Categories c on p.CategoryId = c.CategoryId
+where p.CategoryId = @CategoryId
+```
+
+```csharp
+var db = new JauntyDb(connection);
+var rows = db.Products.GetByCategory(1);
+
+foreach (var row in rows)
+    Console.WriteLine($"{row.ProductName} ({row.CategoryName})");
+```
+
+The row type is generated from that file: the five selected columns, read by ordinal, with the
+parameter typed `short?` because that is what the schema snapshot says `CategoryId` is.
+
+### Choose Jaunty if
+
+- You want data access solved in C#, reaching for SQL strings when they are the clearer tool rather
+  than as the default.
+- You want the mismatch between a query and an entity to throw at the call site, with
+  `QueryPartial<T>` marking a projection as deliberate.
+- Your queries take shape at runtime, or a committed schema snapshot and a generator step do not fit
+  your workflow.
+- You want bulk copy, scaffolding, DuckDB and flat-file querying, and NativeAOT publishing from one
+  library family.
+
+### Choose JauntyQ if
+
+- SQL is where you are most fluent, and you want every query to be SQL you wrote, versioned as
+  `.sql` files.
+- You want a renamed column or a dropped table to break the build rather than a request in
+  production.
+- You want the generated code to be the code you would have hand-written: ordinal reads, typed
+  parameters, no reflection, no runtime parsing.
+
+If the second list is you, JauntyQ is at [github.com/extrode/jauntyq](https://github.com/extrode/jauntyq)
+and you will be better served there.
+
 ## Installation
 
 ```bash
