@@ -684,6 +684,64 @@ public class MultiEntityMapperTests : IDisposable
 
     #endregion
 
+    #region Mapping mode - the MappingMode.Strict argument is inert
+
+    public class ProjectionT1
+    {
+        public int OrderId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public double Total { get; set; }
+        public string? NoSuchColumn { get; set; }
+    }
+
+    public class ProjectionT2
+    {
+        public int DetailId { get; set; }
+        public string? AlsoNoSuchColumn { get; set; }
+    }
+
+    /// <summary>
+    /// Every public <c>Query&lt;T1..TN&gt;</c> overload passes <c>MappingMode.Strict</c> down to
+    /// <c>QueryMultiEntityCore</c>, but on the ordinal-claiming path that argument never reaches a
+    /// mapper: <c>MultiEntityMapperCore.GetSettersExcluding&lt;T&gt;</c> hard-codes
+    /// <c>MappingMode.Projection</c>. Both unclaimed properties must therefore keep their defaults
+    /// instead of raising <c>Strict mapping failed</c>, which is what
+    /// <c>multi-entity-mapping.md</c> documents.
+    /// </summary>
+    [Fact]
+    public void Query_MultiEntity_LeavesUnmatchedPropertiesAtDefault_RatherThanFailingStrictly()
+    {
+        var results = _connection.Query<ProjectionT1, ProjectionT2>(
+            "SELECT o.order_id AS OrderId, o.customer_name AS CustomerName, o.total AS Total, d.detail_id AS DetailId " +
+            "FROM orders o JOIN order_details d ON d.order_id = o.order_id ORDER BY d.detail_id");
+
+        Assert.Equal(2, results.Count);
+        (ProjectionT1 order, ProjectionT2 detail) = results[0];
+
+        Assert.Equal(1, order.OrderId);
+        Assert.Equal("Alice", order.CustomerName);
+        Assert.Equal(99.95, order.Total);
+        Assert.Null(order.NoSuchColumn);
+
+        Assert.Equal(1, detail.DetailId);
+        Assert.Null(detail.AlsoNoSuchColumn);
+    }
+
+    /// <summary>
+    /// The contrast that makes the point: the identical shape under single-entity
+    /// <c>Query&lt;T&gt;</c>, which really is strict, throws.
+    /// </summary>
+    [Fact]
+    public void Query_SingleEntity_SameShape_StillFailsStrictly()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => _connection.Query<ProjectionT1>(
+            "SELECT order_id AS OrderId, customer_name AS CustomerName, total AS Total FROM orders"));
+
+        Assert.Contains("Strict mapping failed", ex.Message);
+    }
+
+    #endregion
+
     private static Action<object, IDataRecord> BuildLiveApplier(Type type, IDataReader reader)
     {
         var matches = new List<(System.Reflection.PropertyInfo Property, int Ordinal)>();

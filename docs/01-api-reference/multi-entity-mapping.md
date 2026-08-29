@@ -200,6 +200,10 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3>
 
 Internally, multi-entity mapping always resolves individual entity property setters in `MappingMode.Projection` (each type maps only the columns it can claim, rather than requiring every property to have a matching column). The public `Query<T1,...,TN>` surface always operates this way — there is no separate strict/partial toggle for multi-entity queries, since ordinal claiming already implies a projection over the full result set.
 
+The source reads as if it contradicted this: every public overload in `src/Jaunty/Read/QueryMultiEntity.cs` passes `MappingMode.Strict` down to `QueryMultiEntityCore`. That argument is inert. The core consults `mode` only on the `options.Mapper is not null` branch, where it delegates to the single-entity core — and `DrDispatcher.Resolve` returns `options.Mapper` at step 1, before `mode` is looked at. On the ordinal-claiming path the mode never reaches a mapper at all; `MultiEntityMapperCore.GetSettersExcluding<T>` hard-codes `MetadataCache<T>.GetSetters(reader, MappingMode.Projection)`.
+
+So projection is the behaviour on both branches, and the `Strict` literal is a parameter with no reachable effect rather than a second mapping mode.
+
 ## Best Practices
 
 ### 1. Order generic type parameters to match column order
