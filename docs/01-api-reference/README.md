@@ -128,7 +128,7 @@ var category = multi.ReadFirst<Category>();
 
 | Mode | Method | Behavior |
 |------|--------|----------|
-| **Strict** | `Query<T>()` | All properties must have matching columns or throws `InvalidOperationException` |
+| **Strict** | `Query<T>()` | Throws `InvalidOperationException` on an unmatched property **or** an unmatched column |
 | **Partial** | `QueryPartial<T>()` | Only maps existing columns, ignores unmatched properties |
 
 ## Parameter Binding
@@ -150,7 +150,7 @@ connection.Query<Product>(
 
 | Error | Exception |
 |-------|-----------|
-| Missing column (strict mode) | `InvalidOperationException` |
+| Property with no column, or column with no property (strict mode) | `InvalidOperationException` |
 | Parameter count mismatch | `ArgumentException` |
 | No elements (First/Single) | `InvalidOperationException` |
 | Multiple elements (Single) | `InvalidOperationException` |
