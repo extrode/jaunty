@@ -1,10 +1,12 @@
-
+﻿
 using System.Data;
 
 using Jaunty.Attributes;
 using Jaunty.Interceptors;
 using Jaunty.Internals;
 using Jaunty.TypeHandlers;
+
+using Jaunty.Import;
 
 namespace Jaunty.Configuration;
 
@@ -35,6 +37,7 @@ public static class JauntyConfig
     private static volatile Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
     private static volatile Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
     private static volatile Func<Type, object>? _reflectionTableMetadataResolver;
+    private static volatile CopyImportFactory? _copyImportFactory;
     private static volatile Func<Type, Type, object>? _reflectionMultiMapperResolver;
     private static volatile Func<Type[], IDataReader, Action<object, IDataRecord>[]>? _reflectionMultiMapperResolverN;
     private static volatile InterceptorPipeline? _interceptorPipeline;
@@ -176,6 +179,29 @@ public static class JauntyConfig
     {
         get => _reflectionTableMetadataResolver;
         set { _reflectionTableMetadataResolver = value; ConfigurationGeneration.Invalidate(); }
+    }
+
+    /// <summary>
+    /// Optional client-side bulk-copy provider, used by CSV import for the streaming
+    /// <c>COPY ... FROM STDIN</c> path.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Core declares no dependency on a database driver, so it cannot call a provider's copy API
+    /// directly. Until this hook it called PostgreSQL's by reflection - five
+    /// <c>GetType().GetMethod(...)</c> probes that all returned null under trimming, one of which
+    /// then committed a partially written import instead of aborting it.
+    /// </para>
+    /// <para>
+    /// Install <c>Extrode.Jaunty.Extensions.Npgsql</c> and call <c>JauntyNpgsql.Use()</c> for
+    /// PostgreSQL, or assign your own <see cref="CopyImportFactory"/> for another driver. Leave it
+    /// unset and CSV import uses the server-side path, where the database engine opens the file.
+    /// </para>
+    /// </remarks>
+    public static CopyImportFactory? CopyImportFactory
+    {
+        get => _copyImportFactory;
+        set { _copyImportFactory = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -402,6 +428,7 @@ public static class JauntyConfig
         _reflectionUpdateBinderResolver = null;
         _reflectionDeleteBinderResolver = null;
         ReflectionTableMetadataResolver = null;
+        CopyImportFactory = null;
         ReflectionMultiMapperResolver = null;
         ReflectionMultiMapperResolverN = null;
         lock (InterceptorSync)
