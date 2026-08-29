@@ -1,6 +1,9 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Text;
+
+using Jaunty.Configuration;
+using Jaunty.Import;
 
 namespace Jaunty.Tests.Integration.Import;
 
@@ -9,20 +12,33 @@ namespace Jaunty.Tests.Integration.Import;
 /// <para>
 /// The path is reached by dialect - <c>SqlDialectFactory</c> resolves by connection type
 /// <em>name</em> - and streams the file through whatever <c>BeginTextImport(string)</c> returns,
-/// found by reflection. A type named <c>NpgsqlConnection</c> exposing that method therefore
-/// exercises the real code with no server: the assertions here are about what Jaunty writes to the
-/// copy stream and what it does to that stream when the read fails, both of which are Jaunty's
-/// alone.
+/// obtained from <see cref="JauntyConfig.CopyImportFactory"/>. A type named
+/// <c>NpgsqlConnection</c> plus a factory returning the recording writer below therefore exercises
+/// the real code with no server: the assertions here are about what Jaunty writes to the copy
+/// stream and what it does to that stream when the read fails, both of which are Jaunty's alone.
+/// </para>
+/// <para>
+/// Until the AOT reflection audit the writer was found with <c>connection.GetType().GetMethod</c>,
+/// and these same tests passed because the test host is never trimmed. The factory is the
+/// replacement, so the fake registers one rather than merely exposing a method by name.
 /// </para>
 /// </summary>
+[Collection("Copy Import Provider")]
 public class CsvImportPostgreSqlStdinTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), $"jaunty_pg_stdin_{Guid.NewGuid():N}");
+    private readonly CopyImportFactory? _previousFactory = JauntyConfig.CopyImportFactory;
 
-    public CsvImportPostgreSqlStdinTests() => Directory.CreateDirectory(_dir);
+    public CsvImportPostgreSqlStdinTests()
+    {
+        Directory.CreateDirectory(_dir);
+        JauntyConfig.CopyImportFactory = static (connection, copyCommand) =>
+            connection is NpgsqlConnection fake ? fake.OpenCopy(copyCommand) : null;
+    }
 
     public void Dispose()
     {
+        JauntyConfig.CopyImportFactory = _previousFactory;
         try { Directory.Delete(_dir, true); } catch { }
         GC.SuppressFinalize(this);
     }
@@ -173,19 +189,19 @@ public class CsvImportPostgreSqlStdinTests : IDisposable
     }
 
     /// <summary>
-    /// Named for the type <c>SqlDialectFactory</c> resolves PostgreSQL by, and exposing the
-    /// <c>BeginTextImport(string)</c> that <c>ImportPostgreSql</c> probes for.
+    /// Named for the type <c>SqlDialectFactory</c> resolves PostgreSQL by, and handing out the
+    /// copy writer that the registered <see cref="CopyImportFactory"/> returns.
     /// </summary>
     private sealed class NpgsqlConnection : DbConnection
     {
         public CopyWriter? LastWriter { get; private set; }
         public bool CancelThrows { get; set; }
 
-        public TextWriter BeginTextImport(string copyCommand)
+        public ICopyImportWriter OpenCopy(string copyCommand)
         {
             CopyCommand = copyCommand;
             LastWriter = new CopyWriter(CancelThrows);
-            return LastWriter;
+            return new FakeCopyImportWriter(LastWriter);
         }
 
         public string? CopyCommand { get; private set; }
@@ -208,6 +224,28 @@ public class CsvImportPostgreSqlStdinTests : IDisposable
 
         protected override DbCommand CreateDbCommand()
             => throw new NotSupportedException("the STDIN path must not fall through to server-side COPY FROM");
+    }
+
+    /// <summary>
+    /// The <see cref="ICopyImportWriter"/> Jaunty sees, over the recording writer below.
+    /// </summary>
+    private sealed class FakeCopyImportWriter : ICopyImportWriter
+    {
+        private readonly CopyWriter _writer;
+
+        public FakeCopyImportWriter(CopyWriter writer) => _writer = writer;
+
+        public TextWriter Writer => _writer;
+
+        public void Cancel() => _writer.Cancel();
+
+        public ValueTask CancelAsync()
+        {
+            _writer.Cancel();
+            return default;
+        }
+
+        public void Dispose() => _writer.Dispose();
     }
 
     /// <summary>

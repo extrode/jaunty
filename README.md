@@ -684,13 +684,17 @@ Verified 2026-08-29 by publishing the scaffolding CLI on both legs:
 | `net8.0` win-x64 (control) | produced, runs | 36.98 MB |
 | `net10.0` win-x64 | produced, `--help` exits 0 | **34.63 MB** |
 
-**No Jaunty assembly produces a trim or AOT warning.** The warnings that do appear all come from
+**No Jaunty assembly produces a trim or AOT warning.** That is accurate about build output and is
+not by itself a proof of safety: a few sites are clean because of an `UnconditionalSuppressMessage`,
+which is an assertion by the author rather than a proof by the tool. The warnings that do appear all come from
 third-party ADO.NET drivers and BCL serialization assemblies pulled in by the CLI —
 `Microsoft.Data.SqlClient`, `MySqlConnector`, `Microsoft.IdentityModel.Tokens`,
 `System.Data.Common` — none of which are referenced by Jaunty core.
 
 `scripts/Verify-NativeAOT.ps1` additionally checks that every reflection site in the shipped
-assemblies carries a reviewed `AOT-SAFE` justification: **21 sites, all justified.**
+assemblies carries a reviewed `AOT-SAFE` justification: **15 sites, all justified.**
+[`docs/02-architecture/reflection-and-trimming.md`](docs/02-architecture/reflection-and-trimming.md)
+lists every one of them with its reason and what, if anything, you have to do about it.
 
 Two projects are deliberately excluded, because AOT does not apply to them:
 

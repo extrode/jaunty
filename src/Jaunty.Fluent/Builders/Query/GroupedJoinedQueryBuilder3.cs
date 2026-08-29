@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
@@ -50,19 +51,43 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
         return this;
     }
 
-    public List<TResult> Select<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector)
+    public List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector)
         => Select(selector, default);
 
-    public List<TResult> Select<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options)
+    public List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options)
     {
         var sql = BuildSelectSql(selector);
         return ExecuteQuery<TResult>(sql, selector, options);
     }
 
-    public Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CancellationToken cancellationToken = default)
+    public Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CancellationToken cancellationToken = default)
         => SelectAsync(selector, default, cancellationToken);
 
-    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    public async Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(selector);
         return await ExecuteQueryAsync<TResult>(sql, selector, options, cancellationToken).ConfigureAwait(false);
@@ -110,12 +135,24 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
         return sb.ToString();
     }
 
-    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options)
+    private List<TResult> ExecuteQuery<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options)
         => CommandObservation.Execute(
             sql, _parent._parent.DescribeParameters(), _parent._parent.Connection, FluentCommandOptions.Describe(options),
             () => ExecuteQueryDirect(sql, selector, options));
 
-    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options)
+    private List<TResult> ExecuteQueryDirect<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
@@ -149,12 +186,24 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
         return results;
     }
 
-    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+    private async Task<List<TResult>> ExecuteQueryAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
         => await CommandObservation.ExecuteAsync(
             sql, _parent._parent.DescribeParameters(), _parent._parent.Connection, FluentCommandOptions.Describe(options),
             () => ExecuteQueryDirectAsync(sql, selector, options, cancellationToken), cancellationToken).ConfigureAwait(false);
 
-    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_parent._parent.Connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");

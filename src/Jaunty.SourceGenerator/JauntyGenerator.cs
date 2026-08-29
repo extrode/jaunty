@@ -57,8 +57,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// </remarks>
     private static readonly DiagnosticDescriptor HandWrittenMapperNotTrimSafeDescriptor = new(
         id: "JAUNTYGEN002",
-        title: "Hand-written IMapped<T> will not survive trimming",
-        messageFormat: "Type '{0}' implements IMapped<{0}> by hand, so Jaunty locates its ReadEntity by reflection and a trimmed or NativeAOT publish can remove it, failing at runtime with \"No mapper found for type '{0}'\". Add [Table] so Jaunty generates the mapper, implement IGeneratedAccessors<{0}>, or root the member with [DynamicDependency].",
+        title: "Hand-written mapper or binder members will not survive trimming",
+        messageFormat: "Type '{0}' supplies {1}, so Jaunty locates {2} by reflection and a trimmed or NativeAOT publish can remove them - a read fails at runtime with \"No mapper found for type '{0}'\", and a write silently binds nothing. Add [Table] so Jaunty generates them, implement IGeneratedAccessors<{0}>, or root {2} with [DynamicDependency].",
         category: "JauntySourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -241,7 +241,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // struct (or null), so an edit that does not change the answer is cached like everything
         // else in the pipeline.
         IncrementalValuesProvider<HandWrittenMapper?> handWrittenMappers = context.SyntaxProvider.CreateSyntaxProvider(
-            predicate: static (node, _) => node is ClassDeclarationSyntax { BaseList: not null },
+            predicate: static (node, _) => node is ClassDeclarationSyntax candidate
+                && (candidate.BaseList is not null || DeclaresConventionBinderByName(candidate)),
             transform: static (ctx, _) => FindHandWrittenMapper(ctx));
 
         context.RegisterSourceOutput(handWrittenMappers, static (spc, mapper) =>
@@ -251,7 +252,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 spc.ReportDiagnostic(Diagnostic.Create(
                     HandWrittenMapperNotTrimSafeDescriptor,
                     m.Location?.ToLocation() ?? Location.None,
-                    m.TypeName));
+                    m.TypeName,
+                    m.Supplies,
+                    m.Members));
             }
         });
 
@@ -268,13 +271,21 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// </summary>
     private readonly struct HandWrittenMapper : IEquatable<HandWrittenMapper>
     {
-        public HandWrittenMapper(string typeName, LocationInfo? location)
+        public HandWrittenMapper(string typeName, string supplies, string members, LocationInfo? location)
         {
             TypeName = typeName;
+            Supplies = supplies;
+            Members = members;
             Location = location;
         }
 
         public string TypeName { get; }
+
+        /// <summary>What the type does by hand, for the diagnostic's first clause.</summary>
+        public string Supplies { get; }
+
+        /// <summary>The member names the trimmer can remove, for the diagnostic's second clause.</summary>
+        public string Members { get; }
 
         /// <summary>
         /// AUD-R35-230. This was a Roslyn <see cref="Microsoft.CodeAnalysis.Location"/>, which roots
@@ -286,12 +297,23 @@ public partial class JauntyGenerator : IIncrementalGenerator
         public LocationInfo? Location { get; }
 
         public bool Equals(HandWrittenMapper other)
-            => TypeName == other.TypeName && Nullable.Equals(Location, other.Location);
+            => TypeName == other.TypeName
+                && Supplies == other.Supplies
+                && Members == other.Members
+                && Nullable.Equals(Location, other.Location);
 
         public override bool Equals(object? obj) => obj is HandWrittenMapper other && Equals(other);
 
         public override int GetHashCode()
-            => unchecked((TypeName?.GetHashCode() ?? 0) * 397) ^ (Location?.GetHashCode() ?? 0);
+        {
+            unchecked
+            {
+                int hash = TypeName?.GetHashCode() ?? 0;
+                hash = (hash * 397) ^ (Supplies?.GetHashCode() ?? 0);
+                hash = (hash * 397) ^ (Members?.GetHashCode() ?? 0);
+                return (hash * 397) ^ (Location?.GetHashCode() ?? 0);
+            }
+        }
     }
 
     /// <summary>
@@ -321,11 +343,96 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 && i.ContainingNamespace?.ToDisplayString() == JauntyInterfacesNamespace))
             return null;
 
-        if (!symbol.AllInterfaces.Any(static i => i.MetadataName == MappedInterfaceMetadataName
-                && i.ContainingNamespace?.ToDisplayString() == JauntyInterfacesNamespace))
+        bool hasMapped = symbol.AllInterfaces.Any(static i => i.MetadataName == MappedInterfaceMetadataName
+            && i.ContainingNamespace?.ToDisplayString() == JauntyInterfacesNamespace);
+
+        string binders = DescribeConventionBinders(symbol);
+
+        if (!hasMapped && binders.Length == 0)
             return null;
 
-        return new HandWrittenMapper(symbol.Name, LocationInfo.From(ctx.Node.GetLocation()));
+        string supplies = (hasMapped, binders.Length) switch
+        {
+            (true, 0) => $"IMapped<{symbol.Name}> by hand",
+            (false, _) => $"{binders} by convention",
+            _ => $"IMapped<{symbol.Name}> by hand and {binders} by convention",
+        };
+
+        string members = (hasMapped, binders.Length) switch
+        {
+            (true, 0) => "ReadEntity",
+            (false, _) => binders,
+            _ => $"ReadEntity and {binders}",
+        };
+
+        return new HandWrittenMapper(symbol.Name, supplies, members, LocationInfo.From(ctx.Node.GetLocation()));
+    }
+
+    /// <summary>
+    /// The three write-path members <c>WriteParameterCache.TryGetGeneratedBinder</c> looks up by
+    /// name, in the order the message should list them.
+    /// </summary>
+    private static readonly string[] ConventionBinderNames = ["BindInsert", "BindUpdate", "BindDelete"];
+
+    /// <summary>
+    /// The syntax-only half of the convention-binder check, so the predicate stays cheap: does this
+    /// class declare a method with one of the three names at all?
+    /// </summary>
+    /// <remarks>
+    /// A class supplying only convention binders need not have a base list, which is why the
+    /// predicate cannot be <c>BaseList: not null</c> alone. That gap was the reason the write path's
+    /// reflection went unwarned while the read path's did not.
+    /// </remarks>
+    private static bool DeclaresConventionBinderByName(ClassDeclarationSyntax candidate)
+    {
+        foreach (MemberDeclarationSyntax member in candidate.Members)
+        {
+            if (member is MethodDeclarationSyntax method
+                && Array.IndexOf(ConventionBinderNames, method.Identifier.ValueText) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Lists the convention binders this type declares in the shape
+    /// <c>WriteParameterCache.TryGetGeneratedBinder</c> requires - <c>public static void
+    /// Bind*(IDbCommand, T)</c> - or the empty string when it declares none.
+    /// </summary>
+    private static string DescribeConventionBinders(INamedTypeSymbol symbol)
+    {
+        string? found = null;
+
+        foreach (string name in ConventionBinderNames)
+        {
+            foreach (ISymbol member in symbol.GetMembers(name))
+            {
+                if (member is not IMethodSymbol
+                    {
+                        IsStatic: true,
+                        DeclaredAccessibility: Accessibility.Public,
+                        ReturnsVoid: true,
+                    } method)
+                {
+                    continue;
+                }
+
+                if (method.Parameters.Length != 2
+                    || method.Parameters[0].Type.ToDisplayString() != "System.Data.IDbCommand"
+                    || !SymbolEqualityComparer.Default.Equals(method.Parameters[1].Type, symbol))
+                {
+                    continue;
+                }
+
+                found = found is null ? name : found + "/" + name;
+                break;
+            }
+        }
+
+        return found ?? string.Empty;
     }
 
     /// <summary>
