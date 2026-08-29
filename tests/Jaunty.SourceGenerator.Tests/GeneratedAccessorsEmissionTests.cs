@@ -245,6 +245,116 @@ public class GeneratedAccessorsEmissionTests
         Assert.DoesNotContain(diagnostics, d => d.Id == "JAUNTYGEN002");
     }
 
+    /// <summary>
+    /// The write path has its own reflection: <c>WriteParameterCache.TryGetGeneratedBinder</c> looks
+    /// up <c>BindInsert</c>/<c>BindUpdate</c>/<c>BindDelete</c> by name. A type supplying those and
+    /// nothing else has no base list at all, so the old predicate never saw it and the write half of
+    /// the trimming problem went unwarned while the read half did not.
+    /// </summary>
+    [Fact]
+    public void AConventionBinderWithNoBaseList_ReportsJAUNTYGEN002()
+    {
+        ImmutableArray<Diagnostic> diagnostics = RunGenerator("""
+            using System.Data;
+
+            namespace AccessorProbe;
+
+            public class HandBound
+            {
+                public int Id { get; set; }
+
+                public static void BindInsert(IDbCommand command, HandBound entity) { }
+                public static void BindUpdate(IDbCommand command, HandBound entity) { }
+            }
+            """).Diagnostics;
+
+        var message = Assert.Single(diagnostics, d => d.Id == "JAUNTYGEN002").GetMessage();
+
+        Assert.Contains("HandBound", message, StringComparison.Ordinal);
+        Assert.Contains("BindInsert/BindUpdate", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("BindDelete", message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The shape has to match the one reflection looks for. An instance method, a wrong parameter
+    /// list or a foreign entity type is not what <c>TryGetGeneratedBinder</c> would find, so warning
+    /// about it would be a false positive on ordinary code that happens to share a name.
+    /// </summary>
+    [Fact]
+    public void AMethodThatOnlySharesTheName_DoesNotReportJAUNTYGEN002()
+    {
+        ImmutableArray<Diagnostic> diagnostics = RunGenerator("""
+            using System.Data;
+
+            namespace AccessorProbe;
+
+            public class NotABinder
+            {
+                public void BindInsert(IDbCommand command, NotABinder entity) { }
+                public static void BindUpdate(IDbCommand command) { }
+                public static int BindDelete(IDbCommand command, NotABinder entity) => 0;
+            }
+            """).Diagnostics;
+
+        Assert.DoesNotContain(diagnostics, d => d.Id == "JAUNTYGEN002");
+    }
+
+    /// <summary>
+    /// A <c>[Table]</c> entity gets all three binders emitted, so declaring them is the generator's
+    /// job and not a warning - the same false-positive guard the read side already had.
+    /// </summary>
+    [Fact]
+    public void AGeneratedEntityWithBinders_DoesNotReportJAUNTYGEN002()
+    {
+        ImmutableArray<Diagnostic> diagnostics = RunGenerator("""
+            using System.Data;
+            using Jaunty.Attributes;
+
+            namespace AccessorProbe;
+
+            [Table("bound")]
+            public partial class Bound
+            {
+                public int Id { get; set; }
+
+                public static void BindInsert(IDbCommand command, Bound entity) { }
+            }
+            """).Diagnostics;
+
+        Assert.DoesNotContain(diagnostics, d => d.Id == "JAUNTYGEN002");
+    }
+
+    /// <summary>
+    /// One type doing both gets one diagnostic naming both, not two diagnostics or a message that
+    /// mentions only whichever half was checked first.
+    /// </summary>
+    [Fact]
+    public void AMapperThatAlsoBinds_NamesBothInOneDiagnostic()
+    {
+        ImmutableArray<Diagnostic> diagnostics = RunGenerator("""
+            using System.Data;
+            using Jaunty.Interfaces;
+
+            namespace AccessorProbe;
+
+            public class BothHalves : IMapped<BothHalves>
+            {
+            #if NET8_0_OR_GREATER
+                public static BothHalves ReadEntity(IDataReader reader) => new BothHalves();
+            #else
+                public BothHalves ReadEntity(IDataReader reader) => new BothHalves();
+            #endif
+
+                public static void BindDelete(IDbCommand command, BothHalves entity) { }
+            }
+            """).Diagnostics;
+
+        var message = Assert.Single(diagnostics, d => d.Id == "JAUNTYGEN002").GetMessage();
+
+        Assert.Contains("ReadEntity", message, StringComparison.Ordinal);
+        Assert.Contains("BindDelete", message, StringComparison.Ordinal);
+    }
+
     // ------------------------------------------------------------------
     // Harness
     // ------------------------------------------------------------------
@@ -282,10 +392,15 @@ public class GeneratedAccessorsEmissionTests
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
             .Select(a => a.Location);
 
+        // System.Data.Common is listed rather than assumed: it is loaded by the time the whole suite
+        // has run, so an unfiltered run passed either way, but a filtered run reached these tests
+        // before anything had loaded it and IDbCommand resolved to an error type - which reads as the
+        // generator failing to match rather than the harness failing to reference.
         string[] required =
         [
             typeof(global::Jaunty.Attributes.TableAttribute).Assembly.Location,
             typeof(global::Jaunty.Interfaces.IGeneratedAccessors<>).Assembly.Location,
+            typeof(System.Data.IDbCommand).Assembly.Location,
         ];
 
         foreach (var path in loaded.Concat(required).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase))
