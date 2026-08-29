@@ -138,6 +138,12 @@ Your SELECT doesn't include a column for property X. Either:
 - Use `QueryPartial<T>()` instead
 - Add `[Ignore]` attribute to the property
 
+On a source-generated entity the same cause surfaces as whatever the provider's `GetOrdinal` throws
+for an unknown column name - `ArgumentOutOfRangeException` on SQLite, `IndexOutOfRangeException` on
+SqlClient - rather than this message. The reverse case - a column with no property - throws only
+under the reflection mapper; see
+[which mapper enforces which direction](../01-api-reference/query-partial-methods.md#which-mapper-enforces-which-direction).
+
 ### "Parameter count mismatch"
 
 You passed more/fewer parameters than your SQL contains. Check:
