@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
 
@@ -28,7 +28,11 @@ internal static class SqlParameterParser
 #if NET8_0_OR_GREATER
     private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes)
     {
-        var names = new List<string>(JauntyConfig.ParameterParsingCapacity);
+        // Deferred until the first sigil is found. Opening with a sized List cost every
+        // parameterless statement a List plus its backing array - measured at 120 bytes/call by
+        // AllocationBudgetTests - for a result that is always empty. Most CRUD SQL Jaunty
+        // generates has parameters, but every hand-written SELECT without a WHERE clause paid it.
+        List<string>? names = null;
         var i = 0;
         var len = sql.Length;
 
@@ -107,14 +111,14 @@ internal static class SqlParameterParser
             // IsSigilInsideIdentifier.
             if (c is '@' or '$' && !IsSigilInsideIdentifier(sql, i))
             {
-                i = ExtractAndAddParameterName(sql, i + 1, names);
+                i = ExtractAndAddParameterName(sql, i + 1, ref names);
                 continue;
             }
 
             i++;
         }
 
-        return [.. names];
+        return names is null ? [] : [.. names];
     }
 
     // A dollar-quote opening tag is '$' + zero-or-more identifier chars + '$' (e.g. "$$" or
@@ -196,7 +200,7 @@ internal static class SqlParameterParser
         return len;
     }
 
-    private static int ExtractAndAddParameterName(ReadOnlySpan<char> sql, int start, List<string> names)
+    private static int ExtractAndAddParameterName(ReadOnlySpan<char> sql, int start, ref List<string>? names)
     {
         int i = start;
         int len = sql.Length;
@@ -206,6 +210,7 @@ internal static class SqlParameterParser
 
         if (i > start)
         {
+            names ??= new List<string>(JauntyConfig.ParameterParsingCapacity);
             names.Add(sql.Slice(start, i - start).ToString());
         }
 
@@ -215,7 +220,7 @@ internal static class SqlParameterParser
 
     private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes)
     {
-        var names = new List<string>(JauntyConfig.ParameterParsingCapacity);
+        List<string>? names = null;
         var i = 0;
         var len = sql.Length;
 
@@ -280,14 +285,14 @@ internal static class SqlParameterParser
 
             if (c is '@' or '$' && !IsSigilInsideIdentifier(sql, i))
             {
-                i = ExtractAndAddParameterNameClassic(sql, i + 1, len, names);
+                i = ExtractAndAddParameterNameClassic(sql, i + 1, len, ref names);
                 continue;
             }
 
             i++;
         }
 
-        return [.. names];
+        return names is null ? [] : [.. names];
     }
 
     private static int TrySkipDollarQuotedClassic(string sql, int dollarPos, int len)
@@ -358,7 +363,7 @@ internal static class SqlParameterParser
         return len;
     }
 
-    private static int ExtractAndAddParameterNameClassic(string sql, int start, int len, List<string> names)
+    private static int ExtractAndAddParameterNameClassic(string sql, int start, int len, ref List<string>? names)
     {
         var i = start;
         while (i < len && IsParameterChar(sql[i]))
@@ -366,6 +371,7 @@ internal static class SqlParameterParser
 
         if (i > start)
         {
+            names ??= new List<string>(JauntyConfig.ParameterParsingCapacity);
             names.Add(sql.Substring(start, i - start));
         }
 
