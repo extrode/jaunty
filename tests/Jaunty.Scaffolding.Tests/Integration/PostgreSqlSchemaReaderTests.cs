@@ -1,4 +1,4 @@
-using Npgsql;
+﻿using Npgsql;
 
 using Jaunty.Scaffolding.Abstractions;
 using Jaunty.Scaffolding.Providers.PostgreSql;
@@ -18,6 +18,14 @@ namespace Jaunty.Scaffolding.Tests.Integration;
 /// </summary>
 public class PostgreSqlSchemaReaderTests
 {
+    // Suffixed per process so the net8/net10/net472 legs of one `dotnet test` run - which execute
+    // concurrently against the same PostgreSQL instance - cannot drop and recreate each other's
+    // fixtures mid-assertion. Same fix as SqlServerSchemaReaderTests.
+    private static readonly string Products = $"scaffold_test_products_{Environment.ProcessId}";
+    private static readonly string Orders = $"scaffold_test_orders_{Environment.ProcessId}";
+    private static readonly string OrderItems = $"scaffold_test_order_items_{Environment.ProcessId}";
+    private static readonly string Shipments = $"scaffold_test_shipments_{Environment.ProcessId}";
+
     private static NpgsqlConnection OpenOrSkip()
     {
         if (!TestConfiguration.HasPostgreSql)
@@ -41,18 +49,18 @@ public class PostgreSqlSchemaReaderTests
     private static void CreateProductsAndOrders(NpgsqlConnection conn)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            DROP TABLE IF EXISTS scaffold_test_orders;
-            DROP TABLE IF EXISTS scaffold_test_products;
-            CREATE TABLE scaffold_test_products (
+        cmd.CommandText = $"""
+            DROP TABLE IF EXISTS {Orders};
+            DROP TABLE IF EXISTS {Products};
+            CREATE TABLE {Products} (
                 product_id SERIAL PRIMARY KEY,
                 product_name TEXT NOT NULL,
                 unit_price NUMERIC(10,2) NULL,
                 full_label TEXT GENERATED ALWAYS AS (product_name || '!') STORED
             );
-            CREATE TABLE scaffold_test_orders (
+            CREATE TABLE {Orders} (
                 order_id SERIAL PRIMARY KEY,
-                product_id INT NOT NULL REFERENCES scaffold_test_products(product_id)
+                product_id INT NOT NULL REFERENCES {Products}(product_id)
             );
             """;
         cmd.ExecuteNonQuery();
@@ -61,10 +69,10 @@ public class PostgreSqlSchemaReaderTests
     private static void CreateCompositeKeyTable(NpgsqlConnection conn)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            DROP TABLE IF EXISTS scaffold_test_shipments;
-            DROP TABLE IF EXISTS scaffold_test_order_items;
-            CREATE TABLE scaffold_test_order_items (
+        cmd.CommandText = $"""
+            DROP TABLE IF EXISTS {Shipments};
+            DROP TABLE IF EXISTS {OrderItems};
+            CREATE TABLE {OrderItems} (
                 order_id INT NOT NULL,
                 line_number INT NOT NULL,
                 quantity INT NOT NULL,
@@ -81,10 +89,10 @@ public class PostgreSqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
-            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
 
         var table = Assert.Single(schema.Tables);
-        Assert.Equal("scaffold_test_products", table.TableName);
+        Assert.Equal(Products, table.TableName);
         Assert.Equal("public", table.SchemaName);
         Assert.Equal(4, table.Columns.Count);
         Assert.Contains(table.Columns, c => c.ColumnName == "product_name" && c.DataType == "text");
@@ -97,7 +105,7 @@ public class PostgreSqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
-            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
 
         var table = schema.Tables.Single();
         var idColumn = table.Columns.Single(c => c.ColumnName == "product_id");
@@ -115,7 +123,7 @@ public class PostgreSqlSchemaReaderTests
         CreateCompositeKeyTable(conn);
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
-            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_order_items"] });
+            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = [OrderItems] });
 
         var table = schema.Tables.Single();
         Assert.NotNull(table.PrimaryKey);
@@ -130,7 +138,7 @@ public class PostgreSqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
-            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
 
         var table = schema.Tables.Single();
         var computed = table.Columns.Single(c => c.ColumnName == "full_label");
@@ -148,9 +156,9 @@ public class PostgreSqlSchemaReaderTests
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
             TestConfiguration.PostgreSqlConnectionString,
-            new SchemaReaderOptions { IncludeTables = ["scaffold_test_products", "scaffold_test_orders"] });
+            new SchemaReaderOptions { IncludeTables = [Products, Orders] });
 
-        Assert.Equal(2, schema.Tables.Count(t => t.TableName is "scaffold_test_products" or "scaffold_test_orders"));
+        Assert.Equal(2, schema.Tables.Count(t => t.TableName == Products || t.TableName == Orders));
     }
 
     [Fact]
@@ -161,13 +169,13 @@ public class PostgreSqlSchemaReaderTests
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
             TestConfiguration.PostgreSqlConnectionString,
-            new SchemaReaderOptions { IncludeTables = ["scaffold_test_orders"], IncludeForeignKeys = true });
+            new SchemaReaderOptions { IncludeTables = [Orders], IncludeForeignKeys = true });
 
-        var ordersTable = schema.Tables.Single(t => t.TableName == "scaffold_test_orders");
+        var ordersTable = schema.Tables.Single(t => t.TableName == Orders);
         var fk = Assert.Single(ordersTable.ForeignKeys);
 
         Assert.Equal("product_id", fk.ForeignKeyColumn);
-        Assert.Equal("scaffold_test_products", fk.ReferencedTable);
+        Assert.Equal(Products, fk.ReferencedTable);
         Assert.Equal("product_id", fk.ReferencedColumn);
     }
 
@@ -178,14 +186,14 @@ public class PostgreSqlSchemaReaderTests
         CreateCompositeKeyTable(conn);
         using (var cmd = conn.CreateCommand())
         {
-            cmd.CommandText = """
-                DROP TABLE IF EXISTS scaffold_test_shipments;
-                CREATE TABLE scaffold_test_shipments (
+            cmd.CommandText = $"""
+                DROP TABLE IF EXISTS {Shipments};
+                CREATE TABLE {Shipments} (
                     shipment_id SERIAL PRIMARY KEY,
                     order_id INT NOT NULL,
                     line_number INT NOT NULL,
                     FOREIGN KEY (order_id, line_number)
-                        REFERENCES scaffold_test_order_items (order_id, line_number)
+                        REFERENCES {OrderItems} (order_id, line_number)
                 );
                 """;
             cmd.ExecuteNonQuery();
@@ -193,15 +201,15 @@ public class PostgreSqlSchemaReaderTests
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
             TestConfiguration.PostgreSqlConnectionString,
-            new SchemaReaderOptions { IncludeTables = ["scaffold_test_shipments"], IncludeForeignKeys = true });
+            new SchemaReaderOptions { IncludeTables = [Shipments], IncludeForeignKeys = true });
 
-        var table = schema.Tables.Single(t => t.TableName == "scaffold_test_shipments");
+        var table = schema.Tables.Single(t => t.TableName == Shipments);
         Assert.Equal(2, table.ForeignKeys.Count);
         Assert.Contains(table.ForeignKeys, fk =>
             fk.ForeignKeyColumn == "order_id" && fk.ReferencedColumn == "order_id");
         Assert.Contains(table.ForeignKeys, fk =>
             fk.ForeignKeyColumn == "line_number" && fk.ReferencedColumn == "line_number");
-        Assert.All(table.ForeignKeys, fk => Assert.Equal("scaffold_test_order_items", fk.ReferencedTable));
+        Assert.All(table.ForeignKeys, fk => Assert.Equal(OrderItems, fk.ReferencedTable));
     }
 
     [Fact]
@@ -212,9 +220,9 @@ public class PostgreSqlSchemaReaderTests
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
             TestConfiguration.PostgreSqlConnectionString,
-            new SchemaReaderOptions { IncludeTables = ["scaffold_test_orders"], IncludeForeignKeys = false });
+            new SchemaReaderOptions { IncludeTables = [Orders], IncludeForeignKeys = false });
 
-        var ordersTable = schema.Tables.Single(t => t.TableName == "scaffold_test_orders");
+        var ordersTable = schema.Tables.Single(t => t.TableName == Orders);
         Assert.Empty(ordersTable.ForeignKeys);
     }
 
@@ -226,7 +234,7 @@ public class PostgreSqlSchemaReaderTests
 
         var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
             TestConfiguration.PostgreSqlConnectionString,
-            new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"], IncludeSchemas = ["nonexistent_schema"] });
+            new SchemaReaderOptions { IncludeTables = [Products], IncludeSchemas = ["nonexistent_schema"] });
 
         Assert.Empty(schema.Tables);
     }
