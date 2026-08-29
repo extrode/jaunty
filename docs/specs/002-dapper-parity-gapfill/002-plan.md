@@ -2,7 +2,7 @@
 
 **Branch**: `002-dapper-parity-gapfill`
 **Date**: 2026-07-03
-**Spec**: [spec.md](spec.md)
+**Spec**: [002-spec.md](002-spec.md)
 **Input**: `/specs/002-dapper-parity-gapfill/spec.md`
 
 ---

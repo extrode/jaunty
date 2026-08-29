@@ -81,8 +81,9 @@ Release documentation and task lists:
 
 - **[06-releases/](06-releases/README.md)**
   - [Release Runbook](06-releases/RELEASE-RUNBOOK.md) - Step-by-step release process
-  - [Production Readiness Tasklist](06-releases/tasklists/production-readiness-tasklist.md)
-  - [Commercial Tasklist](06-releases/tasklists/commercial-tasklist.md)
+  - [Pricing](06-releases/pricing.md) - The commercial model
+  - [Production Readiness Tasklist](06-releases/tasklists/PRODUCTION-READINESS-TASKLIST.md)
+  - [Commercial Tasklist](06-releases/tasklists/COMMERCIAL-TASKLIST.md)
   - [Test Reorganization Plan](06-releases/tasklists/jaunty-reorganize-tests.md)
 
 ### 7. Design
@@ -93,6 +94,18 @@ Visual design source for the Jaunty docs site:
   - [`Jaunty Docs App.dc.html`](07-design/Jaunty%20Docs%20App.dc.html) - Primary design (authoritative layout target)
   - [`Jaunty Docs.dc.html`](07-design/Jaunty%20Docs.dc.html) - Secondary design reference
   - [`support.js`](07-design/support.js) - Design-tool runtime (view `.dc.html` files in browser)
+
+### 8. Learn
+
+Hands-on guides for people writing Jaunty code for the first time, or porting to it:
+
+- **[08-learn/](08-learn/README.md)** - Your first hour with Jaunty, a runnable walkthrough
+  - [Exercises](08-learn/exercises.md)
+  - [Migrating to Jaunty](08-learn/migrating/README.md) - from [Dapper](08-learn/migrating/from-dapper.md) or [EF Core](08-learn/migrating/from-ef-core.md), and the [strict-mapping rule](08-learn/migrating/strict-mapping.md) to read first
+
+### Decisions
+
+Dated architecture and commercial decision records: **[decisions/](decisions/)**
 
 ---
 
