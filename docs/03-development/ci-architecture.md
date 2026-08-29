@@ -176,7 +176,6 @@ suite must be added to that filter by hand.**
 | Item | Owner action | Blocks |
 |---|---|---|
 | `gh variable delete CI_RUNNER --repo extrode/jaunty` | one command; workflows already fall back to `ubuntu-latest` | **the public flip** — self-hosted runner + public repo is arbitrary fork-PR execution |
-| Schedule the the audit host nightly (launchd, 02:00) | needs a login shell on the audit host; check `pmset` first | the audit running unattended |
 | First real Blacksmith mutation run | `gh workflow run nightly.yml` | replacing the extrapolated 70-90 min estimate with an observed duration and cost |
 | `ci.yml` least-privilege review | done — `contents: read` is in place | — |
 
