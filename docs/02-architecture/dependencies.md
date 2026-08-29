@@ -139,6 +139,32 @@ never pulls one in transitively.
 
 ---
 
+## NativeAOT
+
+Fewer dependencies is directly an AOT win: a package you do not reference cannot produce a trim
+warning. Verified after the split, 2026-08-29:
+
+| Check | Result |
+|---|---|
+| `scripts/Verify-NativeAOT.ps1` | PASS — 21 reflection sites, all carrying a reviewed `AOT-SAFE` justification |
+| NativeAOT publish, `net8.0` win-x64 (control) | binary produced, 36.98 MB |
+| NativeAOT publish, `net10.0` win-x64 | binary produced and runs, 34.63 MB |
+| Trim/AOT warnings from any **Jaunty** assembly | **none** |
+
+Every `IL2104`/`IL3053` warning in that publish names a third-party driver or a BCL serialization
+assembly reached through `Jaunty.Scaffolding.Cli` — `Microsoft.Data.SqlClient`, `MySqlConnector`,
+`Microsoft.IdentityModel.Tokens`, `System.Data.Common`, `System.Private.Xml`. **None of these is
+referenced by Jaunty core**, so they cannot reach a consumer who does not install the CLI tool.
+
+`IsTrimmable` and `IsAotCompatible` are set for every `net8.0`+ target in
+`src/Directory.Build.props`, and `TreatWarningsAsErrors` is on, so an AOT regression in Jaunty's own
+code fails the build rather than being reported.
+
+`Jaunty.Extensions.Reflection` is excluded from the AOT scan by design — reflection is its purpose,
+and referencing it is how a consumer opts out of the guarantee.
+
+---
+
 ## How the contract is enforced
 
 Adding a `PackageReference` to a csproj succeeds silently; the only symptom is a dependency group in
