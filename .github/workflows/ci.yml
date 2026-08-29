@@ -101,6 +101,10 @@ jobs:
       - name: Test - Core (SQLite + SQL Server)
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          # The mssql service container is provisioned above, so an unreachable SQL Server here is
+          # a broken job rather than a machine without the engine. Without this the dialect rows
+          # would skip and the leg would report green having tested SQLite only.
+          JAUNTY_REQUIRE_SQLSERVER: "1"
         run: >-
           dotnet test tests/Jaunty.Tests
           -c Release
@@ -198,6 +202,10 @@ jobs:
       - name: Test - Core net10 (SQLite + SQL Server)
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          # The mssql service container is provisioned above, so an unreachable SQL Server here is
+          # a broken job rather than a machine without the engine. Without this the dialect rows
+          # would skip and the leg would report green having tested SQLite only.
+          JAUNTY_REQUIRE_SQLSERVER: "1"
         run: >-
           dotnet test tests/Jaunty.Tests
           -c Release

@@ -70,8 +70,12 @@ internal static class DialectReachability
     /// <summary>The environment variable that makes an unreachable PostgreSQL a failure.</summary>
     public const string RequirePostgreSql = "JAUNTY_REQUIRE_POSTGRESQL";
 
-    /// <summary>The environment variable that makes an unreachable MariaDB/MySQL a failure.</summary>
-    public const string RequireMariaDb = "JAUNTY_REQUIRE_MARIADB";
+    /// <summary>
+    /// The environment variable that makes an unreachable MariaDB/MySQL a failure. One name for
+    /// both, because <see cref="TestConfiguration"/> already aliases the two connection strings
+    /// onto each other in either direction - a box with one configured has both.
+    /// </summary>
+    public const string RequireMySql = "JAUNTY_REQUIRE_MYSQL";
 
     public static bool IsSqlServerReachable => _sqlServer.Value.Succeeded;
 
