@@ -1,4 +1,4 @@
-# Project Structure
+﻿# Project Structure
 
 This document explains the Jaunty codebase organization.
 
@@ -49,7 +49,7 @@ Jaunty/
 
 |-----------|---------|----------|
 | `Attributes/` | `[Table]`, `[Column]`, `[Ignore]`, `[Key]`, `[DatabaseGenerated]` | yes |
-| `Configuration/` | `JauntyConfig`, `NamingConvention` helpers | yes |
+| `Configuration/` | `JauntyConfig` resolver delegates, type handlers, enum storage | yes |
 | `Core/` | `CommandOptions<T>`, `GridReader` | yes |
 | `Interfaces/` | `IMapped<T>`, `IEntity<T>` | — |
 | `Read/` | Query* methods | yes |
