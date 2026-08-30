@@ -1,8 +1,16 @@
-# Configuration
+﻿# Configuration
 
 ## Overview
 
-Jaunty provides global configuration options through the `JauntyConfig` class to customize naming conventions and other behaviors. Configuration should be set at application startup before any queries are executed, as metadata is cached statically and won't pick up changes afterward.
+Jaunty provides global configuration options through the `JauntyConfig` class to customize naming
+conventions and other behaviors. Set them at application startup, before any queries run.
+
+**That is advice, not a constraint.** Metadata used to be cached in a static constructor and
+compiled once per type per process, so a resolver registered after a type had been read was
+silently ignored for the life of the process. It no longer is: every setter on `JauntyConfig`
+bumps a configuration generation, and metadata compiled under an older generation — along with
+the per-reader setter caches built from it — is retired and rebuilt on next use. Startup is
+still the right place, because changing configuration mid-flight throws away compiled work.
 
 ## JauntyConfig Class
 
@@ -41,7 +49,7 @@ public static Func<Type, string>? TableNameResolver { get; set; }
 JauntyConfig.TableNameResolver = type => $"{type.Name}s";
 
 // Use snake_case table names
-JauntyConfig.TableNameResolver = type => NamingConvention.ToSnakeCasePluralTable(type.Name);
+JauntyConfig.TableNameResolver = type => ToSnakeCase(type.Name) + "s";   // your own helper
 ```
 
 ### ColumnNameResolver
@@ -56,7 +64,7 @@ public static Func<string, string>? ColumnNameResolver { get; set; }
 **Example:**
 ```csharp
 // Use snake_case column names
-JauntyConfig.ColumnNameResolver = propertyName => NamingConvention.ToSnakeCase(propertyName);
+JauntyConfig.ColumnNameResolver = propertyName => ToSnakeCase(propertyName);   // your own helper
 
 // Use lowercase column names
 JauntyConfig.ColumnNameResolver = propertyName => propertyName.ToLower();
@@ -146,82 +154,52 @@ public static bool RemoveTypeHandler<T>()
 JauntyConfig.RemoveTypeHandler<Guid>();
 ```
 
-## NamingConvention Class
+## Naming conventions
 
-The `NamingConvention` class provides built-in naming convention helpers:
+> **This page previously documented a `NamingConvention` class with `ToSnakeCase`, `ToLowerCase`,
+> `Pluralize`, `SnakeCasePluralTable` and `SnakeCaseColumn`. No such class has ever existed in
+> `src/`.** The section was written from an intended design and never checked against the code.
+> Corrected 2026-08-31.
 
-### ToSnakeCase(string input)
+Jaunty ships no naming-convention helpers. You supply the conversion yourself through the three
+resolver delegates on `JauntyConfig`:
 
-Converts a PascalCase or camelCase string to snake_case.
+| Delegate | Signature | Applied to |
+|---|---|---|
+| `SchemaNameResolver` | `Func<Type, string>?` | the schema name |
+| `TableNameResolver` | `Func<Type, string>?` | the table name |
+| `ColumnNameResolver` | `Func<string, string>?` | each member name |
 
-**Method:**
+All three are nullable and default to `null`, which means the .NET name is used unchanged.
+
+Nothing stops you writing the conversions; there is deliberately no inflector in the box, because
+pluralisation is language- and schema-specific and a wrong guess is worse than no guess.
+
 ```csharp
-public static string ToSnakeCase(string input)
+static string ToSnakeCase(string name)
+{
+    var sb = new StringBuilder(name.Length + 8);
+    for (int i = 0; i < name.Length; i++)
+    {
+        char c = name[i];
+        if (char.IsUpper(c))
+        {
+            if (i > 0) sb.Append('_');
+            sb.Append(char.ToLowerInvariant(c));
+        }
+        else sb.Append(c);
+    }
+    return sb.ToString();
+}
+
+JauntyConfig.ColumnNameResolver = ToSnakeCase;
+JauntyConfig.TableNameResolver  = type => ToSnakeCase(type.Name) + "s";   // your pluralisation
 ```
 
-**Example:**
-```csharp
-var result = NamingConvention.ToSnakeCase("ProductName"); // "product_name"
-var result2 = NamingConvention.ToSnakeCase("categoryId"); // "category_id"
-```
-
-### ToLowerCase(string input)
-
-Converts a string to lowercase.
-
-**Method:**
-```csharp
-public static string ToLowerCase(string input)
-```
-
-**Example:**
-```csharp
-var result = NamingConvention.ToLowerCase("ProductName"); // "productname"
-```
-
-### Pluralize(string singular)
-
-Converts a singular noun to its plural form.
-
-**Method:**
-```csharp
-public static string Pluralize(string singular)
-```
-
-**Example:**
-```csharp
-var result = NamingConvention.Pluralize("Category"); // "Categories"
-var result2 = NamingConvention.Pluralize("Product"); // "Products"
-```
-
-### SnakeCasePluralTable(string typeName)
-
-Converts a type name to snake_case plural table name.
-
-**Method:**
-```csharp
-public static string SnakeCasePluralTable(string typeName)
-```
-
-**Example:**
-```csharp
-var result = NamingConvention.SnakeCasePluralTable("Product"); // "products"
-var result2 = NamingConvention.SnakeCasePluralTable("Category"); // "categories"
-```
-
-### SnakeCaseColumn(string propertyName)
-
-Converts a property name to snake_case column name.
-
-**Method:**
-```csharp
-public static string SnakeCaseColumn(string propertyName)
-```
-
-**Example:**
-```csharp
-var result = NamingConvention.SnakeCaseColumn("ProductName"); // "product_name"
-```
+Setting any resolver bumps a configuration generation, so metadata already compiled for a type is
+retired and rebuilt rather than going stale. Startup is still the sensible place to configure
+them, because a mid-flight change discards compiled mappers, but it is not a correctness
+requirement.
 
 ## CommandOptions Class
 
@@ -356,7 +334,7 @@ Jaunty uses the following priority order for determining table/column names:
 **Example:**
 ```csharp
 // If you have this configuration:
-JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
 
 // And this entity:
 public class Product
@@ -378,8 +356,8 @@ Configuration should be set once at application startup before any queries are e
 public void ConfigureServices(IServiceCollection services)
 {
     // Set Jaunty configuration at startup
-    JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
-    JauntyConfig.TableNameResolver = NamingConvention.SnakeCasePluralTable;
+    JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+    JauntyConfig.TableNameResolver = type => ToSnakeCase(type.Name) + "s";
     
     // Register your database connection
     services.AddScoped<IDbConnection>(provider => 
@@ -413,8 +391,8 @@ Since configuration is global and static, ensure thread safety when setting conf
 // Set configuration before any threads start using Jaunty
 public static void InitializeJaunty()
 {
-    JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
-    JauntyConfig.TableNameResolver = NamingConvention.Pluralize;
+    JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+    JauntyConfig.TableNameResolver = type => type.Name + "s";
 }
 ```
 
