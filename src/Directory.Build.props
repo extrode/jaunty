@@ -18,9 +18,14 @@
   <PropertyGroup>
     <PackageTags>orm;micro-orm;sql;database;dapper-alternative;aot;nativeaot;source-generator</PackageTags>
     <PackageProjectUrl>https://extrode.com/jaunty</PackageProjectUrl>
-    <!-- Binaries ship under the ISL-EULA (grant conditioned on an Order); the
-         repository's LICENSE.md (ISL-R) covers source inspection only. -->
-    <PackageLicenseFile>LICENSE-EULA.md</PackageLicenseFile>
+    <!-- ISL-R governs the binaries as well as the source, as of the 2026-08-30 model
+         decision: use is royalty-free and unconditioned, and what is sold is support.
+         The previous value here was LICENSE-EULA.md, whose grant was conditioned on an
+         Order - retired, and packing it would have shown every consumer a licence the
+         project no longer operates under. ISL-R has no SPDX identifier, so this is a
+         PackageLicenseFile and not a PackageLicenseExpression.
+         Acceptance stays required: sections 4 and 5 are conditions a consumer must see. -->
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
@@ -40,10 +45,14 @@
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
-  <!-- Pack README.md and the EULA into NuGet packages -->
+  <!-- Pack README.md, the licence and the redistribution exception into NuGet packages.
+       The exception is packed alongside ISL-R because without it the no-distribution
+       clause would make shipping an application that references Jaunty impossible - a
+       consumer reading only LICENSE.md would reach the wrong conclusion. -->
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
-    <None Include="$(MSBuildThisFileDirectory)..\LICENSE-EULA.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE-DISTRIBUTION-EXCEPTION.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\docs\_assets\icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
