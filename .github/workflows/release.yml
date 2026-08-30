@@ -13,6 +13,14 @@ jobs:
   release:
     name: Pack & Publish
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # Restated in full because a job-level block replaces the top-level one rather
+    # than adding to it. id-token: write only lets the job REQUEST an OIDC token;
+    # nuget.org still decides whether to honour it by matching the token against the
+    # trusted-publishing policy, so no publishing right is granted here.
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -70,9 +78,9 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
           -o packout
 
-      # Private distribution: GitHub Packages, authenticated with the built-in
-      # GITHUB_TOKEN (no external secret). Customers consume with read-only
-      # fine-grained PATs - see docs/06-releases/COMMERCIAL-DISTRIBUTION-FLOW.md.
+      # GitHub Packages, authenticated with the built-in GITHUB_TOKEN (no external
+      # secret). Kept after the NuGet.org decision of 2026-08-30 so existing
+      # consumers of the feed are not broken by the move.
       # Note: GitHub Packages has no snupkg symbol server; symbol packages are
       # attached to the GitHub Release below instead.
       - name: Push to GitHub Packages
@@ -81,6 +89,45 @@ jobs:
           --api-key "${{ secrets.GITHUB_TOKEN }}"
           --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
           --skip-duplicate
+
+      # NuGet.org is the primary feed as of the 2026-08-30 decision, and it is what
+      # makes the README's install line true without a feed step.
+      #
+      # Trusted publishing (OIDC), not a stored key. There is no NUGET_API_KEY secret
+      # to rotate or leak: NuGet/login exchanges the workflow's short-lived OIDC token
+      # for an API key valid one hour. This is also the only durable route - keys
+      # created after 2026-08-17 expire after 30 days, and older ones die 2026-11-01.
+      #
+      # Gated on a variable rather than run unconditionally, so a release cut before
+      # the policy exists still ships to GitHub Packages instead of failing at the last
+      # step with the packages published to one feed and not the other.
+      #
+      # The policy on nuget.org must name workflow file `release.yml` with no
+      # environment, because this job declares none. Setting `environment:` here
+      # without adding it to the policy - or the reverse - fails the token exchange.
+      - name: NuGet.org login (OIDC, short-lived key)
+        id: nuget-login
+        if: vars.PUBLISH_TO_NUGET_ORG == 'true'
+        uses: NuGet/login@v1
+        with:
+          # The nuget.org profile name, not an email address.
+          user: ${{ vars.NUGET_USER }}
+
+      # --skip-duplicate matters more here than on GitHub Packages: nuget.org rejects
+      # a re-push of an existing version, so re-running a partially failed release
+      # would otherwise abort on the first package that already landed.
+      - name: Push to NuGet.org
+        if: vars.PUBLISH_TO_NUGET_ORG == 'true'
+        run: >-
+          dotnet nuget push "packout/*.nupkg"
+          --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}"
+          --source "https://api.nuget.org/v3/index.json"
+          --skip-duplicate
+
+      - name: Note that NuGet.org was skipped
+        if: vars.PUBLISH_TO_NUGET_ORG != 'true'
+        run: |
+          echo "::warning title=NuGet.org push skipped::Set the PUBLISH_TO_NUGET_ORG repository variable to 'true' once the trusted-publishing policy is active. Packages went to GitHub Packages only."
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
