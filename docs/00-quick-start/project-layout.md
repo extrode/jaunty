@@ -50,7 +50,8 @@ C:\src\jaunty\
 | `tests/` | Test projects | `Jaunty.Tests/`, `Jaunty.FlatFiles.Tests/` |
 | `docs/` | Documentation source | Organized by topic (00-quick-start through 06-releases) |
 | `docs/specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
-| `work/` | The work underway | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
+| `work/` | The work underway. **Untracked** — held in a private repository, so a clone will not contain it | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
+| `audit/` | The 36-round audit record. **Untracked**, same private repository. The public summary is [`docs/05-quality/audit-record.md`](../05-quality/audit-record.md) | `roundNN/`, `findings-registry.md`, `coverage-ledger.md` |
 
 ### Development Folders
 
