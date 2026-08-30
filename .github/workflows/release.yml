@@ -4,14 +4,50 @@ on:
   push:
     tags:
       - "v*"
+  # Dispatch runs the trusted-publishing check below and nothing else. It exists
+  # because a nuget.org policy created against a PRIVATE repository is only
+  # temporarily active for 7 days: it becomes permanent after one successful
+  # NuGet/login, which binds it to immutable GitHub repository and owner IDs.
+  # Without this, the only way to arm the policy is to cut a real release.
+  workflow_dispatch:
 
 permissions:
   contents: write
   packages: write
 
 jobs:
+  # Arms the nuget.org trusted-publishing policy without publishing anything. One
+  # successful login inside the 7-day window makes the policy permanent; a package
+  # need not be pushed. Deliberately not on the self-hosted runner - this must be
+  # runnable when that machine is off, which is the situation it exists for.
+  verify-trusted-publishing:
+    name: Verify trusted publishing
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: NuGet.org login (OIDC, short-lived key)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Report
+        run: |
+          if [ -n "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" ]; then
+            echo "::notice title=Trusted publishing armed::nuget.org issued a short-lived key. The policy is now permanently active."
+          else
+            echo "::error title=No key issued::The token exchange returned nothing. Check the policy's workflow file name and that its environment is empty."
+            exit 1
+          fi
+
   release:
     name: Pack & Publish
+    # A tag push, never a dispatch: the version is derived from the ref, so a
+    # dispatch would pack a package named after a branch.
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     # Restated in full because a job-level block replaces the top-level one rather
     # than adding to it. id-token: write only lets the job REQUEST an OIDC token;
