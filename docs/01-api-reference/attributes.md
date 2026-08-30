@@ -1,4 +1,4 @@
-# Attributes
+﻿# Attributes
 
 ## Overview
 
@@ -295,7 +295,7 @@ public class ProductCategoryMapping
 
 ```csharp
 // Global configuration
-JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
 
 // Entity with attribute override
 public class Product
@@ -330,7 +330,7 @@ Use attributes for exceptions and global configuration for general conventions:
 
 ```csharp
 // Global configuration for snake_case
-JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
 
 // Specific override for this property
 public class Product

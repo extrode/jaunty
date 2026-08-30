@@ -61,10 +61,22 @@ Development guides and best practices:
 
 Documentation for Jaunty extension packages:
 
-- **[04-extensions/](04-extensions/README.md)**
-  - [Jaunty.FlatFiles](04-extensions/flatfiles/) - Flat file support
-  - [Jaunty.Extensions.Logging](02-architecture/dependencies.md) - `ILogger` and DI integration; the package that keeps core dependency-free
-  - Jaunty.Extensions.Reflection - _Coming soon_
+Nine packages ship. `Extrode.Jaunty` is the core and has no dependencies of its own; everything
+that would add one lives in a separate package, which is the whole reason the list is this long.
+
+| Package | What it adds | Docs |
+|---|---|---|
+| `Extrode.Jaunty` | The core: query, CRUD, dialects, parameter binding | [01-api-reference/](01-api-reference/README.md) |
+| `Extrode.Jaunty.Fluent` | The fluent query builder | [Fluent API](01-api-reference/fluent-api.md) |
+| `Extrode.Jaunty.FlatFiles` | CSV and flat-file sources | [flatfiles/](04-extensions/flatfiles/README.md) |
+| `Extrode.Jaunty.FlatFiles.DuckDB` | DuckDB-backed flat-file querying | [flatfiles/](04-extensions/flatfiles/README.md) |
+| `Extrode.Jaunty.Extensions.Logging` | `ILogger` and DI integration, `LoggingInterceptor`, sensitive-parameter masking | [Configuration](01-api-reference/configuration.md) |
+| `Extrode.Jaunty.Extensions.Reflection` | Reflection-based mapping and bulk copy — **shipping, not planned** | [Bulk Copy Methods](01-api-reference/bulk-copy-methods.md) |
+| `Extrode.Jaunty.Extensions.Npgsql` | PostgreSQL-specific binding without boxing | [Dependencies](02-architecture/dependencies.md) |
+| `Extrode.Jaunty.Scaffolding` | Model generation from a live schema | [Dependencies](02-architecture/dependencies.md) |
+| `Extrode.Jaunty.Scaffolding.Cli` | The scaffolding command-line tool | [Dependencies](02-architecture/dependencies.md) |
+
+- **[04-extensions/](04-extensions/README.md)** - the extension section index
 - **[Dependencies](02-architecture/dependencies.md)** - what every package pulls in, per target framework
 
 ### 5. Quality & Testing
@@ -72,8 +84,12 @@ Documentation for Jaunty extension packages:
 Quality assurance and testing documentation:
 
 - **[05-quality/](05-quality/README.md)**
+  - [Audit Record](05-quality/audit-record.md) - 36 rounds, 725 findings, and where each of the
+    eight security families is closed in `src/`
+  - [Code Coverage](05-quality/code-coverage.md)
   - [Production Readiness Report](05-quality/reports/PRODUCTION-READINESS-2026-07-02.md)
   - [Coverage Gap Inventory](05-quality/reports/COVERAGE-GAPS-2026-07-04.md)
+  - [Benchmarks](05-quality/reports/benchmarks-2026-07-29.md)
 
 ### 6. Releases & Planning
 
@@ -120,7 +136,9 @@ Dated architecture and commercial decision records: **[decisions/](decisions/)**
 # Open dist/docs-site/index.html in a browser to review
 ```
 
-**Output** is written to `dist/docs-site/`, which is committed as the published doc site.  
+**Output** is written to `dist/docs-site/`, which is **committed** as the published doc site —
+`.gitignore` has `/dist/*` then `!/dist/docs-site/`. Regenerating and not committing the result
+leaves a published site that disagrees with the markdown it came from, so the two move together.  
 **Design tokens** and implementation details are documented in [`07-design/README.md`](07-design/README.md).
 
 ---
@@ -186,7 +204,7 @@ Dated architecture and commercial decision records: **[decisions/](decisions/)**
 
 ### Adding New Documentation
 
-1. Choose the appropriate section (01-06)
+1. Choose the appropriate section (01-09)
 2. Follow naming conventions: `lowercase-with-hyphens.md`
 3. Add to the section's README.md
 4. Update this index if needed
@@ -203,5 +221,4 @@ When moving documentation:
 
 ---
 
-**Last Updated**: July 2026  
-**Maintained By**: Jaunty Contributors
+**Last updated**: 2026-08-31

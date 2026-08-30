@@ -1,4 +1,4 @@
-# Design Philosophy
+﻿# Design Philosophy
 
 Jaunty's design is guided by clear principles that prioritize performance, correctness, and developer experience.
 
@@ -174,7 +174,7 @@ We choose return types that accurately reflect the underlying database operation
 
 ```csharp
 // At application startup
-JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
 
 // First query triggers caching
 var product = connection.Query<Product>(sql);
