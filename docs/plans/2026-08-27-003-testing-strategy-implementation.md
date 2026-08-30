@@ -304,9 +304,15 @@ outright — failed all 6 cancellation variants (16 passed → 10). Non-vacuous.
 from `tmp/GetAllCore.cs.bak` and confirmed clean by `git diff src/`.
 
 Measured: 34 tests, 16 passed, 12 skipped (Postgres and MariaDB containers not running).
-The 6 SqlServer variants are unverified — the local `MSSQLSERVER` service is stopped, and
-these failed with `provider: Named Pipes Provider, error: 40`, a connection error rather than
-an assertion. They need a re-run once the service is up.
+The 6 SqlServer variants were unverified at the time — the local `MSSQLSERVER` service was
+stopped, and these failed with `provider: Named Pipes Provider, error: 40`, a connection error
+rather than an assertion.
+
+**Closed 2026-08-30.** With the service running, the same 34 tests report **22 passed, 0 failed,
+12 skipped**: the 6 SqlServer variants execute and pass, and the 12 skips are still Postgres and
+MariaDB. Cancellation now has an executing oracle on a real client/server provider, not only on
+the two in-process SQLite ones — which matters here, because the perturbation recorded above
+showed SQLite's `ReadAsync` catching the cancellation one line earlier than the guard under test.
 
 ### 5. Trim analyzer — **done, nothing changed**
 
@@ -520,10 +526,29 @@ Verified: `dotnet build tools/Jaunty.Fuzz -c Release` succeeds under `TreatWarni
 and `workflow_dispatch`; `SolutionLayoutTests` still 2/2 with the fuzz project in the solution
 (both its rules scope to `tests/` only).
 
-**Not yet satisfied:** the verification protocol below requires the harness be *proven by an actual
-run*, not a clean build. That is still outstanding, and it is the same libFuzzer-is-Linux-only
-problem jauntyq hit — see below, because the premise recorded in the original plan turned out to
-be wrong.
+**Satisfied 2026-08-30.** The verification protocol requires the harness be *proven by an actual
+run*, not a clean build. It has now had one, as the local WSL smoke the protocol allows:
+
+| Measurement | Value |
+| --- | ---: |
+| Runs | **510,636** in 61 s |
+| Executions/sec | 8,371 |
+| New units added to the corpus | 2,064 (20 seeds → 373 units) |
+| Peak RSS | 27 MB |
+| Slowest unit | < 1 s |
+| **Crashes, leaks, timeouts, OOMs** | **none** |
+
+Launched through the native driver at `~/libfuzzer-dotnet`, not `dotnet` directly, so the
+fell-back-to-replaying-args[1] failure the README warns about did not apply: 8,371 exec/s and a
+growing corpus are what a real fuzzing loop looks like, and a replay would have exited at once.
+`sharpfuzz` instrumented the published `Jaunty.dll`; `src/` was untouched.
+
+**One environment gap found, and it is local rather than a workflow defect.** `Jaunty.Fuzz`
+targets `net8.0` and the WSL box carries only 10.0.9, so the first attempt died with
+`You must install or update .NET to run this application. Framework: 'Microsoft.NETCore.App',
+version '8.0.0'`. The smoke was re-run with `DOTNET_ROLL_FORWARD=Major`. `nightly.yml` is not
+affected: its `fuzz` job runs `actions/setup-dotnet@v6` with `dotnet-version: '8.0.x'` before
+publishing. Anyone reproducing this locally needs either that env var or an 8.0 runtime.
 
 ### 3 — Fluent command-model tests: **gate said no**
 
@@ -538,6 +563,40 @@ That is a **reach** deficit in one expression visitor, not an ordering or call-s
 command model explores *sequences of calls* on a builder; it would never execute
 `ExistsExpressionVisitor` at all. The right instrument is ordinary unit tests for EXISTS expression
 translation, which is now the highest-value mutation work left in this repo.
+
+#### That reach deficit is now closed — 2026-08-30
+
+Measured rather than assumed, because Stryker cannot be re-run on this machine. Line coverage of
+`ExistsExpressionVisitor` from `scripts/coverage.ps1 -Suite Jaunty.Fluent.Tests`:
+
+| | Uncovered lines | Coverage |
+| --- | ---: | ---: |
+| Before | 39 | 73.8 % |
+| After `ExistsVisitorDispatchTests` (16 facts) | **0** | **100 %** |
+
+`bded5580` had already closed the value-emission half on 2026-08-27, after the baseline was taken;
+what remained was the **dispatcher** — the `Visit*` overrides, which only run when a node arrives
+through the base traversal rather than through `VisitBinary`'s direct call to `AnalyzeExpression`.
+
+**Half of that cluster is unreachable through any lambda, and the tests say so rather than
+pretending otherwise.** A node reaches the dispatcher only as an operand of `AndAlso`/`OrElse`/
+`Not`, so it must be bool-typed. An array construction, an object or collection initializer, an
+indexer access and a bare entity parameter never are, so no C# predicate can route one there; the
+`NotSupportedException` each of them raises is a contract, not a path. Those nodes are handed to
+`Visit` directly and labelled as pinning a contract. The reachable half — a bool column, a
+captured bool, a bool constant, the `Convert` unwrap, and the `<=` / `>=` arms of `GetOperator` —
+uses ordinary lambdas.
+
+Coverage is not a mutation score, and this does not claim the 47 mutants are killed; it claims
+every line they sit on is now executed by an asserting test, which is the precondition. RED-phase
+checked three ways: inverting `VisitMember`'s column test fails 3 of 16, replacing four defensive
+throws with a silent pass-through fails 4, and flipping `CorrelationParameterFinder`'s both-null
+early-out fails 1.
+
+An attempted fourth mutation is worth recording because it did not build: replacing the same
+column test with `if (false)` trips `CS0162 Unreachable code detected` under
+`TreatWarningsAsErrors`. That is the failure mode the allocation-budget note above warns about,
+caught by the compiler this time rather than by a stale binary quietly passing.
 
 **Caveat that must travel with this verdict:** `tests/Jaunty.Fluent.Tests/stryker-config.json`
 scopes mutation to `**/Expressions/**`. The fluent *builder* — where ordering and state logic
