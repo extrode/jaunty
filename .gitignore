@@ -373,3 +373,7 @@ tmp/
 
 # Stryker.NET mutation reports (scripts/coverage.ps1 and tests/*/stryker-config.json)
 StrykerOutput/
+
+# Internal working files, kept out of the published history.
+audit/
+work/
