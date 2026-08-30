@@ -467,19 +467,27 @@ All write methods have async counterparts.
 
 ### Stored Procedures
 
-```csharp
-// Execute stored procedure
-var results = connection.ExecuteStoredProcedure<Product>("GetProductsByCategory", 
-    new { CategoryId = 1 });
+Stored procedures take `SpParameters`, not an anonymous object. Direction has to be stated —
+that is the whole reason for the separate type — so there is no shorthand that guesses it.
 
-// With output parameters
+```csharp
+// Rows back
+var results = connection.ExecuteStoredProcedure<Product>("GetProductsByCategory",
+    new SpParameters().AddInput("CategoryId", 1));
+
+// Output parameters, no result set
 var parameters = new SpParameters()
     .AddInput("CategoryId", 1)
     .AddOutput("TotalCount", DbType.Int32);
 
-connection.ExecuteStoredProcedureWithOutput("GetProductCount", parameters);
-var count = parameters.Get<int>("TotalCount");
+connection.ExecuteStoredProcedureNonQuery("GetProductCount", parameters);
+int? count = parameters.Get<int>("TotalCount");   // Get<T> returns T?
 ```
+
+The full set: `ExecuteStoredProcedure<T>` (a `List<T>`), `ExecuteStoredProcedureFirst<T>`,
+`ExecuteStoredProcedureFirstOrDefault<T>`, `ExecuteStoredProcedureScalar<T>` and
+`ExecuteStoredProcedureNonQuery` (the affected-row count). Each has an `Async` counterpart taking
+a `CancellationToken`. `SpParameters` also carries `AddInputOutput` and `AddReturnValue`.
 
 ---
 
@@ -812,35 +820,32 @@ serviceProvider.ApplyJauntyInterceptors();
 
 ## Global Configuration
 
-Configure naming conventions once at application startup. Resolution is cached per-type for performance.
+Naming is resolved through three delegates on `JauntyConfig`. Each is nullable, and null means
+"use the .NET name unchanged" — so a type with no resolver configured maps `ProductName` to a
+`ProductName` column.
 
 ```csharp
 using Jaunty.Configuration;
 
-// In your startup/initialization code:
-JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
-JauntyConfig.TableNameResolver = NamingConvention.SnakeCasePluralTable;
+public static Func<Type, string>?   SchemaNameResolver   // type   -> schema
+public static Func<Type, string>?   TableNameResolver    // type   -> table
+public static Func<string, string>? ColumnNameResolver   // member -> column
 ```
 
-**Important:** Configure resolvers before executing any queries. Metadata is cached when a type is first used and won't pick up resolver changes afterward. This is intentional—it's faster, and configuration belongs at startup.
-
-### Built-in Conventions
+**Jaunty ships no built-in convention helpers.** There is no snake-case or pluralisation function
+to reach for; you supply the conversion, which is a few lines and keeps the core free of an
+inflector nobody agrees with:
 
 ```csharp
-NamingConvention.ToSnakeCase("ProductName")     // "product_name"
-NamingConvention.ToLowerCase("ProductName")     // "productname"
-NamingConvention.Pluralize("Category")          // "Categories"
-NamingConvention.Pluralize("Company")           // "Companies"
-NamingConvention.SnakeCasePluralTable           // Type -> "snake_case_plurals"
-NamingConvention.SnakeCaseColumn                // Property -> "snake_case"
+JauntyConfig.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
+JauntyConfig.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
 ```
 
-### Custom Resolvers
-
-```csharp
-JauntyConfig.TableNameResolver = type => $"tbl_{type.Name.ToLower()}";
-JauntyConfig.ColumnNameResolver = prop => $"col_{prop.ToLower()}";
-```
+**Resolvers may be changed after queries have run.** Setting any of them bumps a configuration
+generation, and metadata compiled under an older generation — including the per-reader setter
+caches, which would otherwise map through setters built for the old column names — is retired and
+rebuilt on next use. Startup is still the right place to configure them, for the obvious reason
+that a mid-flight change throws away work; it is no longer a correctness requirement.
 
 ---
 
@@ -1064,6 +1069,13 @@ BulkCopyConfiguration.DefaultTimeout = 30;
 | LINQ translation | No | No | Yes |
 | Change tracking | No | No | Yes |
 
+**This compares what each library ships in the box.** A "No" means the package itself does not
+provide the feature, not that it cannot be done — several of these rows are covered for Dapper by
+add-on packages such as `Dapper.Contrib` or `Z.Dapper.Plus`, and for EF Core by
+`EFCore.BulkExtensions`. Pick on the whole picture, not this table: the
+[migration guides](docs/08-learn/migrating/README.md) are more honest about the trade-offs,
+including the ones that favour the other library.
+
 ---
 
 ## Documentation
@@ -1093,4 +1105,4 @@ Support pricing: [docs/06-releases/pricing.md](docs/06-releases/pricing.md).
 
 ---
 
-Built by [Syed Beparey](https://github.com/beparey)
+Built by [Syed Beparey](https://github.com/sbeparey)
