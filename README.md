@@ -2,6 +2,13 @@
 
 **The micro-ORM that respects your SQL and your time.**
 
+**Free to use, including in commercial production** — no seat count, no order form, no expiry.
+Source-available under [ISL-R](LICENSE.md), which is not an OSI-approved open-source licence:
+you may use and read the source, but not modify or redistribute it as a library. Shipping the
+unmodified packages inside your own application is covered by the
+[Redistribution Exception](LICENSE-DISTRIBUTION-EXCEPTION.md), royalty-free and non-expiring.
+What is sold is [support](docs/06-releases/pricing.md), never the right to use the software.
+
 Jaunty is a high-performance data access library for .NET that does one thing exceptionally well: execute your SQL and map results to objects. No LINQ translation, no hidden query rewriting, no magic — the SQL that runs is the SQL you wrote.
 
 When you do want a builder, `Extrode.Jaunty.Fluent` is a separate, optional package that generates parameterized SQL from typed expressions. The core never depends on it.

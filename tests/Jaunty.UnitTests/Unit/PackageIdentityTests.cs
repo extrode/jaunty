@@ -17,6 +17,9 @@ public class PackageIdentityTests
     private const string ExpectedIdPrefix = "Extrode.Jaunty";
     private const string ExpectedOwner = "Extrode LLC";
     private const int ExpectedPackageCount = 9;
+    private const string ExpectedLicenseFile = "LICENSE.md";
+    private const string RetiredLicenseFile = "LICENSE-EULA.md";
+    private const string RedistributionExceptionFile = "LICENSE-DISTRIBUTION-EXCEPTION.md";
 
     private static readonly string[] RetiredOwnerNames = ["Beparey LLC", "Beparey.com"];
 
@@ -196,6 +199,70 @@ public class PackageIdentityTests
         {
             Assert.True(text.IndexOf(retired, StringComparison.OrdinalIgnoreCase) < 0,
                 $"'{relativePath}' still names the retired licensor '{retired}'.");
+        }
+    }
+
+    [Fact]
+    public void ThePackagesDeclareIslrAndNotTheRetiredEula()
+    {
+        List<string> wrong = new();
+
+        foreach ((string project, XDocument document) in SourceProjects())
+        {
+            foreach (XElement declared in document.Descendants("PackageLicenseFile"))
+            {
+                if (declared.Value != ExpectedLicenseFile)
+                    wrong.Add($"{project} declares PackageLicenseFile '{declared.Value}'");
+            }
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"Published packages must declare '{ExpectedLicenseFile}' (ISL-R). " +
+            $"'{RetiredLicenseFile}' conditioned the grant on an Order and was retired by the " +
+            "2026-08-30 model decision; packing it would show consumers a licence this project " +
+            "no longer operates under. Offenders: " + string.Join("; ", wrong));
+    }
+
+    /// <summary>
+    /// A <c>PackageLicenseFile</c> naming a file that is never packed fails at pack time, not at
+    /// build time, so nothing catches it until a release is already being cut. The redistribution
+    /// exception is checked alongside it because ISL-R alone forbids distribution - a consumer
+    /// reading only the licence in the package would conclude they may not ship their own app.
+    /// </summary>
+    [Fact]
+    public void TheDeclaredLicenceAndTheRedistributionExceptionAreBothPacked()
+    {
+        XDocument props = SourceProjects()
+            .Single(p => p.Project.EndsWith("src/Directory.Build.props", StringComparison.Ordinal))
+            .Document;
+
+        List<string> packed = new();
+
+        foreach (XElement none in props.Descendants("None"))
+        {
+            if ((string?)none.Attribute("Pack") != "true")
+                continue;
+
+            string include = (string?)none.Attribute("Include") ?? string.Empty;
+            packed.Add(include.Replace('\\', '/').Split('/')[^1]);
+        }
+
+        Assert.Contains(ExpectedLicenseFile, packed);
+        Assert.Contains(RedistributionExceptionFile, packed);
+        Assert.DoesNotContain(RetiredLicenseFile, packed);
+    }
+
+    [Fact]
+    public void EveryPackedMetadataFileExistsOnDisk()
+    {
+        DirectoryInfo repoRoot = LocateRepositoryRoot();
+
+        foreach (string file in new[]
+                 { ExpectedLicenseFile, RedistributionExceptionFile, "README.md" })
+        {
+            Assert.True(File.Exists(Path.Combine(repoRoot.FullName, file)),
+                $"'{file}' is packed into every NuGet package but is not present at the " +
+                "repository root, so pack would fail on the next release.");
         }
     }
 
