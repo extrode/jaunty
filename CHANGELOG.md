@@ -49,8 +49,8 @@ recompile alone will not surface.
   govern use under the free model.
 
   **The ethical restrictions in ISL-R sections 4 and 5 are conditions of the grant, not of
-  payment**, and are unchanged. What is sold now is support. See
-  [decision 007](docs/decisions/2026-08-29-007-jaunty-licence-instrument-and-support-pricing.md).
+  payment**, and are unchanged. What is sold now is support; the terms are in
+  [`docs/06-releases/pricing.md`](docs/06-releases/pricing.md).
 
 - **`BulkInsert` now validates constraints on SQL Server above the native-copy threshold
   (AUD-R26).** `BulkCopyConfiguration.DefaultCheckConstraints` defaulted to `false` in rc.1, which

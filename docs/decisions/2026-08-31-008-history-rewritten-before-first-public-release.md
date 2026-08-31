@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-31
 **Status:** Decided and carried out by the owner, before the repository was made public.
-**Supersedes nothing.** Closes T15 of `docs/plans/2026-08-29-004-public-release.md`.
+**Supersedes nothing.**
 
 ## The decision
 

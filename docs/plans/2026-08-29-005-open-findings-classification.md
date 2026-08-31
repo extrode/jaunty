@@ -1,7 +1,6 @@
 # Open audit findings: security or correctness?
 
-Closes **T25** of `2026-08-29-004-public-release.md`, which blocks **T20** (flipping the repository
-to public). Written 2026-08-29.
+Written 2026-08-29, as one of the checks that had to pass before the repository was made public.
 
 **Verdict: no open finding is security-relevant.** Every one of the eight security families the
 audit ever raised is closed in `src/` today, verified against the code rather than against the
@@ -95,7 +94,7 @@ publishing. The classification is what T20 needed; the move is what T1 tracks.
 
 ## See also
 
-- `2026-08-29-004-public-release.md` — the release plan; T25 is this document
 - `docs/03-development/continuous-audit.md` — the loop that produces new findings, and why raw
   reports are never committed
-- `work/todo.md` — the open items that were never audit findings
+- `docs/05-quality/audit-record.md` — the public summary of the audit rounds behind this
+  classification
