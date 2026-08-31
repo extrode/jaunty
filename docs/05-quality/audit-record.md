@@ -68,4 +68,4 @@ written rather than rewritten to hide a path.
 
 ## Reporting
 
-Security issues: see [SECURITY.md](SECURITY.md). Everything else: open an issue.
+Security issues: see [SECURITY.md](../../SECURITY.md). Everything else: open an issue.
