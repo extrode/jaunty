@@ -4,8 +4,7 @@
 
 > **DRAFT — NOT YET IN FORCE.** This document has not been reviewed by counsel. It states the
 > intended terms so that they can be reviewed and finalised. Do not rely on it, and do not accept
-> contributions under it, until Extrode LLC marks it final. Tracked as task T5 in
-> `docs/plans/2026-08-29-004-public-release.md`.
+> contributions under it, until Extrode LLC marks it final.
 
 ---
 

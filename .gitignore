@@ -377,3 +377,13 @@ StrykerOutput/
 # Internal working files, kept out of the published history.
 audit/
 work/
+
+# Internal deliberation and release tooling.
+docs/decisions/2026-08-29-002-free-to-use-paid-support-model.md
+docs/decisions/2026-08-29-003-pricing-model-three-model-panel.md
+docs/decisions/2026-08-29-004-product-and-pricing-decision.md
+docs/decisions/2026-08-29-005-pricing-panel-primary-sources.md
+docs/decisions/2026-08-29-006-jauntyq-value-and-pricing-panel.md
+docs/decisions/2026-08-29-007-jaunty-licence-instrument-and-support-pricing.md
+docs/plans/2026-08-29-004-public-release.md
+scripts/history-rewrite/
