@@ -147,4 +147,4 @@ None currently.
 
 ## References
 
-- [Jaunty.Fluent README](../src/Jaunty.Fluent/README.md)
+- [Jaunty.Fluent README](README.md)
