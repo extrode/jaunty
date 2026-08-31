@@ -15,7 +15,16 @@ namespace Jaunty.Internals.Write;
 /// </summary>
 internal static class CrudSqlCache
 {
-    private static readonly ConcurrentDictionary<(Type, Type), CachedCrudSql> _cache = new();
+    /// <remarks>
+    /// AUD-R26 (batch 4). The key was the entity type and the connection type only, so the SQL was
+    /// built once and reused whatever happened to the configuration it came from afterwards. Every
+    /// statement here is derived from <c>EntityMetadata</c>, and metadata is derived from
+    /// <c>SchemaNameResolver</c>, <c>TableNameResolver</c>, <c>ColumnNameResolver</c> and
+    /// <c>ReflectionTableMetadataResolver</c> - all public, all settable at any time. Registering a
+    /// column-name resolver after an entity had been written once left the INSERT naming the old
+    /// columns for the life of the process.
+    /// </remarks>
+    private static readonly ConcurrentDictionary<(Type, Type), ConfigurationScoped<CachedCrudSql>> _cache = new();
 
     /// <summary>
     /// Gets or creates cached SQL for the specified entity type and connection.
@@ -25,13 +34,16 @@ internal static class CrudSqlCache
     {
         (Type, Type) key = (typeof(T), connection.GetType());
 
-        if (_cache.TryGetValue(key, out CachedCrudSql? cached))
-            return cached;
+        // Read the generation before the lookup, never after: see ConfigurationGeneration.Current.
+        int generation = ConfigurationGeneration.Current;
+
+        if (_cache.TryGetValue(key, out ConfigurationScoped<CachedCrudSql> cached) && cached.Generation == generation)
+            return cached.Value;
 
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
-        cached = BuildCachedSql<T>(dialect);
-        _cache.TryAdd(key, cached);
-        return cached;
+        CachedCrudSql sql = BuildCachedSql<T>(dialect);
+        _cache[key] = new ConfigurationScoped<CachedCrudSql>(generation, sql);
+        return sql;
     }
 
     private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect) where T : new()
@@ -42,8 +54,9 @@ internal static class CrudSqlCache
         {
             throw new InvalidOperationException(
                 $"Cannot build CRUD SQL for type '{typeof(T).Name}'. " +
-                "The type is not source-generated and no reflection fallback is registered. " +
-                "Ensure the class has [Table] attribute or 'Jaunty.Extensions.Reflection' is loaded.");
+                "Ensure the class has [Table] and is processed by the Jaunty source generator " +
+                "(the class must be declared 'partial'), or call " +
+                "Jaunty.Extensions.Reflection's UseReflectionMapping().");
         }
 
         string escapedTableName = dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
@@ -64,12 +77,21 @@ internal static class CrudSqlCache
             if (metadata.PrimaryKeys[i].IsIdentity)
                 identityColumnNames[identityCount++] = dialect.EscapeColumnName(metadata.PrimaryKeys[i].ColumnName);
         }
-        string lastInsertIdSql = dialect.GetLastInsertIdSql(System.Array.Empty<string>());
+        // AUD-R35-128: this used to build the no-identity form first and unconditionally, then throw
+        // it away and rebuild from the trimmed array whenever identityCount > 0 - a wasted string
+        // build on every cache miss for exactly the entities that have an identity key, which is the
+        // common case, and it read as though the empty-array call were load-bearing when it is only
+        // the placeholder for entities that have no identity column at all.
+        string lastInsertIdSql;
         if (identityCount > 0)
         {
             var trimmed = new string[identityCount];
             System.Array.Copy(identityColumnNames, 0, trimmed, 0, identityCount);
             lastInsertIdSql = dialect.GetLastInsertIdSql(trimmed);
+        }
+        else
+        {
+            lastInsertIdSql = dialect.GetLastInsertIdSql(System.Array.Empty<string>());
         }
 
         return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, selectByIdSql, selectAllSql, metadata, dialect.SupportsUpsert);
@@ -77,11 +99,13 @@ internal static class CrudSqlCache
 
     private static EntityMetadata? TryResolveMetadata<T>() where T : new()
     {
-        // 1. Check if IMapped<T> provides metadata (Source Gen path)
-        // Our source gen could implement a GetMetadata() on IMapped, but for now we'll rely on the extension hook
-        // for complex metadata like PrimaryKeys/Identity.
+        // 1. Source-generated IEntityMetadataSource implementation - reflection-free
+        if (SourceGeneratedMetadataResolver.TryBuild<T>() is EntityMetadata sourceGenMetadata)
+        {
+            return sourceGenMetadata;
+        }
 
-        // 2. Fallback to extension hook
+        // 2. Fallback to extension hook (Jaunty.Extensions.Reflection)
         if (JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata metadata)
         {
             return metadata;
@@ -149,7 +173,7 @@ internal static class CrudSqlCache
         }
 
         sb.Append(" WHERE ");
-        AppendWhereClause(sb, primaryKeys, dialect, usePropertyNames: true);
+        AppendWhereClause(sb, primaryKeys, dialect);
 
         return sb.ToString();
     }
@@ -164,7 +188,7 @@ internal static class CrudSqlCache
         sb.Append("DELETE FROM ");
         sb.Append(escapedTableName);
         sb.Append(" WHERE ");
-        AppendWhereClause(sb, primaryKeys, dialect, usePropertyNames: true);
+        AppendWhereClause(sb, primaryKeys, dialect);
 
         return sb.ToString();
     }
@@ -215,9 +239,11 @@ internal static class CrudSqlCache
         }
 
         var keyColumns = new string[primaryKeys.Count];
+        var keyParams = new string[primaryKeys.Count];
         for (int i = 0; i < primaryKeys.Count; i++)
         {
             keyColumns[i] = dialect.EscapeColumnName(primaryKeys[i].ColumnName);
+            keyParams[i] = "@" + primaryKeys[i].ColumnName;
         }
 
         return dialect.GenerateUpsertSql(
@@ -226,10 +252,11 @@ internal static class CrudSqlCache
             insertParams,
             updateColNames,
             updateParams,
-            keyColumns);
+            keyColumns,
+            keyParams);
     }
 
-    private static void AppendWhereClause(StringBuilder sb, IReadOnlyList<ColumnMetadata> keys, ISqlDialect dialect, bool usePropertyNames)
+    private static void AppendWhereClause(StringBuilder sb, IReadOnlyList<ColumnMetadata> keys, ISqlDialect dialect)
     {
         for (int i = 0; i < keys.Count; i++)
         {
@@ -238,7 +265,7 @@ internal static class CrudSqlCache
 
             sb.Append(dialect.EscapeColumnName(keys[i].ColumnName));
             sb.Append(" = @");
-            sb.Append(usePropertyNames ? keys[i].ColumnName : "Id");
+            sb.Append(keys[i].ColumnName);
         }
     }
 

@@ -4,9 +4,12 @@ using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Interfaces;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Write;
 
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
+using Jaunty.Interceptors;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
@@ -22,6 +25,28 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}': No primary key found.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs so Delete participates in registered
+        // ICommandInterceptor auditing/logging the same way Query/GetAll/etc. do.
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
+        {
+            return pipeline.ExecuteWithInterception(
+                cached.DeleteSql,
+                entity,
+                connection,
+                options.CommandType,
+                () => DeleteByEntityCoreDirect(connection, entity, cached, binder, options));
+        }
+
+        return DeleteByEntityCoreDirect(connection, entity, cached, binder, options);
+    }
+
+    private static int DeleteByEntityCoreDirect<T>(IDbConnection connection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -31,8 +56,28 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteSql;
 
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -59,6 +104,28 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}': No primary key found.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
+        {
+            return await pipeline.ExecuteWithInterceptionAsync(
+                cached.DeleteSql,
+                entity,
+                dbConnection,
+                options.CommandType,
+                () => DeleteByEntityCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await DeleteByEntityCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<int> DeleteByEntityCoreDirectAsync<T>(DbConnection dbConnection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
@@ -74,8 +141,18 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.DeleteSql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -93,7 +170,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -106,6 +183,27 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
+        {
+            return pipeline.ExecuteWithInterception(
+                cached.DeleteByIdSql,
+                cached.DescribeIdParameter(id),
+                connection,
+                options.CommandType,
+                () => DeleteByIdSimpleCoreDirect<T>(connection, id, cached, options));
+        }
+
+        return DeleteByIdSimpleCoreDirect<T>(connection, id, cached, options);
+    }
+
+    private static int DeleteByIdSimpleCoreDirect<T>(IDbConnection connection, object id, CachedCrudSql cached, CommandOptions options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -115,15 +213,35 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteByIdSql;
 
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             AddPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             return command.ExecuteNonQuery();
         }
@@ -140,6 +258,28 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
+        {
+            return await pipeline.ExecuteWithInterceptionAsync(
+                cached.DeleteByIdSql,
+                cached.DescribeIdParameter(id),
+                dbConnection,
+                options.CommandType,
+                () => DeleteByIdSimpleCoreDirectAsync<T>(dbConnection, id, cached, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await DeleteByIdSimpleCoreDirectAsync<T>(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<int> DeleteByIdSimpleCoreDirectAsync<T>(DbConnection dbConnection, object id, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
@@ -155,15 +295,25 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.DeleteByIdSql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             AddPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -174,7 +324,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -187,6 +337,27 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
+        {
+            return pipeline.ExecuteWithInterception(
+                cached.DeleteByIdSql,
+                cached.DescribeIdParameter(id),
+                connection,
+                options.CommandType,
+                () => DeleteByIdCoreDirect<T, TId>(connection, id, cached, options));
+        }
+
+        return DeleteByIdCoreDirect<T, TId>(connection, id, cached, options);
+    }
+
+    private static int DeleteByIdCoreDirect<T, TId>(IDbConnection connection, TId id, CachedCrudSql cached, CommandOptions options) where T : IEntity<TId>, new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -196,15 +367,35 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteByIdSql;
 
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             AddPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             return command.ExecuteNonQuery();
         }
@@ -214,13 +405,35 @@ public static partial class Jaunty
         }
     }
 
-    internal static async ValueTask<int> DeleteByIdCoreAsync<T, TId>(DbConnection dbConnection, object id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    internal static async ValueTask<int> DeleteByIdCoreAsync<T, TId>(DbConnection dbConnection, TId id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
+        {
+            return await pipeline.ExecuteWithInterceptionAsync(
+                cached.DeleteByIdSql,
+                cached.DescribeIdParameter(id),
+                dbConnection,
+                options.CommandType,
+                () => DeleteByIdCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await DeleteByIdCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<int> DeleteByIdCoreDirectAsync<T, TId>(DbConnection dbConnection, TId id, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
@@ -236,15 +449,25 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.DeleteByIdSql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            // AUD-R35-129: every entry point reports options.CommandType to the interceptor
+            // pipeline, and none of the six *Direct methods ever applied it - so a caller passing
+            // CommandOptions.AsStoredProcedure() had interceptors and any DiagnosticListener
+            // subscriber told the command ran as StoredProcedure while the generated DELETE text
+            // ran as Text. AUD-R27-009 closed exactly this on GetCore's by-id cores; DeleteCore is
+            // its structural twin on the write side and was not brought along. Guarded by
+            // allow-list, not `!= Text`: a `default` CommandOptions<T> carries CommandType 0, which
+            // providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             AddPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -255,7 +478,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -266,7 +489,7 @@ public static partial class Jaunty
         ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         IDbDataParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
-        param.Value = id ?? DBNull.Value;
+        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property, primaryKey.EnumStorageOverride) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
 
@@ -275,7 +498,7 @@ public static partial class Jaunty
         ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         DbParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
-        param.Value = id ?? DBNull.Value;
+        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property, primaryKey.EnumStorageOverride) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
 }

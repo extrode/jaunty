@@ -1,7 +1,10 @@
 using System.Data;
+using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Configuration;
+using Jaunty.Interceptors;
+using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 using Jaunty.StoredProcedure;
 
@@ -66,13 +69,13 @@ public static partial class Jaunty
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, SpParameters, CommandOptions{T}, CancellationToken)"/>
-    public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
+    public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
 
         return ExecuteWithOutputParameters(connection, procedureName, parameters, spOptions, (reader, _) =>
         {
-            var results = new List<T>(16);
+            var results = new List<T>(spOptions.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
 
             while (reader.Read())
@@ -122,9 +125,9 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string, object?, CommandOptions{T})"/>
-    public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
+    public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParameters(connection, procedureName, parameters, spOptions, (reader, _) =>
         {
             if (!reader.Read())
@@ -176,9 +179,9 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string, object?, CommandOptions{T})"/>
-    public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
+    public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParameters<T?>(connection, procedureName, parameters, spOptions, (reader, _) =>
         {
             if (!reader.Read())
@@ -225,7 +228,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string, object?, CommandOptions{T})"/>
-    public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)
+    public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteScalarWithOutputParameters<T>(connection, procedureName, parameters, spOptions);
@@ -269,7 +272,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureNonQuery(IDbConnection, string, object?, CommandOptions)"/>
-    public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)
+    public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteNonQueryWithOutputParameters(connection, procedureName, parameters, spOptions);
@@ -277,19 +280,45 @@ public static partial class Jaunty
 
     #region Core execution with output parameters
 
-    private static TResult ExecuteWithOutputParameters<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+    private static TResult ExecuteWithOutputParameters<TResult>(IDbConnection connection, string procedureName, SpParameters? parameters,
         CommandOptions options, Func<IDataReader, SpParameters, TResult> handler)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
-        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        // A null literal binds to this overload over the object?-parameter overload (SpParameters
+        // is a more specific reference type), so treat null the same as "no parameters" instead of
+        // throwing - matches the zero-parameter convenience overload's behavior.
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // AUD-R25: these SpParameters overloads built and ran their commands by hand and invoked
+        // neither the interceptor pipeline nor JauntyConfig.Logger, while the identically-named
+        // object?-parameters overloads delegate to Query<T>/QueryFirst/QueryFirstOrDefault/
+        // QueryScalar/ExecuteNonQueryCore and therefore do both. Same method name, same public
+        // surface, opposite observability - and it silently excluded precisely the stored-procedure
+        // calls that use output and return parameters, typically the ones an audit trail most needs.
+        // Whether anything is actually observing is the pipeline's own decision (IsObserved covers
+        // interceptors and the DiagnosticListener alike), so the only test here is whether a
+        // pipeline is configured at all.
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteWithOutputParametersCore(connection, procedureName, spParameters, options, handler)
+            : pipeline.ExecuteWithInterception(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteWithOutputParametersCore(connection, procedureName, spParameters, options, handler));
+    }
+
+    private static TResult ExecuteWithOutputParametersCore<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+        CommandOptions options, Func<IDataReader, SpParameters, TResult> handler)
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -301,13 +330,24 @@ public static partial class Jaunty
             command.CommandText = procedureName;
             command.CommandType = CommandType.StoredProcedure;
 
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
             TResult result = handler(reader, parameters);
@@ -327,18 +367,32 @@ public static partial class Jaunty
         }
     }
 
-    private static T ExecuteScalarWithOutputParameters<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
+    private static T ExecuteScalarWithOutputParameters<T>(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
-        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // See ExecuteWithOutputParameters for why this wrapper exists (AUD-R25).
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteScalarWithOutputParametersCore<T>(connection, procedureName, spParameters, options)
+            : pipeline.ExecuteWithInterception(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteScalarWithOutputParametersCore<T>(connection, procedureName, spParameters, options));
+    }
+
+    private static T ExecuteScalarWithOutputParametersCore<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -350,24 +404,37 @@ public static partial class Jaunty
             command.CommandText = procedureName;
             command.CommandType = CommandType.StoredProcedure;
 
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
 
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
             object? result = command.ExecuteScalar();
 
             // Read output parameter values
             ReadOutputParameters(parameters);
 
+            // Matches QueryScalarCore's null-handling (src/Jaunty/Internals/Read/QueryCore.cs) so
+            // the SpParameters and object-parameters overloads of ExecuteStoredProcedureScalar<T>
+            // behave identically for a NULL/no-row scalar result instead of one throwing and the
+            // other silently returning default(T).
             return result is null || result == DBNull.Value
-                ? default(T) is null
-                    ? default!
-                    : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
-                : (T)Convert.ChangeType(result, typeof(T));
+                ? default!
+                : ScalarConverter<T>.Convert(result);
         }
         finally
         {
@@ -376,18 +443,32 @@ public static partial class Jaunty
         }
     }
 
-    private static int ExecuteNonQueryWithOutputParameters(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
+    private static int ExecuteNonQueryWithOutputParameters(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
-        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // See ExecuteWithOutputParameters for why this wrapper exists (AUD-R25).
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteNonQueryWithOutputParametersCore(connection, procedureName, spParameters, options)
+            : pipeline.ExecuteWithInterception(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteNonQueryWithOutputParametersCore(connection, procedureName, spParameters, options));
+    }
+
+    private static int ExecuteNonQueryWithOutputParametersCore(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -399,13 +480,24 @@ public static partial class Jaunty
             command.CommandText = procedureName;
             command.CommandType = CommandType.StoredProcedure;
 
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             int rowsAffected = command.ExecuteNonQuery();
 
@@ -425,30 +517,48 @@ public static partial class Jaunty
     {
         IReadOnlyList<SpParameter> paramList = parameters.Parameters;
 
+        // AUD-R12: SqlClient/Microsoft.Data.SqlClient captures a stored procedure's RETURN
+        // value correctly only when the ReturnValue-direction parameter is the first one added
+        // to IDbCommand.Parameters. Every SpParameters usage example in this codebase calls
+        // .AddReturnValue() last, so binding strictly in caller-supplied order would silently
+        // produce a wrong/undefined GetReturnValue() result. Stable-partition instead: bind all
+        // ReturnValue parameters first (in their original relative order), then everything else
+        // (in its original relative order).
         for (int i = 0; i < paramList.Count; i++)
         {
-            SpParameter sp = paramList[i];
-            IDbDataParameter dbParam = command.CreateParameter();
-
-            // Ensure parameter name starts with @
-            dbParam.ParameterName = sp.Name.StartsWith("@") ? sp.Name : "@" + sp.Name;
-            dbParam.Direction = sp.Direction;
-
-            if (sp.DbType.HasValue)
-                dbParam.DbType = sp.DbType.Value;
-
-            if (sp.Size.HasValue)
-                dbParam.Size = sp.Size.Value;
-
-            // Set value for Input and InputOutput parameters
-            if (sp.Direction is ParameterDirection.Input or ParameterDirection.InputOutput)
-                dbParam.Value = sp.Value ?? DBNull.Value;
-
-            command.Parameters.Add(dbParam);
-
-            // Store reference to the db parameter so we can read output values later
-            sp.DbParameter = dbParam;
+            if (paramList[i].Direction == ParameterDirection.ReturnValue)
+                BindSpParameter(command, paramList[i]);
         }
+
+        for (int i = 0; i < paramList.Count; i++)
+        {
+            if (paramList[i].Direction != ParameterDirection.ReturnValue)
+                BindSpParameter(command, paramList[i]);
+        }
+    }
+
+    private static void BindSpParameter(IDbCommand command, SpParameter sp)
+    {
+        IDbDataParameter dbParam = command.CreateParameter();
+
+        // Ensure parameter name starts with @
+        dbParam.ParameterName = sp.Name.StartsWith("@") ? sp.Name : "@" + sp.Name;
+        dbParam.Direction = sp.Direction;
+
+        if (sp.DbType.HasValue)
+            dbParam.DbType = sp.DbType.Value;
+
+        if (sp.Size.HasValue)
+            dbParam.Size = sp.Size.Value;
+
+        // Set value for Input and InputOutput parameters
+        if (sp.Direction is ParameterDirection.Input or ParameterDirection.InputOutput)
+            dbParam.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(sp.Value, propertyInfo: null) ?? DBNull.Value;
+
+        command.Parameters.Add(dbParam);
+
+        // Store reference to the db parameter so we can read output values later
+        sp.DbParameter = dbParam;
     }
 
     private static void ReadOutputParameters(SpParameters parameters)

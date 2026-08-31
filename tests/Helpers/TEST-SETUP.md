@@ -1,243 +1,371 @@
 # Jaunty Test Database Setup Guide
 
-This guide explains how to set up the databases required for running Jaunty integration tests.
+How to set up the databases the Jaunty integration tests run against.
+
+> **On an Apple Silicon Mac, read [Apple Silicon](#apple-silicon-macos-arm64) first.** Three
+> of the assumptions below do not hold there: SQLite needs a one-time build step, the SQL
+> Server image has no arm64 build, and `dotnet test` without `-f net8.0` aborts the run.
 
 ## Quick Start
 
-For **SQLite tests** (default, no setup required):
+SQLite needs no setup — the fixture is committed:
+
 ```bash
 dotnet test
 ```
 
-For **all database tests**, you'll need to set up SQL Server, PostgreSQL, and MySQL with the Northwind database.
+That leaves the four server dialects skipped. To run everything, bring up the
+stack the repo already defines, seed it, and point the tests at it:
+
+```bash
+docker compose up -d                                # four containers
+pwsh scripts/reset-test-databases.ps1 --execute     # seeds all four from data/
+```
+
+Then export the four connection strings (see [Step 4](#step-4-configure-connection-strings))
+and run `dotnet test` again.
+
+**Reset the databases after every run.** The tests mutate what they run against —
+write tests insert and update rows, `DialectFixture` creates its own tables, and the
+SQLite fixture is edited in place. `scripts/reset-test-databases.ps1 --execute` drops
+and recreates each database, then re-seeds. Re-seeding alone is not enough: the seed
+scripts only recreate the 13 Northwind tables, so test-created ones (`bulk_*`,
+`csv_import_test`, `execute_test`, `get_test`, `scaffold_test_*`) would survive.
+
+---
+
+## Apple Silicon (macOS arm64)
+
+This guide was written from the Windows machine, where everything below is a non-issue.
+Three things differ on an arm64 Mac. Measured 2026-07-29.
+
+### 1. SQLite is not setup-free
+
+`System.Data.SQLite.Core` ships no `osx-arm64` native, and its `osx-x64` one is plain
+x86_64 Mach-O, so it cannot load into an arm64 process. Until this is built, **every test
+touching `System.Data.SQLite` fails** — 1,099 of 1,099 failures in `Jaunty.Tests` and all
+887 in `Jaunty.Fluent.Tests` had that single cause.
+
+```bash
+tools/native/sqlite-interop-osx-arm64/build.sh    # once per machine, ~1 min
+```
+
+See that directory's README for why it is more than a recompile. Nothing else on this page
+changes, and CI is unaffected.
+
+### 2. SQL Server has no arm64 image
+
+Queried from the registries rather than assumed:
+
+| Image | Platforms |
+|---|---|
+| `mcr.microsoft.com/mssql/server:2022-latest` | **linux/amd64 only** |
+| `postgres:16` | linux/amd64, linux/arm64, +5 |
+| `mysql:8` | linux/amd64, linux/arm64 |
+| `mariadb:11` | linux/amd64, linux/arm64, +2 |
+
+So three of the four run natively and `mssql` runs under amd64 emulation. **Verified working
+on 2026-07-29** — Docker Desktop 29.6.1 on macOS 15 needed no configuration at all: Rosetta
+was already present and `docker run --platform linux/amd64` worked out of the box. SQL Server
+2022 starts, passes its health check, and runs the full suite. `docker-compose.yml` declares
+`platform: linux/amd64` on that service so the mismatch warning does not appear on every
+`up`.
+
+If emulation is ever unavailable, the fallbacks are Docker Desktop's **Settings → General →
+Use Rosetta for x86_64/amd64 emulation on Apple Silicon**, or pointing
+`JAUNTY_TEST_SQLSERVER` at a real instance elsewhere.
+
+### 3. `dotnet test` at solution level aborts
+
+`Jaunty.Tests` multi-targets `net8.0;net472`, and .NET Framework cannot host on macOS. The
+net472 run does not fail — it **aborts the whole invocation**, so projects queued behind it
+never execute and the summary looks short rather than broken.
+
+```bash
+dotnet test tests/Jaunty.Tests/Jaunty.Tests.csproj -f net8.0    # not `dotnet test`
+```
+
+That also means the Mac cannot cover net472 at all. The Windows machine is the only place
+that TFM runs, which is worth remembering before concluding a change is verified.
+
+### Measured baseline, unconfigured
+
+With the SQLite native built and no connection strings set, on net8.0:
+
+| | Passed | Failed | Skipped |
+|---|---|---|---|
+| `Jaunty.Tests` | 2,763 | 0 | 2,447 |
+| `Jaunty.Fluent.Tests` | 1,182 | 0 | 0 |
+| `Jaunty.Scaffolding.Tests` | 555 | 0 | 24 |
+| `Jaunty.FlatFiles.DuckDB.Tests` | 578 | 0 | 0 |
+| `Jaunty.FlatFiles.Tests` | 185 | 0 | 0 |
+| `Jaunty.SourceGenerator.Tests` | 72 | 0 | 0 |
+| `Jaunty.Fluent.SourceGen.Tests` | 9 | 0 | 8 |
+| `Jaunty.Scaffolding.Cli.Tests` | 33 | **1** | 0 |
+
+Of the 2,447 skips, 815 want `JAUNTY_TEST_POSTGRESQL` and 811 want `JAUNTY_TEST_SQLSERVER`.
+
+### Measured baseline, all four servers configured
+
+An arm64 Mac reaches **zero skips**, including the `BULK INSERT` tests. Measured 2026-07-29:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.bulkinsert.yml up -d
+./scripts/reset-test-databases.sh --execute
+# then export the four connection strings from Step 4
+```
+
+| | Passed | Failed | Skipped |
+|---|---|---|---|
+| `Jaunty.Tests` (net8.0) | 5,218 | 0 | **0** |
+| `Jaunty.Scaffolding.Tests` | 579 | 0 | **0** |
+
+**Do this before trusting a green run.** The first time this stack was brought up it found
+16 real failures — a regression from AUD-R26-030 that made every no-parameter
+stored-procedure call throw before reaching the database, on both Postgres and MariaDB. It
+had been invisible for the obvious reason: SQLite has no stored procedures, so the only
+coverage was in tests that were skipping. See `AUD-R26-032`.
+
+Two things were needed to reach zero, and both are now in the connection strings and compose
+files above:
+
+- **`AllowPublicKeyRetrieval=true`** on the MySQL and MariaDB strings.
+  `Jaunty.Scaffolding.Tests` uses **MySqlConnector**, which refuses MySQL 8's default
+  `caching_sha2_password` over an unencrypted connection without it; `Jaunty.Tests` uses
+  **MySql.Data**, which does not need it. Omitting it skips 8 scaffolding schema-reader
+  tests and nothing else, with the reason buried in a skip message.
+- **`docker-compose.bulkinsert.yml`**, which bind-mounts the repo into the SQL Server
+  container at the identical absolute path. See [Known environment limit](#known-environment-limit).
+
+`pwsh` is not required. `scripts/reset-test-databases.sh` is a bash port of
+`reset-test-databases.ps1` with the same dry-run-by-default contract; keep the two in step.
+
+The one failure is `ListTablesCommandTests.Invoke_ConnectionFailure_ReturnsErrorExitCodeAndMessage`
+(expects exit 1, gets 0). It predates the SQLite work and is unrelated to it. Whether it is
+macOS-specific has not been established — the coverage table below reports 34 passing for
+that assembly on Windows, which suggests it may be, but that is one run on each platform and
+not a conclusion.
 
 ---
 
 ## Database Requirements
 
-### 1. SQLite (Required)
-- **Database:** Northwind.db
-- **Location:** `data/sqlite/Northwind.db`
-- **Setup:** Already included in the repository
-- **Tests:** ~877 tests
+Ports below are what `docker-compose.yml` publishes. **They are not the defaults** —
+Postgres and MySQL are deliberately remapped so the stack cannot collide with a server
+already installed on the machine. Using 5432 or 3306 silently reaches the wrong server.
 
-### 2. SQL Server (Optional)
-- **Server:** localhost
-- **Database:** Northwind
-- **Authentication:** Windows Authentication (Trusted Connection)
-- **Tests:** ~100 additional tests
+| Dialect | Container | Host port | Database | User |
+|---|---|---|---|---|
+| SQLite | — | — | `data/sqlite/Northwind.db` | — |
+| SQL Server | `torture-mssql` | **1433** | `Northwind` | `sa` |
+| PostgreSQL | `torture-postgres` | **5433** | `northwind` | `postgres` |
+| MySQL | `torture-mysql` | **3308** | `northwind` | `root` |
+| MariaDB | `torture-mariadb` | **3307** | `northwind` | `root` |
 
-### 3. PostgreSQL (Optional)
-- **Host:** localhost
-- **Port:** 5432
-- **Database:** Northwind
-- **Username:** postgres
-- **Tests:** ~100 additional tests
-
-### 4. MySQL / MariaDB (Optional)
-- **Host:** localhost
-- **Port:** 3306
-- **Database:** Northwind
-- **Username:** root
-- **Tests:** ~100 additional tests
+The container password is `Torture_Test_Pwd1!` for all four, set in `docker-compose.yml`.
 
 ---
 
 ## Setup Instructions
 
-### Step 1: Install Database Servers
+### Step 1: Start the database servers
 
-#### SQL Server
-1. Install [SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (free)
-2. Or use [Azure SQL Edge](https://hub.docker.com/_/microsoft-azure-sql-edge) (Docker)
-
-#### PostgreSQL
-1. Install from [postgresql.org](https://www.postgresql.org/download/)
-2. Or use Docker: `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15`
-
-#### MySQL
-1. Install from [mysql.com](https://dev.mysql.com/downloads/mysql/)
-2. Or use Docker: `docker run -e MYSQL_ROOT_PASSWORD= -p 3306:3306 mysql:8`
-
-### Step 2: Create Northwind Database
-
-Download and run the Northwind database script for your database server:
-
-- **SQL Server:** [Northwind for SQL Server](https://github.com/microsoft/sql-server-samples/tree/master/samples/databases/northwind)
-- **PostgreSQL:** [Northwind for PostgreSQL](https://github.com/pthom/northwind_psql)
-- **MySQL:** [Northwind for MySQL](https://github.com/jpwhite3/northwind-MySQL)
-
-### Step 3: Create Test Stored Procedures
-
-**For SQL Server:**
-```bash
-# In SQL Server Management Studio:
-USE Northwind;
-GO
--- Run: tests/database-setup.sql
-```
-
-**For PostgreSQL:**
-```bash
-# Using psql:
-psql -U postgres -f tests/postgres-setup.sql
-
-# Or in pgAdmin: Run tests/postgres-setup.sql
-```
-
-**For MySQL:**
-```bash
-# Using mysql client:
-mysql -u root -p < tests/mysql-setup.sql
-
-# Or in MySQL Workbench: Run tests/mysql-setup.sql
-```
-
-The scripts create these stored procedures/functions:
-- `GetAllProducts`
-- `GetProductsByCategory`
-- `GetProductById`
-- `GetProductCount`
-- `GetProductCountByCategory`
-- `UpdateProductPrice`
-- `GetProductCountWithOutput`
-- `GetNoResults`
-
-### Step 4: Configure Connection Strings
-
-Edit `tests/Jaunty.Tests/appsettings.json`:
-
-```json
-{
-  "ConnectionStrings": {
-    "SqlServer": "Server=localhost;Database=Northwind;Trusted_Connection=true;TrustServerCertificate=true;",
-    "PostgreSql": "Host=localhost;Port=5432;Database=Northwind;Username=postgres;Password=your_password",
-    "MariaDb": "Server=localhost;Port=3306;Database=Northwind;Uid=root;Pwd=your_password"
-  }
-}
-```
-
-**Or** use environment variables:
+Use the repo's own stack rather than ad-hoc containers — it fixes the ports, passwords
+and health checks that the rest of this guide assumes:
 
 ```bash
-# Windows
-setx JAUNTY_TEST_SQLSERVER "Server=localhost;Database=Northwind;Trusted_Connection=true;"
-setx JAUNTY_TEST_POSTGRESQL "Host=localhost;Database=Northwind;Username=postgres;Password=xxx"
-setx JAUNTY_TEST_MARIADB "Server=localhost;Database=Northwind;Uid=root;Pwd=xxx"
-
-# Linux/Mac
-export JAUNTY_TEST_SQLSERVER="Server=localhost;Database=Northwind;..."
-export JAUNTY_TEST_POSTGRESQL="Host=localhost;Database=Northwind;..."
-export JAUNTY_TEST_MARIADB="Server=localhost;Database=Northwind;..."
+docker compose up -d
+docker compose ps          # wait for all four to report healthy
 ```
+
+A locally installed SQL Server works too, and is the only way to run the `BULK INSERT`
+tests (see [Known environment limit](#known-environment-limit)).
+
+### Step 2: Create the Northwind schema
+
+The bootstrap scripts are vendored — do not download a third-party Northwind dump, as
+their column naming does not match the entity contracts.
+
+| Server | Script | Load with |
+|---|---|---|
+| SQL Server | `data/sqlserver/create-northwind.sql` | `sqlcmd -S <server> -U sa -P <pwd> -C -b -i create-northwind.sql` (creates the database itself) |
+| PostgreSQL | `data/postgres/create-northwind.sql` | `createdb northwind` first, then `psql -d northwind -v ON_ERROR_STOP=1 -f create-northwind.sql` |
+| MySQL / MariaDB | `data/mysql/create-northwind.sql` | `CREATE DATABASE northwind;` first, then `mysql northwind < create-northwind.sql` |
+
+All three are generated from `data/sqlite/Northwind.db` so every dialect carries
+identical data. Regenerate after changing that reference database:
+
+```bash
+python scripts/generate-sqlserver-northwind.py   # SQL Server
+python scripts/generate-northwind.py             # PostgreSQL + MySQL/MariaDB
+```
+
+Each table carries both namings: snake_case columns as declared, plus PascalCase
+generated columns bridging them, because the integration entities read PascalCase
+field names out of the reader while their `[Column]` attributes name snake_case.
+
+Pass `-b` to `sqlcmd` whenever you script this. Without it sqlcmd exits **0** even when
+the statement failed, so a half-applied schema looks like a success.
+
+### Step 3: Create the test stored procedures
+
+| Server | Script |
+|---|---|
+| SQL Server | `data/sqlserver/create-stored-procedures.sql` |
+| PostgreSQL | `data/postgres/create-stored-procedures.sql` |
+| MySQL / MariaDB | `data/mysql/create-stored-procedures.sql` |
+
+These create `GetAllProducts`, `GetProductsByCategory`, `GetProductById`,
+`GetProductCount`, `GetProductCountByCategory`, `UpdateProductPrice`,
+`GetProductCountWithOutput` and `GetNoResults`.
+
+The PostgreSQL and MySQL versions alias their result columns to PascalCase
+(`SELECT product_id AS ProductId, ...`, and quoted `RETURNS TABLE` column names on
+Postgres). That is load-bearing: `Product.ReadEntity` looks up `ProductId`, not
+`product_id`, so an unaliased procedure returns rows that cannot be mapped.
+
+> `tests/database-setup.sql`, `tests/postgres-setup.sql` and `tests/mysql-setup.sql`
+> are an older, divergent set of the same procedures. The `data/` scripts above are the
+> ones `scripts/reset-test-databases.ps1` uses and the ones the green suite was verified
+> against. Prefer them.
+
+### Step 4: Configure connection strings
+
+Environment variables take priority over `appsettings.json`:
+
+```bash
+export JAUNTY_TEST_SQLSERVER="Server=localhost,1433;Database=Northwind;User Id=sa;Password=Torture_Test_Pwd1!;TrustServerCertificate=true;"
+export JAUNTY_TEST_POSTGRESQL="Host=localhost;Port=5433;Database=northwind;Username=postgres;Password=Torture_Test_Pwd1!"
+export JAUNTY_TEST_MYSQL="Server=localhost;Port=3308;Database=northwind;Uid=root;Pwd=Torture_Test_Pwd1!;SslMode=Disabled;AllowPublicKeyRetrieval=True;AllowLoadLocalInfile=true"
+export JAUNTY_TEST_MARIADB="Server=localhost;Port=3307;Database=northwind;Uid=root;Pwd=Torture_Test_Pwd1!;SslMode=Disabled;AllowPublicKeyRetrieval=True;AllowLoadLocalInfile=true"
+```
+
+Notes on the MySQL/MariaDB string:
+
+- `SslMode=Disabled` — MySqlConnector's enum has no `None`; that value throws
+  `Requested value 'None' was not found`.
+- `AllowPublicKeyRetrieval=True` — required by `Jaunty.Scaffolding.Tests`; omitting it
+  silently skips 8 tests rather than failing. See [Measured baseline, all four servers
+  configured](#measured-baseline-all-four-servers-configured).
+- `AllowLoadLocalInfile=true` — required by the `LOAD DATA LOCAL INFILE` import tests.
+
+Or use a settings file. `appsettings.json` is gitignored, so a fresh checkout has none —
+copy the committed template:
+
+```bash
+cp tests/Jaunty.Tests/appsettings.example.json tests/Jaunty.Tests/appsettings.json
+cp tests/Jaunty.Scaffolding.Tests/appsettings.example.json tests/Jaunty.Scaffolding.Tests/appsettings.json
+```
+
+**Fill in the passwords, or empty the string entirely.** An empty connection string makes
+that dialect's tests **skip**; a non-empty one that cannot connect makes them **fail**.
+The template ships with passwords blank, so copying it without editing turns 1,584
+skips into failures. A checkout with no `appsettings.json` at all skips 4,791.
 
 ---
 
 ## Running Tests
 
-### Run All Tests
 ```bash
-dotnet test
-```
-
-### Run SQLite Tests Only
-```bash
-dotnet test --filter "FullyQualifiedName~Sqlite"
-```
-
-### Run SQL Server Tests Only
-```bash
-dotnet test --filter "FullyQualifiedName~SqlServer"
-```
-
-### Run PostgreSQL Tests Only
-```bash
-dotnet test --filter "FullyQualifiedName~Postgres"
-```
-
-### Run MySQL Tests Only
-```bash
-dotnet test --filter "FullyQualifiedName~MySql"
+dotnet test                                              # everything, both TFMs
+dotnet test --filter "FullyQualifiedName~Sqlite"         # SQLite only
+dotnet test --filter "FullyQualifiedName~SqlServer"      # SQL Server only
+dotnet test --filter "FullyQualifiedName~Postgres"       # PostgreSQL only
+dotnet test --filter "FullyQualifiedName~MySql"          # MySQL only
 ```
 
 ---
 
 ## Troubleshooting
 
-### Tests Are Skipped
+### Tests are skipped
 
-If tests are being skipped, it means the connection strings are not configured. Check:
+Connection strings are not configured. Check the environment variables are exported in
+the shell running `dotnet test`, that `appsettings.json` reached the test output
+directory, and that the containers are healthy (`docker compose ps`).
 
-1. `appsettings.json` exists in the test output directory
-2. Environment variables are set correctly
-3. Database servers are running
+### "database northwind does not exist" — but it does
 
-### "Could not find stored procedure" Error
+You are on the wrong port. `docker-compose.yml` publishes PostgreSQL on **5433** and
+MySQL on **3308**, not 5432/3306. Those defaults reach whatever else is installed
+locally, which will not have a `northwind`.
 
-Run the `database-setup.sql` script on your database server to create the required stored procedures.
+### "Could not find stored procedure"
 
-### "Unused parameter properties" Error
+Run the Step 3 script for that server.
 
-The parameter names in your anonymous object don't match the stored procedure parameter names. Check:
+### "Field not found in row: ProductId"
+
+The stored procedures were created from an unaliased script. Re-run the `data/` version
+from Step 3.
+
+### "Unused parameter properties"
+
+Parameter names in the anonymous object do not match the procedure's:
+
 - SQL Server: `CategoryId`, `ProductId`, `NewPrice`
 - PostgreSQL: `p_category_id`, `p_product_id`, `p_new_price`
 - MySQL/MariaDB: `p_CategoryId`, `p_ProductId`, `p_NewPrice`
 
-### Connection Refused
+### Connection refused
 
-1. Verify the database server is running
-2. Check firewall settings
-3. Verify connection string is correct
-4. For Docker containers, ensure ports are exposed
+Server not running, firewall, wrong port, or the container's port is not published.
 
 ---
 
 ## Test Coverage Summary
 
-| Database | Tests | Status |
-|----------|-------|--------|
-| SQLite | ~877 | Always runs |
-| SQL Server | ~100 | Requires setup |
-| PostgreSQL | ~100 | Requires setup |
-| MySQL | ~100 | Requires setup |
-| **Total** | **~1177** | |
+With all four configured against the `docker-compose.yml` stack and SQL Server pointed
+at a **local** instance, the suite runs **12,426 passing / 0 failed / 0 skipped**:
 
----
+| Assembly | net8.0 | net472 |
+|---|---|---|
+| Jaunty.Tests | 5,028 | 5,006 |
+| Jaunty.Fluent.Tests | 1,157 | — |
+| Jaunty.FlatFiles.DuckDB.Tests | 547 | — |
+| Jaunty.Scaffolding.Tests | 436 | — |
+| Jaunty.FlatFiles.Tests | 151 | — |
+| Jaunty.SourceGenerator.Tests | 67 | — |
+| Jaunty.Scaffolding.Cli.Tests | 34 | — |
 
-## Docker Setup (Recommended for CI/CD)
+Unconfigured — no environment variables, and `appsettings.json` either absent or blank — the
+same suite runs **7,528 passing / 0 failed / 4,898 skipped**. The two totals agree:
+7,528 + 4,898 = 12,426. The skips are 2,437 in each `Jaunty.Tests` TFM plus 24 in
+`Jaunty.Scaffolding.Tests`.
 
-For consistent testing across environments, use Docker:
+### Known environment limit
 
-```yaml
-# docker-compose.test.yml
-version: '3.8'
-services:
-  sqlserver:
-    image: mcr.microsoft.com/azure-sql-edge:latest
-    environment:
-      ACCEPT_EULA: "1"
-      MSSQL_SA_PASSWORD: "YourStrong@Passw0rd"
-    ports:
-      - "1433:1433"
-  
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-  
-  mysql:
-    image: mysql:8
-    environment:
-      MYSQL_ROOT_PASSWORD: ""
-    ports:
-      - "3306:3306"
-```
+The `CsvImportTests.*_SqlServer_*` tests use `BULK INSERT`, which reads the CSV
+**server-side**, so the file has to be reachable from wherever SQL Server runs:
 
-Start containers:
+| SQL Server | Result |
+|---|---|
+| Linux container (`docker-compose.yml`) | fail — the container cannot see the runner's filesystem |
+| Linux container + `docker-compose.bulkinsert.yml` | **pass** — the repo is bind-mounted at the identical path |
+| Local Windows instance | pass |
+
+**This is no longer a hard limit.** The tests send an absolute host path, so the fix is to
+make that path resolve inside the container:
+
 ```bash
-docker-compose -f docker-compose.test.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.bulkinsert.yml up -d mssql
 ```
 
-Then run the database setup scripts and tests.
+The overlay bind-mounts the repo root at its own absolute path, read-only — `BULK INSERT`
+only reads. Verified 2026-07-29 on macOS arm64: all four `CsvImportTests.*_SqlServer_*`
+pass, and `Jaunty.Tests` reaches 5,218 passing with zero skips.
+
+It is a separate file rather than part of `docker-compose.yml` because `${PWD}` is not an
+environment variable under PowerShell or cmd, so putting it in the base file would break
+`docker compose up` on Windows — where it is unnecessary anyway, a local instance already
+sharing the filesystem with the runner. Run compose from the repo root.
+
+Run them against a local instance by pointing `JAUNTY_TEST_SQLSERVER` at it:
+
+```bash
+JAUNTY_TEST_SQLSERVER="Server=lpc:localhost;Database=NorthwindJaunty;Trusted_Connection=true;TrustServerCertificate=true;" \
+  dotnet test tests/Jaunty.Tests/Jaunty.Tests.csproj -f net8.0 --filter "FullyQualifiedName~CsvImportTests"
+```
+
+The fixtures are staged under the test output directory (inside the repo), not the OS
+temp dir, precisely so a container that bind-mounts the workspace can still see them.

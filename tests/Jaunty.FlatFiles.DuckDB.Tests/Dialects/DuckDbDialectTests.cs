@@ -1,3 +1,6 @@
+using DuckDB.NET.Data;
+
+using Jaunty.Dialects;
 using Jaunty.FlatFiles.DuckDB.Dialects;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests.Dialects;
@@ -56,6 +59,42 @@ public class DuckDbDialectTests
         var result = _dialect.EscapeColumnName("ProductName");
         Assert.Equal("\"ProductName\"", result);
     }
+
+    [Theory]
+    [InlineData("\"ProductName\"")]
+    [InlineData("\"a\"\"b\"")]
+    [InlineData("\"\"")]
+    [InlineData("\" UNION SELECT password FROM users --\"")]
+    public void EscapeColumnName_WellFormedQuotedIdentifier_PassesThroughUnchanged(string columnName)
+    {
+        Assert.Equal(columnName, _dialect.EscapeColumnName(columnName));
+    }
+
+    [Theory]
+    [InlineData("\"a\" AS x, (SELECT 1) AS \"b\"")]
+    [InlineData("\"a\", 1 AS \"b\"")]
+    [InlineData("\"a\" UNION ALL SELECT 1 --\"")]
+    public void EscapeColumnName_BreakoutAttempt_IsRequotedNotPassedThrough(string columnName)
+    {
+        string result = _dialect.EscapeColumnName(columnName);
+
+        Assert.NotEqual(columnName, result);
+        Assert.StartsWith("\"", result);
+        Assert.EndsWith("\"", result);
+        Assert.Equal(columnName, Unquote(result));
+    }
+
+    [Fact]
+    public void EscapeColumnName_IsIdempotent_ForNamesContainingQuotes()
+    {
+        string once = _dialect.EscapeColumnName("a\"b");
+
+        Assert.Equal("\"a\"\"b\"", once);
+        Assert.Equal(once, _dialect.EscapeColumnName(once));
+    }
+
+    private static string Unquote(string quoted)
+        => quoted.Substring(1, quoted.Length - 2).Replace("\"\"", "\"");
 
     [Fact]
     public void GetLastInsertIdSql_ReturnsReturningClause()
@@ -119,6 +158,31 @@ public class DuckDbDialectTests
     public void FormatEndsWithPattern_PrependsPercent()
     {
         Assert.Equal("%test", _dialect.FormatEndsWithPattern("test"));
+    }
+
+    [Theory]
+    [InlineData("100%", "%100\\%%")]
+    [InlineData("a_b", "%a\\_b%")]
+    [InlineData("a\\b", "%a\\\\b%")]
+    public void FormatContainsPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _dialect.FormatContainsPattern(value));
+    }
+
+    [Theory]
+    [InlineData("100%", "100\\%%")]
+    [InlineData("a_b", "a\\_b%")]
+    public void FormatStartsWithPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _dialect.FormatStartsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("100%", "%100\\%")]
+    [InlineData("a_b", "%a\\_b")]
+    public void FormatEndsWithPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _dialect.FormatEndsWithPattern(value));
     }
 
     // ==========================================
@@ -202,6 +266,47 @@ public class DuckDbDialectTests
         Assert.Equal("SUBSTRING(col, 1, 5)", _dialect.GenerateSubstring("col", "1", "5"));
     }
 
+    /// <summary>
+    /// AUD-R26. DuckDB is outside the assembly the drift guard
+    /// (<c>SubstringToEndDialectTests.EveryShippingDialect_ImplementsTheOptionalInterface</c>) can
+    /// reach, so it is pinned here instead. Without the optional interface DuckDB would fall back to
+    /// a sentinel length, which is what the finding was about.
+    /// </summary>
+    [Fact]
+    public void GenerateSubstringToEnd_UsesTheTwoArgumentForm()
+    {
+        Assert.IsAssignableFrom<ISubstringToEndDialect>(_dialect);
+        Assert.Equal("SUBSTRING(col, 2)", ((ISubstringToEndDialect)_dialect).GenerateSubstringToEnd("col", "2"));
+        Assert.Equal("SUBSTRING(col, 2)", SubstringToEnd.Generate(_dialect, "col", "2"));
+    }
+
+    /// <summary>
+    /// Executed against DuckDB rather than asserted about: the old hardcoded 8000 returns 8,000 of
+    /// the 9,999 characters available, and the two-argument form returns all of them.
+    /// </summary>
+    [Fact]
+    public void GenerateSubstringToEnd_DoesNotTruncate_AgainstARealConnection()
+    {
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        using (var seed = connection.CreateCommand())
+        {
+            seed.CommandText = "CREATE TABLE t (s VARCHAR); INSERT INTO t VALUES (repeat('x', 10000));";
+            seed.ExecuteNonQuery();
+        }
+
+        string Scalar(string sql)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = sql;
+            return (string)cmd.ExecuteScalar()!;
+        }
+
+        Assert.Equal(8000, Scalar($"SELECT {_dialect.GenerateSubstring("s", "2", "8000")} FROM t").Length);
+        Assert.Equal(9999, Scalar($"SELECT {SubstringToEnd.Generate(_dialect, "s", "2")} FROM t").Length);
+    }
+
     // ==========================================
     // Date Functions
     // ==========================================
@@ -243,11 +348,31 @@ public class DuckDbDialectTests
             new[] { "@p0", "@p1" },
             new[] { "name" },
             new[] { "@p1" },
-            new[] { "id" });
+            new[] { "id" },
+            new[] { "@p0" });
 
         Assert.Contains("INSERT INTO \"products\"", result);
         Assert.Contains("ON CONFLICT (id) DO UPDATE SET", result);
         Assert.Contains("name = EXCLUDED.name", result);
+    }
+
+    // AUD-R12: GenerateUpsertSql appended ") DO UPDATE SET " and then the joined updateColumns
+    // list with no guard for a zero-length array, producing a dangling clause (invalid SQL) for
+    // a key-only entity with no non-key updatable columns.
+    [Fact]
+    public void GenerateUpsertSql_NoUpdateColumns_GeneratesDoNothing()
+    {
+        var result = _dialect.GenerateUpsertSql(
+            "\"products\"",
+            new[] { "id" },
+            new[] { "@p0" },
+            Array.Empty<string>(),
+            Array.Empty<string>(),
+            new[] { "id" },
+            new[] { "@p0" });
+
+        Assert.Contains("ON CONFLICT (id) DO NOTHING", result);
+        Assert.DoesNotContain("DO UPDATE SET", result);
     }
 
     // ==========================================
@@ -528,5 +653,64 @@ public class DuckDbDialectTests
         var result = _dialect.GenerateCopyToSql("sales", "/output/sales.json", FileFormats.Json);
 
         Assert.Contains("FORMAT JSON", result);
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_DeltaFormat_ThrowsNotSupportedException()
+    {
+        // Delta Lake is read-only via delta_scan(); DuckDB's COPY TO does not support it as a
+        // write target, and the format string must not be interpolated unvalidated (AUD-R9).
+        var ex = Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("sales", "/output/sales.delta", FileFormats.DeltaLake));
+
+        Assert.Contains("DELTA", ex.Message);
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_IcebergFormat_ThrowsNotSupportedException()
+    {
+        var ex = Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("sales", "/output/sales.iceberg", FileFormats.Iceberg));
+
+        Assert.Contains("ICEBERG", ex.Message);
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_UnknownCustomFormat_ThrowsNotSupportedException()
+    {
+        // A caller-supplied format that isn't on the allowlist must be rejected instead of being
+        // interpolated raw into the generated SQL's FORMAT clause.
+        var ex = Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("sales", "/output/sales.bin", "CSV) ; DROP TABLE sales; --"));
+
+        Assert.Contains("not supported", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_SourceOverload_DeltaLakeSource_ThrowsNotSupportedException()
+    {
+        var source = new DeltaLakeFileSource("orders", "/data/orders_delta", typeof(object));
+
+        Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("orders", "/output/orders.delta", source));
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_SourceOverload_IcebergSource_ThrowsNotSupportedException()
+    {
+        var source = new IcebergFileSource("orders", "/data/orders_iceberg", typeof(object));
+
+        Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("orders", "/output/orders.iceberg", source));
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_SourceOverload_CsvSource_StillWorks()
+    {
+        var source = new CsvFileSource("sales", "/data/sales.csv", typeof(object));
+
+        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.csv", source);
+
+        Assert.Contains("FORMAT CSV", result);
     }
 }

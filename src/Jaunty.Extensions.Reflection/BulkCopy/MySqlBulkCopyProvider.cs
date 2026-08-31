@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Jaunty;
 using Jaunty.Configuration;
 
 namespace Jaunty.Extensions.Reflection.BulkCopy;
@@ -31,11 +32,16 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
     // max_allowed_packet regardless of column count.
     private const int MaxParametersPerStatement = 2000;
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Always true: this provider needs no optional package and no reflected member. It issues
+    /// chunked multi-row INSERTs over whatever ADO.NET connection it is handed, so unlike
+    /// <c>SqlServerBulkCopyProvider</c> and <c>PostgreSqlBulkCopyProvider</c> there is nothing that
+    /// can fail to resolve.
+    /// </summary>
     public bool IsSupported => true;
 
     /// <inheritdoc/>
-    public int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options)
+    public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
         IDbTransaction? transaction = options.Transaction;
@@ -54,7 +60,20 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
             for (int i = 0; i < columnCount; i++)
                 columnNames[i] = data.GetName(i);
 
-            int rowsPerChunk = Math.Max(1, MaxParametersPerStatement / Math.Max(1, columnCount));
+            // R16: options.BatchSize must cap rows-per-statement - the MaxParametersPerStatement
+            // ceiling alone left BatchSize completely unused, so callers had no way to shrink the
+            // chunk size (e.g. to limit statement/packet size or transaction lock duration).
+
+            // AUD-R26-061: options.CheckConstraints, options.TableLock and options.IdentityMode are
+            // not read here, for three different reasons. CheckConstraints is not expressible - this
+            // provider issues ordinary multi-row INSERTs, which always enforce constraints, so the
+            // behaviour is permanently that of true. TableLock has no INSERT-level hint in MySQL;
+            // approximating it with LOCK TABLES would carry different transactional semantics than
+            // the flag implies. IdentityMode is inert on every provider, not just this one -
+            // EntityDataReader streams EntityMetadata.InsertColumns, which excludes identity
+            // columns, so the identity value never reaches any bulk copy at all. Documented per
+            // provider on BulkCopyOptions; pinned by BulkCopyIdentityModeTests.
+            int rowsPerChunk = Math.Max(1, Math.Min(options.BatchSize, MaxParametersPerStatement / Math.Max(1, columnCount)));
 
             int total = 0;
             var buffer = new object?[rowsPerChunk][];
@@ -73,7 +92,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
                     if (buffered == rowsPerChunk)
                     {
-                        fullChunkCommand ??= BuildChunkCommand(connection, transaction, tableName, columnNames, rowsPerChunk, options);
+                        fullChunkCommand ??= BuildChunkCommand(connection, transaction, schemaName, tableName, columnNames, rowsPerChunk, options);
                         BindChunk(fullChunkCommand, buffer, buffered, columnCount);
                         total += ExecuteAffectedRows(fullChunkCommand, buffered);
                         buffered = 0;
@@ -82,7 +101,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
                 if (buffered > 0)
                 {
-                    using IDbCommand tail = BuildChunkCommand(connection, transaction, tableName, columnNames, buffered, options);
+                    using IDbCommand tail = BuildChunkCommand(connection, transaction, schemaName, tableName, columnNames, buffered, options);
                     BindChunk(tail, buffer, buffered, columnCount);
                     total += ExecuteAffectedRows(tail, buffered);
                 }
@@ -99,8 +118,16 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
         }
         catch
         {
-            if (ownTransaction)
-                transaction?.Rollback();
+            // AUD-R35-215: the rollback is best-effort. The reachable case is a throwing Commit():
+            // control arrives here with an already-terminated transaction and MySQL's Rollback()
+            // throws on one, which would replace the real failure with a misleading one. Same idiom
+            // as BulkInsert.BulkInsertNativeCore.
+            if (ownTransaction && transaction is not null)
+            {
+                try { transaction.Rollback(); }
+                catch { /* Best effort - do not mask the original exception */ }
+            }
+
             throw;
         }
         finally
@@ -113,10 +140,10 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
     }
 
     /// <inheritdoc/>
-    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
+    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
-        DbTransaction? transaction = options.Transaction as DbTransaction;
+        DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
         bool ownTransaction = options.Transaction is null;
 
         try
@@ -125,14 +152,35 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
             if (ownTransaction)
+            {
+                // AUD-R35-216: this whole method used the synchronous transaction and connection
+                // members inside an async method that awaits everything else. The repository's
+                // async bulk paths (BulkInsertAsync, BulkUpdateAsync, BulkDeleteAsync) all take the
+                // async counterpart under NET8_0_OR_GREATER with a netstandard2.0 fallback.
+#if NET8_0_OR_GREATER
+                transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+#else
                 transaction = connection.BeginTransaction();
+#endif
+            }
 
             int columnCount = data.FieldCount;
             var columnNames = new string[columnCount];
             for (int i = 0; i < columnCount; i++)
                 columnNames[i] = data.GetName(i);
 
-            int rowsPerChunk = Math.Max(1, MaxParametersPerStatement / Math.Max(1, columnCount));
+            // R16: see the sync CopyToServer for why BatchSize must cap rows-per-statement here too.
+
+            // AUD-R26-061: options.CheckConstraints, options.TableLock and options.IdentityMode are
+            // not read here, for three different reasons. CheckConstraints is not expressible - this
+            // provider issues ordinary multi-row INSERTs, which always enforce constraints, so the
+            // behaviour is permanently that of true. TableLock has no INSERT-level hint in MySQL;
+            // approximating it with LOCK TABLES would carry different transactional semantics than
+            // the flag implies. IdentityMode is inert on every provider, not just this one -
+            // EntityDataReader streams EntityMetadata.InsertColumns, which excludes identity
+            // columns, so the identity value never reaches any bulk copy at all. Documented per
+            // provider on BulkCopyOptions; pinned by BulkCopyIdentityModeTests.
+            int rowsPerChunk = Math.Max(1, Math.Min(options.BatchSize, MaxParametersPerStatement / Math.Max(1, columnCount)));
 
             int total = 0;
             var buffer = new object?[rowsPerChunk][];
@@ -150,7 +198,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
                     if (buffered == rowsPerChunk)
                     {
-                        fullChunkCommand ??= (DbCommand)BuildChunkCommand(connection, transaction, tableName, columnNames, rowsPerChunk, options);
+                        fullChunkCommand ??= (DbCommand)BuildChunkCommand(connection, transaction, schemaName, tableName, columnNames, rowsPerChunk, options);
                         BindChunk(fullChunkCommand, buffer, buffered, columnCount);
                         int affected = await fullChunkCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                         total += affected < 0 ? buffered : affected;
@@ -160,7 +208,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
                 if (buffered > 0)
                 {
-                    using var tail = (DbCommand)BuildChunkCommand(connection, transaction, tableName, columnNames, buffered, options);
+                    using var tail = (DbCommand)BuildChunkCommand(connection, transaction, schemaName, tableName, columnNames, buffered, options);
                     BindChunk(tail, buffer, buffered, columnCount);
                     int affected = await tail.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     total += affected < 0 ? buffered : affected;
@@ -172,34 +220,83 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
             }
 
             if (ownTransaction)
+            {
+#if NET8_0_OR_GREATER
+                await transaction!.CommitAsync(cancellationToken).ConfigureAwait(false);
+#else
                 transaction!.Commit();
+#endif
+            }
 
             return total;
         }
         catch
         {
-            if (ownTransaction)
-                transaction?.Rollback();
+            // AUD-R35-215: best-effort rollback, and AUD-R35-216: the async counterpart where the
+            // framework has one. See the sync CopyToServer for why the rollback cannot be bare.
+            if (ownTransaction && transaction is not null)
+            {
+                try
+                {
+#if NET8_0_OR_GREATER
+                    await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+#else
+                    transaction.Rollback();
+#endif
+                }
+                catch { /* Best effort - do not mask the original exception */ }
+            }
+
             throw;
         }
         finally
         {
-            if (ownTransaction)
-                transaction?.Dispose();
+            if (ownTransaction && transaction is not null)
+            {
+#if NET8_0_OR_GREATER
+                await transaction.DisposeAsync().ConfigureAwait(false);
+#else
+                transaction.Dispose();
+#endif
+            }
+
             if (wasClosed && connection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await connection.CloseAsync().ConfigureAwait(false);
+#else
                 connection.Close();
+#endif
+            }
         }
     }
 
-    private static IDbCommand BuildChunkCommand(IDbConnection connection, IDbTransaction? transaction, string tableName, string[] columnNames, int rows, BulkCopyOptions options)
+    private static IDbCommand BuildChunkCommand(IDbConnection connection, IDbTransaction? transaction, string? schemaName, string tableName, string[] columnNames, int rows, BulkCopyOptions options)
     {
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName), global::Jaunty.Dialects.SqlIdentifierFlavor.MySql);
+        if (schemaName is not null && schemaName.Length != 0)
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName), global::Jaunty.Dialects.SqlIdentifierFlavor.MySql);
+        foreach (string columnName in columnNames)
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(columnName, nameof(columnNames), global::Jaunty.Dialects.SqlIdentifierFlavor.MySql);
+
         IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;
-        if (options.Timeout > 0)
+        // AUD-R35-067: this guarded on > 0, so Timeout = 0 - documented on BulkCopyOptions as "use 0
+        // for no timeout" - never reached the command and the chunk kept the ADO.NET default of 30
+        // seconds. A caller who asked for an untimed bulk load got a 30-second cap, and a slow chunk
+        // aborted the copy. SqlServerBulkCopyProvider assigns unconditionally, where 0 does mean no
+        // timeout, so the same option value meant opposite things on the two providers. 0 is the
+        // documented value and IDbCommand.CommandTimeout reads it the same way; only a negative,
+        // which CommandTimeout rejects outright, is still skipped.
+        if (options.Timeout >= 0)
             command.CommandTimeout = options.Timeout;
 
+        string qualifiedTableName = schemaName is null || schemaName.Length == 0
+            ? EscapeIdentifier(tableName)
+            : $"{EscapeIdentifier(schemaName)}.{EscapeIdentifier(tableName)}";
+
         var sb = new StringBuilder(64 + rows * columnNames.Length * 8);
-        sb.Append("INSERT INTO ").Append(EscapeIdentifier(tableName)).Append(" (");
+        sb.Append("INSERT INTO ").Append(qualifiedTableName).Append(" (");
         for (int c = 0; c < columnNames.Length; c++)
         {
             if (c > 0) sb.Append(", ");

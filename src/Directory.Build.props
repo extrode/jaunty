@@ -1,4 +1,9 @@
 <Project>
+  <!-- Chain to the repository-root props (LangVersion). Without this import MSBuild stops at
+       the nearest Directory.Build.props and everything under src/ silently falls back to the
+       SDK's per-TFM language default. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
   <PropertyGroup>
     <!-- Single source of truth for the local/dev version. Release builds override
          via -p:Version=<tag> in .github/workflows/release.yml (SemVer, see CHANGELOG.md). -->
@@ -12,14 +17,21 @@
   <!-- Common NuGet package metadata -->
   <PropertyGroup>
     <PackageTags>orm;micro-orm;sql;database;dapper-alternative;aot;nativeaot;source-generator</PackageTags>
-    <PackageProjectUrl>https://github.com/beparey/jaunty</PackageProjectUrl>
+    <PackageProjectUrl>https://extrode.com/jaunty</PackageProjectUrl>
+    <!-- ISL-R governs the binaries as well as the source, as of the 2026-08-30 model
+         decision: use is royalty-free and unconditioned, and what is sold is support.
+         The previous value here was LICENSE-EULA.md, whose grant was conditioned on an
+         Order - retired, and packing it would have shown every consumer a licence the
+         project no longer operates under. ISL-R has no SPDX identifier, so this is a
+         PackageLicenseFile and not a PackageLicenseExpression.
+         Acceptance stays required: sections 4 and 5 are conditions a consumer must see. -->
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-    <!-- Proprietary source-viewable license; consumers must accept it explicitly. -->
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <Copyright>Copyright (c) 2026 Syed Beparey</Copyright>
-    <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+    <Copyright>Copyright (c) 2026 Extrode LLC</Copyright>
+    <Company>Extrode LLC</Company>
+    <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
@@ -33,10 +45,14 @@
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
-  <!-- Pack README.md and LICENSE.md into NuGet packages -->
+  <!-- Pack README.md, the licence and the redistribution exception into NuGet packages.
+       The exception is packed alongside ISL-R because without it the no-distribution
+       clause would make shipping an application that references Jaunty impossible - a
+       consumer reading only LICENSE.md would reach the wrong conclusion. -->
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE-DISTRIBUTION-EXCEPTION.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\docs\_assets\icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>

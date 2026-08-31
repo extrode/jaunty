@@ -50,8 +50,33 @@ public sealed class EnumStorageAttribute : Attribute
     /// Initializes a new instance of the <see cref="EnumStorageAttribute"/> class.
     /// </summary>
     /// <param name="storage">The enum storage strategy.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="storage"/> is not a defined <see cref="EnumStorage"/> member.
+    /// </exception>
+    /// <remarks>
+    /// AUD-R35-137. The value used to be stored unchecked, and the two mapping paths then disagreed
+    /// about what an out-of-range one meant. Reflection - <c>BuildValueConverter</c>,
+    /// <c>ParameterBinder.GetEnumStorage</c>, <c>MetadataCache&lt;T&gt;.CreateFallbackSetter</c> -
+    /// treats anything that is not <see cref="EnumStorage.String"/> as numeric, so an explicit
+    /// attribute always wins. The generator recognises 0 and 1 and emits <c>null</c> for anything
+    /// else, at which point <c>GeneratedBindingSupport.ToDbEnumValue</c> falls back to
+    /// <c>JauntyConfig.DefaultEnumStorage</c>. So <c>[EnumStorage((EnumStorage)7)]</c> under a global
+    /// default of <c>String</c> wrote a number through reflection and a string through the
+    /// generator - the same add-the-generator-package silent behaviour change AUD-R30 closed for the
+    /// ordinary case. Rejecting the value at its source removes the divergence rather than picking a
+    /// winner for it, and a cast to an undefined member is a caller mistake in every case: there is
+    /// no third storage strategy to be forward-compatible with.
+    /// </remarks>
     public EnumStorageAttribute(EnumStorage storage)
     {
+        if (storage is not (EnumStorage.Numeric or EnumStorage.String))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(storage),
+                storage,
+                "Enum storage must be EnumStorage.Numeric or EnumStorage.String.");
+        }
+
         Storage = storage;
     }
 }

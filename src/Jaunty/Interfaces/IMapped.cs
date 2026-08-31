@@ -65,8 +65,14 @@ namespace Jaunty.Interfaces;
 /// #endif
 /// }
 /// 
-/// // Use with custom mapper option
+/// // Use with custom mapper option. AUD-R35-173: the call sits outside the #if above, so it has
+/// // to be spelled the way each target framework declares the member - static on net8.0+, an
+/// // instance member below it, which is the whole reason the #else branch exists.
+/// #if NET8_0_OR_GREATER
 /// var options = CommandOptions&lt;Product&gt;.WithMapper(Product.ReadEntity);
+/// #else
+/// var options = CommandOptions&lt;Product&gt;.WithMapper(new Product().ReadEntity);
+/// #endif
 /// var products = connection.Query("SELECT * FROM Products", options: options);
 /// </code>
 /// </example>

@@ -12,7 +12,10 @@ public class ScaffolderIntegrationTests : IDisposable
 
     public ScaffolderIntegrationTests()
     {
-        _connectionString = "Data Source=InMemoryScaffoldTest;Mode=Memory;Cache=Shared";
+        // GUID-suffixed to match the temp output directory below - a future test-method-level
+        // parallelism change (or a constructor failure that skips Dispose) can't cause two
+        // instances to collide on the same shared-cache name.
+        _connectionString = $"Data Source=InMemoryScaffoldTest_{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
         _connection = new SqliteConnection(_connectionString);
         _connection.Open();
 
@@ -68,6 +71,29 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.True(File.Exists(categoryFile));
     }
 
+    // AUD-R22: ScaffoldAsync used to wrap its entire body in catch (Exception ex), converting
+    // OperationCanceledException from a cancelled cancellationToken into an ordinary
+    // ScaffoldResult.Failed - unlike the sibling ListTablesAsync, which has no such catch and
+    // lets cancellation propagate as a thrown exception. A caller couldn't distinguish
+    // "cancelled" from "the database read failed" via ScaffoldAsync's result alone.
+    [Fact]
+    public async Task ScaffoldAsync_CancelledToken_PropagatesOperationCanceledException()
+    {
+        var scaffolder = new Scaffolder();
+        var options = new ScaffoldOptions
+        {
+            ConnectionString = _connectionString,
+            Provider = DatabaseProvider.SQLite,
+            OutputDirectory = _tempOutputDir,
+            Namespace = "Test.Entities"
+        };
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => scaffolder.ScaffoldAsync(options, cts.Token));
+    }
+
     [Fact]
     public async Task ScaffoldAsync_GeneratesCorrectCode()
     {
@@ -97,21 +123,21 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.Contains("namespace Test.Entities;", content);
 
         // Check class declaration
-        Assert.Contains("public class Product", content);
+        Assert.Contains("public partial class Product", content);
 
         // Check table attribute
-        Assert.Contains("[Table(\"products\")]", content);
+        Assert.Contains("[Jaunty.Attributes.Table(\"products\")]", content);
 
         // Check key attribute on primary key
-        Assert.Contains("[Key]", content);
+        Assert.Contains("[Jaunty.Attributes.Key]", content);
 
         // Check database generated attribute on identity column
-        Assert.Contains("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]", content);
+        Assert.Contains("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", content);
 
         // Check column attributes for snake_case columns
-        Assert.Contains("[Column(\"product_id\")]", content);
-        Assert.Contains("[Column(\"product_name\")]", content);
-        Assert.Contains("[Column(\"unit_price\")]", content);
+        Assert.Contains("[Jaunty.Attributes.Column(\"product_id\")]", content);
+        Assert.Contains("[Jaunty.Attributes.Column(\"product_name\")]", content);
+        Assert.Contains("[Jaunty.Attributes.Column(\"unit_price\")]", content);
 
         // Check nullable type for nullable column
         Assert.Contains("public double? UnitPrice", content);
@@ -218,7 +244,7 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.True(File.Exists(entityFile));
 
         var content = await File.ReadAllTextAsync(entityFile);
-        Assert.Contains("public class ProductEntity", content);
+        Assert.Contains("public partial class ProductEntity", content);
     }
 
     [Fact]
@@ -243,7 +269,7 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.True(File.Exists(pluralFile));
 
         var content = await File.ReadAllTextAsync(pluralFile);
-        Assert.Contains("public class Products", content);
+        Assert.Contains("public partial class Products", content);
     }
 
     [Fact]
@@ -310,8 +336,79 @@ public class ScaffolderIntegrationTests : IDisposable
 
         // File should be overwritten with new content
         var content = await File.ReadAllTextAsync(existingFile);
-        Assert.Contains("public class Product", content);
+        Assert.Contains("public partial class Product", content);
         Assert.DoesNotContain("// existing content", content);
+    }
+
+    [Fact]
+    public async Task ScaffoldAsync_CollidingClassNames_FailsBeforeWritingAnyFile()
+    {
+        // "product" and "products" both singularize to the class name "Product".
+        using (var cmd = _connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+                CREATE TABLE product (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL
+                )";
+            cmd.ExecuteNonQuery();
+        }
+
+        var scaffolder = new Scaffolder();
+        var options = new ScaffoldOptions
+        {
+            ConnectionString = _connectionString,
+            Provider = DatabaseProvider.SQLite,
+            OutputDirectory = _tempOutputDir,
+            Namespace = "Test.Entities",
+            IncludeTables = ["product", "products"],
+            Singularize = true
+        };
+
+        var result = await scaffolder.ScaffoldAsync(options);
+
+        Assert.False(result.Success);
+        Assert.Contains("Product", result.Error);
+        Assert.Contains("product", result.Error);
+        Assert.Contains("products", result.Error);
+
+        // Detected up front - neither colliding table's file should have been written.
+        Assert.False(File.Exists(Path.Combine(_tempOutputDir, "Product.cs")));
+    }
+
+    [Fact]
+    public async Task ScaffoldAsync_LaterTableFileExists_FailsBeforeWritingEarlierTableFiles()
+    {
+        // Round 15 audit finding: File.Exists was previously checked one table at a time
+        // inside the write loop, so a collision on a *later* table (categories, here) would
+        // leave an *earlier* table's file (Product.cs) already written to disk with no
+        // rollback. This proves the up-front pre-validation (mirroring the class-name-collision
+        // check above) now catches it before writing anything at all.
+        var existingFile = Path.Combine(_tempOutputDir, "Category.cs");
+        await File.WriteAllTextAsync(existingFile, "// existing content");
+
+        var scaffolder = new Scaffolder();
+        var options = new ScaffoldOptions
+        {
+            ConnectionString = _connectionString,
+            Provider = DatabaseProvider.SQLite,
+            OutputDirectory = _tempOutputDir,
+            Namespace = "Test.Entities",
+            IncludeTables = ["products", "categories"],
+            Force = false
+        };
+
+        var result = await scaffolder.ScaffoldAsync(options);
+
+        Assert.False(result.Success);
+        Assert.Contains("Category.cs", result.Error);
+
+        // Product.cs must not have been written even though "products" sorts/executes before
+        // "categories" - the collision on categories must be caught before any write happens.
+        Assert.False(File.Exists(Path.Combine(_tempOutputDir, "Product.cs")));
+
+        // The pre-existing categories file must be untouched.
+        Assert.Equal("// existing content", await File.ReadAllTextAsync(existingFile));
     }
 
     public void Dispose()

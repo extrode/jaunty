@@ -1,3 +1,4 @@
+using Jaunty.Core;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
@@ -15,6 +16,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_ReturnsLong_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -29,6 +32,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_ReturnsString_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -44,6 +49,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_ReturnsDouble_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -59,6 +66,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_WithNamedParameter_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -75,6 +84,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_WithPositionalParameter_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -91,6 +102,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_NoRows_ReturnsDefault(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -107,6 +120,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_NullValue_ReturnsDefault(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -116,8 +131,40 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
                 : "SELECT region FROM customers WHERE customer_id = @Id",
             new { Id = "ALFKI" });
 
-        // Region can be null for some customers
-        // This tests that null handling works
-        Assert.True(result == null || result is string);
+        // ALFKI's Region is NULL in the seed data - verifies QueryScalar actually returns
+        // null for a NULL database value rather than an empty string or throwing.
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_WithOptionsOnly_Works(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var count = dialect.Provider == DialectProvider.SqlServer
+            ? connection.QueryScalar<int>("SELECT COUNT(*) FROM Products", CommandOptions<int>.WithTimeout(30))
+            : connection.QueryScalar<long>("SELECT COUNT(*) FROM products", CommandOptions<long>.WithTimeout(30));
+
+        Assert.True(count > 0);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_WithParametersAndOptions_Works(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var count = dialect.Provider == DialectProvider.SqlServer
+            ? connection.QueryScalar<int>("SELECT COUNT(*) FROM Products WHERE CategoryId = @CategoryId", new { CategoryId = 1 }, CommandOptions<int>.WithTimeout(30))
+            : connection.QueryScalar<long>("SELECT COUNT(*) FROM products WHERE category_id = @CategoryId", new { CategoryId = 1 }, CommandOptions<long>.WithTimeout(30));
+
+        Assert.True(count > 0);
     }
 }

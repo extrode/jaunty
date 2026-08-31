@@ -29,6 +29,8 @@ public class QuerySingleTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QuerySingle_WithSingleResult_ReturnsResult(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -45,6 +47,8 @@ public class QuerySingleTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QuerySingle_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -61,6 +65,8 @@ public class QuerySingleTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QuerySingle_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -76,6 +82,8 @@ public class QuerySingleTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QuerySingle_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -91,6 +99,8 @@ public class QuerySingleTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QuerySingle_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -107,6 +117,8 @@ public class QuerySingleTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QuerySingle_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

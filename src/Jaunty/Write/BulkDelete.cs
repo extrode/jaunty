@@ -4,6 +4,7 @@ using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -29,6 +30,12 @@ public static partial class Jaunty
     /// <para>
     /// Each entity must have its primary key property set to identify the row to delete.
     /// </para>
+    /// <para>
+    /// <strong>Performance note:</strong> This method issues one <c>DELETE</c> round trip per entity
+    /// in a sequential loop; unlike <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>, there
+    /// is no multi-row batching for the delete path. For large collections, this is the dominant cost
+    /// driver.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -38,7 +45,7 @@ public static partial class Jaunty
     ///     public string Name { get; set; }
     ///     public decimal Price { get; set; }
     /// }
-    /// 
+    ///
     /// // Bulk delete multiple products
     /// var productsToDelete = new List&lt;Product&gt;
     /// {
@@ -46,7 +53,7 @@ public static partial class Jaunty
     ///     new Product { Id = 2 },
     ///     new Product { Id = 3 }
     /// };
-    /// 
+    ///
     /// int deleted = connection.BulkDelete(productsToDelete);
     /// Console.WriteLine($"Deleted {deleted} products");
     /// </code>
@@ -230,6 +237,9 @@ public static partial class Jaunty
         if (entityList.Count == 0)
             return 0;
 
+        BulkEntityValidator.ThrowIfAnyNull(entityList, nameof(entities));
+        BulkCommandTypeValidator.ThrowIfNotText(options, "BulkDelete");
+
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (!cached.HasPrimaryKey)
@@ -238,105 +248,148 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}': Delete SQL could not be generated.");
 
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        var bulkParameters = new BulkOperationParameters("BulkDelete", typeof(T), entityList.Count);
 
-        if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
-            throw new NotSupportedException(
-                $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
-                "Use BulkDelete instead, or disable constraints manually before calling this method.");
+        // AUD-R26: the whole operation is reported once, not once per statement - a 100,000-row
+        // BulkDelete is one logical write, and firing the pipeline per row would both swamp an
+        // auditor and cost more than the bulk path saves. The body below is unchanged; it lives in
+        // a local function so the transaction, FK-toggle and rollback logic is captured rather than
+        // re-threaded through a new signature.
 
-        // Note: Native bulk DELETE is not widely supported by database providers.
-        // Most databases (SQL Server, PostgreSQL, MySQL) don't have native bulk DELETE APIs.
-        // We fall back to standard parameterized DELETE statements which are still efficient
-        // when executed within a single transaction.
+        return CommandObservation.Execute(
+            cached.DeleteSql,
+            bulkParameters,
+            connection,
+            options.CommandType,
+            Body);
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        IDbTransaction? transaction = options.Transaction;
-        bool ownTransaction = transaction is null;
-
-        try
+        int Body()
         {
-            if (wasClosed)
-                connection.Open();
+            CommandObservation.Log(cached.DeleteSql, bulkParameters);
 
-            if (ownTransaction)
-                transaction = connection.BeginTransaction();
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
 
-            if (ignoreConstraints)
-            {
-                using IDbCommand fkOffCmd = connection.CreateCommand();
-                fkOffCmd.Transaction = transaction;
-                fkOffCmd.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
-                fkOffCmd.ExecuteNonQuery();
-            }
+            if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
+                throw new NotSupportedException(
+                    $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
+                    "Use BulkDelete instead, or disable constraints manually before calling this method.");
 
-            int totalDeleted = 0;
+            ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
+            bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
+
+            // Note: Native bulk DELETE is not widely supported by database providers.
+            // Most databases (SQL Server, PostgreSQL, MySQL) don't have native bulk DELETE APIs.
+            // We fall back to standard parameterized DELETE statements which are still efficient
+            // when executed within a single transaction.
+
+            bool wasClosed = connection.State == ConnectionState.Closed;
+
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
+            IDbTransaction? transaction = connection is System.Data.Common.DbConnection
+                ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                : options.Transaction;
+            bool ownTransaction = transaction is null;
 
             try
             {
-                using IDbCommand command = connection.CreateCommand();
-                command.Transaction = transaction;
-                command.CommandText = cached.DeleteSql;
+                if (wasClosed)
+                    connection.Open();
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+                int totalDeleted = 0;
 
-                PrepareDeleteParameters(command, cached.Metadata);
-
-                Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.DeleteValueSetter;
-                if (valueSetter == null)
+                try
                 {
-                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
-                }
+                    // AUD-R34-008: these three lines used to sit outside this try, so a throw from
+                    // BeginTransaction - or from the second disable - skipped the catch below and
+                    // left foreign key enforcement off. The outer finally only disposes and closes,
+                    // and the connection then goes back to the pool disabled.
+                    if (ignoreConstraints && requiresAutocommit)
+                        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null, options.CommandTimeout);
 
-                IDataParameterCollection pCollection = command.Parameters;
+                    if (ownTransaction)
+                        transaction = connection.BeginTransaction();
 
-                foreach (T? entity in entityList)
-                {
-                    valueSetter(pCollection, entity);
-                    totalDeleted += command.ExecuteNonQuery();
-                }
+                    if (ignoreConstraints && !requiresAutocommit)
+                        ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction, options.CommandTimeout);
 
-                if (ignoreConstraints)
-                {
-                    using IDbCommand fkOnCmd = connection.CreateCommand();
-                    fkOnCmd.Transaction = transaction;
-                    fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
-                    fkOnCmd.ExecuteNonQuery();
-                }
+                    using IDbCommand command = connection.CreateCommand();
+                    command.Transaction = transaction;
+                    command.CommandText = cached.DeleteSql;
 
-                if (ownTransaction)
-                    transaction!.Commit();
+                    if (options.CommandTimeout.HasValue)
+                        command.CommandTimeout = options.CommandTimeout.Value;
 
-                return totalDeleted;
-            }
-            catch
-            {
-                if (ignoreConstraints)
-                {
-                    try
+                    PrepareDeleteParameters(command, cached.Metadata);
+
+                    Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.DeleteValueSetter;
+                    if (valueSetter == null)
                     {
-                        using IDbCommand fkOnCmd = connection.CreateCommand();
-                        fkOnCmd.Transaction = transaction;
-                        fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
-                        fkOnCmd.ExecuteNonQuery();
+                        throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
                     }
-                    catch { /* Best effort */ }
+
+                    IDataParameterCollection pCollection = command.Parameters;
+
+                    // Set first entity values before Prepare() so providers can infer parameter types.
+                    // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
+                    // require explicit DbType on all parameters, which we can't guarantee here.
+                    bool isFirst = true;
+                    foreach (T? entity in entityList)
+                    {
+                        valueSetter(pCollection, entity);
+                        if (isFirst)
+                        {
+                            try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
+                            isFirst = false;
+                        }
+                        totalDeleted += command.ExecuteNonQuery();
+                    }
+
+                    if (ignoreConstraints && !requiresAutocommit)
+                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction, options.CommandTimeout);
+
+                    if (ownTransaction)
+                        transaction!.Commit();
+
+                    if (ignoreConstraints && requiresAutocommit)
+                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null, options.CommandTimeout);
+
+                    return totalDeleted;
                 }
+                catch
+                {
+                    if (ignoreConstraints && !requiresAutocommit)
+                    {
+                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction, options.CommandTimeout); }
+                        catch { /* Best effort */ }
+                    }
 
-                if (ownTransaction)
-                    transaction?.Rollback();
+                    if (ownTransaction)
+                    {
+                        try { transaction?.Rollback(); }
+                        catch { /* Best effort - do not mask the original exception */ }
+                    }
 
-                throw;
+                    if (ignoreConstraints && requiresAutocommit)
+                    {
+                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null, options.CommandTimeout); }
+                        catch { /* Best effort */ }
+                    }
+
+                    throw;
+                }
             }
-        }
-        finally
-        {
-            if (ownTransaction)
-                transaction?.Dispose();
+            finally
+            {
+                if (ownTransaction)
+                    transaction?.Dispose();
 
-            if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
+                if (wasClosed && connection.State != ConnectionState.Closed)
+                    connection.Close();
+            }
         }
     }
 }

@@ -1,6 +1,8 @@
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.Interfaces;
 
+using Jaunty.FlatFiles.Internals;
+
 namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
@@ -70,10 +72,8 @@ public sealed class ExcelFileSource : IFileSource
     public ExcelFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
-        if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
-        if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
-        if (filePaths[0] is null) throw new ArgumentNullException(nameof(filePaths), "File path must not be null.");
-        FilePaths = filePaths;
+        FilePathValidator.ThrowIfInvalid(filePaths, nameof(filePaths));
+        FilePaths = FilePathValidator.Snapshot(filePaths);
         FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
@@ -98,5 +98,41 @@ public sealed class ExcelFileSource : IFileSource
     }
 
     /// <inheritdoc />
-    public string? GenerateCopyToOptions() => null;
+    /// <remarks>
+    /// AUD-R35-073. <see cref="SheetName"/> and <see cref="HasHeader"/> were honoured on the read
+    /// side and dropped on the write side, so a source configured <c>SheetName = "Data"</c> or
+    /// <c>HasHeader = false</c> did not round-trip: the written file landed on DuckDB's default
+    /// sheet with a header row, and re-reading it through the same source ate the first data row as
+    /// column names. Same defect already fixed for the two siblings that carry write-relevant read
+    /// options - <c>CsvFileSource</c> (AUD-R21-003) and <c>TsvFileSource</c>.
+    /// <para>
+    /// <see cref="Range"/> is deliberately not written back: it selects a sub-rectangle of an
+    /// existing sheet, which has no meaning for a file being created from scratch.
+    /// </para>
+    /// <para>
+    /// Option spellings measured against the pinned DuckDB 1.3.0 <c>excel</c> extension, not taken
+    /// from documentation: <c>SHEET '&lt;name&gt;'</c> is the one that names the sheet.
+    /// <c>SHEET_NAME</c> is accepted by the parser and then silently does nothing - the written
+    /// file's sheet keeps its default name and a subsequent <c>read_xlsx(..., sheet = '&lt;name&gt;')</c>
+    /// fails with "Sheet not found".
+    /// </para>
+    /// </remarks>
+    public string? GenerateCopyToOptions()
+    {
+        var sb = new System.Text.StringBuilder();
+
+        if (SheetName is not null)
+            sb.Append($"SHEET '{SheetName.Replace("'", "''")}'");
+
+        // HasHeader == false means the file genuinely has no header row, so writing one back would
+        // produce a file this very source can never read correctly - the same reasoning, and the
+        // same null-means-leave-it-alone default, as CsvFileSource.
+        if (HasHeader == false)
+        {
+            if (sb.Length > 0) sb.Append(", ");
+            sb.Append("HEADER false");
+        }
+
+        return sb.Length == 0 ? null : sb.ToString();
+    }
 }

@@ -47,7 +47,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
+    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when the number of provided parameters doesn't match the SQL.
@@ -64,7 +65,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryFirstOrDefaultCore<T>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -103,7 +104,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
+    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -116,10 +118,12 @@ public static partial class Jaunty
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstOrDefaultCore<T>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -153,7 +157,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
+    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="QueryFirstOrDefault{T}(IDbConnection, string)"/>
@@ -166,7 +171,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryFirstOrDefaultCore<T>(connection, sql, null, options, MappingMode.Strict);
     }
@@ -205,7 +210,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
+    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -218,10 +224,12 @@ public static partial class Jaunty
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, MappingMode.Strict);
     }

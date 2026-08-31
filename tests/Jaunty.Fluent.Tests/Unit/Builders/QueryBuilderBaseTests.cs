@@ -6,10 +6,9 @@ using Jaunty.Fluent.Tests.Helpers;
 namespace Jaunty.Fluent.Tests.Unit.Builders;
 
 /// <summary>
-/// Tests for QueryBuilderBase via the public fluent API surface.
-/// QueryBuilderBase is internal/abstract; its behaviour is exercised through
-/// concrete builders (From&lt;T&gt;) that inherit from it.  All assertions target
-/// observable SQL output (ToSql) or query results on an in-memory SQLite DB.
+/// Tests for query-builder FROM/JOIN/WHERE/ORDER BY clause construction via the
+/// public fluent API surface (From&lt;T&gt;). All assertions target observable
+/// SQL output (ToSql) or query results on an in-memory SQLite DB.
 /// </summary>
 public class QueryBuilderBaseTests : IClassFixture<FluentDatabaseFixture>
 {
@@ -71,9 +70,10 @@ public class QueryBuilderBaseTests : IClassFixture<FluentDatabaseFixture>
             .On("p.category_id", "c.category_id")
             .ToSql();
 
-        // alias "p" must appear after the table name in the FROM clause
-        Assert.Contains(" p", sql);
-        Assert.Contains(" c", sql);
+        // BuildFromAndJoinClause emits "<table> <alias>" verbatim after the table name in
+        // FROM/JOIN, so these substrings only appear if the alias was actually applied.
+        Assert.Contains("products p", sql);
+        Assert.Contains("categories c", sql);
     }
 
     // ------------------------------------------------------------------

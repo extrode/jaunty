@@ -1,0 +1,1 @@
+SELECT $$ @nope $$, $1 FROM t

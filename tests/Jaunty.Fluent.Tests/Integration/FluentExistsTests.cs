@@ -196,8 +196,10 @@ public class FluentExistsTests : IClassFixture<FluentDatabaseFixture>
             .WhereNotExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .CountAsync();
 
-        // Count should be valid (>= 0)
-        Assert.True(count >= 0);
+        // Northwind's seed data has at least one product per category, so no category should
+        // satisfy WhereNotExists; a regression that inverted the clause (e.g. behaved like
+        // WhereExists) would return a non-zero count instead.
+        Assert.Equal(0, count);
     }
 
     // ==========================================
@@ -228,5 +230,145 @@ public class FluentExistsTests : IClassFixture<FluentDatabaseFixture>
             .Select();
 
         Assert.True(categories.Count <= 3);
+    }
+
+    // ==========================================
+    // Alias / Self-Reference / Null Handling
+    // ==========================================
+
+    [Fact]
+    public void WhereExists_WithOuterAlias_UsesAliasNotTableName()
+    {
+        var sql = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .ToSql();
+
+        // The outer correlation column must be prefixed with the alias the query was
+        // created with, not the raw (escaped) table name.
+        Assert.Contains("c.category_id", sql);
+        Assert.DoesNotContain("categories.category_id", sql);
+    }
+
+    // AUD-R35: the assertion above is text-only and passed while the statement was unrunnable -
+    // the alias was referenced and never declared. These execute it.
+    [Fact]
+    public void WhereExists_WithOuterAlias_DeclaresTheAliasOnTheOuterTable()
+    {
+        var sql = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .ToSql();
+
+        Assert.Contains("categories c WHERE", sql);
+    }
+
+    [Fact]
+    public void WhereExists_WithOuterAlias_Executes()
+    {
+        var aliased = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .Select();
+
+        var unaliased = _fixture.Connection.From<Category>()
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .Select();
+
+        Assert.NotEmpty(aliased);
+        Assert.Equal(unaliased.Count, aliased.Count);
+    }
+
+    [Fact]
+    public void WhereExists_WithOuterAlias_CountAndAggregateExecute()
+    {
+        int count = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .Count();
+
+        int max = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .Max(c => c.CategoryId);
+
+        Assert.True(count > 0);
+        Assert.True(max > 0);
+    }
+
+    [Fact]
+    public void WhereExists_WithOuterAlias_DeleteThrowsRatherThanNamingAnUndeclaredAlias()
+    {
+        NotSupportedException ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Category>("c")
+                .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+                .Delete());
+        Assert.Contains("cannot declare a table alias", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("c\"; DROP TABLE categories --")]
+    [InlineData("a b")]
+    [InlineData("")]
+    public void From_InvalidAlias_IsRejected(string alias)
+    {
+        Assert.Throws<ArgumentException>(() => _fixture.Connection.From<Category>(alias));
+    }
+
+    [Fact]
+    public void WhereExists_SelfReferencing_UsesDistinctAliasesForBothSides()
+    {
+        // TOuter == TSubquery (Product self-referencing EXISTS): both sides must not collapse
+        // onto the same table prefix, or the correlation would be meaningless.
+        var sql = _fixture.Connection.From<Product>()
+            .WhereExists<Product>((p1, p2) => p1.CategoryId == p2.CategoryId && p1.ProductId != p2.ProductId)
+            .ToSql();
+
+        Assert.Contains("products_ex", sql);
+    }
+
+    [Fact]
+    public void WhereExists_SelfReferencing_FindsProductsWithSiblingInSameCategory()
+    {
+        var products = _fixture.Connection.From<Product>()
+            .WhereExists<Product>((p1, p2) => p1.CategoryId == p2.CategoryId && p1.ProductId != p2.ProductId)
+            .Select();
+
+        Assert.NotEmpty(products);
+
+        foreach (var product in products)
+        {
+            var siblingCount = _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == product.CategoryId)
+                .And(p => p.ProductId != product.ProductId)
+                .Count();
+            Assert.True(siblingCount > 0);
+        }
+    }
+
+    [Fact]
+    public void WhereExists_ComparisonAgainstNull_GeneratesIsNull()
+    {
+        var sql = _fixture.Connection.From<Category>()
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId && p.SupplierId == null)
+            .ToSql();
+
+        Assert.Contains("IS NULL", sql);
+        Assert.DoesNotContain("= NULL", sql);
+    }
+
+    [Fact]
+    public void WhereExists_ComparisonAgainstNull_FiltersCorrectly()
+    {
+        // Products with no supplier: correlate against that so only categories that have a
+        // supplier-less product are returned. Confirms IS NULL (not "= NULL", which is always
+        // UNKNOWN/false under SQL's three-valued logic) is actually being applied.
+        var categories = _fixture.Connection.From<Category>()
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId && p.SupplierId == null)
+            .Select();
+
+        foreach (var category in categories)
+        {
+            var matchCount = _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == category.CategoryId)
+                .And(p => p.SupplierId == null)
+                .Count();
+            Assert.True(matchCount > 0);
+        }
     }
 }

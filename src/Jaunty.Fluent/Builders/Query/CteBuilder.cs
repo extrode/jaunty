@@ -1,11 +1,11 @@
-using System.Data;
+﻿using System.Data;
 using System.Linq.Expressions;
 using System.Text;
 
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent;
 
@@ -16,10 +16,10 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 {
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
-    private readonly EntityMetadata _metadata;
     private readonly CachedDialectMetadata _cache;
     private readonly string _cteName;
     private readonly ParameterCollection _parameters = new();
+    private readonly Dictionary<string, int> _whereParamCounts = new(StringComparer.OrdinalIgnoreCase);
 
     private string? _cteDefinitionSql;
     private readonly List<WhereCondition> _whereConditions = new();
@@ -35,7 +35,6 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
-        _metadata = FluentMetadataCache.GetMetadata<T>();
         _cache = FluentMetadataCache.GetForDialect<T>(_dialect);
         _cteName = cteName;
     }
@@ -48,34 +47,44 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         IWhereClause<T> result = queryBuilder(innerQuery);
 
         // Get the SQL from the inner query (without executing)
-        _cteDefinitionSql = ((IWhereClause<T>)result).ToSql();
+        var sql = ((IWhereClause<T>)result).ToSql();
 
-        // Copy parameters from inner query
+        // Copy parameters from inner query, renamed to a unique prefix so they can never
+        // collide with a name this CteBuilder's own Where/And/Or calls generate later
+        // (see ParameterRenamer.Rename).
         if (result is QueryBuilder<T> qb)
         {
             ParameterCollection innerParams = qb.GetParameters();
-            foreach ((string Name, object? Value) param in innerParams.GetAll())
+            (sql, ParameterCollection renamedParams) = ParameterRenamer.Rename(sql, innerParams, "cte_src");
+            foreach ((string Name, object? Value) param in renamedParams.GetAll())
             {
                 _parameters.Add(param.Name, param.Value);
             }
         }
+
+        _cteDefinitionSql = sql;
 
         return this;
     }
 
     public ICteQueryClause<T> As(IWhereClause<T> query)
     {
-        _cteDefinitionSql = query.ToSql();
+        var sql = query.ToSql();
 
-        // Copy parameters from the query
+        // Copy parameters from the query, renamed to a unique prefix so they can never
+        // collide with a name this CteBuilder's own Where/And/Or calls generate later
+        // (see ParameterRenamer.Rename).
         if (query is QueryBuilder<T> qb)
         {
             ParameterCollection innerParams = qb.GetParameters();
-            foreach ((string Name, object? Value) param in innerParams.GetAll())
+            (sql, ParameterCollection renamedParams) = ParameterRenamer.Rename(sql, innerParams, "cte_src");
+            foreach ((string Name, object? Value) param in renamedParams.GetAll())
             {
                 _parameters.Add(param.Name, param.Value);
             }
         }
+
+        _cteDefinitionSql = sql;
 
         return this;
     }
@@ -86,7 +95,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public ICteQueryClause<T> Where(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         LogicalOperator op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
         _whereConditions.Add(WhereCondition.Expression(sql, op));
@@ -96,17 +105,29 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public ICteQueryClause<T> Where(string column, object? value)
     {
-        var paramName = $"@cte_p{_parameters.Count}";
-        _parameters.Add(paramName, value);
-        var sql = $"{_dialect.EscapeColumnName(column)} = {paramName}";
+        var escapedColumn = _dialect.EscapeColumnName(column);
         LogicalOperator op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
-        _whereConditions.Add(WhereCondition.Column(sql, op));
+
+        if (value is null)
+        {
+            // A bound null becomes DBNull, and "col = NULL" is UNKNOWN for every row under SQL's
+            // three-valued logic - so the query silently returned nothing instead of the rows where
+            // the column IS NULL. Every other string-column predicate in the assembly branches here
+            // (QueryBuilder's six Where/And/Or overloads and their IUpdateWhereClause counterparts);
+            // this was the one that didn't.
+            _whereConditions.Add(WhereCondition.Column($"{escapedColumn} IS NULL", op));
+            return this;
+        }
+
+        var paramName = $"{_dialect.ParameterPrefix}cte_p{_parameters.Count}";
+        _parameters.Add(paramName, value);
+        _whereConditions.Add(WhereCondition.Column($"{escapedColumn} = {paramName}", op));
         return this;
     }
 
     public ICteQueryClause<T> And(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _whereConditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
         _parameters.AddRange(parameters);
@@ -115,7 +136,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public ICteQueryClause<T> Or(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _whereConditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         _parameters.AddRange(parameters);
@@ -125,16 +146,21 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     public ICteQueryClause<T> OrderBy<TKey>(Expression<Func<T, TKey>> selector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(selector);
+        // Already dialect-escaped (GetColumnNameFromProperty is backed by the pre-escaped
+        // CachedDialectMetadata cache) - escaping again here would double-escape (and throw
+        // for a keyword-named column, since SqlIdentifierValidator rejects the bracketed/
+        // quoted text on the second pass).
         string columnName = GetColumnNameFromProperty(propertyName);
-        _orderByColumns.Add(new OrderByColumn(_dialect.EscapeColumnName(columnName), false));
+        _orderByColumns.Add(new OrderByColumn(columnName, false));
         return this;
     }
 
     public ICteQueryClause<T> OrderByDescending<TKey>(Expression<Func<T, TKey>> selector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(selector);
+        // Already dialect-escaped - see comment in the OrderBy(ascending) overload above.
         string columnName = GetColumnNameFromProperty(propertyName);
-        _orderByColumns.Add(new OrderByColumn(_dialect.EscapeColumnName(columnName), true));
+        _orderByColumns.Add(new OrderByColumn(columnName, true));
         return this;
     }
 
@@ -156,31 +182,154 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         return _connection.Query<T>(sql, _parameters.ToParameterObject()!);
     }
 
+    /// <summary>
+    /// AUD-R34-017: a CTE query built inside a caller's transaction could not be enlisted in it -
+    /// there was no options overload anywhere on this builder, the same hole AUD-R26-060 and
+    /// AUD-R31-007 closed for the query and grouped builders.
+    /// </summary>
+    public List<T> Select(CommandOptions options)
+    {
+        var sql = BuildSql();
+        return _connection.Query<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public async Task<List<T>> SelectAsync(CancellationToken cancellationToken = default)
     {
         var sql = BuildSql();
         return await _connection.QueryAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>AUD-R34-017: see <see cref="Select(CommandOptions)"/>.</summary>
+    public async Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSql();
+        return await _connection.QueryAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     public T SelectFirst()
     {
-        _takeCount = 1;
-        var sql = BuildSql();
+        var sql = BuildSqlTakingOne();
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!);
+    }
+
+    /// <summary>AUD-R34-017: see <see cref="Select(CommandOptions)"/>.</summary>
+    public T SelectFirst(CommandOptions options)
+    {
+        var sql = BuildSqlTakingOne();
+        return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectFirstOrDefault()
     {
-        _takeCount = 1;
-        var sql = BuildSql();
+        var sql = BuildSqlTakingOne();
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
+
+    /// <summary>AUD-R34-017: see <see cref="Select(CommandOptions)"/>.</summary>
+    public T? SelectFirstOrDefault(CommandOptions options)
+    {
+        var sql = BuildSqlTakingOne();
+        return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    /// <summary>
+    /// The async twin of <see cref="SelectFirst()"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-186. The CTE builder had all four synchronous first-row terminals and no async one,
+    /// so an async caller wanting a single row had to materialise the whole CTE result and take the
+    /// first element. Every sibling terminal surface in the assembly carries the pair -
+    /// <c>SetOperationBuilder</c>, <c>QueryBuilder</c>, and the joined builders since AUD-R30. The
+    /// save-and-restore of <c>_takeCount</c> is the same one the sync terminals do, and for the same
+    /// reason: a CteBuilder is held and reused, so leaving it at 1 would silently cap a later
+    /// <c>Select()</c>.
+    /// </remarks>
+    public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSqlTakingOne();
+        return await _connection.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
+    public async Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSqlTakingOne();
+        return await _connection.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
+    public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSqlTakingOne();
+        return await _connection.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>AUD-R35-186: see <see cref="SelectFirstAsync(CancellationToken)"/>.</summary>
+    public async Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSqlTakingOne();
+        return await _connection.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
+        new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
 
     public string ToSql() => BuildSql();
 
     #endregion
 
     #region Private helpers
+
+    /// <summary>
+    /// Folds WHERE conditions left-to-right, wrapping each step in parentheses so the
+    /// generated SQL evaluates in the same order the fluent Where/And/Or chain was built,
+    /// instead of relying on SQL's AND-before-OR operator precedence.
+    /// </summary>
+    private static string BuildWhereExpression(List<WhereCondition> conditions)
+    {
+        var expr = conditions[0].Sql;
+
+        for (var i = 1; i < conditions.Count; i++)
+        {
+            var condition = conditions[i];
+            var op = condition.Operator == LogicalOperator.Or ? "OR" : "AND";
+            expr = $"({expr} {op} {condition.Sql})";
+        }
+
+        return expr;
+    }
+
+    /// <summary>
+    /// Builds the CTE SELECT with <c>_takeCount</c> temporarily clamped to 1.
+    /// </summary>
+    /// <remarks>
+    /// Save and restore rather than assign: a CteBuilder is exactly the kind of object a caller
+    /// holds onto and reuses, since building the CTE definition is the expensive part. Leaving
+    /// <c>_takeCount</c> at 1 meant a later <c>Select()</c>/<c>ToSql()</c> on the same instance
+    /// silently returned one row (AUD-R34).
+    /// <para>
+    /// AUD-R35-187 sibling, fixed 2026-08-30. The eight first-row terminals each inlined that
+    /// save-set-build-restore with no <c>try</c>/<c>finally</c>, so a throw out of
+    /// <see cref="BuildSql"/> left the builder permanently clamped and a later <c>Select()</c>
+    /// silently returned one row instead of the full set - the same defect and the same fix as
+    /// <c>QueryBuilder.BuildSelectSqlTaking</c> (AUD-R35-187) and <c>SetOperationBuilder</c>
+    /// (AUD-R35-190). The restore now happens on both paths, in one place.
+    /// </para>
+    /// </remarks>
+    private string BuildSqlTakingOne()
+    {
+        int? original = _takeCount;
+        _takeCount = 1;
+
+        try
+        {
+            return BuildSql();
+        }
+        finally
+        {
+            _takeCount = original;
+        }
+    }
 
     private string BuildSql()
     {
@@ -204,14 +353,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         if (_whereConditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _whereConditions.Count; i++)
-            {
-                if (i > 0)
-                {
-                    sb.Append(_whereConditions[i].Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(_whereConditions[i].Sql);
-            }
+            sb.Append(BuildWhereExpression(_whereConditions));
         }
 
         // ORDER BY

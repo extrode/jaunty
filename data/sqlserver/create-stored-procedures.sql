@@ -149,6 +149,25 @@ END;
 GO
 
 -- =============================================
+-- GetProductCountWithReturnValue: Returns count via RETURN instead of OUTPUT
+-- Tests: ExecuteStoredProcedure with SpParameters (AddReturnValue/GetReturnValue)
+-- =============================================
+IF OBJECT_ID('dbo.GetProductCountWithReturnValue', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.GetProductCountWithReturnValue;
+GO
+
+CREATE PROCEDURE dbo.GetProductCountWithReturnValue
+    @CategoryId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @ProductCount INT;
+    SELECT @ProductCount = COUNT(*) FROM products WHERE category_id = @CategoryId;
+    RETURN @ProductCount;
+END;
+GO
+
+-- =============================================
 -- GetNoResults: Returns empty result set
 -- Tests: FirstOrDefault returns null, First throws
 -- =============================================

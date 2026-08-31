@@ -37,6 +37,18 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
             ? new { p_ProductId = id }
             : new { ProductId = id };
 
+    private static SpParameters CategorySpParam(DialectInfo dialect, int id) =>
+        new SpParameters().AddInput(
+            dialect.Provider == DialectProvider.Postgres ? "p_category_id" :
+            dialect.Provider == DialectProvider.MariaDb ? "p_CategoryId" : "CategoryId",
+            id);
+
+    private static SpParameters ProductSpParam(DialectInfo dialect, int id) =>
+        new SpParameters().AddInput(
+            dialect.Provider == DialectProvider.Postgres ? "p_product_id" :
+            dialect.Provider == DialectProvider.MariaDb ? "p_ProductId" : "ProductId",
+            id);
+
     private static object UpdatePriceParam(DialectInfo dialect, int productId, decimal newPrice) =>
         dialect.Provider == DialectProvider.Postgres
             ? new { p_product_id = productId, p_new_price = newPrice }
@@ -109,6 +121,23 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
         {
             transaction.Rollback();
         }
+    }
+
+    // R16: the CommandOptions<T> rebuilt internally to force CommandType.StoredProcedure dropped
+    // the caller's ExpectedRowCount, silently reverting to JauntyConfig.QueryResultCapacity.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureAsync_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var products = await connection.ExecuteStoredProcedureAsync<Product>(
+            SpName("GetAllProducts", dialect), null, CommandOptions<Product>.WithExpectedRowCount(500));
+
+        Assert.NotEmpty(products);
+        Assert.True(products.Capacity >= 500);
     }
 
     #endregion
@@ -225,6 +254,57 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
 
     #endregion
 
+    #region SpParameters (List/First/FirstOrDefault)
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureAsync_SpParametersOverload_ReturnsFilteredResults(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var products = await connection.ExecuteStoredProcedureAsync<Product>(
+            SpName("GetProductsByCategory", dialect),
+            CategorySpParam(dialect, 1));
+
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureFirstAsync_SpParametersOverload_ReturnsFirst(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var product = await connection.ExecuteStoredProcedureFirstAsync<Product>(
+            SpName("GetProductById", dialect),
+            ProductSpParam(dialect, 1));
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureFirstOrDefaultAsync_SpParametersOverload_NoResults_ReturnsNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var product = await connection.ExecuteStoredProcedureFirstOrDefaultAsync<Product>(
+            SpName("GetProductById", dialect),
+            ProductSpParam(dialect, -1));
+
+        Assert.Null(product);
+    }
+
+    #endregion
+
     #region ExecuteStoredProcedureScalarAsync
 
     [Theory]
@@ -281,6 +361,19 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
     #endregion
 
     #region ExecuteStoredProcedureNonQueryAsync
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureNonQueryAsync_ZeroParameterOverload_ExecutesSuccessfully(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        int result = await connection.ExecuteStoredProcedureNonQueryAsync(SpName("GetAllProducts", dialect));
+
+        Assert.True(result >= -1);
+    }
 
     [Theory]
     [SqlServer]
@@ -347,6 +440,27 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
         await connection.ExecuteStoredProcedureNonQueryAsync(SpName("GetProductCountWithOutput", dialect), parameters);
 
         Assert.True(parameters.HasValue(OutputCountParamName(dialect)));
+    }
+
+    [Theory]
+    [SqlServer]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureScalarAsync_SpParametersOverload_NoResultSet_ReturnsDefaultInsteadOfThrowing(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var parameters = new SpParameters()
+            .AddInput(OutputCategoryParamName(dialect), 1)
+            .AddOutput(OutputCountParamName(dialect), DbType.Int32);
+
+        // GetProductCountWithOutput returns its count via the OUTPUT parameter only (no SELECT
+        // result set), so ExecuteScalar() sees no rows here - this exercises the SpParameters
+        // overload of ExecuteStoredProcedureScalarAsync<T>, which used to throw for a non-nullable
+        // T in this scenario while the object-parameters overload silently returned default(T)
+        // for the identical case (AUD-R11 consistency fix).
+        var result = await connection.ExecuteStoredProcedureScalarAsync<int>(SpName("GetProductCountWithOutput", dialect), parameters);
+
+        Assert.Equal(0, result);
     }
 
     #endregion

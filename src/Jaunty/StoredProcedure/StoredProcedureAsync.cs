@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
@@ -45,6 +45,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string)"/>
     public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureAsync<T>(connection, procedureName, (object?)null, default(CommandOptions<T>), cancellationToken);
     }
 
@@ -78,7 +85,28 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, object?, CommandOptions{T}, CancellationToken)"/>
     public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureAsync<T>(connection, procedureName, parameters, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    {
+        return ExecuteStoredProcedureAsync<T>(connection, procedureName, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -108,10 +136,10 @@ public static partial class Jaunty
     /// <code>
     /// // Async execute stored procedure with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var products = await connection.ExecuteStoredProcedureAsync(
+    /// var products = await connection.ExecuteStoredProcedureAsync&lt;Product&gt;(
     ///     "GetProductsByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// tx.Commit();
     /// </code>
     /// </example>
@@ -119,8 +147,20 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
-        return connection.QueryAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
+        // The stored-procedure family declares `object? parameters`, and its own no-parameter
+        // overloads forward null here. The `object parameters` overload rejects null (AUD-R26-030),
+        // so route a null set to the overload that takes none rather than suppressing the warning.
+        return parameters is null
+            ? connection.QueryAsync<T>(procedureName, spOptions, cancellationToken)
+            : connection.QueryAsync<T>(procedureName, parameters, spOptions, cancellationToken);
     }
 
     /// <summary>
@@ -154,6 +194,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, (object?)null, default(CommandOptions<T>), cancellationToken);
     }
 
@@ -190,7 +237,28 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstAsync{T}(IDbConnection, string, object?, CommandOptions{T}, CancellationToken)"/>
     public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, parameters, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureFirstAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    {
+        return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -218,10 +286,10 @@ public static partial class Jaunty
     /// <code>
     /// // Async get first product with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var product = await connection.ExecuteStoredProcedureFirstAsync(
+    /// var product = await connection.ExecuteStoredProcedureFirstAsync&lt;Product&gt;(
     ///     "GetTopProductByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -231,8 +299,20 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
-        return connection.QueryFirstAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
+        // The stored-procedure family declares `object? parameters`, and its own no-parameter
+        // overloads forward null here. The `object parameters` overload rejects null (AUD-R26-030),
+        // so route a null set to the overload that takes none rather than suppressing the warning.
+        return parameters is null
+            ? connection.QueryFirstAsync<T>(procedureName, spOptions, cancellationToken)
+            : connection.QueryFirstAsync<T>(procedureName, parameters, spOptions, cancellationToken);
     }
 
     /// <summary>
@@ -272,6 +352,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, (object?)null, default(CommandOptions<T>), cancellationToken);
     }
 
@@ -313,7 +400,28 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefaultAsync{T}(IDbConnection, string, object?, CommandOptions{T}, CancellationToken)"/>
     public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, parameters, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureFirstOrDefaultAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    {
+        return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -344,18 +452,30 @@ public static partial class Jaunty
     /// <code>
     /// // Async get first product with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var product = await connection.ExecuteStoredProcedureFirstOrDefaultAsync(
+    /// var product = await connection.ExecuteStoredProcedureFirstOrDefaultAsync&lt;Product&gt;(
     ///     "GetTopProductByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
-        return connection.QueryFirstOrDefaultAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
+        // The stored-procedure family declares `object? parameters`, and its own no-parameter
+        // overloads forward null here. The `object parameters` overload rejects null (AUD-R26-030),
+        // so route a null set to the overload that takes none rather than suppressing the warning.
+        return parameters is null
+            ? connection.QueryFirstOrDefaultAsync<T>(procedureName, spOptions, cancellationToken)
+            : connection.QueryFirstOrDefaultAsync<T>(procedureName, parameters, spOptions, cancellationToken);
     }
 
     /// <summary>
@@ -384,6 +504,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string)"/>
     public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, (object?)null, default, cancellationToken);
     }
 
@@ -417,7 +544,28 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureScalarAsync{T}(IDbConnection, string, object?, CommandOptions{T}, CancellationToken)"/>
     public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, parameters, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureScalarAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default)
+    {
+        return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -445,18 +593,30 @@ public static partial class Jaunty
     /// <code>
     /// // Async get count with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var count = await connection.ExecuteStoredProcedureScalarAsync(
+    /// var count = await connection.ExecuteStoredProcedureScalarAsync&lt;long&gt;(
     ///     "GetProductCountByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="ExecuteStoredProcedureScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
-        return connection.QueryScalarAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
+        // The stored-procedure family declares `object? parameters`, and its own no-parameter
+        // overloads forward null here. The `object parameters` overload rejects null (AUD-R26-030),
+        // so route a null set to the overload that takes none rather than suppressing the warning.
+        return parameters is null
+            ? connection.QueryScalarAsync<T>(procedureName, spOptions, cancellationToken)
+            : connection.QueryScalarAsync<T>(procedureName, parameters, spOptions, cancellationToken);
     }
 
     /// <summary>
@@ -484,6 +644,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureNonQuery(IDbConnection, string)"/>
     public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, (object?)null, default(CommandOptions), cancellationToken);
     }
 
@@ -517,7 +684,28 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureNonQueryAsync(IDbConnection, string, object?, CommandOptions, CancellationToken)"/>
     public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, parameters, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a stored procedure that takes no parameters, with command options.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
+    /// so <c>connection.ExecuteStoredProcedureNonQueryAsync("proc", options)</c> bound the options as a
+    /// parameters object and discarded the caller's transaction and timeout without a diagnostic.
+    /// The type's own documented example used this shape.
+    /// </remarks>
+    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -555,6 +743,15 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureNonQueryAsync(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
-        return ExecuteNonQueryCoreAsync(connection, procedureName, parameters, options, CommandType.StoredProcedure, cancellationToken);
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : ExecuteNonQueryCoreAsync(dbConnection, procedureName, parameters, options, CommandType.StoredProcedure, cancellationToken);
     }
 }

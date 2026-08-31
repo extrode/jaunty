@@ -138,7 +138,7 @@ See [Multi-Entity Mapping](multi-entity-mapping.md) for full details.
 
 - `List<(T1,...,TN)> Query<T1,...,TN>(string sql, ...)` for N = 2..7 - Map joined query rows into N entity types via left-to-right ordinal claiming
 - `QueryFirst<T1,...,TN>`, `QueryFirstOrDefault<T1,...,TN>`, `QuerySingle<T1,...,TN>`, `QuerySingleOrDefault<T1,...,TN>`, `QueryStream<T1,...,TN>` - Same arities, single-result and streaming variants
-- `MultiEntityCommandOptions<T1,...,TN>` - Per-position custom mapper delegates (`mapper1..mapperN`) to opt individual positions out of ordinal claiming
+- `MultiEntityCommandOptions<T1,...,TN>` - Transaction/CommandTimeout/CommandType options carrier for multi-entity queries (no per-position custom mapper support)
 
 ## Stored Procedure Methods
 

@@ -58,11 +58,41 @@ internal static class ExpressionTranslator
         return GetColumnName(prop);
     }
 
-    private static string GetColumnName(PropertyInfo prop)
-    {
-        ColumnAttribute? attr = prop.GetCustomAttribute<ColumnAttribute>();
-        return attr?.Name ?? prop.Name;
-    }
+    /// <summary>
+    /// AUD-R26-067: the fourth copy of the "[Column] name or property name" rule, now shared with
+    /// <see cref="ColumnMappingCache"/> and <see cref="Import.TargetDdlGenerator"/> via
+    /// <see cref="MappedPropertyFilter"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It is deliberately <em>not</em> guarded by <see cref="MappedPropertyFilter.IsMapped"/>, even
+    /// though the finding asked for that and a first attempt added it. Measured: the guard is a
+    /// behavioural regression. The registered view exposes every column in the <em>file</em> -
+    /// <c>DuckDb.GenerateViewSqlWithDateTimeCasts</c> builds its select list from the reader's own
+    /// field names, not from the entity's mapping - so a property marked <c>[Ignore]</c> ("do not
+    /// materialise this") whose column is nevertheless present in the CSV is legitimately usable in
+    /// an <c>Update</c>/<c>Delete</c> predicate today. Measured before and after: an
+    /// <c>[Ignore]</c>d <c>Audited</c> property over a CSV with an <c>Audited</c> column gives
+    /// <c>Delete&lt;Row&gt;(r =&gt; r.Audited == "yes")</c> → 1 row deleted without the guard, and
+    /// <c>InvalidOperationException</c> with it.
+    /// </para>
+    /// <para>
+    /// The finding's own measurement used a property with no corresponding file column, where the
+    /// provider does reject the SQL - so its complaint (an opaque
+    /// <c>Binder Error: Referenced column "Secret" not found in FROM clause!</c> naming neither the
+    /// entity nor the reason) is real but narrower than the guard. Closing it properly means
+    /// deciding whether the entity's mapping or the file's columns define the queryable surface
+    /// here, which is a design decision rather than a fix; carried to round 27.
+    /// </para>
+    /// </remarks>
+    private static string GetColumnName(PropertyInfo prop) => MappedPropertyFilter.GetColumnName(prop);
+
+    // AUD-R12-127: mirrors DuckDbDialect's private QuoteIdentifier escaping. Callers of
+    // ResolveColumnName/ResolveColumnFromMember outside this file (e.g. DuckDbUpdate.cs) escape
+    // the raw name themselves via _dialect.EscapeColumnName, so this helper is applied only at
+    // this file's own SQL-interpolation sites rather than folded into GetColumnName - doing the
+    // latter would double-escape those external callers.
+    private static string EscapeColumnName(string columnName) => columnName.Replace("\"", "\"\"");
 
     private static MemberExpression? ExtractMemberExpression(Expression expression)
     {
@@ -89,7 +119,7 @@ internal static class ExpressionTranslator
     private static string VisitBoolMember(MemberExpression member)
     {
         var columnName = ResolveColumnFromMember(member);
-        return $"\"{columnName}\" = true";
+        return $"\"{EscapeColumnName(columnName)}\" = true";
     }
 
     private static string VisitBinary(BinaryExpression binary, List<DuckDBParameter> parameters, int paramOffset)
@@ -102,15 +132,22 @@ internal static class ExpressionTranslator
             return $"({left} {op} {right})";
         }
 
-        (string? columnName, object? value) = ExtractColumnAndValue(binary);
+        (string? columnName, object? value, bool swapped) = ExtractColumnAndValue(binary);
+        ExpressionType nodeType = swapped ? Mirror(binary.NodeType) : binary.NodeType;
 
         if (value is null)
         {
-            var nullOp = binary.NodeType == ExpressionType.Equal ? "IS NULL" : "IS NOT NULL";
-            return $"\"{columnName}\" {nullOp}";
+            // A relational comparison (<, <=, >, >=) against NULL is UNKNOWN in SQL and false
+            // for C#'s lifted operators - never true either way - so it becomes a match-nothing
+            // predicate; only ==/!= translate to the IS NULL forms.
+            if (nodeType is not (ExpressionType.Equal or ExpressionType.NotEqual))
+                return "1 = 0";
+
+            var nullOp = nodeType == ExpressionType.Equal ? "IS NULL" : "IS NOT NULL";
+            return $"\"{EscapeColumnName(columnName!)}\" {nullOp}";
         }
 
-        var sqlOp = binary.NodeType switch
+        var sqlOp = nodeType switch
         {
             ExpressionType.Equal => "=",
             ExpressionType.NotEqual => "!=",
@@ -123,7 +160,7 @@ internal static class ExpressionTranslator
 
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = value });
-        return $"\"{columnName}\" {sqlOp} ${paramIndex}";
+        return $"\"{EscapeColumnName(columnName!)}\" {sqlOp} ${paramIndex}";
     }
 
     private static string VisitMethodCall(MethodCallExpression method, List<DuckDBParameter> parameters, int paramOffset)
@@ -132,18 +169,20 @@ internal static class ExpressionTranslator
         {
             var columnName = ResolveColumnFromMember(member);
             var value = EvaluateExpression(method.Arguments[0]);
+            var caseInsensitive = IsCaseInsensitiveComparison(method);
 
             return method.Method.Name switch
             {
-                "Contains" => HandleStringContains(columnName, value, parameters, paramOffset),
-                "StartsWith" => HandleStringStartsWith(columnName, value, parameters, paramOffset),
-                "EndsWith" => HandleStringEndsWith(columnName, value, parameters, paramOffset),
+                "Contains" => HandleStringContains(columnName, value, parameters, paramOffset, caseInsensitive),
+                "StartsWith" => HandleStringStartsWith(columnName, value, parameters, paramOffset, caseInsensitive),
+                "EndsWith" => HandleStringEndsWith(columnName, value, parameters, paramOffset, caseInsensitive),
                 _ => throw new NotSupportedException($"String method '{method.Method.Name}' is not supported.")
             };
         }
 
         if (method.Method.Name == "Contains" && method.Method.DeclaringType != null &&
             (method.Method.DeclaringType == typeof(Enumerable) ||
+             method.Method.DeclaringType == typeof(MemoryExtensions) ||
              method.Method.DeclaringType.IsGenericType && method.Method.DeclaringType.GetGenericTypeDefinition() == typeof(List<>)))
         {
             return HandleInClause(method, parameters, paramOffset);
@@ -152,25 +191,70 @@ internal static class ExpressionTranslator
         throw new NotSupportedException($"Method '{method.Method.Name}' is not supported in flat file predicates.");
     }
 
-    private static string HandleStringContains(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
+    private static string HandleStringContains(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
-        parameters.Add(new DuckDBParameter { Value = $"%{value}%" });
-        return $"\"{columnName}\" LIKE ${paramIndex}";
+        parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}%" });
+        return $"\"{EscapeColumnName(columnName)}\" {LikeOperator(caseInsensitive)} ${paramIndex} ESCAPE '\\'";
     }
 
-    private static string HandleStringStartsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
+    private static string HandleStringStartsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
-        parameters.Add(new DuckDBParameter { Value = $"{value}%" });
-        return $"\"{columnName}\" LIKE ${paramIndex}";
+        parameters.Add(new DuckDBParameter { Value = $"{EscapeLikeValue(value)}%" });
+        return $"\"{EscapeColumnName(columnName)}\" {LikeOperator(caseInsensitive)} ${paramIndex} ESCAPE '\\'";
     }
 
-    private static string HandleStringEndsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
+    private static string HandleStringEndsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
-        parameters.Add(new DuckDBParameter { Value = $"%{value}" });
-        return $"\"{columnName}\" LIKE ${paramIndex}";
+        parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}" });
+        return $"\"{EscapeColumnName(columnName)}\" {LikeOperator(caseInsensitive)} ${paramIndex} ESCAPE '\\'";
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="method"/> is one of the
+    /// <c>(string, StringComparison)</c> overloads and the comparison requested is case-insensitive.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R25: the three string handlers read <c>Arguments[0]</c> and emitted a bare LIKE, silently
+    /// discarding the comparison argument - so
+    /// <c>Where(p =&gt; p.Name.Contains("abc", StringComparison.OrdinalIgnoreCase))</c> compiled, ran,
+    /// and filtered case-sensitively, because DuckDB's LIKE is case-sensitive like PostgreSQL's.
+    /// Jaunty.Fluent's WhereExpressionVisitor had the identical omission and is fixed alongside this.
+    ///
+    /// <para>
+    /// The culture distinction between Ordinal, CurrentCulture and InvariantCulture is not
+    /// expressible here and is deliberately not attempted; case sensitivity is the part that changes
+    /// which rows come back.
+    /// </para>
+    /// </remarks>
+    private static bool IsCaseInsensitiveComparison(MethodCallExpression method)
+    {
+        if (method.Arguments.Count < 2) return false;
+
+        return EvaluateExpression(method.Arguments[1]) is StringComparison comparison
+            && comparison is StringComparison.OrdinalIgnoreCase
+                or StringComparison.CurrentCultureIgnoreCase
+                or StringComparison.InvariantCultureIgnoreCase;
+    }
+
+    // DuckDB follows PostgreSQL: LIKE is case-sensitive, ILIKE is not. Same pairing DuckDbDialect
+    // exposes as GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike.
+    private static string LikeOperator(bool caseInsensitive) => caseInsensitive ? "ILIKE" : "LIKE";
+
+    /// <summary>
+    /// Escapes LIKE wildcard characters (<c>%</c>, <c>_</c>) and the escape character itself
+    /// (<c>\</c>) in a value so it matches literally rather than as a wildcard pattern, when
+    /// combined with an <c>ESCAPE '\'</c> clause.
+    /// </summary>
+    private static string EscapeLikeValue(object? value)
+    {
+        var text = value?.ToString() ?? string.Empty;
+        return text
+            .Replace("\\", "\\\\")
+            .Replace("%", "\\%")
+            .Replace("_", "\\_");
     }
 
     private static string HandleInClause(MethodCallExpression method, List<DuckDBParameter> parameters, int paramOffset)
@@ -178,9 +262,15 @@ internal static class ExpressionTranslator
         Expression collectionExpr;
         Expression itemExpr;
 
-        if (method.Method.DeclaringType == typeof(Enumerable))
+        if (method.Method.DeclaringType == typeof(Enumerable) || method.Method.DeclaringType == typeof(MemoryExtensions))
         {
-            collectionExpr = method.Arguments[0];
+            // For an array, `array.Contains(x)` resolves to the span-based
+            // MemoryExtensions.Contains(ReadOnlySpan<T>, T) overload (preferred over
+            // Enumerable.Contains since C# started favoring first-class Span conversions), and
+            // the compiler wraps the array argument in an implicit `T[] -> ReadOnlySpan<T>`
+            // conversion call. ReadOnlySpan<T> is a ref struct and can't be evaluated/boxed by
+            // EvaluateExpression, so unwrap back to the original array expression first.
+            collectionExpr = UnwrapSpanConversion(method.Arguments[0]);
             itemExpr = method.Arguments[1];
         }
         else
@@ -198,21 +288,56 @@ internal static class ExpressionTranslator
             ?? throw new NotSupportedException("IN clause requires an enumerable collection.");
 
         var sb = new StringBuilder();
-        sb.Append($"\"{columnName}\" IN (");
         var first = true;
         foreach (var item in collection)
         {
-            if (!first) sb.Append(", ");
+            if (first)
+            {
+                sb.Append($"\"{EscapeColumnName(columnName)}\" IN (");
+                first = false;
+            }
+            else
+            {
+                sb.Append(", ");
+            }
+
             var paramIndex = paramOffset + parameters.Count + 1;
             parameters.Add(new DuckDBParameter { Value = item });
             sb.Append($"${paramIndex}");
-            first = false;
         }
+
+        if (first)
+        {
+            // Empty collection: no value can ever match, so the clause must always be false
+            // rather than emitting the invalid SQL `"col" IN ()`.
+            return "1 = 0";
+        }
+
         sb.Append(')');
         return sb.ToString();
     }
 
-    private static (string ColumnName, object? Value) ExtractColumnAndValue(BinaryExpression binary)
+    private static Expression UnwrapSpanConversion(Expression expr)
+    {
+        if (expr is MethodCallExpression { Method.Name: "op_Implicit" } call &&
+            call.Method.DeclaringType is { IsGenericType: true } declaringType &&
+            (declaringType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>) ||
+             declaringType.GetGenericTypeDefinition() == typeof(Span<>)))
+        {
+            return call.Arguments[0];
+        }
+
+        return expr;
+    }
+
+    /// <summary>
+    /// AUD-R33-001: also reports whether the operands were swapped. The caller emits
+    /// <c>"column" op $n</c>, so when the entity member is on the right - <c>1000 &lt; x.Revenue</c> -
+    /// the column and the value change places and the operator has to be mirrored with them.
+    /// <c>=</c> and <c>!=</c> are symmetric and unaffected; <c>&lt;</c> <c>&lt;=</c> <c>&gt;</c>
+    /// <c>&gt;=</c> all produced the exact inverse of the predicate before this.
+    /// </summary>
+    private static (string ColumnName, object? Value, bool Swapped) ExtractColumnAndValue(BinaryExpression binary)
     {
         MemberExpression? leftMember = ExtractMemberExpression(binary.Left);
         MemberExpression? rightMember = ExtractMemberExpression(binary.Right);
@@ -221,18 +346,28 @@ internal static class ExpressionTranslator
         {
             var columnName = ResolveColumnFromMember(leftMember);
             var value = EvaluateExpression(binary.Right);
-            return (columnName, value);
+            return (columnName, value, false);
         }
 
         if (rightMember != null && IsEntityMember(rightMember))
         {
             var columnName = ResolveColumnFromMember(rightMember);
             var value = EvaluateExpression(binary.Left);
-            return (columnName, value);
+            return (columnName, value, true);
         }
 
         throw new NotSupportedException("Binary comparison must have at least one property access on the entity.");
     }
+
+    /// <summary>Mirrors a relational comparison so it reads correctly with the operands reversed.</summary>
+    private static ExpressionType Mirror(ExpressionType nodeType) => nodeType switch
+    {
+        ExpressionType.LessThan => ExpressionType.GreaterThan,
+        ExpressionType.LessThanOrEqual => ExpressionType.GreaterThanOrEqual,
+        ExpressionType.GreaterThan => ExpressionType.LessThan,
+        ExpressionType.GreaterThanOrEqual => ExpressionType.LessThanOrEqual,
+        _ => nodeType
+    };
 
     private static bool IsEntityMember(MemberExpression member)
     {
@@ -242,25 +377,161 @@ internal static class ExpressionTranslator
         return current is ParameterExpression;
     }
 
+    /// <remarks>
+    /// AUD-R35-025. Only <see cref="ExtractColumnAndValue"/> checked <see cref="IsEntityMember"/>
+    /// before treating a member expression as a column; the three other sites that resolve one did
+    /// not, so a property read with nothing to do with the entity was emitted as a column
+    /// reference. <c>VisitBoolMember</c> turned <c>x =&gt; captured.Flag</c> or
+    /// <c>x =&gt; Settings.DebugMode</c> into <c>"Flag" = true</c>; <c>VisitMethodCall</c>'s string
+    /// branch turned <c>x =&gt; caption.StartsWith(x.Name)</c> into a LIKE over a column
+    /// <c>"caption"</c>; and <c>HandleInClause</c> took any member it could extract, so
+    /// <c>x =&gt; ids.Contains(threshold)</c> became <c>"threshold" IN (...)</c>. The registered
+    /// DuckDB view exposes every column in the file, so a name collision with a real column meant
+    /// the predicate silently filtered on file data instead of the caller's value; without one it
+    /// degraded into an opaque binder error. A captured <em>field</em> was caught incidentally by
+    /// the not-a-property throw below - it is properties, static or captured, that slipped through.
+    /// <para>
+    /// The check lives here rather than at each call site because every site resolving a column
+    /// goes through this method, and <see cref="ExtractColumnAndValue"/> reaches it only after
+    /// asking the same question itself, so its two-sided fall-through is unaffected.
+    /// </para>
+    /// </remarks>
     private static string ResolveColumnFromMember(MemberExpression member)
     {
-        if (member.Member is not PropertyInfo prop)
-            throw new NotSupportedException($"Member '{member.Member.Name}' is not a property.");
+        if (!IsEntityMember(member))
+            throw new NotSupportedException(
+                $"'{member}' does not read a property of the entity, so it is not a column. " +
+                "Evaluate it before the query and compare against the value.");
+
+        // AUD-R35-248. IsEntityMember walks the whole chain to the ParameterExpression and accepts
+        // it, but only the leaf member was ever resolved - so `x => x.Score!.Value > 5` (Score is
+        // int?) emitted a column "Value", and `x => x.Child.Name == "a"` emitted "Name". Neither is
+        // translated correctly nor rejected: both reach the provider naming a column the caller
+        // never wrote. A lifted `.Value` is the one chain with an obvious meaning - it is the same
+        // column, asserted non-null - so it is unwrapped; everything else is a navigation this
+        // translator has no join to follow and is now refused by name.
+        MemberExpression resolved = UnwrapLiftedValue(member);
+
+        if (resolved.Expression is not ParameterExpression)
+        {
+            string hint = member.Member.Name == "HasValue"
+                ? " Write 'x => x.Prop != null' instead, which translates to IS NOT NULL."
+                : " Flat file predicates translate to a single view, so there is no join to follow.";
+
+            throw new NotSupportedException(
+                $"'{member}' reads through '{resolved.Expression}' rather than directly off the entity, " +
+                $"so it is not a column.{hint}");
+        }
+
+        if (resolved.Member is not PropertyInfo prop)
+            throw new NotSupportedException($"Member '{resolved.Member.Name}' is not a property.");
         return GetColumnName(prop);
     }
 
+    /// <summary>
+    /// Unwraps <c>x.Prop.Value</c> on a <see cref="Nullable{T}"/> property to <c>x.Prop</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-248. Reading <c>.Value</c> off a nullable column means "this column, and it is not
+    /// null" - the same column either way, since a SQL comparison against NULL is already false.
+    /// Only the one level is unwrapped: <c>Nullable&lt;T&gt;</c> does not nest.
+    /// </remarks>
+    private static MemberExpression UnwrapLiftedValue(MemberExpression member)
+        => member.Member.Name == "Value"
+            && member.Expression is MemberExpression inner
+            && Nullable.GetUnderlyingType(inner.Type) is not null
+                ? inner
+                : member;
+
     private static object? EvaluateExpression(Expression expression)
     {
-        if (expression is ConstantExpression constant)
-            return constant.Value;
-
+        // Unwrapped before the fast path, exactly as before: the compile fallback below would
+        // otherwise apply the conversion that this deliberately discards.
         if (expression is UnaryExpression { NodeType: ExpressionType.Convert } unary)
             return EvaluateExpression(unary.Operand);
+
+        if (TryEvaluateWithoutCompiling(expression, out object? value))
+            return value;
 
         // Not cached by expression.ToString(): closure-captured variables (e.g. `x => x.Age > someLocalVar`)
         // produce a new Expression instance per call but stringify identically across calls, so a
         // string-keyed cache would return a stale compiled delegate bound to an earlier call's captured value.
         var lambda = System.Linq.Expressions.Expression.Lambda<Func<object?>>(System.Linq.Expressions.Expression.Convert(expression, typeof(object)));
         return lambda.Compile()();
+    }
+
+    /// <summary>
+    /// Reads the operand's value directly where that is possible, so the compile fallback above
+    /// only fires for genuinely computed operands - AUD-R25.
+    /// </summary>
+    /// <remarks>
+    /// A closure-captured local (<c>x =&gt; x.Age &gt; minAge</c>) is not a
+    /// <see cref="ConstantExpression"/>: the compiler lifts it onto a generated closure class, so
+    /// it arrives as a <see cref="MemberExpression"/> - a field read - over a constant holding the
+    /// closure instance, and used to miss the fast path entirely. Each such value then cost a full
+    /// expression compile: a <c>DynamicMethod</c> emit of tens to hundreds of microseconds plus
+    /// code heap that is never reclaimed, where reading the field is a handful of nanoseconds. A
+    /// predicate capturing five values paid it five times, per Delete/Update call.
+    ///
+    /// <para>
+    /// Jaunty.Fluent's <c>ExpressionEvaluator</c> carries the same logic for the seven copies that
+    /// lived in that assembly. This one is duplicated rather than shared because the two assemblies
+    /// are independent - Jaunty.FlatFiles.DuckDB does not reference Jaunty.Fluent.
+    /// </para>
+    /// </remarks>
+    private static bool TryEvaluateWithoutCompiling(Expression expression, out object? value)
+    {
+        value = null;
+
+        switch (expression)
+        {
+            case ConstantExpression constant:
+                value = constant.Value;
+                return true;
+
+            // Only reachable in a nested position (the declaring object of a member read); the
+            // top-level case is unwrapped by EvaluateExpression before this is called.
+            case UnaryExpression { NodeType: ExpressionType.Convert } unary:
+                return TryEvaluateWithoutCompiling(unary.Operand, out value);
+
+            case MemberExpression member:
+                object? instance = null;
+
+                // A null Expression means a static member. Otherwise the declaring object must
+                // itself be readable without compiling, or there is nothing to be gained.
+                if (member.Expression is not null && !TryEvaluateWithoutCompiling(member.Expression, out instance))
+                    return false;
+
+                switch (member.Member)
+                {
+                    case FieldInfo field:
+                        // A null instance on an instance member would throw TargetException here
+                        // but NullReferenceException from compiled code; leave those to the
+                        // compiled path so the failure does not depend on the route taken.
+                        if (instance is null && !field.IsStatic)
+                            return false;
+
+                        value = field.GetValue(instance);
+                        return true;
+
+                    case PropertyInfo property:
+                        MethodInfo? getter = property.GetGetMethod(nonPublic: true);
+
+                        if (getter is null || property.GetIndexParameters().Length != 0)
+                            return false;
+
+                        if (instance is null && !getter.IsStatic)
+                            return false;
+
+                        value = property.GetValue(instance);
+                        return true;
+
+                    default:
+                        return false;
+                }
+
+            default:
+                return false;
+        }
     }
 }

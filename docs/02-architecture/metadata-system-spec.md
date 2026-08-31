@@ -1,4 +1,4 @@
-# Metadata System Specification
+﻿# Metadata System Specification
 
 **Version**: 2026.02.19  
 **Status**: Active
@@ -188,7 +188,7 @@ public class Product
     public decimal Price { get; set; }
 }
 
-// With JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase
+// With JauntyConfig.ColumnNameResolver set to a snake_case helper you supply
 // Resolution:
 // Id -> "prod_id" (from [Column])
 // ProductName -> "product_name" (from resolver)
@@ -584,5 +584,5 @@ flowchart TD
 | [`architecture-specification.md`](architecture-specification.md) | Full architecture |
 | [`parameter-binding-spec.md`](parameter-binding-spec.md) | Parameter binding |
 | [`performance-spec.md`](performance-spec.md) | Performance optimization |
-| [`../../01-api-reference/attributes.md`](../../01-api-reference/attributes.md) | Mapping attributes |
-| [`../../01-api-reference/configuration.md`](../../01-api-reference/configuration.md) | JauntyConfig |
+| [`../../01-api-reference/attributes.md`](../01-api-reference/attributes.md) | Mapping attributes |
+| [`../../01-api-reference/configuration.md`](../01-api-reference/configuration.md) | JauntyConfig |

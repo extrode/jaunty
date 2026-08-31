@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -68,9 +70,23 @@ public interface ISetOperationClause<T> where T : new()
     List<T> Select();
 
     /// <summary>
+    /// Executes the query and returns all results as a list, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    List<T> Select(CommandOptions options);
+
+    /// <summary>
     /// Returns the first result or throws if empty.
     /// </summary>
     T SelectFirst();
+
+    /// <summary>
+    /// Returns the first result or throws if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T SelectFirst(CommandOptions options);
 
     /// <summary>
     /// Returns the first result, or default if empty.
@@ -78,14 +94,36 @@ public interface ISetOperationClause<T> where T : new()
     T? SelectFirstOrDefault();
 
     /// <summary>
+    /// Returns the first result, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T? SelectFirstOrDefault(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result or throws if empty or more than one.
     /// </summary>
     T SelectSingle();
 
     /// <summary>
+    /// Returns the single result or throws if empty or more than one, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T SelectSingle(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result, or default if empty. Throws if more than one.
     /// </summary>
     T? SelectSingleOrDefault();
+
+    /// <summary>
+    /// Returns the single result, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// Throws if more than one.
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T? SelectSingleOrDefault(CommandOptions options);
 
     /// <summary>
     /// Executes the query asynchronously and returns all results as a list.
@@ -94,10 +132,26 @@ public interface ISetOperationClause<T> where T : new()
     Task<List<T>> SelectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Executes the query asynchronously and returns all results as a list, executing within
+    /// the given <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first result asynchronously or throws if empty.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T> SelectFirstAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously or throws if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result asynchronously, or default if empty.
@@ -106,16 +160,41 @@ public interface ISetOperationClause<T> where T : new()
     Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the first result asynchronously, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously or throws if empty or more than one.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T> SelectSingleAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result asynchronously or throws if empty or more than one, executing
+    /// within the given <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously, or default if empty. Throws if more than one.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single result asynchronously, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// Throws if more than one.
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     // SQL introspection
     /// <summary>
@@ -172,9 +251,23 @@ public interface ISetOperationOrderByClause<T> where T : new()
     List<T> Select();
 
     /// <summary>
+    /// Executes the query and returns all results as a list, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    List<T> Select(CommandOptions options);
+
+    /// <summary>
     /// Returns the first result or throws if empty.
     /// </summary>
     T SelectFirst();
+
+    /// <summary>
+    /// Returns the first result or throws if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T SelectFirst(CommandOptions options);
 
     /// <summary>
     /// Returns the first result, or default if empty.
@@ -182,14 +275,36 @@ public interface ISetOperationOrderByClause<T> where T : new()
     T? SelectFirstOrDefault();
 
     /// <summary>
+    /// Returns the first result, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T? SelectFirstOrDefault(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result or throws if empty or more than one.
     /// </summary>
     T SelectSingle();
 
     /// <summary>
+    /// Returns the single result or throws if empty or more than one, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T SelectSingle(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result, or default if empty. Throws if more than one.
     /// </summary>
     T? SelectSingleOrDefault();
+
+    /// <summary>
+    /// Returns the single result, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// Throws if more than one.
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T? SelectSingleOrDefault(CommandOptions options);
 
     /// <summary>
     /// Executes the query asynchronously and returns all results as a list.
@@ -198,10 +313,26 @@ public interface ISetOperationOrderByClause<T> where T : new()
     Task<List<T>> SelectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Executes the query asynchronously and returns all results as a list, executing within
+    /// the given <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first result asynchronously or throws if empty.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T> SelectFirstAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously or throws if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result asynchronously, or default if empty.
@@ -210,16 +341,41 @@ public interface ISetOperationOrderByClause<T> where T : new()
     Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the first result asynchronously, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously or throws if empty or more than one.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T> SelectSingleAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result asynchronously or throws if empty or more than one, executing
+    /// within the given <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously, or default if empty. Throws if more than one.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single result asynchronously, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// Throws if more than one.
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the generated SQL for debugging purposes.

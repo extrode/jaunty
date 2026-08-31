@@ -1,13 +1,22 @@
-using Jaunty.Attributes;
+﻿using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection;
 using Jaunty.TypeHandlers;
 
-namespace Jaunty.Tests.TypeHandlers;
+namespace Jaunty.Tests.Unit.TypeHandlers;
 
 /// <summary>
 /// Unit tests for the TypeHandler registration and registry APIs.
 /// </summary>
+/// <remarks>
+/// Shares the "Type Handler Operations" collection with
+/// <see cref="Jaunty.Tests.Unit.TypeHandlers.EnumStorageTests"/>,
+/// <see cref="Jaunty.Tests.Integration.TypeHandlers.TypeHandlerRoundTripTests"/>, and
+/// <see cref="Jaunty.Tests.Unit.Read.ParameterBinderTests"/> — all mutate the same process-wide
+/// <see cref="JauntyConfig.DefaultEnumStorage"/>/type-handler registry static state and must run
+/// serialized against each other.
+/// </remarks>
+[Collection("Type Handler Operations")]
 public class TypeHandlerRegistryTests : IDisposable
 {
     public void Dispose()
@@ -32,8 +41,11 @@ public class TypeHandlerRegistryTests : IDisposable
             toDb: value => value.ToString()
         );
 
-        // Assert - registration completed without exception
-        Assert.True(true);
+        // Assert - the delegate-based handler is retrievable and parses as registered
+        bool found = TypeHandlerRegistry.TryGetHandler(typeof(int), out var handler);
+        Assert.True(found);
+        Assert.NotNull(handler);
+        Assert.Equal(42, (int)handler!.Parse(42)!);
     }
 
     [Fact]
@@ -67,8 +79,11 @@ public class TypeHandlerRegistryTests : IDisposable
         // Act
         JauntyConfig.RegisterTypeHandler(handler);
 
-        // Assert - smoke test
-        Assert.True(true);
+        // Assert - the typed handler is retrievable and parses as registered
+        bool found = TypeHandlerRegistry.TryGetHandler(typeof(int), out var retrieved);
+        Assert.True(found);
+        Assert.NotNull(retrieved);
+        Assert.Equal(7, (int)retrieved!.Parse(7)!);
     }
 
     [Fact]
@@ -139,10 +154,18 @@ public class TypeHandlerRegistryTests : IDisposable
         JauntyConfig.RegisterTypeHandler<string>(fromDb: x => "", toDb: x => null);
         JauntyConfig.RegisterTypeHandler<Guid>(fromDb: x => Guid.Empty, toDb: x => null);
 
+        // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared with
+        // the "Logging Extensions" collection (running concurrently as a different xunit
+        // collection) - capture and clear it atomically (AUD-R7) so an interceptor registered by
+        // that collection between a separate capture-then-Reset() pair can't be silently dropped.
+        var interceptorsBeforeReset = JauntyConfig.CaptureAndClearInterceptors();
+
         // Act — Reset() is the API under test; restore reflection mapping afterwards
         // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
         JauntyReflectionExtensions.UseReflectionMapping();
+        if (interceptorsBeforeReset is { Length: > 0 })
+            JauntyConfig.AddInterceptors(interceptorsBeforeReset);
 
         // Assert - verify removal works after reset (i.e., nothing is registered)
         Assert.False(JauntyConfig.RemoveTypeHandler<int>());
@@ -177,10 +200,18 @@ public class TypeHandlerRegistryTests : IDisposable
         // Arrange
         JauntyConfig.DefaultEnumStorage = EnumStorage.String;
 
+        // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared with
+        // the "Logging Extensions" collection (running concurrently as a different xunit
+        // collection) - capture and clear it atomically (AUD-R7) so an interceptor registered by
+        // that collection between a separate capture-then-Reset() pair can't be silently dropped.
+        var interceptorsBeforeReset = JauntyConfig.CaptureAndClearInterceptors();
+
         // Act — Reset() is the API under test; restore reflection mapping afterwards
         // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
         JauntyReflectionExtensions.UseReflectionMapping();
+        if (interceptorsBeforeReset is { Length: > 0 })
+            JauntyConfig.AddInterceptors(interceptorsBeforeReset);
 
         // Assert
         Assert.Equal(EnumStorage.Numeric, JauntyConfig.DefaultEnumStorage);
@@ -266,6 +297,84 @@ public class TypeHandlerRegistryTests : IDisposable
 
     #endregion
 
+    #region Type Handler Exception Propagation (Finding 3)
+
+    [Fact]
+    public void TryConvertToDb_WhenHandlerThrows_PropagatesAsInvalidOperationException()
+    {
+        JauntyConfig.RegisterTypeHandler(new ThrowingStringHandler());
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            TypeHandlerRegistry.TryConvertToDb<string>("x", out _));
+        Assert.IsType<FormatException>(ex.InnerException);
+    }
+
+    [Fact]
+    public void TryConvertFromDb_WhenHandlerThrows_PropagatesAsInvalidOperationException()
+    {
+        JauntyConfig.RegisterTypeHandler(new ThrowingStringHandler());
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            TypeHandlerRegistry.TryConvertFromDb<string>("x", out _));
+        Assert.IsType<FormatException>(ex.InnerException);
+    }
+
+    #endregion
+
+    #region Concurrent Register/Remove (Finding: _handlerCount race)
+
+    [Fact]
+    public async Task HasHandlers_DuringConcurrentRegisterRemoveOfOtherTypes_NeverFalselyReportsEmpty()
+    {
+        // A witness handler stays registered for the whole test — HasHandlers must never
+        // read false while this is registered, even under heavy concurrent Register/Remove
+        // churn on a different type (regression for the non-atomic _handlerCount race).
+        JauntyConfig.RegisterTypeHandler<Guid>(fromDb: v => Guid.Empty, toDb: v => v.ToString());
+        try
+        {
+            const int iterations = 500;
+            int threadCount = Math.Max(4, Environment.ProcessorCount);
+            var tasks = new Task[threadCount];
+            int falseNegatives = 0;
+
+            for (int t = 0; t < threadCount; t++)
+            {
+                tasks[t] = Task.Run(() =>
+                {
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        JauntyConfig.RegisterTypeHandler<string>(fromDb: v => v?.ToString() ?? string.Empty, toDb: v => v);
+                        if (!TypeHandlerRegistry.HasHandlers)
+                            Interlocked.Increment(ref falseNegatives);
+
+                        JauntyConfig.RemoveTypeHandler<string>();
+                        if (!TypeHandlerRegistry.HasHandlers)
+                            Interlocked.Increment(ref falseNegatives);
+                    }
+                });
+            }
+
+            await Task.WhenAll(tasks);
+
+            Assert.Equal(0, falseNegatives);
+            Assert.True(TypeHandlerRegistry.HasHandlers);
+        }
+        finally
+        {
+            JauntyConfig.RemoveTypeHandler<Guid>();
+            JauntyConfig.RemoveTypeHandler<string>();
+        }
+    }
+
+    #endregion
+
+    private sealed class ThrowingStringHandler : TypeHandler<string>
+    {
+        public override string Parse(object? dbValue) => throw new FormatException("parse boom");
+
+        public override object? ToDbValue(string? value) => throw new FormatException("todb boom");
+    }
+
     private class UpperCaseStringHandler : TypeHandler<string>
     {
         public override string Parse(object? dbValue) =>
@@ -273,6 +382,57 @@ public class TypeHandlerRegistryTests : IDisposable
 
         public override object? ToDbValue(string? value) => value?.ToLowerInvariant();
     }
+
+    #region TryConvertFromDb null-from-handler (R27 batch 7)
+
+    // A null from the handler cannot represent a non-nullable value type; success would hand
+    // back default(T) (0 for int), indistinguishable from real data.
+    [Fact]
+    public void TryConvertFromDb_HandlerReturnsNull_NonNullableValueType_ReturnsFalse()
+    {
+        TypeHandlerRegistry.Register<int>(new NullReturningHandler());
+
+        bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out int result);
+
+        Assert.False(ok);
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    public void TryConvertFromDb_HandlerReturnsNull_ReferenceType_ReturnsTrueWithNull()
+    {
+        TypeHandlerRegistry.Register<string>(new NullReturningHandler());
+
+        bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out string result);
+
+        Assert.True(ok);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void TryConvertFromDb_HandlerReturnsNull_NullableValueType_ReturnsTrueWithNull()
+    {
+        TypeHandlerRegistry.Register<int?>(new NullReturningHandler());
+        try
+        {
+            bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out int? result);
+
+            Assert.True(ok);
+            Assert.Null(result);
+        }
+        finally
+        {
+            TypeHandlerRegistry.Remove<int?>();
+        }
+    }
+
+    private sealed class NullReturningHandler : ITypeHandler
+    {
+        public object? Parse(object? dbValue) => null;
+        public object? ToDbValue(object? value) => null;
+    }
+
+    #endregion
 
     // Helper for testing
     private class TestTypeHandler : TypeHandler<int>

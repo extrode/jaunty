@@ -8,6 +8,7 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
+[Collection("Write Operations")]
 public class InsertAsyncTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
@@ -109,7 +110,6 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
         Assert.Equal("ProvidedIdTest", insertedEntity.Name);
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -140,5 +140,4 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
         Assert.True(id > 0);
         Assert.Equal(1, GetRowCount(ctx.Connection));
     }
-#endif
 }

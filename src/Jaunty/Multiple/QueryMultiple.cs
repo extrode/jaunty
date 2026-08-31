@@ -37,10 +37,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return ExecuteQueryMultiple(connection, sql, null, default);
     }
@@ -83,10 +85,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return ExecuteQueryMultiple(connection, sql, parameters, default);
     }
@@ -125,10 +131,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return ExecuteQueryMultiple(connection, sql, null, options);
     }
@@ -172,10 +180,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return ExecuteQueryMultiple(connection, sql, parameters, options);
     }
@@ -191,6 +203,13 @@ public static partial class Jaunty
     /// <remarks>
     /// <para>
     /// This overload automatically disposes the <see cref="GridReader"/> after the callback completes.
+    /// </para>
+    /// <para>
+    /// <strong>Do not return a deferred sequence from the callback.</strong> <see cref="GridReader.ReadStream{T}"/>,
+    /// <see cref="GridReader.ReadPartialStream{T}"/> and their async twins return lazy iterators over the
+    /// underlying reader, which this overload has already disposed by the time the caller enumerates what
+    /// came back. Materialise inside the callback - <c>ToList()</c> - or use the overload that hands you the
+    /// <see cref="GridReader"/> to dispose yourself.
     /// </para>
     /// </remarks>
     /// <example>
@@ -210,11 +229,13 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         using GridReader gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
@@ -234,6 +255,13 @@ public static partial class Jaunty
     /// <remarks>
     /// <para>
     /// This overload automatically disposes the <see cref="GridReader"/> after the callback completes.
+    /// </para>
+    /// <para>
+    /// <strong>Do not return a deferred sequence from the callback.</strong> <see cref="GridReader.ReadStream{T}"/>,
+    /// <see cref="GridReader.ReadPartialStream{T}"/> and their async twins return lazy iterators over the
+    /// underlying reader, which this overload has already disposed by the time the caller enumerates what
+    /// came back. Materialise inside the callback - <c>ToList()</c> - or use the overload that hands you the
+    /// <see cref="GridReader"/> to dispose yourself.
     /// </para>
     /// </remarks>
     /// <example>
@@ -255,11 +283,13 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         using GridReader gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);

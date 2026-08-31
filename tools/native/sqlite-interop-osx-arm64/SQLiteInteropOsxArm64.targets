@@ -1,0 +1,39 @@
+<Project>
+
+  <!--
+    Copies the locally built macOS arm64 SQLite.Interop into the test output.
+
+    System.Data.SQLite.Core ships no osx-arm64 native, so on Apple silicon every
+    test that touches it fails with DllNotFoundException until build.sh has been
+    run once. This file is a no-op everywhere else: the item is conditioned on
+    the SDK's own RID and on the artifact existing, so CI, Linux, Windows and
+    Intel Macs are untouched, and nothing is added to any package.
+
+    The file lands next to the test assembly rather than under
+    runtimes/osx-arm64/native/, because that is the probing path both test
+    projects have in common - only projects whose deps.json already declares
+    osx-arm64 native assets probe the runtimes directory.
+  -->
+
+  <PropertyGroup>
+    <JauntySqliteInteropOsxArm64>$(MSBuildThisFileDirectory)artifacts/SQLite.Interop.dll</JauntySqliteInteropOsxArm64>
+    <JauntyNeedsSqliteInteropOsxArm64
+      Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'osx-arm64' AND '$(TargetFramework)' != 'net472'">true</JauntyNeedsSqliteInteropOsxArm64>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(JauntyNeedsSqliteInteropOsxArm64)' == 'true' AND Exists('$(JauntySqliteInteropOsxArm64)')">
+    <None Include="$(JauntySqliteInteropOsxArm64)">
+      <Link>SQLite.Interop.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <Target Name="JauntyWarnMissingSqliteInteropOsxArm64"
+          BeforeTargets="Build"
+          Condition="'$(JauntyNeedsSqliteInteropOsxArm64)' == 'true' AND !Exists('$(JauntySqliteInteropOsxArm64)')">
+    <Message Importance="high"
+             Text="System.Data.SQLite has no osx-arm64 native, so those tests will fail with DllNotFoundException. Run tools/native/sqlite-interop-osx-arm64/build.sh once to build it." />
+  </Target>
+
+</Project>

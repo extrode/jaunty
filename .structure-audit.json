@@ -1,0 +1,7 @@
+{
+  "_why": "docs/99-archive/ is history. Its files carry the names they had when the work happened (PRODUCTION-READINESS-2026-03-03.md, code-coverage-dotCover-2026-02-27.png); renaming them to match today's convention would detach them from the commits and notes that reference them, which is the one thing an archive must not do. docs/_assets/ is the underscore-prefixed asset directory referenced by relative links across the docs tree.",
+  "namingExempt": [
+    "docs/99-archive/",
+    "docs/_assets/"
+  ]
+}

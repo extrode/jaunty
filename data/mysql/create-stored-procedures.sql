@@ -18,9 +18,11 @@ DROP PROCEDURE IF EXISTS GetAllProducts;
 DELIMITER //
 CREATE PROCEDURE GetAllProducts()
 BEGIN
-    SELECT product_id, product_name, supplier_id, category_id,
-           quantity_per_unit, unit_price, units_in_stock, units_on_order,
-           reorder_level, discontinued
+    SELECT product_id AS ProductId, product_name AS ProductName,
+           supplier_id AS SupplierId, category_id AS CategoryId,
+           quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
+           units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder,
+           reorder_level AS ReorderLevel, discontinued AS Discontinued
     FROM products;
 END //
 DELIMITER ;
@@ -34,9 +36,11 @@ DROP PROCEDURE IF EXISTS GetProductsByCategory;
 DELIMITER //
 CREATE PROCEDURE GetProductsByCategory(IN p_CategoryId INT)
 BEGIN
-    SELECT product_id, product_name, supplier_id, category_id,
-           quantity_per_unit, unit_price, units_in_stock, units_on_order,
-           reorder_level, discontinued
+    SELECT product_id AS ProductId, product_name AS ProductName,
+           supplier_id AS SupplierId, category_id AS CategoryId,
+           quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
+           units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder,
+           reorder_level AS ReorderLevel, discontinued AS Discontinued
     FROM products
     WHERE category_id = p_CategoryId;
 END //
@@ -51,9 +55,11 @@ DROP PROCEDURE IF EXISTS GetProductById;
 DELIMITER //
 CREATE PROCEDURE GetProductById(IN p_ProductId INT)
 BEGIN
-    SELECT product_id, product_name, supplier_id, category_id,
-           quantity_per_unit, unit_price, units_in_stock, units_on_order,
-           reorder_level, discontinued
+    SELECT product_id AS ProductId, product_name AS ProductName,
+           supplier_id AS SupplierId, category_id AS CategoryId,
+           quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
+           units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder,
+           reorder_level AS ReorderLevel, discontinued AS Discontinued
     FROM products
     WHERE product_id = p_ProductId;
 END //
@@ -121,9 +127,11 @@ DROP PROCEDURE IF EXISTS GetNoResults;
 DELIMITER //
 CREATE PROCEDURE GetNoResults()
 BEGIN
-    SELECT product_id, product_name, supplier_id, category_id,
-           quantity_per_unit, unit_price, units_in_stock, units_on_order,
-           reorder_level, discontinued
+    SELECT product_id AS ProductId, product_name AS ProductName,
+           supplier_id AS SupplierId, category_id AS CategoryId,
+           quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
+           units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder,
+           reorder_level AS ReorderLevel, discontinued AS Discontinued
     FROM products
     WHERE 1 = 0;
 END //

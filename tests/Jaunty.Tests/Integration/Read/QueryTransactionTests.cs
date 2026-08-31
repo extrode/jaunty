@@ -58,4 +58,50 @@ public class QueryTransactionTests : IClassFixture<DialectFixture>
 
         transaction.Rollback();
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryAsync_WithTransaction_ExecutesCorrectly(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var transaction = connection.BeginTransaction();
+
+        var categories = await connection.QueryAsync<Category>(
+            dialect.Provider == DialectProvider.SqlServer
+                ? "SELECT CategoryId, CategoryName, Description FROM Categories"
+                : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories",
+            new CommandOptions<Category>(transaction: transaction));
+
+        Assert.NotEmpty(categories);
+        transaction.Rollback();
+    }
+
+    [Theory]
+    [Postgres]
+    [SqlServer]
+    [MariaDB]
+    public async Task QueryScalarAsync_WithTransaction_ExecutesCorrectly(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var transaction = connection.BeginTransaction();
+
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            var count = await connection.QueryScalarAsync("SELECT COUNT(*) FROM products",
+                CommandOptions<int>.WithTransaction(transaction));
+
+            Assert.True(count > 0);
+        }
+        else
+        {
+            var count = await connection.QueryScalarAsync("SELECT COUNT(*) FROM products",
+                CommandOptions<long>.WithTransaction(transaction));
+
+            Assert.True(count > 0);
+        }
+
+        transaction.Rollback();
+    }
 }

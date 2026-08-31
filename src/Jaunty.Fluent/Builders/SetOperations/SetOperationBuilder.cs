@@ -2,8 +2,8 @@ using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
-using System.Text.RegularExpressions;
 
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
@@ -67,7 +67,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         _metadata = FluentMetadataCache.GetMetadata<T>();
 
         // Rename first query parameters with prefix "p0_"
-        (string? renamedSql, ParameterCollection? renamedParams) = RenameParameters(firstQuerySql, firstQueryParameters, "p0");
+        (string? renamedSql, ParameterCollection? renamedParams) = ParameterRenamer.Rename(firstQuerySql, firstQueryParameters, "p0");
         _firstQuerySql = renamedSql;
         _firstQueryParameters = renamedParams;
     }
@@ -101,56 +101,202 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     private void AddOperation(SetOperationType operationType, IQueryTerminal<T> other)
     {
         var sql = other.ToSql();
-        ParameterCollection parameters = ExtractParameters(other);
+        ThrowIfOperandHasOrderingOrPaging(other, sql);
+        ParameterCollection parameters = ExtractParameters(other, sql);
 
         // Rename parameters with unique prefix
         var prefix = $"p{_operationCount}";
-        (string? renamedSql, ParameterCollection? renamedParams) = RenameParameters(sql, parameters, prefix);
+        (string? renamedSql, ParameterCollection? renamedParams) = ParameterRenamer.Rename(sql, parameters, prefix);
 
         _operations.Add(new SetOperationComponent(operationType, renamedSql, renamedParams));
         _operationCount++;
     }
 
-    private static ParameterCollection ExtractParameters(IQueryTerminal<T> query)
+    // An operand that already has its own ORDER BY/Take/Skip applied would have that
+    // ordering/paging spliced verbatim into the middle (or end) of the combined
+    // UNION/EXCEPT/INTERSECT statement instead of applying to the combined result - either
+    // a syntax error (if this builder's own OrderBy/Take/Skip is also used) or silent
+    // semantic corruption (if it isn't, since the operand's clause ends up governing the
+    // whole result). Only the outer set-operation chain's OrderBy/Take/Skip is meaningful;
+    // reject the operand up front instead of emitting broken or misleading SQL.
+    private void ThrowIfOperandHasOrderingOrPaging(IQueryTerminal<T> query, string sql)
     {
-        // Extract parameters from QueryBuilder or SetOperationBuilder
+        bool hasOrderingOrPaging = query is QueryBuilder<T> qb
+            ? qb.HasOrderingOrPaging()
+            : CustomOperandHasOrderingOrPaging(sql);
+
+        if (hasOrderingOrPaging)
+        {
+            throw new NotSupportedException(
+                "Union/UnionAll/Except/Intersect operands must not have their own OrderBy/Take/Skip applied. " +
+                "Ordering and paging apply to the combined result - call OrderBy/Take/Skip on the outer " +
+                "set-operation chain (after Union/UnionAll/Except/Intersect) instead.");
+        }
+    }
+
+    // A QueryBuilder<T> reports its own ordering/paging state; a custom IQueryTerminal<T> can only
+    // be judged by the SQL it produced. Until AUD-R31 that meant searching for " ORDER BY " alone,
+    // so an operand that applied paging *without* ordering - LIMIT/OFFSET/FETCH on the ANSI and
+    // MySQL/SQLite/PostgreSQL dialects, TOP on SQL Server - passed the guard and had its paging
+    // spliced into the combined statement, where it silently governs the whole result. Matching is
+    // whole-word and case-insensitive because custom SQL is hand-written; a column merely
+    // containing one of these words (toplevel, limits) is therefore not flagged.
+    private static readonly string[] PagingKeywords = ["ORDER BY", "LIMIT", "OFFSET", "FETCH", "TOP"];
+
+    // AUD-R35-191. The scan used to run over the raw text, so a parameter-free operand whose SQL
+    // merely contained one of these words inside a string literal, a quoted identifier or a comment -
+    // WHERE product_name = 'Top Gun', LIKE '%order by%' - was rejected for ordering it does not have.
+    // The word-boundary check AUD-R31-003 added defends against toplevel/limits, not against
+    // literals. SqlServerDialect.HasTopLevelOrderBy already solves this in the same repository by
+    // masking the uninteresting regions first; this does the same, then runs the existing
+    // whole-word search over the masked copy so the boundary rule and the keyword list are unchanged.
+    private static bool CustomOperandHasOrderingOrPaging(string sql)
+    {
+        string scannable = MaskLiteralsAndComments(sql);
+
+        foreach (string keyword in PagingKeywords)
+        {
+            int from = 0;
+            while (from <= scannable.Length - keyword.Length)
+            {
+                int at = scannable.IndexOf(keyword, from, StringComparison.OrdinalIgnoreCase);
+                if (at < 0)
+                    break;
+
+                if (IsWordBoundary(scannable, at - 1) && IsWordBoundary(scannable, at + keyword.Length))
+                    return true;
+
+                from = at + 1;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Replaces the contents of string literals, quoted identifiers and comments with spaces.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-191. Length is preserved so offsets still line up with the original; only the
+    /// characters change. Handles single-quoted literals with the doubled-quote escape, double-quoted
+    /// and bracketed identifiers, <c>--</c> line comments and <c>/* */</c> block comments. Backticks
+    /// are included because a custom operand may be hand-written MySQL.
+    /// </remarks>
+    private static string MaskLiteralsAndComments(string sql)
+    {
+        char[] masked = sql.ToCharArray();
+
+        for (int i = 0; i < masked.Length; i++)
+        {
+            char c = masked[i];
+
+            if (c == '\'' || c == '"' || c == '`')
+            {
+                char quote = c;
+                i++;
+
+                while (i < masked.Length)
+                {
+                    if (masked[i] == quote)
+                    {
+                        if (i + 1 < masked.Length && masked[i + 1] == quote)
+                        {
+                            masked[i] = ' ';
+                            masked[i + 1] = ' ';
+                            i += 2;
+                            continue;
+                        }
+
+                        break;
+                    }
+
+                    masked[i] = ' ';
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (c == '[')
+            {
+                i++;
+
+                while (i < masked.Length && masked[i] != ']')
+                {
+                    masked[i] = ' ';
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (c == '-' && i + 1 < masked.Length && masked[i + 1] == '-')
+            {
+                while (i < masked.Length && masked[i] != '\n')
+                {
+                    masked[i] = ' ';
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (c == '/' && i + 1 < masked.Length && masked[i + 1] == '*')
+            {
+                while (i < masked.Length && !(masked[i] == '*' && i + 1 < masked.Length && masked[i + 1] == '/'))
+                {
+                    masked[i] = ' ';
+                    i++;
+                }
+
+                if (i + 1 < masked.Length)
+                {
+                    masked[i] = ' ';
+                    masked[i + 1] = ' ';
+                    i++;
+                }
+
+                continue;
+            }
+        }
+
+        return new string(masked);
+    }
+
+    private static bool IsWordBoundary(string sql, int index)
+    {
+        if (index < 0 || index >= sql.Length)
+            return true;
+
+        char c = sql[index];
+        return !char.IsLetterOrDigit(c) && c != '_';
+    }
+
+    private ParameterCollection ExtractParameters(IQueryTerminal<T> query, string sql)
+    {
+        // SetOperationBuilder<T> does not implement IQueryTerminal<T>, so it can never
+        // reach this method - only QueryBuilder<T> (or another IQueryTerminal<T>
+        // implementation) can.
         if (query is QueryBuilder<T> qb)
         {
             return qb.GetParameters();
         }
-        if (query is SetOperationBuilder<T> sob)
+
+        // A custom IQueryTerminal<T> has no way to report its bound parameters here, so its
+        // SQL must be parameter-free - otherwise its placeholders would be spliced into the
+        // combined SQL with no corresponding values ever bound. Fail loudly instead of
+        // silently emitting broken SQL, mirroring QueryBuilder<T>.BuildInSubqueryClause's
+        // guard for the same class of gap in WhereInSubquery/WhereNotInSubquery.
+        if (sql.IndexOf(_dialect.ParameterPrefix, StringComparison.Ordinal) >= 0)
         {
-            return sob.GetAllParameters();
+            throw new NotSupportedException(
+                $"Union/UnionAll/Except/Intersect only supports merging parameters from " +
+                $"a query built via QueryBuilder<{typeof(T).Name}> (e.g. connection.From<{typeof(T).Name}>()...). " +
+                $"The provided IQueryTerminal<{typeof(T).Name}> implementation produced " +
+                $"parameterized SQL that cannot be safely merged into the combined query.");
         }
+
         return new ParameterCollection();
-    }
-
-    /// <summary>
-    /// Renames all parameters in the SQL and parameter collection with the given prefix.
-    /// </summary>
-    private static (string Sql, ParameterCollection Parameters) RenameParameters(
-        string sql,
-        ParameterCollection parameters,
-        string prefix)
-    {
-        var renamedParams = new ParameterCollection();
-        var renamedSql = sql;
-
-        foreach ((string? name, object? value) in parameters.GetAll())
-        {
-            // Detect prefix from the parameter name itself (@ or $)
-            var paramPrefix = name.Length > 0 && name[0] is '@' or '$' ? name[0].ToString() : "@";
-            var baseName = name.TrimStart('@').TrimStart('$');
-            var newName = $"{paramPrefix}{prefix}_{baseName}";
-
-            // Replace in SQL - use word boundary to avoid partial matches
-            var pattern = $@"{Regex.Escape(paramPrefix)}{Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
-            renamedSql = Regex.Replace(renamedSql, pattern, newName);
-
-            renamedParams.Add(newName, value);
-        }
-
-        return (renamedSql, renamedParams);
     }
 
     #endregion
@@ -251,40 +397,86 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return _connection.Query<T>(sql, GetAllParameters().ToParameterObject()!);
     }
 
+    public List<T> Select(CommandOptions options)
+    {
+        var sql = ToSql();
+        return _connection.Query<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    /// <summary>
+    /// Builds the combined statement with <c>_take</c> temporarily clamped to <paramref name="take"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-190. The sixteen First/Single terminals each inlined "save <c>_take</c>, set it to 1
+    /// or 2, call <see cref="ToSql"/>, restore" with no <c>try</c>/<c>finally</c>. <c>ToSql</c> can
+    /// throw on a reachable path - <c>EscapeColumnName</c> runs <c>SqlIdentifierValidator</c>, so a
+    /// bad string column handed to the <c>OrderBy(string)</c>/<c>ThenBy(string)</c> overloads throws
+    /// from inside the guarded region - and the throw left <c>_take</c> at 1 or 2 permanently, so a
+    /// later <c>Select()</c> on the same builder silently returned at most one or two rows of the
+    /// combined result. The save/restore pattern itself says a terminal must not mutate the builder.
+    /// Same defect and same fix as AUD-R35-187 on <c>QueryBuilder</c>.
+    /// </remarks>
+    private string ToSqlTaking(int take)
+    {
+        int? original = _take;
+        _take = take;
+
+        try
+        {
+            return ToSql();
+        }
+        finally
+        {
+            _take = original;
+        }
+    }
+
     public T SelectFirst()
     {
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return _connection.QueryFirst<T>(sql, GetAllParameters().ToParameterObject()!);
+    }
+
+    public T SelectFirst(CommandOptions options)
+    {
+        var sql = ToSqlTaking(1);
+        return _connection.QueryFirst<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectFirstOrDefault()
     {
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(1);
         return _connection.QueryFirstOrDefault<T>(sql, GetAllParameters().ToParameterObject()!);
+    }
+
+    public T? SelectFirstOrDefault(CommandOptions options)
+    {
+        var sql = ToSqlTaking(1);
+        return _connection.QueryFirstOrDefault<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T SelectSingle()
     {
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return _connection.QuerySingle<T>(sql, GetAllParameters().ToParameterObject()!);
+    }
+
+    public T SelectSingle(CommandOptions options)
+    {
+        var sql = ToSqlTaking(2);
+        return _connection.QuerySingle<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectSingleOrDefault()
     {
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
+        var sql = ToSqlTaking(2);
         return _connection.QuerySingleOrDefault<T>(sql, GetAllParameters().ToParameterObject()!);
+    }
+
+    public T? SelectSingleOrDefault(CommandOptions options)
+    {
+        var sql = ToSqlTaking(2);
+        return _connection.QuerySingleOrDefault<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     #endregion
@@ -293,54 +485,92 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
     public async Task<List<T>> SelectAsync(CancellationToken cancellationToken = default)
     {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
         var sql = ToSql();
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return Select();
+        return await dbConn.QueryAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSql();
+        return await dbConn.QueryAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectFirst();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSqlTaking(1);
+        return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSqlTaking(1);
+        return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 1;
-        var sql = ToSql();
-        _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectFirstOrDefault();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSqlTaking(1);
+        return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSqlTaking(1);
+        return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectSingleAsync(CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectSingle();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSqlTaking(2);
+        return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSqlTaking(2);
+        return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
-        var original = _take;
-        _take = 2;
-        var sql = ToSql();
-        _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectSingleOrDefault();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSqlTaking(2);
+        return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSqlTaking(2);
+        return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
@@ -425,12 +655,15 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return combined;
     }
 
+    private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
+        new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
+
     private string GetColumnNameFromProperty(string propertyName)
     {
         IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
-            if (columns[i].Property.Name == propertyName)
+            if (columns[i].PropertyName == propertyName)
                 return columns[i].ColumnName;
         }
         return propertyName;

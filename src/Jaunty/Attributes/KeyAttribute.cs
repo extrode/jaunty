@@ -13,8 +13,16 @@ namespace Jaunty.Attributes;
 /// <c>KeyAttribute</c> from System.ComponentModel.DataAnnotations for compatibility.
 /// </para>
 /// <para>
-/// <strong>Note:</strong> Currently, Jaunty only supports single-column primary keys. 
-/// Composite primary keys are not supported.
+/// <strong>Composite keys:</strong> apply <c>[Key]</c> to more than one property to declare a
+/// composite primary key. The write paths support this throughout - <c>UPDATE</c>, <c>DELETE</c>
+/// and upsert all emit a multi-column <c>WHERE</c>/conflict target, and <c>BulkUpdate</c>/
+/// <c>BulkDelete</c> bind every key column.
+/// </para>
+/// <para>
+/// <strong>Exception:</strong> the by-id convenience overloads (<c>Get&lt;T&gt;(id)</c>,
+/// <c>Delete&lt;T&gt;(id)</c> and friends) take a single identifier and therefore require exactly
+/// one key property; calling them on a composite-key entity throws with a message saying so. Use
+/// the entity-taking overloads, or a Fluent predicate, for composite-key types.
 /// </para>
 /// </remarks>
 /// <example>

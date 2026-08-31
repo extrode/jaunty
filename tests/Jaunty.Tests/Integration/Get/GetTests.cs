@@ -132,4 +132,90 @@ public class GetTests : IClassFixture<DialectFixture>
         Assert.Equal("TxRow", entity.Name);
         tx.Rollback();
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Get_TypedKey_WithTransaction_ReadsUncommittedInSameTx(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "TypedTxRow", 6);
+        using var tx = ctx.Connection.BeginTransaction();
+
+        var entity = ctx.Connection.Get<GetTestEntityTyped, long>(id, CommandOptions<GetTestEntityTyped>.WithTransaction(tx));
+
+        Assert.NotNull(entity);
+        Assert.Equal("TypedTxRow", entity.Name);
+        tx.Rollback();
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GetRequired_WithTransaction_ReadsUncommittedInSameTx(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "ReqTxRow", 8);
+        using var tx = ctx.Connection.BeginTransaction();
+
+        var entity = ctx.Connection.GetRequired<GetTestEntity>(id, CommandOptions<GetTestEntity>.WithTransaction(tx));
+
+        Assert.Equal("ReqTxRow", entity.Name);
+        tx.Rollback();
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GetRequired_TypedKey_ReturnsEntity(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "TypedRequired", 11);
+
+        var entity = ctx.Connection.GetRequired<GetTestEntityTyped, long>(id);
+
+        Assert.Equal(id, entity.Id);
+        Assert.Equal("TypedRequired", entity.Name);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GetRequired_TypedKey_MissingRow_Throws(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            ctx.Connection.GetRequired<GetTestEntityTyped, long>(-1L));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GetRequired_TypedKey_WithTransaction_ReadsUncommittedInSameTx(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "TypedReqTxRow", 9);
+        using var tx = ctx.Connection.BeginTransaction();
+
+        var entity = ctx.Connection.GetRequired<GetTestEntityTyped, long>(id, CommandOptions<GetTestEntityTyped>.WithTransaction(tx));
+
+        Assert.Equal("TypedReqTxRow", entity.Name);
+        tx.Rollback();
+    }
 }

@@ -13,7 +13,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Import;
 /// </summary>
 public class ImportPipelineTests : IDisposable
 {
-    private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_import_tests_{Guid.NewGuid():N}");
+    private readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_import_tests_{Guid.NewGuid():N}");
     private readonly string _csvPath;
     private readonly string _parquetPath;
     private readonly DuckDb _db;
@@ -234,7 +234,7 @@ public class ImportPipelineTests : IDisposable
         await _db.ImportIntoAsync<InventoryItem>(sqlite);
 
         // Second import should fail on duplicate primary key
-        await Assert.ThrowsAnyAsync<Exception>(async () =>
+        await Assert.ThrowsAsync<SqliteException>(async () =>
         {
             await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Error));
         });
@@ -256,6 +256,11 @@ public class ImportPipelineTests : IDisposable
 
         // Second import with Skip — should not add duplicates
         var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Skip));
+
+        // ImportIntoAsync's return value counts every source row processed (ExecuteNonQuery
+        // called), not rows actually inserted - it does not decrement for ON CONFLICT DO NOTHING
+        // no-ops, so all 5 duplicate rows are still counted here even though none were inserted.
+        Assert.Equal(5, count);
 
         // Still 5 rows — duplicates skipped
         Assert.Equal(5, CountRows(sqlite, "inventory"));
@@ -340,6 +345,50 @@ public class ImportPipelineTests : IDisposable
         Assert.Equal(5, count);
         // With batch size 2 and 5 rows: progress at 2, 4, then final at 5
         Assert.True(progressCallCount >= 3, $"Expected at least 3 progress calls, got {progressCallCount}");
+        Assert.Equal(5, lastReported);
+    }
+
+    [Fact]
+    public async Task ImportIntoAsync_LargeSource_ImportsAllRowsAcrossMultipleBatches()
+    {
+        // Regression test for AUD-R9: ImportBatchesAsync previously executed one
+        // ExecuteNonQueryAsync round-trip per row regardless of BatchSize. This forces several
+        // batch boundaries (small batchSize, many rows) through the real import pipeline —
+        // including the DbBatch grouping path, since Microsoft.Data.Sqlite supports DbBatch — and
+        // asserts every row still lands in the target with correct data.
+        const int rowCount = 2500;
+        var newItems = new InventoryItem[rowCount];
+        for (int i = 0; i < rowCount; i++)
+        {
+            newItems[i] = new InventoryItem
+            {
+                ItemId = 10_000 + i,
+                ItemName = $"BulkImportItem{i}",
+                Category = "BulkImport",
+                StockQuantity = i,
+                UnitPrice = 2.50m,
+                InStock = i % 2 == 0
+            };
+        }
+        _db.Insert(newItems);
+
+        using var sqlite = CreateSqliteConnection();
+        CreateInventoryTable(sqlite);
+
+        var progressCallCount = 0;
+        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(batchSize: 100, onProgress: (_, _) =>
+        {
+            progressCallCount++;
+        }));
+
+        Assert.Equal(rowCount + 5, count); // 5 original fixture rows + the bulk-inserted rows
+        Assert.Equal(rowCount + 5, CountRows(sqlite, "inventory"));
+        Assert.True(progressCallCount >= rowCount / 100,
+            $"Expected at least {rowCount / 100} progress calls for batchSize 100, got {progressCallCount}");
+
+        using var verifyCmd = sqlite.CreateCommand();
+        verifyCmd.CommandText = "SELECT \"ItemName\" FROM \"inventory\" WHERE \"ItemId\" = 12499";
+        Assert.Equal("BulkImportItem2499", verifyCmd.ExecuteScalar());
     }
 
     // ==========================================
@@ -446,6 +495,37 @@ public class ImportPipelineTests : IDisposable
     }
 
     [Fact]
+    public async Task FlatFileImporter_ImportAsync_TableNameWithEmbeddedQuote_Succeeds()
+    {
+        // AUD-R12-127 regression: ImportExecutor.ExecuteAsync<T> built the source SELECT as
+        // $"SELECT * FROM \"{tableName}\"" without doubling embedded double quotes in tableName,
+        // unlike ValidateTargetSchemaAsync's structurally identical query in the same file. A
+        // [Table] name containing a literal double quote (tableName here comes straight from
+        // TableNameResolver.Resolve<T>(), same as the finding describes) broke the source read
+        // with a DuckDB syntax error even though the DuckDB-side view for this table name was
+        // created correctly (DuckDbDialect.EscapeTableName already escapes properly there).
+        using var sqlite = CreateSqliteConnection();
+        using (var cmd = sqlite.CreateCommand())
+        {
+            cmd.CommandText = @"
+                CREATE TABLE ""evil""""table"" (
+                    ""ItemId"" INTEGER PRIMARY KEY,
+                    ""ItemName"" TEXT NOT NULL,
+                    ""Category"" TEXT NOT NULL,
+                    ""StockQuantity"" INTEGER NOT NULL,
+                    ""UnitPrice"" REAL NOT NULL,
+                    ""InStock"" INTEGER NOT NULL
+                )";
+            cmd.ExecuteNonQuery();
+        }
+
+        var count = await FlatFileImporter.ImportAsync<EvilTableNameItem>(_csvPath, sqlite);
+
+        Assert.Equal(5, count);
+        Assert.Equal(5, CountRows(sqlite, "evil\"\"table"));
+    }
+
+    [Fact]
     public async Task FlatFileImporter_ImportAsync_ParquetToSqlite()
     {
         using var sqlite = CreateSqliteConnection();
@@ -487,7 +567,7 @@ public class ImportPipelineTests : IDisposable
         Assert.Equal(5, CountRows(sqlite, "inventory"));
 
         // 2. ConflictStrategy.Error — should throw on duplicate
-        await Assert.ThrowsAnyAsync<Exception>(async () =>
+        await Assert.ThrowsAsync<SqliteException>(async () =>
         {
             await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Error));
         });

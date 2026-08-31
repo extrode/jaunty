@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Data;
+using System.Globalization;
 using System.Data.Common;
 using System.Text;
 
@@ -41,6 +42,12 @@ public sealed partial class DuckDb : IFlatFile
     private readonly FlatFileOptions _options;
     private readonly ConcurrentDictionary<Type, IFileSource> _sources = new();
     private readonly ConcurrentDictionary<Type, bool> _modified = new();
+    // ConcurrentDictionary-as-set rather than HashSet: RegisterSource/RegisterSourceAsync are
+    // callable concurrently (the sibling _sources/_modified caches are concurrent for exactly
+    // that reason), and they reach EnsureExtensionsLoaded, whose unsynchronized HashSet.Add
+    // could corrupt internal state or throw. TryAdd keeps the same "first caller wins, install
+    // the extension once" semantics HashSet.Add's bool return provided.
+    private readonly ConcurrentDictionary<string, bool> _loadedExtensions = new(StringComparer.OrdinalIgnoreCase);
     private bool _disposed;
 
     /// <inheritdoc />
@@ -74,15 +81,29 @@ public sealed partial class DuckDb : IFlatFile
         if (options.RegisterDialect)
             SqlDialectFactory.RegisterDialect("DuckDBConnection", _dialect);
 
-        if (options.AutoOpen)
-            _connection.Open();
-
-        foreach (IFileSource source in options.Sources)
+        try
         {
-            if (options.PreloadIntoMemory && !source.IsPreloaded)
-                source.IsPreloaded = true;
+            // AUD-R32-004: Open() used to sit outside this try. A throwing Open (locked file,
+            // a path that is a directory, a corrupt database) left _connection undisposed, and
+            // the constructor never returns an instance the caller could Dispose - so the
+            // native handle leaked. Same reason the source loop is guarded.
+            if (options.AutoOpen)
+                _connection.Open();
 
-            RegisterSource(source);
+            // AUD-R35-072: FlatFileOptions.AddUnique only guards the AddXxx APIs; Sources is a
+            // public mutable list, so options.Sources.Add(duplicate) reached the last-wins
+            // _sources dictionary and CREATE OR REPLACE VIEW with the guard never consulted.
+            options.EnsureSourceTableNamesAreUnique();
+
+            foreach (IFileSource source in options.Sources)
+                RegisterSource(source);
+        }
+        catch
+        {
+            // A source registration can fail partway through; without this, _connection would
+            // leak because the constructor never returns an instance the caller could Dispose.
+            _connection.Dispose();
+            throw;
         }
     }
 
@@ -90,6 +111,28 @@ public sealed partial class DuckDb : IFlatFile
     public void RegisterSource(IFileSource source)
     {
         ArgumentNullException.ThrowIfNull(source);
+        EnsureExtensionsLoaded(source);
+
+        // AUD-R35-026: seeded once, from the caller's own opt-in, and never written back to the
+        // source - see PreloadRegistry.
+        if (_options.PreloadIntoMemory || source.IsPreloaded)
+            PreloadRegistry.Mark(_connection, source);
+
+        // A file-backed catalog can already hold this object as a table: a previous instance's
+        // mutation promoted the registration view, and the promotion persisted. Re-running the
+        // unconditional CREATE OR REPLACE VIEW would be rejected by DuckDB ("Existing object is
+        // of type Table, trying to replace with type View"), so the table - which holds the
+        // mutated data - is left alone. Preloaded sources are exempt: their CREATE OR REPLACE
+        // TABLE deliberately reloads from the file every time.
+        if (!PreloadRegistry.IsPreloaded(_connection, source) && ExistsAsTable(source.TableName))
+        {
+            if (_options.ValidateSchema && source.EntityType != typeof(object))
+                ValidateSchema(source);
+
+            _sources[source.EntityType] = source;
+            return;
+        }
+
         string sql = GenerateRegistrationSql(source);
 
         using DuckDBCommand cmd = _connection.CreateCommand();
@@ -106,7 +149,23 @@ public sealed partial class DuckDb : IFlatFile
     public async ValueTask RegisterSourceAsync(IFileSource source, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
-        string sql = GenerateRegistrationSql(source);
+        await EnsureExtensionsLoadedAsync(source, cancellationToken).ConfigureAwait(false);
+
+        // Same seeding as RegisterSource; see the comment there.
+        if (_options.PreloadIntoMemory || source.IsPreloaded)
+            PreloadRegistry.Mark(_connection, source);
+
+        // Same promoted-table guard as RegisterSource; see the comment there.
+        if (!PreloadRegistry.IsPreloaded(_connection, source) && await ExistsAsTableAsync(source.TableName, cancellationToken).ConfigureAwait(false))
+        {
+            if (_options.ValidateSchema && source.EntityType != typeof(object))
+                await ValidateSchemaAsync(source, cancellationToken).ConfigureAwait(false);
+
+            _sources[source.EntityType] = source;
+            return;
+        }
+
+        string sql = await GenerateRegistrationSqlAsync(source, cancellationToken).ConfigureAwait(false);
 
         DuckDBCommand cmd = _connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
@@ -114,10 +173,81 @@ public sealed partial class DuckDb : IFlatFile
         await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         if (_options.ValidateSchema && source.EntityType != typeof(object))
-            ValidateSchema(source);
+            await ValidateSchemaAsync(source, cancellationToken).ConfigureAwait(false);
 
         _sources[source.EntityType] = source;
     }
+
+    /// <summary>
+    /// Installs and loads the DuckDB extension required to read <paramref name="source"/>'s
+    /// remote URI scheme (e.g. <c>httpfs</c> for S3/HTTP(S), <c>azure</c> for az/abfss), if any.
+    /// DuckDB's implicit extension autoload is unreliable for the azure extension and can be
+    /// disabled entirely in locked-down deployments, so this is done explicitly up front rather
+    /// than left to fail opaquely at query time.
+    /// </summary>
+    private void EnsureExtensionsLoaded(IFileSource source)
+    {
+        foreach (string path in source.FilePaths)
+        {
+            if (!FlatFile.IsRemoteUri(path, out string scheme))
+                continue;
+
+            string? extension = GetDuckDbExtensionForScheme(scheme);
+            if (extension is null || !_loadedExtensions.TryAdd(extension, true))
+                continue;
+
+            try
+            {
+                using DuckDBCommand cmd = _connection.CreateCommand();
+                cmd.CommandText = $"INSTALL {extension}; LOAD {extension};";
+                cmd.ExecuteNonQuery();
+            }
+            catch
+            {
+                // R27 batch 13: the TryAdd above wins the right to run INSTALL/LOAD, but a
+                // failure (offline machine, blocked extension repository) must not leave the
+                // extension marked loaded - a later registration would skip the install and die
+                // much later with DuckDB's opaque "extension not loaded" error.
+                _loadedExtensions.TryRemove(extension, out _);
+                throw;
+            }
+        }
+    }
+
+    /// <inheritdoc cref="EnsureExtensionsLoaded"/>
+    private async ValueTask EnsureExtensionsLoadedAsync(IFileSource source, CancellationToken cancellationToken)
+    {
+        foreach (string path in source.FilePaths)
+        {
+            if (!FlatFile.IsRemoteUri(path, out string scheme))
+                continue;
+
+            string? extension = GetDuckDbExtensionForScheme(scheme);
+            if (extension is null || !_loadedExtensions.TryAdd(extension, true))
+                continue;
+
+            try
+            {
+                DuckDBCommand cmd = _connection.CreateCommand();
+                await using var cmdDisposer = cmd.ConfigureAwait(false);
+                cmd.CommandText = $"INSTALL {extension}; LOAD {extension};";
+                await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                // R27 batch 13: see the sync path - do not leave a failed install marked loaded.
+                _loadedExtensions.TryRemove(extension, out _);
+                throw;
+            }
+        }
+    }
+
+    private static string? GetDuckDbExtensionForScheme(string scheme) => scheme.ToLowerInvariant() switch
+    {
+        "az" or "abfss" => "azure",
+        "http" or "https" or "s3" or "s3a" or "s3n" or "r2" or "gs" or "hf" => "httpfs",
+        _ => null
+    };
 
     /// <inheritdoc />
     public IFileSource? GetSource<T>() where T : class, new()
@@ -145,6 +275,43 @@ public sealed partial class DuckDb : IFlatFile
             : source;
     }
 
+    /// <summary>
+    /// Counts base tables named <c>$name</c> <b>in the schema this connection's unqualified names
+    /// resolve to</b>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-244: the schema and catalog predicates used to be absent, so the query matched a
+    /// base table of that name anywhere in <c>information_schema.tables</c> - in <c>temp</c>, or in
+    /// any attached catalog - while every object this class creates is unqualified. An unrelated
+    /// same-named table elsewhere therefore sent <c>RegisterSource</c> down the "already promoted,
+    /// leave it alone" branch, the view was never created, and queries for that entity silently
+    /// read whatever the unqualified name resolved to instead of the registered file.
+    /// <c>current_schema()</c>/<c>current_database()</c> rather than the literal <c>main</c>,
+    /// because a caller is free to <c>USE</c> another schema before handing the connection over.
+    /// </remarks>
+    private const string ExistsAsTableSql =
+        "SELECT COUNT(*) FROM information_schema.tables " +
+        "WHERE table_name = $name AND table_type = 'BASE TABLE' " +
+        "AND table_schema = current_schema() AND table_catalog = current_database()";
+
+    private bool ExistsAsTable(string tableName)
+    {
+        using DuckDBCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = ExistsAsTableSql;
+        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+    }
+
+    private async ValueTask<bool> ExistsAsTableAsync(string tableName, CancellationToken cancellationToken)
+    {
+        DuckDBCommand cmd = _connection.CreateCommand();
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
+        cmd.CommandText = ExistsAsTableSql;
+        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        object? count = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return Convert.ToInt64(count, CultureInfo.InvariantCulture) > 0;
+    }
+
     private string GenerateRegistrationSql(IFileSource source)
     {
         if (source.EntityType != typeof(object))
@@ -155,7 +322,22 @@ public sealed partial class DuckDb : IFlatFile
                 return GenerateViewSqlWithDateTimeCasts(source, mappings);
         }
 
-        return source.IsPreloaded
+        return PreloadRegistry.IsPreloaded(_connection, source)
+            ? _dialect.GenerateCreateTableAsSql(source)
+            : _dialect.GenerateCreateViewSql(source);
+    }
+
+    private async ValueTask<string> GenerateRegistrationSqlAsync(IFileSource source, CancellationToken cancellationToken)
+    {
+        if (source.EntityType != typeof(object))
+        {
+            IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(source.EntityType);
+
+            if (HasDateTimeColumns(mappings))
+                return await GenerateViewSqlWithDateTimeCastsAsync(source, mappings, cancellationToken).ConfigureAwait(false);
+        }
+
+        return PreloadRegistry.IsPreloaded(_connection, source)
             ? _dialect.GenerateCreateTableAsSql(source)
             : _dialect.GenerateCreateViewSql(source);
     }
@@ -195,14 +377,54 @@ public sealed partial class DuckDb : IFlatFile
             string col = fileColumns[i];
 
             if (dateTimeColumns.Contains(col))
-                sb.Append($"CAST(\"{col}\" AS TIMESTAMP) AS \"{col}\"");
+                sb.Append($"CAST({_dialect.EscapeColumnName(col)} AS TIMESTAMP) AS {_dialect.EscapeColumnName(col)}");
             else
-                sb.Append($"\"{col}\"");
+                sb.Append(_dialect.EscapeColumnName(col));
         }
 
-        string keyword = source.IsPreloaded ? "TABLE" : "VIEW";
+        string keyword = PreloadRegistry.IsPreloaded(_connection, source) ? "TABLE" : "VIEW";
 
-        return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
+        return $"CREATE OR REPLACE {keyword} {_dialect.EscapeTableName(null, source.TableName)} AS SELECT {sb} FROM {readFunction}";
+    }
+
+    private async ValueTask<string> GenerateViewSqlWithDateTimeCastsAsync(IFileSource source, IReadOnlyDictionary<string, ColumnMapping> mappings, CancellationToken cancellationToken)
+    {
+        string readFunction = DuckDbDialect.GenerateReadFunction(source);
+        HashSet<string> dateTimeColumns = GetDateTimeColumnNamesFromMappings(mappings);
+        List<string> fileColumns;
+
+        DuckDBCommand cmd = _connection.CreateCommand();
+        await using (cmd.ConfigureAwait(false))
+        {
+            cmd.CommandText = $"SELECT * FROM {readFunction} LIMIT 0";
+            DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                fileColumns = new List<string>(reader.FieldCount);
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    fileColumns.Add(reader.GetName(i));
+                }
+            }
+        }
+
+        var sb = new StringBuilder();
+
+        for (int i = 0; i < fileColumns.Count; i++)
+        {
+            if (i > 0) sb.Append(", ");
+
+            string col = fileColumns[i];
+
+            if (dateTimeColumns.Contains(col))
+                sb.Append($"CAST({_dialect.EscapeColumnName(col)} AS TIMESTAMP) AS {_dialect.EscapeColumnName(col)}");
+            else
+                sb.Append(_dialect.EscapeColumnName(col));
+        }
+
+        string keyword = PreloadRegistry.IsPreloaded(_connection, source) ? "TABLE" : "VIEW";
+
+        return $"CREATE OR REPLACE {keyword} {_dialect.EscapeTableName(null, source.TableName)} AS SELECT {sb} FROM {readFunction}";
     }
 
     private static HashSet<string> GetDateTimeColumnNamesFromMappings(IReadOnlyDictionary<string, ColumnMapping> mappings)
@@ -219,12 +441,42 @@ public sealed partial class DuckDb : IFlatFile
     private void ValidateSchema(IFileSource source)
     {
         using DuckDBCommand cmd = _connection.CreateCommand();
-        cmd.CommandText = $"DESCRIBE \"{source.TableName}\"";
+        cmd.CommandText = $"DESCRIBE {_dialect.EscapeTableName(null, source.TableName)}";
 
         using DuckDBDataReader reader = cmd.ExecuteReader();
         var fileColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         while (reader.Read())
+        {
+            string colName = reader.GetString(0);
+            string colType = reader.GetString(1);
+            fileColumns[colName] = colType;
+        }
+
+        foreach (ColumnMapping mapping in ColumnMappingCache.Get(source.EntityType).Values)
+        {
+            if (!fileColumns.ContainsKey(mapping.ColumnName))
+            {
+                throw new InvalidOperationException(
+                    $"Schema validation failed for '{source.TableName}': Entity property '{mapping.Property.Name}' " +
+                    $"maps to column '{mapping.ColumnName}' which does not exist in the file. " +
+                    $"Available columns: {string.Join(", ", fileColumns.Keys)}");
+            }
+        }
+    }
+
+    private async ValueTask ValidateSchemaAsync(IFileSource source, CancellationToken cancellationToken)
+    {
+        DuckDBCommand cmd = _connection.CreateCommand();
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
+        cmd.CommandText = $"DESCRIBE {_dialect.EscapeTableName(null, source.TableName)}";
+
+        DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        await using var readerDisposer = reader.ConfigureAwait(false);
+
+        var fileColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             string colName = reader.GetString(0);
             string colType = reader.GetString(1);

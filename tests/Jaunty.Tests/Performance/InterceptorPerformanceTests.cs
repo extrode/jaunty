@@ -24,6 +24,11 @@ public class InterceptorPerformanceTests
     [Fact]
     public void InterceptorPipeline_WithNoOpInterceptor_HasMinimalOverhead()
     {
+        // Wall-clock threshold: a useful canary on a developer machine,
+        // pure noise on shared CI runners.
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            Assert.Skip("Wall-clock performance thresholds are unreliable on shared CI runners.");
+
         // Arrange
         var noOpInterceptor = new NoOpInterceptor();
         var pipeline = new InterceptorPipeline([noOpInterceptor]);
@@ -55,6 +60,11 @@ public class InterceptorPerformanceTests
     [Fact]
     public async Task InterceptorPipeline_WithMultipleNoOpInterceptors_HasAcceptableOverhead()
     {
+        // Wall-clock threshold: a useful canary on a developer machine,
+        // pure noise on shared CI runners.
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            Assert.Skip("Wall-clock performance thresholds are unreliable on shared CI runners.");
+
         // Arrange - 5 no-op interceptors
         var interceptors = new List<ICommandInterceptor>
         {
@@ -98,6 +108,11 @@ public class InterceptorPerformanceTests
     [Fact]
     public async Task AuditInterceptor_Overhead_IsAcceptable()
     {
+        // Wall-clock threshold: a useful canary on a developer machine,
+        // pure noise on shared CI runners.
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            Assert.Skip("Wall-clock performance thresholds are unreliable on shared CI runners.");
+
         // Arrange
         var auditInterceptor = new AuditInterceptor();
         var pipeline = new InterceptorPipeline(new[] { auditInterceptor });
@@ -133,6 +148,11 @@ public class InterceptorPerformanceTests
     [Fact]
     public void DiagnosticListener_Overhead_IsAcceptable()
     {
+        // Wall-clock threshold: a useful canary on a developer machine,
+        // pure noise on shared CI runners.
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            Assert.Skip("Wall-clock performance thresholds are unreliable on shared CI runners.");
+
         // Arrange - use singleton which is always enabled
         var connection = new TestDbConnection();
         var context = new CommandContext("SELECT 1", null, connection, CommandType.Text);

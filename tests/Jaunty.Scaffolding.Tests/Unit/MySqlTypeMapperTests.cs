@@ -9,13 +9,16 @@ public class MySqlTypeMapperTests
 {
     private readonly MySqlTypeMapper _mapper = new();
 
-    private static ColumnSchema CreateColumn(string dataType, bool isNullable = false) =>
+    private static ColumnSchema CreateColumn(
+        string dataType, bool isNullable = false, int? maxLength = null, string? columnType = null) =>
         new()
         {
             ColumnName = "test_column",
             DataType = dataType,
             IsNullable = isNullable,
-            OrdinalPosition = 1
+            OrdinalPosition = 1,
+            MaxLength = maxLength,
+            ColumnType = columnType
         };
 
     // ------------------------------------------------------------------
@@ -29,6 +32,47 @@ public class MySqlTypeMapperTests
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
         Assert.Equal("bool", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Theory]
+    [InlineData("bit", "bit(1)")]
+    [InlineData("tinyint", "tinyint(1)")]
+    [InlineData("tinyint", "tinyint(1) unsigned")]
+    public void MapToCSharpType_ColumnTypeDisplayWidthOne_ReturnsBool(string sqlType, string columnType)
+    {
+        // MySQL's tinyint(1)/bit(1) boolean convention is only observable via COLUMN_TYPE's
+        // display width. INFORMATION_SCHEMA.COLUMNS.CHARACTER_MAXIMUM_LENGTH (ColumnSchema's
+        // MaxLength) is always NULL for numeric columns, so it can never carry this signal.
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, columnType: columnType));
+        Assert.Equal("bool", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Fact]
+    public void MapToCSharpType_MaxLengthOneWithoutColumnType_DoesNotReturnBool()
+    {
+        // Regression guard: MaxLength alone must NOT trigger the bool convention, since a real
+        // MySqlSchemaReader read never populates MaxLength for tinyint/bit columns (only
+        // ColumnType carries the display-width signal).
+        var result = _mapper.MapToCSharpType(CreateColumn("tinyint", maxLength: 1));
+        Assert.Equal("sbyte", result.TypeName);
+    }
+
+    [Fact]
+    public void MapToCSharpType_BitWithWiderColumnType_ReturnsUlong()
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn("bit", columnType: "bit(8)"));
+        Assert.Equal("ulong", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Fact]
+    public void MapToCSharpType_TinyintWithoutColumnType_ReturnsSbyte()
+    {
+        // No ColumnType at all must NOT be treated as the tinyint(1) boolean case.
+        var result = _mapper.MapToCSharpType(CreateColumn("tinyint"));
+        Assert.Equal("sbyte", result.TypeName);
         Assert.True(result.IsValueType);
     }
 
@@ -72,6 +116,8 @@ public class MySqlTypeMapperTests
     [Theory]
     [InlineData("decimal")]
     [InlineData("numeric")]
+    [InlineData("dec")]
+    [InlineData("fixed")]
     public void MapToCSharpType_DecimalTypes_ReturnsDecimal(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
@@ -105,10 +151,13 @@ public class MySqlTypeMapperTests
 
     [Theory]
     [InlineData("date", "DateOnly")]
-    [InlineData("time", "TimeOnly")]
+    // AUD-R35-039: TimeSpan, not TimeOnly. MySQL's TIME is a signed interval spanning
+    // -838:59:59 to 838:59:59, which TimeOnly cannot represent; the connector returns TimeSpan.
+    [InlineData("time", "TimeSpan")]
     [InlineData("datetime", "DateTime")]
     [InlineData("timestamp", "DateTime")]
-    [InlineData("year", "short")]
+    // AUD-R35-040: int, not short. YEAR reaches 2155, which overflows short.
+    [InlineData("year", "int")]
     public void MapToCSharpType_DateTimeTypes_MapsCorrectly(string sqlType, string expected)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
@@ -127,6 +176,28 @@ public class MySqlTypeMapperTests
     [InlineData("mediumblob")]
     [InlineData("longblob")]
     public void MapToCSharpType_BinaryTypes_ReturnsByteArray(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("byte[]", result.TypeName);
+        Assert.False(result.IsValueType);
+    }
+
+    // ------------------------------------------------------------------
+    // Spatial types
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("geometry")]
+    [InlineData("point")]
+    [InlineData("linestring")]
+    [InlineData("polygon")]
+    [InlineData("multipoint")]
+    [InlineData("multilinestring")]
+    [InlineData("multipolygon")]
+    [InlineData("geometrycollection")]
+    // AUD-R35-041: MySQL 8's preferred spelling for the same type.
+    [InlineData("geomcollection")]
+    public void MapToCSharpType_SpatialTypes_ReturnsByteArray(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
         Assert.Equal("byte[]", result.TypeName);
@@ -154,5 +225,19 @@ public class MySqlTypeMapperTests
     {
         var result = _mapper.MapToCSharpType(CreateColumn("unknown_custom_type_xyz"));
         Assert.Equal("object", result.TypeName);
+    }
+
+    // AUD-R18 batch-8: RequiredUsing exists so EntityCodeGenerator.AppendUsings can emit
+    // "using System;" for types like DateOnly that aren't in scope without ImplicitUsings -
+    // no mapper populated it, so generated code failed to compile with ImplicitUsings disabled.
+    [Theory]
+    [InlineData("date")]
+    [InlineData("time")]
+    [InlineData("datetime")]
+    [InlineData("timestamp")]
+    public void MapToCSharpType_SystemNamespaceTypes_SetsRequiredUsing(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("System", result.RequiredUsing);
     }
 }

@@ -128,7 +128,7 @@ var category = multi.ReadFirst<Category>();
 
 | Mode | Method | Behavior |
 |------|--------|----------|
-| **Strict** | `Query<T>()` | All properties must have matching columns or throws `InvalidOperationException` |
+| **Strict** | `Query<T>()` | Throws on an unmatched property; the reflection mapper also throws on an unmatched column, the source-generated one ignores it ([detail](query-partial-methods.md#which-mapper-enforces-which-direction)) |
 | **Partial** | `QueryPartial<T>()` | Only maps existing columns, ignores unmatched properties |
 
 ## Parameter Binding
@@ -150,7 +150,8 @@ connection.Query<Product>(
 
 | Error | Exception |
 |-------|-----------|
-| Missing column (strict mode) | `InvalidOperationException` |
+| Property with no column, or column with no property - strict mode, reflection mapper | `InvalidOperationException` |
+| Property with no column - strict mode, source-generated mapper | provider-specific, from `GetOrdinal`: `ArgumentOutOfRangeException` (SQLite), `IndexOutOfRangeException` (SqlClient) |
 | Parameter count mismatch | `ArgumentException` |
 | No elements (First/Single) | `InvalidOperationException` |
 | Multiple elements (Single) | `InvalidOperationException` |
@@ -160,6 +161,6 @@ connection.Query<Product>(
 
 ## See Also
 
-- [`../../00-quick-start/README.md`](../../00-quick-start/README.md) - Quick start
-- [`../../02-architecture/README.md`](../../02-architecture/README.md) - Architecture
+- [`../../00-quick-start/README.md`](../00-quick-start/README.md) - Quick start
+- [`../../02-architecture/README.md`](../02-architecture/README.md) - Architecture
 

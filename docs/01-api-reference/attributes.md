@@ -1,4 +1,4 @@
-# Attributes
+﻿# Attributes
 
 ## Overview
 
@@ -142,6 +142,66 @@ public class Product
 - Identity values are returned by Insert operations and can be automatically populated
 - Computed columns are typically read-only in insert/update operations
 
+**Write it explicitly — the two mapping paths infer differently without it.**
+
+If a key property is an `int` or `long` and carries no `[DatabaseGenerated]`, the two mapping
+paths disagree about whether the database generates its value, and therefore about whether the
+column appears in the generated `INSERT`:
+
+| Mapping path | Single `int`/`long` key, no `[DatabaseGenerated]` |
+|---|---|
+| `Jaunty.SourceGenerator` | Treated as an identity column — **omitted** from the `INSERT` |
+| `Jaunty.Extensions.Reflection` | Not an identity column — **included** in the `INSERT` |
+
+The source-generated mapper is preferred whenever one exists, so *adding or removing the
+`Jaunty.SourceGenerator` package reference changes the SQL* for such an entity — dropping a
+client-assigned key on one side, or overriding a real sequence on the other.
+
+Adding `[DatabaseGenerated(...)]` removes the ambiguity: both paths then honour exactly what you
+wrote. Do that for every `int`/`long` key, whichever way it should behave:
+
+```csharp
+[Table("orders")]
+public partial class Order
+{
+    // Auto-increment / IDENTITY / SERIAL column: excluded from INSERT on both paths.
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }
+}
+
+[Table("tenants")]
+public partial class Tenant
+{
+    // Client-assigned key: included in INSERT on both paths.
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public int Id { get; set; }
+}
+```
+
+Composite keys are not affected: neither path infers identity for an entity with more than one key
+column, since no database has two identity columns. An explicit `[DatabaseGenerated]` on one part
+of a composite key is still honoured.
+
+**A property whose setter is `init`-only or inaccessible is mapped by reflection only.**
+
+The generated mapper assigns properties after construction (`entity.Name = ...`), so it cannot
+write an `init`-only setter, nor a setter declared on a base class that the entity itself cannot
+reach (`private set` on a base, or an `internal set` across an assembly boundary). The reflection
+mapper writes both without difficulty — `PropertyInfo.SetValue` is not bound by either rule.
+
+| Setter | `Jaunty.SourceGenerator` | `Jaunty.Extensions.Reflection` |
+|---|---|---|
+| `set` | Mapped | Mapped |
+| `init` | **Not mapped** | Mapped |
+| Inaccessible from the entity (e.g. base-class `private set`) | **Not mapped** | Mapped |
+| No setter at all | Not mapped | Not mapped |
+
+The build reports `JAUNTYGEN005` for each such property, naming the entity, the property and the
+reason. Give the property a plain accessible setter to map it on both paths, or mark it `[Ignore]`
+to record that the exclusion is intended and silence the warning.
+
 ## EnumStorage Attribute
 
 ### [EnumStorage(EnumStorage storage)]
@@ -235,7 +295,7 @@ public class ProductCategoryMapping
 
 ```csharp
 // Global configuration
-JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
 
 // Entity with attribute override
 public class Product
@@ -270,7 +330,7 @@ Use attributes for exceptions and global configuration for general conventions:
 
 ```csharp
 // Global configuration for snake_case
-JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
 
 // Specific override for this property
 public class Product

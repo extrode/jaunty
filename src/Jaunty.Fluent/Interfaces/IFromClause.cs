@@ -1,4 +1,7 @@
+using System.Data;
 using System.Linq.Expressions;
+
+using Jaunty.Core;
 
 namespace Jaunty.Fluent;
 
@@ -132,14 +135,14 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     /// </summary>
     /// <param name="count">The maximum number of rows.</param>
     /// <returns>The query with the LIMIT clause applied.</returns>
-    IFromClause<T> Take(int count);
+    IPagedClause<T> Take(int count);
 
     /// <summary>
     /// Skips the specified number of rows.
     /// </summary>
     /// <param name="count">The number of rows to skip.</param>
     /// <returns>The query with the OFFSET clause applied.</returns>
-    IFromClause<T> Skip(int count);
+    IPagedClause<T> Skip(int count);
 
     /// <summary>
     /// Adds an INNER JOIN to another table.
@@ -185,9 +188,25 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     int DeleteAll();
 
     /// <summary>
+    /// Deletes all rows from the table, executing within the given <see cref="CommandOptions"/>
+    /// (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <returns>Number of rows affected.</returns>
+    int DeleteAll(CommandOptions options);
+
+    /// <summary>
     /// Asynchronously deletes all rows from the table.
     /// </summary>
     Task<int> DeleteAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously deletes all rows from the table, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    Task<int> DeleteAllAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Begins an UPDATE statement by setting a column to a value.

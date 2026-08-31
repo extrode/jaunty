@@ -16,6 +16,41 @@ public interface ISqlDialect
     /// <summary>
     /// Gets the parameter prefix used in SQL queries (e.g., "@" for SQL Server/SQLite, "$" for DuckDB).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Honored by <c>Jaunty.Fluent</c> only.</b> Every fluent builder consults this property when
+    /// composing placeholders. Jaunty core's own CRUD and by-id paths do not: <c>CrudSqlCache</c>,
+    /// <c>MultiRowInsertCache</c>, <c>Upsert</c>, <c>DeleteCore</c>, <c>GetCore</c> and
+    /// <c>WriteParameterHelper</c> all emit a literal <c>"@"</c>, and so do the two entity binders -
+    /// <c>JauntyGenerator</c>'s generated <c>BindInsert</c>/<c>BindUpdate</c>/<c>BindDelete</c> and
+    /// <c>Jaunty.Extensions.Reflection</c>'s equivalents.
+    /// </para>
+    /// <para>
+    /// This is documented rather than fixed because the generated binders bake the prefix in at
+    /// <em>compile</em> time, when no connection and therefore no dialect exists. Routing core CRUD
+    /// through this property requires the generated binder contract to take a prefix at runtime,
+    /// which is a breaking change to the generated API surface rather than an internal one - see
+    /// AUD-R25 (B4-3).
+    /// </para>
+    /// <para>
+    /// Consequence for a dialect that returns anything other than <c>"@"</c>: core CRUD produces SQL
+    /// its own provider will not accept. <c>DuckDbDialect.ParameterPrefix</c> returns <c>"$"</c> and
+    /// <c>DuckDb</c>'s constructor registers that dialect for <c>DuckDBConnection</c> by default, so
+    /// <c>duckDbConnection.Insert(entity)</c> throws
+    /// <c>DuckDBException: Binder Error: Referenced column "..." not found in FROM clause!</c> -
+    /// DuckDB reads <c>@Name</c> as a column reference, not a placeholder.
+    /// </para>
+    /// <para>
+    /// <b>Jaunty.Fluent is not a workaround for this.</b> It honours the prefix, so its SQL parses,
+    /// but it then fails at bind time with
+    /// <c>Invalid Input Error: Values were not provided for the following prepared statement
+    /// parameters</c> - the names it gives its parameters are not the ones DuckDB matches against
+    /// the <c>$</c> placeholders. Writes and by-id lookups against a non-<c>"@"</c> dialect
+    /// therefore do not work through either path today, for two different reasons, and fixing core
+    /// alone would not make them work. Reads are unaffected, since they bind no parameters. All
+    /// three behaviours are pinned by <c>ParameterPrefixLimitationTests</c>.
+    /// </para>
+    /// </remarks>
     string ParameterPrefix { get; }
 
     /// <summary>
@@ -27,6 +62,14 @@ public interface ISqlDialect
     /// Escapes a column name. Only escapes if necessary.
     /// </summary>
     string EscapeColumnName(string columnName);
+
+    /// <summary>
+    /// Escapes a string value for safe inline use as a SQL string literal (i.e. between single
+    /// quotes), for dialects/clauses that cannot use a bound parameter (e.g. HAVING literals).
+    /// Dialects where backslash is an in-string escape character (e.g. MySQL/MariaDB without
+    /// NO_BACKSLASH_ESCAPES) must also double backslashes, not just single quotes.
+    /// </summary>
+    string EscapeStringLiteral(string value);
 
     /// <summary>
     /// Returns SQL to retrieve the last inserted identity value.
@@ -96,6 +139,14 @@ public interface ISqlDialect
     string FormatEndsWithPattern(string value);
 
     /// <summary>
+    /// Formats a boolean literal for use directly in generated SQL (e.g. bare boolean member
+    /// predicates such as <c>.Where(p => p.IsActive)</c>).
+    /// </summary>
+    /// <param name="value">The boolean value to format.</param>
+    /// <returns>The dialect-appropriate SQL literal for the given boolean value.</returns>
+    string FormatBooleanLiteral(bool value);
+
+    /// <summary>
     /// Returns SQL to disable foreign key constraint checks for the current session/connection.
     /// Used by bulk operations that need to ignore referential integrity.
     /// </summary>
@@ -113,6 +164,15 @@ public interface ISqlDialect
     /// Indicates whether this dialect supports session-level foreign key constraint toggling.
     /// </summary>
     bool SupportsForeignKeyToggle { get; }
+
+    /// <summary>
+    /// Indicates whether <see cref="GetDisableForeignKeyChecksSql"/>/<see cref="GetEnableForeignKeyChecksSql"/>
+    /// only take effect outside an active transaction (autocommit mode) and are a silent no-op
+    /// while a transaction is pending. True for SQLite's <c>PRAGMA foreign_keys</c>; false for
+    /// dialects whose FK-toggle statement is an ordinary session-level command that works fine
+    /// inside a transaction.
+    /// </summary>
+    bool RequiresAutocommitForForeignKeyToggle { get; }
 
     /// <summary>
     /// Generates SQL for COALESCE function.
@@ -170,7 +230,8 @@ public interface ISqlDialect
 
     /// <summary>
     /// Generates SQL for trimming whitespace.
-    /// Most dialects use TRIM, older SQL Server uses LTRIM(RTRIM(...)).
+    /// All dialects, including SQL Server, use TRIM (SQL Server 2017+ syntax) - there is no
+    /// LTRIM(RTRIM(...)) fallback for older SQL Server versions.
     /// </summary>
     /// <param name="expression">The SQL expression for the string.</param>
     /// <returns>Dialect-specific trim SQL expression.</returns>
@@ -232,6 +293,9 @@ public interface ISqlDialect
     /// <param name="updateColumns">Column names for UPDATE SET clause.</param>
     /// <param name="updateParams">Parameter names for UPDATE values.</param>
     /// <param name="keyColumns">Primary key column names for conflict detection.</param>
+    /// <param name="keyParams">Parameter names for the primary key values (needed even for
+    /// identity keys excluded from <paramref name="insertColumns"/>, since MERGE-based
+    /// dialects still need to match on them).</param>
     /// <returns>Dialect-specific upsert SQL statement.</returns>
     string GenerateUpsertSql(
         string tableName,
@@ -239,7 +303,8 @@ public interface ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns);
+        string[] keyColumns,
+        string[] keyParams);
 
     // ==========================================
     // Multi-Row Insert Support
@@ -251,9 +316,23 @@ public interface ISqlDialect
     bool SupportsMultiRowInsert { get; }
 
     /// <summary>
-    /// Gets the maximum number of parameters allowed per SQL statement.
-    /// Used to compute optimal batch sizes for multi-row INSERT operations.
+    /// Gets the maximum number of parameters the engine accepts in a single SQL statement.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is a <b>hard engine limit, not a tuning knob</b>. It is used two ways: to compute batch
+    /// sizes for multi-row INSERT, and - since it is also the point past which the provider would
+    /// fail - as the threshold for rejecting an over-sized <c>IN</c>-clause expansion with a clear
+    /// error instead of an opaque driver exception.
+    /// </para>
+    /// <para>
+    /// AUD-R26 (batch 4): the second use was undocumented, and the omission had a cost. A
+    /// conservative value is harmless for batch sizing and a functional restriction for rejection,
+    /// which is how SQLite came to sit at 999 - the pre-2020 default - and refuse <c>IN</c> lists a
+    /// third of the way to what the engine actually accepts. Implementations must report what the
+    /// engine really allows, ideally measured against the provider they target.
+    /// </para>
+    /// </remarks>
     int MaxParametersPerStatement { get; }
 
     // ==========================================

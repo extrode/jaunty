@@ -111,18 +111,46 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
         Assert.NotEmpty(results);
     }
 
+    [Fact]
+    public void GroupBy_WithChainedWhereOrAnd_FiltersBeforeGroupingWithCorrectPrecedence()
+    {
+        // Chained: Where(...).Or(...).And(...) - regression test for AND/OR precedence
+        // (round 10): the shared WHERE conditions must evaluate as
+        // (CategoryId == 1 OR CategoryId == 2) AND UnitPrice > 10 before grouping,
+        // not CategoryId == 1 OR (CategoryId == 2 AND UnitPrice > 10) per SQL's native
+        // AND-before-OR precedence. Seed data: category 1 has "Cheap Product" at
+        // UnitPrice 5 (3 of its 4 products pass UnitPrice > 10), category 2 has
+        // "Aniseed Syrup" at UnitPrice 10 (4 of its 5 products pass). The buggy
+        // unparenthesized form lets all 4 category-1 products through regardless of price.
+        var results = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Or(p => p.CategoryId == 2)
+            .And(p => p.UnitPrice > 10)
+            .GroupBy(p => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.Equal(2, results.Count);
+        Assert.Equal(3, results.Single(r => r.CategoryId == 1).Count);
+        Assert.Equal(4, results.Single(r => r.CategoryId == 2).Count);
+    }
+
     // --- GROUP BY with HAVING Tests ---
 
     [Fact]
     public void GroupBy_WithHaving_FiltersGroupsAfterGrouping()
     {
-        // Only return groups with more than 5 products
+        // Fixture seed data has category 1 with 4 products, category 2 with 5, category 3
+        // with 2 - "> 5" (the original threshold) matches zero categories, which is why the
+        // prior Assert.All-only version passed vacuously over an empty result. "> 3" actually
+        // splits the groups: categories 1 and 2 pass, category 3 is filtered out.
         var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
-            .Having(g => g.Count() > 5)
+            .Having(g => g.Count() > 3)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        Assert.All(results, r => Assert.True(r.Count > 5));
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count > 3));
+        Assert.DoesNotContain(results, r => r.CategoryId == 3);
     }
 
     [Fact]
@@ -135,6 +163,28 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.NotEmpty(results);
         Assert.All(results, r => Assert.True(r.Count > 0));
+    }
+
+    [Fact]
+    public void GroupBy_WithHaving_CapturedVariableThreshold_FiltersGroupsAfterGrouping()
+    {
+        // A closed-over local (not a literal) on the right-hand side of a HAVING
+        // comparison compiles to a MemberExpression over a compiler-generated
+        // closure class, not a ConstantExpression - this must still translate.
+        // Per the fixture seed data, category counts are 4/5/2 - "> 5" (the original threshold)
+        // matches zero categories, which is why the prior Assert.All-only version passed
+        // vacuously over an empty result (same anti-pattern as the sibling test above). "> 3"
+        // actually splits the groups: categories 1 and 2 pass, category 3 is filtered out.
+        var minCount = 3;
+
+        var results = _fixture.Connection.From<Product>()
+            .GroupBy(p => p.CategoryId)
+            .Having(g => g.Count() > minCount)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count > minCount));
+        Assert.DoesNotContain(results, r => r.CategoryId == 3);
     }
 
     // --- GROUP BY with Composite Key Tests ---
@@ -249,12 +299,19 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public async Task SelectAsync_GroupByWithHaving_FiltersGroupsCorrectly()
     {
+        // Fixture seed data has category 1 with 4 products, category 2 with 5, category 3
+        // with 2 - "> 5" (the original threshold) matches zero categories, which made
+        // Assert.All pass vacuously over an empty result. "> 3" actually splits the groups:
+        // categories 1 and 2 pass, category 3 is filtered out (mirrors the sync
+        // GroupBy_WithHaving_FiltersGroupsAfterGrouping fix).
         var results = await _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
-            .Having(g => g.Count() > 5)
+            .Having(g => g.Count() > 3)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        Assert.All(results, r => Assert.True(r.Count > 5));
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count > 3));
+        Assert.DoesNotContain(results, r => r.CategoryId == 3);
     }
 
     [Fact]
@@ -304,5 +361,52 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
         Assert.NotEmpty(results);
         // SupplierCount should be <= TotalCount (counts non-null SupplierId only)
         Assert.All(results, r => Assert.True(r.SupplierCount <= r.TotalCount));
+    }
+
+    // --- GROUP BY with HAVING (AndAlso/OrElse) Tests ---
+
+    [Fact]
+    public void GroupBy_WithHaving_AndAlsoOfTwoAggregates_FiltersGroupsCorrectly()
+    {
+        // Seed data: category 1 = 4 products / price sum 162.00, category 2 = 5 products /
+        // price sum 138.35, category 3 = 2 products / price sum 65.00. Only category 1
+        // satisfies both "count > 3" and "sum(unit_price) > 150" - this previously threw
+        // because the left/right operands of the top-level AndAlso are themselves
+        // BinaryExpression comparisons, which TranslateHavingExpression didn't handle.
+        var results = _fixture.Connection.From<Product>()
+            .GroupBy(p => p.CategoryId)
+            .Having(g => g.Count() > 3 && g.Sum(p => p.UnitPrice) > 150)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        var result = Assert.Single(results);
+        Assert.Equal((short?)1, result.CategoryId);
+    }
+
+    [Fact]
+    public void GroupBy_WithHaving_OrElseOfTwoAggregates_FiltersGroupsCorrectly()
+    {
+        // "count > 4" matches category 2 (5 products); "sum(unit_price) < 100" matches
+        // category 3 (65.00). Category 1 (count 4, sum 162.00) matches neither.
+        var results = _fixture.Connection.From<Product>()
+            .GroupBy(p => p.CategoryId)
+            .Having(g => g.Count() > 4 || g.Sum(p => p.UnitPrice) < 100)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.Equal(2, results.Count);
+        Assert.Contains(results, r => r.CategoryId == 2);
+        Assert.Contains(results, r => r.CategoryId == 3);
+        Assert.DoesNotContain(results, r => r.CategoryId == 1);
+    }
+
+    [Fact]
+    public void ToSql_GroupByWithHaving_StringConstant_IsParameterizedNotInlined()
+    {
+        var sql = _fixture.Connection.From<Product>()
+            .GroupBy(p => p.CategoryId)
+            .Having(g => g.Min(p => p.ProductName) == "Chai")
+            .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.Contains("@hp", sql);
+        Assert.DoesNotContain("'Chai'", sql);
     }
 }

@@ -8,7 +8,6 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-#if ASYNC_ENUMERABLE_SUPPORT
     /// <summary>
     /// Asynchronously executes a SQL query and streams the results as entities of type <typeparamref name="T"/>.
     /// </summary>
@@ -30,6 +29,17 @@ public static partial class Jaunty
     /// </para>
     /// <para>
     /// Async streaming is memory-efficient for large result sets and doesn't block the calling thread.
+    /// </para>
+    /// <para>
+    /// <strong>Interceptor gap:</strong> streamed commands honor <see cref="CommandOptions{T}.CommandType"/>
+    /// and the simple <see cref="global::Jaunty.Configuration.JauntyConfig.Logger"/> callback, the same as
+    /// buffered queries, but they do NOT currently pass through the registered
+    /// <see cref="global::Jaunty.Interceptors.ICommandInterceptor"/> pipeline. Wiring pipeline interceptors into
+    /// a streaming path would require materializing the entire result set before the "command executed"
+    /// hook could fire, which would defeat the purpose of streaming, so this is intentionally left
+    /// unwired for now. Callers relying on interceptor-based auditing should not assume streamed
+    /// queries (<c>QueryStream</c>, <c>QueryPartialStream</c>, <c>QueryPartialUnbuffered</c>, and their
+    /// async equivalents) are observed by their interceptors.
     /// </para>
     /// </remarks>
     /// <example>
@@ -68,10 +78,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -120,10 +132,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -156,7 +172,7 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;(
     ///     "SELECT * FROM products",
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"{product.Id}: {product.Name}");
     /// }
@@ -172,10 +188,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -210,7 +228,7 @@ public static partial class Jaunty
     /// await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;(
     ///     "SELECT * FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"{product.Id}: {product.Name}");
     /// }
@@ -229,156 +247,17 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
-#else
-    /// <summary>
-    /// Asynchronously executes a SQL query and returns the results as entities of type <typeparamref name="T"/>.
-    /// </summary>
-    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="sql">The SQL query to execute.</param>
-    /// <param name="cancellationToken">
-    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
-    /// </param>
-    /// <returns>A task containing a list of entities of type <typeparamref name="T"/>.</returns>
-    /// <remarks>
-    /// <para>
-    /// This method uses <strong>strict mapping mode</strong>. All public writable properties on 
-    /// <typeparamref name="T"/> must have matching columns in the result set.
-    /// </para>
-    /// <para>
-    /// Note: This method buffers all results in memory. For true streaming, enable ASYNC_ENUMERABLE_SUPPORT.
-    /// </para>
-    /// </remarks>
-    /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, object, CancellationToken)"/>
-    /// <seealso cref="QueryAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static ValueTask<IEnumerable<T>> QueryStreamAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
-#endif
-        return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : QueryStreamCoreAsync<T>(dbConnection, sql, null, default, MappingMode.Strict, cancellationToken);
-    }
-
-    /// <summary>
-    /// Asynchronously executes a SQL query with parameters and returns the results as entities of type <typeparamref name="T"/>.
-    /// </summary>
-    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="sql">The SQL query to execute.</param>
-    /// <param name="parameters">
-    /// An anonymous object or dictionary containing parameter values.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
-    /// </param>
-    /// <returns>A task containing a list of entities of type <typeparamref name="T"/>.</returns>
-    /// <remarks>
-    /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
-    /// </para>
-    /// </remarks>
-    /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
-    /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, object, CommandOptions{T}, CancellationToken)"/>
-    public static ValueTask<IEnumerable<T>> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
-#endif
-        return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, default, MappingMode.Strict, cancellationToken);
-    }
-
-    /// <summary>
-    /// Asynchronously executes a SQL query with command options and returns the results as entities of type <typeparamref name="T"/>.
-    /// </summary>
-    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="sql">The SQL query to execute.</param>
-    /// <param name="options">
-    /// Command options for configuring the query execution. Use 
-    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
-    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
-    /// </param>
-    /// <returns>A task containing a list of entities of type <typeparamref name="T"/>.</returns>
-    /// <remarks>
-    /// <para>
-    /// Use this overload when you need to execute the query within a transaction or with a specific timeout.
-    /// </para>
-    /// </remarks>
-    /// <seealso cref="CommandOptions{T}"/>
-    /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static ValueTask<IEnumerable<T>> QueryStreamAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
-#endif
-        return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : QueryStreamCoreAsync<T>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
-    }
-
-    /// <summary>
-    /// Asynchronously executes a SQL query with parameters and command options and returns the results as entities of type <typeparamref name="T"/>.
-    /// </summary>
-    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="sql">The SQL query to execute.</param>
-    /// <param name="parameters">
-    /// An anonymous object or dictionary containing parameter values.
-    /// </param>
-    /// <param name="options">
-    /// Command options for transaction, timeout, or custom mapper configuration.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
-    /// </param>
-    /// <returns>A task containing a list of entities of type <typeparamref name="T"/>.</returns>
-    /// <remarks>
-    /// <para>
-    /// This is the most flexible overload, combining parameter binding with execution options.
-    /// </para>
-    /// </remarks>
-    /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
-    /// <seealso cref="CommandOptions{T}"/>
-    public static ValueTask<IEnumerable<T>> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
-#endif
-        return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
-    }
-#endif
 }

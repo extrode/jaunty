@@ -1,3 +1,4 @@
+// System.Buffers/Span are unavailable on net472; ToSnakeCase has a non-span #else branch below.
 #if NET8_0_OR_GREATER
 using System.Buffers;
 #endif
@@ -8,6 +9,7 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read.Configuration;
 
+[Collection("Configuration Operations")]
 public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
 {
     private readonly DialectFixture _fixture;
@@ -19,10 +21,26 @@ public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
 
     public void Dispose()
     {
-        _fixture.Dispose();
+        // The DialectFixture is not ours to dispose. xunit builds one per test class but a fresh
+        // test-class instance per test method, so disposing it here retired the shared fixture
+        // after the first test in the class. That was invisible while DialectFixture.Dispose()
+        // was a no-op; once it began deleting this class's private database copy, every test
+        // after the first opened a path that no longer existed and Microsoft.Data.Sqlite created
+        // an empty database in its place - surfacing as "no such table: categories".
+
+        // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared
+        // with the "Logging Extensions" collection (running concurrently as a different
+        // xunit collection) - capture and clear it atomically (AUD-R7) so an interceptor
+        // registered by that collection between a separate capture-then-Reset() pair can't
+        // be silently dropped.
+        var interceptorsBeforeReset = JauntyConfig.CaptureAndClearInterceptors();
+
         JauntyConfig.Reset();
         JauntyReflectionExtensions.UseReflectionMapping();
         SpecialTypeMappers.Register();
+
+        if (interceptorsBeforeReset is { Length: > 0 })
+            JauntyConfig.AddInterceptors(interceptorsBeforeReset);
     }
 
     [Theory]

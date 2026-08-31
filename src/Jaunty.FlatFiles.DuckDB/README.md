@@ -2,16 +2,16 @@
 
 **Jaunty.FlatFiles.DuckDB** is the DuckDB engine implementation for Jaunty.FlatFiles. It provides the underlying query engine that enables SQL queries on flat files (CSV, TSV, Parquet, JSON) using DuckDB's embedded database engine.
 
-[![NuGet](https://img.shields.io/nuget/v/Beparey.Jaunty.FlatFiles.DuckDB.svg)](https://www.nuget.org/packages/Beparey.Jaunty.FlatFiles.DuckDB)
+[![NuGet](https://img.shields.io/nuget/v/Extrode.Jaunty.FlatFiles.DuckDB.svg)](https://www.nuget.org/packages/Extrode.Jaunty.FlatFiles.DuckDB)
 
 ## Installation
 
 ```bash
-dotnet add package Beparey.Jaunty.FlatFiles.DuckDB
+dotnet add package Extrode.Jaunty.FlatFiles.DuckDB
 ```
 
 This package depends on:
-- `Beparey.Jaunty.FlatFiles` (abstractions)
+- `Extrode.Jaunty.FlatFiles` (abstractions)
 - `DuckDB.NET.Data.Full` (DuckDB ADO.NET provider with native binaries)
 
 ## What's Included

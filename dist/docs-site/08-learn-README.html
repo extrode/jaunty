@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your First Hour with Jaunty — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Your First Hour with Jaunty</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html" class="active" aria-current="page">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#setup">Setup</a><a class="toc-l2" href="#step-1-your-first-queryt">Step 1: Your First Query&lt;T&gt;</a><a class="toc-l2" href="#step-2-break-it-on-purpose-strict-mode">Step 2: Break It on Purpose (Strict Mode)</a><a class="toc-l2" href="#step-3-projections-with-querypartialt">Step 3: Projections with QueryPartial&lt;T&gt;</a><a class="toc-l2" href="#step-4-parameterized-queries">Step 4: Parameterized Queries</a><a class="toc-l2" href="#step-5-writing-data">Step 5: Writing Data</a><a class="toc-l2" href="#step-6-a-transaction">Step 6: A Transaction</a><a class="toc-l2" href="#step-7-a-custom-row-mapper">Step 7: A Custom Row Mapper</a><a class="toc-l2" href="#step-8-attribute-mapping">Step 8: Attribute Mapping</a><a class="toc-l2" href="#step-9-async-variants">Step 9: Async Variants</a><a class="toc-l2" href="#step-10-streaming-a-large-result-set">Step 10: Streaming a Large Result Set</a><a class="toc-l2" href="#where-to-go-next">Where to Go Next</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Your First Hour with Jaunty</nav>
+        <article>
+<h1 id="your-first-hour-with-jaunty">Your First Hour with Jaunty</h1>
+<p>This is a hands-on walkthrough, not a reference. Every snippet below is runnable as-is against
+an in-memory SQLite database, so you can follow along without installing a database server.
+By the end you'll have touched every core Jaunty feature: strict and partial mapping, parameters,
+writes, transactions, custom mappers, attribute mapping, async, and streaming.</p>
+<p>If you want the full API surface, see <code>README.md</code> at the repository root. This guide only
+uses APIs documented there (plus the two official samples under <code>samples/</code>), so anything you see
+here is safe to rely on.</p>
+<h2 id="setup">Setup</h2>
+<p>Create a new console project and add the packages:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet new console -n JauntyLearn
+cd JauntyLearn
+dotnet add package Extrode.Jaunty
+dotnet add package Microsoft.Data.Sqlite
+</code></pre>
+</div>
+<p>Open <code>Program.cs</code> and start with an in-memory database, a schema, and some seed data:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> Jaunty;
+<span class="tok-kw">using</span> Microsoft.Data.Sqlite;
+
+<span class="tok-kw">using</span> <span class="tok-kw">var</span> connection = <span class="tok-kw">new</span> SqliteConnection(&quot;Data Source=:memory:&quot;);
+connection.Open();
+
+<span class="tok-kw">using</span> (<span class="tok-kw">var</span> cmd = connection.CreateCommand())
+{
+    cmd.CommandText = &quot;&quot;&quot;
+        CREATE TABLE products (
+            product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_name TEXT NOT NULL,
+            unit_price REAL NOT NULL,
+            discontinued INTEGER NOT NULL DEFAULT <span class="tok-num">0</span>
+        );
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Chai'</span>, <span class="tok-num">18.00</span>, <span class="tok-num">0</span>);
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Chang'</span>, <span class="tok-num">19.00</span>, <span class="tok-num">0</span>);
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Aniseed Syrup'</span>, <span class="tok-num">10.00</span>, <span class="tok-num">0</span>);
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Tofu'</span>, <span class="tok-num">23.25</span>, <span class="tok-num">0</span>);
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Genen Shouyu'</span>, <span class="tok-num">15.50</span>, <span class="tok-num">1</span>);
+        &quot;&quot;&quot;;
+    cmd.ExecuteNonQuery();
+}
+</code></pre>
+</div>
+<p>Keep this connection open for the rest of the walkthrough. Run it now (<code>dotnet run</code>) just to
+confirm the schema and seed data work before we touch Jaunty at all.</p>
+<h2 id="step-1-your-first-queryt">Step 1: Your First <code>Query&lt;T&gt;</code></h2>
+<p>Define an entity whose properties line up with the columns you're about to select:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p>Query for it, aliasing each column to the matching property name:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.Query&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> p <span class="tok-kw">in</span> products)
+    Console.WriteLine($&quot;[{p.Id}] {p.Name} - ${p.Price:F2}&quot;);
+</code></pre>
+</div>
+<p>Expected output:</p>
+<pre><code>[1] Chai - $18.00
+[2] Chang - $19.00
+[3] Aniseed Syrup - $10.00
+[4] Tofu - $23.25
+[5] Genen Shouyu - $15.50
+</code></pre>
+<p>Nothing surprising yet. <code>Query&lt;T&gt;</code> selected five rows and mapped each one onto a <code>Product</code>.</p>
+<h2 id="step-2-break-it-on-purpose-strict-mode">Step 2: Break It on Purpose (Strict Mode)</h2>
+<p>Now drop the <code>Price</code> column from the query and run it again:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> broken = connection.Query&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name FROM products&quot;);
+</code></pre>
+</div>
+<p>This throws immediately:</p>
+<pre><code>System.InvalidOperationException: Strict mapping failed: property 'Price' has no matching column
+</code></pre>
+<p>This is deliberate, and it's the whole reason <code>Query&lt;T&gt;</code> exists in this strict form. Every
+property on <code>Product</code> — <code>Id</code>, <code>Name</code>, <code>Price</code> — must have a matching column in the result set.
+If you meant to select all three, the exception just caught a real bug in your SQL before it
+shipped. If you meant to select only two columns on purpose, Jaunty wants you to say so
+explicitly, which is exactly what Step 3 does.</p>
+<figure class="diagram" style="--dw:915px"><svg id="dg0" width="100%" xmlns="http://www.w3.org/2000/svg" class="flowchart" style="max-width:915px;" viewBox="0 0 915.171875 269" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#dg0{font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:14px;fill:var(--dg-text, #e6edf3);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#dg0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#dg0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#dg0 .error-icon{fill:var(--dg-cluster-bg, #141922);}#dg0 .error-text{fill:var(--dg-edge-label, #ebe6dd);stroke:var(--dg-edge-label, #ebe6dd);}#dg0 .edge-thickness-normal{stroke-width:1px;}#dg0 .edge-thickness-thick{stroke-width:3.5px;}#dg0 .edge-pattern-solid{stroke-dasharray:0;}#dg0 .edge-thickness-invisible{stroke-width:0;fill:none;}#dg0 .edge-pattern-dashed{stroke-dasharray:3;}#dg0 .edge-pattern-dotted{stroke-dasharray:2;}#dg0 .marker{fill:var(--dg-line, #8b97a8);stroke:var(--dg-line, #8b97a8);}#dg0 .marker.cross{stroke:var(--dg-line, #8b97a8);}#dg0 svg{font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:14px;}#dg0 p{margin:0;}#dg0 .label{font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;color:var(--dg-text, #e6edf3);}#dg0 .cluster-label text{fill:var(--dg-title, #f0ece6);}#dg0 .cluster-label span{color:var(--dg-title, #f0ece6);}#dg0 .cluster-label span p{background-color:transparent;}#dg0 .label text,#dg0 span{fill:var(--dg-text, #e6edf3);color:var(--dg-text, #e6edf3);}#dg0 .node rect,#dg0 .node circle,#dg0 .node ellipse,#dg0 .node polygon,#dg0 .node path{fill:var(--dg-node-bg, #161b24);stroke:var(--dg-border, #2b323d);stroke-width:1px;}#dg0 .rough-node .label text,#dg0 .node .label text,#dg0 .image-shape .label,#dg0 .icon-shape .label{text-anchor:middle;}#dg0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dg0 .rough-node .label,#dg0 .node .label,#dg0 .image-shape .label,#dg0 .icon-shape .label{text-align:center;}#dg0 .node.clickable{cursor:pointer;}#dg0 .root .anchor path{fill:var(--dg-line, #8b97a8)!important;stroke-width:0;stroke:var(--dg-line, #8b97a8);}#dg0 .arrowheadPath{fill:var(--dg-title, #f0ece6);}#dg0 .edgePath .path{stroke:var(--dg-line, #8b97a8);stroke-width:1px;}#dg0 .flowchart-link{stroke:var(--dg-line, #8b97a8);fill:none;}#dg0 .edgeLabel{background-color:var(--dg-node-bg-2, #1b2230);text-align:center;}#dg0 .edgeLabel p{background-color:var(--dg-node-bg-2, #1b2230);}#dg0 .edgeLabel rect{opacity:0.5;background-color:var(--dg-node-bg-2, #1b2230);fill:var(--dg-node-bg-2, #1b2230);}#dg0 .labelBkg{background-color:var(--dg-label-bg, rgba(27, 34, 48, 0.5));}#dg0 .cluster rect{fill:var(--dg-cluster-bg, #141922);stroke:hsl(218.5714285714, 0%, 0.5882352941%);stroke-width:1px;}#dg0 .cluster text{fill:var(--dg-title, #f0ece6);}#dg0 .cluster span{color:var(--dg-title, #f0ece6);}#dg0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:12px;background:var(--dg-cluster-bg, #141922);border:1px solid hsl(218.5714285714, 0%, 0.5882352941%);border-radius:2px;pointer-events:none;z-index:100;}#dg0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:var(--dg-text, #e6edf3);}#dg0 rect.text{fill:none;stroke-width:0;}#dg0 .icon-shape,#dg0 .image-shape{background-color:var(--dg-node-bg-2, #1b2230);text-align:center;}#dg0 .icon-shape p,#dg0 .image-shape p{background-color:var(--dg-node-bg-2, #1b2230);padding:2px;}#dg0 .icon-shape .label rect,#dg0 .image-shape .label rect{opacity:0.5;background-color:var(--dg-node-bg-2, #1b2230);fill:var(--dg-node-bg-2, #1b2230);}#dg0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#dg0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#dg0 .node .neo-node{stroke:var(--dg-border, #2b323d);}#dg0 [data-look="neo"].node rect,#dg0 [data-look="neo"].cluster rect,#dg0 [data-look="neo"].node polygon{stroke:url(#dg0-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 [data-look="neo"].swimlane.cluster rect{filter:none;}#dg0 [data-look="neo"].node path{stroke:url(#dg0-gradient);stroke-width:1px;}#dg0 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 [data-look="neo"].node .neo-line path{stroke:var(--dg-border, #2b323d);filter:none;}#dg0 [data-look="neo"].node circle{stroke:url(#dg0-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 [data-look="neo"].node circle .state-start{fill:#000000;}#dg0 [data-look="neo"].icon-shape .icon{fill:url(#dg0-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#dg0-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}#dg0 [stop-color="#2b323d"]{stop-color:var(--dg-border, #2b323d);}</style><g><marker id="dg0_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="dg0_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dg0_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dg0_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="dg0_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="dg0_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="dg0_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M121.234,134.5L125.401,134.5C129.568,134.5,137.901,134.5,145.568,134.5C153.234,134.5,160.234,134.5,163.734,134.5L167.234,134.5" id="dg0-L_A_B_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A_B_0" data-points="W3sieCI6MTIxLjIzNDM3NSwieSI6MTM0LjV9LHsieCI6MTQ2LjIzNDM3NSwieSI6MTM0LjV9LHsieCI6MTcxLjIzNDM3NSwieSI6MTM0LjV9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M356.94,96.753L377.601,86.211C398.262,75.668,439.584,54.584,480.603,44.042C521.622,33.5,562.339,33.5,582.697,33.5L603.055,33.5" id="dg0-L_B_C_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_C_0" data-points="W3sieCI6MzU2Ljk0MDE4NTIyMTQ4MTgsInkiOjk2Ljc1MjY4NTIyMTQ4MTc3fSx7IngiOjQ4MC45MDYyNSwieSI6MzMuNX0seyJ4Ijo2MDcuMDU0Njg3NSwieSI6MzMuNX1d" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M394.688,134.5L409.057,134.5C423.427,134.5,452.167,134.5,480.24,134.5C508.313,134.5,535.719,134.5,549.422,134.5L563.125,134.5" id="dg0-L_B_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_D_0" data-points="W3sieCI6Mzk0LjY4NzUsInkiOjEzNC41fSx7IngiOjQ4MC45MDYyNSwieSI6MTM0LjV9LHsieCI6NTY3LjEyNSwieSI6MTM0LjV9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M356.94,172.247L377.601,182.789C398.262,193.332,439.584,214.416,478.148,224.958C516.711,235.5,552.516,235.5,570.418,235.5L588.32,235.5" id="dg0-L_B_E_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_E_0" data-points="W3sieCI6MzU2Ljk0MDE4NTIyMTQ4MTgsInkiOjE3Mi4yNDczMTQ3Nzg1MTgyMn0seyJ4Ijo0ODAuOTA2MjUsInkiOjIzNS41fSx7IngiOjU5Mi4zMjAzMTI1LCJ5IjoyMzUuNX1d" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_A_B_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(480.90625, 33.5)"><g class="label" data-id="L_B_C_0" transform="translate(-11.0546875, -10.5)"><foreignObject width="22.109375" height="21"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>Yes</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(480.90625, 134.5)"><g class="label" data-id="L_B_D_0" transform="translate(-8.875, -10.5)"><foreignObject width="17.75" height="21"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>No</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(480.90625, 235.5)"><g class="label" data-id="L_B_E_0" transform="translate(-61.21875, -21)"><foreignObject width="122.4375" height="42"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>Not applicable<br>(intentional subset)</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="dg0-flowchart-A-0" data-look="classic" transform="translate(64.6171875, 134.5)"><rect class="basic label-container" style="" x="-56.6171875" y="-25.5" width="113.234375" height="51"></rect><g class="label" style="" transform="translate(-26.6171875, -10.5)"><rect></rect><foreignObject width="53.234375" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>Run SQL</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-B-1" data-look="classic" transform="translate(282.9609375, 134.5)"><polygon points="111.7265625,0 223.453125,-111.7265625 111.7265625,-223.453125 0,-111.7265625" class="label-container" transform="translate(-111.2265625, 111.7265625)"></polygon><g class="label" style="" transform="translate(-75.7265625, -21)"><rect></rect><foreignObject width="151.453125" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>Every entity property<br>has a matching column?</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-C-3" data-look="classic" transform="translate(737.1484375, 33.5)"><rect class="basic label-container" style="" x="-130.09375" y="-25.5" width="260.1875" height="51"></rect><g class="label" style="" transform="translate(-100.09375, -10.5)"><rect></rect><foreignObject width="200.1875" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>Query&lt;T&gt; returns mapped rows</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-D-5" data-look="classic" transform="translate(737.1484375, 134.5)"><rect class="basic label-container" style="" x="-170.0234375" y="-25.5" width="340.046875" height="51"></rect><g class="label" style="" transform="translate(-140.0234375, -10.5)"><rect></rect><foreignObject width="280.046875" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>Query&lt;T&gt; throws InvalidOperationException</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-E-7" data-look="classic" transform="translate(737.1484375, 235.5)"><rect class="basic label-container" style="" x="-144.828125" y="-25.5" width="289.65625" height="51"></rect><g class="label" style="" transform="translate(-114.828125, -10.5)"><rect></rect><foreignObject width="229.65625" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>QueryPartial&lt;T&gt; returns partial rows</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="dg0-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="dg0-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><linearGradient id="dg0-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#2b323d" stop-opacity="1"></stop><stop offset="100%" stop-color="hsl(220, 0%, 4.7058823529%)" stop-opacity="1"></stop></linearGradient></svg></figure>
+<h2 id="step-3-projections-with-querypartialt">Step 3: Projections with <code>QueryPartial&lt;T&gt;</code></h2>
+<p>Define a smaller DTO for a summary view:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductSummary
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p>Select only the columns you need, and use <code>QueryPartial&lt;T&gt;</code> instead of <code>Query&lt;T&gt;</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> summaries = connection.QueryPartial&lt;ProductSummary&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name FROM products&quot;);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> s <span class="tok-kw">in</span> summaries)
+    Console.WriteLine($&quot;{s.Id}: {s.Name}&quot;);
+</code></pre>
+</div>
+<p>You can even select extra columns you don't map — <code>QueryPartial&lt;T&gt;</code> ignores anything without a
+matching property, silently:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> summaries2 = connection.QueryPartial&lt;ProductSummary&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price, discontinued FROM products&quot;);
+</code></pre>
+</div>
+<p>Same five rows, same two mapped properties. <code>unit_price</code> and <code>discontinued</code> are simply not
+looked at. This is the tool you reach for whenever you're intentionally projecting a subset of
+columns.</p>
+<h2 id="step-4-parameterized-queries">Step 4: Parameterized Queries</h2>
+<p>Pass an anonymous object for named parameters:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> cheap = connection.Query&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products WHERE unit_price &lt; @MaxPrice&quot;,
+    <span class="tok-kw">new</span> { MaxPrice = <span class="tok-num">15.00m</span> });
+</code></pre>
+</div>
+<p>Or skip the object entirely and pass values positionally — Jaunty parses the SQL to find the
+parameter names and binds your values in order:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> cheapPositional = connection.Query&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products WHERE unit_price &lt; @MaxPrice&quot;,
+    <span class="tok-num">15.00m</span>);
+</code></pre>
+</div>
+<p>Both return the same three rows (Chai, Aniseed Syrup, Genen Shouyu).</p>
+<h2 id="step-5-writing-data">Step 5: Writing Data</h2>
+<p>Insert, update, and delete work against the same connection, using the entity's shape to build
+the SQL. For this section we need <code>[Key]</code> so Jaunty knows which column identifies a row — see
+Step 8 for the full attribute story. For now, a minimal write:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> rows = connection.QueryScalar&lt;long&gt;(&quot;SELECT COUNT(*) FROM products&quot;);
+Console.WriteLine($&quot;Before insert: {rows} products&quot;);
+
+<span class="tok-kw">using</span> (<span class="tok-kw">var</span> insertCmd = connection.CreateCommand())
+{
+    insertCmd.CommandText = &quot;INSERT INTO products (product_name, unit_price, discontinued) VALUES (@Name, @Price, <span class="tok-num">0</span>)&quot;;
+    <span class="tok-kw">var</span> nameParam = insertCmd.CreateParameter();
+    nameParam.ParameterName = &quot;@Name&quot;;
+    nameParam.Value = &quot;Ikura&quot;;
+    insertCmd.Parameters.Add(nameParam);
+
+    <span class="tok-kw">var</span> priceParam = insertCmd.CreateParameter();
+    priceParam.ParameterName = &quot;@Price&quot;;
+    priceParam.Value = <span class="tok-num">31.00m</span>;
+    insertCmd.Parameters.Add(priceParam);
+
+    insertCmd.ExecuteNonQuery();
+}
+
+<span class="tok-kw">var</span> after = connection.QueryScalar&lt;long&gt;(&quot;SELECT COUNT(*) FROM products&quot;);
+Console.WriteLine($&quot;After insert: {after} products&quot;);
+</code></pre>
+</div>
+<p>Expected output:</p>
+<pre><code>Before insert: 5 products
+After insert: 6 products
+</code></pre>
+<p>We'll come back to Jaunty's entity-based <code>Insert</code>/<code>Update</code>/<code>Delete</code> in Step 8, once we have an
+entity with <code>[Key]</code> and <code>[DatabaseGenerated]</code> attributes wired up correctly.</p>
+<h2 id="step-6-a-transaction">Step 6: A Transaction</h2>
+<p>Wrap several statements in a transaction so they succeed or fail together:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
+
+<span class="tok-kw">try</span>
+{
+    <span class="tok-kw">using</span> (<span class="tok-kw">var</span> cmd1 = connection.CreateCommand())
+    {
+        cmd1.Transaction = transaction;
+        cmd1.CommandText = &quot;INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Konbu'</span>, <span class="tok-num">6.00</span>, <span class="tok-num">0</span>)&quot;;
+        cmd1.ExecuteNonQuery();
+    }
+
+    <span class="tok-kw">var</span> totalRows = connection.Query&lt;Product&gt;(
+        &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;,
+        CommandOptions.WithTransaction(transaction));
+
+    Console.WriteLine($&quot;Rows visible inside the transaction: {totalRows.Count}&quot;);
+
+    transaction.Commit();
+}
+<span class="tok-kw">catch</span>
+{
+    transaction.Rollback();
+    <span class="tok-kw">throw</span>;
+}
+</code></pre>
+</div>
+<p><code>CommandOptions.WithTransaction(transaction)</code> is how you tell any Jaunty call — reads or writes —
+to participate in a transaction. There's no special &quot;transactional&quot; overload to remember; every
+<code>Query</code>/<code>Insert</code>/<code>Update</code>/<code>BulkInsert</code> call accepts the same <code>CommandOptions</code>.</p>
+<h2 id="step-7-a-custom-row-mapper">Step 7: A Custom Row Mapper</h2>
+<p>Sometimes you want full control over how a row becomes an object — no attributes, no
+reflection, just a function. Jaunty lets you hand it a mapper delegate through
+<code>CommandOptions&lt;T&gt;</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> System.Data;
+<span class="tok-kw">using</span> Jaunty.Core;
+
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductRow
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">static</span> ProductRow MapProductRow(IDataReader reader)
+{
+    <span class="tok-kw">return</span> <span class="tok-kw">new</span> ProductRow
+    {
+        Id = reader.GetInt32(reader.GetOrdinal(&quot;product_id&quot;)),
+        Name = reader.GetString(reader.GetOrdinal(&quot;product_name&quot;)),
+        Price = (decimal)reader.GetDouble(reader.GetOrdinal(&quot;unit_price&quot;))
+    };
+}
+
+<span class="tok-kw">var</span> options = CommandOptions&lt;ProductRow&gt;.WithMapper(MapProductRow);
+
+<span class="tok-kw">var</span> mapped = connection.Query&lt;ProductRow&gt;(
+    &quot;SELECT product_id, product_name, unit_price FROM products&quot;,
+    options: options);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> p <span class="tok-kw">in</span> mapped)
+    Console.WriteLine($&quot;{p.Id}: {p.Name} (${p.Price:F2})&quot;);
+</code></pre>
+</div>
+<p>Notice the SQL doesn't even need column aliases anymore — the mapper reads columns by their
+real database names via <code>reader.GetOrdinal</code>. This is the escape hatch for cases where
+reflection-based mapping (or a source-generated one) isn't the right fit: hand-tuned
+performance-critical paths, unusual type conversions, or NativeAOT builds that can't use
+runtime reflection at all.</p>
+<h2 id="step-8-attribute-mapping">Step 8: Attribute Mapping</h2>
+<p>Real schemas rarely match your C# naming exactly. Attributes let you keep idiomatic C# property
+names while pointing at whatever the database actually calls things:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> Jaunty.Attributes;
+
+[Table(&quot;products&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductEntity
+{
+    [Key]
+    [Column(&quot;product_id&quot;)]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;product_name&quot;)]
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;unit_price&quot;)]
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;discontinued&quot;)]
+    <span class="tok-kw">public</span> bool Discontinued { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p><code>[Table]</code> overrides the table name Jaunty infers from the class name. <code>[Column]</code> does the same
+for a property's column. <code>[Key]</code> marks the primary key, and
+<code>[DatabaseGenerated(DatabaseGeneratedOption.Identity)]</code> tells Jaunty the database assigns this
+value on insert, so <code>Insert</code> won't try to send it and will hand you back the generated id:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entity = <span class="tok-kw">new</span> ProductEntity { Name = &quot;Mishi Kobe Niku&quot;, Price = <span class="tok-num">97.00m</span>, Discontinued = <span class="tok-kw">false</span> };
+<span class="tok-kw">var</span> newId = connection.Insert(entity);
+Console.WriteLine($&quot;Inserted product <span class="tok-kw">with</span> id {newId}&quot;);
+
+entity.Id = (int)newId;
+entity.Price = <span class="tok-num">99.00m</span>;
+<span class="tok-kw">var</span> updatedRows = connection.Update(entity);
+Console.WriteLine($&quot;Updated {updatedRows} row(s)&quot;);
+
+<span class="tok-kw">var</span> deletedRows = connection.Delete(entity);
+Console.WriteLine($&quot;Deleted {deletedRows} row(s)&quot;);
+</code></pre>
+</div>
+<p>Because <code>ProductEntity</code> maps onto the same <code>products</code> table with <code>[Column]</code> attributes, you can
+also read it back with <code>QueryPartial&lt;T&gt;</code> using the real database column names directly, no
+aliasing required:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entities = connection.QueryPartial&lt;ProductEntity&gt;(
+    &quot;SELECT product_id, product_name, unit_price, discontinued FROM products&quot;);
+</code></pre>
+</div>
+<h2 id="step-9-async-variants">Step 9: Async Variants</h2>
+<p>Every method used so far has an async counterpart with the same name plus <code>Async</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> asyncProducts = <span class="tok-kw">await</span> connection.QueryAsync&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;);
+
+Console.WriteLine($&quot;Fetched {asyncProducts.Count} products asynchronously&quot;);
+
+<span class="tok-kw">var</span> id = <span class="tok-kw">await</span> connection.InsertAsync(<span class="tok-kw">new</span> ProductEntity { Name = &quot;Async Item&quot;, Price = <span class="tok-num">5.00m</span> });
+Console.WriteLine($&quot;Inserted <span class="tok-kw">async</span> <span class="tok-kw">with</span> id {id}&quot;);
+</code></pre>
+</div>
+<p><code>CancellationToken</code> is an optional trailing argument on all of these — pass one when you have a
+real cancellation source (an HTTP request, a background job) and skip it otherwise.</p>
+<h2 id="step-10-streaming-a-large-result-set">Step 10: Streaming a Large Result Set</h2>
+<p><code>Query&lt;T&gt;</code> buffers the whole result set into a <code>List&lt;T&gt;</code>. When a result set is too large to
+comfortably hold in memory, use <code>QueryStream&lt;T&gt;</code> (or the async, <code>IAsyncEnumerable</code>-based
+<code>QueryStreamAsync&lt;T&gt;</code>) to process rows one at a time as they arrive from the database:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> connection.QueryStream&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;))
+{
+    Console.WriteLine($&quot;Streamed: {product.Name}&quot;);
+}
+
+<span class="tok-kw">await</span> <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> connection.QueryStreamAsync&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;))
+{
+    Console.WriteLine($&quot;Streamed <span class="tok-kw">async</span>: {product.Name}&quot;);
+}
+</code></pre>
+</div>
+<p>With only five rows this won't feel any different from <code>Query&lt;T&gt;</code> — the value shows up once
+you're pulling back tens of thousands of rows and don't want them all resident in memory at once.</p>
+<h2 id="where-to-go-next">Where to Go Next</h2>
+<p>You've now touched every core building block: strict mapping, partial mapping, parameters,
+writes, transactions, a custom mapper, attribute mapping, async, and streaming. From here:</p>
+<ul>
+<li>Read the <a href="08-learn-exercises.html"><code>exercises.md</code></a> in this folder to practice each of these on your own.</li>
+<li>The root <code>README.md</code> in the repository documents the full API surface, including bulk
+operations, upserts, stored procedures, <code>GridReader</code> for multiple result sets, and
+interceptors for logging and auditing.</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="07-design-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="08-learn-exercises.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Exercises</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

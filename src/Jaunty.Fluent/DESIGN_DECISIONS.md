@@ -147,6 +147,4 @@ None currently.
 
 ## References
 
-- [Jaunty.Fluent README](../src/Jaunty.Fluent/README.md)
-- [API Improvement Tasklist](../../docs/tasks/jaunty-fluent-improvement-tasklist.md)
-- [Prioritized Tasklist](../../docs/tasks/jaunty-fluent-prioritized.md)
+- [Jaunty.Fluent README](README.md)

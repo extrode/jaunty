@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PackageId>Extrode.Jaunty.Extensions.Npgsql</PackageId>
+    <Authors>Extrode LLC</Authors>
+    <Description>PostgreSQL client-side COPY support for Jaunty's CSV import. Optional: the core Extrode.Jaunty package has no dependency on any database driver.</Description>
+    <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
+  </PropertyGroup>
+
+  <!-- The whole reason this package exists. Core cannot reference Npgsql without taking a driver
+       dependency, and reaching NpgsqlConnection.BeginTextImport by reflection returned null under
+       trimming - silently, and dangerously for the Cancel probe. This package makes the reference
+       real and the calls direct. Same TFM-conditioned split as Jaunty.Tests: 10.x from net8.0 up,
+       8.x for netstandard2.0, which 10.x no longer targets. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Npgsql" Version="8.0.7" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <PackageReference Include="Npgsql" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <ProjectReference Include="..\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <ProjectReference Include="..\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net10.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <ProjectReference Include="..\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.UnitTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

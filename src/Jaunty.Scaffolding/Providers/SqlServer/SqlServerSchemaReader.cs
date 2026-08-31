@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Internals;
 using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding.Providers.SqlServer;
@@ -20,10 +21,49 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         WHERE t.is_ms_shipped = 0
         ORDER BY s.name, t.name";
 
+    /// <remarks>
+    /// AUD-R33-008: <c>DataType</c> used to be <c>TYPE_NAME(ty.system_type_id)</c>, even though the
+    /// join is already on <c>c.user_type_id = ty.user_type_id</c> - so the row holding the column's
+    /// actual type was in hand and a second, lossy lookup was done instead. <c>TYPE_NAME</c> takes a
+    /// <i>user</i> type id, so passing it a system type id is only correct for types where the two
+    /// coincide. They do not for the CLR-backed system types: <c>geography</c>, <c>geometry</c> and
+    /// <c>hierarchyid</c> all carry <c>system_type_id</c> 240, which is not a user type id at all, so
+    /// <c>TYPE_NAME</c> returned NULL and <see cref="ReadColumnsAsync"/>'s <c>GetString</c> threw
+    /// <c>SqlNullValueException</c>. Scaffolding any table holding one of those columns failed
+    /// outright rather than producing a wrong type name.
+    /// <para>
+    /// Selecting <c>ty.name</c> outright would have swapped one bug for another: for an alias type
+    /// (<c>CREATE TYPE OrderCode FROM nvarchar(20)</c>) <c>ty.name</c> is <c>OrderCode</c>, which
+    /// <c>SqlServerTypeMapper</c> has never heard of, whereas the old expression correctly resolved
+    /// it to the underlying <c>nvarchar</c>. The <c>CASE</c> keeps that behaviour for alias types -
+    /// the only kind of row where <c>is_user_defined</c> is 1 and a base type is what the mapper
+    /// wants - and reports every system type under its own name. Note the CLR types above are
+    /// <i>system</i> types (<c>is_user_defined</c> = 0), so they take the <c>ty.name</c> arm.
+    /// </para>
+    /// <para>
+    /// AUD-R35-042: <c>sysname</c> needs its own arm. It is the one alias type SQL Server ships, and
+    /// it is flagged as a <i>system</i> type - verified against a live instance: <c>sys.types</c>
+    /// reports <c>name = sysname</c>, <c>system_type_id</c> 231, <c>user_type_id</c> 256,
+    /// <c>is_user_defined</c> 0, <c>max_length</c> 256 - so the <c>is_user_defined = 1</c> arm above,
+    /// written for exactly this shape, does not reach it and it fell to <c>ELSE ty.name</c>. The
+    /// pre-AUD-R33-008 <c>TYPE_NAME(231)</c> resolved it to <c>nvarchar</c>, which was right.
+    /// Reporting the literal <c>"sysname"</c> cost two things at once:
+    /// <c>SqlServerTypeMapper.MapToCSharpType</c> has no arm for it, so the column scaffolded as
+    /// <c>object</c> instead of <c>string</c>; and <see cref="NormalizeMaxLength"/> halves only for
+    /// <c>nchar</c>/<c>nvarchar</c>, so the byte length 256 was reported as a 256-character column
+    /// instead of 128. Resolving it here rather than widening the condition to
+    /// <c>system_type_id &lt;&gt; user_type_id</c>, because the CLR types differ that way too and
+    /// must keep their own names.
+    /// </para>
+    /// </remarks>
     private const string ColumnsSql = @"
         SELECT
             c.name AS ColumnName,
-            TYPE_NAME(c.user_type_id) AS DataType,
+            CASE
+                WHEN ty.is_user_defined = 1 THEN TYPE_NAME(ty.system_type_id)
+                WHEN ty.name = 'sysname' THEN 'nvarchar'
+                ELSE ty.name
+            END AS DataType,
             c.is_nullable AS IsNullable,
             c.is_identity AS IsIdentity,
             c.is_computed AS IsComputed,
@@ -35,6 +75,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         FROM sys.columns c
         INNER JOIN sys.tables t ON c.object_id = t.object_id
         INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+        INNER JOIN sys.types ty ON c.user_type_id = ty.user_type_id
         LEFT JOIN sys.default_constraints dc ON c.default_object_id = dc.object_id
         WHERE s.name = @SchemaName AND t.name = @TableName
         ORDER BY c.column_id";
@@ -52,7 +93,11 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         WHERE kc.type = 'PK' AND s.name = @SchemaName AND t.name = @TableName
         ORDER BY ic.key_ordinal";
 
-    private const string ForeignKeysSql = @"
+    /// <summary>
+    /// AUD-R35-046: <c>internal</c> so the ordering below can be asserted without a live server,
+    /// matching <c>PostgreSqlSchemaReader.ForeignKeysSql</c>.
+    /// </summary>
+    internal const string ForeignKeysSql = @"
         SELECT
             fk.name AS ConstraintName,
             COL_NAME(fkc.parent_object_id, fkc.parent_column_id) AS ForeignKeyColumn,
@@ -63,7 +108,10 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         INNER JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
         INNER JOIN sys.tables t ON fk.parent_object_id = t.object_id
         INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
-        WHERE s.name = @SchemaName AND t.name = @TableName";
+        WHERE s.name = @SchemaName AND t.name = @TableName
+        -- AUD-R35-046: a composite foreign key's columns pair positionally with the referenced
+        -- ones, so an unordered read pairs them by whatever order the engine happened to pick.
+        ORDER BY fk.name, fkc.constraint_column_id";
 
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
@@ -92,22 +140,18 @@ public sealed class SqlServerSchemaReader : ISchemaReader
 
     private static DbConnection CreateConnection(string connectionString)
     {
-        // Try Microsoft.Data.SqlClient first, then System.Data.SqlClient
-        var connectionTypes = new[]
-        {
-            "Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient",
-            "System.Data.SqlClient.SqlConnection, System.Data.SqlClient",
-        };
+        // Try Microsoft.Data.SqlClient first, then System.Data.SqlClient.
+        // Literal type names, not a loop over an array: the trim analyzer only recognizes
+        // Type.GetType on a string it can see (IL2057, fatal at ilc on the NativeAOT publish -
+        // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
+        // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
+        // returns null and falls through.
+        var type = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
+                ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
 
-        foreach (var typeName in connectionTypes)
+        if (type != null)
         {
-#pragma warning disable IL2057 // Type name is from trusted source list
-            var type = Type.GetType(typeName);
-#pragma warning restore IL2057
-            if (type != null)
-            {
-                return (DbConnection)Activator.CreateInstance(type, connectionString)!;
-            }
+            return ReflectedConnectionFactory.Create(type, connectionString);
         }
 
         throw new InvalidOperationException(
@@ -169,32 +213,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
             ? await ReadForeignKeysAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false)
             : [];
 
-        // Mark primary key columns
-        if (primaryKey != null)
-        {
-            foreach (ColumnSchema col in columns)
-            {
-                if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
-                {
-                    // Re-create with IsPrimaryKey set (since ColumnSchema is init-only)
-                    var index = columns.IndexOf(col);
-                    columns[index] = new ColumnSchema
-                    {
-                        ColumnName = col.ColumnName,
-                        DataType = col.DataType,
-                        IsNullable = col.IsNullable,
-                        IsPrimaryKey = true,
-                        IsIdentity = col.IsIdentity,
-                        IsComputed = col.IsComputed,
-                        MaxLength = col.MaxLength,
-                        Precision = col.Precision,
-                        Scale = col.Scale,
-                        DefaultValue = col.DefaultValue,
-                        OrdinalPosition = col.OrdinalPosition
-                    };
-                }
-            }
-        }
+        MarkPrimaryKeyColumns(columns, primaryKey);
 
         return new TableSchema
         {
@@ -205,6 +224,13 @@ public sealed class SqlServerSchemaReader : ISchemaReader
             ForeignKeys = foreignKeys
         };
     }
+
+    /// <summary>
+    /// AUD-R35-043: delegates to the shared helper. Kept as an internal member because tests
+    /// address it by this name; the clone itself now lives in exactly one place.
+    /// </summary>
+    internal static void MarkPrimaryKeyColumns(List<ColumnSchema> columns, PrimaryKeyInfo? primaryKey) =>
+        SchemaReaderHelpers.MarkPrimaryKeyColumns(columns, primaryKey);
 
     private static async Task<List<ColumnSchema>> ReadColumnsAsync(
         DbConnection connection,
@@ -230,14 +256,16 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
+            string dataType = reader.GetString(1);
+
             columns.Add(new ColumnSchema
             {
                 ColumnName = reader.GetString(0),
-                DataType = reader.GetString(1),
+                DataType = dataType,
                 IsNullable = reader.GetBoolean(2),
                 IsIdentity = reader.GetBoolean(3),
                 IsComputed = reader.GetBoolean(4),
-                MaxLength = reader.IsDBNull(5) ? null : reader.GetInt16(5),
+                MaxLength = NormalizeMaxLength(dataType, reader.IsDBNull(5) ? null : reader.GetInt16(5)),
                 Precision = reader.IsDBNull(6) ? null : reader.GetByte(6),
                 Scale = reader.IsDBNull(7) ? null : reader.GetByte(7),
                 DefaultValue = reader.IsDBNull(8) ? null : reader.GetString(8),
@@ -246,6 +274,28 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         }
 
         return columns;
+    }
+
+    /// <summary>
+    /// <c>sys.columns.max_length</c> is reported in bytes. For unicode character types
+    /// (<c>nchar</c>/<c>nvarchar</c>) SQL Server stores 2 bytes per character, so the raw value
+    /// must be halved to get the actual character length; <c>-1</c> (the MAX sentinel) is left
+    /// untouched. The legacy LOB types <c>text</c>/<c>ntext</c>/<c>image</c> always report a fixed
+    /// sentinel <c>max_length</c> of 16 (the size of the internal data pointer) regardless of the
+    /// column's actual, effectively unbounded, capacity - AUD-R22: treat them as unbounded (null)
+    /// like the MAX sentinel instead of halving/passing through the meaningless sentinel value.
+    /// </summary>
+    internal static short? NormalizeMaxLength(string dataType, short? maxLength)
+    {
+        if (maxLength is null or -1)
+            return maxLength;
+
+        if (dataType is "text" or "ntext" or "image")
+            return null;
+
+        return dataType is "nchar" or "nvarchar"
+            ? (short)(maxLength.Value / 2)
+            : maxLength;
     }
 
     private static async Task<PrimaryKeyInfo?> ReadPrimaryKeyAsync(

@@ -1,7 +1,7 @@
-using System.Data;
+﻿using System.Data;
 
-using Jaunty.Core;
 using Jaunty.Configuration;
+using Jaunty.Core;
 using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 
@@ -25,8 +25,15 @@ public static partial class Jaunty
     /// <returns>A list of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// This method uses <strong>strict mapping mode</strong>. All public writable properties on both 
-    /// <typeparamref name="T1"/> and <typeparamref name="T2"/> must have matching columns in the result set.
+    /// AUD-R35-048: this used to say the method uses <strong>strict mapping mode</strong> and that
+    /// all public writable properties on both <typeparamref name="T1"/> and
+    /// <typeparamref name="T2"/> must have matching columns. Neither is true. Multi-entity reads
+    /// always resolve each entity's setters in <strong>projection mode</strong>: a property whose
+    /// column is missing or misspelled in the SELECT list is left at its default value, silently.
+    /// The <c>MappingMode</c> argument threaded to <c>QueryMultiEntityCore</c> is ignored unless
+    /// <c>options.Mapper</c> is set, and <c>docs/01-api-reference/multi-entity-mapping.md</c> has
+    /// documented the real behaviour all along - so the prose docs and these XML docs contradicted
+    /// each other, and these are the ones a caller sees in IntelliSense.
     /// </para>
     /// <para>
     /// Columns are matched to entity properties using case-insensitive name matching. If a column name 
@@ -65,7 +72,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string, object)"/>
     /// <seealso cref="QueryFirst{T1, T2}(IDbConnection, string)"/>
@@ -73,10 +80,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -94,7 +103,8 @@ public static partial class Jaunty
     /// <returns>A list of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// </remarks>
     /// <example>
@@ -108,7 +118,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -119,10 +129,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -152,11 +166,11 @@ public static partial class Jaunty
     /// var results = connection.Query&lt;Order, Customer&gt;(
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
@@ -164,12 +178,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-        return QueryMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+        return QueryMultiEntityCore(connection, sql, null, options, MappingMode.Strict);
     }
 
     /// <summary>
@@ -200,11 +216,11 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -215,88 +231,52 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
-    #endregion
-
-    #region Legacy Multi-Entity Query APIs (Marked as Obsolete for Consistency)
-
     /// <summary>
-    /// Executes a query and maps columns to two entity types by property name.
-    /// Columns are matched to entity properties using case-insensitive name matching.
-    /// T1 has priority - if a column matches both types, it maps to T1.
-    /// Use SQL aliases to disambiguate (e.g., "o.id AS OrderId, c.id AS CustomerId").
+    /// Executes a SQL query with multi-entity command options and maps columns to two entity types by property name, returning a list of tuples.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
+    public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
     {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            var results = new List<(T1, T2)>(64);
-
-            if (!reader.Read())
-                return results;
-
-            // Build mapping on first row
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
-            {
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
-
-                results.Add((t1, t2));
-            }
-            while (reader.Read());
-
-            return results;
-        });
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return QueryMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
 
     /// <summary>
-    /// Executes a query, maps to two entity types, and combines them using a function.
+    /// Executes a SQL query with parameters and multi-entity command options and maps columns to two entity types by property name, returning a list of tuples.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static List<TResult> Query<T1, T2, TResult>(this IDbConnection connection, string sql, Func<T1, T2, TResult> map, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
+    public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
     {
 #if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
-        if (map is null) throw new ArgumentNullException(nameof(map));
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
-
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            var results = new List<TResult>(64);
-
-            if (!reader.Read())
-                return results;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
-            {
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
-
-                results.Add(map(t1, t2));
-            }
-            while (reader.Read());
-
-            return results;
-        });
+        return QueryMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     #endregion
@@ -313,7 +293,8 @@ public static partial class Jaunty
     /// <returns>A tuple containing the first mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if no results are returned.</strong>
@@ -339,10 +320,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -386,10 +369,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -417,7 +404,7 @@ public static partial class Jaunty
     /// var (order, customer) = connection.QueryFirst&lt;Order, Customer&gt;(
     ///     "SELECT TOP 1 o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -430,10 +417,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
@@ -466,7 +455,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -482,36 +471,52 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     /// <summary>
-    /// Executes a query and returns the first row mapped to two entity types.
-    /// Throws if no rows are returned.
+    /// Executes a SQL query with multi-entity command options and returns the first row mapped to two entity types.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
+    public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
     {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            if (!reader.Read())
-                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return QueryFirstMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
 
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
-
-            return (t1, t2);
-        });
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and returns the first row mapped to two entity types.
+    /// </summary>
+    public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return QueryFirstMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     #endregion
@@ -530,7 +535,8 @@ public static partial class Jaunty
     /// </returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// Returns <see langword="null"/> for empty result sets instead of throwing.
@@ -553,7 +559,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirst{T1, T2}(IDbConnection, string)"/>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
@@ -561,10 +567,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -598,7 +606,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -609,10 +617,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -642,11 +654,11 @@ public static partial class Jaunty
     /// var result = connection.QueryFirstOrDefault&lt;Order, Customer&gt;(
     ///     "SELECT TOP 1 o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirstOrDefault{T1, T2}(IDbConnection, string)"/>
     /// <seealso cref="CommandOptions{T}"/>
@@ -654,10 +666,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
@@ -692,11 +706,11 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 999 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -707,35 +721,52 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     /// <summary>
-    /// Executes a query and returns the first row mapped to two entity types, or default if empty.
+    /// Executes a SQL query with multi-entity command options and returns the first row mapped to two entity types, or <see langword="null"/> if empty.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
+    public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
     {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            if (!reader.Read())
-                return ((T1, T2)?)null;
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
 
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
-
-            return (t1, t2);
-        });
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and returns the first row mapped to two entity types, or <see langword="null"/> if empty.
+    /// </summary>
+    public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     #endregion
@@ -752,7 +783,8 @@ public static partial class Jaunty
     /// <returns>A tuple containing the single mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if:</strong>
@@ -782,10 +814,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -829,10 +863,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -861,7 +899,7 @@ public static partial class Jaunty
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -874,10 +912,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
@@ -910,7 +950,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
     ///     new { OrderId = 1 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -926,36 +966,52 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     /// <summary>
-    /// Executes a query and returns exactly one row mapped to two entity types.
-    /// Throws if zero or more than one row is returned.
+    /// Executes a SQL query with multi-entity command options and returns exactly one row mapped to two entity types.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
+    public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
     {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            if (!reader.Read())
-                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return QuerySingleMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
 
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
-
-            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : (t1, t2);
-        });
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and returns exactly one row mapped to two entity types.
+    /// </summary>
+    public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return QuerySingleMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     #endregion
@@ -974,7 +1030,8 @@ public static partial class Jaunty
     /// </returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if the query returns more than one result.</strong>
@@ -1009,10 +1066,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -1058,10 +1117,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -1092,7 +1155,7 @@ public static partial class Jaunty
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1105,10 +1168,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
@@ -1143,7 +1208,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
     ///     new { OrderId = 999 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1159,36 +1224,52 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     /// <summary>
-    /// Executes a query and returns exactly one row mapped to two entity types, or default if empty.
-    /// Throws if more than one row is returned.
+    /// Executes a SQL query with multi-entity command options and returns exactly one row mapped to two entity types, or <see langword="null"/> if empty.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
+    public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
     {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
-        {
-            if (!reader.Read())
-                return ((T1, T2)?)null;
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
 
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1 = new T1();
-            var t2 = new T2();
-
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
-
-            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : ((T1, T2)?)(t1, t2);
-        });
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and returns exactly one row mapped to two entity types, or <see langword="null"/> if empty.
+    /// </summary>
+    public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     #endregion
@@ -1205,7 +1286,8 @@ public static partial class Jaunty
     /// <returns>An enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Important:</strong> The connection stays open until enumeration completes. Use a <c>using</c> statement 
@@ -1224,7 +1306,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryStream{T1, T2}(IDbConnection, string, object)"/>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
@@ -1232,10 +1314,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -1270,7 +1354,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -1281,10 +1365,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -1312,14 +1400,14 @@ public static partial class Jaunty
     /// foreach (var (order, customer) in connection.QueryStream&lt;Order, Customer&gt;(
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"Order {order.OrderId}");
     /// }
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryStream{T1, T2}(IDbConnection, string)"/>
     /// <seealso cref="CommandOptions{T}"/>
@@ -1327,10 +1415,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
@@ -1363,14 +1453,14 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 5 },
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"Order {order.OrderId}");
     /// }
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property has no matching column or when a non-nullable property receives a NULL value.
+    /// Thrown when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -1381,82 +1471,52 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     /// <summary>
-    /// Executes a query and streams rows mapped to two entity types.
-    /// Connection stays open until enumeration completes.
+    /// Executes a SQL query with multi-entity command options and streams rows mapped to two entity types.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, object? parameters = null, CommandOptions options = default) where T1 : new() where T2 : new()
-    {
-        return QueryStreamCore<T1, T2>(connection, sql, parameters, options);
-    }
-
-    private static IEnumerable<(T1, T2)> QueryStreamCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions options) where T1 : new() where T2 : new()
+    public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-        bool wasClosed = connection.State == ConnectionState.Closed;
+        return QueryStreamMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
 
-        IDbCommand? command = null;
-        IDataReader? reader = null;
-        MultiEntityMapper<T1, T2>? mapping = null;
-
-        try
-        {
-            if (wasClosed) connection.Open();
-
-            command = connection.CreateCommand();
-            command.CommandText = sql;
-
-            if (options.Transaction is System.Data.Common.DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
-
-            if (options.CommandTimeout.HasValue)
-                command.CommandTimeout = options.CommandTimeout.Value;
-
-            if (parameters is not null)
-                ParameterBinder.Bind(command, parameters);
-
-            reader = command.ExecuteReader();
-
-            if (!reader.Read())
-                yield break;
-
-            mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
-            {
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
-
-                yield return (t1, t2);
-            }
-            while (reader.Read());
-        }
-        finally
-        {
-            reader?.Dispose();
-            command?.Dispose();
-            if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
-        }
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and streams rows mapped to two entity types.
+    /// </summary>
+    public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return QueryStreamMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
     #endregion

@@ -129,7 +129,12 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
             return node;
         }
 
-        return base.VisitUnary(node);
+        // AUD-R34-019: the base implementation visits the operand and appends nothing for the
+        // operator, so `-p.UnitPrice` used to translate to a bare column - the negation silently
+        // gone from the emitted SQL. Negate, TypeAs, OnesComplement, ArrayLength and UnaryPlus all
+        // took that route.
+        throw new NotSupportedException(
+            $"Unary operator '{node.NodeType}' is not supported in JOIN expressions.");
     }
 
     private static bool IsNullValue(Expression expression)
@@ -167,6 +172,85 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         return node;
     }
 
+    /// <summary>
+    /// AUD-R33-003. The AUD-R32-002 fix reached <c>WhereExpressionVisitor</c> and
+    /// <c>SelectExpressionVisitor</c> but never the JOIN and EXISTS visitors, which have the same
+    /// gap: with no override the base traversal walks Test/IfTrue/IfFalse and each appends its own
+    /// fragment to the shared <c>_sql</c> builder with nothing joining them. Every other
+    /// unsupported shape in this file throws, so this does too.
+    /// </summary>
+    protected override Expression VisitConditional(ConditionalExpression node)
+        => throw new NotSupportedException(
+            "Conditional (ternary) expressions are not supported in JOIN predicates. " +
+            "Split the predicate into separate conditions, or filter with Where after the join.");
+
+    /// <summary>
+    /// AUD-R34-019. AUD-R32-002/R33-003 closed <see cref="ConditionalExpression"/> here, but every
+    /// other node type this class does not override still fell through to
+    /// <see cref="ExpressionVisitor"/>'s descend-into-children default, which appends each child's
+    /// fragment to the shared <c>_sql</c> builder with nothing joining them. A constructor call in
+    /// a predicate - <c>(p, c) =&gt; p.Created == new DateTime(2020, 1, 1)</c> - is ordinary C# and
+    /// used to emit <c>(p.[created] = @jp0@jp1@jp2)</c>. The rest emit their children bare, or
+    /// nothing at all, leaving a dangling operator. All of them now throw, like the rest of this
+    /// file.
+    /// </summary>
+    protected override Expression VisitNew(NewExpression node)
+        => throw new NotSupportedException(
+            $"Constructing a '{node.Type.Name}' is not supported inside a JOIN predicate. " +
+            "Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        => throw new NotSupportedException(
+            "Type tests ('is', 'as') are not supported in JOIN predicates. There is no SQL " +
+            "equivalent of a CLR type test over a column; join on a discriminator column instead.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitInvocation(InvocationExpression node)
+        => throw new NotSupportedException(
+            "Invoking a delegate or a nested lambda is not supported inside a JOIN predicate. " +
+            "Inline the condition.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitNewArray(NewArrayExpression node)
+        => throw new NotSupportedException(
+            "Array construction is not supported inside a JOIN predicate. Build the array before " +
+            "the query and pass it in.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitMemberInit(MemberInitExpression node)
+        => throw new NotSupportedException(
+            $"Object initializers ('new {node.Type.Name} {{ ... }}') are not supported inside a " +
+            "JOIN predicate. Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitListInit(ListInitExpression node)
+        => throw new NotSupportedException(
+            "Collection initializers are not supported inside a JOIN predicate. Build the " +
+            "collection before the query and pass it in.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitIndex(IndexExpression node)
+        => throw new NotSupportedException(
+            "Indexer access is not supported inside a JOIN predicate. Compute the value before " +
+            "the query and compare against it.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitDefault(DefaultExpression node)
+        => throw new NotSupportedException(
+            $"'default({node.Type.Name})' is not supported inside a JOIN predicate. Write the " +
+            "value out, or compute it before the query.");
+
+    /// <inheritdoc cref="VisitNew"/>
+    protected override Expression VisitParameter(ParameterExpression node)
+        => throw new NotSupportedException(
+            $"'{node.Name}' is a whole entity, not a condition. Compare its properties instead.");
+
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        throw new NotSupportedException($"Method '{node.Method.Name}' is not supported in JOIN expressions.");
+    }
+
     private string? TryGetColumnExpression(Expression expression)
     {
         if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
@@ -185,35 +269,35 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         string propertyName = member.Member.Name;
         string? alias;
         EntityMetadata metadata;
+        CachedDialectMetadata cached;
 
         if (param == _param1)
         {
             alias = _alias1;
             metadata = _metadata1;
+            cached = FluentMetadataCache.GetForDialect<T1>(_dialect);
         }
         else if (param == _param2)
         {
             alias = _alias2;
             metadata = _metadata2;
+            cached = FluentMetadataCache.GetForDialect<T2>(_dialect);
         }
         else
         {
             return null;
         }
 
-        string columnName = propertyName;
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].Property.Name == propertyName)
-            {
-                columnName = columns[i].ColumnName;
-                break;
-            }
-        }
-
-        var escaped = _dialect.EscapeColumnName(columnName);
-        var prefix = alias ?? metadata.TableName;
+        // AUD-R26-058: this used to scan metadata.Columns linearly and then call
+        // _dialect.EscapeColumnName - re-running SqlIdentifierValidator's regex match and a keyword
+        // HashSet lookup - once per column reference per query build. AUD-R25 replaced exactly that
+        // with the pre-escaped CachedDialectMetadata lookup and reached WhereExpressionVisitor,
+        // ExistsExpressionVisitor, SelectExpressionVisitor and the arity-3 and arity-4 join
+        // visitors, but not this one: the arity-2 visitor, which is the one the overwhelmingly
+        // common two-table join uses. Same arity-drift pattern round 1 found on the joined
+        // builders, recurring inside the fix for a different finding.
+        var escaped = cached.GetColumnName(propertyName);
+        var prefix = alias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
 
@@ -230,15 +314,10 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         _parameters.Add((paramName, value));
     }
 
-    private static object? EvaluateExpression(Expression expression)
-    {
-        if (expression is ConstantExpression constant)
-            return constant.Value;
-
-        LambdaExpression lambda = Expression.Lambda(expression);
-        Delegate compiled = lambda.Compile();
-        return compiled.DynamicInvoke();
-    }
+    // AUD-R25: this was one of eight byte-identical private copies. Kept as a one-line forwarder
+    // rather than rewriting every call site, so the shared implementation - including its
+    // closure-member fast path - is the only place the behaviour lives.
+    private static object? EvaluateExpression(Expression expression) => ExpressionEvaluator.Evaluate(expression);
 
     private static string GetOperator(ExpressionType nodeType) => nodeType switch
     {

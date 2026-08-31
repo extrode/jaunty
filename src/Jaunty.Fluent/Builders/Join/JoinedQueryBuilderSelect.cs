@@ -1,10 +1,11 @@
 using System.Data;
 using System.Runtime.CompilerServices;
-using System.Text;
 
+using Jaunty.Core;
 using Jaunty.Fluent.Internals;
 using Jaunty.Configuration;
 using Jaunty.Internals.Read;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -18,6 +19,13 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public List<TFrom> Select(CommandOptions options)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+        return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
 
     public List<T> Select<T>() where T : new()
@@ -62,11 +70,77 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
+    public TFrom SelectFirst(CommandOptions options)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
+        return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
+    }
+
     public TFrom? SelectFirstOrDefault()
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public TFrom? SelectFirstOrDefault(CommandOptions options)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
+        return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
+    }
+
+    public TFrom SelectSingle()
+    {
+        // AUD-R26-057: LIMIT 2, not the whole result set. QueryPartialSingle throws when a second
+        // row exists, so two rows is all it takes to make that decision - reading the rest only to
+        // discard it is pure waste, and on a large join SelectSingle read the entire result set to
+        // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
+        // for exactly this reason, and the SelectFirst neighbours four lines above which already
+        // page to 1.
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
+        return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public TFrom SelectSingle(CommandOptions options)
+    {
+        // AUD-R26-057: LIMIT 2, not the whole result set. QueryPartialSingle throws when a second
+        // row exists, so two rows is all it takes to make that decision - reading the rest only to
+        // discard it is pure waste, and on a large join SelectSingle read the entire result set to
+        // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
+        // for exactly this reason, and the SelectFirst neighbours four lines above which already
+        // page to 1.
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
+        return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
+    }
+
+    public TFrom? SelectSingleOrDefault()
+    {
+        // AUD-R26-057: LIMIT 2, not the whole result set. QueryPartialSingle throws when a second
+        // row exists, so two rows is all it takes to make that decision - reading the rest only to
+        // discard it is pure waste, and on a large join SelectSingle read the entire result set to
+        // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
+        // for exactly this reason, and the SelectFirst neighbours four lines above which already
+        // page to 1.
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
+        return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public TFrom? SelectSingleOrDefault(CommandOptions options)
+    {
+        // AUD-R26-057: LIMIT 2, not the whole result set. QueryPartialSingle throws when a second
+        // row exists, so two rows is all it takes to make that decision - reading the rest only to
+        // discard it is pure waste, and on a large join SelectSingle read the entire result set to
+        // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
+        // for exactly this reason, and the SelectFirst neighbours four lines above which already
+        // page to 1.
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
+        return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
 
     public T SelectFirst<T>() where T : new()
@@ -125,7 +199,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public (TFrom From, TJoin Joined) SelectFirstBoth()
     {
-        List<(TFrom From, TJoin Joined)> result = SelectBothInternal();
+        List<(TFrom From, TJoin Joined)> result = SelectBothInternal(limit: 1);
         if (result.Count == 0)
             throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(TFrom).Name}, {typeof(TJoin).Name})'.");
 
@@ -138,10 +212,22 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject()!);
     }
 
+    public int Count(CommandOptions options)
+    {
+        string sql = BuildCountSql();
+        return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject()!, ToTypedOptions<int>(options));
+    }
+
     public long LongCount()
     {
         string sql = BuildCountSql();
         return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public long LongCount(CommandOptions options)
+    {
+        string sql = BuildCountSql();
+        return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options));
     }
 
     public string ToSql()
@@ -171,170 +257,182 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
-    private List<(TFrom From, TJoin Joined)> SelectBothInternal()
+    /// <summary>
+    /// Materialises the joined rows, optionally bounded.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26-057: the limit did not exist, so SelectFirstBoth called this and indexed [0] -
+    /// materialising and mapping every joined row to return one. SelectWithMapper already took a
+    /// limit for the same job; this is the sibling that did not.
+    /// </para>
+    /// <para>
+    /// AUD-R26-060, knowingly left open here: this helper and its two neighbours
+    /// (<c>SelectWithMapping</c>, <c>SelectWithMapper</c>) build and execute their own command, so
+    /// a caller's transaction and timeout cannot reach it - the terminals that route through them
+    /// (<c>SelectBoth</c>, <c>Select&lt;T&gt;</c>, <c>Select&lt;T&gt;(mapper)</c>, the
+    /// <c>SelectFirst</c>/<c>SelectFirstOrDefault</c> mapper overloads and <c>SelectFirstBoth</c>)
+    /// carry no <see cref="CommandOptions"/> overload. The neighbours that delegate to core
+    /// (<c>Select</c>, <c>SelectFirst</c>, <c>SelectSingle</c>, <c>Count</c>, <c>LongCount</c>) all
+    /// do. Closing this uniformly means the same set of overloads on arities 2, 3 and 4, sync and
+    /// async, on both <c>IJoinedQuery</c> and the partial-select family - roughly sixty new public
+    /// methods. Doing arity 2 alone would relocate the inconsistency rather than remove it, so this
+    /// is a public-API decision rather than a defect fix and is carried forward deliberately. The
+    /// two places that had no options path at all - <c>InsertBuilder</c> and
+    /// <c>GroupedQueryBuilder</c> - were fixed under AUD-R26-060; see <c>FluentCommandOptions</c>.
+    /// </para>
+    /// </remarks>
+    private List<(TFrom From, TJoin Joined)> SelectBothInternal(int? limit = null)
     {
         string[] fromColumns = GetPrefixedColumnsWithAlias(_fromMetadata, _fromAlias, "f_");
         string[] joinColumns = GetPrefixedColumnsWithAlias(_joinMetadata, _joins[0].Alias, "j_");
         string[] allColumns = fromColumns.Concat(joinColumns).ToArray();
 
         string sql = BuildSelectSql(allColumns);
-        var results = new List<(TFrom, TJoin)>();
+        if (limit.HasValue) sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        List<(TFrom From, TJoin Joined)> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
+            var results = new List<(TFrom, TJoin)>();
 
-            while (reader.Read())
-            {
-                TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, "f_");
-                TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, "j_");
-                results.Add((fromObj, joinObj));
-            }
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return results;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+                Dictionary<string, int> ordinals = BuildOrdinalLookup(reader);
+
+                while (reader.Read())
+                {
+                    TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, "f_", ordinals);
+                    TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, "j_", ordinals);
+                    results.Add((fromObj, joinObj));
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return results;
+        }
     }
 
     private List<T> SelectWithMapping<T>(MappingMode mode, int? limit = null)
         where T : new()
     {
-        string sql = BuildSelectAllColumnsSql();
+        string sql = BuildSelectPartialSql("*");
+
+        // AUD-R31: page before reporting, so interceptors and the diagnostics listener see the
+        // command that actually executes. SelectBothInternal already decides the final text here.
         if (limit.HasValue)
             sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
-        var results = new List<T>();
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
-
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        List<T> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
-            Func<IDataReader, T> mapper = DrDispatcher.Resolve<T>(reader, default, mode);
+            var results = new List<T>();
 
-            while (reader.Read())
-                results.Add(mapper(reader));
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return results;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+                EnsureNoAmbiguousColumns(reader);
+                Func<IDataReader, T> mapper = DrDispatcher.Resolve<T>(reader, default, mode);
+
+                while (reader.Read())
+                    results.Add(mapper(reader));
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return results;
+        }
+    }
+
+    private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
+        new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
+
+    private static void EnsureNoAmbiguousColumns(IDataReader reader)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            string name = reader.GetName(i);
+            if (!seen.Add(name))
+                throw new InvalidOperationException(
+                    $"Column '{name}' is ambiguous: it appears more than once in the joined result set. " +
+                    "Use SelectPartial with aliased columns, or Select(Func<IDataReader, T> mapper), to disambiguate.");
+        }
     }
 
     private List<T> SelectWithMapper<T>(Func<IDataReader, T> mapper, int? limit = null)
     {
-        string sql = BuildSelectAllColumnsSql();
+        string sql = BuildSelectPartialSql("*");
+
+        // AUD-R31: page before reporting, so interceptors and the diagnostics listener see the
+        // command that actually executes. SelectBothInternal already decides the final text here.
         if (limit.HasValue)
             sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
-        var results = new List<T>();
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
-
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        List<T> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
+            var results = new List<T>();
 
-            while (reader.Read())
-                results.Add(mapper(reader));
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return results;
-    }
-
-    private string BuildSelectAllColumnsSql()
-    {
-        var sb = new StringBuilder(256);
-        sb.Append("SELECT *");
-
-        sb.Append(" FROM ");
-        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
-
-        if (_fromAlias is not null)
-        {
-            sb.Append(' ');
-            sb.Append(_fromAlias);
-        }
-
-        foreach (JoinInfo join in _joins)
-        {
-            sb.Append(' ');
-            sb.Append(join.JoinKeyword);
-            sb.Append(' ');
-            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
-
-            if (join.Alias is not null)
+            try
             {
-                sb.Append(' ');
-                sb.Append(join.Alias);
+                using IDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                    results.Add(mapper(reader));
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
             }
 
-            sb.Append(" ON ");
-            sb.Append(join.OnCondition);
+            return results;
         }
-
-        if (_conditions.Count > 0)
-        {
-            sb.Append(" WHERE ");
-
-            for (var i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                sb.Append(condition.Sql);
-            }
-        }
-
-        if (_orderByColumns.Count > 0)
-        {
-            sb.Append(" ORDER BY ");
-
-            for (var i = 0; i < _orderByColumns.Count; i++)
-            {
-                if (i > 0)
-                    sb.Append(", ");
-
-                OrderByColumn orderBy = _orderByColumns[i];
-                sb.Append(orderBy.ColumnName);
-
-                if (orderBy.Descending)
-                    sb.Append(" DESC");
-            }
-        }
-
-        return sb.ToString();
     }
 }

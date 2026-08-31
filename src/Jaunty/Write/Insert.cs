@@ -26,7 +26,17 @@ public static partial class Jaunty
     /// </para>
     /// <list type="bullet">
     /// <item><description>Properties marked with <see cref="Attributes.DatabaseGeneratedAttribute"/> set to <c>Identity</c> are excluded from INSERT</description></item>
-    /// <item><description>Properties named <c>Id</c> or <c>{TypeName}Id</c> are treated as potential identity columns</description></item>
+    /// <item><description>
+    /// AUD-R35-050: properties named <c>Id</c> or <c>{TypeName}Id</c> are treated as potential
+    /// identity columns <strong>on the source-generated path only</strong>. This used to be
+    /// stated unconditionally, and it is not what the reflection path does:
+    /// <c>MetadataBuilder</c> infers the <em>key</em> by that name convention but infers no
+    /// identity, so with no <see cref="Attributes.DatabaseGeneratedAttribute"/> the column is
+    /// sent on INSERT and this method returns rows affected rather than a generated id.
+    /// Mark the property <c>[DatabaseGenerated(DatabaseGeneratedOption.Identity)]</c> to get the
+    /// same behaviour on both paths; <c>docs/01-api-reference/attributes.md</c> records the
+    /// divergence, and this file - the primary write API's documentation - did not.
+    /// </description></item>
     /// <item><description>For entities implementing <c>IEntity&lt;T&gt;</c>, the <c>Id</c> property is automatically populated</description></item>
     /// </list>
     /// <para>
@@ -37,6 +47,10 @@ public static partial class Jaunty
     /// <item><description>PostgreSQL: Returns the value from <c>RETURNING</c> clause</description></item>
     /// <item><description>MySQL: Returns <c>LAST_INSERT_ID()</c></description></item>
     /// <item><description>No identity column: Returns 1 (rows affected)</description></item>
+    /// <item><description>
+    /// AUD-R35-050: an identity column the reflection path did not infer is no identity column
+    /// as far as this list is concerned - see the note above.
+    /// </description></item>
     /// </list>
     /// </remarks>
     /// <example>

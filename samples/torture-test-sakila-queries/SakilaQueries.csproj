@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ExcludeFromCoverage>true</ExcludeFromCoverage>
+    <NoWarn>$(NoWarn);CS8321</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Npgsql" Version="8.0.5" />
+    <PackageReference Include="MySqlConnector" Version="2.4.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+  </ItemGroup>
+
+  <!--
+  Deliberately does NOT reference Jaunty.Extensions.Reflection. Spec 003 (fluent
+  NativeAOT-safe metadata) closed gap #11 - all 15 queries here now resolve
+  source-generated entity metadata reflection-free, with no UseReflectionMapping() call.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" />
+    <ProjectReference Include="..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" />
+    <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

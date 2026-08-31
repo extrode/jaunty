@@ -58,6 +58,25 @@ public class FluentSelectTests : IClassFixture<FluentDatabaseFixture>
         Assert.Null(products.First().UnitPrice);
     }
 
+    [Fact]
+    public void SelectPartial_StringColumns_RejectsInvalidIdentifier()
+    {
+        // Regression test (round 10): raw caller-supplied column-name strings must be validated/
+        // escaped like Where(string, object) already does, instead of being interpolated straight
+        // into the generated SQL unchecked.
+        var query = _fixture.Connection.From<Product>();
+
+        Assert.Throws<ArgumentException>(() => query.SelectPartial("product_id; DROP TABLE products;--"));
+    }
+
+    [Fact]
+    public void ToSql_StringColumns_RejectsInvalidIdentifier()
+    {
+        var query = _fixture.Connection.From<Product>();
+
+        Assert.Throws<ArgumentException>(() => query.ToSql("product_id\" OR 1=1--"));
+    }
+
     // --- SelectPartial Expression-based Tests ---
 
     [Fact]
@@ -314,6 +333,23 @@ public class FluentSelectTests : IClassFixture<FluentDatabaseFixture>
         var products = await _fixture.Connection.From<Product>().SelectAsync();
 
         Assert.NotEmpty(products);
+    }
+
+    [Fact]
+    public async Task SelectAsync_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => query.SelectAsync());
+    }
+
+    [Fact]
+    public async Task SelectPartialAsync_String_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => query.SelectPartialAsync(new[] { "product_id", "product_name" }));
     }
 
     [Fact]

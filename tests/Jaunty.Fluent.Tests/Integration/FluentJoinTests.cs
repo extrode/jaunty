@@ -189,6 +189,30 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
         Assert.NotEmpty(results.First().CategoryName);
     }
 
+    [Fact]
+    public void InnerJoin_SelectPartial_WithDuplicateColumnName_ThrowsInvalidOperationException()
+    {
+        var query = _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On(p => p.CategoryId, c => c.CategoryId);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            query.SelectPartial("p.product_name, c.category_name AS product_name"));
+        Assert.Contains("product_name", ex.Message);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectCustomType_WithAmbiguousColumn_ThrowsInvalidOperationException()
+    {
+        var query = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId);
+
+        // products.category_id and categories.category_id collide under SELECT *.
+        var ex = Assert.Throws<InvalidOperationException>(() => query.Select<ProductInfo>());
+        Assert.Contains("category_id", ex.Message);
+    }
+
     // ==========================================
     // Multi-Entity Selection Tests (Select<T1, T2> and SelectTuple)
     // ==========================================
@@ -264,6 +288,27 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public async Task InnerJoin_SelectAsync_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => query.SelectAsync());
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectPartialAsync_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => query.SelectPartialAsync("products.product_id, categories.category_name"));
+    }
+
+    [Fact]
     public async Task InnerJoin_SelectAsyncGeneric_ReturnsTuples()
     {
         var results = await _fixture.Connection.From<Product>()
@@ -288,6 +333,18 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
         Assert.NotEmpty(results);
         var first = results.First();
         Assert.NotEmpty(first.CategoryName);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectAsyncCustomType_WithAmbiguousColumn_ThrowsInvalidOperationException()
+    {
+        var query = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId);
+
+        // products.category_id and categories.category_id collide under SELECT *.
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => query.SelectAsync<ProductInfo>());
+        Assert.Contains("category_id", ex.Message);
     }
 
     [Fact]
@@ -348,6 +405,31 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => p.ProductId == -999) // Non-existent
             .SelectFirstOrDefaultAsync();
+
+        Assert.Null(product);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectSingleAsync_OneResult_ReturnsProduct()
+    {
+        var product = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == 1)
+            .SelectSingleAsync();
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectSingleOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var product = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == -999) // Non-existent
+            .SelectSingleOrDefaultAsync();
 
         Assert.Null(product);
     }
@@ -515,23 +597,6 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
 
-
-    [Fact]
-    public void InnerJoin_MultipleJoins_ThreeTables_ReturnsJoinedResults()
-    {
-        var results = _fixture.Connection.From<Product>()
-            .InnerJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId)
-            .InnerJoin<Supplier>()
-            .On(p => p.SupplierId, s => s.SupplierId)
-            .SelectAll();
-
-        Assert.NotEmpty(results);
-        var first = results.First();
-        Assert.NotEmpty(first.Item1.ProductName);
-        Assert.NotEmpty(first.Item2.CategoryName);
-        Assert.NotEmpty(first.Item3.CompanyName);
-    }
 
     [Fact]
     public void InnerJoin_MultipleJoins_ThreeTables_ReturnsTuples()

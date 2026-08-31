@@ -1,0 +1,241 @@
+﻿using Npgsql;
+
+using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Providers.PostgreSql;
+using Jaunty.Scaffolding.Tests.Helpers;
+
+using Xunit;
+
+namespace Jaunty.Scaffolding.Tests.Integration;
+
+/// <summary>
+/// AUD-R14 batch-8 coverage gap: PostgreSqlSchemaReaderTests.cs only asserted that the
+/// PrimaryKeysSql/ForeignKeysSql string constants contain certain substrings; the reader was
+/// never actually executed against a database. ReadSchemaAsync/GetTableInfosAsync/
+/// ReadTableSchemaAsync/ReadColumnsAsync/ReadPrimaryKeyAsync/ReadForeignKeysAsync/
+/// CreateConnection were never exercised. Skipped dynamically when no local PostgreSQL server is
+/// reachable (mirrors PostgreSqlBulkCopyProviderTests.cs's OpenOrSkip pattern).
+/// </summary>
+public class PostgreSqlSchemaReaderTests
+{
+    // Suffixed per process so the net8/net10/net472 legs of one `dotnet test` run - which execute
+    // concurrently against the same PostgreSQL instance - cannot drop and recreate each other's
+    // fixtures mid-assertion. Same fix as SqlServerSchemaReaderTests.
+    private static readonly string Products = $"scaffold_test_products_{Environment.ProcessId}";
+    private static readonly string Orders = $"scaffold_test_orders_{Environment.ProcessId}";
+    private static readonly string OrderItems = $"scaffold_test_order_items_{Environment.ProcessId}";
+    private static readonly string Shipments = $"scaffold_test_shipments_{Environment.ProcessId}";
+
+    private static NpgsqlConnection OpenOrSkip()
+    {
+        if (!TestConfiguration.HasPostgreSql)
+        {
+            RequiredEngine.SkipOrFail(RequiredEngine.PostgreSql, "PostgreSQL not configured. Set JAUNTY_TEST_POSTGRESQL or ConnectionStrings:PostgreSql.");
+        }
+
+        var conn = new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString);
+        try
+        {
+            conn.Open();
+        }
+        catch (Exception ex)
+        {
+            conn.Dispose();
+            RequiredEngine.SkipOrFail(RequiredEngine.PostgreSql, $"PostgreSQL not reachable: {ex.Message}");
+        }
+        return conn;
+    }
+
+    private static void CreateProductsAndOrders(NpgsqlConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            DROP TABLE IF EXISTS {Orders};
+            DROP TABLE IF EXISTS {Products};
+            CREATE TABLE {Products} (
+                product_id SERIAL PRIMARY KEY,
+                product_name TEXT NOT NULL,
+                unit_price NUMERIC(10,2) NULL,
+                full_label TEXT GENERATED ALWAYS AS (product_name || '!') STORED
+            );
+            CREATE TABLE {Orders} (
+                order_id SERIAL PRIMARY KEY,
+                product_id INT NOT NULL REFERENCES {Products}(product_id)
+            );
+            """;
+        cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateCompositeKeyTable(NpgsqlConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            DROP TABLE IF EXISTS {Shipments};
+            DROP TABLE IF EXISTS {OrderItems};
+            CREATE TABLE {OrderItems} (
+                order_id INT NOT NULL,
+                line_number INT NOT NULL,
+                quantity INT NOT NULL,
+                PRIMARY KEY (order_id, line_number)
+            );
+            """;
+        cmd.ExecuteNonQuery();
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_ReturnsTableWithColumns()
+    {
+        using var conn = OpenOrSkip();
+        CreateProductsAndOrders(conn);
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
+
+        var table = Assert.Single(schema.Tables);
+        Assert.Equal(Products, table.TableName);
+        Assert.Equal("public", table.SchemaName);
+        Assert.Equal(4, table.Columns.Count);
+        Assert.Contains(table.Columns, c => c.ColumnName == "product_name" && c.DataType == "text");
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_IdentifiesPrimaryKeyAndIdentity()
+    {
+        using var conn = OpenOrSkip();
+        CreateProductsAndOrders(conn);
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
+
+        var table = schema.Tables.Single();
+        var idColumn = table.Columns.Single(c => c.ColumnName == "product_id");
+
+        Assert.True(idColumn.IsPrimaryKey);
+        Assert.True(idColumn.IsIdentity);
+        Assert.NotNull(table.PrimaryKey);
+        Assert.Contains("product_id", table.PrimaryKey!.Columns);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_IdentifiesCompositePrimaryKey()
+    {
+        using var conn = OpenOrSkip();
+        CreateCompositeKeyTable(conn);
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = [OrderItems] });
+
+        var table = schema.Tables.Single();
+        Assert.NotNull(table.PrimaryKey);
+        Assert.Equal(2, table.PrimaryKey!.Columns.Count);
+        Assert.All(table.Columns.Where(c => c.ColumnName is "order_id" or "line_number"), c => Assert.True(c.IsPrimaryKey));
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_IdentifiesGeneratedColumnAsComputed()
+    {
+        using var conn = OpenOrSkip();
+        CreateProductsAndOrders(conn);
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString, new SchemaReaderOptions { IncludeTables = [Products] });
+
+        var table = schema.Tables.Single();
+        var computed = table.Columns.Single(c => c.ColumnName == "full_label");
+        var plain = table.Columns.Single(c => c.ColumnName == "product_name");
+
+        Assert.True(computed.IsComputed);
+        Assert.False(plain.IsComputed);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_WithIncludeTables_FiltersCorrectly()
+    {
+        using var conn = OpenOrSkip();
+        CreateProductsAndOrders(conn);
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString,
+            new SchemaReaderOptions { IncludeTables = [Products, Orders] });
+
+        Assert.Equal(2, schema.Tables.Count(t => t.TableName == Products || t.TableName == Orders));
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_WithForeignKeys_ReadsForeignKeyInfo()
+    {
+        using var conn = OpenOrSkip();
+        CreateProductsAndOrders(conn);
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString,
+            new SchemaReaderOptions { IncludeTables = [Orders], IncludeForeignKeys = true });
+
+        var ordersTable = schema.Tables.Single(t => t.TableName == Orders);
+        var fk = Assert.Single(ordersTable.ForeignKeys);
+
+        Assert.Equal("product_id", fk.ForeignKeyColumn);
+        Assert.Equal(Products, fk.ReferencedTable);
+        Assert.Equal("product_id", fk.ReferencedColumn);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_CompositeForeignKey_OneRowPerColumnCorrectlyPaired()
+    {
+        using var conn = OpenOrSkip();
+        CreateCompositeKeyTable(conn);
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $"""
+                DROP TABLE IF EXISTS {Shipments};
+                CREATE TABLE {Shipments} (
+                    shipment_id SERIAL PRIMARY KEY,
+                    order_id INT NOT NULL,
+                    line_number INT NOT NULL,
+                    FOREIGN KEY (order_id, line_number)
+                        REFERENCES {OrderItems} (order_id, line_number)
+                );
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString,
+            new SchemaReaderOptions { IncludeTables = [Shipments], IncludeForeignKeys = true });
+
+        var table = schema.Tables.Single(t => t.TableName == Shipments);
+        Assert.Equal(2, table.ForeignKeys.Count);
+        Assert.Contains(table.ForeignKeys, fk =>
+            fk.ForeignKeyColumn == "order_id" && fk.ReferencedColumn == "order_id");
+        Assert.Contains(table.ForeignKeys, fk =>
+            fk.ForeignKeyColumn == "line_number" && fk.ReferencedColumn == "line_number");
+        Assert.All(table.ForeignKeys, fk => Assert.Equal(OrderItems, fk.ReferencedTable));
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_WithoutForeignKeys_DoesNotReadForeignKeys()
+    {
+        using var conn = OpenOrSkip();
+        CreateProductsAndOrders(conn);
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString,
+            new SchemaReaderOptions { IncludeTables = [Orders], IncludeForeignKeys = false });
+
+        var ordersTable = schema.Tables.Single(t => t.TableName == Orders);
+        Assert.Empty(ordersTable.ForeignKeys);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_WithIncludeSchemas_FiltersToMatchingSchemaOnly()
+    {
+        using var conn = OpenOrSkip();
+        CreateProductsAndOrders(conn);
+
+        var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+            TestConfiguration.PostgreSqlConnectionString,
+            new SchemaReaderOptions { IncludeTables = [Products], IncludeSchemas = ["nonexistent_schema"] });
+
+        Assert.Empty(schema.Tables);
+    }
+}

@@ -12,7 +12,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.WriteBack;
 /// </summary>
 public class WriteBackTests : IDisposable
 {
-    private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_writeback_tests_{Guid.NewGuid():N}");
+    private readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_writeback_tests_{Guid.NewGuid():N}");
     private readonly string _csvPath;
     private readonly DuckDb _db;
 
@@ -296,10 +296,42 @@ public class WriteBackTests : IDisposable
         Assert.Equal((byte)'1', bytes[3]);
     }
 
+    // AUD-R35-272: ".ndjson" is the one alias in InferFormatFromExtension's table, and nothing
+    // exercised it - the JSON inference tests all use ".json", so an export named .ndjson was
+    // never proven to be inferred at all rather than rejected as unsupported. The ".xlsx" arm is
+    // covered by JsonAndExcelRoundTripTests.
+    [Fact]
+    public async Task FormatInference_Ndjson_InfersJson()
+    {
+        var path = Path.Combine(DataDir, "inferred.ndjson");
+
+        await _db.ExportAsync<InventoryItem>(path);
+
+        Assert.True(File.Exists(path));
+        var lines = File.ReadAllLines(path).Where(l => l.Trim().Length != 0).ToList();
+        Assert.Equal(5, lines.Count);
+        Assert.All(lines, line => Assert.StartsWith("{", line.TrimStart(), StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task FormatInference_UnsupportedExtension_Throws()
     {
         var path = Path.Combine(DataDir, "bad.xyz");
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await _db.ExportAsync<InventoryItem>(path);
+        });
+    }
+
+    [Fact]
+    public async Task FormatInference_LegacyXls_Throws()
+    {
+        // AUD-R14 batch-7: ".xls" used to map to FileFormats.Excel here, but DuckDB's write path
+        // can only produce modern ".xlsx" content - writing that under a ".xls" name produced a
+        // file FlatFile.cs's read-side _extensionRegistry (which only registers ".xlsx") can never
+        // read back, and isn't a genuine legacy .xls file despite the extension. Now rejected like
+        // any other unsupported extension.
+        var path = Path.Combine(DataDir, "legacy.xls");
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
             await _db.ExportAsync<InventoryItem>(path);

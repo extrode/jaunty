@@ -31,6 +31,27 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
+    // AUD-R6: GridReader.ReadAsyncCore ignored CommandOptions<T>.ExpectedRowCount and always
+    // hardcoded new List<T>(16). ReadAsync<T> returns List<T> directly, so the pre-sized capacity
+    // is directly observable here.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadAsync_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategorySql(dialect, 2));
+
+        List<Category> categories = await gridReader.ReadAsync(CommandOptions<Category>.WithExpectedRowCount(500));
+
+        Assert.Equal(2, categories.Count);
+        Assert.True(categories.Capacity >= 500);
+    }
+
     [Theory]
     [SqlServer]
     [Postgres]
@@ -235,7 +256,6 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         Assert.True(count > 0);
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -302,7 +322,6 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
 
         Assert.Equal(3, categories.Count);
     }
-#endif
 
     #region ReadPartialFirstAsync / ReadPartialFirstOrDefaultAsync
 
@@ -479,7 +498,6 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
 
     #endregion
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -488,16 +506,15 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public async Task GridReader_DisposeAsync_ClosesReader(DialectInfo dialect)
     {
-        using var connection = _fixture.GetDbConnection(dialect);
+        using var connection = _fixture.GetClosedDbConnection(dialect);
         var gridReader = await connection.QueryMultipleAsync(FullCategorySql(dialect, 1));
 
         await gridReader.ReadFirstAsync<Category>();
         await gridReader.DisposeAsync();
 
-        // After DisposeAsync, the reader should be marked as consumed
-        // Verify no exception is thrown and reader is properly disposed
+        // GridReader self-opened the connection, so DisposeAsync should close it again.
+        Assert.Equal(ConnectionState.Closed, connection.State);
     }
-#endif
 
     [Theory]
     [SqlServer]
@@ -793,9 +810,7 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     public async Task GridReader_ReadAsync_WithMultipleResultSets_ReadsAll(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT 1; SELECT 2; SELECT 3"
-            : "SELECT 1; SELECT 2; SELECT 3";
+        const string sql = "SELECT 1; SELECT 2; SELECT 3";
 
         using var gridReader = await connection.QueryMultipleAsync(sql);
 
@@ -824,6 +839,30 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
 
         // Try to read again - should throw EnsureNotConsumed exception
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => gridReader.ReadScalarAsync<int>());
+        Assert.Contains("consumed", ex.Message.ToLower());
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadStreamAsync_AfterAllResultSetsConsumed_ThrowsImmediatelyWithoutEnumeration(DialectInfo dialect)
+    {
+        // Regression: ReadStreamAsync returns an IAsyncEnumerable<T>. Before the fix, the
+        // validation (EnsureNotConsumed, the DbDataReader guard) lived inside the async-iterator
+        // body, so misuse (calling ReadStreamAsync again on an already-consumed grid) only threw
+        // once the caller actually enumerated the result - a caller who merely obtained the
+        // enumerable without enumerating would not observe the failure at the point of misuse.
+        // ReadStreamAsync now validates eagerly, synchronously, before returning the enumerable -
+        // no await/enumeration required to observe the throw.
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync("SELECT 1");
+
+        await gridReader.ReadScalarAsync<int>();
+
+        var ex = Assert.Throws<InvalidOperationException>(() => gridReader.ReadStreamAsync<Category>());
         Assert.Contains("consumed", ex.Message.ToLower());
     }
 

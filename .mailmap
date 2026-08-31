@@ -1,0 +1,9 @@
+# Collapse every spelling of the author to one identity.
+#
+# Format: Canonical Name <canonical@email> <commit@email>
+# Git applies this to log, shortlog, blame and --author. It rewrites nothing:
+# the commit objects still carry the original author, so this is display only.
+#
+
+Syed Beparey <syed@beparey.com> <sy_github@maskx.com>
+Syed Beparey <syed@beparey.com> sbeparey <syed@beparey.com>

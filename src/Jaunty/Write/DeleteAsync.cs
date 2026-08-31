@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
+using Jaunty.Internals;
 using Jaunty.Interfaces;
 
 namespace Jaunty;
@@ -93,11 +94,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : DeleteByIdCoreAsync<T, TId>(dbConnection, id, default, cancellationToken);
@@ -110,11 +110,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : DeleteByIdCoreAsync<T, TId>(dbConnection, id, options, cancellationToken);

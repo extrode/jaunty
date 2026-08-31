@@ -41,10 +41,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -88,10 +90,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -135,10 +141,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -187,10 +195,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -211,6 +223,13 @@ public static partial class Jaunty
     /// <para>
     /// This overload automatically disposes the <see cref="GridReader"/> after the callback completes.
     /// </para>
+    /// <para>
+    /// <strong>Do not return a deferred sequence from the callback.</strong> <see cref="GridReader.ReadStream{T}"/>,
+    /// <see cref="GridReader.ReadPartialStream{T}"/> and their async twins return lazy iterators over the
+    /// underlying reader, which this overload has already disposed by the time the caller enumerates what
+    /// came back. Materialise inside the callback - <c>ToList()</c> - or use the overload that hands you the
+    /// <see cref="GridReader"/> to dispose yourself.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -228,14 +247,21 @@ public static partial class Jaunty
     public static async ValueTask QueryMultipleAsync(this IDbConnection connection, string sql, Action<GridReader> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await using var gridReaderDisposer = gridReader.ConfigureAwait(false);
         reader(gridReader);
     }
 
@@ -271,14 +297,21 @@ public static partial class Jaunty
     public static async ValueTask QueryMultipleAsync(this IDbConnection connection, string sql, Func<GridReader, Task> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await using var gridReaderDisposer = gridReader.ConfigureAwait(false);
         await reader(gridReader).ConfigureAwait(false);
     }
 
@@ -296,6 +329,13 @@ public static partial class Jaunty
     /// <remarks>
     /// <para>
     /// This overload automatically disposes the <see cref="GridReader"/> after the callback completes.
+    /// </para>
+    /// <para>
+    /// <strong>Do not return a deferred sequence from the callback.</strong> <see cref="GridReader.ReadStream{T}"/>,
+    /// <see cref="GridReader.ReadPartialStream{T}"/> and their async twins return lazy iterators over the
+    /// underlying reader, which this overload has already disposed by the time the caller enumerates what
+    /// came back. Materialise inside the callback - <c>ToList()</c> - or use the overload that hands you the
+    /// <see cref="GridReader"/> to dispose yourself.
     /// </para>
     /// </remarks>
     /// <example>
@@ -316,14 +356,21 @@ public static partial class Jaunty
     public static async ValueTask<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, TResult> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await using var gridReaderDisposer = gridReader.ConfigureAwait(false);
         return reader(gridReader);
     }
 
@@ -357,18 +404,25 @@ public static partial class Jaunty
     ///     new { Id = 1, CategoryId = 5 });
     /// </code>
     /// </example>
-    /// <seealso cref="QueryMultipleAsync{TResult}(IDbConnection, string, Func{GridReader, Task{TResult}}, object?, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="QueryMultiple{TResult}(IDbConnection, string, Func{GridReader, TResult}, object?, CommandOptions)"/>
     public static async ValueTask<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, Task<TResult>> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await using var gridReaderDisposer = gridReader.ConfigureAwait(false);
         return await reader(gridReader).ConfigureAwait(false);
     }
 }

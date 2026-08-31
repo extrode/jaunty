@@ -9,13 +9,14 @@ public class PostgreSqlTypeMapperTests
 {
     private readonly PostgreSqlTypeMapper _mapper = new();
 
-    private static ColumnSchema CreateColumn(string dataType, bool isNullable = false) =>
+    private static ColumnSchema CreateColumn(string dataType, bool isNullable = false, int? maxLength = null) =>
         new()
         {
             ColumnName = "test_column",
             DataType = dataType,
             IsNullable = isNullable,
-            OrdinalPosition = 1
+            OrdinalPosition = 1,
+            MaxLength = maxLength
         };
 
     // ------------------------------------------------------------------
@@ -46,6 +47,22 @@ public class PostgreSqlTypeMapperTests
     [InlineData("int8", "long")]
     public void MapToCSharpType_IntegerTypes_MapsCorrectly(string sqlType, string expected)
     {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal(expected, result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Theory]
+    [InlineData("serial", "int")]
+    [InlineData("serial4", "int")]
+    [InlineData("bigserial", "long")]
+    [InlineData("serial8", "long")]
+    [InlineData("smallserial", "short")]
+    [InlineData("serial2", "short")]
+    public void MapToCSharpType_SerialAliases_MapsToIdentityColumnType(string sqlType, string expected)
+    {
+        // serial/bigserial/smallserial are the most commonly-used identity-column type
+        // aliases in Postgres primary keys.
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
         Assert.Equal(expected, result.TypeName);
         Assert.True(result.IsValueType);
@@ -96,6 +113,16 @@ public class PostgreSqlTypeMapperTests
     public void MapToCSharpType_TextTypes_ReturnsString(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("string", result.TypeName);
+        Assert.False(result.IsValueType);
+    }
+
+    [Fact]
+    public void MapToCSharpType_Bpchar_ReturnsString()
+    {
+        // The schema reader supplies udt_name, not information_schema.data_type - "bpchar" is
+        // the real wire value for fixed-length CHAR(n)/CHARACTER(n) columns.
+        var result = _mapper.MapToCSharpType(CreateColumn("bpchar"));
         Assert.Equal("string", result.TypeName);
         Assert.False(result.IsValueType);
     }
@@ -161,15 +188,111 @@ public class PostgreSqlTypeMapperTests
     // Network / other types that map to string
     // ------------------------------------------------------------------
 
+    /// <summary>
+    /// AUD-R35-037. cidr stays string: Npgsql returns NpgsqlCidr, a driver type, and emitting it
+    /// would put a package reference into every scaffolded entity. That is the caller's decision,
+    /// not this mapper's, so string remains the lossless-round-trip fallback.
+    /// </summary>
     [Theory]
-    [InlineData("inet")]
     [InlineData("cidr")]
-    [InlineData("macaddr")]
     [InlineData("xml")]
-    public void MapToCSharpType_NetworkAndXmlTypes_ReturnsString(string sqlType)
+    public void MapToCSharpType_CidrAndXmlTypes_ReturnsString(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
         Assert.Equal("string", result.TypeName);
+    }
+
+    /// <summary>
+    /// AUD-R35-037. inet and macaddr came back as string, but Npgsql hands the reader an IPAddress
+    /// and a PhysicalAddress - both BCL types - so the scaffolded property threw on read rather
+    /// than being merely imprecise.
+    /// </summary>
+    [Theory]
+    [InlineData("inet", "IPAddress", "System.Net")]
+    [InlineData("macaddr", "PhysicalAddress", "System.Net.NetworkInformation")]
+    [InlineData("macaddr8", "PhysicalAddress", "System.Net.NetworkInformation")]
+    public void MapToCSharpType_NetworkTypes_ReturnsTheBclType(
+        string sqlType, string expected, string expectedUsing)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal(expected, result.TypeName);
+        Assert.False(result.IsValueType);
+        Assert.Equal(expectedUsing, result.RequiredUsing);
+    }
+
+    /// <summary>
+    /// AUD-R35-037. timetz carries a UTC offset that TimeOnly has nowhere to put.
+    /// </summary>
+    [Theory]
+    [InlineData("timetz")]
+    [InlineData("time with time zone")]
+    public void MapToCSharpType_TimeWithTimeZone_ReturnsDateTimeOffset(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("DateTimeOffset", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    // ------------------------------------------------------------------
+    // Bit strings
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("bit")]
+    [InlineData("bit varying")]
+    [InlineData("varbit")]
+    public void MapToCSharpType_MaxLengthOneBitStringTypes_ReturnsBool(string sqlType)
+    {
+        // bit(1)/bit varying(1) follow the common single-bit boolean-flag convention.
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: 1));
+        Assert.Equal("bool", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Theory]
+    [InlineData("bit")]
+    [InlineData("bit varying")]
+    [InlineData("varbit")]
+    public void MapToCSharpType_WiderBitStringTypes_ReturnsBitArray(string sqlType)
+    {
+        // AUD-R35-038: bit varying(64) etc. hold more than one bit and must not be collapsed to
+        // bool - but nor to ulong, which is what Npgsql never returns and which cannot hold a
+        // bit(n) for n > 64 at all.
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: 64));
+        Assert.Equal("BitArray", result.TypeName);
+        Assert.False(result.IsValueType);
+        Assert.Equal("System.Collections", result.RequiredUsing);
+    }
+
+    [Theory]
+    [InlineData("bit")]
+    [InlineData("bit varying")]
+    [InlineData("varbit")]
+    public void MapToCSharpType_BitStringWithoutMaxLength_ReturnsBitArray(string sqlType)
+    {
+        // No MaxLength at all (e.g. unbounded "bit varying") must NOT be treated as bit(1).
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: null));
+        Assert.Equal("BitArray", result.TypeName);
+        Assert.False(result.IsValueType);
+    }
+
+    // ------------------------------------------------------------------
+    // Geometric types
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("point")]
+    [InlineData("line")]
+    [InlineData("lseg")]
+    [InlineData("box")]
+    [InlineData("path")]
+    [InlineData("polygon")]
+    [InlineData("circle")]
+    public void MapToCSharpType_GeometricTypes_ReturnsString(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("string", result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     // ------------------------------------------------------------------
@@ -193,5 +316,23 @@ public class PostgreSqlTypeMapperTests
     {
         var result = _mapper.MapToCSharpType(CreateColumn("user_defined_type_xyz"));
         Assert.Equal("object", result.TypeName);
+    }
+
+    // AUD-R18 batch-8: RequiredUsing exists so EntityCodeGenerator.AppendUsings can emit
+    // "using System;" for types like Guid/DateOnly that aren't in scope without ImplicitUsings -
+    // no mapper populated it, so generated code failed to compile with ImplicitUsings disabled.
+    [Theory]
+    [InlineData("date")]
+    [InlineData("time")]
+    [InlineData("time without time zone")]
+    [InlineData("time with time zone")]
+    [InlineData("timestamp")]
+    [InlineData("timestamp with time zone")]
+    [InlineData("interval")]
+    [InlineData("uuid")]
+    public void MapToCSharpType_SystemNamespaceTypes_SetsRequiredUsing(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("System", result.RequiredUsing);
     }
 }

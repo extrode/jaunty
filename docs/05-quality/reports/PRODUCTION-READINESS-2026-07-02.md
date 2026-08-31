@@ -2,9 +2,9 @@
 
 ## Scope and Method
 
-- Full local validation on branch `dev` (commit `7b57cc0`): `dotnet build Jaunty.slnx -c Release`, full test suites per project, package metadata audit, dependency vulnerability scan, secrets scan, CI workflow review, documentation review.
+- Full local validation on branch `dev` (commit `aea430f`): `dotnet build Jaunty.slnx -c Release`, full test suites per project, package metadata audit, dependency vulnerability scan, secrets scan, CI workflow review, documentation review.
 - Unlike the 2026-03-03 report (source/document review only), this assessment executed the build and the complete test suite.
-- Supersedes: [PRODUCTION-READINESS-2026-03-03.md](PRODUCTION-READINESS-2026-03-03.md).
+- Supersedes: [PRODUCTION-READINESS-2026-03-03.md](../../99-archive/PRODUCTION-READINESS-2026-03-03.md).
 
 ## Verdict
 
@@ -60,7 +60,7 @@ Observed during the Release build (before it aborted): `CS8603` in `src/Jaunty.F
 
 ### D3 — PRD-001 (schema-safe ordinal cache) still open
 
-The March P0 — source-generated mapper ordinal cache vulnerable to stale mappings when result shape changes — is marked "In Progress ... runtime validation pending" and no completing commit was found. The generator's `CacheEntry` uses an `_initialized` boolean rather than shape validation (per commit history `8dc2257`, `3a02660`). This remains the top correctness risk for the source-generated path.
+The March P0 — source-generated mapper ordinal cache vulnerable to stale mappings when result shape changes — is marked "In Progress ... runtime validation pending" and no completing commit was found. The generator's `CacheEntry` uses an `_initialized` boolean rather than shape validation (per commit history `9d307b7`, `4386abd`). This remains the top correctness risk for the source-generated path.
 
 ## Missing for Production
 
@@ -77,7 +77,7 @@ The March P0 — source-generated mapper ordinal cache vulnerable to stale mappi
 
 - `PackageLicenseFile` / license asset packed into the nupkg (critical: the license is a custom proprietary one, so nuget.org will reject or mislabel the package without an explicit license file; `PackageRequireLicenseAcceptance` should also be considered).
 - `PackageReadmeFile`, `PackageIcon`.
-- `GenerateDocumentationFile` (XML docs were written — merge `717498c` — but are not packed).
+- `GenerateDocumentationFile` (XML docs were written — merge `a0c9626` — but are not packed).
 - SourceLink / `PublishRepositoryUrl` / `EmbedUntrackedSources` / `ContinuousIntegrationBuild` / symbol packages (`snupkg`).
 - Only the FlatFiles projects set `PackageTags`.
 
@@ -89,7 +89,7 @@ CI runs 97 SQLite tests + FlatFiles/DuckDB. Not run in CI: 3,492 core tests (SQL
 
 ### M4 — Documentation staleness and conflicts
 
-- `PRODUCTION-READINESS-TASKLIST.md` was last updated 2026-03-03 and does not reflect merged work (interception/logging `a5f9254` fulfills PRD-010; XML docs merged).
+- `PRODUCTION-READINESS-TASKLIST.md` was last updated 2026-03-03 and does not reflect merged work (interception/logging `6f2eac6` fulfills PRD-010; XML docs merged).
 - Multiple overlapping status/assessment documents (already flagged as P1 finding #6 in March) remain unconsolidated.
 - No `SECURITY.md` / vulnerability-reporting policy — expected for a data-access library asking for production trust.
 
@@ -99,7 +99,7 @@ CI runs 97 SQLite tests + FlatFiles/DuckDB. Not run in CI: 3,492 core tests (SQL
 - **Dependencies**: `dotnet list package --vulnerable` and `--deprecated` are clean for the core package.
 - **Code hygiene**: zero `TODO`/`FIXME`/`HACK` comments in `src/` and `tests/`; all `NotSupportedException` usages are legitimate documented guards.
 - **Secrets**: no credentials in the repo (test appsettings use localhost with empty passwords).
-- **Features shipped since March**: command interception pipeline (`ICommandInterceptor`, `InterceptorPipeline`, `LoggingInterceptor`, `AuditInterceptor`) with sensitive-parameter redaction (closes PRD-010); complete XML documentation; DI integration design in progress (`7b57cc0`).
+- **Features shipped since March**: command interception pipeline (`ICommandInterceptor`, `InterceptorPipeline`, `LoggingInterceptor`, `AuditInterceptor`) with sensitive-parameter redaction (closes PRD-010); complete XML documentation; DI integration design in progress (`aea430f`).
 - **CI structure**: sound skeleton (restore/build/test/AOT verify/AOT publish, NuGet caching, concurrency groups) — it just fails at the build step and under-tests.
 
 ## Recommended Path to Production

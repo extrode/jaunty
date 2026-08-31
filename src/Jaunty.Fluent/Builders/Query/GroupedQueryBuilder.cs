@@ -1,13 +1,15 @@
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -22,7 +24,6 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private readonly List<WhereCondition> _whereConditions;
     private readonly ParameterCollection _parameters;
     private readonly string[] _groupByColumns;
-    private readonly Expression<Func<T, TKey>> _keySelector;
     private readonly List<string> _havingConditions = [];
 
     internal GroupedQueryBuilder(IDbConnection connection, ISqlDialect dialect, List<WhereCondition> whereConditions,
@@ -33,7 +34,6 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         _metadata = FluentMetadataCache.GetMetadata<T>();
         _whereConditions = whereConditions;
         _parameters = parameters;
-        _keySelector = keySelector;
         _groupByColumns = ExtractGroupByColumns(keySelector);
     }
 
@@ -44,21 +44,73 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return this;
     }
 
-    public List<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    public List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+        => Select(selector, default);
+
+    // AUD-R26-060: this builder creates and executes its own command rather than delegating to
+    // core, and until now that meant it silently ignored the caller's transaction and timeout -
+    // there was no overload to pass them through at all. See FluentCommandOptions.
+    public List<TResult> Select<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
     {
         var sql = BuildSelectSql(selector);
-        return ExecuteQuery<TResult>(sql, selector);
+        return ExecuteQuery<TResult>(sql, selector, options);
     }
 
-    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken = default)
+    public Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken = default)
+        => SelectAsync(selector, default, cancellationToken);
+
+    public async Task<List<TResult>> SelectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(selector);
-        return await ExecuteQueryAsync<TResult>(sql, selector, cancellationToken).ConfigureAwait(false);
+        return await ExecuteQueryAsync<TResult>(sql, selector, options, cancellationToken).ConfigureAwait(false);
     }
 
     public string ToSql<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
     {
         return BuildSelectSql(selector);
+    }
+
+    /// <summary>
+    /// Folds WHERE conditions left-to-right, wrapping each step in parentheses so the
+    /// generated SQL evaluates in the same order the fluent Where/And/Or chain was built,
+    /// instead of relying on SQL's AND-before-OR operator precedence.
+    /// </summary>
+    private static string BuildWhereExpression(List<WhereCondition> conditions)
+    {
+        var expr = conditions[0].Sql;
+
+        for (var i = 1; i < conditions.Count; i++)
+        {
+            var condition = conditions[i];
+            var op = condition.Operator == LogicalOperator.Or ? "OR" : "AND";
+            expr = $"({expr} {op} {condition.Sql})";
+        }
+
+        return expr;
     }
 
     private string BuildSelectSql<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
@@ -84,15 +136,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         if (_whereConditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _whereConditions.Count; i++)
-            {
-                WhereCondition condition = _whereConditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_whereConditions));
         }
 
         // GROUP BY
@@ -117,27 +161,47 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return sb.ToString();
     }
 
-    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    private List<TResult> ExecuteQuery<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
+        => CommandObservation.Execute(
+            sql, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
+            () => ExecuteQueryDirect(sql, selector, options));
+
+    private List<TResult> ExecuteQueryDirect<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
     {
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
-        (string[] _, string[]? aliases) = visitor.TranslateSelect(selector);
+        (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
+        FluentCommandOptions.Apply(command, _connection, options);
         BindParameters(command);
+
+        CommandObservation.Log(sql, _parameters.ToParameterObject());
 
         var wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) _connection.Open();
         try
         {
             using IDataReader reader = command.ExecuteReader();
-            Type resultType = typeof(TResult);
 
             while (reader.Read())
             {
-                TResult? result = MapResult<TResult>(reader, aliases, selector);
+                TResult? result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -149,19 +213,40 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return results;
     }
 
-    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken)
+    private async Task<List<TResult>> ExecuteQueryAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+        => await CommandObservation.ExecuteAsync(
+            sql, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
+            () => ExecuteQueryDirectAsync(sql, selector, options, cancellationToken), cancellationToken).ConfigureAwait(false);
+
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConn)
-            return ExecuteQuery(sql, selector);
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
-        (string[] _, string[]? aliases) = visitor.TranslateSelect(selector);
+        (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
         using DbCommand command = dbConn.CreateCommand();
         command.CommandText = sql;
+        FluentCommandOptions.Apply(command, dbConn, options);
         BindParameters(command);
+
+        CommandObservation.Log(sql, _parameters.ToParameterObject());
 
         bool wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -172,7 +257,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                TResult? result = MapResult(reader, aliases, selector);
+                TResult? result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -184,67 +269,11 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return results;
     }
 
-    private TResult MapResult<TResult>(IDataReader reader, string[] aliases, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
-    {
-        Type resultType = typeof(TResult);
-
-        // For anonymous types, we need to use the constructor
-#pragma warning disable IL2090 // Reflection on generic parameter for result mapping
-        if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
-        {
-            var values = new object?[aliases.Length];
-
-            ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
-
-            if (constructor is not null)
-            {
-                ParameterInfo[] parameters = constructor.GetParameters();
-
-                for (int i = 0; i < aliases.Length; i++)
-                {
-                    int ordinal = reader.GetOrdinal(aliases[i]);
-
-                    if (!reader.IsDBNull(ordinal))
-                    {
-                        object value = reader.GetValue(ordinal);
-                        Type targetType = parameters[i].ParameterType;
-                        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                        values[i] = Convert.ChangeType(value, underlyingType);
-                    }
-                }
-#pragma warning restore IL2090
-                return (TResult)constructor.Invoke(values);
-            }
-        }
-
-        // For regular classes/structs
-#pragma warning disable IL2091 // Activator.CreateInstance requires public parameterless constructor
-        TResult? instance = Activator.CreateInstance<TResult>();
-#pragma warning restore IL2091
-        for (int i = 0; i < aliases.Length; i++)
-        {
-
-#pragma warning disable IL2090
-            PropertyInfo? property = resultType.GetProperty(aliases[i]);
-#pragma warning restore IL2090
-
-            if (property is not null && property.CanWrite)
-            {
-                int ordinal = reader.GetOrdinal(aliases[i]);
-
-                if (!reader.IsDBNull(ordinal))
-                {
-                    object value = reader.GetValue(ordinal);
-                    Type targetType = property.PropertyType;
-                    Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                    object converted = Convert.ChangeType(value, underlyingType);
-                    property.SetValue(instance, converted);
-                }
-            }
-        }
-
-        return instance;
-    }
+    // AUD-R25: ResultMapperPlan, ResolveResultMapperPlan and MapResult used to live here as a
+    // byte-for-byte private copy of GroupedJoinedResultMapper's, right down to the per-row
+    // GetOrdinal call. ConvertColumnValue was already shared with that type "so they can't drift
+    // out of sync with each other"; the rest now is too, so the ordinal caching added there
+    // benefits this builder as well instead of leaving the two halves divergent.
 
     private string[] ExtractGroupByColumns(Expression<Func<T, TKey>> keySelector)
     {
@@ -288,25 +317,54 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
     private string TranslateHavingPredicate(Expression<Func<IGrouping<TKey, T>, bool>> predicate)
     {
-        Expression body = predicate.Body;
-
-        if (body is BinaryExpression binary)
-        {
-            object left = TranslateHavingExpression(binary.Left);
-            object right = TranslateHavingExpression(binary.Right);
-            object op = GetSqlOperator(binary.NodeType);
-            return $"{left} {op} {right}";
-        }
-
-        throw new NotSupportedException($"HAVING predicate type '{body.NodeType}' is not supported.");
+        return TranslateHavingExpression(predicate.Body);
     }
 
+    /// <summary>
+    /// Recursively translates a HAVING predicate. Top-level and nested AndAlso/OrElse
+    /// combinators (e.g. <c>g => g.Count() > 5 &amp;&amp; g.Sum(x => x.Foo) > 10</c>) are handled
+    /// by translating both operands and joining them with the mapped SQL operator; comparison
+    /// operators bottom out in <see cref="TranslateHavingOperand"/> for each side.
+    /// </summary>
     private string TranslateHavingExpression(Expression expr)
     {
+        if (expr is UnaryExpression convert && convert.NodeType == ExpressionType.Convert)
+            expr = convert.Operand;
+
+        if (expr is BinaryExpression binary)
+        {
+            string op = GetSqlOperator(binary.NodeType);
+
+            if (binary.NodeType is ExpressionType.AndAlso or ExpressionType.OrElse)
+            {
+                string left = TranslateHavingExpression(binary.Left);
+                string right = TranslateHavingExpression(binary.Right);
+                return $"({left} {op} {right})";
+            }
+
+            string leftOperand = TranslateHavingOperand(binary.Left);
+            string rightOperand = TranslateHavingOperand(binary.Right);
+            return $"{leftOperand} {op} {rightOperand}";
+        }
+
+        return TranslateHavingOperand(expr);
+    }
+
+    /// <summary>
+    /// Translates one side of a HAVING comparison: an aggregate method call (COUNT/SUM/...), or
+    /// a value (literal constant, captured local, or method parameter) which is bound as a
+    /// query parameter rather than being inlined into the SQL text, matching how every WHERE
+    /// value in this codebase is parameterized.
+    /// </summary>
+    private string TranslateHavingOperand(Expression expr)
+    {
+        if (expr is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            expr = unary.Operand;
+
         // g.Count() > 5
         if (expr is MethodCallExpression methodCall)
         {
-            object methodName = methodCall.Method.Name;
+            string methodName = methodCall.Method.Name;
 
             return methodName switch
             {
@@ -322,19 +380,38 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
         // Constants
         if (expr is ConstantExpression constant)
-        {
-            return constant.Value is null
-                ? "NULL"
-                : constant.Value is string s
-                ? $"'{s.Replace("'", "''")}'"
-                : constant.Value is bool b
-                ? b
-                    ? "1"
-                    : "0"
-                        : constant.Value.ToString() ?? "NULL";
-        }
+            return AddHavingParameter(constant.Value);
+
+        // Captured local variables, method parameters, and other closed-over values
+        // (e.g. `.Having(g => g.Count() > minFilms)`) compile to a MemberExpression
+        // over a compiler-generated closure class, not a ConstantExpression. Evaluate
+        // it the same way WhereExpressionVisitor/JoinExpressionVisitor/etc. already do.
+        if (expr is MemberExpression or UnaryExpression)
+            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr));
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
+    }
+
+    /// <summary>
+    /// Adds a HAVING operand value as a bound query parameter and returns its placeholder name,
+    /// instead of inlining it into the SQL text (which previously quote-doubled strings and
+    /// left the value vulnerable to injection/culture-formatting bugs).
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-016. The name used to be <c>{prefix}hp{_havingParamSeq++}</c> from an instance field
+    /// starting at 0, while <c>_parameters</c> is the <em>parent</em> <c>QueryBuilder</c>'s
+    /// collection, handed over by reference rather than cloned (<c>QueryBuilder.GroupBy</c>). Two
+    /// groupings off one query - each perfectly valid and independent - therefore both minted
+    /// <c>@hp0</c> into the same collection and the second threw
+    /// <c>ArgumentException: A parameter named '@hp0' has already been added</c>, on a name the
+    /// caller never chose. Deriving the name from the collection it is added to cannot collide by
+    /// construction; the counter could only ever be right for one builder at a time.
+    /// </remarks>
+    private string AddHavingParameter(object? value)
+    {
+        string name = _parameters.CreateUniqueName(_dialect.ParameterPrefix, "hp");
+        _parameters.Add(name, value);
+        return name;
     }
 
     private string BuildHavingAggregate(string aggregate, Expression selectorExpr)
@@ -352,23 +429,27 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             if (body is MemberExpression memberExpr)
             {
                 string columnName = GetColumnName(memberExpr.Member.Name);
-                return $"{aggregate}({_dialect.EscapeColumnName(columnName)})";
+                string operand = _dialect.EscapeColumnName(columnName);
+
+                // AUD-R35-066: a truncated AVG changes which groups a HAVING keeps, not just the
+                // value reported - HAVING AVG(qty) > 12.5 is false for a group averaging 12.6 once
+                // the engine has floored it to 12.
+                return aggregate == "AVG"
+                    ? FractionalAverage.Generate(_dialect, operand)
+                    : $"{aggregate}({operand})";
             }
         }
 
         throw new NotSupportedException("Cannot extract column from HAVING aggregate expression.");
     }
 
-    private string GetColumnName(string propertyName)
-    {
-        IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
-
-        for (int i = 0; i < columns.Count; i++)
-            if (columns[i].Property.Name == propertyName)
-                return columns[i].ColumnName;
-
-        return propertyName;
-    }
+        // AUD-R26-058: the raw-name half of the same AUD-R25 conversion. This one never
+        // re-escaped, so it was only the linear scan - but CachedDialectMetadata already holds a
+        // property-name to raw-column-name dictionary for exactly this (RawColumns exists because a
+        // column reference feeds both the SQL text, which must be escaped, and the parameter name,
+        // which must not be), and the fallback to the property name is the same.
+    private string GetColumnName(string propertyName) =>
+        FluentMetadataCache.GetForDialect<T>(_dialect).GetRawColumnName(propertyName);
 
     private static string GetSqlOperator(ExpressionType nodeType) => nodeType switch
     {
@@ -383,19 +464,42 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         _ => throw new NotSupportedException($"Operator '{nodeType}' is not supported.")
     };
 
+    /// <summary>
+    /// Binds all accumulated parameters directly to the command via raw ADO.NET. Unlike
+    /// QueryBuilder/CteBuilder/SetOperationBuilder, which execute through Jaunty's core
+    /// Query&lt;T&gt;/ParameterBinder, this builder binds directly to support arbitrary projected
+    /// shapes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26 (batch 5, medium/bug). This used to route every value through a local
+    /// <c>NormalizeForBinding</c> that coerced any <see cref="decimal"/> to <see cref="double"/> -
+    /// <c>value is decimal d ? (double)d : value</c> - unconditionally and on every dialect, on the
+    /// strength of one provider's behaviour. It now asks the dialect, via
+    /// <see cref="DecimalParameterBinding"/>: SQLite still gets the conversion, and SQL Server,
+    /// PostgreSQL and MySQL no longer have a <c>DECIMAL(19,4)</c> or <c>NUMERIC</c> comparison
+    /// downgraded to binary floating point on another engine's behalf.
+    /// </para>
+    /// <para>
+    /// This builder is where the conversion earns its place, and it is why removing it outright did
+    /// not survive. Every parameter it binds for a HAVING clause is compared against an
+    /// <em>aggregate expression</em>, which is exactly the case both SQLite providers get wrong:
+    /// they bind a <see cref="decimal"/> as TEXT, SQLite has no column affinity to apply to an
+    /// expression operand, and TEXT sorts above every number - so
+    /// <c>HAVING SUM(price) &gt; @p</c> matches no group and <c>&lt; @p</c> matches every group,
+    /// whatever the values are. Four <c>GroupBy</c>/<c>Having</c> integration tests turn red without
+    /// it. See <see cref="IDecimalBindingDialect"/> for the measurements.
+    /// </para>
+    /// </remarks>
     private void BindParameters(IDbCommand command)
     {
-        object? paramObj = _parameters.ToParameterObject();
-
-        if (paramObj is IDictionary<string, object?> dict)
+        foreach ((string name, object? value) in _parameters.GetAll())
         {
-            foreach (KeyValuePair<string, object?> kvp in dict)
-            {
-                IDbDataParameter p = command.CreateParameter();
-                p.ParameterName = kvp.Key;
-                p.Value = kvp.Value ?? DBNull.Value;
-                command.Parameters.Add(p);
-            }
+            IDbDataParameter p = command.CreateParameter();
+            p.ParameterName = name;
+            p.Value = DecimalParameterBinding.Normalize(_dialect, value) ?? DBNull.Value;
+            command.Parameters.Add(p);
         }
     }
+
 }

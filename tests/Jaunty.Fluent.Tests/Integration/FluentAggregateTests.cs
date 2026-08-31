@@ -199,4 +199,22 @@ public class FluentAggregateTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.Equal(count1, count2);
     }
+
+    // --- NonDbConnection async guard ---
+
+    [Fact]
+    public async Task CountAsync_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => query.CountAsync());
+    }
+
+    [Fact]
+    public async Task SumAsync_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => query.SumAsync(p => p.SupplierId));
+    }
 }

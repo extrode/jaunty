@@ -40,8 +40,8 @@ namespace Jaunty.Core;
 /// var options = CommandOptions&lt;Product&gt;.AsStoredProcedure();
 /// var products = connection.Query("GetAllProducts", options: options);
 /// 
-/// // Combine multiple options
-/// var options = CommandOptions&lt;Product&gt;.WithTransaction(tx).WithTimeout(60);
+/// // Combine multiple options - use the constructor directly, or With(mapper, transaction, timeoutSeconds)
+/// var options = new CommandOptions&lt;Product&gt;(transaction: tx, commandTimeout: 60);
 /// 
 /// // Pre-size list for large result sets
 /// var options = CommandOptions&lt;Product&gt;.WithExpectedRowCount(10000);
@@ -71,7 +71,7 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <remarks>
     /// If null, the connection's default command timeout is used.
     /// </remarks>
-    public readonly int? CommandTimeout = commandTimeout;
+    public readonly int? CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
 
     /// <summary>
     /// Gets the type of command to execute.
@@ -88,8 +88,17 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <remarks>
     /// This is a hint used to pre-size the internal list for better performance
     /// when the approximate result size is known. If not specified, a default capacity is used.
+    /// <para>
+    /// AUD-R35-122: normalised on the way in, so a hint can never abort the query it was meant to
+    /// speed up. A non-positive value reads as "no hint" and falls back to
+    /// <see cref="Configuration.JauntyConfig.QueryResultCapacity"/> - matching that property's own
+    /// setter, which clamps the same way - and anything above
+    /// <c>CapacityHint.MaxExpectedRowCount</c> (1,048,576) is capped, so a mistyped value cannot
+    /// allocate its way to <see cref="OutOfMemoryException"/> before the first row is read. The
+    /// value read back here is therefore the normalised one, not the one passed in.
+    /// </para>
     /// </remarks>
-    public readonly int? ExpectedRowCount = expectedRowCount;
+    public readonly int? ExpectedRowCount = global::Jaunty.Internals.CapacityHint.Normalize(expectedRowCount);
 
     /// <summary>
     /// Creates a new <see cref="CommandOptions{T}"/> with the specified mapper function.
@@ -118,8 +127,13 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// <summary>
     /// Creates a new <see cref="CommandOptions{T}"/> with the specified timeout.
     /// </summary>
-    /// <param name="seconds">The command timeout in seconds.</param>
+    /// <param name="seconds">The command timeout in seconds. Zero means no timeout.</param>
     /// <returns>A new <see cref="CommandOptions{T}"/> instance with the specified timeout.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// AUD-R35-149. <paramref name="seconds"/> is negative. This used to be accepted here and to
+    /// surface as a provider-specific exception from inside command execution, naming nothing the
+    /// caller had written.
+    /// </exception>
     public static CommandOptions<T> WithTimeout(int seconds) => new(commandTimeout: seconds);
 
     /// <summary>
@@ -152,7 +166,83 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// </summary>
     /// <param name="options">The generic command options to convert.</param>
     /// <returns>A non-generic <see cref="CommandOptions"/> with the same transaction, timeout, and command type.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b><see cref="Mapper"/> and <see cref="ExpectedRowCount"/> do not survive this conversion</b>,
+    /// and because it is <em>implicit</em> there is no cast at the call site to say so: passing a
+    /// <c>CommandOptions&lt;Product&gt;</c> to an API whose parameter is the non-generic
+    /// <see cref="CommandOptions"/> compiles clean and silently drops both.
+    /// </para>
+    /// <para>
+    /// AUD-R26-054 (batch 4, low/consistency). Neither field can be carried: <see cref="CommandOptions"/>
+    /// has no member for either one, and <see cref="Mapper"/> is typed on <typeparamref name="T"/>,
+    /// so a non-generic target could not hold it even if a field were added. The conversion is left
+    /// implicit rather than made explicit because that would be a source-breaking change to a
+    /// shipped public API.
+    /// </para>
+    /// <para>
+    /// It is documented rather than fixed because as of this writing nothing can be lost that the
+    /// destination could have used. Every public API taking a non-generic <see cref="CommandOptions"/>
+    /// is a scalar read, a non-query, a dictionary projection, or a multi-entity overload that takes
+    /// its <c>map</c> delegate as an explicit parameter - none consults a mapper, and none builds a
+    /// list a row-count hint could pre-size. That is a property of the current API surface, not a
+    /// guarantee: <b>an API that maps entities must take <see cref="CommandOptions{T}"/>, never the
+    /// non-generic form</b>, or this conversion starts losing a mapper the caller supplied.
+    /// </para>
+    /// </remarks>
     public static implicit operator CommandOptions(CommandOptions<T> options) => new(options.Transaction, options.CommandTimeout, options.CommandType);
+
+    /// <summary>
+    /// Implicitly converts a non-generic <see cref="CommandOptions"/> to a
+    /// <see cref="CommandOptions{T}"/>, carrying the transaction, timeout and command type.
+    /// </summary>
+    /// <param name="options">The non-generic command options to convert.</param>
+    /// <returns>A <see cref="CommandOptions{T}"/> with no mapper and no row-count hint.</returns>
+    /// <remarks>
+    /// <para>
+    /// AUD-R34-002 (high, design flaw in the overload set). Every entity-mapping API pairs an
+    /// <c>(IDbConnection, string sql, object parameters)</c> overload with an
+    /// <c>(IDbConnection, string sql, CommandOptions&lt;T&gt; options)</c> one. Without this
+    /// conversion a non-generic <see cref="CommandOptions"/> - which is what
+    /// <see cref="CommandOptions.WithTransaction"/> and <see cref="CommandOptions.WithTimeout"/>
+    /// return - was not convertible to <c>CommandOptions&lt;T&gt;</c>, so the only applicable
+    /// candidate was <c>object parameters</c>. The caller's options were bound as a parameters
+    /// object, no properties were found on a struct exposing public fields, zero parameters bound,
+    /// nothing was reported, and <b>the transaction or timeout was silently discarded</b>. The
+    /// repo's own tests made that mistake in three places.
+    /// </para>
+    /// <para>
+    /// The conversion is what fixes it, and it fixes it for every arity of every entity API at
+    /// once: overload resolution prefers the conversion to <c>CommandOptions&lt;T&gt;</c> over the
+    /// boxing conversion to <c>object</c>, because <c>CommandOptions&lt;T&gt;</c> converts to
+    /// <c>object</c> and <c>object</c> does not convert back - the better-conversion-target rule.
+    /// So the call that used to bind to <c>object parameters</c> now binds to the overload the
+    /// caller meant, with no source change on their side.
+    /// </para>
+    /// <para>
+    /// <see cref="Mapper"/> and <see cref="ExpectedRowCount"/> are null on the result, which loses
+    /// nothing: the source type has no member for either. Round-tripping through the non-generic
+    /// form still drops them - see the conversion above.
+    /// </para>
+    /// <para>
+    /// <b>The two conversions are now mutually implicit, which constrains what can be added to this
+    /// API.</b> Neither type is a better common type than the other, so an expression that must pick
+    /// one is ambiguous: <c>cond ? CommandOptions.WithTimeout(1) : CommandOptions&lt;Row&gt;.WithMapper(m)</c>
+    /// is CS0172 and <c>new[] { genericOptions, nonGenericOptions }</c> is CS0826, where before this
+    /// operator both resolved to the non-generic form. Both are narrow source breaks with an obvious
+    /// remedy (annotate the type). The forward-looking constraint matters more: <b>an overload group
+    /// must not offer both <see cref="CommandOptions"/> and <see cref="CommandOptions{T}"/> at the
+    /// same argument position</b>, because a <c>default</c> argument there would be CS0121 with no
+    /// unique best target. No group in this library does.
+    /// </para>
+    /// <para>
+    /// Binary compatibility is unaffected - adding a conversion operator is additive, and compiled
+    /// consumers keep their existing bindings. On <i>recompile</i>, though, a call site that was
+    /// silently dropping a transaction or timeout starts honouring it with no source diff, so this
+    /// belongs in release notes as a behaviour change rather than a pure bug fix.
+    /// </para>
+    /// </remarks>
+    public static implicit operator CommandOptions<T>(CommandOptions options) => new(null, options.Transaction, options.CommandTimeout, options.CommandType);
 }
 
 /// <summary>
@@ -198,7 +288,7 @@ public readonly struct CommandOptions(IDbTransaction? transaction = null, int? c
     /// <summary>
     /// Gets the command timeout in seconds, if specified.
     /// </summary>
-    public readonly int? CommandTimeout = commandTimeout;
+    public readonly int? CommandTimeout = global::Jaunty.Internals.CommandTimeoutHint.Require(commandTimeout);
 
     /// <summary>
     /// Gets the type of command to execute.
@@ -215,8 +305,9 @@ public readonly struct CommandOptions(IDbTransaction? transaction = null, int? c
     /// <summary>
     /// Creates a new <see cref="CommandOptions"/> with the specified timeout.
     /// </summary>
-    /// <param name="seconds">The command timeout in seconds.</param>
+    /// <param name="seconds">The command timeout in seconds. Zero means no timeout.</param>
     /// <returns>A new <see cref="CommandOptions"/> instance with the specified timeout.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">AUD-R35-149. <paramref name="seconds"/> is negative.</exception>
     public static CommandOptions WithTimeout(int seconds) => new(commandTimeout: seconds);
 
     /// <summary>

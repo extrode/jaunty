@@ -5,6 +5,8 @@ using Jaunty.Core;
 using Jaunty.Internals.Write;
 
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
+using Jaunty.Interceptors;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
@@ -20,6 +22,28 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.UpdateSql))
             throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found or no columns to update.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs so Update participates in registered
+        // ICommandInterceptor auditing/logging the same way Query/GetAll/etc. do.
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
+        {
+            return pipeline.ExecuteWithInterception(
+                cached.UpdateSql,
+                entity,
+                connection,
+                options.CommandType,
+                () => UpdateCoreDirect(connection, entity, cached, binder, options));
+        }
+
+        return UpdateCoreDirect(connection, entity, cached, binder, options);
+    }
+
+    private static int UpdateCoreDirect<T>(IDbConnection connection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -29,8 +53,25 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.UpdateSql;
 
+            // AUD-R35-129's remainder: UpdateCore reports options.CommandType to the interceptor
+            // pipeline above and never applied it here, so CommandOptions.AsStoredProcedure() told
+            // every auditor the command ran as StoredProcedure while the generated UPDATE ran as
+            // Text. Same allow-list as DeleteCore - not `!= Text`, because a `default`
+            // CommandOptions carries CommandType 0, which providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -57,6 +98,28 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.UpdateSql))
             throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found or no columns to update.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
+        {
+            return await pipeline.ExecuteWithInterceptionAsync(
+                cached.UpdateSql,
+                entity,
+                dbConnection,
+                options.CommandType,
+                () => UpdateCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await UpdateCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<int> UpdateCoreDirectAsync<T>(DbConnection dbConnection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
@@ -72,8 +135,11 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.UpdateSql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            // AUD-R35-129's remainder, async twin. See UpdateCoreDirect for the allow-list rationale.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -91,7 +157,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }

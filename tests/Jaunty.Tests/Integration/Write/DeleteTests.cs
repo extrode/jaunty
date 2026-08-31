@@ -195,7 +195,6 @@ public class DeleteTests : IClassFixture<DialectFixture>
         Assert.Throws<ArgumentNullException>(() => ctx.Connection.Delete<BulkTestEntity>(nullId));
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -233,5 +232,4 @@ public class DeleteTests : IClassFixture<DialectFixture>
         Assert.Equal(1, rows);
         Assert.Equal(0, GetRowCount(connection));
     }
-#endif
 }

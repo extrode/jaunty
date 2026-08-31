@@ -291,11 +291,9 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
             .Intersect(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 1))
             .SelectSingleOrDefaultAsync();
 
-        // Product 1 is in category 1 (Beverages), so intersection should return it
-        if (result != null)
-        {
-            Assert.Equal(1, result.ProductId);
-        }
+        // Product 1 is in category 1 (Beverages), so intersection should always return it
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
     }
 
     // ==========================================
@@ -335,17 +333,22 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
     [Fact]
     public void Intersect_WithParameters_PassesParametersCorrectly()
     {
-        // Intersect products in category 1 AND products with SupplierId = 1
-        // This tests that parameters are correctly passed through Intersect operations
+        // Intersect products in category 1 AND products with SupplierId = 1.
+        // Every category-1 product in the seed data already has SupplierId = 1
+        // (products 1, 2, 8, 11), so the intersection should return exactly that set,
+        // proving both the CategoryId and SupplierId parameters were actually applied.
         var results = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Intersect(_fixture.Connection.From<Product>().Where(p => p.SupplierId == 1))
             .OrderBy(p => p.ProductId)
             .Select();
 
-        // Results may vary based on test data, but the query should execute without error
-        // The important thing is that parameters are passed correctly
-        Assert.NotNull(results);
+        Assert.Equal(new[] { 1, 2, 8, 11 }, results.Select(p => p.ProductId));
+        Assert.All(results, p =>
+        {
+            Assert.Equal((short)1, p.CategoryId);
+            Assert.Equal(1, p.SupplierId);
+        });
     }
 
     [Fact]
@@ -400,10 +403,9 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
             .Intersect(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 1))
             .SelectSingleOrDefault();
 
-        if (result != null)
-        {
-            Assert.Equal(1, result.ProductId);
-        }
+        // Product 1 is in category 1 (Beverages), so intersection should always return it
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
     }
 
     // ==========================================

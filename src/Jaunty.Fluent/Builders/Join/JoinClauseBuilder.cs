@@ -45,15 +45,17 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
         (string condition, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
         JoinedQueryBuilder<TFrom, TJoin> joinedQuery = CreateJoinedQuery(condition);
-        for (int i = 0; i < parameters.Count; i++)
-        {
-            joinedQuery.AddParameter(parameters[i].Name, parameters[i].Value);
-        }
+        joinedQuery.AddOnParameters(parameters);
         return joinedQuery;
     }
 
     public IJoinedQuery<TFrom, TJoin> On(string leftColumn, string rightColumn)
     {
+        // AUD-R34-022: see JoinColumnReference - this overload wins the overload resolution a
+        // string-valued On(condition, value) call meant for the generic one.
+        JoinColumnReference.Require(leftColumn, nameof(leftColumn));
+        JoinColumnReference.Require(rightColumn, nameof(rightColumn));
+
         string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery(condition);
     }
@@ -64,9 +66,18 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
     }
 
     public IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, TValue value)
+        => On(condition, JoinParameterName.Default, value);
+
+    public IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, string parameterName, TValue value)
     {
+        string qualified = JoinParameterName.Qualify(_fromBuilder.Dialect.ParameterPrefix, parameterName, nameof(parameterName));
+
         JoinedQueryBuilder<TFrom, TJoin> joinedQuery = CreateJoinedQuery(condition);
-        joinedQuery.AddParameter("@value", value);
+
+        if (joinedQuery.HasParameter(qualified))
+            throw JoinParameterName.DuplicateError(qualified, nameof(parameterName));
+
+        joinedQuery.AddParameter(qualified, value);
         return joinedQuery;
     }
 
@@ -90,21 +101,16 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
     private string GetColumnName<T>(string propertyName, string? alias) where T : new()
     {
+        // AUD-R26-058: AUD-R25 replaced this linear scan plus per-reference re-escape with the
+        // pre-escaped CachedDialectMetadata lookup across the where/exists/select visitors and the
+        // arity-3 and arity-4 join visitors, and left this site on the old shape. EscapeColumnName
+        // re-runs SqlIdentifierValidator's regex match and a keyword HashSet lookup on every column
+        // reference of every query build; the cache does it once per (entity, dialect) pair.
         EntityMetadata metadata = FluentMetadataCache.GetMetadata<T>();
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
+        CachedDialectMetadata cached = FluentMetadataCache.GetForDialect<T>(_fromBuilder.Dialect);
 
-        string columnName = propertyName;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].Property.Name == propertyName)
-            {
-                columnName = columns[i].ColumnName;
-                break;
-            }
-        }
-
-        var escaped = _fromBuilder.Dialect.EscapeColumnName(columnName);
-        var prefix = alias ?? metadata.TableName;
+        var escaped = cached.GetColumnName(propertyName);
+        var prefix = alias ?? _fromBuilder.Dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
 }

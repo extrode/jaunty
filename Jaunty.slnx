@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Jaunty.Extensions.Logging/Jaunty.Extensions.Logging.csproj" />
+    <Project Path="src/Jaunty.Extensions.Npgsql/Jaunty.Extensions.Npgsql.csproj" />
     <Project Path="src/Jaunty.Extensions.Reflection/Jaunty.Extensions.Reflection.csproj" />
     <Project Path="src/Jaunty.Fluent/Jaunty.Fluent.csproj" />
     <Project Path="src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj" />
@@ -10,7 +12,11 @@
     <Project Path="src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Jaunty.Fluent.SourceGen.Tests/Jaunty.Fluent.SourceGen.Tests.csproj" />
+    <Project Path="tests/Jaunty.UnitTests/Jaunty.UnitTests.csproj" />
+    <Project Path="tests/Jaunty.Fluent.ConfigTests/Jaunty.Fluent.ConfigTests.csproj" />
     <Project Path="tests/Jaunty.Fluent.Tests/Jaunty.Fluent.Tests.csproj" />
+    <Project Path="tests/Jaunty.Scaffolding.Cli.Tests/Jaunty.Scaffolding.Cli.Tests.csproj" />
     <Project Path="tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj" />
     <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
     <Project Path="tests/Jaunty.FlatFiles.Tests/Jaunty.FlatFiles.Tests.csproj" />
@@ -25,7 +31,9 @@
     <Project Path="samples/NativeAOT-Basic/NativeAOT-Basic.csproj" />
     <Project Path="samples/NativeAOT-WithReflection/NativeAOT-WithReflection.csproj" />
     <Project Path="samples/NativeAOT-CustomMapper/NativeAOT-CustomMapper.csproj" />
+    <Project Path="samples/NativeAOT-FluentQuery/NativeAOT-FluentQuery.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/Jaunty.Fuzz/Jaunty.Fuzz.csproj" />
   </Folder>
 </Solution>

@@ -145,6 +145,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     {
         // Get the first category
         var firstCategory = _fixture.Connection.From<Category>()
+            .OrderBy(c => c.CategoryId)
             .Take(1)
             .SelectFirst();
 
@@ -208,6 +209,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
             .Select(c => c.CategoryId)
             .ToHashSet();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
         {
             Assert.Contains(p.CategoryId!.Value, validCategoryIds);
@@ -220,6 +222,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     {
         // Get first category
         var firstCategory = _fixture.Connection.From<Category>()
+            .OrderBy(c => c.CategoryId)
             .Take(1)
             .SelectFirst();
 
@@ -235,6 +238,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
                 subquery)
             .Select();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
             Assert.True(p.Discontinued == false && p.CategoryId != firstCategory.CategoryId));
     }
@@ -244,6 +248,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     {
         // Get first two categories
         var categories = _fixture.Connection.From<Category>()
+            .OrderBy(c => c.CategoryId)
             .Take(2)
             .Select();
 
@@ -262,6 +267,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
                 subquery)
             .Select();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
             Assert.True(p.CategoryId == cat1Id || p.CategoryId == cat2Id));
     }
@@ -271,6 +277,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     {
         // Get first category
         var firstCategory = _fixture.Connection.From<Category>()
+            .OrderBy(c => c.CategoryId)
             .Take(1)
             .SelectFirst();
 
@@ -287,6 +294,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
                 subquery)
             .Select();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
             Assert.True(p.Discontinued == true || p.CategoryId != firstCategory.CategoryId));
     }
@@ -345,6 +353,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
             .OrderBy(p => p.ProductName)
             .Select();
 
+        Assert.NotEmpty(products);
         for (int i = 1; i < products.Count; i++)
         {
             Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
@@ -371,7 +380,12 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public void WhereInSubquery_WithDistinct_ReturnsUniqueResults()
     {
+        // Distinct() only exists on IFromClause<T>/IDistinctClause<T>, and WhereInSubquery(...)
+        // (which returns IWhereClause<T>) is only on IFromClause<T> - the outer Product query
+        // therefore can't chain both. Distinct() is applied to the subquery instead, which is
+        // still a valid IQueryTerminal<Category> and actually exercises the Distinct() call path.
         var subquery = _fixture.Connection.From<Category>()
+            .Distinct()
             .Where(c => c.CategoryName.StartsWith("C"));
 
         var products = _fixture.Connection.From<Product>()
@@ -472,5 +486,86 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
             .Select();
 
         Assert.NotEmpty(products);
+    }
+
+    // ==========================================
+    // Custom IQueryTerminal<TSubquery> implementations (non-QueryBuilder)
+    // ==========================================
+
+    [Fact]
+    public void WhereInSubquery_CustomImplementationWithNoParameters_WorksCorrectly()
+    {
+        var subquery = new StubQueryTerminal<Category>("SELECT category_id FROM categories");
+
+        var sql = _fixture.Connection.From<Product>()
+            .WhereInSubquery<int, Category>(
+                p => p.CategoryId!.Value,
+                c => c.CategoryId,
+                subquery)
+            .ToSql();
+
+        Assert.Contains("IN (SELECT category_id FROM categories)", sql);
+    }
+
+    [Fact]
+    public void WhereInSubquery_CustomImplementationWithUnmergeableParameters_ThrowsNotSupportedException()
+    {
+        // A custom IQueryTerminal<TSubquery> implementation whose ToSql() embeds a
+        // parameter placeholder (@name) has no way for BuildInSubqueryClause to extract
+        // and merge that parameter's value into the outer query, so it must fail loudly
+        // instead of emitting SQL with an unbound placeholder.
+        var subquery = new StubQueryTerminal<Category>(
+            "SELECT category_id FROM categories WHERE category_name = @name");
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .WhereInSubquery<int, Category>(
+                    p => p.CategoryId!.Value,
+                    c => c.CategoryId,
+                    subquery)
+                .ToSql());
+
+        Assert.Contains(nameof(Category), ex.Message);
+    }
+
+    // ==========================================
+    // AUD-R35-188 - a literal @ is not a placeholder
+    // ==========================================
+
+    [Theory]
+    [InlineData("SELECT category_id FROM categories WHERE description LIKE '%@example.com'")]
+    [InlineData("SELECT category_id FROM categories WHERE description = 'it''s @home'")]
+    [InlineData("SELECT category_id FROM categories -- filter on @name later")]
+    [InlineData("SELECT category_id FROM categories /* @name is not bound here */")]
+    [InlineData("SELECT category_id FROM categories WHERE description = '@'")]
+    public void WhereInSubquery_CustomImplementationWithALiteralAt_IsAccepted(string subquerySql)
+    {
+        var subquery = new StubQueryTerminal<Category>(subquerySql);
+
+        var sql = _fixture.Connection.From<Product>()
+            .WhereInSubquery<int, Category>(
+                p => p.CategoryId!.Value,
+                c => c.CategoryId,
+                subquery)
+            .ToSql();
+
+        Assert.Contains("IN (SELECT category_id FROM categories", sql);
+    }
+
+    [Theory]
+    [InlineData("SELECT category_id FROM categories WHERE category_name = @name")]
+    [InlineData("SELECT category_id FROM categories WHERE description LIKE '%safe%' AND id = @p0")]
+    [InlineData("SELECT category_id FROM categories -- a comment\r\nWHERE id = @p_1")]
+    public void WhereInSubquery_CustomImplementationWithARealPlaceholder_StillThrows(string subquerySql)
+    {
+        var subquery = new StubQueryTerminal<Category>(subquerySql);
+
+        Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .WhereInSubquery<int, Category>(
+                    p => p.CategoryId!.Value,
+                    c => c.CategoryId,
+                    subquery)
+                .ToSql());
     }
 }

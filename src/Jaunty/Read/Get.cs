@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
+using Jaunty.Internals;
 using Jaunty.Interfaces;
 
 namespace Jaunty;
@@ -61,11 +62,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return GetByIdTypedCore<T, TId>(connection, id, default);
     }
 
@@ -82,11 +82,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return GetByIdTypedCore<T, TId>(connection, id, options);
     }
 
@@ -144,11 +143,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return GetByIdTypedCore<T, TId>(connection, id, default) ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
     }
 
@@ -166,11 +164,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return GetByIdTypedCore<T, TId>(connection, id, options) ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
     }
 
@@ -192,7 +189,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken);
     }
 
@@ -215,7 +212,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken);
     }
 
@@ -232,13 +229,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken);
     }
 
@@ -256,13 +252,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken);
     }
 
@@ -275,7 +270,14 @@ public static partial class Jaunty
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A task containing the entity.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no entity with the specified key exists.</exception>
-    public static async ValueTask<T> GetRequiredAsync<T>(this IDbConnection connection, object id, CancellationToken cancellationToken = default) where T : new()
+    /// <remarks>
+    /// AUD-R35-047: split into a non-<c>async</c> validating wrapper over an <c>async</c>
+    /// local, so the argument checks throw at the call site rather than surfacing as a faulted
+    /// <see cref="ValueTask"/> on await. Every other async entry point in this file already
+    /// does this, the <c>*EagerValidationTests</c> family pins it as a contract, and
+    /// AUD-R25 B2-1 fixed the same shape on <c>ExecuteAsync</c>/<c>ExecuteBatchAsync</c>.
+    /// </remarks>
+    public static ValueTask<T> GetRequiredAsync<T>(this IDbConnection connection, object id, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -285,9 +287,15 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
-        var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
-        return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        return AwaitAsync();
+
+        async ValueTask<T> AwaitAsync()
+        {
+            var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
+            return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+        }
     }
 
     /// <summary>
@@ -300,7 +308,14 @@ public static partial class Jaunty
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A task containing the entity.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no entity with the specified key exists.</exception>
-    public static async ValueTask<T> GetRequiredAsync<T>(this IDbConnection connection, object id, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    /// <remarks>
+    /// AUD-R35-047: split into a non-<c>async</c> validating wrapper over an <c>async</c>
+    /// local, so the argument checks throw at the call site rather than surfacing as a faulted
+    /// <see cref="ValueTask"/> on await. Every other async entry point in this file already
+    /// does this, the <c>*EagerValidationTests</c> family pins it as a contract, and
+    /// AUD-R25 B2-1 fixed the same shape on <c>ExecuteAsync</c>/<c>ExecuteBatchAsync</c>.
+    /// </remarks>
+    public static ValueTask<T> GetRequiredAsync<T>(this IDbConnection connection, object id, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -310,9 +325,15 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
-        var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);
-        return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        return AwaitAsync();
+
+        async ValueTask<T> AwaitAsync()
+        {
+            var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);
+            return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+        }
     }
 
     /// <summary>
@@ -325,19 +346,31 @@ public static partial class Jaunty
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A task containing the entity.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no entity with the specified key exists.</exception>
-    public static async ValueTask<T> GetRequiredAsync<T, TId>(this IDbConnection connection, TId id, CancellationToken cancellationToken = default) where T : IEntity<TId>, new()
+    /// <remarks>
+    /// AUD-R35-047: split into a non-<c>async</c> validating wrapper over an <c>async</c>
+    /// local, so the argument checks throw at the call site rather than surfacing as a faulted
+    /// <see cref="ValueTask"/> on await. Every other async entry point in this file already
+    /// does this, the <c>*EagerValidationTests</c> family pins it as a contract, and
+    /// AUD-R25 B2-1 fixed the same shape on <c>ExecuteAsync</c>/<c>ExecuteBatchAsync</c>.
+    /// </remarks>
+    public static ValueTask<T> GetRequiredAsync<T, TId>(this IDbConnection connection, TId id, CancellationToken cancellationToken = default) where T : IEntity<TId>, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
-        var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
-        return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        return AwaitAsync();
+
+        async ValueTask<T> AwaitAsync()
+        {
+            var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
+            return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+        }
     }
 
     /// <summary>
@@ -351,18 +384,30 @@ public static partial class Jaunty
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A task containing the entity.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no entity with the specified key exists.</exception>
-    public static async ValueTask<T> GetRequiredAsync<T, TId>(this IDbConnection connection, TId id, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : IEntity<TId>, new()
+    /// <remarks>
+    /// AUD-R35-047: split into a non-<c>async</c> validating wrapper over an <c>async</c>
+    /// local, so the argument checks throw at the call site rather than surfacing as a faulted
+    /// <see cref="ValueTask"/> on await. Every other async entry point in this file already
+    /// does this, the <c>*EagerValidationTests</c> family pins it as a contract, and
+    /// AUD-R25 B2-1 fixed the same shape on <c>ExecuteAsync</c>/<c>ExecuteBatchAsync</c>.
+    /// </remarks>
+    public static ValueTask<T> GetRequiredAsync<T, TId>(this IDbConnection connection, TId id, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : IEntity<TId>, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
-        var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);
-        return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        return AwaitAsync();
+
+        async ValueTask<T> AwaitAsync()
+        {
+            var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);
+            return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+        }
     }
 }

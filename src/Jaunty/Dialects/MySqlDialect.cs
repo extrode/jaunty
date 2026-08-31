@@ -5,9 +5,10 @@ namespace Jaunty.Dialects;
 /// <summary>
 /// MySQL dialect.
 /// Uses `backticks` only for SQL keywords.
-/// Default schema: null (MySQL doesn't use schemas the same way)
+/// Default schema: the empty string (MySQL uses databases, not schemas). AUD-R35-159: this
+/// said "null" for as long as GetDefaultSchema has returned string.Empty.
 /// </summary>
-internal sealed class MySqlDialect : ISqlDialect
+internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -39,7 +40,17 @@ internal sealed class MySqlDialect : ISqlDialect
         "TINYBLOB", "TINYINT", "TINYTEXT", "TO", "TRAILING", "TRIGGER", "TRUE", "UNDO", "UNION",
         "UNIQUE", "UNLOCK", "UNSIGNED", "UPDATE", "USAGE", "USE", "USING", "UTC_DATE", "UTC_TIME",
         "UTC_TIMESTAMP", "VALUES", "VARBINARY", "VARCHAR", "VARCHARACTER", "VARYING", "WHEN",
-        "WHERE", "WHILE", "WITH", "WRITE", "XOR", "YEAR_MONTH", "ZEROFILL", "ORDER", "USER"
+        "WHERE", "WHILE", "WITH", "WRITE", "XOR", "YEAR_MONTH", "ZEROFILL", "USER",
+
+        // AUD-R35-018. Everything above predates MySQL 8.0; none of the words 8.0 reserved were
+        // here. EscapeTableName/EscapeColumnName backtick only what IsKeyword recognises, so an
+        // entity mapped to a column called `rank`, `system`, `rows` or `groups` - all perfectly
+        // legal names before 8.0, and so present in real schemas being upgraded - was emitted bare
+        // and every statement touching it failed to parse on MySQL 8. SqlIdentifierValidator does
+        // not compensate: it validates an identifier's shape, not its reservedness.
+        "CUME_DIST", "DENSE_RANK", "EMPTY", "EXCEPT", "FIRST_VALUE", "GROUPING", "GROUPS",
+        "JSON_TABLE", "LAG", "LAST_VALUE", "LATERAL", "LEAD", "NTH_VALUE", "NTILE", "OF", "OVER",
+        "PERCENT_RANK", "RANK", "RECURSIVE", "ROW", "ROWS", "ROW_NUMBER", "SYSTEM", "WINDOW",
     };
 
     public string ParameterPrefix => "@";
@@ -50,21 +61,29 @@ internal sealed class MySqlDialect : ISqlDialect
 
     public string EscapeTableName(string? schemaName, string tableName)
     {
-        SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        SqlIdentifierValidator.Validate(tableName, nameof(tableName), SqlIdentifierFlavor.MySql);
         var escapedTable = IsKeyword(tableName) ? $"`{tableName}`" : tableName;
 
         if (string.IsNullOrWhiteSpace(schemaName))
             return escapedTable;
 
-        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName));
+        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName), SqlIdentifierFlavor.MySql);
         var escapedSchema = IsKeyword(schemaName!) ? $"`{schemaName}`" : schemaName;
         return $"{escapedSchema}.{escapedTable}";
     }
 
     public string EscapeColumnName(string columnName)
     {
-        SqlIdentifierValidator.Validate(columnName, nameof(columnName));
+        SqlIdentifierValidator.Validate(columnName, nameof(columnName), SqlIdentifierFlavor.MySql);
         return IsKeyword(columnName) ? $"`{columnName}`" : columnName;
+    }
+
+    public string EscapeStringLiteral(string value)
+    {
+        // MySQL/MariaDB (without NO_BACKSLASH_ESCAPES) treats backslash as an in-string
+        // escape character, so backslashes must be doubled first or a value ending in an
+        // odd number of them can escape the closing quote.
+        return value.Replace("\\", "\\\\").Replace("'", "''");
     }
 
     public string GetLastInsertIdSql(params string[] columnNames)
@@ -79,14 +98,23 @@ internal sealed class MySqlDialect : ISqlDialect
 
     public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar)
     {
-        // MySQL: Default LIKE is case-insensitive
-        // We need to use a case-sensitive collation
-        // utf8mb4_bin provides binary comparison (case-sensitive)
-        // This works for both utf8 and utf8mb4 character sets
-        return $"{columnName} COLLATE utf8mb4_bin LIKE {parameterName} ESCAPE '{escapeChar}'";
-
-        // Alternative using BINARY keyword (also works but less explicit):
-        // return $"BINARY {columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
+        // MySQL's default LIKE is case-insensitive, so a case-sensitive comparison has to be
+        // asked for explicitly.
+        //
+        // AUD-R35-017: this used to say `COLLATE utf8mb4_bin`, and the comment claimed it "works
+        // for both utf8 and utf8mb4 character sets". It does not. A collation is only valid for
+        // the character set it belongs to, so applied to a latin1 or utf8mb3 column - both still
+        // ordinary in existing schemas - MySQL raises error 1253, "COLLATION 'utf8mb4_bin' is not
+        // valid for CHARACTER SET 'latin1'", and the query fails outright rather than comparing
+        // case-sensitively. Casting to BINARY asks for the same byte-wise comparison without
+        // naming a character set, so it holds for every column. CAST(... AS BINARY) rather than
+        // the `BINARY expr` operator, which MySQL deprecated in 8.0.27.
+        //
+        // AUD-R35: the escape char goes through EscapeStringLiteral because it lands inside a
+        // string literal like every other value here. The only production caller passes a single
+        // backslash, and under MySQL's default sql_mode `ESCAPE '\'` has the backslash escape its
+        // own closing quote, so the statement does not parse - MySQL needs `ESCAPE '\\'`.
+        return $"CAST({columnName} AS BINARY) LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)
@@ -94,25 +122,42 @@ internal sealed class MySqlDialect : ISqlDialect
         // MySQL: Default LIKE is already case-insensitive
         // Just use standard LIKE without any collation
         // This uses the column's default collation (typically utf8mb4_general_ci)
-        return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
+        // AUD-R35: see GenerateCaseSensitiveLike - the escape char must be string-literal escaped.
+        return $"{columnName} LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
     {
-        // MySQL: Default = is case-insensitive for most collations
-        // Use utf8mb4_general_ci to be explicit
-        return $"{columnName} COLLATE utf8mb4_general_ci = {parameterName}";
+        // AUD-R35-017: `COLLATE utf8mb4_general_ci` was error 1253 on any column that is not
+        // utf8mb4, for the reason spelled out on GenerateCaseSensitiveLike. LOWER() on both sides
+        // is charset-independent and is what PostgreSqlDialect and SQLiteDialect already emit for
+        // this method, so the three now agree. It is no worse for indexing than the collation
+        // form was: a comparison under a collation other than the column's own cannot use an
+        // index on that column either.
+        return $"LOWER({columnName}) = LOWER({parameterName})";
     }
 
-    public string FormatContainsPattern(string value) => $"%{value}%";
-    public string FormatStartsWithPattern(string value) => $"{value}%";
-    public string FormatEndsWithPattern(string value) => $"%{value}";
+    public string FormatContainsPattern(string value) => $"%{EscapeLikeWildcards(value)}%";
+    public string FormatStartsWithPattern(string value) => $"{EscapeLikeWildcards(value)}%";
+    public string FormatEndsWithPattern(string value) => $"%{EscapeLikeWildcards(value)}";
+
+    public string FormatBooleanLiteral(bool value) => value ? "1" : "0";
+
+    // GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike declare ESCAPE '\', so literal
+    // occurrences of the escape char and LIKE wildcard chars (%, _) must be escaped in the
+    // value or they change query semantics instead of matching literally.
+    private static string EscapeLikeWildcards(string value) => value
+        .Replace("\\", "\\\\")
+        .Replace("%", "\\%")
+        .Replace("_", "\\_");
 
     public string? GetDisableForeignKeyChecksSql() => "SET FOREIGN_KEY_CHECKS = 0";
 
     public string? GetEnableForeignKeyChecksSql() => "SET FOREIGN_KEY_CHECKS = 1";
 
     public bool SupportsForeignKeyToggle => true;
+
+    public bool RequiresAutocommitForForeignKeyToggle => false;
 
     public string GenerateCoalesce(params string[] expressions)
     {
@@ -137,6 +182,10 @@ internal sealed class MySqlDialect : ISqlDialect
     public string GenerateTrim(string expression) => $"TRIM({expression})";
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression}, {start}, {length})";
 
+    /// <summary>MySQL's two-argument SUBSTRING returns the remainder, and needs no sentinel length.</summary>
+    public string GenerateSubstringToEnd(string expression, string start)
+        => $"SUBSTRING({expression}, {start})";
+
     // Date functions - MySQL uses YEAR(), MONTH(), DAY()
     public string GenerateYear(string expression) => $"YEAR({expression})";
     public string GenerateMonth(string expression) => $"MONTH({expression})";
@@ -155,7 +204,8 @@ internal sealed class MySqlDialect : ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         // MySQL: INSERT INTO table (...) VALUES (...) ON DUPLICATE KEY UPDATE col = VALUES(col)
         var sb = new System.Text.StringBuilder(256);
@@ -177,6 +227,18 @@ internal sealed class MySqlDialect : ISqlDialect
         }
 
         sb.Append(") ON DUPLICATE KEY UPDATE ");
+
+        if (updateColumns.Length == 0)
+        {
+            // MySQL's ON DUPLICATE KEY UPDATE clause requires at least one assignment; unlike
+            // Postgres/SQLite's DO NOTHING, there is no no-op syntax here. A key-only entity (no
+            // non-key updatable columns) has nothing meaningful to set, so self-assign the first
+            // key column as a harmless no-op that still satisfies the grammar.
+            sb.Append(keyColumns[0]);
+            sb.Append(" = ");
+            sb.Append(keyColumns[0]);
+            return sb.ToString();
+        }
 
         for (int i = 0; i < updateColumns.Length; i++)
         {

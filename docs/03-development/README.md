@@ -6,11 +6,13 @@ Guides for developing and extending Jaunty.
 
 | Document | Purpose |
 |----------|---------|
-| [`coding-conventions.md`](coding-conventions.md) | C# coding standards and conventions |
+| [`api-design-guidelines.md`](api-design-guidelines.md) | C# API and coding standards |
+| [`xml-documentation-style.md`](xml-documentation-style.md) | Doc comment house style |
 | [`file-naming-convention.md`](file-naming-convention.md) | Documentation file naming standard |
 | [`adding-new-methods.md`](adding-new-methods.md) | How to add new query methods |
 | [`multi-targeting.md`](multi-targeting.md) | Supporting netstandard2.0 and net8.0 |
-| [`performance-checklist.md`](performance-checklist.md) | Performance optimization checklist |
+| [`optimization-checklist.md`](optimization-checklist.md) | Performance optimization checklist |
+| [`ci-architecture.md`](ci-architecture.md) | **Where CI, the nightly tiers and the audit loop run** — diagrams, hosts, open items |
 
 ## Quick Reference
 
@@ -132,6 +134,8 @@ await something.ConfigureAwait(false);
 | Error case tests | Test all exception paths |
 | Coverage goal | 100% for public APIs |
 
+See [`../05-quality/code-coverage.md`](../05-quality/code-coverage.md) for how coverage is
+measured and what the current baseline says.
 
 ## Git Workflow
 
@@ -163,6 +167,6 @@ Optional longer description.
 
 ## See Also
 
-- [`../../00-quick-start/build-and-test.md`](../../00-quick-start/build-and-test.md) - Build commands
+- [`../../00-quick-start/build-and-test.md`](../00-quick-start/build-and-test.md) - Build commands
 - [`../02-architecture/README.md`](../02-architecture/README.md) - Architecture overview
 

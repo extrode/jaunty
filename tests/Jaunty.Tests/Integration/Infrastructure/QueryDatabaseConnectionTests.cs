@@ -19,7 +19,7 @@ public class QueryDatabaseConnectionTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public void TestDatabaseConnection(DialectInfo dialect)
+    public void QueryScalar_SelectOne_ReturnsOne(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         long result = connection.QueryScalar<long>("SELECT 1");

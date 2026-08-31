@@ -20,19 +20,32 @@ namespace Jaunty.Diagnostics;
 /// <item><description>Exception details on failure</description></item>
 /// </list>
 /// <para>
-/// Unlike <see cref="LoggingInterceptor"/>, this interceptor does not log parameter values
-/// to avoid capturing sensitive data in audit logs.
+/// Unlike <c>LoggingInterceptor</c> (in the optional Extrode.Jaunty.Extensions.Logging package),
+/// this interceptor does not log parameter values to avoid capturing sensitive data in audit logs.
 /// </para>
 /// </remarks>
 public sealed class AuditInterceptor : ISyncCommandInterceptor
 {
     private readonly ConcurrentQueue<AuditRecord> _auditLog = new();
     private readonly int _maxRecords;
+    private readonly object _trimLock = new();
+
+    private long _sequence;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AuditInterceptor"/> class.
     /// </summary>
-    /// <param name="maxRecords">Maximum number of audit records to retain. Defaults to 1000.</param>
+    /// <param name="maxRecords">
+    /// Maximum number of audit <b>records</b> to retain. Defaults to 1000.
+    /// </param>
+    /// <remarks>
+    /// The bound is on records, not commands, and this interceptor writes <b>two records per
+    /// command</b> - an <see cref="AuditPhase.Executing"/> and then an
+    /// <see cref="AuditPhase.Executed"/> or <see cref="AuditPhase.Failed"/>. The default of 1000
+    /// therefore covers roughly 500 commands. Recorded under AUD-R26-055: for a knob whose whole
+    /// purpose is bounding an audit trail, the factor of two is worth stating rather than leaving
+    /// the caller to infer it.
+    /// </remarks>
     public AuditInterceptor(int maxRecords = 1000)
     {
         _maxRecords = maxRecords > 0 ? maxRecords : 1000;
@@ -46,12 +59,76 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
     /// <summary>
     /// Gets the most recent audit records.
     /// </summary>
-    /// <param name="count">Number of records to retrieve.</param>
-    /// <returns>The most recent audit records in chronological order.</returns>
+    /// <param name="count">Number of records to retrieve. Zero or less returns nothing.</param>
+    /// <returns>
+    /// The most recently written <paramref name="count"/> records, oldest first.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26-055 (batch 4, low/bug). This was
+    /// <c>OrderByDescending(r =&gt; r.Timestamp).Take(count).Reverse()</c>, which did not deliver the
+    /// chronological order it documented. <c>OrderByDescending</c> is stable, so records sharing a
+    /// timestamp kept insertion order <em>within the descending sequence</em> and the trailing
+    /// <c>Reverse()</c> flipped them - ties came back in reverse insertion order.
+    /// </para>
+    /// <para>
+    /// The <c>Take</c> was the worse half. On a run of equal timestamps the stable descending sort
+    /// leaves the queue in its original oldest-first order, so <c>Take(count)</c> selected the
+    /// <b>oldest</b> <c>count</c> records - from a method named <c>GetRecentRecords</c>. Ties are
+    /// the normal case, not an edge case: <see cref="DateTime.UtcNow"/> has about 15.6 ms of
+    /// resolution on Windows and every command writes two records, so a single command can produce
+    /// a mis-ordered pair.
+    /// </para>
+    /// <para>
+    /// No sort is needed at all. <see cref="RecordAudit"/> is the only writer and enqueues under a
+    /// lock, so the queue is already in insertion order - the last <paramref name="count"/> entries
+    /// of a snapshot <em>are</em> the most recent, already oldest-first.
+    /// <c>ConcurrentQueue.ToArray</c> gives that snapshot atomically, which also removes the
+    /// torn read the old code was open to, where <c>Count</c> and the enumeration could disagree
+    /// under a concurrent write.
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// AUD-R35-151. This used to hand back the retained <see cref="AuditRecord"/> instances
+    /// themselves, and every property on them is settable - so a consumer reading the trail could
+    /// rewrite it in place, including <see cref="AuditRecord.Sequence"/>, which exists precisely so
+    /// the trail can be totally ordered and trimming made visible. When the snapshot was no longer
+    /// than <paramref name="count"/> the internal array was returned uncast as well, so
+    /// <c>(AuditRecord[])result</c> also let a reader replace elements wholesale. For a type whose
+    /// stated purpose is compliance auditing, a reader must not be able to reach the retained record
+    /// at all: each is copied, and the result is a read-only view over a private array. The setters
+    /// stay public - an <c>init</c>-only record would be a breaking change for consumers who build
+    /// these, and copying at the boundary is where the guarantee belongs.
+    /// </remarks>
     public IEnumerable<AuditRecord> GetRecentRecords(int count = 100)
     {
-        return _auditLog.OrderByDescending(r => r.Timestamp).Take(count).Reverse();
+        if (count <= 0) return Array.Empty<AuditRecord>();
+
+        AuditRecord[] snapshot = _auditLog.ToArray();
+        int take = snapshot.Length <= count ? snapshot.Length : count;
+        int start = snapshot.Length - take;
+
+        var recent = new AuditRecord[take];
+        for (int i = 0; i < take; i++)
+            recent[i] = Copy(snapshot[start + i]);
+
+        return new System.Collections.ObjectModel.ReadOnlyCollection<AuditRecord>(recent);
     }
+
+    private static AuditRecord Copy(AuditRecord source) => new()
+    {
+        Timestamp = source.Timestamp,
+        Sequence = source.Sequence,
+        Phase = source.Phase,
+        CommandText = source.CommandText,
+        CommandType = source.CommandType,
+        Database = source.Database,
+        ConnectionState = source.ConnectionState,
+        ElapsedMilliseconds = source.ElapsedMilliseconds,
+        Success = source.Success,
+        ExceptionType = source.ExceptionType,
+        ExceptionMessage = source.ExceptionMessage,
+    };
 
     /// <summary>
     /// Clears all retained audit records.
@@ -59,6 +136,25 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
     public void Clear()
     {
         while (_auditLog.TryDequeue(out _)) { }
+    }
+
+    // AUD-R12: trim-then-enqueue on a ConcurrentQueue is not atomic on its own - concurrent
+    // callers can each observe Count < _maxRecords, then all enqueue, letting the queue
+    // temporarily exceed _maxRecords. Serializing trim+enqueue behind a lock keeps the bound
+    // exact; contention is negligible since this only guards an O(1) dequeue/enqueue pair.
+    private void RecordAudit(AuditRecord record)
+    {
+        lock (_trimLock)
+        {
+            // AUD-R26-055: numbered here, inside the same lock that orders the enqueue, so the
+            // sequence a record carries agrees with its position in the queue. Assigning it at
+            // construction instead would let two threads number in one order and enqueue in the
+            // other.
+            record.Sequence = ++_sequence;
+
+            while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
+            _auditLog.Enqueue(record);
+        }
     }
 
     /// <inheritdoc/>
@@ -76,9 +172,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
         };
 
         // Trim log if exceeding max records
-        while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
-
-        _auditLog.Enqueue(record);
+        RecordAudit(record);
 
         return new ValueTask();
     }
@@ -92,14 +186,13 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             CommandText = context.CommandText,
             CommandType = context.CommandType,
             Database = context.Connection.Database,
+            ConnectionState = context.Connection.State,
             ElapsedMilliseconds = context.Elapsed.TotalMilliseconds,
             Phase = AuditPhase.Executed,
             Success = true
         };
 
-        while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
-
-        _auditLog.Enqueue(record);
+        RecordAudit(record);
 
         return new ValueTask();
     }
@@ -113,6 +206,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             CommandText = context.CommandText,
             CommandType = context.CommandType,
             Database = context.Connection.Database,
+            ConnectionState = context.Connection.State,
             ElapsedMilliseconds = context.Elapsed.TotalMilliseconds,
             Phase = AuditPhase.Failed,
             Success = false,
@@ -120,9 +214,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             ExceptionMessage = exception.Message
         };
 
-        while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
-
-        _auditLog.Enqueue(record);
+        RecordAudit(record);
 
         return new ValueTask();
     }
@@ -149,6 +241,20 @@ public sealed class AuditRecord
     /// Gets or sets the UTC timestamp of the audit event.
     /// </summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets a monotonic, gap-free-until-trimmed number identifying this record's position
+    /// in the interceptor that produced it. Starts at 1.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-055. <see cref="Timestamp"/> cannot totally order an audit trail - it is
+    /// <see cref="DateTime.UtcNow"/>, whose resolution is about 15.6 ms on Windows, and a single
+    /// command writes two records - so a consumer that persists these and sorts them later cannot
+    /// recover the order they happened in. This can. A gap at the start of a retrieved run means
+    /// older records were trimmed, which is worth being able to see in an audit log; numbers are
+    /// never reused or renumbered.
+    /// </remarks>
+    public long Sequence { get; set; }
 
     /// <summary>
     /// Gets or sets the phase of command execution.

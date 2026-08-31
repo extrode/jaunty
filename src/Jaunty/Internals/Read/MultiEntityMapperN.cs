@@ -1,10 +1,104 @@
 using System;
-using System.Collections.Concurrent;
 using System.Data;
 
 using Jaunty.Configuration;
+using Jaunty.Internals;
 
 namespace Jaunty.Internals.Read;
+
+/// <summary>
+/// Validates what <see cref="JauntyConfig.ReflectionMultiMapperResolverN"/> hands back, before the
+/// per-row closures start indexing it.
+/// </summary>
+/// <remarks>
+/// AUD-R26. All five arities called the resolver - a public, settable
+/// <c>Func&lt;Type[], IDataReader, Action&lt;object, IDataRecord&gt;[]&gt;</c> - and then indexed the
+/// returned array at <c>0..N-1</c> from inside closures that run once per row, with no length check.
+/// A third-party resolver returning fewer than N delegates produced an
+/// <c>IndexOutOfRangeException</c> per row that mentioned neither the resolver, nor the arity, nor
+/// the entity types: the one clue that would have pointed at the extension point was absent. The
+/// in-repo implementation always returns exactly N, so nothing in the suite exercised it.
+/// Checking once, where the array arrives, costs nothing per row and names the hook.
+/// </remarks>
+internal static class MultiEntityMapperNGuard
+{
+    /// <summary>
+    /// Rejects a value-type entity before it can be mapped (AUD-R34-015).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>T1..T7</c> are constrained only to <c>new()</c>, so a struct entity compiles. It cannot
+    /// work: the N-ary apply closures are <c>(t, r) =&gt; delegates[i](t!, r)</c> over
+    /// <c>Action&lt;object, IDataRecord&gt;</c>, so the target is boxed and the setters run against
+    /// the throwaway box; arity 2 passes the struct by value and loses the writes the same way. The
+    /// caller's entity came back all-default with no exception and no wrong-looking SQL - the worst
+    /// shape a defect can take. <c>MultiEntityMapper.cs</c>'s own AUD-R26 remarks already describe
+    /// the boxed-copy behaviour for value types, so the possibility was known one file over.
+    /// </para>
+    /// <para>
+    /// Supporting struct entities properly means ref-passing apply delegates through both the core
+    /// and <c>Jaunty.Extensions.Reflection</c>, which <c>Action&lt;&gt;</c> cannot express. Until
+    /// that exists this fails loudly rather than returning zeroed entities.
+    /// </para>
+    /// </remarks>
+    public static void RequireReferenceTypes(Type[] types)
+    {
+        for (int i = 0; i < types.Length; i++)
+        {
+            if (!types[i].IsValueType) continue;
+
+            throw new NotSupportedException(
+                $"Multi-entity mapping requires reference-type entities, and '{types[i].Name}' " +
+                $"(entity {i + 1} of {types.Length}: {DescribeTypes(types)}) is a value type. A " +
+                "struct entity is populated through a copy, so every mapped value would be " +
+                "discarded and the entity returned all-default. Declare the entity as a class.");
+        }
+    }
+
+    public static Action<object, IDataRecord>[] Resolve(
+        Func<Type[], IDataReader, Action<object, IDataRecord>[]> resolver, Type[] types, IDataReader reader)
+    {
+        RequireReferenceTypes(types);
+
+        Action<object, IDataRecord>[]? delegates = resolver(types, reader);
+
+        if (delegates is null)
+            throw new InvalidOperationException(
+                $"JauntyConfig.ReflectionMultiMapperResolverN returned null for arity {types.Length} " +
+                $"({DescribeTypes(types)}). It must return one mapping delegate per entity type.");
+
+        // AUD-R35-119: this used to be `<`, so a resolver returning too many delegates was accepted
+        // and the first N used. The error text below states the contract as one per entity type in
+        // the same order, which an over-long array breaks just as surely - and the likely cause of
+        // an over-long array is exactly the misalignment this guard exists to catch, a resolver that
+        // prepended or appended an entry. Accepting it maps entity 1 with the wrong delegate and
+        // returns wrong data silently, which is worse than the per-row IndexOutOfRangeException the
+        // guard replaced.
+        if (delegates.Length != types.Length)
+            throw new InvalidOperationException(
+                $"JauntyConfig.ReflectionMultiMapperResolverN returned {delegates.Length} delegate(s) " +
+                $"for arity {types.Length} ({DescribeTypes(types)}). It must return exactly one per " +
+                "entity type, in the same order as the type array it was given.");
+
+        for (int i = 0; i < types.Length; i++)
+        {
+            if (delegates[i] is null)
+                throw new InvalidOperationException(
+                    $"JauntyConfig.ReflectionMultiMapperResolverN returned a null delegate at index {i} " +
+                    $"for arity {types.Length} ({DescribeTypes(types)}), where the mapper for " +
+                    $"'{types[i].Name}' was expected.");
+        }
+
+        return delegates;
+    }
+
+    private static string DescribeTypes(Type[] types)
+    {
+        var names = new string[types.Length];
+        for (int i = 0; i < types.Length; i++) names[i] = types[i].Name;
+        return string.Join(", ", names);
+    }
+}
 
 // ============================================================
 //  Arity-3
@@ -13,7 +107,11 @@ namespace Jaunty.Internals.Read;
 /// <summary>Hook for arity-3 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -29,7 +127,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
     internal static MultiEntityMapper<T1, T2, T3> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -38,10 +137,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3> CreateMapper(IDataReader reader)
@@ -51,7 +154,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;
@@ -73,7 +176,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
 /// <summary>Hook for arity-4 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T2 : new() where T3 : new() where T4 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -91,7 +198,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
     internal static MultiEntityMapper<T1, T2, T3, T4> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3, T4>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3, T4> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -100,10 +208,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4> CreateMapper(IDataReader reader)
@@ -113,7 +225,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;
@@ -138,7 +250,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
 /// <summary>Hook for arity-5 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -158,7 +274,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
     internal static MultiEntityMapper<T1, T2, T3, T4, T5> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3, T4, T5>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -167,10 +284,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5> CreateMapper(IDataReader reader)
@@ -180,7 +301,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;
@@ -208,7 +329,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
 /// <summary>Hook for arity-6 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -230,7 +355,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
     internal static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5, T6>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3, T4, T5, T6>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5, T6> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -239,10 +365,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6> CreateMapper(IDataReader reader)
@@ -252,7 +382,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5, T6). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;
@@ -283,7 +413,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
 /// <summary>Hook for arity-7 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -307,7 +441,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
     internal static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -316,10 +451,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
     private static string BuildSchemaKey(IDataReader reader)
     {
         int fieldCount = reader.FieldCount;
+        // AUD-R34-023: the generation is part of the key, so a JauntyConfig.ColumnNameResolver
+        // change (or JauntyConfig.Reset()) retires mappers built under the old configuration
+        // instead of serving them for the process lifetime. Same fix as the reflection-side
+        // MultiEntityMapper caches this layer delegates to.
         var parts = new string[fieldCount + 1];
-        parts[0] = fieldCount.ToString();
+        parts[0] = ConfigurationGeneration.Current.ToString() + "|" + fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> CreateMapper(IDataReader reader)
@@ -329,7 +468,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5, T6, T7). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;

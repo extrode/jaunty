@@ -5,31 +5,40 @@ using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
 using Jaunty.Interceptors;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static async ValueTask<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
+    // Internal (not private) so tests can exercise the non-DbConnection fallback branch directly:
+    // every current public async entry point rejects non-DbConnection connections before reaching
+    // here, so this path is otherwise unreachable from outside the assembly.
+    internal static async ValueTask<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
             CommandOptions options, Func<IDataReader, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(handler);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (handler is null) throw new ArgumentNullException(nameof(handler));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         var dbConnection = connection as DbConnection;
 
         // Use InterceptorPipeline if registered, otherwise execute directly
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
             TResult result = default!;
-            await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            await pipeline.ExecuteWithInterceptionAsync(
                 sql,
                 parameters,
                 connection,
@@ -55,14 +64,15 @@ public static partial class Jaunty
                             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                                 command.CommandType = options.CommandType;
 
-                            if (options.Transaction is DbTransaction dbTransaction)
-                                command.Transaction = dbTransaction;
+                            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
                             if (options.CommandTimeout.HasValue)
                                 command.CommandTimeout = options.CommandTimeout.Value;
 
                             if (parameters is not null)
                                 ParameterBinder.Bind(command, parameters);
+
+                            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
 #if NET8_0_OR_GREATER
                             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -74,9 +84,21 @@ public static partial class Jaunty
                         }
                         else
                         {
-                            // Fallback for non-DbConnection - use sync methods wrapped in Task.Run
+                            // AUD-R35-123: this used to wrap Open and Close in Task.Run and say it was
+                            // "to avoid blocking". ExecuteReader() below - by a wide margin the longest
+                            // blocking call of the three - was not wrapped, and neither is the row
+                            // reading the handler then does, so the property the comment claimed was
+                            // never delivered. What the wrapping did deliver was a thread hop and a lost
+                            // synchronization context per call, and a Task.Run around a blocking call
+                            // still blocks a thread-pool thread rather than freeing one. Either all
+                            // three move off the caller's thread or none do; none is cheaper and
+                            // honest. The token is checked directly, which is what Task.Run's token
+                            // argument was doing.
                             if (wasClosed)
-                                await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                                connection.Open();
+                            }
 
                             using IDbCommand command = connection.CreateCommand();
                             command.CommandText = sql;
@@ -93,6 +115,8 @@ public static partial class Jaunty
                             if (parameters is not null)
                                 ParameterBinder.Bind(command, parameters);
 
+                            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
                             using IDataReader reader = command.ExecuteReader();
                             result = await handler(reader, cancellationToken).ConfigureAwait(false);
                         }
@@ -106,9 +130,9 @@ public static partial class Jaunty
                             if (dbConnection is not null)
                                 await dbConnection.CloseAsync().ConfigureAwait(false);
                             else
-                                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                                connection.Close();
 #else
-                            await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                            connection.Close();
 #endif
                         }
                     }
@@ -139,8 +163,7 @@ public static partial class Jaunty
                 if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                     command.CommandType = options.CommandType;
 
-                if (options.Transaction is DbTransaction dbTransaction)
-                    command.Transaction = dbTransaction;
+                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
                 if (options.CommandTimeout.HasValue)
                     command.CommandTimeout = options.CommandTimeout.Value;
@@ -160,9 +183,13 @@ public static partial class Jaunty
             }
             else
             {
-                // Fallback for non-DbConnection - use sync methods wrapped in Task.Run to avoid blocking
+                // AUD-R35-123: see the interceptor branch above - the wrapping did not deliver
+                // what its comment claimed, so this path runs the sync members directly too.
                 if (wasClosed)
-                    await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    connection.Open();
+                }
 
                 using IDbCommand command = connection.CreateCommand();
                 command.CommandText = sql;
@@ -195,9 +222,9 @@ public static partial class Jaunty
                 if (dbConnection is not null)
                     await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                    connection.Close();
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                connection.Close();
 #endif
             }
         }

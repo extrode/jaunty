@@ -26,7 +26,7 @@ var products = connection.Query<Product>(
 
 ```bash
 # Clone the repository
-git clone https://github.com/beparey/Jaunty.git
+git clone https://github.com/extrode/jaunty.git
 cd Jaunty
 
 # Build all targets
@@ -54,7 +54,7 @@ dotnet test --filter "FullyQualifiedName~QueryTests"
 ### 1. Add the Package
 
 ```bash
-dotnet add package Beparey.Jaunty
+dotnet add package Extrode.Jaunty
 ```
 
 ### 2. Create an Entity
@@ -93,7 +93,7 @@ var filtered = connection.Query<Product>(
 
 | Mode | Method | Behavior |
 |------|--------|----------|
-| **Strict** | `Query<T>()` | All properties must have columns or throws |
+| **Strict** | `Query<T>()` | Throws on an unmatched property **or** an unmatched column |
 | **Partial** | `QueryPartial<T>()` | Only maps existing columns, ignores rest |
 
 ### Connection Management
@@ -137,6 +137,12 @@ Your SELECT doesn't include a column for property X. Either:
 - Add the column to your SELECT
 - Use `QueryPartial<T>()` instead
 - Add `[Ignore]` attribute to the property
+
+On a source-generated entity the same cause surfaces as whatever the provider's `GetOrdinal` throws
+for an unknown column name - `ArgumentOutOfRangeException` on SQLite, `IndexOutOfRangeException` on
+SqlClient - rather than this message. The reverse case - a column with no property - throws only
+under the reflection mapper; see
+[which mapper enforces which direction](../01-api-reference/query-partial-methods.md#which-mapper-enforces-which-direction).
 
 ### "Parameter count mismatch"
 

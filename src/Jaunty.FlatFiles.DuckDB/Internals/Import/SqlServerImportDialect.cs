@@ -8,7 +8,7 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// <summary>
 /// Import dialect for SQL Server databases.
 /// </summary>
-internal sealed class SqlServerImportDialect : IImportDialect
+internal sealed class SqlServerImportDialect : IImportDialect, IQuotedIdentifierDialect
 {
     /// <summary>
     /// Singleton instance.
@@ -16,14 +16,22 @@ internal sealed class SqlServerImportDialect : IImportDialect
     public static SqlServerImportDialect Instance { get; } = new();
 
     /// <summary>
-    /// Quotes an identifier for SQL Server, doubling any embedded double quotes so the
-    /// identifier cannot break out of the quoted context (e.g. names derived from
-    /// filenames or [Table]/[Column] attributes).
+    /// Quotes an identifier for SQL Server using [brackets], doubling any embedded closing
+    /// bracket so the identifier cannot break out of the quoted context (e.g. names derived
+    /// from filenames or [Table]/[Column] attributes). Brackets are SQL Server's native
+    /// identifier delimiter and work regardless of the session's QUOTED_IDENTIFIER setting,
+    /// unlike double quotes, which only work when QUOTED_IDENTIFIER is ON (see
+    /// src/Jaunty/Dialects/SqlServerDialect.cs).
     /// </summary>
-    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+    private static string QuoteIdentifier(string identifier) => $"[{identifier.Replace("]", "]]")}]";
 
     /// <inheritdoc />
-    public string MapClrTypeToSqlType(Type clrType) => clrType switch
+    string IQuotedIdentifierDialect.QuoteIdentifier(string identifier) => QuoteIdentifier(identifier);
+
+    /// <inheritdoc />
+    public string MapClrTypeToSqlType(Type clrType) => MapNormalized(ImportTypeMapping.Normalize(clrType));
+
+    private static string MapNormalized(Type clrType) => clrType switch
     {
         _ when clrType == typeof(string) => "NVARCHAR(MAX)",
         _ when clrType == typeof(int) => "INT",
@@ -32,13 +40,28 @@ internal sealed class SqlServerImportDialect : IImportDialect
         _ when clrType == typeof(byte) => "TINYINT",
         _ when clrType == typeof(float) => "REAL",
         _ when clrType == typeof(double) => "FLOAT",
-        _ when clrType == typeof(decimal) => "DECIMAL(18,4)",
+        // AUD-R35-030: was DECIMAL(18,4), which SQL Server silently rounds to - an imported 1.23456
+        // landed as 1.2346 with no error, while the same column against PostgreSQL's unconstrained
+        // NUMERIC kept every digit. (38,9) is the widest fixed choice that cannot overflow: 38-9=29
+        // integer digits covers decimal.MaxValue (7.9e28, 29 digits) in full, so the only remaining
+        // loss is beyond nine decimal places rather than beyond four. SQL Server has no
+        // unconstrained DECIMAL, so a fixed precision has to be picked; this is the one that loses
+        // least.
+        _ when clrType == typeof(decimal) => "DECIMAL(38,9)",
         _ when clrType == typeof(bool) => "BIT",
         _ when clrType == typeof(DateTime) => "DATETIME2",
         _ when clrType == typeof(DateTimeOffset) => "DATETIMEOFFSET",
         _ when clrType == typeof(Guid) => "UNIQUEIDENTIFIER",
         _ when clrType == typeof(byte[]) => "VARBINARY(MAX)",
-        _ => "NVARCHAR(MAX)"
+        _ when clrType == typeof(DateOnly) => "DATE",
+        _ when clrType == typeof(TimeOnly) => "TIME",
+        _ when clrType == typeof(TimeSpan) => "TIME",
+        _ when clrType == typeof(char) => "NCHAR(1)",
+        _ when clrType == typeof(uint) => "BIGINT",
+        _ when clrType == typeof(ulong) => "DECIMAL(20,0)",
+        _ when clrType == typeof(sbyte) => "SMALLINT",
+        _ when clrType == typeof(ushort) => "INT",
+        _ => throw ImportTypeMapping.Unsupported(clrType, "SQL Server")
     };
 
     /// <inheritdoc />
@@ -50,8 +73,16 @@ internal sealed class SqlServerImportDialect : IImportDialect
         string? keyColumnName)
     {
         // SQL Server uses MERGE for upsert/skip scenarios
-        if (conflictStrategy != ConflictStrategy.Error && keyColumnName is not null)
+        if (conflictStrategy != ConflictStrategy.Error)
         {
+            if (keyColumnName is null)
+            {
+                throw new NotSupportedException(
+                    $"Table '{tableName}' has no [Key] property to use for conflict resolution. " +
+                    $"The {conflictStrategy} conflict strategy requires a [Key]-attributed property; " +
+                    "use ConflictStrategy.Error (the default) instead, or add a [Key] attribute to the entity.");
+            }
+
             return GenerateMergeSql(tableName, columnNames, parameterNames, conflictStrategy, keyColumnName);
         }
 
@@ -83,7 +114,7 @@ internal sealed class SqlServerImportDialect : IImportDialect
         string keyColumnName)
     {
         var sb = new StringBuilder();
-        sb.Append($"MERGE {QuoteIdentifier(tableName)} AS target USING (SELECT ");
+        sb.Append($"MERGE {QuoteIdentifier(tableName)} WITH (HOLDLOCK) AS target USING (SELECT ");
 
         for (int i = 0; i < parameterNames.Count; i++)
         {
@@ -95,14 +126,21 @@ internal sealed class SqlServerImportDialect : IImportDialect
 
         if (conflictStrategy == ConflictStrategy.Upsert)
         {
-            sb.Append(" WHEN MATCHED THEN UPDATE SET ");
-            var first = true;
+            // Key-only entity: "WHEN MATCHED THEN UPDATE SET" with no assignments is a syntax
+            // error, so omit the clause entirely - the row already matches by key and there is
+            // nothing to update.
+            var assignments = new StringBuilder();
             foreach (var colName in columnNames)
             {
                 if (colName == keyColumnName) continue;
-                if (!first) sb.Append(", ");
-                sb.Append($"target.{QuoteIdentifier(colName)} = source.{QuoteIdentifier(colName)}");
-                first = false;
+                if (assignments.Length > 0) assignments.Append(", ");
+                assignments.Append($"target.{QuoteIdentifier(colName)} = source.{QuoteIdentifier(colName)}");
+            }
+
+            if (assignments.Length > 0)
+            {
+                sb.Append(" WHEN MATCHED THEN UPDATE SET ");
+                sb.Append(assignments);
             }
         }
 
@@ -129,14 +167,32 @@ internal sealed class SqlServerImportDialect : IImportDialect
         IReadOnlyList<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> columns)
     {
         var sb = new StringBuilder();
-        sb.Append($"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '{tableName.Replace("'", "''")}') ");
+
+        // AUD-R26-065: OBJECT_ID resolves the name the same way CREATE TABLE below will - in the
+        // connection's default schema, or in an explicitly named one - instead of matching a bare
+        // name across every schema in the database.
+        //
+        // The old guard was `IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '<table>')`, and
+        // sys.tables holds one row per table per schema with no schema predicate applied. An
+        // unrelated staging.orders or archive.orders therefore suppressed the creation of
+        // dbo.orders, and the import's INSERT then ran against a table that was never made - or,
+        // worse, against a same-named table in another schema that the connection's default schema
+        // happened to resolve to. sys.tables exposes schema_id precisely so this can be qualified;
+        // OBJECT_ID does the qualification for us and accepts a schema-qualified name unchanged.
+        //
+        // Still not atomic, and cannot be made so in one statement: two importers starting together
+        // both pass the check and one gets "There is already an object named 'x'". PostgreSQL and
+        // SQLite avoid this for free with CREATE TABLE IF NOT EXISTS, which SQL Server has no
+        // equivalent of. Serialising it needs an application lock or a caught error 2714 around the
+        // whole create, which is the caller's transaction to own rather than this generator's.
+        sb.Append($"IF OBJECT_ID(N'{QuoteIdentifier(tableName).Replace("'", "''")}', N'U') IS NULL ");
         sb.Append($"CREATE TABLE {QuoteIdentifier(tableName)} (");
 
         for (int i = 0; i < columns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
-            sb.Append($"{QuoteIdentifier(name)} {MapClrTypeToSqlType(clrType)}");
+            sb.Append($"{QuoteIdentifier(name)} {ImportTypeMapping.MapForColumn(MapClrTypeToSqlType, name, clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
         }

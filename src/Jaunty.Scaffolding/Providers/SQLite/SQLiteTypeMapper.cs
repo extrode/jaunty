@@ -21,12 +21,12 @@ public sealed class SQLiteTypeMapper : ITypeMapper
 
         return dataType switch
         {
-            // Integer types - SQLite stores all integers as 64-bit
-            "INT" or "INTEGER" or "TINYINT" or "SMALLINT" or "MEDIUMINT" or "INT2" or "INT8" =>
-                new CSharpTypeInfo { TypeName = "long", IsValueType = true },
-
-            // Explicitly use int for common names
-            "BIGINT" =>
+            // Integer types - SQLite stores all integers as 64-bit, so every spelling maps to long
+            // regardless of the width the declaration names. AUD-R35-270: BIGINT used to sit in an
+            // arm of its own under the comment "Explicitly use int for common names", which
+            // described neither the arm it labelled (it returns long) nor any decision this switch
+            // makes.
+            "INT" or "INTEGER" or "TINYINT" or "SMALLINT" or "MEDIUMINT" or "INT2" or "INT8" or "BIGINT" =>
                 new CSharpTypeInfo { TypeName = "long", IsValueType = true },
 
             // Real types
@@ -52,17 +52,17 @@ public sealed class SQLiteTypeMapper : ITypeMapper
 
             // Date/Time (SQLite stores as text or numbers)
             "DATE" =>
-                new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true, RequiredUsing = "System" },
 
             "TIME" =>
-                new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
 
             "DATETIME" or "TIMESTAMP" =>
-                new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true, RequiredUsing = "System" },
 
             // GUID/UUID (SQLite stores as text or blob)
             "GUID" or "UUID" or "UNIQUEIDENTIFIER" =>
-                new CSharpTypeInfo { TypeName = "Guid", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "Guid", IsValueType = true, RequiredUsing = "System" },
 
             // Default to object for unknown types
             _ => new CSharpTypeInfo { TypeName = "object", IsValueType = false }

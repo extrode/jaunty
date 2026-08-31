@@ -12,8 +12,11 @@ public class SQLiteSchemaReaderTests : IDisposable
 
     public SQLiteSchemaReaderTests()
     {
-        // Use in-memory database with shared cache so it persists across connections
-        _connectionString = "Data Source=InMemorySchemaTest;Mode=Memory;Cache=Shared";
+        // Use in-memory database with shared cache so it persists across connections.
+        // GUID-suffixed per instance so a future test-method-level-parallelism change (or a
+        // constructor failure that skips Dispose) can't cause two instances to collide on the
+        // same shared-cache name.
+        _connectionString = $"Data Source=InMemorySchemaTest_{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
         _connection = new SqliteConnection(_connectionString);
         _connection.Open();
 
@@ -69,6 +72,45 @@ public class SQLiteSchemaReaderTests : IDisposable
                 PRIMARY KEY (order_id, product_id)
             )";
         cmd.ExecuteNonQuery();
+
+        // Composite primary key declared in the *opposite* order to the physical columns.
+        // PRAGMA table_info reports rows in physical order, so anything that derives the key
+        // order by filtering the column list gets [col_a, col_b] instead of [col_b, col_a].
+        cmd.CommandText = @"
+            CREATE TABLE reversed_composite_pk (
+                col_a INTEGER NOT NULL,
+                col_b INTEGER NOT NULL,
+                payload TEXT,
+                PRIMARY KEY (col_b, col_a)
+            )";
+        cmd.ExecuteNonQuery();
+
+        // Plain "INTEGER PRIMARY KEY" (no AUTOINCREMENT keyword) - still a rowid alias and
+        // therefore still auto-generated.
+        cmd.CommandText = @"
+            CREATE TABLE plain_rowid_pk (
+                item_id INTEGER PRIMARY KEY,
+                item_name TEXT NOT NULL
+            )";
+        cmd.ExecuteNonQuery();
+
+        // WITHOUT ROWID table - INTEGER PRIMARY KEY does NOT get rowid aliasing here.
+        cmd.CommandText = @"
+            CREATE TABLE without_rowid_pk (
+                code_id INTEGER PRIMARY KEY,
+                code_name TEXT NOT NULL
+            ) WITHOUT ROWID";
+        cmd.ExecuteNonQuery();
+
+        // Table name containing a single quote, requiring a quoted identifier. Exercises
+        // GetCreateTableSqlAsync's WHERE name = @TableName lookup with a value that would have
+        // needed manual quote-doubling under the old string-interpolated query.
+        cmd.CommandText = @"
+            CREATE TABLE ""order's notes"" (
+                note_id INTEGER PRIMARY KEY,
+                note_text TEXT NOT NULL
+            ) WITHOUT ROWID";
+        cmd.ExecuteNonQuery();
     }
 
     [Fact]
@@ -79,9 +121,10 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        Assert.Equal(4, schema.Tables.Count);
-        Assert.Equal(["customers", "order_details", "orders", "products"],
-            schema.Tables.Select(t => t.TableName).Order());
+        Assert.Equal(8, schema.Tables.Count);
+        Assert.Equal(
+            new[] { "customers", "order's notes", "order_details", "orders", "plain_rowid_pk", "products", "reversed_composite_pk", "without_rowid_pk" }.OrderBy(t => t, StringComparer.Ordinal),
+            schema.Tables.Select(t => t.TableName).OrderBy(t => t, StringComparer.Ordinal));
     }
 
     [Fact]
@@ -132,9 +175,76 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var orderDetailsTable = schema.Tables.First(t => t.TableName == "order_details");
         Assert.NotNull(orderDetailsTable.PrimaryKey);
-        Assert.Equal(2, orderDetailsTable.PrimaryKey!.Columns.Count);
-        Assert.Contains("order_id", orderDetailsTable.PrimaryKey!.Columns);
-        Assert.Contains("product_id", orderDetailsTable.PrimaryKey!.Columns);
+        Assert.Equal(new[] { "order_id", "product_id" }, orderDetailsTable.PrimaryKey!.Columns);
+    }
+
+    // R24: the key order came from filtering the columns (physical order) rather than from the
+    // PRAGMA table_info pk ordinal, so a key declared against the grain of the column order was
+    // reported reversed. The order-independent Assert.Contains in the test above can't see it,
+    // and PrimaryKeyInfo.Columns order is what generated key lookups/parameter order depend on.
+    [Fact]
+    public async Task ReadSchemaAsync_CompositePrimaryKey_UsesDeclarationOrderNotColumnOrder()
+    {
+        var reader = new SQLiteSchemaReader();
+        var options = new SchemaReaderOptions();
+
+        var schema = await reader.ReadSchemaAsync(_connectionString, options);
+
+        var table = schema.Tables.First(t => t.TableName == "reversed_composite_pk");
+        Assert.NotNull(table.PrimaryKey);
+        Assert.Equal(new[] { "col_b", "col_a" }, table.PrimaryKey!.Columns);
+
+        // The columns themselves stay in physical order - only the key is re-ordered.
+        Assert.Equal(new[] { "col_a", "col_b", "payload" }, table.Columns.Select(c => c.ColumnName));
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_PlainIntegerPrimaryKeyWithoutAutoincrement_IsIdentity()
+    {
+        var reader = new SQLiteSchemaReader();
+        var options = new SchemaReaderOptions();
+
+        var schema = await reader.ReadSchemaAsync(_connectionString, options);
+
+        var table = schema.Tables.First(t => t.TableName == "plain_rowid_pk");
+        var idColumn = table.Columns.First(c => c.ColumnName == "item_id");
+
+        // A single-column "INTEGER PRIMARY KEY" is a rowid alias and is always
+        // auto-generated, even without the AUTOINCREMENT keyword.
+        Assert.True(idColumn.IsPrimaryKey);
+        Assert.True(idColumn.IsIdentity);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_WithoutRowidTable_IntegerPrimaryKeyIsNotIdentity()
+    {
+        var reader = new SQLiteSchemaReader();
+        var options = new SchemaReaderOptions();
+
+        var schema = await reader.ReadSchemaAsync(_connectionString, options);
+
+        var table = schema.Tables.First(t => t.TableName == "without_rowid_pk");
+        var idColumn = table.Columns.First(c => c.ColumnName == "code_id");
+
+        // WITHOUT ROWID suppresses rowid aliasing, so this INTEGER PRIMARY KEY is not
+        // auto-generated even though it's a single-column INTEGER PK.
+        Assert.True(idColumn.IsPrimaryKey);
+        Assert.False(idColumn.IsIdentity);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_CompositePrimaryKey_ColumnsAreNotIdentity()
+    {
+        var reader = new SQLiteSchemaReader();
+        var options = new SchemaReaderOptions();
+
+        var schema = await reader.ReadSchemaAsync(_connectionString, options);
+
+        var table = schema.Tables.First(t => t.TableName == "order_details");
+
+        // A composite primary key doesn't get rowid aliasing, even though each column
+        // individually has type affinity INTEGER.
+        Assert.All(table.Columns.Where(c => c.IsPrimaryKey), c => Assert.False(c.IsIdentity));
     }
 
     [Fact]
@@ -164,7 +274,7 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        Assert.Equal(3, schema.Tables.Count);
+        Assert.Equal(7, schema.Tables.Count);
         Assert.DoesNotContain("order_details", schema.Tables.Select(t => t.TableName));
     }
 
@@ -217,6 +327,24 @@ public class SQLiteSchemaReaderTests : IDisposable
         Assert.Equal(
             ["customer_id", "first_name", "last_name", "email", "birth_date", "balance", "is_active"],
             columnNames);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_TableNameWithSingleQuote_ReadsWithoutRowidCorrectly()
+    {
+        var reader = new SQLiteSchemaReader();
+        var options = new SchemaReaderOptions();
+
+        var schema = await reader.ReadSchemaAsync(_connectionString, options);
+
+        var table = schema.Tables.First(t => t.TableName == "order's notes");
+        var idColumn = table.Columns.First(c => c.ColumnName == "note_id");
+
+        // WITHOUT ROWID suppresses rowid aliasing; correctly detecting this requires
+        // GetCreateTableSqlAsync's WHERE name = @TableName lookup to have matched the
+        // apostrophe-containing table name exactly (not truncated/misescaped).
+        Assert.True(idColumn.IsPrimaryKey);
+        Assert.False(idColumn.IsIdentity);
     }
 
     public void Dispose()

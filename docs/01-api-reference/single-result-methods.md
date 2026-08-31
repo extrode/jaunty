@@ -190,6 +190,27 @@ public static T QuerySingle<T>(this IDbConnection connection, string sql, Comman
 **Exceptions:**
 - `InvalidOperationException`: If the result set is empty or contains more than one element
 
+### QuerySingle&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)
+
+Executes a parameterised query with command options and returns the single entity from the result set. Throws an exception if the result set is empty or contains more than one element.
+
+**Signature:**
+```csharp
+public static T QuerySingle<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
+```
+
+**Parameters:**
+- `connection`: The database connection
+- `sql`: The SQL query to execute
+- `parameters`: Parameters for the query
+- `options`: Command options (transaction, timeout, custom mapper)
+
+**Returns:**
+- `T`: The single entity of type T from the result set
+
+**Exceptions:**
+- `InvalidOperationException`: If the result set is empty or contains more than one element
+
 ### QuerySingleOrDefault&lt;T&gt;(string sql)
 
 Executes a query and returns the single entity from the result set or the default value if the result set is empty. Throws an exception if the result set contains more than one element.
@@ -263,7 +284,7 @@ Asynchronously executes a query and returns the first entity from the result set
 
 **Signature:**
 ```csharp
-public static Task<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryFirstOrDefaultAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -272,7 +293,7 @@ Asynchronously executes a query and returns the first entity from the result set
 
 **Signature:**
 ```csharp
-public static Task<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QuerySingleAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -281,7 +302,7 @@ Asynchronously executes a query and returns the single entity from the result se
 
 **Signature:**
 ```csharp
-public static Task<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QuerySingleOrDefaultAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -290,7 +311,7 @@ Asynchronously executes a query and returns the single entity from the result se
 
 **Signature:**
 ```csharp
-public static Task<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**
@@ -306,7 +327,7 @@ Asynchronously executes a parameterized query and returns the first entity from 
 
 **Signature:**
 ```csharp
-public static Task<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryFirstOrDefaultAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
@@ -315,7 +336,7 @@ Asynchronously executes a parameterized query and returns the first entity from 
 
 **Signature:**
 ```csharp
-public static Task<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QuerySingleAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
@@ -324,7 +345,7 @@ Asynchronously executes a parameterized query and returns the single entity from
 
 **Signature:**
 ```csharp
-public static Task<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QuerySingleOrDefaultAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
@@ -333,7 +354,7 @@ Asynchronously executes a parameterized query and returns the single entity from
 
 **Signature:**
 ```csharp
-public static Task<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**
@@ -352,7 +373,7 @@ Asynchronously executes a query with command options and returns the first entit
 
 **Signature:**
 ```csharp
-public static Task<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryFirstOrDefaultAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -361,7 +382,7 @@ Asynchronously executes a query with command options and returns the first entit
 
 **Signature:**
 ```csharp
-public static Task<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QuerySingleAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -370,7 +391,7 @@ Asynchronously executes a query with command options and returns the single enti
 
 **Signature:**
 ```csharp
-public static Task<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QuerySingleOrDefaultAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -379,7 +400,7 @@ Asynchronously executes a query with command options and returns the single enti
 
 **Signature:**
 ```csharp
-public static Task<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**
@@ -398,7 +419,7 @@ Asynchronously executes a parameterized query with command options and returns t
 
 **Signature:**
 ```csharp
-public static Task<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryFirstOrDefaultAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -407,7 +428,7 @@ Asynchronously executes a parameterized query with command options and returns t
 
 **Signature:**
 ```csharp
-public static Task<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QuerySingleAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -416,7 +437,7 @@ Asynchronously executes a parameterized query with command options and returns t
 
 **Signature:**
 ```csharp
-public static Task<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QuerySingleOrDefaultAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -425,7 +446,7 @@ Asynchronously executes a parameterized query with command options and returns t
 
 **Signature:**
 ```csharp
-public static Task<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**
@@ -489,7 +510,7 @@ Asynchronously executes a query and returns the first entity from the result set
 
 **Signature:**
 ```csharp
-public static Task<T> QueryPartialFirstAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QueryPartialFirstAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialFirstOrDefaultAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -498,7 +519,7 @@ Asynchronously executes a query and returns the first entity from the result set
 
 **Signature:**
 ```csharp
-public static Task<T?> QueryPartialFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QueryPartialFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialSingleAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -507,7 +528,7 @@ Asynchronously executes a query and returns the single entity from the result se
 
 **Signature:**
 ```csharp
-public static Task<T> QueryPartialSingleAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> QueryPartialSingleAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialSingleOrDefaultAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -516,7 +537,7 @@ Asynchronously executes a query and returns the single entity from the result se
 
 **Signature:**
 ```csharp
-public static Task<T?> QueryPartialSingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> QueryPartialSingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Coverage settings for the coverlet.collector already referenced by every project under tests/.
+  Used by scripts/coverage.ps1; not applied to ordinary `dotnet test` runs.
+
+  ExcludeByAttribute is set explicitly rather than left to coverlet's default, and the difference
+  is the whole point of this file. Adding CompilerGeneratedAttribute to the list - as coverlet's
+  own default does - hides lambda and closure bodies. Measured on Jaunty.FlatFiles.Tests with
+  coverlet.collector 10.0.1, the same run reports:
+
+      kept      583 classes, 38,130 lines
+      excluded  485 classes, 35,652 lines
+      hidden     98 classes,  2,478 lines - 77 <>c__DisplayClass closures, 18 <>c lambda
+                 caches, and 3 option/payload types
+
+  Async and iterator state machines are NOT affected on this collector version (240 of them
+  either way), so the exclusion is narrower than it looks - but 2,478 lines of predicate and
+  callback bodies reading as "not there" is still a report that flatters itself. Only
+  GeneratedCodeAttribute is wanted: that is what the source generator stamps on emitted code,
+  which genuinely should not be measured.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[Jaunty]*,[Jaunty.*]*</Include>
+          <Exclude>[*.Tests]*,[*.Tests.*]*,[Jaunty.Tests.Helpers]*</Exclude>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute</ExcludeByAttribute>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>false</UseSourceLink>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

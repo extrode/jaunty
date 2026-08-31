@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Runtime.CompilerServices;
 
@@ -7,31 +7,34 @@ using Jaunty.Core;
 using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 using Jaunty.Interceptors;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
+// AUD-R35-124. Every core below used to branch on `reader is DbDataReader` and carry a full
+// plain-IDataReader fallback arm underneath it, and not one of those arms could execute: all
+// twenty-five declare their connection parameter as DbConnection, so `connection as DbConnection`
+// inside ExecuteReaderAsync never yields null, the DbConnection branch is the only one taken, and
+// the reader it hands the handler is always the DbDataReader that DbCommand.ExecuteReaderAsync
+// returned. That was roughly 475 lines - near a quarter of this file - that no test could reach,
+// no coverage run could measure, and nothing stopped from drifting away from the live arm two
+// lines above it. The arms are gone and the invariant is now written down as a cast: if a future
+// change ever routes a non-DbConnection here, it fails immediately and by name rather than
+// silently taking a path no one has exercised since it was written. The IDataReader fallback
+// inside ExecuteReaderAsync itself stays - that method takes IDbConnection, is reachable with one,
+// and has its own tests.
 public static partial class Jaunty
 {
     private static async ValueTask<List<T>> QueryCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            var list = new List<T>(JauntyConfig.QueryResultCapacity);
-            if (reader is DbDataReader dbReader)
-            {
-                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
-                while (await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    list.Add(map(dbReader));
-            }
-            else
-            {
-                Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
-                while (reader.Read())
-                {
-                    ct.ThrowIfCancellationRequested();
-                    list.Add(map(reader));
-                }
-            }
+            var list = new List<T>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
+            while (await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                list.Add(map(dbReader));
             return list;
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -40,18 +43,12 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
-                return map(dbReader);
-            }
+            DbDataReader dbReader = (DbDataReader)reader;
 
-            if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-            ct.ThrowIfCancellationRequested();
-            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
-            return mapFallback(reader);
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+            Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
+            return map(dbReader);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -59,18 +56,12 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return default;
-                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
-                return map(dbReader);
-            }
+            DbDataReader dbReader = (DbDataReader)reader;
 
-            if (!reader.Read()) return default;
-            ct.ThrowIfCancellationRequested();
-            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
-            return mapFallback(reader);
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return default;
+            Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
+            return map(dbReader);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -78,26 +69,16 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync<T>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+            DbDataReader dbReader = (DbDataReader)reader;
 
-                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
-                T? entity = map(dbReader);
-                return await dbReader.ReadAsync(ct).ConfigureAwait(false)
-                    ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
-                    : entity!;
-            }
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
 
-            if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-            ct.ThrowIfCancellationRequested();
-            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
-            T? entityFallback = mapFallback(reader);
-            ct.ThrowIfCancellationRequested();
-            return reader.Read()
+            Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
+            T? entity = map(dbReader);
+            return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                 ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
-                : entityFallback!;
+                : entity!;
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -105,30 +86,62 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return default;
+            DbDataReader dbReader = (DbDataReader)reader;
 
-                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
-                T? entity = map(dbReader);
-                return await dbReader.ReadAsync(ct).ConfigureAwait(false)
-                    ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
-                    : entity;
-            }
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return default;
 
-            if (!reader.Read()) return default;
-            ct.ThrowIfCancellationRequested();
-            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
-            T? entityFallback = mapFallback(reader);
-            ct.ThrowIfCancellationRequested();
-            return reader.Read()
+            Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
+            T? entity = map(dbReader);
+            return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                 ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
-                : entityFallback;
+                : entity;
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T> QueryScalarCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
+    // AUD-R34-004: the async twin of QueryCore.cs's MappedTuple cores. The multi-entity cores
+    // delegate here when options.Mapper is set, and QueryFirstOrDefaultCoreAsync /
+    // QuerySingleOrDefaultCoreAsync return T? over a type parameter constrained only by new() -
+    // for a ValueTuple that is the tuple itself, so an empty result set produced a non-null
+    // (default, default) rather than null. Constraining the tuple to struct restores the contract.
+    private static async ValueTask<TTuple?> QueryFirstOrDefaultMappedTupleCoreAsync<TTuple>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<TTuple> options, MappingMode mode, CancellationToken cancellationToken = default) where TTuple : struct
+    {
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return (TTuple?)null;
+            Func<DbDataReader, TTuple> map = DrDispatcher.Resolve(dbReader, options, mode);
+            return map(dbReader);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    // describeType is only invoked on the more-than-one-row failure; see the sync twin for why it
+    // is passed rather than derived from typeof(TTuple).
+    private static async ValueTask<TTuple?> QuerySingleOrDefaultMappedTupleCoreAsync<TTuple>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<TTuple> options, MappingMode mode, Func<string> describeType, CancellationToken cancellationToken = default) where TTuple : struct
+    {
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return (TTuple?)null;
+
+            Func<DbDataReader, TTuple> map = DrDispatcher.Resolve(dbReader, options, mode);
+            TTuple entity = map(dbReader);
+            return await dbReader.ReadAsync(ct).ConfigureAwait(false)
+                ? throw new InvalidOperationException($"Sequence contains more than one element of type '{describeType()}'.")
+                : (TTuple?)entity;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Internal (not private) so tests can inject a custom DbCommand wrapper that deterministically
+    // cancels the operation's CancellationToken from inside ExecuteScalarAsync, right before the
+    // real exception it throws propagates into this method's finally-block cleanup. There is no
+    // other way to reach that precise interleaving through the public API, since it depends on
+    // control over exactly when cancellation happens relative to command execution.
+    internal static async ValueTask<T> QueryScalarCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(dbConnection);
@@ -141,10 +154,14 @@ public static partial class Jaunty
 #endif
 
         // Use InterceptorPipeline if registered, otherwise execute directly
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
             T result = default!;
-            await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            await pipeline.ExecuteWithInterceptionAsync(
                 sql,
                 parameters,
                 dbConnection,
@@ -169,8 +186,7 @@ public static partial class Jaunty
                         if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                             command.CommandType = options.CommandType;
 
-                        if (options.Transaction is DbTransaction dbTransaction)
-                            command.Transaction = dbTransaction;
+                        command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
                         if (options.CommandTimeout.HasValue)
                             command.CommandTimeout = options.CommandTimeout.Value;
@@ -178,14 +194,11 @@ public static partial class Jaunty
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
 
-                        object? commandResult = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-                        if (commandResult is null or DBNull)
-                            result = default!;
-                        else if (commandResult is T direct)
-                            result = direct;
-                        else
-                            result = ScalarConverter<T>.Convert(commandResult);
+                        // AUD-R26: options.Mapper was accepted and discarded here. See ScalarExecution.
+                        result = await ScalarExecution.ExecuteAsync(command, options.Mapper, cancellationToken)
+                            .ConfigureAwait(false);
 
                         return result;
                     }
@@ -196,7 +209,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                             await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                            await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                            await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
                         }
                     }
@@ -224,8 +237,7 @@ public static partial class Jaunty
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -235,15 +247,9 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-            object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-
-            if (result is null or DBNull)
-                return default!;
-
-            if (result is T direct)
-                return direct;
-
-            return ScalarConverter<T>.Convert(result);
+            // AUD-R26: options.Mapper was accepted and discarded here. See ScalarExecution.
+            return await ScalarExecution.ExecuteAsync(command, options.Mapper, cancellationToken)
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -252,13 +258,15 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
     }
 
-#if ASYNC_ENUMERABLE_SUPPORT
+    // Deliberately no InterceptorPipeline here - see the rationale on QueryStreamCore in
+    // QueryCore.cs. A lazy IAsyncEnumerable can't be wrapped by ExecuteWithInterceptionAsync
+    // without materializing every row first, which is what streaming exists to avoid.
     private static async IAsyncEnumerable<T> QueryStreamCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
     {
         var wasClosed = dbConnection.State == ConnectionState.Closed;
@@ -275,14 +283,18 @@ public static partial class Jaunty
 #endif
             command.CommandText = sql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
 #if NET8_0_OR_GREATER
             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -304,103 +316,45 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
     }
-#else
-    private static async ValueTask<IEnumerable<T>> QueryStreamCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
-    {
-        var results = new List<T>(JauntyConfig.QueryResultCapacity);
-        var wasClosed = dbConnection.State == ConnectionState.Closed;
-
-        try
-        {
-            if (wasClosed)
-                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            using var command = dbConnection.CreateCommand();
-            command.CommandText = sql;
-
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
-
-            if (options.CommandTimeout.HasValue)
-                command.CommandTimeout = options.CommandTimeout.Value;
-
-            if (parameters is not null)
-                ParameterBinder.Bind(command, parameters);
-
-            using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            var map = DrDispatcher.Resolve(reader, options, mode);
-
-            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                results.Add(map(reader));
-        }
-        finally
-        {
-            if (wasClosed && dbConnection.State != ConnectionState.Closed)
-            {
-#if NET8_0_OR_GREATER
-                await dbConnection.CloseAsync().ConfigureAwait(false);
-#else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
-#endif
-            }
-        }
-
-        return results;
-    }
-#endif
 
     #region Multi-Entity Async Core Methods
 
     private static async ValueTask<List<(T1, T2)>> QueryMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryCoreAsync<(T1, T2)>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity * 2);
+            var results = new List<(T1, T2)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
-            if (reader is DbDataReader dbReader)
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return results;
+
+            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
+
+            do
             {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return results;
+                var t1 = new T1();
+                var t2 = new T2();
 
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
+                mapping.Map(t1, t2, dbReader);
 
-                do
-                {
-                    var t1 = new T1();
-                    var t2 = new T2();
-
-                    mapping.ApplyT1(t1, dbReader);
-                    mapping.ApplyT2(t2, dbReader);
-
-                    results.Add((t1, t2));
-                }
-                while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
+                results.Add((t1, t2));
             }
-            else
-            {
-                if (!reader.Read())
-                    return results;
-
-                var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-                do
-                {
-                    ct.ThrowIfCancellationRequested();
-                    var t1 = new T1();
-                    var t2 = new T2();
-
-                    mapping.ApplyT1(t1, reader);
-                    mapping.ApplyT2(t2, reader);
-
-                    results.Add((t1, t2));
-                }
-                while (reader.Read());
-            }
+            while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
 
             return results;
         }, cancellationToken).ConfigureAwait(false);
@@ -414,36 +368,29 @@ public static partial class Jaunty
 
     private static async ValueTask<(T1, T2)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return ((T1, T2)?)null;
+            DbDataReader dbReader = (DbDataReader)reader;
 
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return ((T1, T2)?)null;
 
-                var t1 = new T1();
-                var t2 = new T2();
+            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
 
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
+            var t1 = new T1();
+            var t2 = new T2();
 
-                return (t1, t2);
-            }
+            mapping.Map(t1, t2, dbReader);
 
-            if (!reader.Read())
-                return null;
-
-            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1Fallback = new T1();
-            var t2Fallback = new T2();
-
-            mappingFallback.ApplyT1(t1Fallback, reader);
-            mappingFallback.ApplyT2(t2Fallback, reader);
-
-            return (t1Fallback, t2Fallback);
+            return (t1, t2);
 
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -456,44 +403,32 @@ public static partial class Jaunty
 
     private static async ValueTask<(T1, T2)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name})", cancellationToken).ConfigureAwait(false);
+
         return await ExecuteReaderAsync<(T1, T2)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return null;
+            DbDataReader dbReader = (DbDataReader)reader;
 
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
-
-                if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-                return (t1, t2);
-            }
-
-            if (!reader.Read())
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                 return null;
 
-            ct.ThrowIfCancellationRequested();
-            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
+            var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
 
-            var t1Fallback = new T1();
-            var t2Fallback = new T2();
+            var t1 = new T1();
+            var t2 = new T2();
 
-            mappingFallback.ApplyT1(t1Fallback, reader);
-            mappingFallback.ApplyT2(t2Fallback, reader);
+            mapping.Map(t1, t2, dbReader);
 
-            ct.ThrowIfCancellationRequested();
-            if (reader.Read())
+            if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
                 throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
-            return (t1Fallback, t2Fallback);
+            return (t1, t2);
 
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -501,17 +436,36 @@ public static partial class Jaunty
 #if ASYNC_ENUMERABLE_SUPPORT
     private static async IAsyncEnumerable<(T1, T2)> QueryStreamMultiEntityCoreAsync<T1, T2>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+        {
+            await foreach ((T1, T2) mapped in QueryStreamCoreAsync<(T1, T2)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false))
+                yield return mapped;
+            yield break;
+        }
+
         var wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -519,7 +473,14 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield break;
@@ -531,8 +492,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
+                mapping.Map(t1, t2, reader);
 
                 yield return (t1, t2);
             }
@@ -545,7 +505,1091 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
+#endif
+            }
+        }
+    }
+#endif
+
+    #endregion
+
+    #region N-ary Multi-Entity Async Core Methods
+
+    private static async ValueTask<List<(T1, T2, T3)>> QueryMultiEntityCoreAsync<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryCoreAsync<(T1, T2, T3)>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        {
+            var results = new List<(T1, T2, T3)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
+
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return results;
+
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(dbReader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+
+                mapping.ApplyT1(t1, dbReader);
+                mapping.ApplyT2(t2, dbReader);
+                mapping.ApplyT3(t3, dbReader);
+
+                results.Add((t1, t2, t3));
+            }
+            while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
+
+            return results;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3)> QueryFirstMultiEntityCoreAsync<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    {
+        (T1, T2, T3)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return ((T1, T2, T3)?)null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+
+            return (t1, t2, t3);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3)> QuerySingleMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    {
+        (T1, T2, T3)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})", cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync<(T1, T2, T3)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+
+            if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})'.");
+
+            return (t1, t2, t3);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+#if ASYNC_ENUMERABLE_SUPPORT
+    private static async IAsyncEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+        {
+            await foreach ((T1, T2, T3) mapped in QueryStreamCoreAsync<(T1, T2, T3)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false))
+                yield return mapped;
+            yield break;
+        }
+
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
+            using DbCommand command = dbConnection.CreateCommand();
+#endif
+            command.CommandText = sql;
+
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
+
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                yield break;
+
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+
+                yield return (t1, t2, t3);
+            }
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false));
+        }
+        finally
+        {
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
+#endif
+            }
+        }
+    }
+#endif
+
+    private static async ValueTask<List<(T1, T2, T3, T4)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryCoreAsync<(T1, T2, T3, T4)>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        {
+            var results = new List<(T1, T2, T3, T4)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
+
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return results;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(dbReader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                var t4 = new T4();
+
+                mapping.ApplyT1(t1, dbReader);
+                mapping.ApplyT2(t2, dbReader);
+                mapping.ApplyT3(t3, dbReader);
+                mapping.ApplyT4(t4, dbReader);
+
+                results.Add((t1, t2, t3, t4));
+            }
+            while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
+
+            return results;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        (T1, T2, T3, T4)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return ((T1, T2, T3, T4)?)null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+            mapping.ApplyT4(t4, dbReader);
+
+            return (t1, t2, t3, t4);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        (T1, T2, T3, T4)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})", cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync<(T1, T2, T3, T4)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+            mapping.ApplyT4(t4, dbReader);
+
+            if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})'.");
+
+            return (t1, t2, t3, t4);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+#if ASYNC_ENUMERABLE_SUPPORT
+    private static async IAsyncEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+        {
+            await foreach ((T1, T2, T3, T4) mapped in QueryStreamCoreAsync<(T1, T2, T3, T4)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false))
+                yield return mapped;
+            yield break;
+        }
+
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
+            using DbCommand command = dbConnection.CreateCommand();
+#endif
+            command.CommandText = sql;
+
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
+
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                yield break;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                var t4 = new T4();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+
+                yield return (t1, t2, t3, t4);
+            }
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false));
+        }
+        finally
+        {
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
+#endif
+            }
+        }
+    }
+#endif
+
+    private static async ValueTask<List<(T1, T2, T3, T4, T5)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryCoreAsync<(T1, T2, T3, T4, T5)>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
+
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return results;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(dbReader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                var t4 = new T4();
+                var t5 = new T5();
+
+                mapping.ApplyT1(t1, dbReader);
+                mapping.ApplyT2(t2, dbReader);
+                mapping.ApplyT3(t3, dbReader);
+                mapping.ApplyT4(t4, dbReader);
+                mapping.ApplyT5(t5, dbReader);
+
+                results.Add((t1, t2, t3, t4, t5));
+            }
+            while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
+
+            return results;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        (T1, T2, T3, T4, T5)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return ((T1, T2, T3, T4, T5)?)null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+            mapping.ApplyT4(t4, dbReader);
+            mapping.ApplyT5(t5, dbReader);
+
+            return (t1, t2, t3, t4, t5);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        (T1, T2, T3, T4, T5)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})", cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync<(T1, T2, T3, T4, T5)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+            mapping.ApplyT4(t4, dbReader);
+            mapping.ApplyT5(t5, dbReader);
+
+            if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})'.");
+
+            return (t1, t2, t3, t4, t5);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+#if ASYNC_ENUMERABLE_SUPPORT
+    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+        {
+            await foreach ((T1, T2, T3, T4, T5) mapped in QueryStreamCoreAsync<(T1, T2, T3, T4, T5)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false))
+                yield return mapped;
+            yield break;
+        }
+
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
+            using DbCommand command = dbConnection.CreateCommand();
+#endif
+            command.CommandText = sql;
+
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
+
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                yield break;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                var t4 = new T4();
+                var t5 = new T5();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+
+                yield return (t1, t2, t3, t4, t5);
+            }
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false));
+        }
+        finally
+        {
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
+#endif
+            }
+        }
+    }
+#endif
+
+    private static async ValueTask<List<(T1, T2, T3, T4, T5, T6)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryCoreAsync<(T1, T2, T3, T4, T5, T6)>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5, T6)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
+
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return results;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(dbReader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                var t4 = new T4();
+                var t5 = new T5();
+                var t6 = new T6();
+
+                mapping.ApplyT1(t1, dbReader);
+                mapping.ApplyT2(t2, dbReader);
+                mapping.ApplyT3(t3, dbReader);
+                mapping.ApplyT4(t4, dbReader);
+                mapping.ApplyT5(t5, dbReader);
+                mapping.ApplyT6(t6, dbReader);
+
+                results.Add((t1, t2, t3, t4, t5, t6));
+            }
+            while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
+
+            return results;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        (T1, T2, T3, T4, T5, T6)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5, T6)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return ((T1, T2, T3, T4, T5, T6)?)null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+            mapping.ApplyT4(t4, dbReader);
+            mapping.ApplyT5(t5, dbReader);
+            mapping.ApplyT6(t6, dbReader);
+
+            return (t1, t2, t3, t4, t5, t6);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        (T1, T2, T3, T4, T5, T6)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5, T6)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})", cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync<(T1, T2, T3, T4, T5, T6)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+            mapping.ApplyT4(t4, dbReader);
+            mapping.ApplyT5(t5, dbReader);
+            mapping.ApplyT6(t6, dbReader);
+
+            if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})'.");
+
+            return (t1, t2, t3, t4, t5, t6);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+#if ASYNC_ENUMERABLE_SUPPORT
+    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+        {
+            await foreach ((T1, T2, T3, T4, T5, T6) mapped in QueryStreamCoreAsync<(T1, T2, T3, T4, T5, T6)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false))
+                yield return mapped;
+            yield break;
+        }
+
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
+            using DbCommand command = dbConnection.CreateCommand();
+#endif
+            command.CommandText = sql;
+
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
+
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                yield break;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                var t4 = new T4();
+                var t5 = new T5();
+                var t6 = new T6();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+
+                yield return (t1, t2, t3, t4, t5, t6);
+            }
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false));
+        }
+        finally
+        {
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
+#endif
+            }
+        }
+    }
+#endif
+
+    private static async ValueTask<List<(T1, T2, T3, T4, T5, T6, T7)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryCoreAsync<(T1, T2, T3, T4, T5, T6, T7)>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
+
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return results;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(dbReader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                var t4 = new T4();
+                var t5 = new T5();
+                var t6 = new T6();
+                var t7 = new T7();
+
+                mapping.ApplyT1(t1, dbReader);
+                mapping.ApplyT2(t2, dbReader);
+                mapping.ApplyT3(t3, dbReader);
+                mapping.ApplyT4(t4, dbReader);
+                mapping.ApplyT5(t5, dbReader);
+                mapping.ApplyT6(t6, dbReader);
+                mapping.ApplyT7(t7, dbReader);
+
+                results.Add((t1, t2, t3, t4, t5, t6, t7));
+            }
+            while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
+
+            return results;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        (T1, T2, T3, T4, T5, T6, T7)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QueryFirstOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5, T6, T7)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return ((T1, T2, T3, T4, T5, T6, T7)?)null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            var t7 = new T7();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+            mapping.ApplyT4(t4, dbReader);
+            mapping.ApplyT5(t5, dbReader);
+            mapping.ApplyT6(t6, dbReader);
+            mapping.ApplyT7(t7, dbReader);
+
+            return (t1, t2, t3, t4, t5, t6, t7);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        (T1, T2, T3, T4, T5, T6, T7)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})'.") : result.Value;
+    }
+
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+            return await QuerySingleOrDefaultMappedTupleCoreAsync<(T1, T2, T3, T4, T5, T6, T7)>(dbConnection, sql, parameters, options, mode, static () => $"({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})", cancellationToken).ConfigureAwait(false);
+
+        return await ExecuteReaderAsync<(T1, T2, T3, T4, T5, T6, T7)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
+        {
+            DbDataReader dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                return null;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(dbReader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            var t7 = new T7();
+
+            mapping.ApplyT1(t1, dbReader);
+            mapping.ApplyT2(t2, dbReader);
+            mapping.ApplyT3(t3, dbReader);
+            mapping.ApplyT4(t4, dbReader);
+            mapping.ApplyT5(t5, dbReader);
+            mapping.ApplyT6(t6, dbReader);
+            mapping.ApplyT7(t7, dbReader);
+
+            if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})'.");
+
+            return (t1, t2, t3, t4, t5, t6, t7);
+
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+#if ASYNC_ENUMERABLE_SUPPORT
+    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        // AUD-R34-001: the AUD-R33-004 fix landed on QueryCore.cs only, so the async half of
+        // the same public API went on discarding options.Mapper and running the reflection
+        // mapping. Delegating to the single-entity core is the same remedy the sync side uses:
+        // the tuple satisfies new(), and DrDispatcher returns options.Mapper ahead of every
+        // other strategy, so that core is the honouring path already written and tested.
+        if (options.Mapper is not null)
+        {
+            await foreach ((T1, T2, T3, T4, T5, T6, T7) mapped in QueryStreamCoreAsync<(T1, T2, T3, T4, T5, T6, T7)>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false))
+                yield return mapped;
+            yield break;
+        }
+
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
+            using DbCommand command = dbConnection.CreateCommand();
+#endif
+            command.CommandText = sql;
+
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
+
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                yield break;
+
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                var t4 = new T4();
+                var t5 = new T5();
+                var t6 = new T6();
+                var t7 = new T7();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                mapping.ApplyT7(t7, reader);
+
+                yield return (t1, t2, t3, t4, t5, t6, t7);
+            }
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false));
+        }
+        finally
+        {
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }

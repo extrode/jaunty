@@ -1,6 +1,8 @@
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.Interfaces;
 
+using Jaunty.FlatFiles.Internals;
+
 namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
@@ -68,10 +70,8 @@ public sealed class TsvFileSource : IFileSource
     public TsvFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
-        if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
-        if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
-        if (filePaths[0] is null) throw new ArgumentNullException(nameof(filePaths), "File path must not be null.");
-        FilePaths = filePaths;
+        FilePathValidator.ThrowIfInvalid(filePaths, nameof(filePaths));
+        FilePaths = FilePathValidator.Snapshot(filePaths);
         FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
@@ -96,5 +96,16 @@ public sealed class TsvFileSource : IFileSource
     }
 
     /// <inheritdoc />
-    public string? GenerateCopyToOptions() => "DELIMITER '\t', HEADER true";
+    public string? GenerateCopyToOptions()
+    {
+        // See CsvFileSource.GenerateCopyToOptions: HEADER true on a headerless source round-trips to a
+        // file whose first data row is consumed as column names.
+        var sb = new System.Text.StringBuilder(
+            HasHeader == false ? "DELIMITER '\t', HEADER false" : "DELIMITER '\t', HEADER true");
+
+        if (NullString is not null)
+            sb.Append($", NULL '{NullString.Replace("'", "''")}'");
+
+        return sb.ToString();
+    }
 }

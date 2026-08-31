@@ -1,17 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <LangVersion>latest</LangVersion>
     <!-- Suppress all warnings in test projects -->
     <NoWarn>$(NoWarn);CS1591;CS8618;CS8602;CS8603;CS8604;CS8625;xUnit1026;xUnit1051;xUnit2009;xUnit2010;xUnit2013;xUnit2017</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="coverlet.collector" Version="10.0.1" PrivateAssets="all" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
@@ -26,11 +25,46 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Real-server integration tests for MySqlSchemaReader/PostgreSqlSchemaReader/SqlServerSchemaReader
+         (AUD-R14 batch-8 coverage gap); skip via TestConfiguration when no server is configured. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+    <PackageReference Include="Npgsql" Version="10.0.1" />
+    <PackageReference Include="MySqlConnector" Version="2.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Jaunty.Scaffolding\Jaunty.Scaffolding.csproj" />
+    <!-- AUD-R25 (B8-1): ScaffoldGeneratorCompositionTests compiles the scaffolder's own output
+         together with JauntyGenerator, in memory, to prove the two halves of the product actually
+         compose. Referenced as ordinary assemblies (not OutputItemType="Analyzer") because the
+         generator is driven explicitly by CSharpGeneratorDriver rather than by this project's own
+         build; Jaunty supplies the [Table]/[Key] attributes and IMapped<T> the generated code
+         needs to compile against. -->
+    <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj"
+                      SetTargetFramework="TargetFramework=net8.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj"
+                      SetTargetFramework="TargetFramework=net10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" Condition="Exists('appsettings.json')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

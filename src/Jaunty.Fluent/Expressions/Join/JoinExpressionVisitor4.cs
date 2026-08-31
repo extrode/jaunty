@@ -129,7 +129,12 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
             return node;
         }
 
-        return base.VisitUnary(node);
+        // AUD-R34-019: the base implementation visits the operand and appends nothing for the
+        // operator, so `-p.UnitPrice` used to translate to a bare column - the negation silently
+        // gone from the emitted SQL. Negate, TypeAs, OnesComplement, ArrayLength and UnaryPlus all
+        // took that route.
+        throw new NotSupportedException(
+            $"Unary operator '{node.NodeType}' is not supported in JOIN expressions.");
     }
 
     protected override Expression VisitMember(MemberExpression node)
@@ -153,6 +158,70 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
         return node;
     }
 
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitConditional"/>
+    protected override Expression VisitConditional(ConditionalExpression node)
+        => throw new NotSupportedException(
+            "Conditional (ternary) expressions are not supported in JOIN predicates. " +
+            "Split the predicate into separate conditions, or filter with Where after the join.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitNew(NewExpression node)
+        => throw new NotSupportedException(
+            $"Constructing a '{node.Type.Name}' is not supported inside a JOIN predicate. " +
+            "Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        => throw new NotSupportedException(
+            "Type tests ('is', 'as') are not supported in JOIN predicates. There is no SQL " +
+            "equivalent of a CLR type test over a column; join on a discriminator column instead.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitInvocation(InvocationExpression node)
+        => throw new NotSupportedException(
+            "Invoking a delegate or a nested lambda is not supported inside a JOIN predicate. " +
+            "Inline the condition.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitNewArray(NewArrayExpression node)
+        => throw new NotSupportedException(
+            "Array construction is not supported inside a JOIN predicate. Build the array before " +
+            "the query and pass it in.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitMemberInit(MemberInitExpression node)
+        => throw new NotSupportedException(
+            $"Object initializers ('new {node.Type.Name} {{ ... }}') are not supported inside a " +
+            "JOIN predicate. Compute the value before the query and compare against it.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitListInit(ListInitExpression node)
+        => throw new NotSupportedException(
+            "Collection initializers are not supported inside a JOIN predicate. Build the " +
+            "collection before the query and pass it in.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitIndex(IndexExpression node)
+        => throw new NotSupportedException(
+            "Indexer access is not supported inside a JOIN predicate. Compute the value before " +
+            "the query and compare against it.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitDefault(DefaultExpression node)
+        => throw new NotSupportedException(
+            $"'default({node.Type.Name})' is not supported inside a JOIN predicate. Write the " +
+            "value out, or compute it before the query.");
+
+    /// <inheritdoc cref="JoinExpressionVisitor{T1, T2}.VisitNew"/>
+    protected override Expression VisitParameter(ParameterExpression node)
+        => throw new NotSupportedException(
+            $"'{node.Name}' is a whole entity, not a condition. Compare its properties instead.");
+
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        throw new NotSupportedException($"Method '{node.Method.Name}' is not supported in JOIN expressions.");
+    }
+
     private string? TryGetColumnExpression(Expression expression)
     {
         if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
@@ -170,39 +239,47 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
 
         string? alias;
         EntityMetadata metadata;
+        CachedDialectMetadata cached;
 
         // Match by parameter reference/identity (not by Type) so self-joins resolve correctly.
         if (param == _param1)
         {
             alias = _alias1;
             metadata = FluentMetadataCache.GetMetadata<T1>();
+            cached = FluentMetadataCache.GetForDialect<T1>(_dialect);
         }
         else if (param == _param2)
         {
             alias = _alias2;
             metadata = FluentMetadataCache.GetMetadata<T2>();
+            cached = FluentMetadataCache.GetForDialect<T2>(_dialect);
         }
         else if (param == _param3)
         {
             alias = _alias3;
             metadata = FluentMetadataCache.GetMetadata<T3>();
+            cached = FluentMetadataCache.GetForDialect<T3>(_dialect);
         }
         else if (param == _param4)
         {
             alias = _alias4;
             metadata = FluentMetadataCache.GetMetadata<T4>();
+            cached = FluentMetadataCache.GetForDialect<T4>(_dialect);
         }
         else
         {
             return null;
         }
 
-        string propertyName = member.Member.Name;
-        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
-        string columnName = column?.ColumnName ?? propertyName;
-        string escapedColumn = _dialect.EscapeColumnName(columnName);
+        // AUD-R25: this used to run metadata.Columns.FirstOrDefault(c => c.PropertyName == ...) -
+        // a LINQ delegate allocation plus an O(columns) linear scan - and hand the result to
+        // _dialect.EscapeColumnName, which re-runs SqlIdentifierValidator's regex match and a
+        // keyword HashSet lookup, both per column reference per query build. CachedDialectMetadata
+        // holds an OrdinalIgnoreCase dictionary of property name to already-escaped column name,
+        // built once per (entity, dialect) pair.
+        string escapedColumn = cached.GetColumnName(member.Member.Name);
 
-        string prefix = alias ?? metadata.TableName;
+        string prefix = alias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escapedColumn}";
     }
 
@@ -233,13 +310,8 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
         return false;
     }
 
-    private static object? EvaluateExpression(Expression expression)
-    {
-        if (expression is ConstantExpression constant)
-            return constant.Value;
-
-        LambdaExpression lambda = Expression.Lambda(expression);
-        Delegate compiled = lambda.Compile();
-        return compiled.DynamicInvoke();
-    }
+    // AUD-R25: this was one of eight byte-identical private copies. Kept as a one-line forwarder
+    // rather than rewriting every call site, so the shared implementation - including its
+    // closure-member fast path - is the only place the behaviour lives.
+    private static object? EvaluateExpression(Expression expression) => ExpressionEvaluator.Evaluate(expression);
 }

@@ -1,4 +1,4 @@
-using Jaunty.Fluent.Tests.Entities;
+﻿using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
@@ -143,6 +143,38 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
         Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
+    [Fact]
+    public void InnerJoin_WhereColumnValue_QualifiedKeywordColumn_EscapesBareColumnOnly()
+    {
+        // "order" is a reserved SQLite keyword: EscapeColumnName quotes it, and the fix must
+        // only quote the bare column segment ("order"), leaving the "p." alias prefix as-is
+        // rather than either skipping escaping entirely or quoting the whole "p.order" string.
+        var sql = _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.order", 1)
+            .ToSql();
+
+        Assert.Contains("p.\"order\"", sql);
+        Assert.DoesNotContain("\"p.order\"", sql);
+    }
+
+    [Fact]
+    public void InnerJoin_WhereColumnValue_InjectedAliasSegment_Throws()
+    {
+        // Regression test (critical): EscapeQualifiedColumn used to interpolate the segment
+        // before the first "." into the SQL text unvalidated and unescaped, so a column string
+        // like "1=1 OR p.category_id" injected arbitrary SQL into the WHERE clause instead of
+        // being treated as a (bogus) alias. It must now be validated as a plain identifier via
+        // SqlIdentifierValidator and rejected.
+        Assert.Throws<ArgumentException>(() =>
+            _fixture.Connection.From<Product>("p")
+                .InnerJoin<Category>("c")
+                .On("p.category_id", "c.category_id")
+                .Where("1=1 OR p.category_id", 1)
+                .ToSql());
+    }
+
     // ==========================================
     // And / Or expression predicates
     // ==========================================
@@ -216,6 +248,76 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
             .SelectFirstOrDefault();
 
         Assert.Null(product);
+    }
+
+    // ==========================================
+    // SelectSingle / SelectSingleOrDefault (AUD-R11)
+    // ==========================================
+
+    [Fact]
+    public void InnerJoin_SelectSingle_OneMatch_ReturnsProduct()
+    {
+        var product = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == 1)
+            .SelectSingle();
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingle_NoResults_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == -999)
+            .SelectSingle());
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingle_MultipleResults_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectSingle());
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingleOrDefault_OneMatch_ReturnsProduct()
+    {
+        var product = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == 1)
+            .SelectSingleOrDefault();
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product!.ProductId);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingleOrDefault_NoResults_ReturnsNull()
+    {
+        var product = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == -999)
+            .SelectSingleOrDefault();
+
+        Assert.Null(product);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingleOrDefault_MultipleResults_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectSingleOrDefault());
     }
 
     // ==========================================
@@ -1029,9 +1131,12 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
-    public void ThreeTableJoin_Where_String_NoOp()
+    public void ThreeTableJoin_Where_String_AddsRawWhereClause()
     {
-        // Tests the Where(string) path on JoinedQuery3Builder (which is a no-op in current impl)
+        // Tests the Where(string) path on JoinedQuery3Builder. Per IJoinedQuery3<T1,T2,T3>.Where(string)'s
+        // documented contract ("Adds a WHERE clause using a raw SQL condition"), and confirmed by
+        // JoinedQuery3Builder.Where(string) forwarding to the parent's AddWhereCondition, the raw
+        // predicate is appended verbatim to the generated WHERE clause - it is NOT a no-op.
         var sql = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
@@ -1041,6 +1146,7 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
             .ToSql();
 
         Assert.Contains("INNER JOIN", sql);
+        Assert.Contains("WHERE 1=1", sql);
     }
 
     // ==========================================
@@ -1079,5 +1185,15 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             query.SelectAsync<Product, Product>());
+    }
+
+    [Fact]
+    public void InnerJoin_WhereColumnValue_ColumnWithSpace_ThrowsBeforeParameterIsBuilt()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            _fixture.Connection.From<Product>("p")
+                .InnerJoin<Category>("c")
+                .On("p.category_id", "c.category_id")
+                .Where("p.order date", 1));
     }
 }

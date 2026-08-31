@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using System.Diagnostics;
 
 using Jaunty.Attributes;
@@ -115,4 +114,3 @@ public class SqliteBulkPathDiagnosticTests : IDisposable
         GC.SuppressFinalize(this);
     }
 }
-#endif

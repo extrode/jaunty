@@ -5,14 +5,14 @@
 ## Installation
 
 ```shell
-dotnet tool install --global Beparey.Jaunty.Scaffolding.Cli
+dotnet tool install --global Extrode.Jaunty.Scaffolding.Cli
 ```
 
 Or from a local build:
 
 ```shell
 dotnet pack src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj
-dotnet tool install --global --add-source ./nupkg Beparey.Jaunty.Scaffolding.Cli
+dotnet tool install --global --add-source ./nupkg Extrode.Jaunty.Scaffolding.Cli
 ```
 
 ## Commands

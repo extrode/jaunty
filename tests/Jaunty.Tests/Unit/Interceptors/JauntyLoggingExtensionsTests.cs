@@ -58,6 +58,49 @@ public class JauntyLoggingExtensionsTests : IDisposable
         Assert.Same(a, b);
     }
 
+    /// <summary>
+    /// AUD-R26-055 (batch 4, low/consistency). <c>AddJauntyLogging</c> carried the comment
+    /// "Register LoggingConfiguration" above code that did not register it - the instance was only
+    /// captured in the interceptor's factory closure, so <c>GetService&lt;LoggingConfiguration&gt;()</c>
+    /// returned null and an application could not resolve or inspect the configuration it had just
+    /// supplied.
+    /// </summary>
+    [Fact]
+    public void AddJauntyLogging_RegistersTheConfiguration()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(b => b.AddProvider(NullLoggerProvider.Instance));
+        services.AddJauntyLogging();
+
+        var provider = services.BuildServiceProvider();
+
+        Assert.NotNull(provider.GetService<LoggingConfiguration>());
+    }
+
+    /// <summary>
+    /// And it is the caller's configured instance, not a fresh default one - which is the part that
+    /// makes resolving it worth anything. The pre-existing
+    /// <c>AddJauntyLogging_WithConfigureAction_DoesNotThrow</c> only asserted that configuring did
+    /// not throw, so nothing checked that the settings survived.
+    /// </summary>
+    [Fact]
+    public void AddJauntyLogging_RegistersTheCallersConfiguredInstance()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(b => b.AddProvider(NullLoggerProvider.Instance));
+        services.AddJauntyLogging(cfg =>
+        {
+            cfg.LogSql = false;
+            cfg.MinimumLogLevel = LogLevel.Critical;
+        });
+
+        var provider = services.BuildServiceProvider();
+        var resolved = provider.GetRequiredService<LoggingConfiguration>();
+
+        Assert.False(resolved.LogSql);
+        Assert.Equal(LogLevel.Critical, resolved.MinimumLogLevel);
+    }
+
     [Fact]
     public void AddJauntyLogging_WithConfigureAction_DoesNotThrow()
     {
@@ -191,6 +234,43 @@ public class JauntyLoggingExtensionsTests : IDisposable
         var ex = Record.Exception(() => provider.ApplyJauntyInterceptors());
 
         Assert.Null(ex);
+    }
+
+    [Fact]
+    public void ApplyJauntyInterceptors_CalledTwice_WithSameProvider_DoesNotDuplicateInterceptorInstance()
+    {
+        // Regression: ApplyJauntyInterceptors must resolve interceptors from the real,
+        // already-built IServiceProvider passed in (not a throwaway container), and must not
+        // append the same singleton interceptor instance to JauntyConfig a second time when
+        // called more than once with the same provider.
+        var services = new ServiceCollection();
+        services.AddJauntyInterceptor<StubInterceptor>();
+        var provider = services.BuildServiceProvider();
+
+        provider.ApplyJauntyInterceptors();
+        provider.ApplyJauntyInterceptors();
+
+        var interceptors = JauntyConfig.InterceptorPipeline!.GetInterceptors().ToList();
+        Assert.Single(interceptors);
+        Assert.Same(provider.GetRequiredService<StubInterceptor>(), interceptors[0]);
+    }
+
+    [Fact]
+    public void ApplyJauntyInterceptors_CalledConcurrently_WithSameProvider_DoesNotDuplicateInterceptorInstance()
+    {
+        // Regression: the old check-then-act (IsAlreadyRegistered then AddInterceptor as two
+        // separate unsynchronized calls) let two concurrent callers both observe "not yet
+        // registered" and both append the same instance. AddInterceptorIfNotPresent now does
+        // both atomically under one lock.
+        var services = new ServiceCollection();
+        services.AddJauntyInterceptor<StubInterceptor>();
+        var provider = services.BuildServiceProvider();
+
+        Parallel.For(0, 16, _ => provider.ApplyJauntyInterceptors());
+
+        var interceptors = JauntyConfig.InterceptorPipeline!.GetInterceptors().ToList();
+        Assert.Single(interceptors);
+        Assert.Same(provider.GetRequiredService<StubInterceptor>(), interceptors[0]);
     }
 
     // ------------------------------------------------------------------

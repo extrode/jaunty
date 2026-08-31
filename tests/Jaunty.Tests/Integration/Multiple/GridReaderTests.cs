@@ -31,6 +31,27 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
+    // AUD-R6: GridReader.ReadCore ignored CommandOptions<T>.ExpectedRowCount and always hardcoded
+    // new List<T>(16), unlike the main Query<T> path which honors it. Read<T> returns List<T>
+    // directly, so the pre-sized capacity is directly observable here.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_Read_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
+            FullCategorySql(dialect, 2));
+
+        List<Category> categories = gridReader.Read(CommandOptions<Category>.WithExpectedRowCount(500));
+
+        Assert.Equal(2, categories.Count);
+        Assert.True(categories.Capacity >= 500);
+    }
+
     [Theory]
     [SqlServer]
     [Postgres]
@@ -455,14 +476,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void GridReader_Dispose_ClosesReader(DialectInfo dialect)
     {
-        using var connection = _fixture.GetConnection(dialect);
+        using var connection = _fixture.GetClosedConnection(dialect);
         var gridReader = connection.QueryMultiple(FullCategorySql(dialect, 1));
 
         gridReader.ReadFirst<Category>();
         gridReader.Dispose();
 
-        // After Dispose, the reader should be marked as consumed
-        // Verify no exception is thrown and reader is properly disposed
+        // GridReader self-opened the connection, so Dispose should close it again.
+        Assert.Equal(ConnectionState.Closed, connection.State);
     }
 
     [Theory]
@@ -634,9 +655,7 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     public void GridReader_ReadPartial_WithMultipleResultSets_ReadsAll(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT 1; SELECT 2; SELECT 3"
-            : "SELECT 1; SELECT 2; SELECT 3";
+        const string sql = "SELECT 1; SELECT 2; SELECT 3";
 
         using var gridReader = connection.QueryMultiple(sql);
 
@@ -666,6 +685,67 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         // Try to read again - should throw EnsureNotConsumed exception
         var ex = Assert.Throws<InvalidOperationException>(() => gridReader.ReadScalar<int>());
         Assert.Contains("consumed", ex.Message.ToLower());
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadStream_AfterAllResultSetsConsumed_ThrowsImmediatelyWithoutEnumeration(DialectInfo dialect)
+    {
+        // Regression: ReadStream returns an IEnumerable<T> backed by a yield-return iterator.
+        // Before the fix, EnsureNotConsumed() lived inside that iterator, so misuse (calling
+        // ReadStream again on an already-consumed grid) only threw once the caller actually
+        // enumerated the result - a caller who merely obtained the enumerable (e.g. assigned it
+        // to a variable, or passed it around) without enumerating would not observe the failure
+        // at the point of misuse. ReadStream now validates eagerly, before returning.
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 1");
+
+        gridReader.ReadScalar<int>();
+
+        var ex = Assert.Throws<InvalidOperationException>(() => gridReader.ReadStream<Category>());
+        Assert.Contains("consumed", ex.Message.ToLower());
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadScalar_ConversionFailure_PropagatesException(DialectInfo dialect)
+    {
+        // Regression: a genuine type-conversion failure must not be silently swallowed
+        // and reported as default(T) — it must propagate so callers can distinguish
+        // "no value" from "wrong value". Target Guid rather than int: SQLite's own
+        // dynamic-typing/CAST coercion rules turn a non-numeric string into 0 when read as
+        // an integer (provider-level behavior, not a Jaunty bug), which would make this
+        // test pass vacuously under Microsoft.Data.Sqlite. There's no equivalent numeric
+        // coercion for Guid, so the conversion genuinely fails on every provider.
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 'not-a-guid' AS value");
+
+        Assert.ThrowsAny<Exception>(() => gridReader.ReadScalar<Guid>());
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadFirst_ValueType_NoResults_Throws(DialectInfo dialect)
+    {
+        // Regression: ReadFirst<T> for a value type T must throw InvalidOperationException
+        // on an empty result set, the same as it does for reference types — not silently
+        // return default(T) (e.g. 0).
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 1 WHERE 1 = 0");
+
+        var mapper = new Func<IDataReader, int>(reader => reader.GetInt32(0));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            gridReader.ReadFirst<int>(new CommandOptions<int>(mapper: mapper)));
     }
 
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>

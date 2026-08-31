@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Internals;
 using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding.Providers.MySql;
@@ -31,7 +32,8 @@ public sealed class MySqlSchemaReader : ISchemaReader
             NUMERIC_PRECISION AS `Precision`,
             NUMERIC_SCALE AS Scale,
             COLUMN_DEFAULT AS DefaultValue,
-            ORDINAL_POSITION AS OrdinalPosition
+            ORDINAL_POSITION AS OrdinalPosition,
+            COLUMN_TYPE AS ColumnType
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @TableName
         ORDER BY ORDINAL_POSITION";
@@ -47,17 +49,26 @@ public sealed class MySqlSchemaReader : ISchemaReader
           AND CONSTRAINT_NAME = 'PRIMARY'
         ORDER BY ORDINAL_POSITION";
 
-    private const string ForeignKeysSql = @"
+    internal const string ForeignKeysSql = @"
         SELECT
             CONSTRAINT_NAME AS ConstraintName,
             COLUMN_NAME AS ForeignKeyColumn,
-            '' AS ReferencedSchema,
+            -- AUD-R35-045: the referenced schema was hardcoded '', which is right only for the
+            -- common case. MySQL schemas are databases, and a foreign key may point at a table
+            -- in another one; reporting '' for those sent the generated navigation at a table
+            -- of the same name in the current database, or at nothing. Same-database keys keep
+            -- '' so they still match the '' this reader reports as every table's SchemaName.
+            IF(REFERENCED_TABLE_SCHEMA = DATABASE(), '', REFERENCED_TABLE_SCHEMA) AS ReferencedSchema,
             REFERENCED_TABLE_NAME AS ReferencedTable,
             REFERENCED_COLUMN_NAME AS ReferencedColumn
         FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
         WHERE TABLE_SCHEMA = DATABASE()
           AND TABLE_NAME = @TableName
-          AND REFERENCED_TABLE_NAME IS NOT NULL";
+          AND REFERENCED_TABLE_NAME IS NOT NULL
+        -- AUD-R35-046: the other three readers order by ordinal position; this one did not, so
+        -- a composite foreign key came back in whatever order the server chose and its columns
+        -- paired with the referenced ones by luck.
+        ORDER BY CONSTRAINT_NAME, ORDINAL_POSITION";
 
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
@@ -86,20 +97,17 @@ public sealed class MySqlSchemaReader : ISchemaReader
 
     private static DbConnection CreateConnection(string connectionString)
     {
-        var connectionTypes = new[]
-        {
-            "MySqlConnector.MySqlConnection, MySqlConnector",
-            "MySql.Data.MySqlClient.MySqlConnection, MySql.Data",
-        };
+        // Try to load MySqlConnector first, then MySql.Data.
+        // Literal type names, not a loop over an array: the trim analyzer only recognizes
+        // Type.GetType on a string it can see (IL2057, fatal at ilc on the NativeAOT publish -
+        // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
+        // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
+        // returns null and falls through.
+        var type = Type.GetType("MySqlConnector.MySqlConnection, MySqlConnector")
+                ?? Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data");
 
-        foreach (var typeName in connectionTypes)
-        {
-#pragma warning disable IL2057 // Type name is from trusted source list
-            var type = Type.GetType(typeName);
-#pragma warning restore IL2057
-            if (type != null)
-                return (DbConnection)Activator.CreateInstance(type, connectionString)!;
-        }
+        if (type != null)
+            return ReflectedConnectionFactory.Create(type, connectionString);
 
         throw new InvalidOperationException("Could not find MySQL provider. Please install MySqlConnector or MySql.Data.");
     }
@@ -120,6 +128,9 @@ public sealed class MySqlSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = TablesSql;
 
+        if (ShouldSkipDatabase(options, connection.Database))
+            return tables;
+
         using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -139,6 +150,17 @@ public sealed class MySqlSchemaReader : ISchemaReader
         return tables;
     }
 
+    /// <summary>
+    /// MySQL doesn't have a separate schema concept - TABLE_SCHEMA is the database name,
+    /// and this reader only ever queries the single database the connection is currently
+    /// attached to (via DATABASE()). IncludeSchemas can therefore only accept or reject
+    /// that one database; it can't enumerate tables across multiple MySQL databases in one
+    /// pass the way SQL Server/PostgreSQL schema filtering does.
+    /// </summary>
+    internal static bool ShouldSkipDatabase(SchemaReaderOptions options, string databaseName)
+        => options.IncludeSchemas?.Count > 0 &&
+           !options.IncludeSchemas.Contains(databaseName, StringComparer.OrdinalIgnoreCase);
+
     private static async Task<TableSchema> ReadTableSchemaAsync(
         DbConnection connection,
         string tableName,
@@ -151,30 +173,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
             ? await ReadForeignKeysAsync(connection, tableName, cancellationToken).ConfigureAwait(false)
             : [];
 
-        if (primaryKey != null)
-        {
-            for (int i = 0; i < columns.Count; i++)
-            {
-                ColumnSchema col = columns[i];
-                if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
-                {
-                    columns[i] = new ColumnSchema
-                    {
-                        ColumnName = col.ColumnName,
-                        DataType = col.DataType,
-                        IsNullable = col.IsNullable,
-                        IsPrimaryKey = true,
-                        IsIdentity = col.IsIdentity,
-                        IsComputed = col.IsComputed,
-                        MaxLength = col.MaxLength,
-                        Precision = col.Precision,
-                        Scale = col.Scale,
-                        DefaultValue = col.DefaultValue,
-                        OrdinalPosition = col.OrdinalPosition
-                    };
-                }
-            }
-        }
+        SchemaReaderHelpers.MarkPrimaryKeyColumns(columns, primaryKey);
 
         return new TableSchema
         {
@@ -215,7 +214,8 @@ public sealed class MySqlSchemaReader : ISchemaReader
                 Precision = reader.IsDBNull(6) ? null : ToClampedInt32(reader.GetValue(6)),
                 Scale = reader.IsDBNull(7) ? null : ToClampedInt32(reader.GetValue(7)),
                 DefaultValue = reader.IsDBNull(8) ? null : reader.GetString(8),
-                OrdinalPosition = ToClampedInt32(reader.GetValue(9))
+                OrdinalPosition = ToClampedInt32(reader.GetValue(9)),
+                ColumnType = reader.IsDBNull(10) ? null : reader.GetString(10)
             });
         }
 

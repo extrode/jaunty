@@ -1,14 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AnalysisLevel>latest</AnalysisLevel>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<LangVersion>latest</LangVersion>
 		<DefineConstants>AsyncInterfaces</DefineConstants>
 	</PropertyGroup>
 
@@ -16,14 +15,13 @@
 		<When Condition="$(DefineConstants.Contains('AsyncInterfaces'))">
 			<ItemGroup>
 				<PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
-					<Version>10.0.3</Version>
+					<Version>10.0.10</Version>
 				</PackageReference>
 			</ItemGroup>
 		</When>
 	</Choose>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<LangVersion>latest</LangVersion>
+	<PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
 		<Nullable>enable</Nullable>
 		<IsAotCompatible>true</IsAotCompatible>
 		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
@@ -35,6 +33,14 @@
 		                  SkipGetTargetFrameworkProperties="true" />
 		<ProjectReference Include="..\Jaunty.Fluent\Jaunty.Fluent.csproj"
 		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<ProjectReference Include="..\Jaunty\Jaunty.csproj"
+		                  SetTargetFramework="TargetFramework=net10.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\Jaunty.Fluent\Jaunty.Fluent.csproj"
+		                  SetTargetFramework="TargetFramework=net10.0"
 		                  SkipGetTargetFrameworkProperties="true" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
@@ -59,10 +65,10 @@
 	</ItemGroup>
 
 	<PropertyGroup>
-		<PackageId>Beparey.Jaunty.FlatFiles</PackageId>
-		<Authors>Syed Beparey</Authors>
+		<PackageId>Extrode.Jaunty.FlatFiles</PackageId>
+		<Authors>Extrode LLC</Authors>
 		<Description>Flat file abstractions for the Jaunty micro-ORM. Supports CSV, TSV, Parquet, JSON, Excel, Delta Lake, and Iceberg formats with extensible custom format registration.</Description>
-		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>
 		<ErrorReport>none</ErrorReport>
 		<PackageTags>$(PackageTags);flat-files;csv;parquet;json;duckdb</PackageTags>

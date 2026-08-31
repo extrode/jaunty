@@ -17,7 +17,7 @@ namespace Jaunty.Attributes;
 /// <code>
 /// using Jaunty.Attributes;
 /// 
-/// [Table("Products", Schema = "dbo")]
+/// [Table("Products", "dbo")]
 /// public class Product
 /// {
 ///     public int Id { get; set; }

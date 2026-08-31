@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -56,9 +58,19 @@ public interface IValuesClause<T> where T : new()
     long Insert();
 
     /// <summary>
+    /// Executes the insert with the supplied command options - notably a transaction to enlist in
+    /// and a command timeout.
+    /// </summary>
+    /// <remarks>AUD-R26-060: a fluent insert previously had no way to take either.</remarks>
+    long Insert(CommandOptions options);
+
+    /// <summary>
     /// Asynchronously executes the INSERT statement.
     /// </summary>
     Task<long> InsertAsync(CancellationToken cancellationToken = default);
+
+    /// <inheritdoc cref="Insert(CommandOptions)"/>
+    Task<long> InsertAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the INSERT SQL that would be executed (for debugging).

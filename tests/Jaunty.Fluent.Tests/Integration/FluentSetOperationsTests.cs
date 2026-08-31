@@ -199,14 +199,21 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public void Intersect_TwoQueries_ReturnsOnlyCommonRows()
     {
-        // Get products that are both in category 1 AND have low stock (ReorderLevel > 0)
+        // Get products that are both in category 1 AND have low stock (< 50 units).
+        // NOTE: reorder_level is never populated in the seed data (always NULL), so a
+        // "ReorderLevel > 0" filter here would silently match zero rows; UnitsInStock is
+        // used instead so the intersection actually has to filter real data.
         var results = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
-            .Intersect(_fixture.Connection.From<Product>().Where(p => p.ReorderLevel > 0))
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.UnitsInStock < 50))
             .Select();
 
-        // All results should be in category 1 AND have ReorderLevel > 0
-        Assert.All(results, p => Assert.True(p.CategoryId == 1 && p.ReorderLevel > 0));
+        Assert.NotEmpty(results);
+        // All results should be in category 1 AND have UnitsInStock < 50
+        Assert.All(results, p => Assert.True(p.CategoryId == 1 && p.UnitsInStock < 50));
+        // "Cheap Product" (category 1, stock 100) must be excluded - proves the intersect
+        // actually filters rather than just returning the whole category-1 set.
+        Assert.DoesNotContain(results, p => p.ProductId == 8);
     }
 
     [Fact]
@@ -223,12 +230,16 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public void Intersect_WithOrderBy_OrdersEntireResult()
     {
+        // Same non-vacuous filter as Intersect_TwoQueries_ReturnsOnlyCommonRows above -
+        // reorder_level is always NULL in the seed data, so "ReorderLevel > 0" would
+        // silently match zero rows and this test would pass over an empty result set.
         var results = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
-            .Intersect(_fixture.Connection.From<Product>().Where(p => p.ReorderLevel > 0))
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.UnitsInStock < 50))
             .OrderByDescending(p => p.ProductName)
             .Select();
 
+        Assert.NotEmpty(results);
         for (int i = 1; i < results.Count; i++)
         {
             Assert.True(string.Compare(results[i - 1].ProductName, results[i].ProductName) >= 0);
@@ -275,13 +286,16 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public async Task Intersect_SelectAsync_ReturnsResults()
     {
+        // Same non-vacuous filter as Intersect_TwoQueries_ReturnsOnlyCommonRows above -
+        // reorder_level is always NULL in the seed data, so "ReorderLevel > 0" would
+        // silently match zero rows and this test would pass over an empty result set.
         var results = await _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
-            .Intersect(_fixture.Connection.From<Product>().Where(p => p.ReorderLevel > 0))
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.UnitsInStock < 50))
             .SelectAsync();
 
-        // Results may be empty if no intersection, but should not throw
-        Assert.NotNull(results);
+        Assert.NotEmpty(results);
+        Assert.All(results, p => Assert.True(p.CategoryId == 1 && p.UnitsInStock < 50));
     }
 
     // ==========================================
@@ -397,5 +411,165 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.Contains("UNION ALL", sql);
         Assert.Contains("INTERSECT", sql);
+    }
+
+    // ==========================================
+    // Custom IQueryTerminal<T> implementations (non-QueryBuilder)
+    // ==========================================
+
+    [Fact]
+    public void Union_CustomImplementationWithUnmergeableParameters_ThrowsNotSupportedException()
+    {
+        // AUD-R18: a custom IQueryTerminal<T> implementation whose ToSql() embeds a parameter
+        // placeholder (@name) has no way for SetOperationBuilder to extract and merge that
+        // parameter's value into the combined query, so it must fail loudly instead of
+        // silently splicing in SQL with an unbound placeholder - mirrors
+        // FluentSubqueryTests.WhereInSubquery_CustomImplementationWithUnmergeableParameters_ThrowsNotSupportedException.
+        var other = new StubQueryTerminal<Product>(
+            "SELECT * FROM products WHERE product_name = @name");
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(other)
+                .ToSql());
+
+        Assert.Contains(nameof(Product), ex.Message);
+    }
+
+    [Fact]
+    public void Union_CustomImplementationWithNoParameters_WorksCorrectly()
+    {
+        var other = new StubQueryTerminal<Product>("SELECT * FROM products WHERE category_id = 2");
+
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(other)
+            .ToSql();
+
+        Assert.Contains("UNION", sql);
+        Assert.Contains("SELECT * FROM products WHERE category_id = 2", sql);
+    }
+
+    // ==========================================
+    // Operands/first query with pre-existing ORDER BY / Take / Skip (AUD-R21)
+    // ==========================================
+
+    [Fact]
+    public void Union_OperandAlreadyHasOrderBy_ThrowsNotSupportedException()
+    {
+        // AUD-R21: an operand that already has its own ORDER BY applied would have that
+        // ordering spliced verbatim into the middle of the combined statement instead of
+        // applying to the combined result - reject it instead of emitting broken/misleading SQL.
+        var orderedOperand = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 2)
+            .OrderBy(p => p.ProductName);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(orderedOperand)
+                .ToSql());
+
+        Assert.Contains("OrderBy", ex.Message);
+    }
+
+    [Fact]
+    public void Union_OperandAlreadyHasTake_ThrowsNotSupportedException()
+    {
+        var pagedOperand = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 2)
+            .OrderBy(p => p.ProductId)
+            .Take(5);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(pagedOperand)
+                .ToSql());
+
+        Assert.Contains("Take", ex.Message);
+    }
+
+    [Fact]
+    public void Union_OperandCustomImplementationAlreadyHasOrderBy_ThrowsNotSupportedException()
+    {
+        var other = new StubQueryTerminal<Product>("SELECT * FROM products WHERE category_id = 2 ORDER BY product_name");
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(other)
+                .ToSql());
+
+        Assert.Contains("OrderBy", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("SELECT * FROM products WHERE category_id = 2 LIMIT 5")]
+    [InlineData("SELECT * FROM products WHERE category_id = 2 limit 5")]
+    [InlineData("SELECT * FROM products WHERE category_id = 2 OFFSET 10 ROWS")]
+    [InlineData("SELECT * FROM products WHERE category_id = 2 OFFSET 10 ROWS FETCH NEXT 5 ROWS ONLY")]
+    [InlineData("SELECT TOP 5 * FROM products WHERE category_id = 2")]
+    public void Union_OperandCustomImplementationAlreadyHasPagingWithoutOrderBy_ThrowsNotSupportedException(string sql)
+    {
+        // AUD-R31: the custom-terminal branch only searched for " ORDER BY ", so a custom
+        // implementation that applied paging without ordering had its LIMIT/OFFSET/FETCH/TOP
+        // spliced verbatim into the combined statement - the exact silent semantic corruption
+        // this guard exists to prevent.
+        var other = new StubQueryTerminal<Product>(sql);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(other)
+                .ToSql());
+
+        Assert.Contains("Take", ex.Message);
+    }
+
+    [Fact]
+    public void Union_OperandCustomImplementationWithColumnNamedLikePagingKeyword_IsAccepted()
+    {
+        var other = new StubQueryTerminal<Product>("SELECT toplevel, limits FROM products WHERE category_id = 2");
+
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(other)
+            .ToSql();
+
+        Assert.Contains("toplevel", sql);
+    }
+
+    [Fact]
+    public void Union_FirstQueryAlreadyHasOrderBy_ThrowsNotSupportedException()
+    {
+        // The same guard applies to the first (left-hand) query in the chain: Union/UnionAll/
+        // Except/Intersect are plain public methods on QueryBuilder<T>, reachable even after
+        // OrderBy/Take/Skip has already been applied to that same builder instance.
+        var firstQuery = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .OrderBy(p => p.ProductName);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            firstQuery.Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2)).ToSql());
+
+        Assert.Contains("OrderBy", ex.Message);
+    }
+
+    [Fact]
+    public void Union_OuterOrderByAfterUnion_StillWorksCorrectly()
+    {
+        // Confirms the fix doesn't break the documented/intended usage: OrderBy/Take/Skip on
+        // the OUTER set-operation chain (after Union), applying to the combined result.
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.ProductName)
+            .Take(5)
+            .ToSql();
+
+        Assert.Contains("UNION", sql);
+        Assert.Contains("ORDER BY", sql);
     }
 }

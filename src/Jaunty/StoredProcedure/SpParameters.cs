@@ -1,5 +1,7 @@
 using System.Data;
 
+using Jaunty.Internals.Read;
+
 namespace Jaunty.StoredProcedure;
 
 /// <summary>
@@ -284,31 +286,36 @@ public sealed class SpParameters
         // After execution, the DbParameter will have the output value
         object? value = param.DbParameter?.Value ?? param.Value;
 
-        return value is null || value == DBNull.Value ? default : (T)Convert.ChangeType(value, typeof(T));
+        return value is null || value == DBNull.Value ? default : ScalarConverter<T>.Convert(value);
     }
 
     /// <summary>
     /// Gets the return value after execution.
     /// </summary>
-    /// <returns>The return value as an integer, or 0 if no return value was defined.</returns>
+    /// <returns>The return value as an integer, or 0 if the return value is null.</returns>
     /// <remarks>
     /// <para>
     /// This method retrieves the integer return value of a stored procedure.
-    /// You must call <see cref="AddReturnValue"/> before executing the stored procedure 
+    /// You must call <see cref="AddReturnValue"/> before executing the stored procedure
     /// to capture the return value.
     /// </para>
     /// <para>
-    /// If no return value parameter was defined or the value is null, this method returns 0.
+    /// If a return value parameter was defined but its captured value is null, this method
+    /// returns 0. If no return value parameter was defined at all (<see cref="AddReturnValue"/>
+    /// was never called), this method throws <see cref="InvalidOperationException"/>.
     /// </para>
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when no return value parameter was defined. Use <see cref="AddReturnValue"/> to add one.
+    /// </exception>
     /// <example>
     /// <code>
     /// var parameters = new SpParameters()
     ///     .AddInput("CategoryId", 5)
     ///     .AddReturnValue();
-    /// 
+    ///
     /// connection.ExecuteStoredProcedureNonQuery("DeleteCategory", parameters);
-    /// 
+    ///
     /// int returnValue = parameters.GetReturnValue();
     /// if (returnValue == 0)
     /// {
@@ -337,7 +344,16 @@ public sealed class SpParameters
 
         object? value = param.DbParameter?.Value ?? param.Value;
 
-        return value is null || value == DBNull.Value ? 0 : Convert.ToInt32(value);
+        // AUD-R26: this was Convert.ToInt32(value), whose no-provider overload runs under
+        // CultureInfo.CurrentCulture. Get<T>(name) two methods above reads the same
+        // `param.DbParameter?.Value ?? param.Value` expression and routes through
+        // ScalarConverter<T>, which pins InvariantCulture on all seven of its conversion paths - so
+        // two accessors for the same provider value disagreed on culture, and this was the
+        // host-locale-dependent one. Routed through the same converter rather than given its own
+        // InvariantCulture argument, so the two cannot drift apart again. Same defect class as the
+        // round-25 sweep (AUD-R25-002/-003/-004); missed then because that sweep matched
+        // Convert.ChangeType and this site is Convert.ToInt32.
+        return value is null || value == DBNull.Value ? 0 : ScalarConverter<int>.Convert(value);
     }
 
     /// <summary>
@@ -348,6 +364,7 @@ public sealed class SpParameters
     /// <remarks>
     /// This method is useful for checking if an output parameter has a value before retrieving it.
     /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="name"/> is null.</exception>
     /// <example>
     /// <code>
     /// var parameters = new SpParameters()
@@ -368,6 +385,11 @@ public sealed class SpParameters
     /// </example>
     public bool HasValue(string name)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(name);
+#else
+        if (name is null) throw new ArgumentNullException(nameof(name));
+#endif
         for (int i = 0; i < _parameters.Count; i++)
         {
             if (string.Equals(_parameters[i].Name, name, StringComparison.OrdinalIgnoreCase))

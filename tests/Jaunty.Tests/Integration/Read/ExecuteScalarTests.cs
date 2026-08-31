@@ -16,6 +16,8 @@ public class ExecuteScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void ExecuteScalar_Count_ReturnsValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -30,6 +32,8 @@ public class ExecuteScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void ExecuteScalar_WithParameters_ReturnsValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -44,6 +48,8 @@ public class ExecuteScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void ExecuteScalar_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -58,6 +64,8 @@ public class ExecuteScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void ExecuteScalar_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -72,6 +80,8 @@ public class ExecuteScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void ExecuteScalar_StringValue_ReturnsString(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -87,6 +97,8 @@ public class ExecuteScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void ExecuteScalar_MaxValue_ReturnsCorrect(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

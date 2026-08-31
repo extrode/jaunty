@@ -14,13 +14,6 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
-    private static void ClearTestTable(IDbConnection connection)
-    {
-        using var cmd = connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM bulk_test";
-        cmd.ExecuteNonQuery();
-    }
-
     private static int GetRowCount(IDbConnection connection)
     {
         using var cmd = connection.CreateCommand();
@@ -51,6 +44,71 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
 
         Assert.Equal(3, inserted);
         Assert.Equal(3, GetRowCount(connection));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void BulkInsert_IEntityImplementation_PopulatesIdsViaLoopPath(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        // A single-entity list always routes through the loop-based insert path (the multi-row
+        // path requires entityList.Count > 1), which is the only BulkInsert path that can
+        // populate identity values back onto entities (see BulkInsert.cs's BulkInsertLoop remarks).
+        var entities = new List<IEntityTestEntity>
+        {
+            new() { Name = "IdPopulationTest", Value = 42 }
+        };
+
+        int inserted = connection.BulkInsert(entities);
+
+        Assert.Equal(1, inserted);
+        Assert.NotEqual(0, entities[0].Id);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void BulkInsert_IEntityImplementation_MultiEntityLoopPath_PopulatesIdsInInsertionOrder(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        // SQLite always takes the loop-based insert path regardless of collection size (see
+        // BulkInsertCore's !IsSqliteDialect(dialect) exclusion from the multi-row path), so a
+        // multi-entity list here verifies BulkInsertLoop's per-entity idSetter ordering, not
+        // just the single-entity case covered by BulkInsert_IEntityImplementation_PopulatesIdsViaLoopPath.
+        var entities = new List<IEntityTestEntity>
+        {
+            new() { Name = "LoopOrderFirst", Value = 1 },
+            new() { Name = "LoopOrderSecond", Value = 2 },
+            new() { Name = "LoopOrderThird", Value = 3 }
+        };
+
+        int inserted = connection.BulkInsert(entities);
+
+        Assert.Equal(3, inserted);
+        Assert.True(entities[0].Id > 0);
+        Assert.True(entities[1].Id > entities[0].Id);
+        Assert.True(entities[2].Id > entities[1].Id);
+
+        // Confirm each entity's populated Id actually matches the DB row inserted for that
+        // entity, not just an arbitrary increasing sequence.
+        foreach (IEntityTestEntity entity in entities)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT id FROM bulk_test WHERE name = @name";
+            var param = cmd.CreateParameter();
+            param.ParameterName = "@name";
+            param.Value = entity.Name;
+            cmd.Parameters.Add(param);
+            long dbId = Convert.ToInt64(cmd.ExecuteScalar());
+
+            Assert.Equal(dbId, entity.Id);
+        }
     }
 
     [Theory]
@@ -149,6 +207,42 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void BulkInsert_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        // AUD-R18: BulkEntityValidator.ThrowIfAnyNull turns a null item inside a non-null
+        // entity list into a clear ArgumentException naming the offending index, instead of
+        // an opaque NullReferenceException surfacing later from parameter binding.
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Name = "Test", Value = 1 }, null! };
+
+        var ex = Assert.Throws<ArgumentException>(() => connection.BulkInsert(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Name = "Test", Value = 1 }, null! };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await connection.BulkInsertAsync(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void BulkInsertIgnoreConstraints_InsertsMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -194,6 +288,13 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         }
 
         using var transaction = connection.BeginTransaction();
+
+        if (dialect.Provider is DialectProvider.SystemSqlite or DialectProvider.MicrosoftSqlite)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkInsertIgnoreConstraints(entities, new CommandOptions(transaction: transaction)));
+            return;
+        }
+
         int inserted = connection.BulkInsertIgnoreConstraints(entities, new CommandOptions(transaction: transaction));
         transaction.Commit();
 
@@ -329,6 +430,39 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void BulkUpdate_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 }, null! };
+
+        var ex = Assert.Throws<ArgumentException>(() => connection.BulkUpdate(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateAsync_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 }, null! };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await connection.BulkUpdateAsync(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void BulkUpdateIgnoreConstraints_UpdatesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -389,6 +523,13 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         }
 
         using var transaction = connection.BeginTransaction();
+
+        if (dialect.Provider is DialectProvider.SystemSqlite or DialectProvider.MicrosoftSqlite)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkUpdateIgnoreConstraints(inserted, new CommandOptions(transaction: transaction)));
+            return;
+        }
+
         int updated = connection.BulkUpdateIgnoreConstraints(inserted, new CommandOptions(transaction: transaction));
         transaction.Commit();
 
@@ -536,6 +677,39 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void BulkDelete_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 }, null! };
+
+        var ex = Assert.Throws<ArgumentException>(() => connection.BulkDelete(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkDeleteAsync_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 }, null! };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await connection.BulkDeleteAsync(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void BulkDeleteIgnoreConstraints_DeletesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -588,6 +762,13 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         }
 
         using var transaction = connection.BeginTransaction();
+
+        if (dialect.Provider is DialectProvider.SystemSqlite or DialectProvider.MicrosoftSqlite)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkDeleteIgnoreConstraints(toDelete, new CommandOptions(transaction: transaction)));
+            return;
+        }
+
         int deleted = connection.BulkDeleteIgnoreConstraints(toDelete, new CommandOptions(transaction: transaction));
         transaction.Commit();
 

@@ -1,10 +1,8 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 using Jaunty.Dialects;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -15,13 +13,11 @@ namespace Jaunty.Fluent.Expressions;
 internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : new()
 {
     private readonly ISqlDialect _dialect;
-    private readonly EntityMetadata _metadata;
     private readonly List<SelectColumn> _columns = new();
 
     public SelectExpressionVisitor(ISqlDialect dialect)
     {
         _dialect = dialect;
-        _metadata = FluentMetadataCache.GetMetadata<T>();
     }
 
     /// <summary>
@@ -76,28 +72,117 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
 
         foreach (MemberBinding? binding in node.Bindings)
         {
-            if (binding is MemberAssignment assignment)
+            // AUD-R35-196: a MemberMemberBinding (`p => new Dto { Nested = { X = p.A } }`) or a
+            // MemberListBinding (`p => new Dto { Items = { p.A } }`) - both legal in a C# expression
+            // tree - used to be skipped in silence, producing a projection with a column missing and
+            // no way to tell. The same gap was closed in the GROUP BY visitors as AUD-R35-195. Every
+            // other untranslatable shape in this class throws and names what it saw.
+            if (binding is not MemberAssignment assignment)
             {
-                var alias = assignment.Member.Name;
-                var sql = TranslateProjectionExpression(assignment.Expression);
-                _columns.Add(new SelectColumn(sql, alias));
+                throw new NotSupportedException(
+                    $"Member binding '{binding.BindingType}' is not supported in SELECT projections. " +
+                    "Only member assignments (Member = expression) can be translated.");
             }
+
+            var alias = assignment.Member.Name;
+            var sql = TranslateProjectionExpression(assignment.Expression);
+            _columns.Add(new SelectColumn(sql, alias));
         }
 
         return node;
     }
 
+    /// <summary>
+    /// AUD-R35-197. Unreachable as the class stands: <c>Translate</c>'s top-level switch names
+    /// <see cref="MemberExpression"/> and routes it through <c>TranslateProjectionExpression</c>
+    /// before <c>Visit</c> is ever called, <c>VisitNew</c>/<c>VisitMemberInit</c> translate their
+    /// children the same way rather than visiting them, and every other override throws. Its last
+    /// caller was the <c>NewArrayInit</c> hole AUD-R34-018 closed. It is kept rather than deleted
+    /// so that a member reaching <c>Visit</c> again has a defined outcome, but the branch that used
+    /// to return <c>node</c> having appended nothing - the silent-drop pattern the last three
+    /// rounds have been removing - now throws instead.
+    /// </summary>
     protected override Expression VisitMember(MemberExpression node)
     {
         // Single member selection: p => p.ProductName
         if (IsParameterMember(node))
         {
-            var columnName = GetColumnName(node);
-            var escapedColumn = _dialect.EscapeColumnName(columnName);
+            var escapedColumn = GetEscapedColumnName(node);
             _columns.Add(new SelectColumn(escapedColumn, node.Member.Name));
+            return node;
         }
-        return node;
+
+        throw new NotSupportedException(
+            $"'{node.Member.Name}' is not a property of the entity being projected. " +
+            "Only entity properties and Sql.* functions can be translated in SELECT projections.");
     }
+
+    /// <summary>
+    /// AUD-R32-002. A ternary is a <see cref="ConditionalExpression"/>, which <c>Translate</c>'s
+    /// top-level switch does not name, so it used to fall through to the base visitor's default
+    /// traversal: Test/IfTrue/IfFalse were each walked independently and any member access inside
+    /// them landed in <c>_columns</c> as a column of its own, producing a SELECT list that has
+    /// nothing to do with the ternary. Every other untranslatable shape in this class throws;
+    /// this one silently returned wrong SQL. If CASE WHEN support is ever wanted, this override
+    /// is where it goes - see <c>Sql.Case</c> for the supported spelling.
+    /// </summary>
+    protected override Expression VisitConditional(ConditionalExpression node)
+        => throw new NotSupportedException(
+            "Conditional (ternary) expressions are not supported in SELECT projections. " +
+            "Use Sql.Case(...) for a CASE WHEN, or project the operands and branch in memory.");
+
+    /// <summary>
+    /// AUD-R33-010, the SELECT half. <c>Translate</c> hands anything that is not a method call,
+    /// member access, constant, unary or binary expression to <c>Visit</c>, and the only overrides
+    /// on that path were <see cref="VisitNew"/>, <see cref="VisitMemberInit"/> and
+    /// <see cref="VisitConditional"/> - so a projection body of any other shape descended into its
+    /// children, added nothing to <c>_columns</c> for the wrapper node, and produced a silently
+    /// empty or partial SELECT list instead of a translation error.
+    /// </summary>
+    protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        => throw new NotSupportedException(
+            "Type tests ('is', 'as') are not supported in SELECT projections. There is no SQL " +
+            "equivalent of a CLR type test; project a discriminator column instead.");
+
+    /// <summary>
+    /// AUD-R34-018. The one shape AUD-R33-010's sweep missed: <c>p =&gt; new[] { p.A, p.B }</c> is a
+    /// <c>NewArrayInit</c>, which <c>Translate</c>'s switch does not name, so it descended into its
+    /// children and each element landed in <c>_columns</c> on its own - the projection silently
+    /// became <c>SELECT a, b</c>, and any operator inside the initializer was dropped with it. The
+    /// WHERE twin already threw here.
+    /// </summary>
+    protected override Expression VisitNewArray(NewArrayExpression node)
+        => throw new NotSupportedException(
+            "Array construction is not supported in SELECT projections. List the columns directly, " +
+            "or project into an anonymous type and build the array from the results.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitListInit(ListInitExpression node)
+        => throw new NotSupportedException(
+            "Collection initializers are not supported in SELECT projections. Project the columns " +
+            "and build the collection from the results.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitInvocation(InvocationExpression node)
+        => throw new NotSupportedException(
+            "Invoking a delegate or a nested lambda is not supported in SELECT projections. " +
+            "Inline the projection, or apply the delegate to the results.");
+
+    /// <inheritdoc cref="VisitTypeBinary"/>
+    protected override Expression VisitIndex(IndexExpression node)
+        => throw new NotSupportedException(
+            "Indexer access is not supported in SELECT projections. Project the column and index " +
+            "the result.");
+
+    /// <summary>
+    /// A bare parameter (<c>x =&gt; x</c>) is not a column list, and used to translate to one
+    /// silently - the base visitor returns the node and nothing is appended, so the projection came
+    /// back empty. AUD-R33-010.
+    /// </summary>
+    protected override Expression VisitParameter(ParameterExpression node)
+        => throw new NotSupportedException(
+            $"'{node.Name}' is the whole entity, not a projection. Select the columns you want, or " +
+            "run the query without a Select to get the entity.");
 
     private string TranslateProjectionExpression(Expression expr)
     {
@@ -110,8 +195,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         // Entity property (p.ProductName)
         if (expr is MemberExpression member && IsParameterMember(member))
         {
-            var columnName = GetColumnName(member);
-            return _dialect.EscapeColumnName(columnName);
+            return GetEscapedColumnName(member);
         }
 
         // Method call (Sql.RowNumber(), Sql.Length(), etc.)
@@ -304,8 +388,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
 
         if (arg is MemberExpression member && IsParameterMember(member))
         {
-            var columnName = GetColumnName(member);
-            return _dialect.EscapeColumnName(columnName);
+            return GetEscapedColumnName(member);
         }
 
         if (arg is MethodCallExpression or ConstantExpression || arg.NodeType == ExpressionType.Coalesce)
@@ -398,35 +481,26 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         return current is ParameterExpression;
     }
 
-    private string GetColumnName(MemberExpression member)
+    // AUD-R25: this used to run metadata.Columns.FirstOrDefault(c => c.PropertyName == ...) - a
+    // LINQ delegate allocation plus an O(columns) linear scan - and hand the result to
+    // _dialect.EscapeColumnName, which re-runs SqlIdentifierValidator's regex match and a keyword
+    // HashSet lookup, both per column reference per query build. CachedDialectMetadata holds an
+    // OrdinalIgnoreCase dictionary of property name to already-escaped column name, built once per
+    // (entity, dialect) pair; QueryBuilder, CteBuilder and InsertBuilder already used it.
+    // AUD-R35-019: the SELECT twin of the WHERE guard AUD-R34-021 added. Without it
+    // .Select(o => new { o.OrderDate.Year }) projected a column called [Year].
+    private string GetEscapedColumnName(MemberExpression member)
     {
-        var propertyName = member.Member.Name;
-
-        ColumnMetadata? column = _metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
-        return column?.ColumnName ?? propertyName;
+        ColumnReference.RequireDirect(member);
+        return FluentMetadataCache.GetForDialect<T>(_dialect).GetColumnName(member.Member.Name);
     }
 
-    private static object? EvaluateExpression(Expression expression)
-    {
-        if (expression is ConstantExpression constant)
-            return constant.Value;
+    // AUD-R25: this was one of eight byte-identical private copies. Kept as a one-line forwarder
+    // rather than rewriting every call site, so the shared implementation - including its
+    // closure-member fast path - is the only place the behaviour lives.
+    private static object? EvaluateExpression(Expression expression) => ExpressionEvaluator.Evaluate(expression);
 
-        LambdaExpression lambda = Expression.Lambda(expression);
-        Delegate compiled = lambda.Compile();
-        return compiled.DynamicInvoke();
-    }
-
-    private static string FormatConstant(object? value)
-    {
-        return value switch
-        {
-            null => "NULL",
-            string s => $"'{s.Replace("'", "''")}'",
-            bool b => b ? "1" : "0",
-            DateTime dt => $"'{dt:yyyy-MM-dd HH:mm:ss}'",
-            _ => value.ToString() ?? "NULL"
-        };
-    }
+    private string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value, _dialect);
 }
 
 internal readonly struct SelectColumn

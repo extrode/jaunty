@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420" font-family="'JetBrains Mono', Consolas, monospace">
+  <style>
+    .step  { fill: #1e2227; stroke: #3a4048; stroke-width: 1.5; rx: 8; }
+    .num   { fill: #2b3138; stroke: #4a5158; stroke-width: 1; }
+    .title { fill: #e8eaed; font-size: 15px; font-weight: 600; }
+    .sub   { fill: #9aa3ad; font-size: 12px; }
+    .numtx { fill: #e8eaed; font-size: 14px; font-weight: 700; }
+    .badge-green { fill: #10321f; stroke: #2ea043; }
+    .badge-blue  { fill: #0d2740; stroke: #388bfd; }
+    .badge-amber { fill: #3a2d0e; stroke: #d29922; }
+    .badge-red   { fill: #3d1418; stroke: #f85149; }
+    .btx-green { fill: #56d364; font-size: 11px; font-weight: 600; }
+    .btx-blue  { fill: #79c0ff; font-size: 11px; font-weight: 600; }
+    .btx-amber { fill: #e3b341; font-size: 11px; font-weight: 600; }
+    .btx-red   { fill: #ff7b72; font-size: 11px; font-weight: 600; }
+    .rail  { stroke: #4a5158; stroke-width: 1.5; fill: none; }
+    .railtx { fill: #6e7781; font-size: 11px; }
+  </style>
+
+  <text x="20" y="26" class="title" font-size="16">How Jaunty picks a row mapper</text>
+  <text x="20" y="44" class="sub">DrDispatcher.Resolve&lt;T&gt; - first match wins, reflection is last, never first</text>
+
+  <!-- fall-through rail -->
+  <path class="rail" d="M 44 92 V 372" marker-end="url(#arr)"/>
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#4a5158"/>
+    </marker>
+  </defs>
+  <text x="52" y="235" class="railtx" transform="rotate(90 52 235)">no match - fall through</text>
+
+  <!-- step 1 -->
+  <rect class="step" x="72" y="66" width="520" height="56" rx="8"/>
+  <circle class="num" cx="98" cy="94" r="14"/><text x="94" y="99" class="numtx">1</text>
+  <text x="122" y="88" class="title">Your mapper</text>
+  <text x="122" y="108" class="sub">CommandOptions.Mapper - per-call override, you always have final say</text>
+  <rect class="badge-green" x="606" y="78" width="134" height="24" rx="12"/>
+  <text x="622" y="94" class="btx-green">ZERO REFLECTION</text>
+
+  <!-- step 2 -->
+  <rect class="step" x="72" y="134" width="520" height="56" rx="8"/>
+  <circle class="num" cx="98" cy="162" r="14"/><text x="94" y="167" class="numtx">2</text>
+  <text x="122" y="156" class="title">Source-generated IMapped&lt;T&gt;</text>
+  <text x="122" y="176" class="sub">[Table] classes - shape checked once per result set, typed getters by ordinal</text>
+  <rect class="badge-green" x="606" y="146" width="134" height="24" rx="12"/>
+  <text x="622" y="162" class="btx-green">ZERO REFLECTION</text>
+
+  <!-- step 3 -->
+  <rect class="step" x="72" y="202" width="520" height="56" rx="8"/>
+  <circle class="num" cx="98" cy="230" r="14"/><text x="94" y="235" class="numtx">3</text>
+  <text x="122" y="224" class="title">Special types</text>
+  <text x="122" y="244" class="sub">Dictionary, dynamic - resolved through the extension hook</text>
+  <rect class="badge-blue" x="606" y="214" width="134" height="24" rx="12"/>
+  <text x="617" y="230" class="btx-blue">EXTENSION HOOK</text>
+
+  <!-- step 4 -->
+  <rect class="step" x="72" y="270" width="520" height="56" rx="8"/>
+  <circle class="num" cx="98" cy="298" r="14"/><text x="94" y="303" class="numtx">4</text>
+  <text x="122" y="292" class="title">Reflection</text>
+  <text x="122" y="312" class="sub">Only if Jaunty.Extensions.Reflection is installed - cached, but opt-in</text>
+  <rect class="badge-amber" x="606" y="282" width="134" height="24" rx="12"/>
+  <text x="620" y="298" class="btx-amber">OPT-IN PACKAGE</text>
+
+  <!-- step 5 -->
+  <rect class="step" x="72" y="338" width="520" height="56" rx="8"/>
+  <circle class="num" cx="98" cy="366" r="14"/><text x="94" y="371" class="numtx">5</text>
+  <text x="122" y="360" class="title">Loud failure</text>
+  <text x="122" y="380" class="sub">InvalidOperationException naming all three fixes - never a silent default(T)</text>
+  <rect class="badge-red" x="606" y="350" width="134" height="24" rx="12"/>
+  <text x="638" y="366" class="btx-red">THROWS</text>
+</svg>

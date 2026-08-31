@@ -104,4 +104,25 @@ public class QueryCommandOptionsTests : IClassFixture<DialectFixture>
         Assert.Single(categories);
         Assert.Equal(1, categories[0].CategoryId);
     }
+
+    // AUD-R12: QueryCoreAsync<T> hardcoded JauntyConfig.QueryResultCapacity for the results list
+    // instead of honoring options.ExpectedRowCount, unlike the sync Query<T> path.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task QueryAsync_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName, Description FROM Categories"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories";
+
+        var categories = await connection.QueryAsync<Category>(sql, CommandOptions<Category>.WithExpectedRowCount(500));
+
+        Assert.NotEmpty(categories);
+        Assert.True(categories.Capacity >= 500);
+    }
 }

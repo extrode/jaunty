@@ -26,6 +26,17 @@ public static partial class Jaunty
     /// <para>
     /// Streaming is memory-efficient for large result sets as it doesn't buffer all results in memory.
     /// </para>
+    /// <para>
+    /// <strong>Interceptor gap:</strong> streamed commands honor <see cref="CommandOptions{T}.CommandType"/>
+    /// and the simple <see cref="global::Jaunty.Configuration.JauntyConfig.Logger"/> callback, the same as
+    /// buffered queries, but they do NOT currently pass through the registered
+    /// <see cref="global::Jaunty.Interceptors.ICommandInterceptor"/> pipeline. Wiring pipeline interceptors into
+    /// a streaming path would require materializing the entire result set before the "command executed"
+    /// hook could fire, which would defeat the purpose of streaming, so this is intentionally left
+    /// unwired for now. Callers relying on interceptor-based auditing should not assume streamed
+    /// queries (<c>QueryStream</c>, <c>QueryPartialStream</c>, <c>QueryPartialUnbuffered</c>, and their
+    /// async equivalents) are observed by their interceptors.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -35,7 +46,7 @@ public static partial class Jaunty
     ///     public string Name { get; set; }
     ///     public decimal Price { get; set; }
     /// }
-    /// 
+    ///
     /// // Stream all products (connection stays open during enumeration)
     /// foreach (var product in connection.QueryStream&lt;Product&gt;("SELECT * FROM products"))
     /// {
@@ -56,10 +67,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryStreamCore<T>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -105,10 +118,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryStreamCore<T>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -139,7 +156,7 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// foreach (var product in connection.QueryStream&lt;Product&gt;(
     ///     "SELECT * FROM products",
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"{product.Id}: {product.Name}");
     /// }
@@ -154,10 +171,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryStreamCore<T>(connection, sql, null, options, MappingMode.Strict);
     }
@@ -190,7 +209,7 @@ public static partial class Jaunty
     /// foreach (var product in connection.QueryStream&lt;Product&gt;(
     ///     "SELECT * FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"{product.Id}: {product.Name}");
     /// }
@@ -208,10 +227,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryStreamCore<T>(connection, sql, parameters, options, MappingMode.Strict);
     }

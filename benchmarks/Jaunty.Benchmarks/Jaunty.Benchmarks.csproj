@@ -3,10 +3,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
     <IsAotCompatible>false</IsAotCompatible>
     <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
@@ -35,16 +34,21 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.*" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" /><!-- pin: GHSA-cmhx-cq75-c4mj -->
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.*" />
     <PackageReference Include="Npgsql" Version="9.0.*" />
     <PackageReference Include="MySqlConnector" Version="2.4.*" />
   </ItemGroup>
 
   <!-- Jaunty -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net10.0" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" SetTargetFramework="TargetFramework=net10.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"

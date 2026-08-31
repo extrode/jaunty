@@ -373,7 +373,7 @@ flowchart TB
     Build8 --> Pkg8["Jaunty.dll (net8.0)"]
     BuildStd --> PkgStd["Jaunty.dll (netstandard2.0)"]
     
-    Pkg8 --> NuGet["Beparey.Jaunty NuGet package"]
+    Pkg8 --> NuGet["Extrode.Jaunty NuGet package"]
     PkgStd --> NuGet
     
     style Source fill:#9cf

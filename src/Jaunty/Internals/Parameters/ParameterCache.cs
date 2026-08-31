@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 #if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
 #endif
@@ -31,9 +31,27 @@ internal static class ParameterCache
     /// </summary>
     /// <param name="type">The entity type to get parameter metadata for.</param>
     /// <returns>An array of parameter metadata for all public properties.</returns>
+    /// <remarks>
+    /// Spec 011. This used to declare
+    /// <c>[DynamicallyAccessedMembers(PublicProperties)]</c> on <paramref name="type"/>. The
+    /// annotation was removed because it was not true and could not become true: every caller reaches
+    /// here through <c>parameters.GetType()</c> on an <c>object</c>, which carries no annotation, so
+    /// nothing was ever propagated. Its only effect was to relocate the problem - two IL2072 warnings
+    /// at the call sites for failing to satisfy a requirement no caller can satisfy, plus an IL2111
+    /// here for handing the annotated <see cref="BuildMetadata"/> to <c>GetOrAdd</c> as a delegate.
+    /// Three warnings, no preservation. Actual preservation is arranged at the consumer's call sites
+    /// by generated rooting; see <c>Jaunty.JauntyAot</c> and <c>JAUNTYGEN003</c>.
+    /// </remarks>
     public static ParameterMetadata[] Get(Type type)
     {
-        return Cache.GetOrAdd(type, BuildMetadata);
+        // Called directly rather than as a `GetOrAdd(type, BuildMetadata)` method group: passing a
+        // method whose parameter is annotated as a delegate is what produced IL2111, and the trimmer
+        // is right that it cannot see through a delegate. Behaviour is unchanged - the factory
+        // overload holds no lock either, so a concurrent double-build was always possible.
+        if (Cache.TryGetValue(type, out ParameterMetadata[]? cached))
+            return cached;
+
+        return Cache.GetOrAdd(type, BuildMetadata(type));
     }
 
     /// <summary>
@@ -41,25 +59,48 @@ internal static class ParameterCache
     /// </summary>
     /// <param name="type">The entity type to build metadata for.</param>
     /// <returns>An array of parameter metadata, one per public property.</returns>
+    /// <remarks>
+    /// The one place in the parameter path that actually reflects, and so the one honest place for the
+    /// suppression. Spec 011 arranges preservation from outside: the source generator reads the
+    /// consumer's <c>Query</c>/<c>Execute</c> call sites and emits
+    /// <c>JauntyAot.PreserveParameters&lt;T&gt;()</c> for each parameters type into a module
+    /// initializer, so the getters this enumerates are statically required by the consumer's own
+    /// assembly. Where it cannot - an <c>object</c>-typed variable, a type built by reflection - it
+    /// reports <c>JAUNTYGEN003</c> at that call site instead of letting the failure surface after
+    /// publish.
+    /// </remarks>
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Used for anonymous types whose properties are always preserved by the compiler.")]
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType() from an object, so no annotation can flow here and none is declared (spec 011 removed the one that used to be, because it produced three warnings and preserved nothing). Preservation is arranged at the consumer's call sites: the source generator emits JauntyAot.PreserveParameters<T>() for every parameters type it can see there. Call sites it cannot see are reported as JAUNTYGEN003 where the call site itself is visible; two shapes stay uncovered - a parameters object forwarded through an object-typed parameter into a helper that calls Query, and a Jaunty call made from inside a wrapper library the generator does not run over. Those preserve nothing and warn nothing, so a consumer with either must root the type itself.")]
 #endif
-    private static ParameterMetadata[] BuildMetadata(
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-#endif
-        Type type)
+    private static ParameterMetadata[] BuildMetadata(Type type)
     {
+        // AOT-SAFE: preservation comes from generated call-site rooting - JauntyAot.PreserveParameters<T>() is emitted for every parameters type the generator can see; a visible call site it cannot type gets JAUNTYGEN003 at build. Forwarded object arguments and calls made from a wrapper library are neither preserved nor warned; see docs/02-architecture/reflection-and-trimming.md. Spec 011.
         PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-        var result = new ParameterMetadata[props.Length];
+        var result = new List<ParameterMetadata>(props.Length);
 
-        for (int i = 0; i < props.Length; i++)
+        foreach (PropertyInfo p in props)
         {
-            PropertyInfo p = props[i];
-            result[i] = new ParameterMetadata(p.Name, CreateGetter(p), property: p);
+            // R16: an indexer (e.g. "public object this[int i]") surfaces as a public instance
+            // property named "Item" with GetIndexParameters().Length > 0. Expression.Property(cast,
+            // prop) throws ArgumentException ("Incorrect number of indexes") for these, so a
+            // parameters POCO that happens to declare an indexer would fail binding with an
+            // unclear exception. Dapper explicitly skips indexed properties; do the same here.
+            if (p.GetIndexParameters().Length > 0)
+                continue;
+
+            // AUD-R26: same defect class as the indexer above, second variant. A public set-only
+            // property (no `get` accessor) makes Expression.Property throw "Expression must be
+            // readable", an error naming neither Jaunty, the type nor the property. A property
+            // that cannot be read cannot supply a parameter value, so it is not a parameter -
+            // skipping leaves the SQL asking for it to fail as "no value found for '@Name'",
+            // which at least says which one.
+            if (p.GetGetMethod() is null)
+                continue;
+
+            result.Add(new ParameterMetadata(p.Name, CreateGetter(p), property: p));
         }
 
-        return result;
+        return result.ToArray();
     }
 
     /// <summary>

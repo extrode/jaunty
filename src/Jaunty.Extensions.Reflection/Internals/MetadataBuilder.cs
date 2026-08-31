@@ -44,8 +44,14 @@ internal static class MetadataBuilder
         TableAttribute? tableAttr = type.GetCustomAttribute<TableAttribute>();
         if (tableAttr is not null)
         {
-            tableName = tableAttr.Name;
-            if (tableAttr.Schema is not null) schemaName = tableAttr.Schema;
+            if (!string.IsNullOrEmpty(tableAttr.Name)) tableName = tableAttr.Name;
+
+            // AUD-R35-221: this was `is not null`, so [Table("X", "")] set the schema to the empty
+            // string and discarded any configured JauntyConfig.SchemaNameResolver value. Every
+            // sibling guard tests IsNullOrEmpty - the table name one line above, the
+            // DataAnnotations branch below, the column-name guard from AUD-R32-006, and the
+            // generator's GetTableNameAndSchema.
+            if (!string.IsNullOrEmpty(tableAttr.Schema)) schemaName = tableAttr.Schema;
         }
         else
         {
@@ -64,12 +70,18 @@ internal static class MetadataBuilder
             }
         }
 
-        PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        PropertyInfo[] props = MostDerivedPerName(type.GetProperties(BindingFlags.Instance | BindingFlags.Public));
         var columns = new List<ColumnMetadata>();
 
         for (var i = 0; i < props.Length; i++)
         {
             PropertyInfo property = props[i];
+
+            // R16/AUD-R22: an indexer (e.g. "public object this[int i]") surfaces as a public
+            // instance property named "Item" with GetIndexParameters().Length > 0.
+            // Expression.Property/PropertyInfo.SetValue throw for these; skip them like
+            // ParameterCache.cs already does.
+            if (property.GetIndexParameters().Length > 0) continue;
 
             // 2. Ignore resolution
             if (property.GetCustomAttribute<IgnoreAttribute>() is not null) continue;
@@ -83,7 +95,12 @@ internal static class MetadataBuilder
             string colName = JauntyConfig.ColumnNameResolver?.Invoke(property.Name) ?? property.Name;
             ColumnAttribute? colAttr = property.GetCustomAttribute<ColumnAttribute>();
 
-            if (colAttr is not null)
+            // AUD-R32-006: the IsNullOrEmpty guard was missing here alone. ColumnAttribute's
+            // constructor rejects null but not "", so [Column("")] mapped the property to an
+            // empty column name, while the DataAnnotations-compat path below and the table/schema
+            // resolutions above all fall back to the default. The source generator carries the
+            // same guard so both mapping modes agree.
+            if (colAttr is not null && !string.IsNullOrEmpty(colAttr.Name))
                 colName = colAttr.Name;
             else
             {
@@ -104,6 +121,26 @@ internal static class MetadataBuilder
                          property.Name.Equals($"{type.Name}Id", StringComparison.OrdinalIgnoreCase);
 
             // 5. DatabaseGenerated resolution
+            //
+            // AUD-R25: note that this path infers nothing. With no [DatabaseGenerated], genOption
+            // stays null and ColumnMetadata sets IsIdentity = false, so a conventional `int Id` key
+            // stays in InsertColumns and its value is sent on INSERT.
+            //
+            // JauntyGenerator does the opposite for the same entity: it treats a single int/long
+            // key with no [DatabaseGenerated] as an identity column and omits it. The key
+            // convention itself is shared and identical (see step 4 above and JauntyGenerator's
+            // isKey), so the two paths agree on which column is the key and disagree only on
+            // whether the database generates it. DrDispatcher prefers the generated mapper when one
+            // exists, which means adding or removing the Jaunty.SourceGenerator package reference
+            // silently changes the INSERT for such an entity - dropping a client-assigned key on
+            // one side, or overriding a real sequence on the other.
+            //
+            // Converging them is a product decision rather than an audit fix: either direction
+            // changes the SQL of existing entities on one of the two paths, and both behaviours are
+            // relied on by current tests. Both are pinned by tests so the divergence cannot drift
+            // further unnoticed, and documented in docs/01-api-reference/attributes.md, which now
+            // tells users to write [DatabaseGenerated] explicitly to get identical behaviour either
+            // way.
             DatabaseGeneratedOption? genOption = null;
             DatabaseGeneratedAttribute? genAttr = property.GetCustomAttribute<DatabaseGeneratedAttribute>();
 
@@ -148,6 +185,66 @@ internal static class MetadataBuilder
     /// <summary>
     /// Checks if a member has an attribute by type name without requiring a hard reference.
     /// </summary>
+    /// <summary>
+    /// Keeps one property per name, the most derived one, preserving declaration order.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-220. A type-changing <c>new</c> shadow - <c>class B { public string P { get; set; } }</c>
+    /// with <c>class D : B { public new int P { get; set; } }</c> - makes
+    /// <c>GetProperties(Instance | Public)</c> return two <c>PropertyInfo</c>s named <c>P</c> (a
+    /// same-signature <c>new</c> returns only the derived one, so only the type-changing case is
+    /// affected). Both used to reach <c>ColumnMetadata</c>, and <c>ThrowIfDuplicateColumnNames</c>
+    /// then reported <c>"'P' and 'P'"</c>, which reads as a nonsense diagnostic. The generator's
+    /// <c>GetMappableProperties</c> and <c>MappedPropertyFilter</c> in Jaunty.FlatFiles.DuckDB both
+    /// dedup by name already; the reflection path was the only one of the three that did not.
+    /// Indexers are passed through untouched rather than deduped: two of them - <c>this[int]</c>
+    /// and <c>this[string]</c> - both surface as <c>Item</c>, and the caller skips them by
+    /// <c>GetIndexParameters</c> rather than by name, so they must reach it unchanged.
+    /// </remarks>
+    private static PropertyInfo[] MostDerivedPerName(PropertyInfo[] properties)
+    {
+        var indexByName = new Dictionary<string, int>(properties.Length, StringComparer.Ordinal);
+        var kept = new List<PropertyInfo>(properties.Length);
+
+        for (var i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length > 0)
+            {
+                kept.Add(property);
+                continue;
+            }
+
+            if (!indexByName.TryGetValue(property.Name, out int index))
+            {
+                indexByName[property.Name] = kept.Count;
+                kept.Add(property);
+                continue;
+            }
+
+            if (IsMoreDerived(property, kept[index]))
+                kept[index] = property;
+        }
+
+        return kept.Count == properties.Length ? properties : kept.ToArray();
+    }
+
+    /// <summary>
+    /// True when <paramref name="candidate"/> is declared on a type derived from the one that
+    /// declares <paramref name="incumbent"/>.
+    /// </summary>
+    private static bool IsMoreDerived(PropertyInfo candidate, PropertyInfo incumbent)
+    {
+        Type? candidateType = candidate.DeclaringType;
+        Type? incumbentType = incumbent.DeclaringType;
+
+        return candidateType is not null
+            && incumbentType is not null
+            && candidateType != incumbentType
+            && incumbentType.IsAssignableFrom(candidateType);
+    }
+
     private static bool HasAttribute(MemberInfo member, string attributeTypeName)
     {
 
@@ -172,17 +269,14 @@ internal static class MetadataBuilder
     /// </summary>
     private static object? GetNamedArgument(CustomAttributeData attributeData, string argumentName)
     {
-        var namedArg = new CustomAttributeNamedArgument();
-
         foreach (CustomAttributeNamedArgument Arg in attributeData.NamedArguments)
         {
             if (Arg.MemberName == argumentName)
             {
-                namedArg = Arg;
-                break;
+                return Arg.TypedValue.Value;
             }
         }
 
-        return namedArg.TypedValue.Value;
+        return null;
     }
 }

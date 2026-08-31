@@ -11,7 +11,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Write;
 /// </summary>
 public class CrudTests : IDisposable
 {
-    private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_crud_tests_{Guid.NewGuid():N}");
+    private readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_crud_tests_{Guid.NewGuid():N}");
     private readonly string _csvPath;
     private readonly DuckDb _db;
 

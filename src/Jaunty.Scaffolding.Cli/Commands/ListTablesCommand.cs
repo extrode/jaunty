@@ -1,5 +1,6 @@
 using System.CommandLine;
 
+using Jaunty.Scaffolding.Abstractions;
 using Jaunty.Scaffolding.Configuration;
 
 namespace Jaunty.Scaffolding.Cli.Commands;
@@ -16,7 +17,9 @@ internal sealed class ListTablesCommand : Command
 
         var providerOption = new Option<DatabaseProvider>("--provider", "-p")
         {
-            Description = "Database provider (SqlServer, PostgreSql, MySql, SQLite)",
+            // AUD-R35-266: AutoDetect belongs in the list. It is both a valid value and this
+            // option's own default, and omitting it left --help unable to say what the default was.
+            Description = "Database provider (AutoDetect, SqlServer, PostgreSql, MySql, SQLite); default AutoDetect",
             DefaultValueFactory = _ => DatabaseProvider.AutoDetect
         };
 
@@ -39,9 +42,15 @@ internal sealed class ListTablesCommand : Command
             try
             {
                 var scaffolder = new Scaffolder();
+                // AUD-R35-079: push --schemas down to the reader so the unwanted schemas' tables
+                // are never read, rather than reading every table in the database and discarding
+                // them here. The client-side pass below is still needed: SQLite ignores
+                // IncludeSchemas (it has no schemas) and MySQL treats it as an accept/reject on the
+                // attached database name, so neither narrows a multi-schema listing on its own.
                 IReadOnlyList<(string Schema, string Table)> tables = await scaffolder.ListTablesAsync(
                     connection,
                     provider,
+                    schemas.Length > 0 ? new SchemaReaderOptions { IncludeSchemas = schemas } : null,
                     cancellationToken).ConfigureAwait(false);
 
                 // Filter by schemas if specified
@@ -69,6 +78,14 @@ internal sealed class ListTablesCommand : Command
                 }
 
                 return 0;
+            }
+            // AUD-R35-267: cancellation named explicitly, so both commands report a Ctrl-C the same
+            // way and the message does not depend on which exception type the cancelled operation
+            // happened to throw.
+            catch (OperationCanceledException)
+            {
+                Console.Error.WriteLine("Error: Operation canceled.");
+                return 1;
             }
             catch (Exception ex)
             {

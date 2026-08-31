@@ -19,7 +19,7 @@ public class QueryFallbackTests : IDisposable
 
     public QueryFallbackTests()
     {
-        _realConnection = new SQLiteConnection("Data Source=../../../../../data/sqlite/Northwind.db");
+        _realConnection = new SQLiteConnection(NorthwindDatabase.ConnectionString);
         _wrapper = new IDbConnectionWrapper(_realConnection);
     }
 

@@ -2,11 +2,20 @@ using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection;
 
-namespace Jaunty.Tests.TypeHandlers;
+namespace Jaunty.Tests.Unit.TypeHandlers;
 
 /// <summary>
 /// Unit tests for enum storage strategy configuration and attribute handling.
 /// </summary>
+/// <remarks>
+/// Shares the "Type Handler Operations" collection with
+/// <see cref="Jaunty.Tests.Unit.TypeHandlers.TypeHandlerRegistryTests"/>,
+/// <see cref="Jaunty.Tests.Integration.TypeHandlers.TypeHandlerRoundTripTests"/>, and
+/// <see cref="Jaunty.Tests.Unit.Read.ParameterBinderTests"/> — all mutate the same process-wide
+/// <see cref="JauntyConfig.DefaultEnumStorage"/>/type-handler registry static state and must run
+/// serialized against each other.
+/// </remarks>
+[Collection("Type Handler Operations")]
 public class EnumStorageTests : IDisposable
 {
     public void Dispose()
@@ -86,10 +95,18 @@ public class EnumStorageTests : IDisposable
         // Arrange
         JauntyConfig.DefaultEnumStorage = EnumStorage.String;
 
+        // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared with
+        // the "Logging Extensions" collection (running concurrently as a different xunit
+        // collection) - capture and clear it atomically (AUD-R7) so an interceptor registered by
+        // that collection between a separate capture-then-Reset() pair can't be silently dropped.
+        var interceptorsBeforeReset = JauntyConfig.CaptureAndClearInterceptors();
+
         // Act — Reset() is the API under test here; restore reflection mapping afterwards
         // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
         JauntyReflectionExtensions.UseReflectionMapping();
+        if (interceptorsBeforeReset is { Length: > 0 })
+            JauntyConfig.AddInterceptors(interceptorsBeforeReset);
 
         // Assert
         Assert.Equal(EnumStorage.Numeric, JauntyConfig.DefaultEnumStorage);

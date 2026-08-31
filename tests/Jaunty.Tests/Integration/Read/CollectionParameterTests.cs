@@ -124,6 +124,9 @@ public class CollectionParameterTests : IClassFixture<DialectFixture>
             ProductSelectSql(dialect, $"{ProductIdColumn(dialect)} IN @Ids1 AND {ProductIdColumn(dialect)} IN @Ids2"),
             new { Ids1 = productIds1, Ids2 = productIds2 });
 
+        // Northwind's seed data has products 3, 4, and 5 - the exact intersection of the two
+        // lists - so a binding regression that collapsed the query to zero rows must be caught.
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
         {
             Assert.Contains(p.ProductId, productIds1);
@@ -221,6 +224,7 @@ public class CollectionParameterTests : IClassFixture<DialectFixture>
             new { Ids = ids });
 
         // Should return products with IDs in the range 1-50
+        Assert.NotEmpty(products);
         Assert.All(products, p => Assert.Contains(p.ProductId, ids));
     }
 
@@ -238,7 +242,7 @@ public class CollectionParameterTests : IClassFixture<DialectFixture>
             .ToArray();
 
         if (customerIds.Length == 0)
-            return; // Skip if no customers
+            Assert.Skip("No customers available in seed data to exercise string-collection parameter binding.");
 
         var customers = connection.QueryPartial<Customer>(
             CustomerSelectSql(dialect, $"{CustomerIdColumn(dialect)} IN @CustomerIds"),

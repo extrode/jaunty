@@ -4,25 +4,72 @@ on:
   push:
     tags:
       - "v*"
+  # Dispatch runs the trusted-publishing check below and nothing else. It exists
+  # because a nuget.org policy created against a PRIVATE repository is only
+  # temporarily active for 7 days: it becomes permanent after one successful
+  # NuGet/login, which binds it to immutable GitHub repository and owner IDs.
+  # Without this, the only way to arm the policy is to cut a real release.
+  workflow_dispatch:
 
 permissions:
   contents: write
   packages: write
 
 jobs:
+  # Arms the nuget.org trusted-publishing policy without publishing anything. One
+  # successful login inside the 7-day window makes the policy permanent; a package
+  # need not be pushed. Deliberately not on the self-hosted runner - this must be
+  # runnable when that machine is off, which is the situation it exists for.
+  verify-trusted-publishing:
+    name: Verify trusted publishing
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: NuGet.org login (OIDC, short-lived key)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Report
+        run: |
+          if [ -n "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" ]; then
+            echo "::notice title=Trusted publishing armed::nuget.org issued a short-lived key. The policy is now permanently active."
+          else
+            echo "::error title=No key issued::The token exchange returned nothing. Check the policy's workflow file name and that its environment is empty."
+            exit 1
+          fi
+
   release:
     name: Pack & Publish
-    runs-on: ubuntu-latest
+    # A tag push, never a dispatch: the version is derived from the ref, so a
+    # dispatch would pack a package named after a branch.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # Restated in full because a job-level block replaces the top-level one rather
+    # than adding to it. id-token: write only lets the job REQUEST an OIDC token;
+    # nuget.org still decides whether to honour it by matching the token against the
+    # trusted-publishing policy, so no publishing right is granted here.
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
         with:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: Derive version from tag
         id: version
@@ -38,13 +85,26 @@ jobs:
           --no-restore
           -p:Version=${{ steps.version.outputs.version }}
 
+      # The filter names suites explicitly, so a substring has to match the suite's real
+      # namespace: "~Jaunty.Fluent.Tests" does NOT match Jaunty.Fluent.SourceGen.Tests and
+      # "~Jaunty.Scaffolding.Tests" does NOT match Jaunty.Scaffolding.Cli.Tests. Both were
+      # missing here and shipped untested until 2026-08-01. A new suite needs adding by hand.
       - name: Test (SQLite core + all local suites)
         run: >-
           dotnet test Jaunty.slnx
           -c Release
           --no-build
           --framework net8.0
-          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
+          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Fluent.SourceGen.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.Scaffolding.Cli.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
+
+      # net10 leg (spec 010 T18): same suites on the second shipped target.
+      - name: Test net10 (SQLite core + all local suites)
+        run: >-
+          dotnet test Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net10.0
+          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Fluent.SourceGen.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.Scaffolding.Cli.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
 
       - name: Pack
         run: >-
@@ -54,9 +114,9 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
           -o packout
 
-      # Private distribution: GitHub Packages, authenticated with the built-in
-      # GITHUB_TOKEN (no external secret). Customers consume with read-only
-      # fine-grained PATs - see docs/06-releases/COMMERCIAL-DISTRIBUTION-FLOW.md.
+      # GitHub Packages, authenticated with the built-in GITHUB_TOKEN (no external
+      # secret). Kept after the NuGet.org decision of 2026-08-30 so existing
+      # consumers of the feed are not broken by the move.
       # Note: GitHub Packages has no snupkg symbol server; symbol packages are
       # attached to the GitHub Release below instead.
       - name: Push to GitHub Packages
@@ -66,12 +126,51 @@ jobs:
           --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
           --skip-duplicate
 
+      # NuGet.org is the primary feed as of the 2026-08-30 decision, and it is what
+      # makes the README's install line true without a feed step.
+      #
+      # Trusted publishing (OIDC), not a stored key. There is no NUGET_API_KEY secret
+      # to rotate or leak: NuGet/login exchanges the workflow's short-lived OIDC token
+      # for an API key valid one hour. This is also the only durable route - keys
+      # created after 2026-08-17 expire after 30 days, and older ones die 2026-11-01.
+      #
+      # Gated on a variable rather than run unconditionally, so a release cut before
+      # the policy exists still ships to GitHub Packages instead of failing at the last
+      # step with the packages published to one feed and not the other.
+      #
+      # The policy on nuget.org must name workflow file `release.yml` with no
+      # environment, because this job declares none. Setting `environment:` here
+      # without adding it to the policy - or the reverse - fails the token exchange.
+      - name: NuGet.org login (OIDC, short-lived key)
+        id: nuget-login
+        if: vars.PUBLISH_TO_NUGET_ORG == 'true'
+        uses: NuGet/login@v1
+        with:
+          # The nuget.org profile name, not an email address.
+          user: ${{ vars.NUGET_USER }}
+
+      # --skip-duplicate matters more here than on GitHub Packages: nuget.org rejects
+      # a re-push of an existing version, so re-running a partially failed release
+      # would otherwise abort on the first package that already landed.
+      - name: Push to NuGet.org
+        if: vars.PUBLISH_TO_NUGET_ORG == 'true'
+        run: >-
+          dotnet nuget push "packout/*.nupkg"
+          --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}"
+          --source "https://api.nuget.org/v3/index.json"
+          --skip-duplicate
+
+      - name: Note that NuGet.org was skipped
+        if: vars.PUBLISH_TO_NUGET_ORG != 'true'
+        run: |
+          echo "::warning title=NuGet.org push skipped::Set the PUBLISH_TO_NUGET_ORG repository variable to 'true' once the trusted-publishing policy is active. Packages went to GitHub Packages only."
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             packout/*.nupkg
             packout/*.snupkg
           generate_release_notes: true
           body: |
-            See [CHANGELOG.md](https://github.com/beparey/jaunty/blob/main/CHANGELOG.md) for details.
+            See [CHANGELOG.md](https://github.com/extrode/jaunty/blob/main/CHANGELOG.md) for details.

@@ -1,0 +1,1 @@
+SELECT '@notaparam' FROM t WHERE id = @id

@@ -45,6 +45,35 @@ internal static class TypeHandlerRegistry
     }
 
     /// <summary>
+    /// Invokes <see cref="ITypeHandler.ToDbValue"/>, rewrapping anything it throws as an
+    /// <see cref="InvalidOperationException"/> naming the handler and the value type.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-115 (round-35 batch 04c). Three write paths call the same handler registry -
+    /// <c>ParameterBinder.ApplyTypeHandlerIfNeeded</c> for ad-hoc parameters,
+    /// <c>GeneratedBindingSupport.ToDbValue</c>/<c>ToDbEnumValue</c> for the source-generated
+    /// binders, and <c>JauntyReflectionExtensions.ConvertWithTypeHandlerOrElse</c> for the
+    /// reflection entity binders - and only the first wrapped a throwing handler. The same faulty
+    /// handler therefore produced a diagnosable error on one path and a raw handler-internal
+    /// exception naming neither Jaunty, the handler nor the value on the other two. One failure
+    /// mode, three call sites, so one contract: they all come through here now.
+    /// </remarks>
+    internal static object? ToDbValueOrThrow(ITypeHandler handler, object value)
+    {
+        try
+        {
+            return handler.ToDbValue(value);
+        }
+        catch (Exception ex)
+        {
+            // Surface conversion failures rather than silently binding unconverted data.
+            throw new InvalidOperationException(
+                $"Type handler '{handler.GetType().Name}' failed to convert a value of type '{value.GetType().Name}' to its database representation.",
+                ex);
+        }
+    }
+
+    /// <summary>
     /// Removes a registered type handler for the specified type.
     /// </summary>
     /// <typeparam name="T">The type to remove the handler for.</typeparam>
@@ -64,8 +93,15 @@ internal static class TypeHandlerRegistry
     }
 
     /// <summary>
-    /// Clears all registered handlers. Intended for testing cleanup.
+    /// Clears all registered handlers.
     /// </summary>
+    /// <remarks>
+    /// AUD-R35-177. This said "intended for testing cleanup", but its only non-test caller is the
+    /// public production API <c>JauntyConfig.Reset()</c>, which the surrounding code treats as a real
+    /// runtime operation - it deliberately bumps <c>ConfigurationGeneration</c> afterwards, because
+    /// this method does not bump it itself. Anyone reasoning about handler lifetime from the old text
+    /// would have concluded handlers outlive a <c>Reset()</c>.
+    /// </remarks>
     internal static void Clear()
     {
         lock (MutationSync)
@@ -82,6 +118,19 @@ internal static class TypeHandlerRegistry
     /// <param name="dbValue">The database value to convert.</param>
     /// <param name="result">The converted value, if conversion succeeded.</param>
     /// <returns>True if a handler was found and conversion succeeded; otherwise false.</returns>
+    /// <remarks>
+    /// AUD-R35-176. This method and its sibling <see cref="TryConvertToDb{T}"/> have no caller
+    /// anywhere in <c>src/</c>. All four production consumers - <c>ParameterBinder</c>,
+    /// <c>GeneratedBindingSupport</c>, <c>JauntyReflectionExtensions</c> and
+    /// <c>MetadataCache.CreateSetter</c> - call <see cref="TryGetHandler"/> and convert themselves.
+    /// They also key on the <em>static</em> <c>typeof(T)</c>, where every write-path consumer keys on
+    /// the runtime <c>value.GetType()</c>, so the two lookups disagree whenever the static type is
+    /// looser than the value's (an <c>object</c>-typed call, for instance). The consequence worth
+    /// stating plainly: the exception-wrapping and null-return contracts these two methods define,
+    /// and the tests that pin them, are not the contracts the shipped paths execute. Kept rather than
+    /// removed - that is a deletion decision, not an audit one - and recorded in
+    /// <c>work/todo.md</c>. First filed in round 27 and never registered either way.
+    /// </remarks>
     internal static bool TryConvertFromDb<T>(object? dbValue, out T result)
     {
         result = default!;
@@ -95,16 +144,20 @@ internal static class TypeHandlerRegistry
             if (converted is null)
             {
                 result = default!;
+                // R27 batch 7: a null from the handler cannot represent a non-nullable value
+                // type; reporting success would hand back default(T) (e.g. 0 for int),
+                // indistinguishable from real data.
+                return default(T) is null;
             }
-            else
-            {
-                result = (T)converted;
-            }
+            result = (T)converted;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            // Surface conversion failures rather than silently reporting "no conversion".
+            throw new InvalidOperationException(
+                $"Type handler '{handler.GetType().Name}' failed to parse a database value into type '{typeof(T).Name}'.",
+                ex);
         }
     }
 
@@ -127,10 +180,12 @@ internal static class TypeHandlerRegistry
             dbValue = handler.ToDbValue(value);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
-            dbValue = null;
-            return false;
+            // Surface conversion failures rather than silently reporting "no conversion".
+            throw new InvalidOperationException(
+                $"Type handler '{handler.GetType().Name}' failed to convert a value of type '{typeof(T).Name}' to its database representation.",
+                ex);
         }
     }
 }

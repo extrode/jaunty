@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 
 using Jaunty.Attributes;
@@ -10,9 +11,39 @@ namespace Jaunty.Internals.Entity;
 internal sealed class ColumnMetadata
 {
     /// <summary>
-    /// Gets the property info for the column.
+    /// Gets the property info for the column, when resolved via runtime reflection
+    /// (<c>Jaunty.Extensions.Reflection</c>). <see langword="null"/> when resolved from
+    /// source-generated metadata instead — use <see cref="PropertyName"/>/<see cref="PropertyType"/>
+    /// for name/type, and <see cref="Getter"/>/<see cref="Setter"/> for value access, which are
+    /// populated regardless of which path resolved this column.
     /// </summary>
-    public PropertyInfo Property { get; }
+    public PropertyInfo? Property { get; }
+
+    /// <summary>
+    /// Gets the CLR property name for this column. Always populated, regardless of whether
+    /// metadata was resolved via reflection or source generation.
+    /// </summary>
+    public string PropertyName { get; }
+
+    /// <summary>
+    /// Gets the CLR property type for this column. Always populated, regardless of whether
+    /// metadata was resolved via reflection or source generation.
+    /// </summary>
+    public Type PropertyType { get; }
+
+    /// <summary>
+    /// Gets a compiled, reflection-free getter for this column's value, when resolved from
+    /// source-generated metadata. <see langword="null"/> when resolved via runtime reflection —
+    /// use <see cref="Property"/>'s <c>GetValue</c> instead in that case.
+    /// </summary>
+    public Func<object, object?>? Getter { get; }
+
+    /// <summary>
+    /// Gets a compiled, reflection-free setter for this column's value, when resolved from
+    /// source-generated metadata. <see langword="null"/> when resolved via runtime reflection —
+    /// use <see cref="Property"/>'s <c>SetValue</c> instead in that case.
+    /// </summary>
+    public Action<object, object?>? Setter { get; }
 
     /// <summary>
     /// Gets the database column name.
@@ -35,7 +66,25 @@ internal sealed class ColumnMetadata
     public bool IsComputed { get; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ColumnMetadata"/> class.
+    /// Gets the <see cref="EnumStorage"/> declared by an <see cref="EnumStorageAttribute"/> on the
+    /// property, when resolved from source-generated metadata. <see langword="null"/> when the
+    /// property carries no attribute, and always <see langword="null"/> on the reflection path,
+    /// which reads the attribute off <see cref="Property"/> instead.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35: the source-generated path leaves <see cref="Property"/> null, so every
+    /// <c>ApplyTypeHandlerIfNeeded(value, col.Property)</c> call fell through to
+    /// <c>JauntyConfig.DefaultEnumStorage</c> and silently ignored a property-level
+    /// <c>[EnumStorage(EnumStorage.String)]</c>. The generated binders baked the override in, so
+    /// <c>Insert</c>/<c>Update</c> wrote <c>"Active"</c> while <c>Upsert</c>, <c>Get</c> and the
+    /// IN-clause expansion wrote <c>1</c> into the same column. Carrying the storage here rather
+    /// than re-deriving it keeps the AOT path reflection-free.
+    /// </remarks>
+    public EnumStorage? EnumStorageOverride { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ColumnMetadata"/> class from a
+    /// reflection-resolved <see cref="PropertyInfo"/>.
     /// </summary>
     /// <param name="property">The property info.</param>
     /// <param name="columnName">The database column name.</param>
@@ -44,9 +93,37 @@ internal sealed class ColumnMetadata
     public ColumnMetadata(PropertyInfo property, string columnName, bool isPrimaryKey, DatabaseGeneratedOption? databaseGeneratedOption)
     {
         Property = property;
+        PropertyName = property.Name;
+        PropertyType = property.PropertyType;
         ColumnName = columnName;
         IsPrimaryKey = isPrimaryKey;
         IsIdentity = databaseGeneratedOption == DatabaseGeneratedOption.Identity;
         IsComputed = databaseGeneratedOption == DatabaseGeneratedOption.Computed;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ColumnMetadata"/> class from
+    /// source-generated metadata, with no <see cref="PropertyInfo"/> involved.
+    /// </summary>
+    /// <param name="propertyName">The CLR property name.</param>
+    /// <param name="propertyType">The CLR property type.</param>
+    /// <param name="columnName">The database column name.</param>
+    /// <param name="isPrimaryKey">Whether the column is part of the primary key.</param>
+    /// <param name="isIdentity">Whether the column is an identity column.</param>
+    /// <param name="isComputed">Whether the column is database-computed.</param>
+    /// <param name="getter">A compiled, reflection-free getter for this column's value.</param>
+    /// <param name="setter">A compiled, reflection-free setter for this column's value.</param>
+    /// <param name="enumStorageOverride">The storage declared by an <c>[EnumStorage]</c> attribute on the property, or <see langword="null"/> when it carries none.</param>
+    public ColumnMetadata(string propertyName, Type propertyType, string columnName, bool isPrimaryKey, bool isIdentity, bool isComputed, Func<object, object?> getter, Action<object, object?> setter, EnumStorage? enumStorageOverride = null)
+    {
+        PropertyName = propertyName;
+        PropertyType = propertyType;
+        ColumnName = columnName;
+        IsPrimaryKey = isPrimaryKey;
+        IsIdentity = isIdentity;
+        IsComputed = isComputed;
+        Getter = getter;
+        Setter = setter;
+        EnumStorageOverride = enumStorageOverride;
     }
 }

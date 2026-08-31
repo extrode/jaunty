@@ -2,26 +2,41 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
     <ExcludeFromCoverage>true</ExcludeFromCoverage>
 
     <!-- NativeAOT -->
     <PublishAot>true</PublishAot>
 
-    <!-- .NET Tool configuration -->
+    <!-- .NET Tool configuration. Unconditional: pack evaluates the outer build with an empty
+         $(TargetFramework), so a TFM-conditioned PackageId never applies and the package
+         silently falls back to the assembly name. -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-jaunty</ToolCommandName>
-    <PackageId>Beparey.Jaunty.Scaffolding.Cli</PackageId>
-    <Authors>Syed Beparey</Authors>
+    <PackageId>Extrode.Jaunty.Scaffolding.Cli</PackageId>
+    <Authors>Extrode LLC</Authors>
     <Description>CLI tool to scaffold entity classes from database schema for Jaunty.</Description>
-    <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+    <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <!-- Spec 010 T15: ilc-time IL2104/IL3053 from THIRD-PARTY assemblies only, kept visible in the
+         publish log but not fatal (src/Directory.Build.props TreatWarningsAsErrors would otherwise
+         promote them). Seven offenders measured on the 2026-07-30 clean publish (the spec's list
+         of six plus System.Configuration.ConfigurationManager); retire per line as they update:
+           Microsoft.Data.SqlClient, MySqlConnector, Microsoft.IdentityModel.Tokens,
+           System.Configuration.ConfigurationManager,
+           and from the net10 NativeAOT runtime pack itself:
+           System.Private.DataContractSerialization, Microsoft.CSharp, System.Linq.Expressions.
+         First-party IL diagnostics stay fatal - the IL2057 at SQLiteSchemaReader.cs:65 (T16) must
+         NOT be added here. -->
+    <WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.9" />
+    <PackageReference Include="System.CommandLine" Version="2.0.10" />
 
     <!-- Database providers -->
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
@@ -33,6 +48,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Jaunty.Scaffolding\Jaunty.Scaffolding.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.Scaffolding.Cli.Tests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

@@ -6,6 +6,7 @@ using System.Dynamic;
 using System.Linq;
 
 using Jaunty.Configuration;
+using Jaunty.Internals.Read;
 
 namespace Jaunty.Extensions.Reflection;
 
@@ -29,6 +30,11 @@ public static class SpecialTypeMappers
     /// Registers special type mappers with Jaunty configuration.
     /// Call this at application startup to enable Dictionary, KeyValuePair, ValueTuple, and ExpandoObject mapping.
     /// </summary>
+    /// <remarks>
+    /// Idempotent: if <see cref="JauntyConfig.SpecialTypeMapperResolver"/> is already set (by a
+    /// prior call to this method, or by a custom resolver configured directly), this call is a
+    /// silent no-op rather than overwriting it.
+    /// </remarks>
     public static void Register()
     {
         JauntyConfig.SpecialTypeMapperResolver ??= ResolveSpecialTypeMapper;
@@ -60,6 +66,15 @@ public static class SpecialTypeMappers
         if (type.IsValueType && type.FullName?.StartsWith("System.ValueTuple`") == true)
         {
             Type[] typeArgs = type.GetGenericArguments();
+
+            // ValueTuple`8's 8th type argument is always the nested "Rest" tuple (C# tuple
+            // syntax only ever nests beyond 7 elements), which this positional mapper treats
+            // as a single plain column instead of flattening - silently truncating/misbinding
+            // rather than mapping correctly. Fail fast instead.
+            if (typeArgs.Length >= 8)
+                throw new NotSupportedException(
+                    $"ValueTuple types with 8 or more elements (nested 'Rest' tuples) are not supported for query mapping; got '{type.Name}'.");
+
             return reader.FieldCount >= typeArgs.Length
                 ? CreateValueTupleMapper(type, reader, typeArgs)
                 : throw new InvalidOperationException(
@@ -77,8 +92,8 @@ public static class SpecialTypeMappers
 
         return new Func<IDataReader, object>(r =>
         {
-            object? key = r.IsDBNull(0) ? GetDefault(keyType) : ConvertValue(r.GetValue(0), keyType);
-            object? value = r.IsDBNull(1) ? GetDefault(valueType) : ConvertValue(r.GetValue(1), valueType);
+            object? key = r.IsDBNull(0) ? GetDefault(keyType, "Key") : ConvertValue(r.GetValue(0), keyType);
+            object? value = r.IsDBNull(1) ? GetDefault(valueType, "Value") : ConvertValue(r.GetValue(1), valueType);
             // Create KeyValuePair using reflection (it's a struct)
             object? kvp = Activator.CreateInstance(type, key, value);
 
@@ -95,7 +110,7 @@ public static class SpecialTypeMappers
             object?[] values = new object?[itemCount];
 
             for (int i = 0; i < itemCount; i++)
-                values[i] = r.IsDBNull(i) ? GetDefault(typeArgs[i]) : ConvertValue(r.GetValue(i), typeArgs[i]);
+                values[i] = r.IsDBNull(i) ? GetDefault(typeArgs[i], $"Item{i + 1}") : ConvertValue(r.GetValue(i), typeArgs[i]);
 
             // Create ValueTuple using Activator
             object? tuple = Activator.CreateInstance(type, values);
@@ -103,9 +118,18 @@ public static class SpecialTypeMappers
         });
     }
 
-    private static object? GetDefault(Type type)
+    /// <summary>
+    /// Returns the default value for a NULL column, matching the entity-mapping path
+    /// (<c>PropertySetter&lt;T&gt;.Set</c>) which throws for NULL into a non-nullable value type
+    /// instead of silently coercing it to <c>default(T)</c>.
+    /// </summary>
+    private static object? GetDefault(Type type, string elementName = "value")
     {
-        return type.IsValueType ? Activator.CreateInstance(type) : null;
+        if (type.IsValueType && Nullable.GetUnderlyingType(type) is null)
+            throw new InvalidOperationException(
+                $"Cannot assign NULL to non-nullable element '{elementName}' of type '{type.Name}'.");
+
+        return null;
     }
 
     private static object? ConvertValue(object? value, Type targetType)
@@ -132,6 +156,21 @@ public static class SpecialTypeMappers
         for (int i = 0; i < fieldCount; i++)
             columnNames[i] = reader.GetName(i);
 
+        // AUD-R34-024: CreateDictionaryMapper below has done this since AUD-R26, which named both
+        // untyped-row sites so they could not drift again - this one was never carried over. An
+        // ExpandoObject is an indexer over a dictionary too, so a Query<dynamic> over a join with
+        // two Id columns silently kept only the last and dropped the first.
+        columnNames = DuplicateColumnNames.Disambiguate(columnNames);
+
+        // AUD-R35-226: an ExpandoObject's IDictionary<string, object?> is ordinal case-*sensitive*
+        // and its comparer is not configurable, while CreateDictionaryMapper below builds its
+        // dictionaries with StringComparer.OrdinalIgnoreCase. So Query<Dictionary<string, object>>()
+        // ["customerid"] resolves against a CustomerID column and ((IDictionary<string, object?>)row)
+        // ["customerid"] on a Query<dynamic> row does not. This is not fixable in the mapper: the
+        // dynamic member access these rows exist for is case-sensitive anyway (C# is), so the only
+        // way to align the two would be to stop returning an ExpandoObject for dynamic, which is the
+        // documented contract. Recorded here so the pair is not read as an oversight - AUD-R34-024
+        // aligned their duplicate-column handling, and this is the half that cannot be aligned.
         return new Func<IDataReader, object>(r =>
         {
             IDictionary<string, object?> expando = new ExpandoObject();
@@ -153,6 +192,11 @@ public static class SpecialTypeMappers
 
         for (int i = 0; i < fieldCount; i++)
             columnNames[i] = reader.GetName(i);
+
+        // AUD-R26: the same indexer collapse QueryPartialList had. The finding named both sites and
+        // required that any fix cover both "so they cannot drift again", so the rule is shared rather
+        // than copied - this is the sibling untyped-row path behind Query<Dictionary<string, object>>.
+        columnNames = DuplicateColumnNames.Disambiguate(columnNames);
 
         if (valueType == typeof(object))
         {
@@ -181,15 +225,9 @@ public static class SpecialTypeMappers
 
                 for (int i = 0; i < fieldCount; i++)
                 {
-                    object? value;
-
-                    if (r.IsDBNull(i))
-                        value = valueType.IsValueType ? Activator.CreateInstance(valueType) : null;
-                    else
-                    {
-                        object raw = r.GetValue(i);
-                        value = ConvertValue(raw, valueType);
-                    }
+                    object? value = r.IsDBNull(i)
+                        ? GetDefault(valueType, columnNames[i])
+                        : ConvertValue(r.GetValue(i), valueType);
                     dict[columnNames[i]] = value;
                 }
 

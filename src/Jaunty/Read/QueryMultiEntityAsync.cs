@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
@@ -27,8 +27,15 @@ public static partial class Jaunty
     /// <returns>A task containing a list of tuples with mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// This method uses <strong>strict mapping mode</strong>. All public writable properties on both 
-    /// <typeparamref name="T1"/> and <typeparamref name="T2"/> must have matching columns in the result set.
+    /// AUD-R35-048: this used to say the method uses <strong>strict mapping mode</strong> and that
+    /// all public writable properties on both <typeparamref name="T1"/> and
+    /// <typeparamref name="T2"/> must have matching columns. Neither is true. Multi-entity reads
+    /// always resolve each entity's setters in <strong>projection mode</strong>: a property whose
+    /// column is missing or misspelled in the SELECT list is left at its default value, silently.
+    /// The <c>MappingMode</c> argument threaded to <c>QueryMultiEntityCoreAsync</c> is ignored
+    /// unless <c>options.Mapper</c> is set, and <c>docs/01-api-reference/multi-entity-mapping.md</c>
+    /// has documented the real behaviour all along - so the prose docs and these XML docs
+    /// contradicted each other, and these are the ones a caller sees in IntelliSense.
     /// </para>
     /// <para>
     /// Columns are matched to entity properties using case-insensitive name matching. If a column name 
@@ -63,10 +70,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -89,7 +98,8 @@ public static partial class Jaunty
     /// <returns>A task containing a list of tuples with mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// </remarks>
     /// <example>
@@ -121,10 +131,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -159,7 +173,7 @@ public static partial class Jaunty
     /// var results = await connection.QueryAsync&lt;Order, Customer&gt;(
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -178,10 +192,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -219,7 +235,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -242,145 +258,71 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
 
-    #endregion
-
-    #region Legacy Multi-Entity QueryAsync APIs (Marked as Obsolete for Consistency)
-
     /// <summary>
-    /// Asynchronously executes a query and maps columns to two entity types by property name.
+    /// Asynchronously executes a SQL query with multi-entity command options and maps columns to two entity types by property name, returning a list of tuples.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<List<(T1, T2)>> QueryAsync<T1, T2>(
+    public static ValueTask<List<(T1, T2)>> QueryAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
-        object? parameters = null,
-        CommandOptions options = default,
-        CancellationToken cancellationToken = default)
-        where T1 : new()
-        where T2 : new()
-    {
-        return await ExecuteReaderAsync<List<(T1, T2)>>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            var results = new List<(T1, T2)>(64);
-
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return results;
-
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-                do
-                {
-                    var t1 = new T1();
-                    var t2 = new T2();
-
-                    mapping.ApplyT1(t1, dbReader);
-                    mapping.ApplyT2(t2, dbReader);
-
-                    results.Add((t1, t2));
-                }
-                while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
-
-                return results;
-            }
-
-            if (!reader.Read())
-                return results;
-
-            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
-            {
-                var t1Fallback = new T1();
-                var t2Fallback = new T2();
-
-                mappingFallback.ApplyT1(t1Fallback, reader);
-                mappingFallback.ApplyT2(t2Fallback, reader);
-
-                results.Add((t1Fallback, t2Fallback));
-            }
-            while (reader.Read());
-
-            return results;
-        }, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Asynchronously executes a query, maps to two entity types, and combines them using a function.
-    /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<List<TResult>> QueryAsync<T1, T2, TResult>(
-        this IDbConnection connection,
-        string sql,
-        Func<T1, T2, TResult> map,
-        object? parameters = null,
-        CommandOptions options = default,
+        MultiEntityCommandOptions<T1, T2> options,
         CancellationToken cancellationToken = default)
         where T1 : new()
         where T2 : new()
     {
 #if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
-        if (map is null) throw new ArgumentNullException(nameof(map));
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
+    }
 
-        return await ExecuteReaderAsync<List<TResult>>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            var results = new List<TResult>(64);
-
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return results;
-
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-                do
-                {
-                    var t1 = new T1();
-                    var t2 = new T2();
-
-                    mapping.ApplyT1(t1, dbReader);
-                    mapping.ApplyT2(t2, dbReader);
-
-                    results.Add(map(t1, t2));
-                }
-                while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
-
-                return results;
-            }
-
-            if (!reader.Read())
-                return results;
-
-            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
-            {
-                var t1Fallback = new T1();
-                var t2Fallback = new T2();
-
-                mappingFallback.ApplyT1(t1Fallback, reader);
-                mappingFallback.ApplyT2(t2Fallback, reader);
-
-                results.Add(map(t1Fallback, t2Fallback));
-            }
-            while (reader.Read());
-
-            return results;
-        }, cancellationToken).ConfigureAwait(false);
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and multi-entity command options and maps columns to two entity types by property name, returning a list of tuples.
+    /// </summary>
+    public static ValueTask<List<(T1, T2)>> QueryAsync<T1, T2>(
+        this IDbConnection connection,
+        string sql,
+        object parameters,
+        MultiEntityCommandOptions<T1, T2> options,
+        CancellationToken cancellationToken = default)
+        where T1 : new()
+        where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
 
     #endregion
@@ -400,7 +342,8 @@ public static partial class Jaunty
     /// <returns>A task containing a tuple with the first mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if no results are returned.</strong>
@@ -431,10 +374,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -489,10 +434,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -525,7 +474,7 @@ public static partial class Jaunty
     /// var (order, customer) = await connection.QueryFirstAsync&lt;Order, Customer&gt;(
     ///     "SELECT TOP 1 o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -544,10 +493,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -585,7 +536,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -608,10 +559,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -619,49 +574,56 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Asynchronously executes a query and returns the first row mapped to two entity types.
+    /// Asynchronously executes a SQL query with multi-entity command options and returns the first row mapped to two entity types.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<(T1, T2)> QueryFirstAsync<T1, T2>(
+    public static ValueTask<(T1, T2)> QueryFirstAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
-        object? parameters = null,
-        CommandOptions options = default,
+        MultiEntityCommandOptions<T1, T2> options,
         CancellationToken cancellationToken = default)
         where T1 : new()
         where T2 : new()
     {
-        return await ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryFirstMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
+    }
 
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
-
-                return (t1, t2);
-            }
-
-            if (!reader.Read())
-                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1Fallback = new T1();
-            var t2Fallback = new T2();
-
-            mappingFallback.ApplyT1(t1Fallback, reader);
-            mappingFallback.ApplyT2(t2Fallback, reader);
-
-            return (t1Fallback, t2Fallback);
-        }, cancellationToken).ConfigureAwait(false);
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and multi-entity command options and returns the first row mapped to two entity types.
+    /// </summary>
+    public static ValueTask<(T1, T2)> QueryFirstAsync<T1, T2>(
+        this IDbConnection connection,
+        string sql,
+        object parameters,
+        MultiEntityCommandOptions<T1, T2> options,
+        CancellationToken cancellationToken = default)
+        where T1 : new()
+        where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryFirstMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
 
     #endregion
@@ -683,7 +645,8 @@ public static partial class Jaunty
     /// </returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// Returns <see langword="null"/> for empty result sets instead of throwing.
@@ -720,10 +683,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -780,10 +745,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -818,7 +787,7 @@ public static partial class Jaunty
     /// var result = await connection.QueryFirstOrDefaultAsync&lt;Order, Customer&gt;(
     ///     "SELECT TOP 1 o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -837,10 +806,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -880,7 +851,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 999 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -903,10 +874,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -914,49 +889,56 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Asynchronously executes a query and returns the first row mapped to two entity types, or default if empty.
+    /// Asynchronously executes a SQL query with multi-entity command options and returns the first row mapped to two entity types, or <see langword="null"/> if empty.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<(T1, T2)?> QueryFirstOrDefaultAsync<T1, T2>(
+    public static ValueTask<(T1, T2)?> QueryFirstOrDefaultAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
-        object? parameters = null,
-        CommandOptions options = default,
+        MultiEntityCommandOptions<T1, T2> options,
         CancellationToken cancellationToken = default)
         where T1 : new()
         where T2 : new()
     {
-        return await ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return null;
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
+    }
 
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
-
-                return (t1, t2);
-            }
-
-            if (!reader.Read())
-                return null;
-
-            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1Fallback = new T1();
-            var t2Fallback = new T2();
-
-            mappingFallback.ApplyT1(t1Fallback, reader);
-            mappingFallback.ApplyT2(t2Fallback, reader);
-
-            return (t1Fallback, t2Fallback);
-        }, cancellationToken).ConfigureAwait(false);
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and multi-entity command options and returns the first row mapped to two entity types, or <see langword="null"/> if empty.
+    /// </summary>
+    public static ValueTask<(T1, T2)?> QueryFirstOrDefaultAsync<T1, T2>(
+        this IDbConnection connection,
+        string sql,
+        object parameters,
+        MultiEntityCommandOptions<T1, T2> options,
+        CancellationToken cancellationToken = default)
+        where T1 : new()
+        where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
 
     #endregion
@@ -976,7 +958,8 @@ public static partial class Jaunty
     /// <returns>A task containing a tuple with the single mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if:</strong>
@@ -1011,10 +994,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -1069,10 +1054,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -1106,7 +1095,7 @@ public static partial class Jaunty
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1125,10 +1114,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -1166,7 +1157,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
     ///     new { OrderId = 1 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1189,10 +1180,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -1200,53 +1195,56 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Asynchronously executes a query and returns exactly one row mapped to two entity types.
+    /// Asynchronously executes a SQL query with multi-entity command options and returns exactly one row mapped to two entity types.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<(T1, T2)> QuerySingleAsync<T1, T2>(
+    public static ValueTask<(T1, T2)> QuerySingleAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
-        object? parameters = null,
-        CommandOptions options = default,
+        MultiEntityCommandOptions<T1, T2> options,
         CancellationToken cancellationToken = default)
         where T1 : new()
         where T2 : new()
     {
-        return await ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QuerySingleMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
+    }
 
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
-
-                return await dbReader.ReadAsync(ct).ConfigureAwait(false)
-                    ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
-                    : ((T1, T2))(t1, t2);
-            }
-
-            if (!reader.Read())
-                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1Fallback = new T1();
-            var t2Fallback = new T2();
-
-            mappingFallback.ApplyT1(t1Fallback, reader);
-            mappingFallback.ApplyT2(t2Fallback, reader);
-
-            return reader.Read()
-                ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
-                : ((T1, T2))(t1Fallback, t2Fallback);
-        }, cancellationToken).ConfigureAwait(false);
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and multi-entity command options and returns exactly one row mapped to two entity types.
+    /// </summary>
+    public static ValueTask<(T1, T2)> QuerySingleAsync<T1, T2>(
+        this IDbConnection connection,
+        string sql,
+        object parameters,
+        MultiEntityCommandOptions<T1, T2> options,
+        CancellationToken cancellationToken = default)
+        where T1 : new()
+        where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QuerySingleMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
 
     #endregion
@@ -1268,7 +1266,8 @@ public static partial class Jaunty
     /// </returns>
     /// <remarks>
     /// <para>
-    /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
+    /// AUD-R35-048: uses <strong>projection mode</strong> - a property with no matching column is
+    /// left at its default value rather than reported. There is no strict mode for multi-entity reads.
     /// </para>
     /// <para>
     /// <strong>Throws <see cref="InvalidOperationException"/> if the query returns more than one result.</strong>
@@ -1308,10 +1307,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -1368,10 +1369,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -1407,7 +1412,7 @@ public static partial class Jaunty
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1426,10 +1431,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -1469,7 +1476,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
     ///     new { OrderId = 999 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1492,10 +1499,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -1503,54 +1514,254 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Asynchronously executes a query and returns exactly one row mapped to two entity types, or default if empty.
+    /// Asynchronously executes a SQL query with multi-entity command options and returns exactly one row mapped to two entity types, or <see langword="null"/> if empty.
     /// </summary>
-    [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<(T1, T2)?> QuerySingleOrDefaultAsync<T1, T2>(
+    public static ValueTask<(T1, T2)?> QuerySingleOrDefaultAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
-        object? parameters = null,
-        CommandOptions options = default,
+        MultiEntityCommandOptions<T1, T2> options,
         CancellationToken cancellationToken = default)
         where T1 : new()
         where T2 : new()
     {
-        return await ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
-        {
-            if (reader is DbDataReader dbReader)
-            {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return null;
-
-                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
-
-                var t1 = new T1();
-                var t2 = new T2();
-
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
-
-                return await dbReader.ReadAsync(ct).ConfigureAwait(false)
-                    ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
-                    : ((T1, T2)?)(t1, t2);
-            }
-
-            if (!reader.Read())
-                return null;
-
-            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
-
-            var t1Fallback = new T1();
-            var t2Fallback = new T2();
-
-            mappingFallback.ApplyT1(t1Fallback, reader);
-            mappingFallback.ApplyT2(t2Fallback, reader);
-
-            return reader.Read()
-                ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
-                : ((T1, T2)?)(t1Fallback, t2Fallback);
-        }, cancellationToken).ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
     }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and multi-entity command options and returns exactly one row mapped to two entity types, or <see langword="null"/> if empty.
+    /// </summary>
+    public static ValueTask<(T1, T2)?> QuerySingleOrDefaultAsync<T1, T2>(
+        this IDbConnection connection,
+        string sql,
+        object parameters,
+        MultiEntityCommandOptions<T1, T2> options,
+        CancellationToken cancellationToken = default)
+        where T1 : new()
+        where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
+    }
+
+    #endregion
+
+    #region Multi-Entity QueryStreamAsync APIs
+
+#if ASYNC_ENUMERABLE_SUPPORT
+    /// <summary>
+    /// Asynchronously executes a SQL query and streams rows mapped to two entity types.
+    /// </summary>
+    /// <typeparam name="T1">The first entity type. Must have a parameterless constructor.</typeparam>
+    /// <typeparam name="T2">The second entity type. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">
+    /// The SQL query to execute. Should return columns that can be mapped to both <typeparamref name="T1"/>
+    /// and <typeparamref name="T2"/>. Use SQL aliases to disambiguate columns with the same name.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>An async enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Important:</strong> The connection stays open until enumeration completes.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// or when a non-nullable property receives a NULL value.
+    /// </exception>
+    /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, object, CancellationToken)"/>
+    /// <seealso cref="QueryAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, default, MappingMode.Strict, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and streams rows mapped to two entity types.
+    /// </summary>
+    /// <typeparam name="T1">The first entity type. Must have a parameterless constructor.</typeparam>
+    /// <typeparam name="T2">The second entity type. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <param name="parameters">
+    /// An anonymous object or dictionary containing parameter values.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>An async enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
+    /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, default, MappingMode.Strict, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with command options and streams rows mapped to two entity types.
+    /// </summary>
+    /// <typeparam name="T1">The first entity type. Must have a parameterless constructor.</typeparam>
+    /// <typeparam name="T2">The second entity type. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <param name="options">
+    /// Command options for transaction, timeout, or custom mapper configuration.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>An async enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
+    /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
+    /// <seealso cref="CommandOptions{T}"/>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, CommandOptions<(T1, T2)> options, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and command options and streams rows mapped to two entity types.
+    /// </summary>
+    /// <typeparam name="T1">The first entity type. Must have a parameterless constructor.</typeparam>
+    /// <typeparam name="T2">The second entity type. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <param name="parameters">
+    /// An anonymous object or dictionary containing parameter values.
+    /// </param>
+    /// <param name="options">
+    /// Command options for transaction, timeout, or custom mapper configuration.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>An async enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Important:</strong> The connection stays open until enumeration completes.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// or when a non-nullable property receives a NULL value.
+    /// </exception>
+    /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, object parameters, CommandOptions<(T1, T2)> options, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with multi-entity command options and streams rows mapped to two entity types.
+    /// </summary>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and multi-entity command options and streams rows mapped to two entity types.
+    /// </summary>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
+    }
+#endif
 
     #endregion
 }

@@ -1,0 +1,1 @@
+SELECT $tag$ @nope $tag$, $1 FROM t

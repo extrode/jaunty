@@ -14,34 +14,6 @@ internal static class ColumnMetadataHelper
     /// <returns>A read-only list of insertable columns.</returns>
     public static IReadOnlyList<ColumnMetadata> GetInsertableColumns(EntityMetadata metadata)
     {
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
-        var insertable = new List<ColumnMetadata>(columns.Count);
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (!columns[i].IsComputed)
-                insertable.Add(columns[i]);
-        }
-        return insertable;
-    }
-
-    /// <summary>
-    /// Gets the updateable (non-primary-key, non-identity, non-computed) columns from metadata.
-    /// These columns can be used in UPDATE SET clauses.
-    /// </summary>
-    /// <param name="metadata">The entity metadata.</param>
-    /// <returns>A read-only list of updateable columns.</returns>
-    public static IReadOnlyList<ColumnMetadata> GetUpdateableColumns(EntityMetadata metadata)
-    {
-        return metadata.UpdateColumns;
-    }
-
-    /// <summary>
-    /// Gets the primary key columns from metadata.
-    /// </summary>
-    /// <param name="metadata">The entity metadata.</param>
-    /// <returns>A read-only list of primary key columns.</returns>
-    public static IReadOnlyList<ColumnMetadata> GetKeyColumns(EntityMetadata metadata)
-    {
-        return metadata.PrimaryKeys;
+        return metadata.InsertColumns;
     }
 }

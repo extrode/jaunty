@@ -10,6 +10,7 @@ namespace Jaunty.Fluent.Tests.Helpers;
 internal class TestDialect : ISqlDialect
 {
     public bool SupportsForeignKeyToggle => false;
+    public bool RequiresAutocommitForForeignKeyToggle => false;
     public bool SupportsUpsert => true;
     public bool SupportsMultiRowInsert => true;
     public int MaxParametersPerStatement => 2100;
@@ -27,9 +28,11 @@ internal class TestDialect : ISqlDialect
 
     public string EscapeColumnName(string columnName) => $"[{columnName}]";
 
+    public string EscapeStringLiteral(string value) => value.Replace("'", "''");
+
     public string GetLastInsertIdSql(params string[] columnNames) => "SELECT SCOPE_IDENTITY()";
 
-    public string GetPagingSql(string baseSql, int offset, int fetchNext)
+    public virtual string GetPagingSql(string baseSql, int offset, int fetchNext)
     {
         return $"{baseSql} ORDER BY (SELECT NULL) OFFSET {offset} ROWS FETCH NEXT {fetchNext} ROWS ONLY";
     }
@@ -54,6 +57,8 @@ internal class TestDialect : ISqlDialect
     public string FormatContainsPattern(string value) => $"%{value}%";
     public string FormatStartsWithPattern(string value) => $"{value}%";
     public string FormatEndsWithPattern(string value) => $"%{value}";
+
+    public string FormatBooleanLiteral(bool value) => value ? "1" : "0";
 
     public string? GetDisableForeignKeyChecksSql() => null;
     public string? GetEnableForeignKeyChecksSql() => null;
@@ -89,7 +94,8 @@ internal class TestDialect : ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         var columnsList = string.Join(", ", insertColumns);
         var valuesList = string.Join(", ", insertParams);

@@ -55,12 +55,13 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
-    [Obsolete]
-    public void Query_TwoEntities_WithCombiner_BuildsObjectGraph(DialectInfo dialect)
+    public void QueryStream_TwoEntities_BuildsObjectGraph(DialectInfo dialect)
     {
         using IDbConnection connection = _fixture.GetConnection(dialect);
 
-        List<ProductInfo> results = connection.Query<ProductInfo, CategoryInfo, ProductInfo>(
+        List<ProductInfo> results = [];
+
+        foreach ((ProductInfo product, CategoryInfo category) in connection.QueryStream<ProductInfo, CategoryInfo>(
             $@"SELECT {TopPrefix(dialect, 5)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -69,12 +70,11 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              {LimitSuffix(dialect, 5)}",
-            (product, category) =>
-            {
-                product.Category = category;
-                return product;
-            });
+              {LimitSuffix(dialect, 5)}"))
+        {
+            product.Category = category;
+            results.Add(product);
+        }
 
         Assert.Equal(5, results.Count);
         Assert.All(results, p =>
@@ -253,22 +253,153 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
-    public void Query_TwoEntities_T1HasPriority_WhenColumnMatchesBoth(DialectInfo dialect)
+    public async Task QueryFirstAsync_TwoEntities_WithParameters_FiltersRow(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        // Both ProductInfo and CategoryInfo have no common properties in this test,
-        // but if they did, T1 would win
-        var results = connection.Query<ProductInfo, CategoryInfo>(
-            $@"SELECT {TopPrefix(dialect, 1)}
+        var (product, _) = await connection.QueryFirstAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
                 c.category_id AS CategoryId,
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
+              WHERE p.product_id = @ProductId",
+            new { ProductId = 1 },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryFirstOrDefaultAsync_TwoEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var result = await connection.QueryFirstOrDefaultAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE p.product_id = @ProductId",
+            new { ProductId = -999 },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QuerySingleAsync_TwoEntities_WithParameters_FiltersRow(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var (product, _) = await connection.QuerySingleAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE p.product_id = @ProductId",
+            new { ProductId = 1 },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QuerySingleOrDefaultAsync_TwoEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var result = await connection.QuerySingleOrDefaultAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE p.product_id = @ProductId",
+            new { ProductId = -999 },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryStreamAsync_TwoEntities_WithParameters_FiltersRows(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var results = new List<(ProductInfo, CategoryInfo)>();
+        await foreach (var row in connection.QueryStreamAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE c.category_id = @CategoryId",
+            new { CategoryId = 1 },
+            CancellationToken.None))
+        {
+            results.Add(row);
+        }
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.Equal(1, r.Item2.CategoryId));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_TwoEntities_T1HasPriority_WhenColumnMatchesBoth(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        // NamedT1 and NamedT2 both have a "Name" property, but the result set has only one
+        // column aliased "Name" - proving T1 claims it (left-to-right ordinal claiming) and T2's
+        // Name property is left at its default, rather than both binding the same column.
+        var results = connection.Query<NamedT1, NamedT2>(
+            $@"SELECT {TopPrefix(dialect, 1)}
+                p.product_id AS Id,
+                p.product_name AS Name,
+                c.category_id AS OtherId
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
               {LimitSuffix(dialect, 1)}");
 
-        Assert.Single(results);
+        (NamedT1 t1, NamedT2 t2) = Assert.Single(results);
+        Assert.NotEqual(0, t1.Id);
+        Assert.False(string.IsNullOrEmpty(t1.Name));
+        Assert.NotEqual(0, t2.OtherId);
+        Assert.Equal(string.Empty, t2.Name);
+    }
+
+    private class NamedT1
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private class NamedT2
+    {
+        public int OtherId { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 
     [Theory]

@@ -1,6 +1,8 @@
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.Interfaces;
 
+using Jaunty.FlatFiles.Internals;
+
 namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
@@ -80,10 +82,8 @@ public sealed class CsvFileSource : IFileSource
     public CsvFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
-        if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
-        if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
-        if (filePaths[0] is null) throw new ArgumentNullException(nameof(filePaths), "File path must not be null.");
-        FilePaths = filePaths;
+        FilePathValidator.ThrowIfInvalid(filePaths, nameof(filePaths));
+        FilePaths = FilePathValidator.Snapshot(filePaths);
         FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
@@ -98,10 +98,10 @@ public sealed class CsvFileSource : IFileSource
             sb.Append($", header = {(HasHeader.Value ? "true" : "false")}");
 
         if (Delimiter.HasValue)
-            sb.Append($", delim = '{Delimiter.Value}'");
+            sb.Append($", delim = '{Delimiter.Value.ToString().Replace("'", "''")}'");
 
         if (QuoteChar.HasValue)
-            sb.Append($", quote = '{QuoteChar.Value}'");
+            sb.Append($", quote = '{QuoteChar.Value.ToString().Replace("'", "''")}'");
 
         if (NullString is not null)
             sb.Append($", nullstr = '{NullString.Replace("'", "''")}'");
@@ -114,5 +114,23 @@ public sealed class CsvFileSource : IFileSource
     }
 
     /// <inheritdoc />
-    public string? GenerateCopyToOptions() => "HEADER true";
+    public string? GenerateCopyToOptions()
+    {
+        // HasHeader == false means the file genuinely has no header row, so writing one back would
+        // produce a file this very source can never read correctly: the first data row would be eaten
+        // as column names on the next read. null (auto-detect) keeps the header, which is both the
+        // previous behaviour and the safer default for a file whose shape we were never told.
+        var sb = new System.Text.StringBuilder(HasHeader == false ? "HEADER false" : "HEADER true");
+
+        if (Delimiter.HasValue)
+            sb.Append($", DELIMITER '{Delimiter.Value.ToString().Replace("'", "''")}'");
+
+        if (QuoteChar.HasValue)
+            sb.Append($", QUOTE '{QuoteChar.Value.ToString().Replace("'", "''")}'");
+
+        if (NullString is not null)
+            sb.Append($", NULL '{NullString.Replace("'", "''")}'");
+
+        return sb.ToString();
+    }
 }

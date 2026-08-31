@@ -38,7 +38,7 @@ public static partial class Jaunty
     ///     cts.Token);
     /// </code>
     /// </example>
-    /// <seealso cref="ExecuteScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
+    /// <seealso cref="ExecuteScalarAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="ExecuteScalar{T}(IDbConnection, string)"/>
     public static ValueTask<T> ExecuteScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
@@ -50,7 +50,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -96,10 +96,12 @@ public static partial class Jaunty
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -134,7 +136,7 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// var count = await connection.ExecuteScalarAsync&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
@@ -148,7 +150,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -185,7 +187,7 @@ public static partial class Jaunty
     /// var count = await connection.ExecuteScalarAsync&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="ArgumentException">
@@ -199,10 +201,12 @@ public static partial class Jaunty
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")

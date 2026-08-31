@@ -40,11 +40,6 @@ internal sealed class EntityMetadata
     public IReadOnlyList<ColumnMetadata> NonIdentityColumns { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the entity has an identity primary key.
-    /// </summary>
-    public bool HasIdentityKey => PrimaryKeys.Any(c => c.IsIdentity);
-
-    /// <summary>
     /// Gets the columns used for INSERT operations (excludes identity and computed columns).
     /// </summary>
     public IReadOnlyList<ColumnMetadata> InsertColumns { get; }
@@ -76,7 +71,14 @@ internal sealed class EntityMetadata
         TableName = tableName;
         SchemaName = schemaName;
 
-        List<ColumnMetadata> colList = columns is List<ColumnMetadata> list ? list : columns.ToList();
+        // AUD-R35-114 (round-35 batch 04b). This used to adopt the caller's list by reference when it
+        // already was a List<ColumnMetadata>, and Columns is a ReadOnlyCollection *view* over it while
+        // PrimaryKeys, NonPrimaryKeyColumns, NonIdentityColumns, InsertColumns, UpdateColumns,
+        // DeleteColumns and ParameterMap are all snapshots taken below. A caller mutating its list
+        // afterwards therefore desynchronised Columns from every derived collection and slipped past
+        // ThrowIfDuplicateColumnNames, which runs once here. Metadata is built once per entity type
+        // and cached, so the copy costs one allocation per type and buys immutability outright.
+        var colList = new List<ColumnMetadata>(columns);
 
         Columns = colList.AsReadOnly();
 
@@ -113,15 +115,55 @@ internal sealed class EntityMetadata
         UpdateColumns = updateColumns.AsReadOnly();
         DeleteColumns = primaryKeys.AsReadOnly();
 
+        ThrowIfDuplicateColumnNames(tableName, colList);
+
 #if NET8_0_OR_GREATER
         ParameterMap = colList.ToFrozenDictionary(c => c.ColumnName, CommonConstants.OrdinalIgnoreCase);
 #else
         var parameterMap = new Dictionary<string, ColumnMetadata>(colList.Count, CommonConstants.OrdinalIgnoreCase);
         for (int i = 0; i < colList.Count; i++)
-        {
             parameterMap[colList[i].ColumnName] = colList[i];
-        }
         ParameterMap = parameterMap;
 #endif
+    }
+
+    /// <summary>
+    /// Rejects two properties mapping onto one column, naming both of them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26. Two properties sharing a column name was already rejected - it is a duplicate key
+    /// in <see cref="ParameterMap"/> - but by whichever dictionary happened to build it, so the
+    /// caller got <c>"An item with the same key has already been added. Key: status"</c> wrapped in
+    /// a <see cref="TypeInitializationException"/>, naming neither the entity nor either property.
+    /// The audit that raised this expected a silent last-wins collapse instead; measuring showed
+    /// the rejection was already there and it was only the diagnostic that was missing.
+    /// </para>
+    /// <para>
+    /// Checked explicitly rather than left to the dictionary so that both target frameworks report
+    /// the same thing - the netstandard2.0 branch previously hand-copied .NET's own wording to keep
+    /// that parity, which is the cross-TFM consistency rule from round 3.
+    /// </para>
+    /// </remarks>
+    private static void ThrowIfDuplicateColumnNames(string tableName, List<ColumnMetadata> colList)
+    {
+        var seen = new Dictionary<string, string>(colList.Count, CommonConstants.OrdinalIgnoreCase);
+
+        for (int i = 0; i < colList.Count; i++)
+        {
+            ColumnMetadata col = colList[i];
+
+            if (seen.TryGetValue(col.ColumnName, out string? firstProperty))
+            {
+                throw new ArgumentException(
+                    $"Entity for table '{tableName}' maps more than one property to column '{col.ColumnName}': " +
+                    $"'{firstProperty}' and '{col.PropertyName}'. Column names are matched case-insensitively, " +
+                    "so two properties cannot share one. Give each its own [Column(\"...\")] name, or remove " +
+                    "the duplicate mapping.",
+                    "columns");
+            }
+
+            seen[col.ColumnName] = col.PropertyName;
+        }
     }
 }

@@ -49,6 +49,13 @@ public static class FluentExtensions
     /// </example>
     public static IFromClause<T> From<T>(this IDbConnection connection, string? alias = null) where T : new()
     {
+#if NET5_0_OR_GREATER
+        // Round-27 item 18: keeps decimal's operator methods (and the other operator types')
+        // reachable, so a predicate like p => p.UnitPrice > 20m can still be built after a trimmed or
+        // NativeAOT publish. Empty method - the JIT inlines this away. See FluentAotOperators.
+        FluentAotOperators.PreserveOperatorMethods();
+#endif
+
         return new QueryBuilder<T>(connection, alias);
     }
 
@@ -79,6 +86,10 @@ public static class FluentExtensions
     /// </example>
     public static IIntoClause<T> Into<T>(this IDbConnection connection) where T : new()
     {
+#if NET5_0_OR_GREATER
+        FluentAotOperators.PreserveOperatorMethods();   // see From<T>
+#endif
+
         return new InsertBuilder<T>(connection);
     }
 
@@ -111,6 +122,10 @@ public static class FluentExtensions
     /// </example>
     public static ICteClause<T> Cte<T>(this IDbConnection connection, string cteName) where T : new()
     {
+#if NET5_0_OR_GREATER
+        FluentAotOperators.PreserveOperatorMethods();   // see From<T>
+#endif
+
         return new CteBuilder<T>(connection, cteName);
     }
 }

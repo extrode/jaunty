@@ -14,6 +14,8 @@ Comprehensive architecture documentation for Jaunty micro-ORM with visual diagra
 | [`metadata-system-spec.md`](metadata-system-spec.md) | **Metadata system** - Caching, expression trees, compiled delegates | Understanding performance |
 | [`parameter-binding-spec.md`](parameter-binding-spec.md) | **Parameter binding** - SQL parsing, parameter binding, validation | Understanding parameter handling |
 | [`performance-spec.md`](performance-spec.md) | **Performance guide** - Optimization techniques, benchmarks | Writing high-performance code |
+| [`reflection-and-trimming.md`](reflection-and-trimming.md) | **Every remaining reflection site** - why it is there, what trimming does to it, what you must root | Publishing trimmed or NativeAOT |
+| [`dependencies.md`](dependencies.md) | **Package dependencies** - what each package pulls in, and the optional satellites | Deciding what to install |
 
 ---
 
@@ -235,7 +237,7 @@ xychart-beta
 
 | Document | Purpose |
 |----------|---------|
-| [`../../00-quick-start/README.md`](../../00-quick-start/README.md) | Quick start guide |
-| [`../../01-api-reference/README.md`](../../01-api-reference/README.md) | API reference |
-| [`../../03-development/README.md`](../../03-development/README.md) | Development guides |
+| [`../../00-quick-start/README.md`](../00-quick-start/README.md) | Quick start guide |
+| [`../../01-api-reference/README.md`](../01-api-reference/README.md) | API reference |
+| [`../../03-development/README.md`](../03-development/README.md) | Development guides |
 

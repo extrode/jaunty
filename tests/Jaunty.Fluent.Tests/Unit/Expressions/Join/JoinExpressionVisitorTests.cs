@@ -96,4 +96,38 @@ public class JoinExpressionVisitorTests
     }
 
     #endregion
+
+    #region Null Alias Fallback
+
+    [Fact]
+    public void Visit_NullAlias_UsesEscapedTableNameNotRawTableName()
+    {
+        // Regression test: TryGetColumnExpression's alias-less fallback used to be
+        // `alias ?? metadata.TableName` (raw, unescaped, schema-dropping). It must
+        // instead call _dialect.EscapeTableName so the prefix is properly escaped.
+        Expression<Func<Product, Category, bool>> expr = (p, c) => p.CategoryId == c.CategoryId;
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, null, null);
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("[products].[category_id]", sql);
+        Assert.DoesNotContain("products.[category_id]", sql);
+    }
+
+    #endregion
+
+    #region Unsupported Method Calls
+
+    [Fact]
+    public void Visit_MethodCall_ThrowsNotSupportedInsteadOfEmittingGarbageSql()
+    {
+        // Regression test: VisitMethodCall used to be unoverridden, so ExpressionVisitor's
+        // base implementation silently produced malformed, operator-less SQL for method
+        // calls (e.g. string.Contains) instead of failing loudly.
+        Expression<Func<Product, Category, bool>> expr = (p, c) => c.CategoryName.Contains("x");
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
+
+        Assert.Throws<NotSupportedException>(() => visitor.Translate(expr));
+    }
+
+    #endregion
 }

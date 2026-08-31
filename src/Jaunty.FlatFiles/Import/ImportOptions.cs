@@ -7,31 +7,46 @@ namespace Jaunty.FlatFiles.Import;
 /// </summary>
 public readonly struct ImportOptions
 {
-    /// <summary>
-    /// Gets or sets the number of rows per batch during import. Default: 1000.
-    /// </summary>
-    public readonly int BatchSize;
+    // AUD-R35-238: the four public members below are readonly fields on a readonly struct, so none
+    // of them can be set after construction - their docs said "Gets or sets" and described an
+    // accessor that does not exist. Corrected to "Gets". The field-vs-property shape is left alone
+    // deliberately: BatchSize is a property and the rest of the public API exposes options as
+    // properties, so these are an outlier, but converting them is a binary-breaking change to a
+    // released package rather than a doc fix. Noted in work/todo.md.
+    // Backing field is nullable so that default(ImportOptions) — which bypasses the constructor
+    // and zero-initializes all value-type fields — can still be distinguished from an explicit
+    // batchSize: 0. BatchSize below falls back to 1000 only when this is null (unset).
+    private readonly int? _batchSize;
 
     /// <summary>
-    /// Gets or sets how primary key conflicts are handled. Default: <see cref="ConflictStrategy.Error"/>.
+    /// Gets the number of rows per batch during import. Default: 1000.
+    /// </summary>
+    /// <remarks>
+    /// Falls back to 1000 even for <c>default(ImportOptions)</c>, since a struct's parameterless
+    /// default-initialization bypasses the constructor and zero-initializes value-type fields.
+    /// </remarks>
+    public int BatchSize => _batchSize ?? 1000;
+
+    /// <summary>
+    /// Gets how primary key conflicts are handled. Default: <see cref="ConflictStrategy.Error"/>.
     /// </summary>
     public readonly ConflictStrategy OnConflict;
 
     /// <summary>
-    /// Gets or sets whether to create the target table if it does not exist.
+    /// Gets whether to create the target table if it does not exist.
     /// When true, the table is created from the entity's property-to-column mappings before import.
     /// Default: false.
     /// </summary>
     public readonly bool CreateTableIfMissing;
 
     /// <summary>
-    /// Gets or sets an optional progress callback invoked after each batch.
+    /// Gets the optional progress callback invoked after each batch.
     /// Parameters: (rowsImportedSoFar, totalRowsOrNull).
     /// </summary>
     public readonly Action<long, long?>? OnProgress;
 
     /// <summary>
-    /// Gets or sets a custom import dialect for generating database-specific DDL and INSERT SQL.
+    /// Gets the custom import dialect for generating database-specific DDL and INSERT SQL.
     /// When null, the import pipeline auto-detects the target database from the connection type.
     /// Set this when importing into a database engine that is not natively supported.
     /// </summary>
@@ -45,9 +60,22 @@ public readonly struct ImportOptions
     /// <param name="createTableIfMissing">Whether to create the target table if it does not exist.</param>
     /// <param name="onProgress">An optional progress callback invoked after each batch.</param>
     /// <param name="dialect">An optional custom import dialect for database-specific SQL generation.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="batchSize"/> is not positive.
+    /// </exception>
     public ImportOptions(int batchSize = 1000, ConflictStrategy onConflict = ConflictStrategy.Error, bool createTableIfMissing = false, Action<long, long?>? onProgress = null, IImportDialect? dialect = null)
     {
-        BatchSize = batchSize;
+        // AUD-R26-064: reject a non-positive batch size here, where "unset" and "explicitly zero"
+        // are still distinguishable. Both import loops compare `>= batchSize`, so a 0 or negative
+        // value flushed after every single row - silently turning the batched import into a
+        // row-at-a-time one and firing the progress callback per row. The DbBatch path exists
+        // specifically to avoid that round-trip pattern, so the option quietly defeated the
+        // optimisation it configures. `default(ImportOptions)` bypasses this constructor entirely
+        // and still falls back to 1000, which is the behaviour the nullable backing field is for.
+        if (batchSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(batchSize), batchSize, "Batch size must be greater than zero.");
+
+        _batchSize = batchSize;
         OnConflict = onConflict;
         CreateTableIfMissing = createTableIfMissing;
         OnProgress = onProgress;

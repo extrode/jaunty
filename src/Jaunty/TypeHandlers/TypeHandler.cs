@@ -11,9 +11,9 @@ namespace Jaunty.TypeHandlers;
 /// to the database via Jaunty's mapping and parameter binding mechanisms.
 /// </para>
 /// <para>
-/// For most use cases, the delegate-based registration APIs on <see cref="Configuration.JauntyConfig"/>
-/// (via <see cref="Configuration.JauntyConfig"/>) are simpler and preferred.
-/// Use this base class when you need structured handler logic or state management.
+/// For most use cases the delegate-based registration API,
+/// <c>JauntyConfig.RegisterTypeHandler&lt;T&gt;(Func&lt;object?, T&gt;, Func&lt;T?, object?&gt;)</c>, is simpler and
+/// preferred. Use this base class when you need structured handler logic or state management.
 /// </para>
 /// <para>
 /// Type handlers participate in the following operations:
@@ -51,19 +51,32 @@ namespace Jaunty.TypeHandlers;
 /// </code>
 /// </example>
 /// <seealso cref="Configuration.JauntyConfig"/>
-/// <seealso cref="Configuration.JauntyConfig"/>
+/// <seealso cref="ITypeHandler"/>
 public abstract class TypeHandler<T>
 {
     /// <summary>
     /// Converts a database value to a CLR value of type <typeparamref name="T"/>.
     /// </summary>
     /// <param name="dbValue">The value from the database. May be null or DBNull.</param>
-    /// <returns>The converted CLR value. May be null if <typeparamref name="T"/> is nullable.</returns>
+    /// <returns>The converted CLR value, or <see langword="null"/> for a database NULL.</returns>
     /// <remarks>
+    /// <para>
     /// The implementation should handle null and DBNull gracefully, and throw
     /// <see cref="InvalidOperationException"/> or <see cref="FormatException"/> if conversion is not possible.
+    /// </para>
+    /// <para>
+    /// AUD-R35-174. The return type was the non-nullable <typeparamref name="T"/> while this very
+    /// paragraph said the result may be null and <c>TypeHandlerRegistry.TryConvertFromDb</c> has a
+    /// dedicated branch for a handler that returns one (AUD-R27-014). A <c>TypeHandler&lt;string&gt;</c>
+    /// returning null for a DBNull input - the documented, registry-handled case - therefore produced
+    /// CS8603 at the implementation site. The annotation is now <c>T?</c>, matching both the
+    /// documented behaviour and the sibling <see cref="ToDbValue"/>, which has always taken
+    /// <c>T?</c>. This is an annotation change only: a handler that never returns null is unaffected,
+    /// and the registry still refuses to report success when a null comes back for a non-nullable
+    /// value type, because <c>default(T)</c> there is real-looking data.
+    /// </para>
     /// </remarks>
-    public abstract T Parse(object? dbValue);
+    public abstract T? Parse(object? dbValue);
 
     /// <summary>
     /// Converts a CLR value to a database value.

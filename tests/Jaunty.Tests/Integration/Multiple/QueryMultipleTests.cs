@@ -1,3 +1,4 @@
+using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -11,6 +12,35 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
+
+    #region CommandType Tests
+
+    /// <summary>
+    /// Gets stored procedure name. PostgreSQL folds unquoted names to lowercase.
+    /// </summary>
+    private static string SpName(string name, DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.Postgres ? name.ToLower() : name;
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void QueryMultiple_WithStoredProcedureCommandType_ReturnsResults(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        using var gridReader = connection.QueryMultiple(
+            SpName("GetAllProducts", dialect),
+            CommandOptions.AsStoredProcedure());
+
+        var products = gridReader.Read<Product>();
+
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductId > 0));
+    }
+
+    #endregion
+
     #region Sync Read Tests
 
     [Theory]
@@ -30,8 +60,6 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
             orders = reader.ReadPartial<Order>().ToList();
             customers = reader.ReadPartial<Customer>().ToList();
         });
-
-        connection.QueryMultiple(sql);
 
         Assert.NotNull(orders);
         Assert.NotNull(customers);
@@ -483,6 +511,26 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
         Assert.Equal(5, orders.Count);
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void QueryMultiple_WithValueReturningCallback_ReturnsTransformedResult(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = MultipleOrdersCustomersSql(dialect);
+
+        var (orderCount, customerCount) = connection.QueryMultiple(sql, reader =>
+        {
+            var orders = reader.ReadPartial<Order>().ToList();
+            var customers = reader.ReadPartial<Customer>().ToList();
+            return (orders.Count, customers.Count);
+        });
+
+        Assert.Equal(3, orderCount);
+        Assert.Equal(2, customerCount);
+    }
+
     #endregion
 
     #region Async Tests
@@ -706,7 +754,6 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
         Assert.True(count > 0);
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -750,7 +797,6 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
 
         Assert.Equal(5, orders.Count);
     }
-#endif
 
     #endregion
 
@@ -837,6 +883,46 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
 
         Assert.NotNull(count);
         Assert.True(count > 0);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryMultipleAsync_WithSyncValueReturningCallback_ReturnsTransformedResult(DialectInfo dialect)
+    {
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = MultipleOrdersCustomersSql(dialect);
+
+        var (orderCount, customerCount) = await conn!.QueryMultipleAsync(sql, reader =>
+        {
+            var orders = reader.ReadPartial<Order>().ToList();
+            var customers = reader.ReadPartial<Customer>().ToList();
+            return (orders.Count, customers.Count);
+        });
+
+        Assert.Equal(3, orderCount);
+        Assert.Equal(2, customerCount);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryMultipleAsync_WithAsyncValueReturningCallback_ReturnsTransformedResult(DialectInfo dialect)
+    {
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = MultipleOrdersCustomersSql(dialect);
+
+        var (orderCount, customerCount) = await conn!.QueryMultipleAsync(sql, async reader =>
+        {
+            var orders = await reader.ReadPartialAsync<Order>();
+            var customers = await reader.ReadPartialAsync<Customer>();
+            return (orders.Count(), customers.Count());
+        });
+
+        Assert.Equal(3, orderCount);
+        Assert.Equal(2, customerCount);
     }
 
     #endregion

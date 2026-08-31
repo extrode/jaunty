@@ -10,13 +10,36 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege. Every step here is checkout / setup-dotnet / cache / upload-artifact, none of
+# which writes through GITHUB_TOKEN. This matters more once the repository is public: without an
+# explicit block the token inherits the repository default, which may be read/write.
+permissions:
+  contents: read
+
+# Every push to dev ran CI twice: once for the push, and once as a pull_request
+# sync of the standing dev -> main PR (#18), whose head branch is dev itself.
+# Concurrency cannot collapse the pair - github.ref is refs/heads/dev for one
+# and refs/pull/18/merge for the other, so they occupy different groups - and
+# the trigger cannot either, because pull_request.branches filters the BASE
+# branch, not the head. Hence a job-level condition.
+#
+# pull_request runs are skipped when the head branch is one that push already
+# covers. A feature or dependabot PR into dev still runs, which is the case that
+# matters: pushes only fire on dev and main, so skipping those PRs would leave
+# them untested. Branch protection is unaffected - the head SHA is identical, so
+# the push run's checks appear on the PR as the same commit's checks.
+
 # The SQL Server service uses a throwaway credential for the ephemeral CI
 # container only. Override with the CI_MSSQL_SA_PASSWORD repository variable
 # if desired.
 jobs:
   build-and-test:
     name: Build & Test
-    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.ref != 'dev' &&
+       github.event.pull_request.head.ref != 'main')
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     services:
       mssql:
         image: mcr.microsoft.com/mssql/server:2022-latest
@@ -24,7 +47,7 @@ jobs:
           ACCEPT_EULA: "Y"
           MSSQL_SA_PASSWORD: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
         ports:
-          - 1433:1433
+          - 1435:1433
         volumes:
           # Mirror the workspace path: BULK INSERT runs server-side and the
           # CSV import tests pass host paths to the server.
@@ -39,17 +62,20 @@ jobs:
       CI_SA_CRED: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
         with:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
@@ -66,12 +92,19 @@ jobs:
       - name: Restore
         run: dotnet restore Jaunty.slnx
 
+      # --no-incremental because ILLink/AOT analysis only runs on a clean compile: an
+      # incremental build on this self-hosted runner's persistent workspace reported 0
+      # diagnostics where a clean build of the same tree reported 4 (spec 010, AC2).
       - name: Build
-        run: dotnet build Jaunty.slnx -c Release --no-restore
+        run: dotnet build Jaunty.slnx -c Release --no-restore --no-incremental
 
       - name: Test - Core (SQLite + SQL Server)
         env:
-          JAUNTY_TEST_SQLSERVER: Server=localhost,1433;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          # The mssql service container is provisioned above, so an unreachable SQL Server here is
+          # a broken job rather than a machine without the engine. Without this the dialect rows
+          # would skip and the leg would report green having tested SQLite only.
+          JAUNTY_REQUIRE_SQLSERVER: "1"
         run: >-
           dotnet test tests/Jaunty.Tests
           -c Release
@@ -79,6 +112,17 @@ jobs:
           --framework net8.0
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-core.trx"
+
+      # The parallel half of Jaunty.Tests. No live engine and no global-config mutation, so it
+      # runs its collections concurrently and needs none of the service containers above.
+      - name: Test - Core unit (parallel)
+        run: >-
+          dotnet test tests/Jaunty.UnitTests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-core-unit.trx"
 
       - name: Test - Source Generator (shape safety)
         run: >-
@@ -98,6 +142,31 @@ jobs:
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-fluent.trx"
 
+      # Split out of Jaunty.Fluent.Tests so that suite can run its collections in parallel.
+      # These tests mutate the process-global JauntyConfig; keep them in their own serial run.
+      - name: Test - Fluent config state
+        run: >-
+          dotnet test tests/Jaunty.Fluent.ConfigTests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-config.trx"
+
+      # Named projects, not a solution-wide run: every test project needs its own step
+      # here or it never executes in CI. Jaunty.Fluent.SourceGen.Tests and
+      # Jaunty.Scaffolding.Cli.Tests had no step and ran nowhere until 2026-08-01.
+      # tests/Jaunty.Tests/Unit/SolutionLayoutTests.cs guards the solution file; this
+      # list is the second half of the same contract and has to be extended by hand.
+      - name: Test - Fluent source-gen (no reflection package reference)
+        run: >-
+          dotnet test tests/Jaunty.Fluent.SourceGen.Tests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-sourcegen.trx"
+
       - name: Test - Scaffolding
         run: >-
           dotnet test tests/Jaunty.Scaffolding.Tests
@@ -106,6 +175,15 @@ jobs:
           --framework net8.0
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-scaffolding.trx"
+
+      - name: Test - Scaffolding CLI
+        run: >-
+          dotnet test tests/Jaunty.Scaffolding.Cli.Tests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-scaffolding-cli.trx"
 
       - name: Test - FlatFiles (DuckDB)
         run: >-
@@ -117,9 +195,101 @@ jobs:
           --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-flatfiles.trx"
 
+      # net10 legs (spec 010 T18): duplicated steps, deliberately NOT a job matrix -
+      # the runner is self-hosted and a matrix re-spins the SQL Server service
+      # container per leg. These also carry the T13 loader assertion, which fails
+      # if a net10 leg silently loads a net8-compiled Jaunty.dll.
+      - name: Test - Core net10 (SQLite + SQL Server)
+        env:
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          # The mssql service container is provisioned above, so an unreachable SQL Server here is
+          # a broken job rather than a machine without the engine. Without this the dialect rows
+          # would skip and the leg would report green having tested SQLite only.
+          JAUNTY_REQUIRE_SQLSERVER: "1"
+        run: >-
+          dotnet test tests/Jaunty.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-core-net10.trx"
+
+      - name: Test - Core unit net10 (parallel)
+        run: >-
+          dotnet test tests/Jaunty.UnitTests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-core-unit-net10.trx"
+
+      - name: Test - Source Generator net10 (shape safety)
+        run: >-
+          dotnet test tests/Jaunty.SourceGenerator.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-sourcegen-net10.trx"
+
+      - name: Test - Fluent net10
+        run: >-
+          dotnet test tests/Jaunty.Fluent.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-net10.trx"
+
+      - name: Test - Fluent config state net10
+        run: >-
+          dotnet test tests/Jaunty.Fluent.ConfigTests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-config-net10.trx"
+
+      - name: Test - Fluent source-gen net10 (no reflection package reference)
+        run: >-
+          dotnet test tests/Jaunty.Fluent.SourceGen.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent-sourcegen-net10.trx"
+
+      - name: Test - Scaffolding net10
+        run: >-
+          dotnet test tests/Jaunty.Scaffolding.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-scaffolding-net10.trx"
+
+      - name: Test - Scaffolding CLI net10
+        run: >-
+          dotnet test tests/Jaunty.Scaffolding.Cli.Tests
+          -c Release
+          --no-build
+          --framework net10.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-scaffolding-cli-net10.trx"
+
+      - name: Test - FlatFiles net10 (DuckDB)
+        run: >-
+          dotnet test Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net10.0
+          --filter "FullyQualifiedName~Jaunty.FlatFiles"
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-flatfiles-net10.trx"
+
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: "**/test-results-*.trx"
@@ -127,7 +297,7 @@ jobs:
 
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: "**/coverage.cobertura.xml"
@@ -135,34 +305,45 @@ jobs:
 
   verify-aot:
     name: Verify NativeAOT Compatibility
-    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.ref != 'dev' &&
+       github.event.pull_request.head.ref != 'main')
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run NativeAOT verification
         run: pwsh scripts/Verify-NativeAOT.ps1
 
+  # No duplicate-run condition here, deliberately. `needs` already skips this job
+  # when build-and-test is skipped, and an explicit `if` would REPLACE the
+  # implicit success() check on that dependency - which would let the publish
+  # start after a failed test run.
   aot-publish:
     name: NativeAOT Publish
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     needs: build-and-test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
         with:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: Install native AOT dependencies
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
@@ -173,24 +354,43 @@ jobs:
       # GLOBAL property that flows into referenced projects, and the
       # netstandard2.0 source generator then fails with NETSDK1207
       # (AOT unsupported for that target framework).
-      - name: Publish NativeAOT
+      #
+      # Two legs since spec 010 (T19): net8 is the CONTROL, net10 the migration
+      # under test. -f is now required - the Cli multi-targets net8.0;net10.0,
+      # and a framework-less publish of a multi-target project fails outright.
+      - name: Publish NativeAOT (net8 control)
         run: >-
           dotnet publish
           src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj
           -c Release
+          -f net8.0
           -r linux-x64
           --self-contained
-          -o ./publish-aot
+          -o ./publish-aot-net8
 
-      - name: Verify AOT binary
+      - name: Publish NativeAOT (net10)
+        run: >-
+          dotnet publish
+          src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj
+          -c Release
+          -f net10.0
+          -r linux-x64
+          --self-contained
+          -o ./publish-aot-net10
+
+      - name: Verify AOT binaries
         run: |
-          if [ -f ./publish-aot/Jaunty.Scaffolding.Cli ]; then
-            SIZE=$(stat --format="%s" ./publish-aot/Jaunty.Scaffolding.Cli)
-            SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
-            echo "AOT binary produced successfully"
-            echo "Binary size: ${SIZE_MB} MB"
-          else
-            echo "ERROR: AOT binary not found"
-            ls -la ./publish-aot/ || true
-            exit 1
-          fi
+          fail=0
+          for leg in net8 net10; do
+            bin="./publish-aot-$leg/Jaunty.Scaffolding.Cli"
+            if [ -f "$bin" ]; then
+              SIZE=$(stat --format="%s" "$bin")
+              SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+              echo "$leg: AOT binary produced, ${SIZE_MB} MB"
+            else
+              echo "ERROR: $leg AOT binary not found"
+              ls -la "./publish-aot-$leg/" || true
+              fail=1
+            fi
+          done
+          exit $fail

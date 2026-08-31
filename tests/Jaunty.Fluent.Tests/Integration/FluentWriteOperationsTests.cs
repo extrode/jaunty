@@ -1,5 +1,6 @@
 using System.Data;
 
+using Jaunty.Core;
 using Jaunty.Fluent;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
@@ -120,6 +121,196 @@ public class FluentWriteOperationsTests : IDisposable
             .DeleteAsync();
 
         Assert.Equal(1, rowsDeleted);
+    }
+
+    [Fact]
+    public void Delete_WithCommandOptionsTransaction_CommitsWithTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteTxCommit",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
+        using (var tx = _db.Connection.BeginTransaction())
+        {
+            var rowsDeleted = _db.Connection.From<Product>()
+                .Where(p => p.ProductId == (int)insertedId)
+                .Delete(CommandOptions.WithTransaction(tx));
+            Assert.Equal(1, rowsDeleted);
+            tx.Commit();
+        }
+
+        var gone = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirstOrDefault();
+        Assert.Null(gone);
+    }
+
+    [Fact]
+    public void Delete_WithCommandOptionsTransaction_RollsBackWithTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteTxRollback",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
+        using (var tx = _db.Connection.BeginTransaction())
+        {
+            var rowsDeleted = _db.Connection.From<Product>()
+                .Where(p => p.ProductId == (int)insertedId)
+                .Delete(CommandOptions.WithTransaction(tx));
+            Assert.Equal(1, rowsDeleted);
+            tx.Rollback();
+        }
+
+        var stillThere = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirstOrDefault();
+        Assert.NotNull(stillThere);
+    }
+
+    // ExecuteNonQuery (the private helper backing Delete/DeleteAll) assigned options.Transaction
+    // to command.Transaction unconditionally. On a real DbConnection that setter casts internally,
+    // so a non-DbTransaction IDbTransaction threw an opaque InvalidCastException instead of
+    // Jaunty's clear ArgumentException. (AUD-R11)
+    [Fact]
+    public void Delete_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteNonDbTx",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
+        using var realTransaction = _db.Connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _db.Connection.From<Product>()
+                .Where(p => p.ProductId == (int)insertedId)
+                .Delete(CommandOptions.WithTransaction(nonDbTransaction)));
+        Assert.Contains("DbTransaction", ex.Message);
+
+        realTransaction.Rollback();
+    }
+
+    // ExecuteNonQueryAsync (the private helper backing DeleteAsync/UpdateAsync) assigned
+    // options.Transaction to command.Transaction only when it was already a DbTransaction,
+    // with no else branch - a non-DbTransaction IDbTransaction was silently dropped instead of
+    // erroring, so the command executed outside the caller's requested transaction with no
+    // indication anything was wrong. The sync counterpart (ExecuteNonQuery, see the
+    // Delete_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException test
+    // above) already threw a clear ArgumentException for this case; ExecuteNonQueryAsync now
+    // matches. (AUD-R13)
+    [Fact]
+    public async Task DeleteAsync_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfSilentlyDroppingTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteAsyncNonDbTx",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
+        using var realTransaction = _db.Connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await _db.Connection.From<Product>()
+                .Where(p => p.ProductId == (int)insertedId)
+                .DeleteAsync(CommandOptions.WithTransaction(nonDbTransaction)));
+        Assert.Contains("DbTransaction", ex.Message);
+
+        realTransaction.Rollback();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithCommandOptionsTransaction_RollsBackWithTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteAsyncTxRollback",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
+        using (var tx = _db.Connection.BeginTransaction())
+        {
+            var rowsDeleted = await _db.Connection.From<Product>()
+                .Where(p => p.ProductId == (int)insertedId)
+                .DeleteAsync(CommandOptions.WithTransaction(tx));
+            Assert.Equal(1, rowsDeleted);
+            tx.Rollback();
+        }
+
+        var stillThere = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirstOrDefault();
+        Assert.NotNull(stillThere);
+    }
+
+    [Fact]
+    public void DeleteAll_WithCommandOptionsTransaction_RollsBackWithTransaction()
+    {
+        _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteAllTxRollback",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
+        using (var tx = _db.Connection.BeginTransaction())
+        {
+            _db.Connection.From<Product>()
+                .DeleteAll(CommandOptions.WithTransaction(tx));
+            tx.Rollback();
+        }
+
+        var stillThere = _db.Connection.From<Product>()
+            .Where(p => p.ProductName == "TestDeleteAllTxRollback")
+            .SelectFirstOrDefault();
+        Assert.NotNull(stillThere);
     }
 
     #endregion
@@ -245,6 +436,136 @@ public class FluentWriteOperationsTests : IDisposable
     }
 
     [Fact]
+    public void Update_WithCommandOptionsTransaction_CommitsWithTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestUpdateTxCommit",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                UnitPrice = 10.00m,
+                UnitsInStock = (short)10,
+                UnitsOnOrder = (short)0,
+                ReorderLevel = (short)5,
+                Discontinued = false
+            })
+            .Insert();
+
+        using (var tx = _db.Connection.BeginTransaction())
+        {
+            var rowsUpdated = _db.Connection.From<Product>()
+                .Set(p => p.UnitPrice, 123.45m)
+                .Where(p => p.ProductId == (int)insertedId)
+                .Update(CommandOptions.WithTransaction(tx));
+            Assert.Equal(1, rowsUpdated);
+            tx.Commit();
+        }
+
+        var updated = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirst();
+        Assert.Equal(123.45m, updated.UnitPrice);
+    }
+
+    [Fact]
+    public void Update_WithCommandOptionsTransaction_RollsBackWithTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestUpdateTxRollback",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                UnitPrice = 10.00m,
+                UnitsInStock = (short)10,
+                UnitsOnOrder = (short)0,
+                ReorderLevel = (short)5,
+                Discontinued = false
+            })
+            .Insert();
+
+        using (var tx = _db.Connection.BeginTransaction())
+        {
+            var rowsUpdated = _db.Connection.From<Product>()
+                .Set(p => p.UnitPrice, 543.21m)
+                .Where(p => p.ProductId == (int)insertedId)
+                .Update(CommandOptions.WithTransaction(tx));
+            Assert.Equal(1, rowsUpdated);
+            tx.Rollback();
+        }
+
+        var unchanged = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirst();
+        Assert.Equal(10.00m, unchanged.UnitPrice);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithCommandOptionsTransaction_RollsBackWithTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestUpdateAsyncTxRollback",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                UnitPrice = 10.00m,
+                UnitsInStock = (short)10,
+                UnitsOnOrder = (short)0,
+                ReorderLevel = (short)5,
+                Discontinued = false
+            })
+            .Insert();
+
+        using (var tx = _db.Connection.BeginTransaction())
+        {
+            var rowsUpdated = await _db.Connection.From<Product>()
+                .Set(p => p.UnitPrice, 999.11m)
+                .Where(p => p.ProductId == (int)insertedId)
+                .UpdateAsync(CommandOptions.WithTransaction(tx));
+            Assert.Equal(1, rowsUpdated);
+            tx.Rollback();
+        }
+
+        var unchanged = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirst();
+        Assert.Equal(10.00m, unchanged.UnitPrice);
+    }
+
+    [Fact]
+    public void UpdateAll_WithCommandOptionsTransaction_RollsBackWithTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestUpdateAllTxRollback",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                UnitPrice = 10.00m,
+                UnitsInStock = (short)10,
+                UnitsOnOrder = (short)0,
+                ReorderLevel = (short)5,
+                Discontinued = false
+            })
+            .Insert();
+
+        using (var tx = _db.Connection.BeginTransaction())
+        {
+            _db.Connection.From<Product>()
+                .Set(p => p.UnitPrice, 1.23m)
+                .UpdateAll(CommandOptions.WithTransaction(tx));
+            tx.Rollback();
+        }
+
+        var unchanged = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirst();
+        Assert.Equal(10.00m, unchanged.UnitPrice);
+    }
+
+    [Fact]
     public void Update_ToSql_ReturnsCorrectSql()
     {
         var sql = ((ISetClause<Product>)_db.Connection.From<Product>()
@@ -255,6 +576,43 @@ public class FluentWriteOperationsTests : IDisposable
         Assert.Contains("products", sql);
         Assert.Contains("SET", sql);
         Assert.Contains("unit_price", sql);
+    }
+
+    [Fact]
+    public void Update_SetThenWhereStringColumn_UpdatesCorrectRow()
+    {
+        // Regression test: ISetClause<T>.Where(string, object?) used to build its parameter
+        // name as a bare "@column" (identical to what WhereExpressionVisitor's first-occurrence
+        // naming produces), rather than the suffixed name every other Where-family overload
+        // uses via GetUniqueParamName. Left uncaught, a bare name here could collide with
+        // another bare-named parameter added to the same builder instance and throw
+        // ArgumentException("A parameter named ... has already been added.") from
+        // ParameterCollection.Add instead of executing the update.
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestUpdateStringWhere",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                UnitPrice = 10.00m,
+                UnitsInStock = (short)10,
+                UnitsOnOrder = (short)0,
+                ReorderLevel = (short)5,
+                Discontinued = false
+            })
+            .Insert();
+
+        var rowsUpdated = ((ISetClause<Product>)_db.Connection.From<Product>()
+            .Set(p => p.UnitPrice, 555.55m))
+            .Where("product_id", (int)insertedId)
+            .Update();
+
+        Assert.Equal(1, rowsUpdated);
+
+        var updated = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirst();
+        Assert.Equal(555.55m, updated.UnitPrice);
     }
 
     #endregion

@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Internals;
 using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding.Providers.PostgreSql;
@@ -36,7 +37,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
         WHERE c.table_schema = @SchemaName AND c.table_name = @TableName
         ORDER BY c.ordinal_position";
 
-    private const string PrimaryKeysSql = @"
+    internal const string PrimaryKeysSql = @"
         SELECT
             tc.constraint_name AS ConstraintName,
             kcu.column_name AS ColumnName,
@@ -45,27 +46,40 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
+            AND tc.table_name = kcu.table_name
         WHERE tc.constraint_type = 'PRIMARY KEY'
           AND tc.table_schema = @SchemaName
           AND tc.table_name = @TableName
         ORDER BY kcu.ordinal_position";
 
-    private const string ForeignKeysSql = @"
+    // R27 batch 15: constraint_column_usage carries no ordinal, so joining it on constraint
+    // name alone cross-produced composite foreign keys (N columns -> N*N rows, every child
+    // column paired with every parent column). referential_constraints links the FK to its
+    // referenced unique constraint, whose key_column_usage row is matched positionally via
+    // position_in_unique_constraint - one row per child column, correctly paired.
+    internal const string ForeignKeysSql = @"
         SELECT
             tc.constraint_name AS ConstraintName,
             kcu.column_name AS ForeignKeyColumn,
-            ccu.table_schema AS ReferencedSchema,
-            ccu.table_name AS ReferencedTable,
-            ccu.column_name AS ReferencedColumn
+            rkcu.table_schema AS ReferencedSchema,
+            rkcu.table_name AS ReferencedTable,
+            rkcu.column_name AS ReferencedColumn
         FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
-        JOIN information_schema.constraint_column_usage ccu
-            ON tc.constraint_name = ccu.constraint_name
+            AND tc.table_name = kcu.table_name
+        JOIN information_schema.referential_constraints rc
+            ON rc.constraint_name = tc.constraint_name
+            AND rc.constraint_schema = tc.constraint_schema
+        JOIN information_schema.key_column_usage rkcu
+            ON rkcu.constraint_name = rc.unique_constraint_name
+            AND rkcu.constraint_schema = rc.unique_constraint_schema
+            AND rkcu.ordinal_position = kcu.position_in_unique_constraint
         WHERE tc.constraint_type = 'FOREIGN KEY'
           AND tc.table_schema = @SchemaName
-          AND tc.table_name = @TableName";
+          AND tc.table_name = @TableName
+        ORDER BY kcu.ordinal_position";
 
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
@@ -96,7 +110,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
     {
         var type = Type.GetType("Npgsql.NpgsqlConnection, Npgsql");
         if (type != null)
-            return (DbConnection)Activator.CreateInstance(type, connectionString)!;
+            return ReflectedConnectionFactory.Create(type, connectionString);
 
         throw new InvalidOperationException("Could not find PostgreSQL provider. Please install Npgsql.");
     }
@@ -154,30 +168,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
             ? await ReadForeignKeysAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false)
             : [];
 
-        if (primaryKey != null)
-        {
-            for (int i = 0; i < columns.Count; i++)
-            {
-                ColumnSchema col = columns[i];
-                if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
-                {
-                    columns[i] = new ColumnSchema
-                    {
-                        ColumnName = col.ColumnName,
-                        DataType = col.DataType,
-                        IsNullable = col.IsNullable,
-                        IsPrimaryKey = true,
-                        IsIdentity = col.IsIdentity,
-                        IsComputed = col.IsComputed,
-                        MaxLength = col.MaxLength,
-                        Precision = col.Precision,
-                        Scale = col.Scale,
-                        DefaultValue = col.DefaultValue,
-                        OrdinalPosition = col.OrdinalPosition
-                    };
-                }
-            }
-        }
+        SchemaReaderHelpers.MarkPrimaryKeyColumns(columns, primaryKey);
 
         return new TableSchema
         {

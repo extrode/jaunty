@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
 		<!--<TargetFramework>net8.0</TargetFramework>-->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AnalysisLevel>latest</AnalysisLevel>
@@ -9,38 +9,42 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<LangVersion>latest</LangVersion>
 		<!-- ASYNC_ENUMERABLE_SUPPORT on ns2.0 too (via Microsoft.Bcl.AsyncInterfaces):
 		     both TFMs expose the same IAsyncEnumerable streaming API. -->
 		<DefineConstants>$(DefineConstants);AsyncInterfaces;ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
-		<!--<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.3" />-->
+		<!--<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.10" />-->
 	</PropertyGroup>
 
 	<Choose>
 		<When Condition="$(DefineConstants.Contains('AsyncInterfaces'))">
 			<ItemGroup>
 				<PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
-					<Version>10.0.3</Version>
+					<Version>10.0.10</Version>
 				</PackageReference>
 			</ItemGroup>
 		</When>
 	</Choose>
 
-	<!-- Logging and Diagnostics - only needed for netstandard2.0 (net8.0 has these built-in) -->
+	<!-- netstandard2.0 is the only target that carries package references, and both are backports
+	     of types that are built into modern .NET rather than third-party libraries:
+
+	       System.Diagnostics.DiagnosticSource   in Microsoft.NETCore.App since .NET Core 3.0
+	       Microsoft.Bcl.AsyncInterfaces         (above) IAsyncEnumerable/IAsyncDisposable,
+	                                             in-box since .NET Core 3.0
+
+	     On net8.0 and net10.0 this project has NO package references at all. Nothing conditional,
+	     nothing transitive - that is the contract, and PackageDependencyTests asserts it.
+
+	     Microsoft.Extensions.Logging.Abstractions and .DependencyInjection.Abstractions used to be
+	     referenced here on every TFM (an old comment claimed they were "built in on net8.0+" -
+	     they are not; they ship in the ASP.NET Core shared framework, which a class library never
+	     gets). They now live in src/Jaunty.Extensions.Logging, which is where the ILogger
+	     interceptor and the DI registration extensions moved. See docs/02-architecture/dependencies.md. -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
-		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.10" />
 	</ItemGroup>
 
-	<!-- For net8.0, these are built-in but we need to include the package for compatibility -->
-	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
-	</ItemGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<LangVersion>latest</LangVersion>
+	<PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
 		<Nullable>enable</Nullable>
 		<IsAotCompatible>true</IsAotCompatible>
 		<DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
@@ -67,6 +71,18 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>Jaunty.Tests</_Parameter1>
 		</AssemblyAttribute>
+		<!-- The parallel half of Jaunty.Tests; same tests, split out so they can run concurrently. -->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.UnitTests</_Parameter1>
+		</AssemblyAttribute>
+		<!-- The serial half of Jaunty.Fluent.Tests; mutates the global JauntyConfig statics. -->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.Fluent.ConfigTests</_Parameter1>
+		</AssemblyAttribute>
+		<!-- libFuzzer harness over SqlParameterParser; tools/Jaunty.Fuzz, nightly only. -->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.Fuzz</_Parameter1>
+		</AssemblyAttribute>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>Jaunty.Fluent</_Parameter1>
 		</AssemblyAttribute>
@@ -74,7 +90,15 @@
       <_Parameter1>Jaunty.Fluent.Tests</_Parameter1>
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.Fluent.SourceGen.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Jaunty.Extensions.Reflection</_Parameter1>
+    </AssemblyAttribute>
+    <!-- The ILogger interceptor and the DI registration extensions; split out so that core
+         carries no Microsoft.Extensions package references. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.Extensions.Logging</_Parameter1>
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Jaunty.FlatFiles</_Parameter1>
@@ -92,10 +116,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-		<PackageId>Beparey.Jaunty</PackageId>
-		<Authors>Syed Beparey</Authors>
+		<PackageId>Extrode.Jaunty</PackageId>
+		<Authors>Extrode LLC</Authors>
 		<Description>A strict, high-performance micro-ORM for .NET with source-generated mapping and NativeAOT support.</Description>
-		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
 		<Nullable>enable</Nullable>
 		<ErrorReport>none</ErrorReport>
 	</PropertyGroup>

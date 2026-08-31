@@ -24,13 +24,15 @@ public class IcebergFileSourceTests
     }
 
     [Fact]
-    public void Constructor_MultiplePaths_SetsAllPaths()
+    public void Constructor_MultiplePaths_Throws()
     {
+        // AUD-R11 batch-07: DuckDB's iceberg_scan function only accepts a single table location
+        // (unlike read_csv/read_parquet/read_json, which accept a list); registering a
+        // multi-path source used to build invalid SQL that failed at query time instead of
+        // construction time.
         var paths = new[] { "/ice/a", "/ice/b" };
-        var source = new IcebergFileSource("t", paths, typeof(IcebergRow));
 
-        Assert.Equal(2, source.FilePaths.Count);
-        Assert.Equal("/ice/a", source.FilePath);
+        Assert.Throws<ArgumentException>(() => new IcebergFileSource("t", paths, typeof(IcebergRow)));
     }
 
     // ------------------------------------------------------------------

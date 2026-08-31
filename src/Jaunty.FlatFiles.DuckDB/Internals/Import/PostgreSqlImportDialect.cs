@@ -8,15 +8,27 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// <summary>
 /// Import dialect for PostgreSQL databases.
 /// </summary>
-internal sealed class PostgreSqlImportDialect : IImportDialect
+internal sealed class PostgreSqlImportDialect : IImportDialect, IQuotedIdentifierDialect
 {
     /// <summary>
     /// Singleton instance.
     /// </summary>
     public static PostgreSqlImportDialect Instance { get; } = new();
 
+    /// <summary>
+    /// Quotes an identifier for PostgreSQL, doubling any embedded double quotes so the
+    /// identifier cannot break out of the quoted context (e.g. names derived from
+    /// filenames or [Table]/[Column] attributes).
+    /// </summary>
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+
     /// <inheritdoc />
-    public string MapClrTypeToSqlType(Type clrType) => clrType switch
+    string IQuotedIdentifierDialect.QuoteIdentifier(string identifier) => QuoteIdentifier(identifier);
+
+    /// <inheritdoc />
+    public string MapClrTypeToSqlType(Type clrType) => MapNormalized(ImportTypeMapping.Normalize(clrType));
+
+    private static string MapNormalized(Type clrType) => clrType switch
     {
         _ when clrType == typeof(string) => "TEXT",
         _ when clrType == typeof(int) => "INTEGER",
@@ -31,7 +43,15 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
         _ when clrType == typeof(DateTimeOffset) => "TIMESTAMPTZ",
         _ when clrType == typeof(Guid) => "UUID",
         _ when clrType == typeof(byte[]) => "BYTEA",
-        _ => "TEXT"
+        _ when clrType == typeof(DateOnly) => "DATE",
+        _ when clrType == typeof(TimeOnly) => "TIME",
+        _ when clrType == typeof(TimeSpan) => "INTERVAL",
+        _ when clrType == typeof(char) => "CHAR(1)",
+        _ when clrType == typeof(uint) => "BIGINT",
+        _ when clrType == typeof(ulong) => "NUMERIC(20,0)",
+        _ when clrType == typeof(sbyte) => "SMALLINT",
+        _ when clrType == typeof(ushort) => "INTEGER",
+        _ => throw ImportTypeMapping.Unsupported(clrType, "PostgreSQL")
     };
 
     /// <inheritdoc />
@@ -42,14 +62,22 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
         ConflictStrategy conflictStrategy,
         string? keyColumnName)
     {
+        if (conflictStrategy != ConflictStrategy.Error && keyColumnName is null)
+        {
+            throw new NotSupportedException(
+                $"Table '{tableName}' has no [Key] property to use for conflict resolution. " +
+                $"The {conflictStrategy} conflict strategy requires a [Key]-attributed property; " +
+                "use ConflictStrategy.Error (the default) instead, or add a [Key] attribute to the entity.");
+        }
+
         var sb = new StringBuilder();
-        sb.Append($"INSERT INTO \"{tableName}\"");
+        sb.Append($"INSERT INTO {QuoteIdentifier(tableName)}");
 
         sb.Append(" (");
         for (int i = 0; i < columnNames.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append($"\"{columnNames[i]}\"");
+            sb.Append(QuoteIdentifier(columnNames[i]));
         }
         sb.Append(") VALUES (");
         for (int i = 0; i < parameterNames.Count; i++)
@@ -63,19 +91,23 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
         {
             if (conflictStrategy == ConflictStrategy.Skip)
             {
-                sb.Append($" ON CONFLICT (\"{keyColumnName}\") DO NOTHING");
+                sb.Append($" ON CONFLICT ({QuoteIdentifier(keyColumnName)}) DO NOTHING");
             }
             else if (conflictStrategy == ConflictStrategy.Upsert)
             {
-                sb.Append($" ON CONFLICT (\"{keyColumnName}\") DO UPDATE SET ");
-                var first = true;
+                // Key-only entity: "DO UPDATE SET" with no assignments is a syntax error, so
+                // degrade to DO NOTHING (matching DuckDbDialect.GenerateUpsertSql's guard).
+                var assignments = new StringBuilder();
                 foreach (var colName in columnNames)
                 {
                     if (colName == keyColumnName) continue;
-                    if (!first) sb.Append(", ");
-                    sb.Append($"\"{colName}\" = EXCLUDED.\"{colName}\"");
-                    first = false;
+                    if (assignments.Length > 0) assignments.Append(", ");
+                    assignments.Append($"{QuoteIdentifier(colName)} = EXCLUDED.{QuoteIdentifier(colName)}");
                 }
+
+                sb.Append(assignments.Length > 0
+                    ? $" ON CONFLICT ({QuoteIdentifier(keyColumnName)}) DO UPDATE SET {assignments}"
+                    : $" ON CONFLICT ({QuoteIdentifier(keyColumnName)}) DO NOTHING");
             }
         }
 
@@ -88,13 +120,13 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
         IReadOnlyList<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> columns)
     {
         var sb = new StringBuilder();
-        sb.Append($"CREATE TABLE IF NOT EXISTS \"{tableName}\" (");
+        sb.Append($"CREATE TABLE IF NOT EXISTS {QuoteIdentifier(tableName)} (");
 
         for (int i = 0; i < columns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
-            sb.Append($"\"{name}\" {MapClrTypeToSqlType(clrType)}");
+            sb.Append($"{QuoteIdentifier(name)} {ImportTypeMapping.MapForColumn(MapClrTypeToSqlType, name, clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
         }

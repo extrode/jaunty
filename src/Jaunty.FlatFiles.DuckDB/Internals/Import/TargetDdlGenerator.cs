@@ -22,41 +22,65 @@ internal static class TargetDdlGenerator
     }
 
     /// <summary>
-    /// Gets the key column name(s) for the entity type.
+    /// Gets the key column name for the entity type.
     /// </summary>
+    /// <exception cref="NotSupportedException">
+    /// Thrown when the entity type has more than one <c>[Key]</c> property. Composite keys are not
+    /// currently supported for import conflict resolution (ON CONFLICT / MERGE) or PRIMARY KEY DDL
+    /// generation; silently using only the first key column would produce incorrect upsert matching.
+    /// </exception>
     public static string? GetKeyColumnName(Type entityType)
     {
-        foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        PropertyInfo? keyProperty = null;
+        string? keyColumnName = null;
+
+        foreach (PropertyInfo prop in MappedPropertyFilter.GetMappedProperties(entityType))
         {
-            if (prop.GetCustomAttribute<KeyAttribute>() is not null)
+            if (prop.GetCustomAttribute<KeyAttribute>() is null) continue;
+
+            if (keyProperty is not null)
             {
-                ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
-                return colAttr?.Name ?? prop.Name;
+                throw new NotSupportedException(
+                    $"Entity type '{entityType.Name}' has more than one [Key] property " +
+                    $"('{keyProperty.Name}' and '{prop.Name}'). Composite keys are not currently " +
+                    "supported for import conflict resolution or PRIMARY KEY DDL generation.");
             }
+
+            keyProperty = prop;
+            keyColumnName = MappedPropertyFilter.GetColumnName(prop);
         }
-        return null;
+
+        return keyColumnName;
     }
 
     internal static List<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> GetColumnDefinitions(Type entityType)
     {
         var result = new List<(string, Type, bool, bool)>();
+        // AUD-R26: this loop used to emit every mapped property, so two properties on one column
+        // produced CREATE TABLE ("code", "CODE") - rejected by SQLite and SQL Server, and silently
+        // half-populated on PostgreSQL where the quoted identifiers are distinct. ColumnMappingCache
+        // meanwhile collapsed them to one. See DuplicateColumnGuard.
+        Dictionary<string, string> claimed = DuplicateColumnGuard.NewClaimSet(4);
 
-        foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (PropertyInfo prop in MappedPropertyFilter.GetMappedProperties(entityType))
         {
-            if (!prop.CanRead || !prop.CanWrite) continue;
-
-            ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
-            var columnName = colAttr?.Name ?? prop.Name;
+            // AUD-R26-067: was a fourth inline copy of the "[Column] name or property name" rule.
+            var columnName = MappedPropertyFilter.GetColumnName(prop);
+            DuplicateColumnGuard.Claim(entityType, columnName, prop, claimed);
             var isPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() is not null;
 
-            Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            // AUD-R26 (batch 7, medium/bug). Normalize here as well as unwrapping Nullable<T>,
+            // because this is the only place that holds the PropertyInfo: [EnumStorage] is a
+            // per-property attribute and MapClrTypeToSqlType(Type) cannot see it. Resolving the
+            // enum's storage type here means the column matches what the write path will actually
+            // put in it - a string column for EnumStorage.String, the underlying integral type's
+            // column for Numeric - rather than the text column every enum used to get.
+            Type underlyingType = ImportTypeMapping.Normalize(prop.PropertyType, prop);
+            // R29: only string consulted the nullable-reference-type annotation; every other
+            // reference type (byte[], POCOs) was unconditionally nullable, so a non-nullable
+            // byte[] property never got its NOT NULL constraint.
             var isNullable = Nullable.GetUnderlyingType(prop.PropertyType) is not null
-                || (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string));
-
-            if (prop.PropertyType == typeof(string))
-            {
-                isNullable = IsNullableReferenceType(prop);
-            }
+                || (!prop.PropertyType.IsValueType && IsNullableReferenceType(prop));
 
             result.Add((columnName, underlyingType, isPrimaryKey, isNullable));
         }
@@ -64,9 +88,15 @@ internal static class TargetDdlGenerator
         return result;
     }
 
+    // NullabilityInfoContext caches per-module/per-type nullability metadata internally, so
+    // allocating one per property is wasteful. It is not documented as thread-safe, so each
+    // thread gets its own cached instance instead of sharing one across threads.
+    [ThreadStatic]
+    private static NullabilityInfoContext? t_nullabilityContext;
+
     private static bool IsNullableReferenceType(PropertyInfo prop)
     {
-        var context = new NullabilityInfoContext();
+        NullabilityInfoContext context = t_nullabilityContext ??= new NullabilityInfoContext();
         NullabilityInfo nullabilityInfo = context.Create(prop);
         return nullabilityInfo.WriteState == NullabilityState.Nullable;
     }

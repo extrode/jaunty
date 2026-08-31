@@ -20,44 +20,34 @@ public class ColumnMappingCachePerformanceTests
         // Act - First call (populates cache)
         var mappings1 = ColumnMappingCache.Get(entityType);
 
-        // Get cache count before second call
-        var cacheCountBefore = GetCacheCount();
-
         // Second call (should use cache)
         var mappings2 = ColumnMappingCache.Get(entityType);
 
-        // Assert
-        Assert.Same(mappings1, mappings2); // Same reference from cache
-        Assert.Equal(cacheCountBefore, GetCacheCount()); // Cache count unchanged
+        // Assert - the same instance came back, which is what "cached" means here.
+        Assert.Same(mappings1, mappings2);
     }
 
-    [Fact]
-    public void Get_DifferentTypes_CachedSeparately()
-    {
-        // Arrange & Act
-        var salesMappings = ColumnMappingCache.Get(typeof(SalesRecord));
-        var inventoryMappings = ColumnMappingCache.Get(typeof(InventoryItem));
+    // AUD-R26: this used to also assert that ColumnMappingCache's total entry count was unchanged
+    // across the two Get calls. That assertion is racy by construction and was observed failing in
+    // a full-suite run while passing in isolation: the count is a *global* static, this project has
+    // no xunit.runner.json and so runs collections in parallel, and any other test resolving a
+    // different entity type between the two reads changes it. Assert.Same already proves the second
+    // call did not rebuild - the count added nothing but a flake, and a suite that cries wolf is
+    // worse than one test fewer.
 
-        // Assert
-        Assert.NotSame(salesMappings, inventoryMappings);
-        Assert.Equal(6, salesMappings.Count); // Id, ProductName, Revenue, Quantity, Date, Region
-        Assert.Equal(6, inventoryMappings.Count); // ItemId, ItemName, Category, StockQuantity, UnitPrice, InStock
-    }
-
-    [Fact]
-    public void Get_RespectsColumnAttribute()
-    {
-        // Arrange & Act
-        var mappings = ColumnMappingCache.Get(typeof(SalesRecord));
-
-        // Assert
-        var productNameMapping = mappings.First(m => m.Value.Property.Name == "ProductName");
-        Assert.Equal("product_name", productNameMapping.Value.ColumnName); // From [Column] attribute
-    }
+    // Get_DifferentTypes_CachedSeparately and Get_RespectsColumnAttribute were removed from this
+    // file - they duplicated ColumnMappingCacheTests.cs's tests of the same name/intent (general
+    // caching/mapping correctness, not performance). That file remains the single source of
+    // truth for those behaviors; this file keeps only cache-behavior/performance-specific tests.
 
     [Fact]
     public void Caching_ImprovesPerformance()
     {
+        // Wall-clock threshold: a useful canary on a developer machine,
+        // pure noise on shared CI runners.
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            Assert.Skip("Wall-clock performance thresholds are unreliable on shared CI runners.");
+
         // Arrange
         var entityType = typeof(SalesRecord);
 

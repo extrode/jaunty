@@ -7,7 +7,7 @@ Guide to the Jaunty repository structure and organization.
 ## Root Directory Structure
 
 ```
-C:\home\extrode\code\jaunty.extrode.com\
+C:\src\jaunty\
 │
 ├── Configuration Files
 │   ├── .editorconfig              # Editor configuration (formatting, naming)
@@ -23,12 +23,13 @@ C:\home\extrode\code\jaunty.extrode.com\
 ├── Folders
 │   ├── .github/                   # GitHub configuration (workflows)
 │   ├── .idea/                     # JetBrains IDE settings
-│   ├── docs/                  # Specify tool configuration
 │   ├── .vs/                       # Visual Studio settings
 │   │
 │   ├── src/                       # Source code packages
 │   ├── tests/                     # Test projects
 │   ├── docs/                      # Documentation (Markdown source)
+│   │   └── specs/                 # Specifications, NNN-slug/NNN-spec.md
+│   ├── work/                      # The work underway (tasklist, status, todo)
 │   │
 │   ├── benchmarks/                # Performance benchmarks
 │   ├── samples/                   # Sample projects
@@ -45,9 +46,12 @@ C:\home\extrode\code\jaunty.extrode.com\
 
 | Folder | Purpose | Key Contents |
 |--------|---------|--------------|
-| `src/` | Source code for all packages | `Jaunty/`, `Jaunty.FlatFiles/`, `Jaunty.Fluent/` |
+| `src/` | Source code for all 8 packages | `Jaunty/`, `Jaunty.FlatFiles/`, `Jaunty.Fluent/` |
 | `tests/` | Test projects | `Jaunty.Tests/`, `Jaunty.FlatFiles.Tests/` |
 | `docs/` | Documentation source | Organized by topic (00-quick-start through 06-releases) |
+| `docs/specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
+| `work/` | The work underway. **Untracked** — held in a private repository, so a clone will not contain it | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
+| `audit/` | The 36-round audit record. **Untracked**, same private repository. The public summary is [`docs/05-quality/audit-record.md`](../05-quality/audit-record.md) | `roundNN/`, `findings-registry.md`, `coverage-ledger.md` |
 
 ### Development Folders
 
@@ -65,7 +69,6 @@ C:\home\extrode\code\jaunty.extrode.com\
 | `.github/` | GitHub configuration | Workflows |
 | `.idea/` | JetBrains IDE settings | Rider, ReSharper settings |
 | `.vs/` | Visual Studio settings | VS-specific configuration |
-| `docs/` | Specify tool | Architecture specification tool |
 
 ### Distribution Folders
 
@@ -88,8 +91,14 @@ src/
 ├── Jaunty.FlatFiles/              # Flat file support (interfaces)
 ├── Jaunty.FlatFiles.DuckDB/       # DuckDB implementation
 ├── Jaunty.Extensions.Reflection/  # Reflection-based mapping
-└── Jaunty.Scaffolding/            # Database scaffolding
+├── Jaunty.Extensions.Logging/     # ILogger + DI integration (keeps core dependency-free)
+├── Jaunty.Scaffolding/            # Database scaffolding
+└── Jaunty.Scaffolding.Cli/        # dotnet tool; the NativeAOT publish target
 ```
+
+`Jaunty.Extensions.Logging` exists so that `src/Jaunty` can declare **no package dependencies** on
+`net8.0` and `net10.0`; it carries the `Microsoft.Extensions.*` references on core's behalf. See
+[`../02-architecture/dependencies.md`](../02-architecture/dependencies.md).
 
 ---
 
@@ -140,7 +149,7 @@ docs/
 | Special | `_prefix/` sorts first | `_assets/` |
 | Special | `99-prefix/` sorts last | `99-archive/` |
 
-See [`03-development/file-naming-convention.md`](03-development/file-naming-convention.md) for the complete standard.
+See [`03-development/file-naming-convention.md`](../03-development/file-naming-convention.md) for the complete standard.
 
 ---
 
@@ -154,6 +163,7 @@ See [`03-development/file-naming-convention.md`](03-development/file-naming-conv
 | CRUD operations | `src/Jaunty/Write/` |
 | Flat file support | `src/Jaunty.FlatFiles.DuckDB/` |
 | Fluent API | `src/Jaunty.Fluent/` |
+| `ILogger` / DI integration | `src/Jaunty.Extensions.Logging/` |
 
 ### Finding Tests
 
@@ -167,10 +177,10 @@ See [`03-development/file-naming-convention.md`](03-development/file-naming-conv
 
 | You Want | Go To |
 |----------|-------|
-| API reference | [`docs/01-api-reference/`](01-api-reference/README.md) |
-| Architecture | [`docs/02-architecture/`](02-architecture/README.md) |
-| Development guides | [`docs/03-development/`](03-development/README.md) |
-| Historical docs | [`docs/99-archive/`](99-archive/README.md) |
+| API reference | [`docs/01-api-reference/`](../01-api-reference/README.md) |
+| Architecture | [`docs/02-architecture/`](../02-architecture/README.md) |
+| Development guides | [`docs/03-development/`](../03-development/README.md) |
+| Historical docs | [`docs/99-archive/`](../99-archive/) |
 
 ---
 
@@ -202,8 +212,8 @@ dotnet test /p:CollectCoverage=true
 ## Related Documents
 
 - [`README.md`](../README.md) - Project overview
-- [`CONTRIBUTING.md`](../CONTRIBUTING.md) - Contribution guide
-- [`00-quick-start/build-and-test.md`](00-quick-start/build-and-test.md) - Build instructions
+- [`CONTRIBUTING.md`](../../CONTRIBUTING.md) - Contribution guide
+- [`00-quick-start/build-and-test.md`](build-and-test.md) - Build instructions
 
 ---
 

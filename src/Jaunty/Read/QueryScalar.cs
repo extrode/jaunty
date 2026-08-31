@@ -47,7 +47,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryScalarCore<T>(connection, sql, null, default);
     }
@@ -92,10 +92,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryScalarCore<T>(connection, sql, parameters, default);
     }
@@ -123,12 +127,12 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// var count = connection.QueryScalar&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products",
-    ///     CommandOptions.WithTransaction(tx));
-    /// 
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
+    ///
     /// // Get count with timeout
     /// var count = connection.QueryScalar&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products",
-    ///     CommandOptions.WithTimeout(30));
+    ///     CommandOptions&lt;long&gt;.WithTimeout(30));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
@@ -137,10 +141,12 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryScalarCore(connection, sql, null, options);
     }
@@ -170,7 +176,7 @@ public static partial class Jaunty
     /// var count = connection.QueryScalar&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="ArgumentException">
@@ -182,10 +188,14 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryScalarCore(connection, sql, parameters, options);
     }

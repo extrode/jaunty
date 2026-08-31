@@ -39,6 +39,8 @@ public class Product : IEntity<int>, IMapped<Product>
     [Column("discontinued")]
     public bool Discontinued { get; set; }
 
+    // IMapped<T>.ReadEntity is a static abstract interface member on net8.0+ and an instance
+    // method on net472, which does not support static abstract members.
 #if NET8_0_OR_GREATER
     public static Product ReadEntity(IDataReader reader)
 #else

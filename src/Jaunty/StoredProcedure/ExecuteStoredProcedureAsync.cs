@@ -3,6 +3,7 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Configuration;
+using Jaunty.Interceptors;
 using Jaunty.Internals.Read;
 using Jaunty.StoredProcedure;
 
@@ -61,12 +62,12 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
-    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
-            var results = new List<T>(16);
+            var results = new List<T>(spOptions.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
             while (await ReadAsync(reader, ct).ConfigureAwait(false))
             {
@@ -118,9 +119,9 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
-    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
             if (!await ReadAsync(reader, ct).ConfigureAwait(false))
@@ -172,9 +173,9 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
-    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParametersAsync<T?>(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
             if (!await ReadAsync(reader, ct).ConfigureAwait(false))
@@ -219,8 +220,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <seealso cref="SpParameters"/>
-    /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string, SpParameters, CommandOptions)"/>
-    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
+    /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
+    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteScalarWithOutputParametersAsync<T>(connection, procedureName, parameters, spOptions, cancellationToken);
@@ -263,7 +264,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureNonQuery(IDbConnection, string, SpParameters, CommandOptions)"/>
-    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
+    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteNonQueryWithOutputParametersAsync(connection, procedureName, parameters, spOptions, cancellationToken);
@@ -271,281 +272,261 @@ public static partial class Jaunty
 
     #region Core async execution with output parameters
 
-    private static async ValueTask<TResult> ExecuteWithOutputParametersAsync<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+    // Internal (not private) so tests can pass a custom handler that cancels the operation's
+    // CancellationToken right before returning a successful result, exercising the reader-close
+    // cleanup below (which runs after the handler, not inside a finally block) with an
+    // already-canceled token. Not reachable via the public API, whose handlers are fixed internal
+    // lambdas.
+    internal static ValueTask<TResult> ExecuteWithOutputParametersAsync<TResult>(IDbConnection connection, string procedureName, SpParameters? parameters,
         CommandOptions options, Func<IDataReader, SpParameters, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
-        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        // A null literal binds to this overload over the object?-parameter overload (SpParameters
+        // is a more specific reference type), so treat null the same as "no parameters" instead of
+        // throwing - matches the zero-parameter convenience overload's behavior.
+        SpParameters spParameters = parameters ?? new SpParameters();
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        var dbConnection = connection as DbConnection;
+        // AUD-R25: these SpParameters overloads built and ran their commands by hand and invoked
+        // neither the interceptor pipeline nor JauntyConfig.Logger, while the identically-named
+        // object?-parameters overloads delegate to QueryAsync/QueryFirstAsync/QueryScalarAsync/
+        // ExecuteNonQueryCoreAsync and therefore do both. Same method name, same public surface,
+        // opposite observability - and it silently excluded precisely the stored-procedure calls
+        // that use output and return parameters, typically the ones an audit trail most needs.
+        // Whether anything is actually observing is the pipeline's own decision (IsObserved covers
+        // interceptors and the DiagnosticListener alike), so the only test here is whether a
+        // pipeline is configured at all.
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken)
+            : pipeline.ExecuteWithInterceptionAsync(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken),
+                cancellationToken);
+    }
+
+    private static async ValueTask<TResult> ExecuteWithOutputParametersCoreAsync<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+        CommandOptions options, Func<IDataReader, SpParameters, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
+    {
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
-            if (dbConnection is not null)
-            {
-                if (wasClosed)
-                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed)
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-                DbCommand command = dbConnection.CreateCommand();
-                await using var commandDisposer = command.ConfigureAwait(false);
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
-                using DbCommand command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = procedureName;
+            command.CommandType = CommandType.StoredProcedure;
 
-                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
 
-                BindSpParameters(command, parameters);
+            BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
 #if NET8_0_OR_GREATER
-                DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-                await using var readerDisposer = reader.ConfigureAwait(false);
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
 #else
-                using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
-                TResult result = await handler(reader, parameters, cancellationToken).ConfigureAwait(false);
+            TResult result = await handler(reader, parameters, cancellationToken).ConfigureAwait(false);
 
-                // Close reader before reading output parameters
+            // Close reader before reading output parameters
 #if NET8_0_OR_GREATER
-                await reader.CloseAsync().ConfigureAwait(false);
+            await reader.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => reader.Close(), cancellationToken).ConfigureAwait(false);
+            await Task.Run(() => reader.Close()).ConfigureAwait(false);
 #endif
 
-                // Read output parameter values
-                ReadOutputParameters(parameters);
+            // Read output parameter values
+            ReadOutputParameters(parameters);
 
-                return result;
-            }
-            else
-            {
-                // Fallback for non-DbConnection
-                if (wasClosed)
-                    connection.Open();
-
-                using IDbCommand command = connection.CreateCommand();
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
-
-                if (options.Transaction is not null)
-                    command.Transaction = options.Transaction;
-
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                BindSpParameters(command, parameters);
-
-                using IDataReader reader = command.ExecuteReader();
-                TResult result = await handler(reader, parameters, cancellationToken).ConfigureAwait(false);
-
-                reader.Close();
-                ReadOutputParameters(parameters);
-
-                return result;
-            }
+            return result;
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (dbConnection is not null)
-                    await dbConnection.CloseAsync().ConfigureAwait(false);
-                else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
     }
 
-    private static async ValueTask<T> ExecuteScalarWithOutputParametersAsync<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
+    private static ValueTask<T> ExecuteScalarWithOutputParametersAsync<T>(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
-        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        SpParameters spParameters = parameters ?? new SpParameters();
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        var dbConnection = connection as DbConnection;
+        // See ExecuteWithOutputParametersAsync for why this wrapper exists (AUD-R25).
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken)
+            : pipeline.ExecuteWithInterceptionAsync(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken),
+                cancellationToken);
+    }
+
+    private static async ValueTask<T> ExecuteScalarWithOutputParametersCoreAsync<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
+    {
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
-            if (dbConnection is not null)
-            {
-                if (wasClosed)
-                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed)
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-                DbCommand command = dbConnection.CreateCommand();
-                await using var commandDisposer = command.ConfigureAwait(false);
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
-                using DbCommand command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = procedureName;
+            command.CommandType = CommandType.StoredProcedure;
 
-                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
 
-                BindSpParameters(command, parameters);
+            BindSpParameters(command, parameters);
 
-                object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-                ReadOutputParameters(parameters);
+            object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
-                return result is null || result == DBNull.Value
-                    ? default(T) is null
-                        ? default!
-                        : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
-                    : (T)Convert.ChangeType(result, typeof(T));
-            }
-            else
-            {
-                // Fallback for non-DbConnection
-                if (wasClosed)
-                    connection.Open();
+            ReadOutputParameters(parameters);
 
-                using IDbCommand command = connection.CreateCommand();
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
-
-                if (options.Transaction is not null)
-                    command.Transaction = options.Transaction;
-
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                BindSpParameters(command, parameters);
-
-                object? result = command.ExecuteScalar();
-
-                ReadOutputParameters(parameters);
-
-                return result is null || result == DBNull.Value
-                    ? default(T) is null
-                        ? default!
-                        : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
-                    : (T)Convert.ChangeType(result, typeof(T));
-            }
+            // Matches QueryScalarCoreAsync's null-handling (src/Jaunty/Internals/Read/QueryCoreAsync.cs)
+            // so the SpParameters and object-parameters overloads of ExecuteStoredProcedureScalarAsync<T>
+            // behave identically for a NULL/no-row scalar result instead of one throwing and the
+            // other silently returning default(T).
+            return result is null || result == DBNull.Value
+                ? default!
+                : ScalarConverter<T>.Convert(result);
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (dbConnection is not null)
-                    await dbConnection.CloseAsync().ConfigureAwait(false);
-                else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
     }
 
-    private static async ValueTask<int> ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
+    private static ValueTask<int> ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
-        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        SpParameters spParameters = parameters ?? new SpParameters();
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        var dbConnection = connection as DbConnection;
+        // See ExecuteWithOutputParametersAsync for why this wrapper exists (AUD-R25).
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken)
+            : pipeline.ExecuteWithInterceptionAsync(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken),
+                cancellationToken);
+    }
+
+    private static async ValueTask<int> ExecuteNonQueryWithOutputParametersCoreAsync(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
+    {
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
-            if (dbConnection is not null)
-            {
-                if (wasClosed)
-                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed)
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-                DbCommand command = dbConnection.CreateCommand();
-                await using var commandDisposer = command.ConfigureAwait(false);
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
-                using DbCommand command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = procedureName;
+            command.CommandType = CommandType.StoredProcedure;
 
-                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
 
-                BindSpParameters(command, parameters);
+            BindSpParameters(command, parameters);
 
-                int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-                ReadOutputParameters(parameters);
+            int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
-                return rowsAffected;
-            }
-            else
-            {
-                // Fallback for non-DbConnection
-                if (wasClosed)
-                    connection.Open();
+            ReadOutputParameters(parameters);
 
-                using IDbCommand command = connection.CreateCommand();
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
-
-                if (options.Transaction is not null)
-                    command.Transaction = options.Transaction;
-
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                BindSpParameters(command, parameters);
-
-                int rowsAffected = command.ExecuteNonQuery();
-
-                ReadOutputParameters(parameters);
-
-                return rowsAffected;
-            }
+            return rowsAffected;
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (dbConnection is not null)
-                    await dbConnection.CloseAsync().ConfigureAwait(false);
-                else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }

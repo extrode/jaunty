@@ -1,4 +1,5 @@
-using System.Data;
+﻿using System.Data;
+using System.Data.Common;
 
 namespace Jaunty.Interceptors;
 
@@ -40,8 +41,19 @@ public sealed class CommandContext
     /// Gets the parameters bound to the command, or null if none.
     /// </summary>
     /// <remarks>
-    /// The actual parameter values are not exposed for security reasons.
-    /// For parameter names, inspect the Parameters object directly (e.g., cast to IDictionary).
+    /// <para>
+    /// This is the caller's parameters instance, stored verbatim - an anonymous type, a
+    /// <see cref="System.Collections.IDictionary"/>, or whatever else was passed to the query. It
+    /// therefore exposes parameter <strong>values</strong> as well as names, and nothing is
+    /// redacted on the way in.
+    /// </para>
+    /// <para>
+    /// <strong>Interceptors that log or forward this object are responsible for their own
+    /// redaction.</strong> Jaunty's built-in <c>LoggingInterceptor</c> masks values whose parameter
+    /// name matches <c>LoggingConfiguration.SensitiveParameterNames</c>, but that masking is opt-in
+    /// and applies only to that interceptor - it does not protect a custom one that reads this
+    /// property directly.
+    /// </para>
     /// </remarks>
     public object? Parameters { get; }
 
@@ -73,20 +85,116 @@ public sealed class CommandContext
     public Exception? Exception { get; }
 
     /// <summary>
-    /// Gets the database provider name (e.g., "System.Data.SqlClient", "Npgsql").
+    /// Gets the connection type's name (for example <c>"SqlConnection"</c>, <c>"NpgsqlConnection"</c>,
+    /// <c>"SqliteConnection"</c>).
     /// </summary>
+    /// <remarks>
+    /// AUD-R35-166. This used to be documented with the examples <c>"System.Data.SqlClient"</c> and
+    /// <c>"Npgsql"</c> - ADO.NET <em>invariant provider names</em>, which is not what it returns and
+    /// never was. An interceptor or telemetry consumer written against the documented values matched
+    /// nothing. The implementation is the intended behaviour, pinned by
+    /// <c>JauntyDiagnosticListenerTests</c>; the documentation was the wrong half.
+    /// </remarks>
     public string ProviderName => Connection.GetType().Name;
 
     /// <summary>
-    /// Gets the database name if available, or "(unknown)" if not.
-    /// </summary>
-    public string DatabaseName => Connection.Database ?? "(unknown)";
-
-    /// <summary>
-    /// Gets the connection string (without sensitive data if provider supports it).
+    /// Gets the database name if available, or <c>"(unknown)"</c> if not.
     /// </summary>
     /// <remarks>
-    /// Some providers may return a sanitized connection string.
+    /// AUD-R35-167. Two defects, one shape. The provider's <c>Database</c> getter was read with no
+    /// guard at all, so a disposed or partially initialised connection - the shape the repo's own
+    /// <c>ThrowingDbConnection</c> helper models - made this property throw from inside an
+    /// interceptor's failure-logging path, replacing a logged failure with a second, unrelated
+    /// exception. And the <c>?? "(unknown)"</c> caught only null, so a provider returning
+    /// <c>""</c> for a closed connection yielded an empty string rather than the documented text.
     /// </remarks>
-    public string ConnectionString => Connection.ConnectionString ?? "(unknown)";
+    public string DatabaseName
+    {
+        get
+        {
+            try
+            {
+                string? database = Connection.Database;
+
+                return string.IsNullOrEmpty(database) ? "(unknown)" : database!;
+            }
+            catch (Exception)
+            {
+                return "(unknown)";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the connection string with sensitive values (such as passwords) redacted.
+    /// </summary>
+    /// <remarks>
+    /// The underlying provider's connection string is parsed with <see cref="DbConnectionStringBuilder"/>
+    /// and any key whose name case-insensitively contains a sensitive fragment (password, pwd, secret,
+    /// token, apikey, passfile) is removed before the string is rebuilt. This sanitization is performed
+    /// unconditionally; it does not rely on the provider itself withholding sensitive data.
+    /// If the connection string cannot be parsed, "(unknown)" is returned instead of the raw value.
+    /// </remarks>
+    /// <remarks>
+    /// AUD-R35-167. <see cref="SanitizeConnectionString"/>'s <c>catch (ArgumentException)</c> covers
+    /// only the parse; the <c>Connection.ConnectionString</c> access that produces its argument is
+    /// evaluated first and was outside every guard, so a provider whose getter throws took the whole
+    /// property down. Reading it is now inside the same try as everything else.
+    /// </remarks>
+    public string ConnectionString
+    {
+        get
+        {
+            string? connectionString;
+
+            try
+            {
+                connectionString = Connection.ConnectionString;
+            }
+            catch (Exception)
+            {
+                return "(unknown)";
+            }
+
+            return SanitizeConnectionString(connectionString);
+        }
+    }
+
+    // R28: an exact-match list ("Password", "Pwd", "User Password") let every other
+    // credential-bearing key through - "Access Token", "Client Secret", "ApiKey", Npgsql's
+    // "Passfile"/"SSL Password", any custom provider's "Token". Redaction now matches key-name
+    // fragments over the parsed keys, so over-redaction of an unusual key beats leaking one.
+    private static readonly string[] SensitiveKeyFragments = { "password", "pwd", "secret", "token", "apikey", "api key", "passfile" };
+
+    private static string SanitizeConnectionString(string? connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString))
+            return "(unknown)";
+
+        try
+        {
+            var builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
+
+            var keys = new string[builder.Keys.Count];
+            builder.Keys.CopyTo(keys, 0);
+
+            foreach (var key in keys)
+            {
+                foreach (var fragment in SensitiveKeyFragments)
+                {
+                    if (key.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        builder.Remove(key);
+                        break;
+                    }
+                }
+            }
+
+            return builder.ConnectionString ?? "(unknown)";
+        }
+        catch (ArgumentException)
+        {
+            return "(unknown)";
+        }
+    }
 }

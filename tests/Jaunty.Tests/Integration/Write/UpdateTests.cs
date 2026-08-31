@@ -139,7 +139,6 @@ public class UpdateTests : IClassFixture<DialectFixture>
         Assert.Throws<ArgumentNullException>(() => ctx.Connection.Update(nullEntity));
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -165,5 +164,4 @@ public class UpdateTests : IClassFixture<DialectFixture>
             new { Id = id });
         Assert.Equal("UpdatedWithCancellationToken", result.Name);
     }
-#endif
 }

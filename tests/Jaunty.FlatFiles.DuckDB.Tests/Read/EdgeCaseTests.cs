@@ -131,6 +131,46 @@ public class EdgeCaseTests
     }
 
     [Fact]
+    public async Task SchemaValidation_MissingColumn_AsyncRegistration_ThrowsDescriptiveError()
+    {
+        // Regression test for AUD-R9: RegisterSourceAsync's schema-validation call chain was
+        // rewritten to use ExecuteReaderAsync/ReadAsync throughout instead of blocking on the
+        // sync ValidateSchema/GenerateViewSqlWithDateTimeCasts helpers. This exercises that async
+        // path directly and asserts it still produces the same descriptive error.
+        var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
+        var source = new CsvFileSource("mismatch_test_async", csvPath, typeof(MismatchEntity));
+
+        var options = new FlatFileOptions { ValidateSchema = true };
+        using var db = new DuckDb(options);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await db.RegisterSourceAsync(source));
+
+        Assert.Contains("NonExistentColumn", ex.Message);
+        Assert.Contains("does not exist", ex.Message);
+    }
+
+    [Fact]
+    public async Task RegisterSourceAsync_EntityWithDateTimeColumn_CastsCorrectlyViaAsyncPath()
+    {
+        // Regression test for AUD-R9: RegisterSourceAsync's GenerateViewSqlWithDateTimeCastsAsync
+        // (used when the entity has a DateTime-mapped column) was rewritten to use
+        // ExecuteReaderAsync instead of blocking on the sync ExecuteReader. SalesRecord.Date is a
+        // DateTime column, so registering it here exercises that async cast-generation path.
+        var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
+        // "sales" matches SalesRecord's [Table("sales")] attribute so From<SalesRecord>() resolves it.
+        var source = new CsvFileSource("sales", csvPath, typeof(SalesRecord));
+
+        using var db = new DuckDb();
+        await db.RegisterSourceAsync(source);
+
+        var results = db.Connection.From<SalesRecord>().Select();
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.NotEqual(default, r.Date));
+    }
+
+    [Fact]
     public void SchemaValidation_Disabled_DoesNotThrow()
     {
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");

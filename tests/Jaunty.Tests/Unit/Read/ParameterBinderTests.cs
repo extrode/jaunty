@@ -1,9 +1,23 @@
 using System.Data;
 
+using Jaunty.Attributes;
+using Jaunty.Dialects;
+using Jaunty.Configuration;
+using Jaunty.Internals;
 using Jaunty.Internals.Parameters;
+using Jaunty.TypeHandlers;
 
-namespace Jaunty.Tests;
+namespace Jaunty.Tests.Unit.Read;
 
+/// <remarks>
+/// Shares the "Type Handler Operations" collection with
+/// <see cref="Jaunty.Tests.Unit.TypeHandlers.EnumStorageTests"/>,
+/// <see cref="Jaunty.Tests.Unit.TypeHandlers.TypeHandlerRegistryTests"/>, and
+/// <see cref="Jaunty.Tests.Integration.TypeHandlers.TypeHandlerRoundTripTests"/> —
+/// <see cref="Bind_WhenTypeHandlerThrows_PropagatesAsInvalidOperationException"/> mutates the same
+/// process-wide type-handler registry static state and must run serialized against them.
+/// </remarks>
+[Collection("Type Handler Operations")]
 public class ParameterBinderTests
 {
     #region Basic Binding
@@ -214,8 +228,12 @@ public class ParameterBinderTests
     }
 
     [Fact]
-    public void Bind_EnumParameter_BindsAsUnderlyingType()
+    public void Bind_EnumParameter_WithDefaultNumericStorage_BindsUnconverted()
     {
+        // The default (EnumStorage.Numeric) path does NOT convert the value to its underlying
+        // numeric type at bind time - it binds the enum value unchanged and leaves any numeric
+        // conversion to the ADO.NET provider. (Contrast with EnumStorageTests.cs, which covers
+        // the String storage mode.)
         var command = new MockDbCommand("SELECT * FROM users WHERE status = @Status");
 
         ParameterBinder.Bind(command, new { Status = TestEnum.Active });
@@ -355,7 +373,8 @@ public class ParameterBinderTests
         var command = new MockDbCommand("SELECT * FROM users");
 
         // This shouldn't throw - 0 params in SQL, 0 values provided
-        // Note: Can't create truly empty anonymous object, so this tests the SQL side
+        ParameterBinder.Bind(command, new { });
+
         Assert.Equal(0, command.Parameters.Count);
     }
 
@@ -524,6 +543,76 @@ public class ParameterBinderTests
         Assert.Contains("(SELECT NULL WHERE 1 = 0)", command.CommandText);
     }
 
+    /// <summary>
+    /// R27 batch 4: MySQL/MariaDB reject a FROM-less WHERE (ER_NO_TABLES_USED), so the
+    /// no-match sentinel for that dialect selects over DUAL.
+    /// </summary>
+    [Fact]
+    public void Bind_EmptyArray_MySqlDialect_UsesDualSubquery()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids")
+        {
+            Connection = new MySqlConnection(),
+        };
+
+        ParameterBinder.Bind(command, new { Ids = Array.Empty<int>() });
+
+        Assert.Empty(command.Parameters);
+        Assert.Contains("(SELECT NULL FROM DUAL WHERE 1 = 0)", command.CommandText);
+    }
+
+    /// <summary>
+    /// With native bulk copy enabled, resolution returns the MySqlDialectWithBulkCopy wrapper,
+    /// not a MySqlDialect subtype - the sentinel check must unwrap before type-testing. The
+    /// registration uses a name nothing else resolves, so it is safe to leave in place.
+    /// </summary>
+    [Fact]
+    public void Bind_EmptyArray_WrappedMySqlDialect_UsesDualSubquery()
+    {
+        SqlDialectFactory.RegisterDialect("R27WrappedMySqlConnection",
+            new global::Jaunty.Extensions.Reflection.Dialects.MySqlDialectWithBulkCopy());
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids")
+        {
+            Connection = new R27WrappedMySqlConnection(),
+        };
+
+        ParameterBinder.Bind(command, new { Ids = Array.Empty<int>() });
+
+        Assert.Contains("(SELECT NULL FROM DUAL WHERE 1 = 0)", command.CommandText);
+    }
+
+    private sealed class R27WrappedMySqlConnection : IDbConnection
+    {
+        public string ConnectionString { get; set; } = "";
+        public int ConnectionTimeout => 0;
+        public string Database => "";
+        public ConnectionState State => ConnectionState.Closed;
+
+        public IDbTransaction BeginTransaction() => throw new NotSupportedException();
+        public IDbTransaction BeginTransaction(IsolationLevel il) => throw new NotSupportedException();
+        public void ChangeDatabase(string databaseName) { }
+        public void Close() { }
+        public IDbCommand CreateCommand() => throw new NotSupportedException();
+        public void Dispose() { }
+        public void Open() { }
+    }
+
+    // Named so SqlDialectFactory's type-name resolution picks MySqlDialect.
+    private sealed class MySqlConnection : IDbConnection
+    {
+        public string ConnectionString { get; set; } = "";
+        public int ConnectionTimeout => 0;
+        public string Database => "";
+        public ConnectionState State => ConnectionState.Open;
+        public IDbTransaction BeginTransaction() => throw new NotSupportedException();
+        public IDbTransaction BeginTransaction(IsolationLevel il) => throw new NotSupportedException();
+        public void ChangeDatabase(string databaseName) { }
+        public void Close() { }
+        public IDbCommand CreateCommand() => throw new NotSupportedException();
+        public void Dispose() { }
+        public void Open() { }
+    }
+
     [Fact]
     public void Bind_SingleItemArray_ExpandsToSingleParam()
     {
@@ -552,6 +641,56 @@ public class ParameterBinderTests
         Assert.Contains("(@Ids0, @Ids1, @Ids2)", command.CommandText);
     }
 
+    // R16: the parameter-limit guard checked only the expanded collection's own count against
+    // dialect.MaxParametersPerStatement, ignoring non-collection scalar parameters in the same
+    // statement - so a collection that fit on its own could still push the statement's true total
+    // past the provider's limit, which is exactly the opaque driver-level failure the guard exists
+    // to turn into a clear, fail-fast exception. The connection only needs to be an object whose
+    // Type.Name SqlDialectFactory recognizes ("SQLiteConnection"); it is never opened.
+    //
+    // AUD-R26: the sizes are derived from the dialect rather than hardcoded. They used to be 998
+    // items and a literal "999", which pinned the ceiling as much as the behaviour under test and
+    // had to be edited when the SQLite ceiling was corrected to its measured value of 32,766. The
+    // property this test is about - scalars count toward the total - is independent of the number.
+    [Fact]
+    public void Bind_CollectionPlusScalarParamsExceedingLimit_ThrowsInvalidOperationException()
+    {
+        int ceiling = new global::Jaunty.Dialects.SQLiteDialect().MaxParametersPerStatement;
+
+        var command = new MockDbCommand("SELECT * FROM items WHERE a = @A AND b = @B AND id IN @Ids")
+        {
+            Connection = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
+        };
+
+        // One short of the ceiling on its own, so only counting the two scalars as well takes the
+        // statement over it.
+        var ids = Enumerable.Range(1, ceiling - 1).ToArray();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            ParameterBinder.Bind(command, new { A = 1, B = 2, Ids = ids }));
+
+        Assert.Contains($"{ceiling + 1} parameters", ex.Message);
+        Assert.Contains(ceiling.ToString(System.Globalization.CultureInfo.InvariantCulture), ex.Message);
+    }
+
+    // The other side of the same guard: a collection that is exactly at the ceiling, with nothing
+    // else in the statement, must bind rather than throw. Without this, the test above passes just
+    // as well against a guard that rejects everything.
+    [Fact]
+    public void Bind_CollectionExactlyAtLimit_DoesNotThrow()
+    {
+        int ceiling = new global::Jaunty.Dialects.SQLiteDialect().MaxParametersPerStatement;
+
+        var command = new MockDbCommand("SELECT * FROM items WHERE id IN @Ids")
+        {
+            Connection = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
+        };
+
+        ParameterBinder.Bind(command, new { Ids = Enumerable.Range(1, ceiling).ToArray() });
+
+        Assert.Equal(ceiling, command.Parameters.Count);
+    }
+
     [Fact]
     public void Bind_MultipleCollections_ExpandsBoth()
     {
@@ -564,6 +703,19 @@ public class ParameterBinderTests
         Assert.Equal(5, command.Parameters.Count);
         Assert.Contains("(@Ids0, @Ids1)", command.CommandText);
         Assert.Contains("(@Categories0, @Categories1, @Categories2)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_CollectionWithExtraUnusedProperty_ThrowsArgumentException()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = new[] { 1, 2, 3 };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            ParameterBinder.Bind(command, new { Ids = ids, TypoName = "x" }));
+
+        Assert.Contains("Unused parameter properties", ex.Message);
+        Assert.Contains("TypoName", ex.Message);
     }
 
     [Fact]
@@ -860,6 +1012,291 @@ public class ParameterBinderTests
         Assert.Equal(true, command.Parameters[0].Value);
     }
 
+    // Guard stays: DateOnly/TimeOnly are .NET 6+ types that do not exist on net472 at all.
+#if NET8_0_OR_GREATER
+    // DateOnly/TimeOnly were missing from IsScalarType, so a bare DateOnly/TimeOnly argument
+    // fell through to reflection-based object binding instead of BindScalar - DateOnly/TimeOnly
+    // expose public properties (Year, Month, Day, ... / Hour, Minute, ...) that would then be
+    // matched against the SQL's parameter names instead of being bound as a single scalar value.
+    [Fact]
+    public void Bind_ScalarDateOnly_BindsToSqlParameter()
+    {
+        var date = new DateOnly(2026, 7, 20);
+        var command = new MockDbCommand("SELECT * FROM orders WHERE order_date = @date");
+
+        ParameterBinder.Bind(command, date);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("date", command.Parameters[0].ParameterName);
+        Assert.Equal(date, command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ScalarTimeOnly_BindsToSqlParameter()
+    {
+        var time = new TimeOnly(13, 45, 0);
+        var command = new MockDbCommand("SELECT * FROM shifts WHERE start_time = @time");
+
+        ParameterBinder.Bind(command, time);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("time", command.Parameters[0].ParameterName);
+        Assert.Equal(time, command.Parameters[0].Value);
+    }
+#endif
+
+    #endregion
+
+    #region Audit Regression Tests
+
+    // Finding 1: a first call whose collection property is null must not cache a scalar-binding
+    // template that permanently defeats IN-clause expansion on later populated calls.
+    [Fact]
+    public void Bind_NullCollectionThenPopulated_StillExpandsInClause()
+    {
+        const string sql = "SELECT * FROM products WHERE id IN @Ids";
+
+        var first = new MockDbCommand(sql);
+        ParameterBinder.Bind(first, new { Ids = (int[]?)null });
+
+        var second = new MockDbCommand(sql);
+        ParameterBinder.Bind(second, new { Ids = new[] { 10, 20 } });
+
+        Assert.Equal(2, second.Parameters.Count);
+        Assert.Contains("(@Ids0, @Ids1)", second.CommandText);
+        Assert.Equal(10, second.Parameters[0].Value);
+        Assert.Equal(20, second.Parameters[1].Value);
+    }
+
+    // Finding 4: an @Name-looking token inside a string literal must not be expanded.
+    [Fact]
+    public void Bind_CollectionNameInsideStringLiteral_LiteralIsNotExpanded()
+    {
+        var command = new MockDbCommand("SELECT * FROM t WHERE note = 'match @Ids here' AND id IN @Ids");
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 1, 2 } });
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Contains("'match @Ids here'", command.CommandText);
+        Assert.Contains("id IN (@Ids0, @Ids1)", command.CommandText);
+    }
+
+    // Finding 4: an @Name-looking token inside a comment must not be expanded.
+    [Fact]
+    public void Bind_CollectionNameInsideComment_CommentIsNotExpanded()
+    {
+        var command = new MockDbCommand("SELECT * FROM t /* filter @Ids */ WHERE id IN @Ids");
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 7, 8 } });
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Contains("/* filter @Ids */", command.CommandText);
+        Assert.Contains("WHERE id IN (@Ids0, @Ids1)", command.CommandText);
+    }
+
+    // Finding 5: a one-shot/forward-only sequence must be enumerated exactly once.
+    [Fact]
+    public void Bind_OneShotEnumerable_IsEnumeratedExactlyOnce()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = new SingleUseEnumerable<int>(YieldOneToThree());
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Contains("(@Ids0, @Ids1, @Ids2)", command.CommandText);
+        Assert.Equal(1, command.Parameters[0].Value);
+        Assert.Equal(3, command.Parameters[2].Value);
+    }
+
+    // Finding 6: a lone scalar cannot unambiguously fill two distinct parameters.
+    [Fact]
+    public void Bind_ScalarValue_WithMultipleDistinctParameters_Throws()
+    {
+        var command = new MockDbCommand("SELECT * FROM t WHERE a = @A AND b = @B");
+
+        Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, 42));
+    }
+
+    // Finding 6: a scalar against SQL that repeats a single parameter name still binds once.
+    [Fact]
+    public void Bind_ScalarValue_WithRepeatedSingleParameter_BindsOnce()
+    {
+        var command = new MockDbCommand("SELECT * FROM t WHERE a = @A OR @A IS NULL");
+
+        ParameterBinder.Bind(command, 5);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("A", command.Parameters[0].ParameterName);
+        Assert.Equal(5, command.Parameters[0].Value);
+    }
+
+    // R16 batch-3: BindScalar used to silently drop the value when the SQL contained zero
+    // parameter placeholders, diverging from the object path (BuildTemplate) and dictionary path
+    // (BindFromDictionary), which both throw on an unused/unmatched value.
+    [Fact]
+    public void Bind_ScalarValue_WithNoParameterPlaceholders_Throws()
+    {
+        var command = new MockDbCommand("SELECT * FROM t");
+
+        Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, 42));
+    }
+
+    // R23 batch-3: a scalar passed to a stored-procedure/table-direct command used to fall
+    // through to BindAllFromObject, which finds zero properties on a scalar type and silently
+    // binds nothing - the procedure would execute with the value dropped instead of failing.
+    [Fact]
+    public void Bind_ScalarValue_ToStoredProcedureCommand_Throws()
+    {
+        var command = new MockDbCommand("GetProductById") { CommandType = CommandType.StoredProcedure };
+
+        var ex = Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, 5));
+        Assert.Empty(command.Parameters);
+        Assert.Contains("stored procedure", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Finding 3: a throwing type handler must surface, not silently bind unconverted data.
+    [Fact]
+    public void Bind_WhenTypeHandlerThrows_PropagatesAsInvalidOperationException()
+    {
+        JauntyConfig.RegisterTypeHandler(new ThrowingBoxHandler());
+        try
+        {
+            var command = new MockDbCommand("SELECT * FROM t WHERE v = @Box");
+
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                ParameterBinder.Bind(command, new { Box = new ThrowingBox() }));
+            Assert.IsType<FormatException>(ex.InnerException);
+        }
+        finally
+        {
+            JauntyConfig.RemoveTypeHandler<ThrowingBox>();
+        }
+    }
+
+    // Finding 7: the bounded cache evicts the oldest-added entry once its cap is exceeded.
+    [Fact]
+    public void BoundedCache_WhenMaxExceeded_EvictsOldestAddedEntry()
+    {
+        var cache = new BoundedCache<string, string>(maxEntries: 3);
+        cache.TryAdd("a", "1");
+        cache.TryAdd("b", "2");
+        cache.TryAdd("c", "3");
+        cache.TryAdd("d", "4");
+
+        Assert.True(cache.Count <= 3);
+        Assert.False(cache.TryGetValue("a", out _));
+        Assert.True(cache.TryGetValue("d", out var d));
+        Assert.Equal("4", d);
+    }
+
+    // Finding 7: GetOrAdd caches and does not re-invoke the factory for a hit.
+    [Fact]
+    public void BoundedCache_GetOrAdd_CachesAndDoesNotReinvokeFactory()
+    {
+        var cache = new BoundedCache<string, string>(maxEntries: 8);
+        int calls = 0;
+
+        var first = cache.GetOrAdd("k", key => { calls++; return key + "!"; });
+        var second = cache.GetOrAdd("k", key => { calls++; return key + "!"; });
+
+        Assert.Equal("k!", first);
+        Assert.Equal("k!", second);
+        Assert.Equal(1, calls);
+    }
+
+    // AUD-R6: a dollar-quoted literal preceding a collection parameter must not be mistaken for a
+    // "$"-prefixed placeholder when detecting the real placeholder prefix. Before the fix, the
+    // identifier-shaped "note" text inside "$$note$$" made DetectParameterPrefix return "$" even
+    // though the real, later placeholder uses "@", corrupting expansion entirely.
+    [Fact]
+    public void Bind_DollarQuotedLiteralBeforeAtPrefixedCollectionParameter_ExpandsWithCorrectPrefix()
+    {
+        var command = new MockDbCommand("SELECT $$note$$, id FROM products WHERE id IN @Ids");
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 1, 2, 3 } });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Contains("$$note$$", command.CommandText);
+        Assert.Contains("(@Ids0, @Ids1, @Ids2)", command.CommandText);
+        Assert.Equal(1, command.Parameters[0].Value);
+        Assert.Equal(3, command.Parameters[2].Value);
+    }
+
+    // AUD-R6: a dollar-quoted literal's body must be copied verbatim (not corrupted) when it
+    // appears alongside a genuine "$"-prefixed collection parameter.
+    [Fact]
+    public void Bind_DollarQuotedLiteralBeforeDollarPrefixedCollectionParameter_ExpandsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT $$literal text$$, id FROM products WHERE id IN $Ids");
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 1, 2, 3 } });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Contains("$$literal text$$", command.CommandText);
+        Assert.Contains("($Ids0, $Ids1, $Ids2)", command.CommandText);
+    }
+
+    // AUD-R6: a dictionary key with no matching SQL parameter must fail fast, mirroring
+    // BuildTemplate's strictness for object-based binding (unused property properties throw).
+    [Fact]
+    public void Bind_DictionaryWithUnusedKey_Throws()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @Id");
+        var parameters = new Dictionary<string, object?> { ["Id"] = 1, ["Extra"] = "unused" };
+
+        var ex = Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, parameters));
+        Assert.Contains("Extra", ex.Message);
+    }
+
+    // AUD-R6: every dictionary key matching a SQL parameter binds without throwing.
+    [Fact]
+    public void Bind_DictionaryWithAllKeysUsed_BindsWithoutThrowing()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @Id AND name = @Name");
+        var parameters = new Dictionary<string, object?> { ["Id"] = 1, ["Name"] = "Alice" };
+
+        ParameterBinder.Bind(command, parameters);
+
+        Assert.Equal(2, command.Parameters.Count);
+    }
+
+    // R16: a collection property's [EnumStorage] attribute must still apply to each value produced
+    // by IN-clause expansion. Before the fix, BindDynamic's expanded-parameter branch always passed
+    // propertyInfo: null to ApplyTypeHandlerIfNeeded, so the attribute was silently ignored and
+    // JauntyConfig.DefaultEnumStorage (Numeric) was used instead - binding the enum values
+    // unconverted rather than as their attribute-specified string representation.
+    [Fact]
+    public void Bind_EnumCollectionWithStringStorageAttribute_ExpandedValuesUseAttributeStorage()
+    {
+        var command = new MockDbCommand("SELECT * FROM orders WHERE status IN @Statuses");
+        var entity = new EnumCollectionEntity { Statuses = [TestEnum.Active, TestEnum.Pending] };
+
+        ParameterBinder.Bind(command, entity);
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Equal("Active", command.Parameters[0].Value);
+        Assert.Equal("Pending", command.Parameters[1].Value);
+    }
+
+    // R16: a parameters POCO with an indexer surfaces via reflection as a public instance property
+    // named "Item" with GetIndexParameters().Length > 0. ParameterCache.BuildMetadata used to
+    // enumerate it like any other property, and CreateGetter's Expression.Property(cast, prop)
+    // throws ArgumentException ("Incorrect number of indexes") for it - failing metadata
+    // construction (and therefore every bind for the type, even for its normal properties) with an
+    // unclear exception. Dapper explicitly skips indexed properties; ParameterCache must too.
+    [Fact]
+    public void Bind_ParametersTypeWithIndexer_SkipsIndexerAndBindsNormalProperties()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @Id");
+
+        ParameterBinder.Bind(command, new ParametersWithIndexer { Id = 7 });
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("Id", command.Parameters[0].ParameterName);
+        Assert.Equal(7, command.Parameters[0].Value);
+    }
+
     #endregion
 
     #region Test Helpers
@@ -871,62 +1308,54 @@ public class ParameterBinderTests
         Pending = 2
     }
 
+    private sealed class EnumCollectionEntity
+    {
+        [EnumStorage(EnumStorage.String)]
+        public List<TestEnum> Statuses { get; set; } = [];
+    }
+
+    private sealed class ParametersWithIndexer
+    {
+        public int Id { get; set; }
+
+        public string this[int index] => index.ToString();
+    }
+
+    private static IEnumerable<int> YieldOneToThree()
+    {
+        yield return 1;
+        yield return 2;
+        yield return 3;
+    }
+
+    private sealed class SingleUseEnumerable<T> : IEnumerable<T>
+    {
+        private readonly IEnumerable<T> _inner;
+        private bool _enumerated;
+
+        public SingleUseEnumerable(IEnumerable<T> inner) => _inner = inner;
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            if (_enumerated)
+                throw new InvalidOperationException("This sequence has already been enumerated.");
+            _enumerated = true;
+            return _inner.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    private sealed class ThrowingBox
+    {
+    }
+
+    private sealed class ThrowingBoxHandler : TypeHandler<ThrowingBox>
+    {
+        public override ThrowingBox Parse(object? dbValue) => throw new FormatException("parse boom");
+
+        public override object? ToDbValue(ThrowingBox? value) => throw new FormatException("todb boom");
+    }
+
     #endregion
 }
-
-#region Mock Classes
-
-public class MockDbCommand : IDbCommand
-{
-    public MockDbCommand(string commandText)
-    {
-        CommandText = commandText;
-        Parameters = new MockDataParameterCollection();
-    }
-
-    public string CommandText { get; set; }
-    public int CommandTimeout { get; set; }
-    public CommandType CommandType { get; set; }
-    public IDbConnection? Connection { get; set; }
-    public MockDataParameterCollection Parameters { get; }
-    IDataParameterCollection IDbCommand.Parameters => Parameters;
-    public IDbTransaction? Transaction { get; set; }
-    public UpdateRowSource UpdatedRowSource { get; set; }
-
-    public void Cancel() { }
-    public IDbDataParameter CreateParameter() => new MockDbDataParameter();
-    public void Dispose() { }
-    public int ExecuteNonQuery() => 0;
-    public IDataReader ExecuteReader() => throw new NotImplementedException();
-    public IDataReader ExecuteReader(CommandBehavior behavior) => throw new NotImplementedException();
-    public object? ExecuteScalar() => null;
-    public void Prepare() { }
-}
-
-public class MockDataParameterCollection : List<MockDbDataParameter>, IDataParameterCollection
-{
-    public bool Contains(string parameterName) => this.Any(p => p.ParameterName == parameterName);
-    public int IndexOf(string parameterName) => FindIndex(p => p.ParameterName == parameterName);
-    public void RemoveAt(string parameterName) => RemoveAll(p => p.ParameterName == parameterName);
-    public object this[string parameterName]
-    {
-        get => this.First(p => p.ParameterName == parameterName);
-        set => throw new NotImplementedException();
-    }
-}
-
-public class MockDbDataParameter : IDbDataParameter
-{
-    public DbType DbType { get; set; }
-    public ParameterDirection Direction { get; set; }
-    public bool IsNullable => true;
-    public string ParameterName { get; set; } = "";
-    public byte Precision { get; set; }
-    public byte Scale { get; set; }
-    public int Size { get; set; }
-    public string SourceColumn { get; set; } = "";
-    public DataRowVersion SourceVersion { get; set; }
-    public object? Value { get; set; }
-}
-
-#endregion

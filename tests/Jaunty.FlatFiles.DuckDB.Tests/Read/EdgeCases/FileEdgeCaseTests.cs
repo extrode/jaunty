@@ -111,8 +111,9 @@ public class FileEdgeCaseTests
         }
         catch (Exception ex) when (ex is System.Data.Common.DbException || ex is InvalidOperationException)
         {
-            // DuckDB may reject the file — that's also acceptable behavior
-            Assert.NotNull(ex.Message);
+            // DuckDB may reject the file — that's also acceptable behavior. The exception filter
+            // above (DbException or InvalidOperationException) is the actual assertion: any other
+            // exception type propagates and fails the test instead of being silently accepted.
         }
     }
 
@@ -128,6 +129,28 @@ public class FileEdgeCaseTests
         var ex = Assert.ThrowsAny<Exception>(() => new DuckDb(options));
         Assert.True(ex is System.Data.Common.DbException || ex is IOException,
             $"Expected DbException or IOException, got {ex.GetType().Name}: {ex.Message}");
+    }
+
+    [Fact]
+    public void SourceRegistrationFailure_DoesNotLeakConnection()
+    {
+        // Regression test for AUD-R9: a source registration failure mid-constructor previously
+        // left the already-opened DuckDBConnection undisposed forever, because the constructor
+        // never returns an instance the caller could Dispose. Repeating the failing construction
+        // many times proves the connection is now cleaned up on the failure path instead of
+        // accumulating undisposed native connections/handles across iterations.
+        var fakePath = Path.Combine(DataDir, "csv", "does-not-exist-for-leak-test.csv");
+
+        for (int i = 0; i < 50; i++)
+        {
+            var source = new CsvFileSource($"nonexistent_{i}", fakePath, typeof(MalformedEntity));
+            var options = new FlatFileOptions();
+            options.Sources.Add(source);
+
+            var ex = Assert.ThrowsAny<Exception>(() => new DuckDb(options));
+            Assert.True(ex is System.Data.Common.DbException || ex is IOException,
+                $"Expected DbException or IOException, got {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     [Fact]

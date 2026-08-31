@@ -1,4 +1,7 @@
+using System.Data;
 using System.Linq.Expressions;
+
+using Jaunty.Core;
 
 namespace Jaunty.Fluent;
 
@@ -135,9 +138,40 @@ public interface IWhereClause<T> : IQueryTerminal<T> where T : new()
     int Delete();
 
     /// <summary>
+    /// Deletes rows matching the WHERE conditions, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <returns>Number of rows affected.</returns>
+    int Delete(CommandOptions options);
+
+    /// <summary>
     /// Asynchronously deletes rows matching the WHERE conditions.
     /// </summary>
     Task<int> DeleteAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously deletes rows matching the WHERE conditions, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    Task<int> DeleteAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the DELETE statement that <see cref="Delete()"/> and
+    /// <see cref="DeleteAsync(CancellationToken)"/> would run, without running it.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-214. The inherited <c>IQueryTerminal&lt;T&gt;.ToSql()</c> returns the SELECT this
+    /// chain would run, so on a chain destined for a delete it previewed a different statement
+    /// against the same conditions - and nothing on the interface reached the DELETE at all. This is
+    /// the delete-side counterpart of <c>IUpdateWhereClause&lt;T&gt;.ToSql()</c>, which returns the
+    /// UPDATE. The statement carries the WHERE conditions but no ORDER BY, TOP or LIMIT: see
+    /// <see cref="IPagedClause{T}"/> for why paging cannot be carried into a delete.
+    /// </remarks>
+    /// <returns>The DELETE statement, with parameter placeholders left in place.</returns>
+    string ToDeleteSql();
 
     // ORDER BY - expression-based
     /// <summary>
@@ -170,13 +204,13 @@ public interface IWhereClause<T> : IQueryTerminal<T> where T : new()
     /// Limits the number of rows returned.
     /// </summary>
     /// <param name="count">The maximum number of rows to return.</param>
-    IWhereClause<T> Take(int count);
+    IPagedWhereClause<T> Take(int count);
 
     /// <summary>
     /// Skips the specified number of rows.
     /// </summary>
     /// <param name="count">The number of rows to skip.</param>
-    IWhereClause<T> Skip(int count);
+    IPagedWhereClause<T> Skip(int count);
 
     // GROUP BY
     /// <summary>

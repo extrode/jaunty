@@ -6,11 +6,14 @@ namespace Jaunty;
 internal static class AsyncTransactionValidator
 {
     /// <summary>
-    /// Casts <paramref name="transaction"/> to <see cref="DbTransaction"/> for use on an async execution path.
+    /// Casts <paramref name="transaction"/> to <see cref="DbTransaction"/> for use against a command
+    /// known to be a <see cref="DbCommand"/> - whether reached via an async execution path or a sync
+    /// path operating on a <see cref="DbConnection"/> (e.g. <c>QueryStreamCoreFast</c>, the
+    /// <see cref="DbConnection"/> branch of <c>GetAllCoreDirect</c>).
     /// </summary>
     /// <remarks>
-    /// Async commands are built via <see cref="DbCommand"/>, whose <see cref="DbCommand.Transaction"/> setter
-    /// only accepts <see cref="DbTransaction"/>. If a caller passes an <see cref="IDbTransaction"/> that isn't
+    /// <see cref="DbCommand"/>'s <see cref="DbCommand.Transaction"/> setter only accepts
+    /// <see cref="DbTransaction"/>. If a caller passes an <see cref="IDbTransaction"/> that isn't
     /// a <see cref="DbTransaction"/>, it must not be silently ignored (which would run the command outside the
     /// caller's transaction, or cause bulk operations to start their own separate transaction) - so this throws
     /// instead of returning null for a non-null, incompatible transaction.

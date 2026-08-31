@@ -77,9 +77,18 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     /// Specifies the join condition using a raw SQL condition with a typed parameter.
     /// </summary>
     /// <typeparam name="TValue">The type of the parameter value.</typeparam>
-    /// <param name="condition">The raw SQL join condition with a @value placeholder.</param>
+    /// <param name="condition">
+    /// The raw SQL join condition with a "value" placeholder using the connection's dialect
+    /// parameter prefix (e.g. "@value" for SQL Server/PostgreSQL/MySQL/SQLite, "$value" for
+    /// DuckDB).
+    /// </param>
     /// <param name="value">The parameter value.</param>
     /// <returns>A joined query builder for further operations.</returns>
+    /// <remarks>
+    /// The parameter is always named "value", so only one join in a chain can use this overload.
+    /// For more than one raw-value join condition, use
+    /// <see cref="On{TValue}(string, string, TValue)"/>.
+    /// </remarks>
     /// <example>
     /// <code>
     /// db.From&lt;Product&gt;("p")
@@ -89,4 +98,31 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     /// </code>
     /// </example>
     IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, TValue value);
+
+    /// <summary>
+    /// Specifies the join condition using a raw SQL condition with a named typed parameter.
+    /// Use this instead of <see cref="On{TValue}(string, TValue)"/> when a join chain has more
+    /// than one raw-value condition: that overload always binds to "value", so a second use
+    /// would collide on the same parameter name.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the parameter value.</typeparam>
+    /// <param name="condition">
+    /// The raw SQL join condition referencing <paramref name="parameterName"/> with the
+    /// connection's dialect parameter prefix (e.g. "@orderId", or "$orderId" for DuckDB).
+    /// </param>
+    /// <param name="parameterName">
+    /// The parameter name, either bare ("orderId") or already prefixed ("@orderId"). Must be
+    /// unique across the query's join conditions.
+    /// </param>
+    /// <param name="value">The parameter value.</param>
+    /// <returns>A joined query builder for further operations.</returns>
+    /// <example>
+    /// <code>
+    /// db.From&lt;Product&gt;("p")
+    ///     .InnerJoin&lt;Category&gt;("c")
+    ///     .On&lt;int&gt;("p.category_id = c.id AND p.active = @active", "active", 1)
+    ///     .Select();
+    /// </code>
+    /// </example>
+    IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, string parameterName, TValue value);
 }

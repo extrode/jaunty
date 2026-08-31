@@ -1,8 +1,10 @@
 using System.Data;
+using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -146,6 +148,20 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.UpsertSql))
             throw new InvalidOperationException($"Cannot upsert entity of type '{typeof(T).Name}': No primary key found or no upsertable columns.");
 
+        // AUD-R26: Upsert implemented its execution inline in this file and so was the one
+        // single-entity write that never reached the interceptor pipeline, unlike Insert/Update/
+        // Delete which all route through their *Core.cs equivalents. It is fully buffered, so the
+        // streaming exemption in ICommandInterceptor's remarks does not apply to it.
+        return CommandObservation.Execute(
+            cached.UpsertSql,
+            entity,
+            connection,
+            options.CommandType,
+            () => UpsertCoreDirect(connection, entity, cached, options));
+    }
+
+    private static int UpsertCoreDirect<T>(IDbConnection connection, T entity, CachedCrudSql cached, CommandOptions options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -156,14 +172,25 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.UpsertSql;
 
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             // Bind parameters from entity properties (all non-identity, non-computed columns)
             BindUpsertParameters(command, entity, cached.Metadata);
+
+            CommandObservation.Log(command.CommandText, entity);
 
             return command.ExecuteNonQuery();
         }
@@ -187,7 +214,7 @@ public static partial class Jaunty
 
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = "@" + col.ColumnName;
-            param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+            param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(GetColumnValue(col, entity), col.Property, col.EnumStorageOverride) ?? DBNull.Value;
             command.Parameters.Add(param);
             addedParams.Add(col.ColumnName);
         }
@@ -201,8 +228,11 @@ public static partial class Jaunty
 
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = "@" + col.ColumnName;
-            param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+            param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(GetColumnValue(col, entity), col.Property, col.EnumStorageOverride) ?? DBNull.Value;
             command.Parameters.Add(param);
         }
     }
+
+    private static object? GetColumnValue<T>(ColumnMetadata col, T entity)
+        => col.Getter is { } getter ? getter(entity!) : col.Property!.GetValue(entity);
 }

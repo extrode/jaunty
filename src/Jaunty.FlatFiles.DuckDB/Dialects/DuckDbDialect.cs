@@ -11,7 +11,7 @@ namespace Jaunty.FlatFiles.DuckDB.Dialects;
 /// SQL dialect for DuckDB, implementing both <see cref="ISqlDialect"/> for standard SQL generation
 /// and <see cref="IFlatFileDialect"/> for flat file-specific operations.
 /// </summary>
-public sealed class DuckDbDialect : IFlatFileDialect
+public sealed class DuckDbDialect : IFlatFileDialect, ISubstringToEndDialect
 {
     /// <summary>
     /// Singleton instance of the DuckDB dialect.
@@ -73,13 +73,55 @@ public sealed class DuckDbDialect : IFlatFileDialect
     /// <inheritdoc />
     public string EscapeColumnName(string columnName)
     {
-        // If already escaped (starts and ends with quotes), return as-is to prevent double-escaping.
-        // This is necessary because CachedDialectMetadata pre-escapes column names,
-        // and BuildSelectSql calls EscapeColumnName again on those cached values.
-        if (columnName.Length >= 2 && columnName[0] == '"' && columnName[^1] == '"')
+        // If already escaped, return as-is to prevent double-escaping. This is necessary because
+        // CachedDialectMetadata pre-escapes column names, and BuildSelectSql calls
+        // EscapeColumnName again on those cached values.
+        //
+        // AUD-R35: the test used to be "starts and ends with a double quote", which a
+        // data-controlled name such as `"a" AS x, (SELECT 1) AS "b"` also satisfies - it passed
+        // through unescaped and broke out of the identifier. DuckDb.GenerateViewSqlWithDateTimeCasts
+        // takes column names off the flat file's own header (reader.GetName(i)) and interpolates
+        // them into a CREATE OR REPLACE VIEW that is then executed, so the input is not trusted.
+        // Only a *well-formed* quoted identifier - every interior quote doubled - is passed
+        // through now; anything else is quoted from scratch.
+        if (IsWellFormedQuotedIdentifier(columnName))
             return columnName;
 
         return QuoteIdentifier(columnName);
+    }
+
+    /// <summary>
+    /// Determines whether <paramref name="identifier"/> is already a complete, well-formed
+    /// double-quoted DuckDB identifier: wrapped in double quotes, with every quote in the
+    /// interior doubled so that neither of the outer quotes can be terminated early.
+    /// </summary>
+    private static bool IsWellFormedQuotedIdentifier(string identifier)
+    {
+        if (identifier.Length < 2 || identifier[0] != '"' || identifier[identifier.Length - 1] != '"')
+            return false;
+
+        // Walk the interior only. A lone quote terminates the identifier and whatever follows it
+        // is SQL, not part of the name - that is exactly the break-out this rejects.
+        int end = identifier.Length - 1;
+
+        for (int i = 1; i < end; i++)
+        {
+            if (identifier[i] != '"')
+                continue;
+
+            if (i + 1 >= end || identifier[i + 1] != '"')
+                return false;
+
+            i++;
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public string EscapeStringLiteral(string value)
+    {
+        return value.Replace("'", "''");
     }
 
     /// <inheritdoc />
@@ -101,14 +143,14 @@ public sealed class DuckDbDialect : IFlatFileDialect
     public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar)
     {
         // DuckDB: LIKE is case-sensitive by default (like PostgreSQL)
-        return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"{columnName} LIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     /// <inheritdoc />
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)
     {
         // DuckDB supports ILIKE (like PostgreSQL)
-        return $"{columnName} ILIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"{columnName} ILIKE {parameterName} ESCAPE '{EscapeStringLiteral(escapeChar)}'";
     }
 
     /// <inheritdoc />
@@ -118,13 +160,24 @@ public sealed class DuckDbDialect : IFlatFileDialect
     }
 
     /// <inheritdoc />
-    public string FormatContainsPattern(string value) => $"%{value}%";
+    public string FormatContainsPattern(string value) => $"%{EscapeLikeWildcards(value)}%";
 
     /// <inheritdoc />
-    public string FormatStartsWithPattern(string value) => $"{value}%";
+    public string FormatStartsWithPattern(string value) => $"{EscapeLikeWildcards(value)}%";
 
     /// <inheritdoc />
-    public string FormatEndsWithPattern(string value) => $"%{value}";
+    public string FormatEndsWithPattern(string value) => $"%{EscapeLikeWildcards(value)}";
+
+    /// <inheritdoc />
+    public string FormatBooleanLiteral(bool value) => value ? "TRUE" : "FALSE";
+
+    // GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike declare ESCAPE '\', so literal
+    // occurrences of the escape char and LIKE wildcard chars (%, _) must be escaped in the
+    // value or they change query semantics instead of matching literally.
+    private static string EscapeLikeWildcards(string value) => value
+        .Replace("\\", "\\\\")
+        .Replace("%", "\\%")
+        .Replace("_", "\\_");
 
     /// <inheritdoc />
     public string? GetDisableForeignKeyChecksSql() => null;
@@ -134,6 +187,9 @@ public sealed class DuckDbDialect : IFlatFileDialect
 
     /// <inheritdoc />
     public bool SupportsForeignKeyToggle => false;
+
+    /// <inheritdoc />
+    public bool RequiresAutocommitForForeignKeyToggle => false;
 
     /// <inheritdoc />
     public string GenerateCoalesce(params string[] expressions)
@@ -169,6 +225,15 @@ public sealed class DuckDbDialect : IFlatFileDialect
     /// <inheritdoc />
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression}, {start}, {length})";
 
+    /// <summary>
+    /// DuckDB's two-argument SUBSTRING returns the remainder and needs no sentinel length. Measured:
+    /// against a 10,000-character value <c>SUBSTRING(s, 2, 8000)</c> returns 8,000 characters while
+    /// <c>SUBSTRING(s, 2)</c> returns 9,999. DuckDB also accepts the ANSI <c>FROM</c> form; the
+    /// comma form is used here to match this dialect's three-argument sibling above.
+    /// </summary>
+    public string GenerateSubstringToEnd(string expression, string start)
+        => $"SUBSTRING({expression}, {start})";
+
     /// <inheritdoc />
     public string GenerateYear(string expression) => $"EXTRACT(YEAR FROM {expression})";
 
@@ -194,7 +259,8 @@ public sealed class DuckDbDialect : IFlatFileDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         var sb = new StringBuilder(256);
         sb.Append("INSERT INTO ");
@@ -219,6 +285,14 @@ public sealed class DuckDbDialect : IFlatFileDialect
         {
             if (i > 0) sb.Append(", ");
             sb.Append(keyColumns[i]);
+        }
+
+        // A key-only entity (no non-key updatable columns) has nothing to set on conflict; DO
+        // NOTHING is the standard idiom instead of emitting "DO UPDATE SET " with nothing after it.
+        if (updateColumns.Length == 0)
+        {
+            sb.Append(") DO NOTHING");
+            return sb.ToString();
         }
 
         sb.Append(") DO UPDATE SET ");
@@ -321,10 +395,32 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Formats that DuckDB's <c>COPY ... TO</c> statement natively supports as a write target.
+    /// Table formats such as Delta Lake and Iceberg are read-only via DuckDB's scan functions
+    /// and cannot be used as a COPY TO format.
+    /// </summary>
+    private static readonly HashSet<string> _supportedCopyToFormats = new(StringComparer.OrdinalIgnoreCase)
+    {
+        FileFormats.Csv,
+        FileFormats.Tsv,
+        FileFormats.Parquet,
+        FileFormats.Json,
+        FileFormats.Excel,
+    };
+
     /// <inheritdoc />
     public string GenerateCopyToSql(string tableName, string outputPath, string format)
     {
         ArgumentNullException.ThrowIfNull(format);
+
+        if (!_supportedCopyToFormats.Contains(format))
+        {
+            throw new NotSupportedException(
+                $"Format '{format}' is not supported by DuckDB's COPY TO statement. " +
+                $"Supported formats: {string.Join(", ", _supportedCopyToFormats.OrderBy(f => f))}. " +
+                "Table formats such as Delta Lake and Iceberg are read-only and cannot be written via COPY TO.");
+        }
 
         var escapedPath = outputPath.Replace("'", "''");
 
@@ -336,7 +432,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
             "PARQUET" => "PARQUET",
             "JSON" => "JSON",
             "XLSX" => "XLSX",
-            _ => format.ToUpperInvariant() // Pass through for custom formats
+            _ => format.ToUpperInvariant()
         };
 
         var sb = new StringBuilder();
@@ -357,6 +453,16 @@ public sealed class DuckDbDialect : IFlatFileDialect
     /// <inheritdoc />
     public string GenerateCopyToSql(string tableName, string outputPath, IFileSource source)
     {
+        ArgumentNullException.ThrowIfNull(source);
+
+        if (!_supportedCopyToFormats.Contains(source.DuckDbFormatName))
+        {
+            throw new NotSupportedException(
+                $"Format '{source.DuckDbFormatName}' (source format '{source.Format}') is not supported by DuckDB's COPY TO statement. " +
+                $"Supported formats: {string.Join(", ", _supportedCopyToFormats.OrderBy(f => f))}. " +
+                "Table formats such as Delta Lake and Iceberg are read-only and cannot be written via COPY TO.");
+        }
+
         var escapedPath = outputPath.Replace("'", "''");
 
         var sb = new StringBuilder();

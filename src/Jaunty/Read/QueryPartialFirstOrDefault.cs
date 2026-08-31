@@ -57,7 +57,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryFirstOrDefaultCore<T>(connection, sql, null, default, MappingMode.Projection);
     }
@@ -95,10 +95,12 @@ public static partial class Jaunty
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstOrDefaultCore<T>(connection, sql, parameters, default, MappingMode.Projection);
     }
@@ -127,7 +129,7 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// var product = connection.QueryPartialFirstOrDefault&lt;Product&gt;(
     ///     "SELECT id, name FROM products ORDER BY id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="QueryPartialFirstOrDefault{T}(IDbConnection, string)"/>
@@ -141,7 +143,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryFirstOrDefaultCore<T>(connection, sql, null, options, MappingMode.Projection);
     }
@@ -171,7 +173,7 @@ public static partial class Jaunty
     /// var product = connection.QueryPartialFirstOrDefault&lt;Product&gt;(
     ///     "SELECT id, name FROM products WHERE category_id = @CategoryId ORDER BY id",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="ArgumentException">
@@ -185,10 +187,12 @@ public static partial class Jaunty
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, MappingMode.Projection);
     }

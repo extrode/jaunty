@@ -5,6 +5,7 @@ using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
 using Jaunty.Interceptors;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
@@ -18,19 +19,24 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(handler);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (handler is null) throw new ArgumentNullException(nameof(handler));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
 
         // Use InterceptorPipeline if registered, otherwise execute directly
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
             TResult result = default!;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+            pipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -57,6 +63,8 @@ public static partial class Jaunty
 
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
+
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
                         using IDataReader reader = command.ExecuteReader();
                         result = handler(reader);
@@ -112,19 +120,24 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(handler);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (handler is null) throw new ArgumentNullException(nameof(handler));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
 
         // Use InterceptorPipeline if registered, otherwise execute directly
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
             TResult result = default!;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+            pipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -143,14 +156,15 @@ public static partial class Jaunty
                         if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                             command.CommandType = options.CommandType;
 
-                        if (options.Transaction is not null)
-                            ((IDbCommand)command).Transaction = options.Transaction;
+                        command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
                         if (options.CommandTimeout.HasValue)
                             command.CommandTimeout = options.CommandTimeout.Value;
 
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
+
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
                         using DbDataReader reader = command.ExecuteReader();
                         result = handler(reader);
@@ -178,8 +192,7 @@ public static partial class Jaunty
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
-            if (options.Transaction is not null)
-                ((IDbCommand)command).Transaction = options.Transaction;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -204,19 +217,24 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(handler);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (handler is null) throw new ArgumentNullException(nameof(handler));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
 
         // Use InterceptorPipeline if registered, otherwise execute directly
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
             TResult result = default!;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+            pipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -235,14 +253,15 @@ public static partial class Jaunty
                         if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                             command.CommandType = options.CommandType;
 
-                        if (options.Transaction is not null)
-                            ((IDbCommand)command).Transaction = options.Transaction;
+                        command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
                         if (options.CommandTimeout.HasValue)
                             command.CommandTimeout = options.CommandTimeout.Value;
 
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
+
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
                         using DbDataReader reader = command.ExecuteReader();
                         result = handler(reader);
@@ -270,8 +289,7 @@ public static partial class Jaunty
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
-            if (options.Transaction is not null)
-                ((IDbCommand)command).Transaction = options.Transaction;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;

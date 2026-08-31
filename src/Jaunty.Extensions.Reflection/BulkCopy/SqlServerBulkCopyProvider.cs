@@ -21,25 +21,72 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly Type? SqlBulkCopyOptionsType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions, Microsoft.Data.SqlClient")
         ?? Type.GetType("System.Data.SqlClient.SqlBulkCopyOptions, System.Data");
 
+    private static readonly Type? SqlConnectionType = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
+        ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data");
+
+    private static readonly Type? SqlTransactionType = Type.GetType("Microsoft.Data.SqlClient.SqlTransaction, Microsoft.Data.SqlClient")
+        ?? Type.GetType("System.Data.SqlClient.SqlTransaction, System.Data");
+
+    private static readonly PropertyInfo? RowsCopiedProperty = SqlBulkCopyType?.GetProperty("RowsCopied");
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
     private static readonly PropertyInfo? ColumnMappingsProperty = SqlBulkCopyType?.GetProperty("ColumnMappings");
+
+    // AUD-R25: BulkCopyOptions.EnableStreaming is public, defaults to true and is documented as
+    // "rows are streamed to the database without buffering", but no provider read it - setting it
+    // to false changed nothing. On SQL Server it maps directly onto SqlBulkCopy.EnableStreaming,
+    // which this provider never set despite reflecting over five other SqlBulkCopy properties.
+    private static readonly PropertyInfo? EnableStreamingProperty = SqlBulkCopyType?.GetProperty("EnableStreaming");
     private static readonly MethodInfo? ColumnMappingsAddMethod = ColumnMappingsProperty?.PropertyType.GetMethod("Add", [typeof(string), typeof(string)]);
     private static readonly MethodInfo? WriteToServerMethod = SqlBulkCopyType?.GetMethod("WriteToServer", [typeof(IDataReader)]);
     private static readonly MethodInfo? WriteToServerAsyncMethod = SqlBulkCopyType?.GetMethod("WriteToServerAsync", [typeof(IDataReader), typeof(CancellationToken)]);
 
-    /// <inheritdoc/>
-    public bool IsSupported => SqlBulkCopyType != null;
+    /// <summary>
+    /// True when every reflected member both copy paths require resolved.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R35-219. This used to test <c>SqlBulkCopyType</c> alone, while the copy methods go on to
+    /// demand <c>SqlConnectionType</c>, a <c>WriteToServer</c>/<c>WriteToServerAsync</c> method and -
+    /// via <c>MapBulkCopyOptions</c> - <c>SqlBulkCopyOptionsType</c>. So the property could answer
+    /// true and the copy still throw, which is the one thing it exists to let callers avoid:
+    /// <c>BulkInsert</c> gates on it before committing to the native path and does not fall back to
+    /// the loop path afterwards. <c>PostgreSqlBulkCopyProvider.IsSupported</c> already conjoins both
+    /// types it needs. The two <c>WriteToServer</c> forms are OR-ed rather than AND-ed because
+    /// <c>CopyToServerAsync</c> deliberately falls back to the synchronous one; the residual case -
+    /// only the async form resolving, which no shipped SqlClient does - would still throw from the
+    /// synchronous <c>CopyToServer</c>, and requiring both here would instead report unsupported on
+    /// a client where copying works.
+    /// </remarks>
+    public bool IsSupported =>
+        AreMembersResolved(SqlBulkCopyType, SqlBulkCopyOptionsType, SqlConnectionType, WriteToServerMethod, WriteToServerAsyncMethod);
+
+    /// <summary>
+    /// The predicate behind <see cref="IsSupported"/>, taking its inputs as parameters so the
+    /// unresolved cases can be tested - the static fields resolve or not once per process, and on a
+    /// machine with SqlClient installed they always resolve.
+    /// </summary>
+    internal static bool AreMembersResolved(Type? bulkCopyType, Type? bulkCopyOptionsType, Type? connectionType, MethodInfo? writeToServer, MethodInfo? writeToServerAsync)
+        => bulkCopyType != null
+            && bulkCopyOptionsType != null
+            && connectionType != null
+            && (writeToServer != null || writeToServerAsync != null);
 
     /// <inheritdoc/>
-    public int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options)
+    public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
     {
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
 
-        DbConnection sqlConnection = connection as DbConnection
-            ?? throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
+        if (SqlConnectionType == null || !SqlConnectionType.IsInstanceOfType(connection))
+            throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
+
+        if (WriteToServerMethod == null)
+            throw new InvalidOperationException("SqlBulkCopy.WriteToServer could not be resolved via reflection.");
+
+        ValidateTransaction(options.Transaction);
+
+        DbConnection sqlConnection = (DbConnection)connection;
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         object? bulkCopyOptions = MapBulkCopyOptions(options);
@@ -49,13 +96,13 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         {
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
-            DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
+            EnableStreamingProperty?.SetValue(bulkCopy, options.EnableStreaming);
+            DestinationTableNameProperty?.SetValue(bulkCopy, QualifyTableName(schemaName, tableName));
             ApplyColumnMappings(bulkCopy, data);
 
-            WriteToServerMethod?.Invoke(bulkCopy, new object[] { data });
+            WriteToServerMethod.Invoke(bulkCopy, new object[] { data });
 
-            // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
-            return -1;
+            return RowsCopiedProperty != null ? (int)RowsCopiedProperty.GetValue(bulkCopy)! : -1;
         }
         finally
         {
@@ -64,10 +111,18 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     }
 
     /// <inheritdoc/>
-    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
+    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
     {
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
+
+        if (SqlConnectionType == null || !SqlConnectionType.IsInstanceOfType(connection))
+            throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
+
+        if (WriteToServerAsyncMethod == null && WriteToServerMethod == null)
+            throw new InvalidOperationException("SqlBulkCopy.WriteToServer/WriteToServerAsync could not be resolved via reflection.");
+
+        ValidateTransaction(options.Transaction);
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         object? bulkCopyOptions = MapBulkCopyOptions(options);
@@ -77,21 +132,58 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         {
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
-            DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
+            EnableStreamingProperty?.SetValue(bulkCopy, options.EnableStreaming);
+            DestinationTableNameProperty?.SetValue(bulkCopy, QualifyTableName(schemaName, tableName));
             ApplyColumnMappings(bulkCopy, data);
 
             if (WriteToServerAsyncMethod != null)
                 await ((Task)WriteToServerAsyncMethod.Invoke(bulkCopy, new object[] { data, cancellationToken })!).ConfigureAwait(false);
             else
-                WriteToServerMethod?.Invoke(bulkCopy, [data]);
+                WriteToServerMethod!.Invoke(bulkCopy, [data]);
 
-            // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
-            return -1;
+            return RowsCopiedProperty != null ? (int)RowsCopiedProperty.GetValue(bulkCopy)! : -1;
         }
         finally
         {
             (bulkCopy as IDisposable)?.Dispose();
         }
+    }
+
+    /// <summary>
+    /// Validates that an external transaction is a SqlTransaction before it reaches
+    /// <see cref="Activator.CreateInstance(Type, object[])"/>. Without this a transaction from a
+    /// different provider surfaces as an opaque reflection MissingMethodException/
+    /// TargetInvocationException instead of naming the actual problem, unlike the
+    /// connection-type mismatch a few lines above.
+    /// </summary>
+    private static void ValidateTransaction(IDbTransaction? transaction)
+    {
+        if (transaction is null)
+            return;
+
+        // If the SqlTransaction type itself can't be resolved, SqlBulkCopyType would have been
+        // null too and the caller has already thrown - but stay silent rather than reject a
+        // legitimate transaction on a type we simply couldn't look up.
+        if (SqlTransactionType != null && !SqlTransactionType.IsInstanceOfType(transaction))
+            throw new ArgumentException(
+                $"BulkCopyOptions.Transaction must be a SqlTransaction, but was {transaction.GetType().FullName}.",
+                nameof(transaction));
+    }
+
+    /// <summary>
+    /// Combines schema and table into the "schema.table" form SqlBulkCopy.DestinationTableName
+    /// accepts natively. Validated (not escaped) the same way MySqlBulkCopyProvider and
+    /// PostgreSqlBulkCopyProvider validate their table/schema names, so a malformed or malicious
+    /// name is rejected up front rather than passed through to SqlBulkCopy's own resolution.
+    /// </summary>
+    private static string QualifyTableName(string? schemaName, string tableName)
+    {
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName), global::Jaunty.Dialects.SqlIdentifierFlavor.SqlServer);
+        if (schemaName is null || schemaName.Length == 0)
+            return tableName;
+
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName), global::Jaunty.Dialects.SqlIdentifierFlavor.SqlServer);
+        return $"{schemaName}.{tableName}";
     }
 
     /// <summary>
@@ -121,7 +213,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static object MapBulkCopyOptions(BulkCopyOptions options)
     {
         if (SqlBulkCopyOptionsType == null)
-            return 0; // Default options
+            throw new InvalidOperationException("SqlBulkCopyOptions could not be resolved via reflection.");
 
         int result = 0;
 
