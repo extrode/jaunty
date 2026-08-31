@@ -6,7 +6,7 @@ Why this exists, how it is wired, and what to do when it breaks.
 > public repository executes arbitrary code from any fork's pull request on the owner's machine.
 > The runner goes before the switch is flipped, not after:
 > `gh variable delete CI_RUNNER --repo extrode/jaunty`, then one green run on `ubuntu-latest`.
-> Tracked as **T16** in `docs/plans/2026-08-29-004-public-release.md`, which blocks **T20**.
+> This was done before the repository was made public.
 >
 > **Everything below is kept as history, not as instructions.** Do not re-provision from it.
 
