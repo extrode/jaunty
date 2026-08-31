@@ -23,7 +23,7 @@ Prioritized task lists for Jaunty development:
 - [`order-form-template.md`](order-form-template.md) - Order form template
 - [`continuity-rider-template.md`](continuity-rider-template.md) - Escrow and continuity rider
 - [`feature-gap-analysis.md`](feature-gap-analysis.md) - Feature gaps against competing ORMs
-- [`COMMERCIAL-ANALYSIS-REPORT.md`](COMMERCIAL-ANALYSIS-REPORT.md) - Market analysis. Pricing sections superseded by [decision 004](../decisions/2026-08-29-004-product-and-pricing-decision.md)
+- [`COMMERCIAL-ANALYSIS-REPORT.md`](COMMERCIAL-ANALYSIS-REPORT.md) - Market analysis. Pricing sections superseded by the owner's decision of 2026-08-29; see [`pricing.md`](pricing.md)
 - [`COMMERCIAL-DISTRIBUTION-FLOW.md`](COMMERCIAL-DISTRIBUTION-FLOW.md) - **Stale.** Its premise is a private release feed and a paid Jaunty; both are retired. Awaiting the owner's call on rewrite or removal
 
 ## Reports
