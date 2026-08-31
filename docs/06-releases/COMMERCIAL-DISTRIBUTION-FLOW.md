@@ -3,11 +3,9 @@
 > **Stale as of 2026-08-29. Do not follow this document.** Its premise — a private release feed,
 > paid access to Jaunty, and an Order-conditioned licence — is retired twice over:
 >
-> - **Jaunty is free to use, including in commercial production.** Decision
->   [002](../decisions/2026-08-29-002-free-to-use-paid-support-model.md) and
->   [004](../decisions/2026-08-29-004-product-and-pricing-decision.md). What is sold is support:
->   Company $1,200 per organisation per year, Enterprise from $7,500 per year
->   ([007](../decisions/2026-08-29-007-jaunty-licence-instrument-and-support-pricing.md)).
+> - **Jaunty is free to use, including in commercial production.** Decided by the owner on
+>   2026-08-29. What is sold is support: Company $1,200 per organisation per year, Enterprise from
+>   $7,500 per year — see [`pricing.md`](pricing.md).
 > - **Redistribution is granted, not sold.** ISL-R §2(b) forbids Distribution, and shipping an
 >   application that references a .NET library distributes it, so the free grant needed an
 >   instrument of its own: [`../../LICENSE-DISTRIBUTION-EXCEPTION.md`](../../LICENSE-DISTRIBUTION-EXCEPTION.md),
