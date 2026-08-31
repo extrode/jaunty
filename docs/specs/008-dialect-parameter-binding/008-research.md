@@ -77,7 +77,7 @@ fakes, so this cannot be settled with a mock.
 
 ## 3. Site Inventory
 
-Exhaustive as of `dev` @ `f47dfc4`.
+Exhaustive as of `dev` @ `50a8b82`.
 
 ### 3.1 Axis A — building SQL text (9 sites)
 
