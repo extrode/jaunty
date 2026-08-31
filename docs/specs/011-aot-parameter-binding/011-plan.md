@@ -7,7 +7,7 @@
 
 > **Renumbered 010 → 011 on 2026-07-30.** This work was authored as spec 010 on an unpushed local
 > branch while `010-net10-migration` was authored and pushed concurrently. The pushed one keeps the
-> number. The two implementation commits, `b4bddb70` and `e5bd8565`, still say `feat(010)` — they
+> number. The two implementation commits, `bc594050` and `6c671763`, still say `feat(010)` — they
 > were made before the collision was visible and are not worth rewriting history over. Nothing else
 > refers to this work as 010.
 
