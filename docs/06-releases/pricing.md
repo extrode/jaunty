@@ -7,10 +7,9 @@ no expiry. What is sold is **support**.
 sold on top.
 
 > **Status: Jaunty is settled, JauntyQ is not.** Jaunty's licence instrument and support numbers were
-> decided 2026-08-29 - see [decision 007](../decisions/2026-08-29-007-jaunty-licence-instrument-and-support-pricing.md).
+> decided by the owner on 2026-08-29 and are stated below.
 > JauntyQ's free/paid boundary and price remain open; the figures in its section below are
-> indicative and commit to nothing. See
-> [decision 006](../decisions/2026-08-29-006-jauntyq-value-and-pricing-panel.md).
+> indicative and commit to nothing.
 
 ---
 

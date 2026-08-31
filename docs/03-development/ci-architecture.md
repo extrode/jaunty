@@ -212,8 +212,8 @@ suite must be added to that filter by hand.**
 - [`self-hosted-ci-runner.md`](self-hosted-ci-runner.md) — **historical.** Documents the WSL2
   runner and the July 2026 hosted-minutes billing block that justified it. That block is over;
   jauntyq's runs on `ubuntu-latest` disprove it. Kept for the reasoning, not as current guidance.
-- [`../plans/2026-08-29-004-public-release.md`](../plans/2026-08-29-004-public-release.md) — the
-  public-release plan these open items belong to
+- [`../decisions/2026-08-31-008-history-rewritten-before-first-public-release.md`](../decisions/2026-08-31-008-history-rewritten-before-first-public-release.md)
+  — what changed in the repository at the first public release
 - `tests/Jaunty.UnitTests/Unit/NightlyWorkflowCadenceTests.cs`,
   `tests/Jaunty.UnitTests/Unit/MutationRunnerContractTests.cs` — the tests that keep this document
   honest
