@@ -29,9 +29,21 @@ permissions:
 # them untested. Branch protection is unaffected - the head SHA is identical, so
 # the push run's checks appear on the PR as the same commit's checks.
 
-# The SQL Server service uses a throwaway credential for the ephemeral CI
-# container only. Override with the CI_MSSQL_SA_PASSWORD repository variable
-# if desired.
+# A pull request from a FORK never runs on the self-hosted runner. `vars` - unlike `secrets` -
+# are readable by fork-PR runs, so a bare `vars.CI_RUNNER` would place an outside contributor's
+# code on the maintainer's own machine, gated only by GitHub's approval-for-first-time-contributors
+# default, which stops applying once that contributor has one merged PR. Forks get a hosted runner;
+# everything else keeps the self-hosted one. Repeated on all three jobs rather than factored into
+# an env, because `runs-on` is evaluated before `env` is available.
+#
+# The SQL Server service uses a throwaway credential for the ephemeral CI container only. It is
+# derived from github.run_id, which is unique per run and public - the point is that no fixed
+# credential sits in a public file for a scanner to find, not that this one is a secret. Override
+# with the CI_MSSQL_SA_PASSWORD repository variable if desired. Both forms must satisfy SQL
+# Server's password policy: 8+ characters from three of upper, lower, digit, symbol.
+#
+# The service port binds to loopback. A self-hosted runner publishes container ports on its own
+# host, and 0.0.0.0 would expose SQL Server to that machine's network for the life of the job.
 jobs:
   build-and-test:
     name: Build & Test
@@ -39,15 +51,17 @@ jobs:
       github.event_name != 'pull_request' ||
       (github.event.pull_request.head.ref != 'dev' &&
        github.event.pull_request.head.ref != 'main')
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'pull_request' &&
+                  github.event.pull_request.head.repo.fork)
+                 && 'ubuntu-latest' || vars.CI_RUNNER || 'ubuntu-latest' }}
     services:
       mssql:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
           ACCEPT_EULA: "Y"
-          MSSQL_SA_PASSWORD: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
+          MSSQL_SA_PASSWORD: ${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
         ports:
-          - 1435:1433
+          - "127.0.0.1:1435:1433"
         volumes:
           # Mirror the workspace path: BULK INSERT runs server-side and the
           # CSV import tests pass host paths to the server.
@@ -59,7 +73,7 @@ jobs:
           --health-retries 10
           --health-start-period 20s
     env:
-      CI_SA_CRED: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
+      CI_SA_CRED: ${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -100,7 +114,7 @@ jobs:
 
       - name: Test - Core (SQLite + SQL Server)
         env:
-          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
           # The mssql service container is provisioned above, so an unreachable SQL Server here is
           # a broken job rather than a machine without the engine. Without this the dialect rows
           # would skip and the leg would report green having tested SQLite only.
@@ -201,7 +215,7 @@ jobs:
       # if a net10 leg silently loads a net8-compiled Jaunty.dll.
       - name: Test - Core net10 (SQLite + SQL Server)
         env:
-          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
           # The mssql service container is provisioned above, so an unreachable SQL Server here is
           # a broken job rather than a machine without the engine. Without this the dialect rows
           # would skip and the leg would report green having tested SQLite only.
@@ -309,7 +323,9 @@ jobs:
       github.event_name != 'pull_request' ||
       (github.event.pull_request.head.ref != 'dev' &&
        github.event.pull_request.head.ref != 'main')
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'pull_request' &&
+                  github.event.pull_request.head.repo.fork)
+                 && 'ubuntu-latest' || vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -323,7 +339,9 @@ jobs:
   # start after a failed test run.
   aot-publish:
     name: NativeAOT Publish
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'pull_request' &&
+                  github.event.pull_request.head.repo.fork)
+                 && 'ubuntu-latest' || vars.CI_RUNNER || 'ubuntu-latest' }}
     needs: build-and-test
     steps:
       - name: Checkout
