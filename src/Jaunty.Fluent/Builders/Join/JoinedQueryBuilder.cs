@@ -384,11 +384,10 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     }
 
     /// <summary>
-    /// Registers the value parameters bound by an <c>On(predicate)</c> join expression. The join
-    /// visitor mints them from a fresh counter as "@jp0".."@jpN-1" - the same shape
-    /// <see cref="AddWhereExpression"/> renumbers Where/And/Or parameters into - so the query-wide
-    /// sequence must advance past them, or the first Where expression after the join would be
-    /// renumbered onto the ON parameter's name and throw a duplicate-parameter error.
+    /// Registers the value parameters bound by a two-table <c>On(predicate)</c> join expression.
+    /// Nothing else in the query has bound a name yet at this point - the ON is what creates the
+    /// joined builder - so the visitor's own names are taken as minted, and the query-wide sequence
+    /// is advanced past them so a later <see cref="AddWhereExpression"/> sees them as taken.
     /// </summary>
     internal void AddOnParameters(List<(string Name, object? Value)> parameters)
     {
