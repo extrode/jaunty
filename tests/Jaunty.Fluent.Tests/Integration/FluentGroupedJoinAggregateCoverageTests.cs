@@ -81,7 +81,7 @@ public class FluentGroupedJoinAggregateCoverageTests : IClassFixture<FluentDatab
         var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
-            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .InnerJoin<Product, Category, Supplier, Order>().On("p.supplier_id", "orders.employee_id")
             .GroupBy((p, c, s, o) => p.CategoryId)
             .Select(g => new
             {
@@ -101,7 +101,7 @@ public class FluentGroupedJoinAggregateCoverageTests : IClassFixture<FluentDatab
         var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
-            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .InnerJoin<Product, Category, Supplier, Order>().On("p.supplier_id", "orders.employee_id")
             .GroupBy((p, c, s, o) => p.CategoryId)
             .Select(g => new
             {
@@ -120,7 +120,7 @@ public class FluentGroupedJoinAggregateCoverageTests : IClassFixture<FluentDatab
         var sql = _fixture.Connection.From<Product>()
             .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
-            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .InnerJoin<Product, Category, Supplier, Order>().On("p.supplier_id", "orders.employee_id")
             .GroupBy((p, c, s, o) => p.CategoryId)
             .ToSql(g => new { CategoryId = g.Key, Named = g.Count((p, c, s, o) => p.ProductName) });
 
@@ -135,7 +135,7 @@ public class FluentGroupedJoinAggregateCoverageTests : IClassFixture<FluentDatab
         var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
-            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .InnerJoin<Product, Category, Supplier, Order>().On("p.supplier_id", "orders.employee_id")
             .GroupBy((p, c, s, o) => p.CategoryId)
             .Select(g => new
             {

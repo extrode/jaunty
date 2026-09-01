@@ -254,53 +254,133 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal void AddWhereCondition(WhereCondition condition) => _conditions.Add(condition);
 
     /// <summary>
-    /// Adds a WHERE condition produced by a join-predicate expression visitor, renumbering
-    /// its positional parameter names (e.g. "jp0", "jp1") against a running counter shared by
-    /// the whole query. Each Where/And/Or call uses a fresh visitor whose parameter index resets
-    /// to 0, so without renumbering, separately-translated conditions on the same query can
-    /// collide on identical parameter names (e.g. two conditions each producing "@jp0"), silently
-    /// dropping/overwriting one of the bound values.
+    /// Adds a WHERE condition produced by a join-predicate expression visitor, uniquifying its
+    /// parameter names against the ones the rest of the query has already bound. Each Where/And/Or
+    /// call uses a fresh visitor that only knows the names it minted itself, so without this two
+    /// conditions filtering the same column would collide and one bound value would silently serve
+    /// both.
     /// </summary>
     internal void AddWhereExpression(string sql, List<(string Name, object? Value)> parameters, LogicalOperator op)
         => _conditions.Add(WhereCondition.Expression(RegisterExpressionParameters(sql, parameters), op));
 
     /// <summary>
-    /// Binds the values a join-predicate visitor produced and rewrites their names in
-    /// <paramref name="sql"/> against the query-wide counter, returning the rewritten text. Used
-    /// for both WHERE expressions and the arity-3/4 <c>On(predicate)</c> conditions, which land in
-    /// a <see cref="JoinInfo"/> rather than a <see cref="WhereCondition"/> but are minted from the
-    /// same reset-per-visitor "jp0".."jpN" sequence and so collide the same way.
+    /// Binds the values a join-predicate visitor produced and rewrites any name that collides with
+    /// one already in the query, returning the rewritten text. Used for both WHERE expressions and
+    /// the arity-3/4 <c>On(predicate)</c> conditions, which land in a <see cref="JoinInfo"/> rather
+    /// than a <see cref="WhereCondition"/> but are minted by a visitor with the same partial view
+    /// of the query and so collide the same way.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This used to renumber every name onto a query-wide <c>jp&lt;n&gt;</c> sequence, which was
+    /// sound while the visitors minted nothing else. Since they name a parameter after the column
+    /// it filters, renumbering would throw that name away - so a colliding name is suffixed instead
+    /// and a name that does not collide, which is nearly all of them, is left exactly as minted.
+    /// </para>
+    /// <para>
+    /// The renames are still applied in a single pass. Doing them one at a time lets a new name
+    /// capture a not-yet-rewritten occurrence of itself elsewhere in the same condition, after
+    /// which one bound value serves both operands.
+    /// </para>
+    /// </remarks>
     internal string RegisterExpressionParameters(string sql, List<(string Name, object? Value)> parameters)
     {
         string finalSql = sql;
 
         if (parameters.Count > 0)
         {
-            // All renames applied in a single pass: renaming one name at a time lets a new name
-            // capture a not-yet-renamed old occurrence in the same condition (with the sequence
-            // at 1, "@jp0" -> "@jp1" while the condition's own "@jp1" is still pending, so the
-            // next step rewrites both to "@jp2" and one bound value silently serves both operands).
-            var renames = new Dictionary<string, string>(parameters.Count, StringComparer.Ordinal);
+            Dictionary<string, string>? renames = null;
+
             for (int i = 0; i < parameters.Count; i++)
             {
-                (string oldName, object? value) = parameters[i];
-                string newName = $"{_dialect.ParameterPrefix}jp{_paramSeq++}";
-                renames[oldName] = newName;
-                _parameters.Add(newName, value);
+                (string mintedName, object? value) = parameters[i];
+                string finalName = mintedName;
+
+                for (int suffix = 2; IsNameTaken(finalName, parameters, i, renames); suffix++)
+                    finalName = mintedName + "_" + suffix.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+                if (!string.Equals(finalName, mintedName, StringComparison.Ordinal))
+                {
+                    renames ??= new Dictionary<string, string>(StringComparer.Ordinal);
+                    renames[mintedName] = finalName;
+                }
+
+                _parameters.Add(finalName, value);
+                _paramSeq++;
             }
 
-            // AUD-R30: the alternation pattern used to be rebuilt from the parameter names on
-            // every call, costing a regex parse per Where/And/Or. Every name the visitors mint is
-            // "<prefix>jp<n>", so one cached per-prefix pattern matches them all; a token not in
-            // the rename map (impossible today, but the lookup must not throw) is left unchanged.
-            Regex renameRegex = JoinParameterRenameRegexes.Cache.GetOrAdd(_dialect.ParameterPrefix,
-                static prefix => new Regex(Regex.Escape(prefix) + @"jp\d+(?!\w)", RegexOptions.Compiled));
-            finalSql = renameRegex.Replace(finalSql,
-                m => renames.TryGetValue(m.Value, out string? renamed) ? renamed : m.Value);
+            if (renames is not null)
+                finalSql = ApplyRenames(finalSql, renames);
         }
 
         return finalSql;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="candidate"/> is already spoken for: bound by the query, minted by
+    /// another parameter of this same condition, or handed out by an earlier rename in this batch.
+    /// </summary>
+    /// <remarks>
+    /// The middle case is the one that is easy to miss. A condition can mint both
+    /// <c>@p_category_id</c> and <c>@p_category_id_2</c>; suffixing the first on collision has to
+    /// step over the second rather than land on it.
+    /// </remarks>
+    private bool IsNameTaken(
+        string candidate,
+        List<(string Name, object? Value)> minted,
+        int self,
+        Dictionary<string, string>? renames)
+    {
+        if (_parameters.Contains(candidate))
+            return true;
+
+        for (int i = 0; i < minted.Count; i++)
+        {
+            if (i != self && string.Equals(minted[i].Name, candidate, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        if (renames is not null)
+        {
+            foreach (KeyValuePair<string, string> rename in renames)
+            {
+                if (string.Equals(rename.Value, candidate, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Rewrites every renamed parameter in one pass.
+    /// </summary>
+    /// <remarks>
+    /// The pattern is built from the names being renamed rather than cached per dialect prefix, the
+    /// way AUD-R30's <c>jp\d+</c> pattern was: names are derived from columns now, so there is no
+    /// one shape to match. It costs a regex parse only on the rare condition that collides at all -
+    /// the common path exits above without building one.
+    /// </remarks>
+    private static string ApplyRenames(string sql, Dictionary<string, string> renames)
+    {
+        // Longest first, so a name that is a prefix of another cannot claim the shorter match. The
+        // trailing lookahead is what makes "@p_category_id" leave "@p_category_id_2" alone.
+        var names = new List<string>(renames.Keys);
+        names.Sort(static (left, right) => right.Length.CompareTo(left.Length));
+
+        var pattern = new StringBuilder("(?:");
+        for (var i = 0; i < names.Count; i++)
+        {
+            if (i > 0)
+                pattern.Append('|');
+
+            pattern.Append(Regex.Escape(names[i]));
+        }
+
+        pattern.Append(")(?!\\w)");
+
+        return Regex.Replace(sql, pattern.ToString(),
+            m => renames.TryGetValue(m.Value, out string? renamed) ? renamed : m.Value);
     }
 
     /// <summary>
@@ -544,6 +624,56 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Maps one entity out of a joined row by position, reading <paramref name="offset"/> onwards.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The builder writes the SELECT list itself, entity by entity and in
+    /// <see cref="EntityMetadata.Columns"/> order, so each entity owns a contiguous run of ordinals
+    /// and its start is the sum of the column counts before it. That is what allowed the
+    /// <c>f_</c>/<c>j_</c> and <c>t1_</c>..<c>t4_</c> column aliases to go: they existed only so the
+    /// name-based overload below could tell <c>products.category_id</c> from
+    /// <c>categories.category_id</c> in one result set, and a position cannot be ambiguous.
+    /// </para>
+    /// <para>
+    /// Unlike the name-based overload, a column cannot be missing here - a short reader is a bug in
+    /// the builder rather than a result set that did not carry what was asked for - so there is no
+    /// skip-if-absent branch. The DBNull skip stays: a null column leaves the property at its
+    /// default, which is what the name-based path does.
+    /// </para>
+    /// </remarks>
+    /// <param name="metadata">The entity's columns, in the order they were emitted.</param>
+    /// <param name="reader">The open reader, positioned on a row.</param>
+    /// <param name="offset">Ordinal of this entity's first column.</param>
+    internal static TEntity MapEntity<TEntity>(EntityMetadata metadata, IDataReader reader, int offset)
+        where TEntity : new()
+    {
+        var entity = new TEntity();
+        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
+
+        for (int i = 0; i < columns.Count; i++)
+        {
+            int ordinal = offset + i;
+
+            if (reader.IsDBNull(ordinal))
+                continue;
+
+            ColumnMetadata col = columns[i];
+            object value = reader.GetValue(ordinal);
+            Type propertyType = col.PropertyType;
+            Type targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+            object convertedValue = GroupedJoinedResultMapper.ConvertColumnValue(value, targetType);
+
+            if (col.Setter is { } setter)
+                setter(entity!, convertedValue);
+            else
+                col.Property!.SetValue(entity, convertedValue);
+        }
+
+        return entity;
+    }
+
     internal static TEntity MapEntity<TEntity>(EntityMetadata metadata, IDataReader reader, string prefix, Dictionary<string, int> ordinals)
         where TEntity : new()
     {
@@ -582,7 +712,8 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     /// </summary>
     /// <remarks>
     /// AUD-R12: ordinals are static for the lifetime of a result set, so callers must build this
-    /// once per reader before their row loop and reuse it across every <see cref="MapEntity{TEntity}"/>
+    /// once per reader before their row loop and reuse it across every
+    /// <see cref="MapEntity{TEntity}(EntityMetadata, IDataReader, string, Dictionary{string, int})"/>
     /// call for that result set, instead of rebuilding it on every call (previously: once per
     /// entity per row).
     /// </remarks>

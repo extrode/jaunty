@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Runtime.CompilerServices;
 
 using Jaunty.Core;
@@ -284,8 +284,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     /// </remarks>
     private List<(TFrom From, TJoin Joined)> SelectBothInternal(int? limit = null)
     {
-        string[] fromColumns = GetPrefixedColumnsWithAlias(_fromMetadata, _fromAlias, "f_");
-        string[] joinColumns = GetPrefixedColumnsWithAlias(_joinMetadata, _joins[0].Alias, "j_");
+        string[] fromColumns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] joinColumns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
         string[] allColumns = fromColumns.Concat(joinColumns).ToArray();
 
         string sql = BuildSelectSql(allColumns);
@@ -311,12 +311,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             try
             {
                 using IDataReader reader = command.ExecuteReader();
-                Dictionary<string, int> ordinals = BuildOrdinalLookup(reader);
 
                 while (reader.Read())
                 {
-                    TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, "f_", ordinals);
-                    TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, "j_", ordinals);
+                    TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, 0);
+                    TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, fromColumns.Length);
                     results.Add((fromObj, joinObj));
                 }
             }
