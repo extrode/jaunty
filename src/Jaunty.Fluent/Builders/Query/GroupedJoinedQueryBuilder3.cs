@@ -45,9 +45,8 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
 
     public IGroupedJoinedQuery3<T1, T2, T3, TKey> Having(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, bool>> predicate)
     {
-        (string havingSql, List<(string Name, object? Value)> parameters) = _visitor.TranslateHavingPredicate(predicate);
-        // AUD-R35-016: see JoinedQueryBuilder.RegisterHavingParameters.
-        _havingConditions.Add(_parent._parent.RegisterHavingParameters(havingSql, parameters));
+        // AUD-R35-016: see JoinedGroupByExpressionVisitor.AddHavingParameter.
+        _havingConditions.Add(_visitor.TranslateHavingPredicate(predicate, _parent._parent.GetParameters()));
         return this;
     }
 
