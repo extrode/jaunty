@@ -378,12 +378,8 @@ StrykerOutput/
 audit/
 work/
 
-# Internal deliberation and release tooling.
-docs/decisions/2026-08-29-002-free-to-use-paid-support-model.md
-docs/decisions/2026-08-29-003-pricing-model-three-model-panel.md
-docs/decisions/2026-08-29-004-product-and-pricing-decision.md
-docs/decisions/2026-08-29-005-pricing-panel-primary-sources.md
-docs/decisions/2026-08-29-006-jauntyq-value-and-pricing-panel.md
-docs/decisions/2026-08-29-007-jaunty-licence-instrument-and-support-pricing.md
-docs/plans/2026-08-29-004-public-release.md
+# Internal deliberation and release tooling. One rule rather than a list of filenames: the list
+# named every document it excluded, so the ignore file itself published what the documents were
+# about. Anything private lives in a `private/` directory and does not need naming here.
+**/private/
 scripts/history-rewrite/
