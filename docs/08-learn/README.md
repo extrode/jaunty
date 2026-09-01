@@ -13,6 +13,9 @@ here is safe to rely on.
 or EF Core, and the [strict-mapping rule](migrating/strict-mapping.md) that catches people out in
 their first hour.
 
+**Hit an error?** [Error Messages, Explained](error-messages.md) takes the messages you can reach
+from ordinary code and gives, for each, the query that produces it and the change that fixes it.
+
 ## Setup
 
 Create a new console project and add the packages:
