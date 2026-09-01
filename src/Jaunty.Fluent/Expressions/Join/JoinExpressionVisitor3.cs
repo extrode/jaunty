@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Text;
 
 using Jaunty.Dialects;
@@ -26,6 +26,12 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
     private readonly List<(string Name, object? Value)> _parameters = new();
     private int _parameterIndex;
 
+    // The column the value about to be appended is being compared against, so the parameter can be
+    // named after it. Set by VisitBinary immediately before it visits the non-column side, and
+    // consumed once by AppendValue - a value reached any other way (an IN list element, a string
+    // method's argument) has no single column to name it after and takes the positional form.
+    private string? _pendingColumn;
+
     public JoinExpressionVisitor3(ISqlDialect dialect, string? alias1, string? alias2, string? alias3)
     {
         _dialect = dialect;
@@ -39,6 +45,7 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
         _sql.Clear();
         _parameters.Clear();
         _parameterIndex = 0;
+        _pendingColumn = null;
         _param1 = predicate.Parameters[0];
         _param2 = predicate.Parameters[1];
         _param3 = predicate.Parameters[2];
@@ -85,7 +92,10 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
         if (leftColumn is not null)
             _sql.Append(leftColumn);
         else
-            Visit(node.Left);
+            {
+                _pendingColumn = rightColumn;
+                Visit(node.Left);
+            }
 
         _sql.Append(node.NodeType switch
         {
@@ -101,7 +111,10 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
         if (rightColumn is not null)
             _sql.Append(rightColumn);
         else
-            Visit(node.Right);
+            {
+                _pendingColumn = leftColumn;
+                Visit(node.Right);
+            }
 
         _sql.Append(')');
 
@@ -280,7 +293,9 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
             return;
         }
 
-        var paramName = $"{_dialect.ParameterPrefix}jp{_parameterIndex++}";
+        string? namedAfter = _pendingColumn;
+        _pendingColumn = null;
+        var paramName = JoinParameterNaming.Derive(_dialect.ParameterPrefix, namedAfter, _parameters, ref _parameterIndex);
         _sql.Append(paramName);
         _parameters.Add((paramName, value));
     }

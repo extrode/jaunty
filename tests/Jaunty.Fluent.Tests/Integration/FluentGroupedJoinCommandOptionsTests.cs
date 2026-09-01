@@ -181,7 +181,7 @@ public class FluentGroupedJoinCommandOptionsTests : IClassFixture<FluentDatabase
         var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
-            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .InnerJoin<Product, Category, Supplier, Order>().On("p.supplier_id", "orders.employee_id")
             .Where((p, c, s, o) => p.ProductId == insertedId)
             .GroupBy((p, c, s, o) => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() }, CommandOptions.WithTransaction(tx));
@@ -199,7 +199,7 @@ public class FluentGroupedJoinCommandOptionsTests : IClassFixture<FluentDatabase
         var results = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
-            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .InnerJoin<Product, Category, Supplier, Order>().On("p.supplier_id", "orders.employee_id")
             .Where((p, c, s, o) => p.ProductId == insertedId)
             .GroupBy((p, c, s, o) => p.CategoryId)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }, CommandOptions.WithTransaction(tx));
@@ -214,7 +214,7 @@ public class FluentGroupedJoinCommandOptionsTests : IClassFixture<FluentDatabase
         var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
-            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .InnerJoin<Product, Category, Supplier, Order>().On("p.supplier_id", "orders.employee_id")
             .GroupBy((p, c, s, o) => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() }, CommandOptions.WithTimeout(30));
 
