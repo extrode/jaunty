@@ -133,7 +133,7 @@ internal static class AliasInference
         if (inferred is not null && !Same(inferred, newTable))
             return inferred;
 
-        return Contains(taken, newTable) ? Positional(slot) : null;
+        return Contains(taken, newTable) ? Positional(taken, slot) : null;
     }
 
     /// <summary>
@@ -174,6 +174,28 @@ internal static class AliasInference
     }
 
     private static string Positional(int slot) => "t" + (slot + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// The first positional name at or after <paramref name="slot"/> that nothing in the query has
+    /// already claimed.
+    /// </summary>
+    /// <remarks>
+    /// The slot number alone is not safe: a caller who writes <c>From&lt;Order&gt;("t3")</c>, or a
+    /// lambda parameter named <c>t3</c> in an earlier join, owns that name before this step runs,
+    /// and the earlier ON is a rendered string that cannot be revised. Emitting it twice is not a
+    /// worse alias but invalid SQL - "the correlation name 't3' is specified multiple times" - so
+    /// the scheme skips forward instead. It terminates because <paramref name="taken"/> is fixed
+    /// here and each candidate is distinct, so one outside it is found within taken.Count + 1 steps.
+    /// </remarks>
+    private static string Positional(List<string> taken, int slot)
+    {
+        string candidate = Positional(slot);
+
+        for (var next = slot + 1; Contains(taken, candidate); next++)
+            candidate = Positional(next);
+
+        return candidate;
+    }
 
     private static bool Contains(List<string> taken, string candidate)
     {
