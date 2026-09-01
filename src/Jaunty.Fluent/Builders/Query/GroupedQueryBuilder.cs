@@ -342,12 +342,70 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
                 return $"({left} {op} {right})";
             }
 
-            string leftOperand = TranslateHavingOperand(binary.Left);
-            string rightOperand = TranslateHavingOperand(binary.Right);
+            // Each side is named after the aggregate on the other side, so `g.Count() > 3` and
+            // `3 < g.Count()` both bind @count. Mirrors the joined twin.
+            string leftOperand = TranslateHavingOperand(binary.Left, AggregateStem(binary.Right));
+            string rightOperand = TranslateHavingOperand(binary.Right, AggregateStem(binary.Left));
             return $"{leftOperand} {op} {rightOperand}";
         }
 
-        return TranslateHavingOperand(expr);
+        return TranslateHavingOperand(expr, null);
+    }
+
+    /// <summary>
+    /// The parameter-name stem for a value compared against <paramref name="expr"/>, or null when
+    /// that side is not an aggregate. Built from the expression tree rather than the rendered SQL,
+    /// for the reason given on <c>JoinedGroupByExpressionVisitor.AggregateStem</c>.
+    /// </summary>
+    private string? AggregateStem(Expression expr)
+    {
+        if (expr is UnaryExpression convert && convert.NodeType == ExpressionType.Convert)
+            expr = convert.Operand;
+
+        if (expr is not MethodCallExpression call)
+            return null;
+
+        string? function = call.Method.Name switch
+        {
+            "Count" => "count",
+            "Sum" => "sum",
+            "Avg" or "Average" => "avg",
+            "Min" => "min",
+            "Max" => "max",
+            _ => null
+        };
+
+        if (function is null)
+            return null;
+
+        if (call.Arguments.Count == 0)
+            return function;
+
+        Expression? selector = call.Arguments[0];
+
+        while (selector is UnaryExpression unary &&
+               (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        {
+            selector = unary.Operand;
+        }
+
+        if (selector is not LambdaExpression lambda)
+            return function;
+
+        Expression body = lambda.Body;
+
+        if (body is UnaryExpression unaryBody &&
+            (unaryBody.NodeType == ExpressionType.Convert || unaryBody.NodeType == ExpressionType.Quote))
+        {
+            body = unaryBody.Operand;
+        }
+
+        if (body is not MemberExpression member)
+            return function;
+
+        string column = JoinParameterNaming.Sanitize(GetColumnName(member.Member.Name));
+
+        return column.Length == 0 ? function : function + "_" + column;
     }
 
     /// <summary>
@@ -356,7 +414,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     /// query parameter rather than being inlined into the SQL text, matching how every WHERE
     /// value in this codebase is parameterized.
     /// </summary>
-    private string TranslateHavingOperand(Expression expr)
+    private string TranslateHavingOperand(Expression expr, string? stem)
     {
         if (expr is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
             expr = unary.Operand;
@@ -380,14 +438,14 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
         // Constants
         if (expr is ConstantExpression constant)
-            return AddHavingParameter(constant.Value);
+            return AddHavingParameter(constant.Value, stem);
 
         // Captured local variables, method parameters, and other closed-over values
         // (e.g. `.Having(g => g.Count() > minFilms)`) compile to a MemberExpression
         // over a compiler-generated closure class, not a ConstantExpression. Evaluate
         // it the same way WhereExpressionVisitor/JoinExpressionVisitor/etc. already do.
         if (expr is MemberExpression or UnaryExpression)
-            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr));
+            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr), stem);
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
     }
@@ -407,9 +465,12 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     /// caller never chose. Deriving the name from the collection it is added to cannot collide by
     /// construction; the counter could only ever be right for one builder at a time.
     /// </remarks>
-    private string AddHavingParameter(object? value)
+    private string AddHavingParameter(object? value, string? stem)
     {
-        string name = _parameters.CreateUniqueName(_dialect.ParameterPrefix, "hp");
+        string name = stem is null
+            ? _parameters.CreateUniqueName(_dialect.ParameterPrefix, "hp")
+            : _parameters.CreateDerivedName(_dialect.ParameterPrefix, stem);
+
         _parameters.Add(name, value);
         return name;
     }

@@ -35,8 +35,8 @@ public class GroupedQueryBuilderParameterBindingTests : IClassFixture<FluentData
             .Having(g => g.Count() > minCount);
 
         string sql = query.ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
-        Match match = Regex.Match(sql, "@hp\\w+");
-        Assert.True(match.Success, $"Expected a prefixed '@hp...' placeholder in generated SQL: {sql}");
+        Match match = Regex.Match(sql, "@count\\w*");
+        Assert.True(match.Success, $"Expected a '@count' placeholder in generated SQL: {sql}");
         string expectedParamName = match.Value;
 
         using var command = _fixture.Connection.CreateCommand();
