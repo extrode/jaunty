@@ -204,3 +204,54 @@ site wants its own pass against those tests.
 That is sound today because the ON is what creates the joined builder, so nothing has bound a name
 yet - but a second `On` on the same clause builder re-adds them. That was true before this change
 too, with `@jp0`, so it is pre-existing rather than introduced.
+
+## Independent review (2026-09-01, fable `review-deep`)
+
+Eight correctness questions put to a reviewer with no shell, given the test and AOT results as
+facts. Three findings, one of them a defect in the merged change.
+
+### Fixed: the positional fallback could emit a name the caller already owned
+
+`AliasInference.cs:136` returned `Positional(slot)` without checking it against `taken`, which
+`Sanction` checks for every other candidate. A caller who names the FROM alias `t3`, or writes a
+lambda parameter `t3` in an earlier join, owns that name before the third join's step runs, and the
+earlier ON is already a rendered string. Measured before the fix:
+
+```sql
+FROM products t3
+INNER JOIN categories c ON (t3.category_id = c.category_id)
+INNER JOIN products t3 ON (c.category_id = t3.category_id)
+```
+
+Two correlation names alike: SQLite rejects it, SQL Server reports "the correlation name 't3' is
+specified multiple times in a FROM clause", and every `t3.` reference in the SELECT list is
+ambiguous. The fallback now walks forward to the first free name (`t4` here). The two-table
+`Fallback` is unaffected: it fires only when both sides are unaliased, where `t1`/`t2` cannot have
+been claimed. `APositionalFallbackNameTheCallerAlreadyUsed_DoesNotProduceTwoT3s` covers it and
+executes the query, so the engine's acceptance is part of the assertion.
+
+### Recorded: the breaking change is wider than this plan first stated
+
+The break is not confined to `Where(string)`. Every string-form API that names a table on a query
+whose lambda `On` inferred aliases is affected, including a string `On` on a *later* join and
+`SelectPartial`: `.On((p, c) => ...).InnerJoin<Supplier>().On("products.supplier_id = suppliers.supplier_id")`
+now names nothing in the FROM clause. The `@jp0` to `@p_category_id` rename is also observable to
+any interceptor or log parser matching parameter names.
+
+### Open, unconfirmed: schema names are not in the collision set
+
+`taken` is seeded with table names and aliases, never `SchemaName`. A query referencing an
+unaliased table three-part (`[sales].[orders].[col]`) could acquire a later inferred alias equal to
+the schema name. Engines differ on whether the reference still binds; the reviewer could not
+confirm a failure and neither can this plan without a live SQL Server. Flagged, not fixed.
+
+### No finding
+
+All-or-nothing in `ForJoin`; case sensitivity (OrdinalIgnoreCase is the stricter test, so it costs
+the verbose fallback and never wrong SQL); termination of `Derive`'s suffix loop; sanitize
+collisions binding a value to another value's name; ordinal contiguity across partial, grouped and
+self-joined selects.
+
+Two stale artefacts noticed and left: the name-based `MapEntity(prefix, ordinals)` overload
+(`JoinedQueryBuilder.cs:676`) now has no callers, and the `BuildOrdinalLookup` doc comment
+(`JoinedQueryBuilder.cs:735`) still describes the removed `f_`/`j_` prefixes.
