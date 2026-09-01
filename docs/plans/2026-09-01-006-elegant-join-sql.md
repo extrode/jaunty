@@ -1,4 +1,4 @@
-# Elegant join SQL
+﻿# Elegant join SQL
 
 **Status:** in progress · **Branch:** `feat/elegant-join-sql` · **Tier:** Standard
 
@@ -195,10 +195,7 @@ so this is the cost of the elegant form.
 
 ### Not done
 
-`JoinedGroupByExpressionVisitor.cs:162` still mints `@jhp0` for HAVING operands. Deferred rather
-than dropped: `GroupedJoinPrefixAndHavingParameterTests` asserts that two groupings off one builder
-get distinct operand names, and a name derived from `COUNT(*)` collides by construction, so that
-site wants its own pass against those tests.
+~~`JoinedGroupByExpressionVisitor.cs:162` still mints `@jhp0`.~~ Done 2026-09-02, see below.
 
 `AddOnParameters` (the two-table `On(predicate)` path) still binds its names without uniquifying.
 That is sound today because the ON is what creates the joined builder, so nothing has bound a name
@@ -255,3 +252,61 @@ self-joined selects.
 Two stale artefacts noticed and left: the name-based `MapEntity(prefix, ordinals)` overload
 (`JoinedQueryBuilder.cs:676`) now has no callers, and the `BuildOrdinalLookup` doc comment
 (`JoinedQueryBuilder.cs:735`) still describes the removed `f_`/`j_` prefixes.
+
+## The fourth site (2026-09-02)
+
+`JoinedGroupByExpressionVisitor.cs:162` and its single-entity twin
+`GroupedQueryBuilder.AddHavingParameter` now derive their names too, so no path is left on a
+counter:
+
+| before | after |
+| --- | --- |
+| `HAVING COUNT(*) > @jhp_0` | `HAVING COUNT(*) > @count` |
+| `HAVING SUM(p.unit_price) > @jhp_0` | `HAVING SUM(p.unit_price) > @sum_p_unit_price` |
+| `HAVING MIN(product_name) = @hp_0` | `HAVING MIN(product_name) = @min_product_name` |
+
+The stem is the aggregate on the *other* side of the comparison, so `g.Count() > 3` and
+`3 < g.Count()` both bind `@count`. It is built from the expression tree, never the rendered SQL:
+AVG renders through `FractionalAverage`, whose CAST wrapper would otherwise reach the name as
+`@avg_cast_p_unit_price_as_float`. The operator is left out, so widening `>` to `>=` does not
+rename a parameter. A comparison with no aggregate on either side keeps the positional form.
+
+### The deferral's stated blocker was wrong
+
+The plan deferred this because a name derived from `COUNT(*)` "collides by construction" against
+the five tests asserting two groupings off one builder get distinct names. That confuses
+codebase-wide uniqueness with the scope a parameter name has, which is one query: the first
+grouping takes `@count` and the second `@count_2`, and all five tests pass unmodified. Sameness
+across queries is the feature - `HAVING COUNT(*) > @count` reads the same in every log line it
+appears in.
+
+### What the design removed
+
+Names are minted against the query's own `ParameterCollection` inside the visitor, which is what
+the single-entity path always did. `JoinedQueryBuilder.RegisterHavingParameters` and
+`HavingParameterRenameRegexes` are gone with it. AUD-R35-016's collision is now prevented by
+construction rather than repaired by a regex rewrite afterwards, and there is no longer a window in
+which a value and its name are two separate strings that a rewrite could mismatch.
+
+`ParameterCollection.CreateDerivedName` is the new primitive: `prefix + stem`, suffixed `_2`, `_3`
+only on collision. It differs from `CreateUniqueName`'s unconditional `_<count>` because that
+suffix exists to keep two distinct *caller-supplied* texts apart (AUD-R35-014), which does not
+apply to a stem the builder rendered. Its taken test asks both `_names` and `_strippedNames`,
+because `Add` throws on either (AUD-R35-201).
+
+### Verification
+
+11 new tests in `HavingParameterNamingTests`, all RED-phase checked:
+
+| Mutation | Killed |
+|---|---|
+| joined `AggregateStem` always null | 9, incl. every joined naming assertion |
+| `CreateDerivedName` never suffixes | 7, incl. all five AUD-R35-016 collision tests |
+| single-entity stem drops its column | 2 |
+| bound HAVING value shifted by 100 | `TheNamedOperandStillBindsItsValue` and 4 pre-existing |
+
+Three pre-existing assertions changed with the behaviour, and no others:
+`FluentGroupByJoinTests.cs:205`, `FluentGroupByTests.cs:409`,
+`GroupedQueryBuilderParameterBindingTests.cs:38`.
+
+Full solution net10.0: 8,720 passed, 0 failed.
