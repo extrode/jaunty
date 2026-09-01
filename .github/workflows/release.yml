@@ -15,6 +15,11 @@ permissions:
   contents: write
   packages: write
 
+# The `release` job below uses the bare `vars.CI_RUNNER` form. Safe for the same reason as
+# nightly.yml: a tag push and a workflow_dispatch both require write access, so a fork cannot
+# reach the self-hosted runner here. ci.yml is the file that takes pull requests, and it is the
+# one carrying the fork guard.
+
 jobs:
   # Arms the nuget.org trusted-publishing policy without publishing anything. One
   # successful login inside the 7-day window makes the policy permanent; a package

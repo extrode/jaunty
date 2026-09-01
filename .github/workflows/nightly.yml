@@ -26,6 +26,12 @@ on:
 permissions:
   contents: read
 
+# `runs-on` here is the bare `vars.CI_RUNNER` form, unlike ci.yml, which routes fork pull requests
+# to a hosted runner. The triggers above are the reason: schedule and workflow_dispatch cannot be
+# fired by a fork, and workflow_dispatch needs write access, so no outside code reaches the
+# self-hosted machine through this file. Adding a `pull_request` trigger here without also copying
+# ci.yml's fork guard would place an outside contributor's code on the maintainer's own machine.
+
 jobs:
   # Everything ci.yml runs on two frameworks, run on all three, with no --framework filter.
   full-suite:
@@ -36,9 +42,9 @@ jobs:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
           ACCEPT_EULA: "Y"
-          MSSQL_SA_PASSWORD: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
+          MSSQL_SA_PASSWORD: ${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
         ports:
-          - 1435:1433
+          - "127.0.0.1:1435:1433"
         volumes:
           - ${{ github.workspace }}:${{ github.workspace }}
         options: >-
@@ -48,7 +54,7 @@ jobs:
           --health-retries 10
           --health-start-period 20s
     env:
-      CI_SA_CRED: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
+      CI_SA_CRED: ${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -86,7 +92,7 @@ jobs:
 
       - name: Test (every framework each project targets)
         env:
-          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
         run: dotnet test Jaunty.slnx -c Release --no-build --logger "trx;LogFileName=nightly-full.trx"
 
       - name: Upload test results
