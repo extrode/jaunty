@@ -26,6 +26,12 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
     private ParameterExpression? _param1;
     private ParameterExpression? _param2;
 
+    // The column the value about to be appended is being compared against, so the parameter can be
+    // named after it. Set by VisitBinary immediately before it visits the non-column side, and
+    // consumed once by AppendValue - a value reached any other way (an IN list element, a string
+    // method's argument) has no single column to name it after and takes the positional form.
+    private string? _pendingColumn;
+
     public JoinExpressionVisitor(ISqlDialect dialect, string? alias1, string? alias2)
     {
         _dialect = dialect;
@@ -40,6 +46,7 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         _sql.Clear();
         _parameters.Clear();
         _parameterIndex = 0;
+        _pendingColumn = null;
         _param1 = predicate.Parameters[0];
         _param2 = predicate.Parameters[1];
 
@@ -50,7 +57,9 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
 
     private string GetParameterName()
     {
-        return $"{_dialect.ParameterPrefix}jp{_parameterIndex++}";
+        string? column = _pendingColumn;
+        _pendingColumn = null;
+        return JoinParameterNaming.Derive(_dialect.ParameterPrefix, column, _parameters, ref _parameterIndex);
     }
 
     protected override Expression VisitBinary(BinaryExpression node)
@@ -95,6 +104,7 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         }
         else
         {
+            _pendingColumn = rightColumn;
             Visit(node.Left);
         }
 
@@ -106,6 +116,7 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         }
         else
         {
+            _pendingColumn = leftColumn;
             Visit(node.Right);
         }
 

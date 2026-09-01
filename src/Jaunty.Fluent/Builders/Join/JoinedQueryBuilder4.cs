@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 
@@ -45,10 +45,11 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
         string leftColumn = GetColumnName<T1>(leftProp, _parent._parent.FromAlias);
-        string rightColumn = GetColumnName<T4>(rightProp, _alias);
+        string? alias = Infer(rightKey.Parameters[0].Name);
+        string rightColumn = GetColumnName<T4>(rightProp, alias);
 
         string condition = $"{leftColumn} = {rightColumn}";
-        return CreateJoinedQuery4(condition);
+        return CreateJoinedQuery4(condition, alias);
     }
 
     public IJoinedQuery4<T1, T2, T3, T4> OnFromSecond<TLeftKey, TRightKey>(
@@ -59,10 +60,11 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
         string leftColumn = GetColumnName<T2>(leftProp, _parent._parent.Joins[0].Alias);
-        string rightColumn = GetColumnName<T4>(rightProp, _alias);
+        string? alias = Infer(rightKey.Parameters[0].Name);
+        string rightColumn = GetColumnName<T4>(rightProp, alias);
 
         string condition = $"{leftColumn} = {rightColumn}";
-        return CreateJoinedQuery4(condition);
+        return CreateJoinedQuery4(condition, alias);
     }
 
     public IJoinedQuery4<T1, T2, T3, T4> OnFromThird<TLeftKey, TRightKey>(
@@ -73,28 +75,31 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
         string leftColumn = GetColumnName<T3>(leftProp, _parent._parent.Joins[1].Alias);
-        string rightColumn = GetColumnName<T4>(rightProp, _alias);
+        string? alias = Infer(rightKey.Parameters[0].Name);
+        string rightColumn = GetColumnName<T4>(rightProp, alias);
 
         string condition = $"{leftColumn} = {rightColumn}";
-        return CreateJoinedQuery4(condition);
+        return CreateJoinedQuery4(condition, alias);
     }
 
     public IJoinedQuery4<T1, T2, T3, T4> On(Expression<Func<T1, T2, T3, T4, bool>> predicate)
     {
         JoinedQueryBuilder<T1, T2> root = _parent._parent;
 
+        string? alias = Infer(predicate.Parameters[3].Name);
+
         var visitor = new JoinExpressionVisitor4<T1, T2, T3, T4>(
             root.Dialect,
             root.FromAlias,
             root.Joins[0].Alias,
             root.Joins[1].Alias,
-            _alias);
+            alias);
 
         (string condition, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
 
         // Renumbered against the query-wide sequence for the same reason as the arity-3 overload:
         // by the fourth join the query can already hold "jp0", and each visitor restarts at 0.
-        return CreateJoinedQuery4(root.RegisterExpressionParameters(condition, parameters));
+        return CreateJoinedQuery4(root.RegisterExpressionParameters(condition, parameters), alias);
     }
 
     /// <inheritdoc cref="JoinClauseBuilder{TFrom, TJoin}.On(string, string)"/>
@@ -125,13 +130,41 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         return joinedQuery;
     }
 
+    /// <summary>
+    /// The alias for T4, inferred from the lambda parameter naming it when the caller supplied none.
+    /// </summary>
+    /// <remarks>
+    /// Only this join's own table is at stake: the aliases of T1 through T3 were settled by earlier
+    /// <c>On</c> calls, whose conditions are already rendered strings, so they are read here as
+    /// constraints rather than revised.
+    /// </remarks>
+    private string? Infer(string? name)
+    {
+        if (_alias is not null)
+            return _alias;
+
+        JoinedQueryBuilder<T1, T2> root = _parent._parent;
+
+        return AliasInference.ForAddedJoin(
+            root.Dialect,
+            new[] { root.FromAlias, root.Joins[0].Alias, root.Joins[1].Alias },
+            new[] { root.FromTable, root.Joins[0].TableName, root.Joins[1].TableName },
+            _metadata.TableName,
+            name,
+            3);
+    }
+
+
     private JoinedQuery4Builder<T1, T2, T3, T4> CreateJoinedQuery4(string onCondition)
+        => CreateJoinedQuery4(onCondition, _alias);
+
+    private JoinedQuery4Builder<T1, T2, T3, T4> CreateJoinedQuery4(string onCondition, string? alias)
     {
         var joinInfo = new JoinInfo(
             _joinType,
             _metadata.TableName,
             _metadata.SchemaName,
-            _alias,
+            alias,
             onCondition);
 
         if (_addedJoin is JoinInfo previous)
@@ -413,10 +446,10 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
         EntityMetadata t4Metadata = FluentMetadataCache.GetMetadata<T4>();
 
-        string[] t1Columns = _parent._parent.GetPrefixedColumnsWithAlias(t1Metadata, _parent._parent.FromAlias, "t1_");
-        string[] t2Columns = _parent._parent.GetPrefixedColumnsWithAlias(t2Metadata, _parent._parent.Joins[0].Alias, "t2_");
-        string[] t3Columns = _parent._parent.GetPrefixedColumnsWithAlias(t3Metadata, _parent._parent.Joins[1].Alias, "t3_");
-        string[] t4Columns = _parent._parent.GetPrefixedColumnsWithAlias(t4Metadata, _parent._parent.Joins[2].Alias, "t4_");
+        string[] t1Columns = _parent._parent.GetPrefixedColumns(t1Metadata, _parent._parent.FromAlias);
+        string[] t2Columns = _parent._parent.GetPrefixedColumns(t2Metadata, _parent._parent.Joins[0].Alias);
+        string[] t3Columns = _parent._parent.GetPrefixedColumns(t3Metadata, _parent._parent.Joins[1].Alias);
+        string[] t4Columns = _parent._parent.GetPrefixedColumns(t4Metadata, _parent._parent.Joins[2].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).Concat(t4Columns).ToArray();
 
         string sql = _parent._parent.BuildSelectSql(allColumns);
@@ -442,14 +475,13 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
             try
             {
                 using IDataReader reader = command.ExecuteReader();
-                Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
 
                 while (reader.Read())
                 {
-                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
-                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
-                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
-                    T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_", ordinals);
+                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, 0);
+                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, t1Columns.Length);
+                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, t1Columns.Length + t2Columns.Length);
+                    T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, t1Columns.Length + t2Columns.Length + t3Columns.Length);
                     results.Add((t1, t2, t3, t4));
                 }
             }
@@ -559,10 +591,10 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
         EntityMetadata t4Metadata = FluentMetadataCache.GetMetadata<T4>();
 
-        string[] t1Columns = _parent._parent.GetPrefixedColumnsWithAlias(t1Metadata, _parent._parent.FromAlias, "t1_");
-        string[] t2Columns = _parent._parent.GetPrefixedColumnsWithAlias(t2Metadata, _parent._parent.Joins[0].Alias, "t2_");
-        string[] t3Columns = _parent._parent.GetPrefixedColumnsWithAlias(t3Metadata, _parent._parent.Joins[1].Alias, "t3_");
-        string[] t4Columns = _parent._parent.GetPrefixedColumnsWithAlias(t4Metadata, _parent._parent.Joins[2].Alias, "t4_");
+        string[] t1Columns = _parent._parent.GetPrefixedColumns(t1Metadata, _parent._parent.FromAlias);
+        string[] t2Columns = _parent._parent.GetPrefixedColumns(t2Metadata, _parent._parent.Joins[0].Alias);
+        string[] t3Columns = _parent._parent.GetPrefixedColumns(t3Metadata, _parent._parent.Joins[1].Alias);
+        string[] t4Columns = _parent._parent.GetPrefixedColumns(t4Metadata, _parent._parent.Joins[2].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).Concat(t4Columns).ToArray();
 
         string sql = _parent._parent.BuildSelectSql(allColumns);
@@ -588,14 +620,13 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
             try
             {
                 using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-                Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
 
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
-                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
-                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
-                    T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_", ordinals);
+                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, 0);
+                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, t1Columns.Length);
+                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, t1Columns.Length + t2Columns.Length);
+                    T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, t1Columns.Length + t2Columns.Length + t3Columns.Length);
                     results.Add((t1, t2, t3, t4));
                 }
             }

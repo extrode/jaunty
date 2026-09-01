@@ -23,7 +23,9 @@ namespace Jaunty.Fluent.Tests.Unit.Builders.Query;
 /// </description></item>
 /// </list>
 /// Uses <see cref="TestDialect"/>, which brackets every identifier, so raw-vs-escaped is visible
-/// regardless of whether the name is a keyword.
+/// regardless of whether the name is a keyword. The helper queries name each lambda parameter
+/// after its own table, which is the one name alias inference declines, so the builders under test
+/// still see the unaliased case these regressions are about.
 /// </summary>
 public class GroupedJoinPrefixAndHavingParameterTests
 {
@@ -38,12 +40,12 @@ public class GroupedJoinPrefixAndHavingParameterTests
     private IJoinedQuery<Product, Category> TwoTable() =>
         _connection.From<Product>()
             .InnerJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId);
+            .On(products => products.CategoryId, categories => categories.CategoryId);
 
     private IJoinedQuery3<Product, Category, Supplier> ThreeTable() =>
         TwoTable()
             .InnerJoin<Supplier>()
-            .On(p => p.SupplierId, s => s.SupplierId);
+            .On(p => p.SupplierId, suppliers => suppliers.SupplierId);
 
     private IJoinedQuery4<Product, Category, Supplier, Order> FourTable() =>
         ThreeTable()

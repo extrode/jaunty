@@ -133,7 +133,7 @@ public class FluentObservabilityTests : IClassFixture<FluentDatabaseFixture>, ID
         _ = Connection.From<Product>()
             .InnerJoin<Category>()
             .On((p, c) => p.CategoryId == c.CategoryId)
-            .SelectPartial("products.product_id, categories.category_name");
+            .SelectPartial("p.product_id, c.category_name");
 
         AssertObserved("SelectPartial on a join");
     }
@@ -219,7 +219,7 @@ public class FluentObservabilityTests : IClassFixture<FluentDatabaseFixture>, ID
             .InnerJoin<Category>()
             .On((p, c) => p.CategoryId == c.CategoryId)
             .SelectPartialAsync(
-                "products.product_id, categories.category_name",
+                "p.product_id, c.category_name",
                 TestContext.Current.CancellationToken);
 
         AssertObserved("SelectPartialAsync on a join");
