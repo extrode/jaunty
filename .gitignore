@@ -364,8 +364,11 @@ packout/
 # Locally built macOS arm64 SQLite.Interop (see tools/native/sqlite-interop-osx-arm64/README.md)
 tools/native/sqlite-interop-osx-arm64/artifacts/
 
-# Git worktrees - never tracked
+# Git worktrees - never tracked. Two locations: .worktrees/ for the ones made by hand,
+# .claude/worktrees/ for the built-in tool, which hardcodes that path. A worktree is a
+# full checkout, so an unignored one commits the repo twice.
 .worktrees/
+.claude/worktrees/
 
 # The repo's one scratch directory : probes, dumps, screenshots, patches.
 # Ignored before the first scratch file exists, not after one is committed.
