@@ -396,6 +396,8 @@ You've now touched every core building block: strict mapping, partial mapping, p
 writes, transactions, a custom mapper, attribute mapping, async, and streaming. From here:
 
 - Read the [`exercises.md`](exercises.md) in this folder to practice each of these on your own.
+- [Error Messages, Explained](error-messages.md) covers the messages you can reach from the code
+  above, including the strict-mapping exception you triggered on purpose in Step 2.
 - The root `README.md` in the repository documents the full API surface, including bulk
   operations, upserts, stored procedures, `GridReader` for multiple result sets, and
   interceptors for logging and auditing.
