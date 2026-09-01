@@ -57,6 +57,9 @@ $targets = @(
     'docs/readme-gfm'
     'chore/elegant-join-sql-followup'
     'fix/positional-alias-collision'
+    'chore/cleanup-script-branch'
+    'test/string-on-alias-diagnostic'
+    'feat/derived-having-parameter-names'
 )
 
 foreach ($target in $targets) {
