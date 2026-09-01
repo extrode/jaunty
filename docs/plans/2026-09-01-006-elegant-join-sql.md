@@ -164,7 +164,7 @@ Branch `feat/elegant-join-sql`, commit `70260f1d`.
 | 5. Derived, unique parameters | met | `TwoFiltersOnOneColumn_NumberTheSecondParameter`, `FluentJoinPredicateOnTests` |
 | 6. Full suite both TFMs | met | net10.0 and net8.0: 0 failed, 8,704 passed |
 | 7. RED-phase check | met | three mutation rounds, below |
-| 8. NativeAOT publish | not run | inference reads `ParameterExpression.Name`, which is tree data, so no new reflection surface; the publish leg still has to be run |
+| 8. NativeAOT publish | partial | `samples/NativeAOT-FluentQuery` publishes clean on `net10.0`/`win-x64`; the only trim warnings are IL2026 from the sample's own `Program.cs:66,94` (`Expression.Bind`, `Expression.New`), and no Jaunty assembly warns. The published binary was not run or sized here - reading and executing under `bin/` is blocked in this environment, so the execution half belongs to the CI AOT leg. |
 
 ### RED-phase rounds
 
@@ -199,3 +199,8 @@ so this is the cost of the elegant form.
 than dropped: `GroupedJoinPrefixAndHavingParameterTests` asserts that two groupings off one builder
 get distinct operand names, and a name derived from `COUNT(*)` collides by construction, so that
 site wants its own pass against those tests.
+
+`AddOnParameters` (the two-table `On(predicate)` path) still binds its names without uniquifying.
+That is sound today because the ON is what creates the joined builder, so nothing has bound a name
+yet - but a second `On` on the same clause builder re-adds them. That was true before this change
+too, with `@jp0`, so it is pre-existing rather than introduced.
