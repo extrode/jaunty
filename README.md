@@ -2,12 +2,19 @@
 
 **The micro-ORM that respects your SQL and your time.**
 
-**Free to use, including in commercial production** — no seat count, no order form, no expiry.
-Source-available under [ISL-R](LICENSE.md), which is not an OSI-approved open-source licence:
-you may use and read the source, but not modify or redistribute it as a library. Shipping the
-unmodified packages inside your own application is covered by the
-[Redistribution Exception](LICENSE-DISTRIBUTION-EXCEPTION.md), royalty-free and non-expiring.
-What is sold is [support](docs/06-releases/pricing.md), never the right to use the software.
+[![CI](https://github.com/extrode/jaunty/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/extrode/jaunty/actions/workflows/ci.yml)
+[![License: ISL-R](https://img.shields.io/badge/license-ISL--R-blue)](LICENSE.md)
+[![Targets](https://img.shields.io/badge/targets-netstandard2.0%20%7C%20net8.0%20%7C%20net10.0-512BD4)](#installation)
+[![NativeAOT](https://img.shields.io/badge/NativeAOT-verified%20in%20CI-brightgreen)](#nativeaot)
+[![Dependencies](https://img.shields.io/badge/dependencies-none%20on%20net8.0%2Fnet10.0-informational)](#installation)
+
+> [!IMPORTANT]
+> **Free to use, including in commercial production** — no seat count, no order form, no expiry.
+> Source-available under [ISL-R](LICENSE.md), which is **not** an OSI-approved open-source licence:
+> you may use and read the source, but not modify or redistribute it as a library. Shipping the
+> unmodified packages inside your own application is covered by the
+> [Redistribution Exception](LICENSE-DISTRIBUTION-EXCEPTION.md), royalty-free and non-expiring.
+> What is sold is [support](docs/06-releases/pricing.md), never the right to use the software.
 
 Jaunty is a high-performance data access library for .NET that does one thing exceptionally well: execute your SQL and map results to objects. No LINQ translation, no hidden query rewriting, no magic — the SQL that runs is the SQL you wrote.
 
@@ -49,7 +56,9 @@ var products = connection.Query<Product>(
 // InvalidOperationException: "Strict mapping failed: property 'Price' has no matching column"
 ```
 
-**Why?** Because silent partial mapping is a bug waiting to happen. If you wanted all three properties, you should know immediately that your query is wrong. If you intentionally want partial data, say so explicitly with `QueryPartial<T>`.
+> [!WARNING]
+> Silent partial mapping is a bug waiting to happen. If you wanted all three properties, you should
+> know immediately that your query is wrong. If you want partial data, say so with `QueryPartial<T>`.
 
 This catches mismatches at development time, not when a customer reports weird behavior in production.
 
@@ -76,10 +85,12 @@ whichever library benchmarks faster on a given path: a query that stops matching
 at the call site rather than silently handing back a half-populated object. Every other row in the
 table is something you could assemble from packages; that row is a different default.
 
-**`QueryPartial<T>` is not a workaround.** Strict mapping is the default because entities and
-per-query DTOs should match their result set exactly, but projections legitimately do not — and for
-those, `QueryPartial<T>` is the right method, not a concession. [The two mapping
-modes](#the-two-mapping-modes) covers the distinction, and [migrating to
+> [!NOTE]
+> **`QueryPartial<T>` is not a workaround.** Strict mapping is the default because entities and
+> per-query DTOs should match their result set exactly, but projections legitimately do not — and
+> for those, `QueryPartial<T>` is the right method, not a concession.
+
+[The two mapping modes](#the-two-mapping-modes) covers the distinction, and [migrating to
 Jaunty](docs/08-learn/migrating/README.md) covers how to port an existing lenient codebase without
 fighting it.
 
@@ -134,16 +145,15 @@ reflection and no runtime SQL parsing. Neither product will silently map the wro
 catch it at different moments: JauntyQ at build time against a snapshot, Jaunty at the call site
 against the live result set.
 
-### The two directions, and what each one produces
+> [!NOTE]
+> If that second description is you, read on at
+> [github.com/extrode/jauntyq](https://github.com/extrode/jauntyq) — you will be better served there,
+> and its README covers the SQL-in/C#-out direction in the same detail this one covers Jaunty's.
 
-The distinction is easiest to see by looking at what you write and what comes out the other side.
-**With Jaunty you write C# and get SQL. With JauntyQ you write SQL and get C#.** Every listing below
-is real output, not an illustration.
+### C# in, SQL out
 
-#### Jaunty: C# in, SQL out
-
-The core API needs no query at all. The entity carries the mapping, and the source generator emits
-the SQL at build time:
+Every listing below is real output, not an illustration. The core API needs no query at all: the
+entity carries the mapping, and the source generator emits the SQL at build time.
 
 ```csharp
 using Jaunty;
@@ -165,8 +175,11 @@ UPDATE products SET product_name = @product_name, category_id = @category_id, un
 DELETE FROM products WHERE product_id = @product_id
 ```
 
-Note what is *not* there: no `SELECT *`, so a column added to the table tomorrow cannot silently
-change the shape of your result. The identity fetch is dialect-specific: `last_insert_rowid()` on
+> [!NOTE]
+> No `SELECT *` anywhere, so a column added to the table tomorrow cannot silently change the shape
+> of your result.
+
+The identity fetch is dialect-specific: `last_insert_rowid()` on
 SQLite, `CAST(SCOPE_IDENTITY() AS BIGINT)` on SQL Server, `RETURNING` on PostgreSQL,
 `LAST_INSERT_ID()` on MySQL. Every value is a parameter, so SQL injection is not a thing you defend
 against per query.
@@ -189,19 +202,25 @@ foreach (var (product, category) in rows)
 and produces:
 
 ```sql
-SELECT products.product_id AS f_product_id, products.product_name AS f_product_name,
-       products.category_id AS f_category_id, products.unit_price AS f_unit_price,
-       products.units_in_stock AS f_units_in_stock, products.discontinued AS f_discontinued,
-       categories.category_id AS j_category_id, categories.category_name AS j_category_name,
-       categories.description AS j_description
-FROM products
-INNER JOIN categories ON products.category_id = categories.category_id
-WHERE (products.category_id = @jp0)
+SELECT p.product_id, p.product_name, p.category_id, p.unit_price, p.units_in_stock, p.discontinued,
+       c.category_id, c.category_name, c.description
+FROM products p
+INNER JOIN categories c ON p.category_id = c.category_id
+WHERE (p.category_id = @p_category_id)
 ```
 
-The `f_`/`j_` aliases are why `SelectBoth()` can hand you both entities: `products.category_id` and
-`categories.category_id` would otherwise collide in one result set. `ToSql()` gives you that string
-without executing anything, so the SQL is reviewable rather than a black box.
+**`p` and `c` are the names you wrote.** A lambda parameter survives into the expression tree as
+data, so the builder aliases each table after the identifier already standing for it in your code.
+Nothing is renamed and nothing is numbered: `@p_category_id` is a parameter you can grep for, and
+the two `category_id` columns are left to collide by name because `SelectBoth()` reads each entity
+from its own ordinals, not by column name.
+
+> [!TIP]
+> `ToSql()` returns that string without executing anything, so the SQL is reviewable in a test.
+
+Aliases are inferred per join and only when every name a join needs is usable. A name that is a SQL
+keyword, is already taken, or matches a table in the query is declined, and that join keeps the
+fully qualified form. An explicit `From<Product>("prd")` always wins.
 
 Raw SQL is a first-class option here, not an escape hatch. This one selects three columns rather
 than a whole `Product`, so it is a projection and `QueryPartial<T>` is the right method — `Query<T>`
@@ -212,86 +231,6 @@ var products = connection.QueryPartial<Product>(
     "SELECT product_id, product_name, unit_price FROM products WHERE category_id = @CategoryId",
     new { CategoryId = 1 });
 ```
-
-#### JauntyQ: SQL in, C# out
-
-You write the file. This one ships as-is in `samples/JauntyQ.Northwind.Tests`:
-
-```sql
--- db/tables/Products/GetByCategory.sql
-select p.ProductId, p.ProductName, p.UnitPrice, p.UnitsInStock, c.CategoryName
-from Products p
-join Categories c on p.CategoryId = c.CategoryId
-where p.CategoryId = @CategoryId
-```
-
-The generator validates it against the committed schema snapshot and emits this, which is what your
-code calls:
-
-```csharp
-public class GetByCategory
-{
-    public required int ProductId { get; set; }
-    public required string ProductName { get; set; }
-    public required decimal? UnitPrice { get; set; }
-    public required short? UnitsInStock { get; set; }
-    public required string CategoryName { get; set; }
-}
-
-public List<Result.GetByCategory> GetByCategory(short? CategoryId)
-{
-    using var cmd = _conn.CreateCommand();
-    cmd.CommandText = @"select p.ProductId, ... where p.CategoryId = @CategoryId";
-
-    var p0 = cmd.CreateParameter();
-    p0.ParameterName = "@CategoryId";
-    p0.DbType = System.Data.DbType.Int16;
-    p0.Value = (object?)CategoryId ?? System.DBNull.Value;
-    cmd.Parameters.Add(p0);
-
-    using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-    JauntyQShapeGuard.Validate(reader, __GetByCategoryColumns, "Products.GetByCategory");
-    ...
-}
-```
-
-so you call:
-
-```csharp
-var db = new JauntyDb(connection);
-var rows = db.Products.GetByCategory(1);
-
-foreach (var row in rows)
-    Console.WriteLine($"{row.ProductName} ({row.CategoryName})");
-```
-
-Three things the schema snapshot decided for you without being asked: the parameter is `short?`
-because `CategoryId` is a `smallint`, its `DbType` is `Int16` rather than left to provider
-inference, and `UnitPrice` is `decimal?` because the column is nullable. Values are read by ordinal.
-Rename `CategoryName` in the database, re-pull the snapshot, and this file stops compiling.
-
-### Choose Jaunty if
-
-- You want data access solved in C#, reaching for SQL strings when they are the clearer tool rather
-  than as the default.
-- You want the mismatch between a query and an entity to throw at the call site, with
-  `QueryPartial<T>` marking a projection as deliberate.
-- Your queries take shape at runtime, or a committed schema snapshot and a generator step do not fit
-  your workflow.
-- You want bulk copy, scaffolding, DuckDB and flat-file querying, and NativeAOT publishing from one
-  library family.
-
-### Choose JauntyQ if
-
-- SQL is where you are most fluent, and you want every query to be SQL you wrote, versioned as
-  `.sql` files.
-- You want a renamed column or a dropped table to break the build rather than a request in
-  production.
-- You want the generated code to be the code you would have hand-written: ordinal reads, typed
-  parameters, no reflection, no runtime parsing.
-
-If the second list is you, JauntyQ is at [github.com/extrode/jauntyq](https://github.com/extrode/jauntyq)
-and you will be better served there.
 
 ## Installation
 
@@ -433,7 +372,8 @@ var summaries = connection.QueryPartial<OrderSummary>(
 
 ## Complete API Reference
 
-### Query Methods (Read Operations)
+<details open>
+<summary><b>Query methods (read operations)</b></summary>
 
 | Method | Returns | Mapping | Description |
 |--------|---------|---------|-------------|
@@ -450,7 +390,10 @@ var summaries = connection.QueryPartial<OrderSummary>(
 
 All methods have async counterparts (`QueryAsync<T>()`, etc.) with `CancellationToken` support.
 
-### Write Operations
+</details>
+
+<details open>
+<summary><b>Write operations</b></summary>
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -464,6 +407,8 @@ All methods have async counterparts (`QueryAsync<T>()`, etc.) with `Cancellation
 | `Upsert<T>()` | `int` | Insert or update by primary key |
 
 All write methods have async counterparts.
+
+</details>
 
 ### Stored Procedures
 
@@ -920,12 +865,29 @@ await foreach (var product in connection.QueryStreamAsync<Product>("SELECT * FRO
 ### Connection Management
 
 Jaunty respects your connection state:
-- If the connection was closed, Jaunty opens it, executes, and closes it
-- If the connection was already open, Jaunty leaves it open
+
+- If the connection was **closed**, Jaunty opens it, executes, and closes it
+- If the connection was **already open**, Jaunty leaves it open
 
 No surprises. No leaked connections.
 
 ### Performance Architecture
+
+Everything that can be decided once is decided once — at build time by the source generator, or on
+first use of a type. What is left per query is parameter binding and the reader loop.
+
+```mermaid
+flowchart LR
+    A["Your SQL<br/>+ parameters"] --> B["Parameter extraction<br/><i>literals and comments skipped</i>"]
+    B --> C["Command template<br/><i>cached per query</i>"]
+    C --> D["DbCommand"]
+    D --> E["DbDataReader"]
+    E --> F["Compiled setters<br/><i>generated, or built on first use</i>"]
+    F --> G["List&lt;T&gt;"]
+
+    M["MetadataCache&lt;T&gt;<br/><i>static, zero-alloc lookup</i>"] -.-> C
+    M -.-> F
+```
 
 1. **Compiled Setters** — Property setters are compiled via expression trees when a type is first used. No reflection during query execution.
 
@@ -1069,12 +1031,13 @@ BulkCopyConfiguration.DefaultTimeout = 30;
 | LINQ translation | No | No | Yes |
 | Change tracking | No | No | Yes |
 
-**This compares what each library ships in the box.** A "No" means the package itself does not
-provide the feature, not that it cannot be done — several of these rows are covered for Dapper by
-add-on packages such as `Dapper.Contrib` or `Z.Dapper.Plus`, and for EF Core by
-`EFCore.BulkExtensions`. Pick on the whole picture, not this table: the
-[migration guides](docs/08-learn/migrating/README.md) are more honest about the trade-offs,
-including the ones that favour the other library.
+> [!NOTE]
+> **This compares what each library ships in the box.** A "No" means the package itself does not
+> provide the feature, not that it cannot be done — several of these rows are covered for Dapper by
+> add-on packages such as `Dapper.Contrib` or `Z.Dapper.Plus`, and for EF Core by
+> `EFCore.BulkExtensions`. Pick on the whole picture, not this table: the
+> [migration guides](docs/08-learn/migrating/README.md) are more honest about the trade-offs,
+> including the ones that favour the other library.
 
 ---
 
@@ -1097,7 +1060,10 @@ For more detailed documentation, see:
 - **The Islamic Software License - Restricted (ISL-R), Version 1.0** - see [LICENSE.md](LICENSE.md) - governs both the source in this repository and the published packages. Section 2 grants a worldwide, royalty-free right to use the software for any lawful purpose, including internal commercial use, and to read the source. It does not grant modification, redistribution as a library, or derivative works.
 - **The Jaunty Redistribution Exception, Version 1.0** - see [LICENSE-DISTRIBUTION-EXCEPTION.md](LICENSE-DISTRIBUTION-EXCEPTION.md) - permits you to ship the unmodified packages inside your own application, container image, installer or hosted service. Without it, ISL-R's no-distribution clause would make deploying an application that references Jaunty impossible. It is royalty-free and does not expire.
 
-**The ethical restrictions in ISL-R Sections 4 and 5 are conditions of the grant, not of payment.** They bind a user who pays nothing exactly as they bind one who pays. They also travel with the redistributed binaries.
+> [!CAUTION]
+> **The ethical restrictions in ISL-R Sections 4 and 5 are conditions of the grant, not of payment.**
+> They bind a user who pays nothing as they bind one who pays, and they travel with the
+> redistributed binaries.
 
 This is not an open-source license. [LICENSE-EULA.md](LICENSE-EULA.md) is the instrument of the previous paid, Order-conditioned model; it is retained for the historical record and does not govern use under the free model.
 
