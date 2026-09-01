@@ -1,4 +1,4 @@
-﻿using Jaunty.Fluent.Tests.Entities;
+using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
@@ -194,5 +194,18 @@ public class FluentJoinSqlShapeTests : IClassFixture<FluentDatabaseFixture>
             Assert.NotNull(category.CategoryName);
             Assert.NotEqual(product.ProductName, category.CategoryName);
         }
+    }
+
+    [Fact]
+    public void AWhereOnAColumnTheOnAlreadyBound_TakesASuffixedName()
+    {
+        var sql = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On((p, c) => p.CategoryId == c.CategoryId && p.CategoryId > 0)
+            .Where((p, c) => p.CategoryId == 1)
+            .ToSql();
+
+        Assert.Contains("p.category_id > @p_category_id)", sql, StringComparison.Ordinal);
+        Assert.EndsWith("WHERE (p.category_id = @p_category_id_2)", sql, StringComparison.Ordinal);
     }
 }
