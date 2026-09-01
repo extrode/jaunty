@@ -68,7 +68,7 @@ internal static class JoinParameterNaming
     /// query names its parameters the same way whichever engine it is built for.
     /// </remarks>
     /// <param name="column">The rendered column reference.</param>
-    private static string Sanitize(string column)
+    internal static string Sanitize(string column)
     {
         var sb = new StringBuilder(column.Length);
         var pendingSeparator = false;
