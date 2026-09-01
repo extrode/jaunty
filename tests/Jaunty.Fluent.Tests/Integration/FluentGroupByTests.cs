@@ -406,7 +406,7 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
             .Having(g => g.Min(p => p.ProductName) == "Chai")
             .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        Assert.Contains("@hp", sql);
+        Assert.Contains("@min_product_name", sql, StringComparison.Ordinal);
         Assert.DoesNotContain("'Chai'", sql);
     }
 }

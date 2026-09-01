@@ -32,8 +32,7 @@ internal sealed class JoinedGroupByExpressionVisitor
     private readonly Dictionary<string, string> _keyPropertyToColumn;
     private readonly List<string> _selectColumns = new();
     private readonly List<string> _columnAliases = new();
-    private List<(string Name, object? Value)> _havingParameters = new();
-    private int _havingParamSeq;
+    private ParameterCollection? _havingParameters;
 
     /// <param name="dialect">The SQL dialect, for column escaping.</param>
     /// <param name="metadata">Entity metadata, ordered index 0 = TFrom, index 1 = TJoin, etc.</param>
@@ -62,19 +61,22 @@ internal sealed class JoinedGroupByExpressionVisitor
 
     /// <summary>
     /// Translates a HAVING predicate (its single parameter is the IGroupingJoined{,3,4}
-    /// instance) to a SQL boolean expression plus the query parameters its comparison operands
-    /// were bound to (matching how <c>GroupedQueryBuilder.AddHavingParameter</c> parameterizes
-    /// the single-entity HAVING path instead of inlining literal text). Reuses
+    /// instance) to a SQL boolean expression, binding each comparison operand into
+    /// <paramref name="parameters"/> instead of inlining literal text. Reuses
     /// <see cref="HavingExpressionHelpers"/> (the same closure-safety fix single-entity HAVING
-    /// uses) and the same aggregate-column resolution as <see cref="TranslateSelect"/>. The
-    /// caller must add the returned parameters to its own parameter collection before binding
-    /// the command.
+    /// uses) and the same aggregate-column resolution as <see cref="TranslateSelect"/>.
     /// </summary>
-    public (string Sql, List<(string Name, object? Value)> Parameters) TranslateHavingPredicate(LambdaExpression predicate)
+    /// <param name="predicate">The HAVING predicate.</param>
+    /// <param name="parameters">
+    /// The query's collection, supplied by the caller because every grouped builder derived from
+    /// one join shares it. Names are minted against it here, so a second grouping sees what the
+    /// first bound - which is the whole of AUD-R35-016, now held by the same mechanism the
+    /// single-entity path has always used rather than by a rewrite afterwards.
+    /// </param>
+    public string TranslateHavingPredicate(LambdaExpression predicate, ParameterCollection parameters)
     {
-        _havingParameters = new List<(string, object?)>();
-        string sql = TranslateHavingExpression(predicate.Body);
-        return (sql, _havingParameters);
+        _havingParameters = parameters;
+        return TranslateHavingExpression(predicate.Body);
     }
 
     /// <summary>
@@ -101,12 +103,87 @@ internal sealed class JoinedGroupByExpressionVisitor
                 return $"({left} {op} {right})";
             }
 
-            string leftOperand = TranslateHavingOperand(binary.Left);
-            string rightOperand = TranslateHavingOperand(binary.Right);
+            // Each side is named after the aggregate on the other side, so `g.Count() > 3` and
+            // `3 < g.Count()` both bind @count. A side that is itself an aggregate ignores the
+            // stem: it renders as SQL and binds nothing.
+            string leftOperand = TranslateHavingOperand(binary.Left, AggregateStem(binary.Right));
+            string rightOperand = TranslateHavingOperand(binary.Right, AggregateStem(binary.Left));
             return $"{leftOperand} {op} {rightOperand}";
         }
 
-        return TranslateHavingOperand(expr);
+        return TranslateHavingOperand(expr, null);
+    }
+
+    /// <summary>
+    /// The parameter-name stem for a value compared against <paramref name="expr"/>, or null when
+    /// that side is not an aggregate and there is nothing to name the value after.
+    /// </summary>
+    /// <remarks>
+    /// Built from the expression tree, never from the rendered SQL. AVG goes through
+    /// <see cref="FractionalAverage"/>, whose CAST wrapper would otherwise reach the name as
+    /// <c>avg_cast_p_unit_price_as_float</c>; the escaping dialects would each contribute their own
+    /// bracket noise for <see cref="JoinParameterNaming.Sanitize"/> to strip back out again. The
+    /// comparison operator is left out on purpose - changing <c>&gt;</c> to <c>&gt;=</c> is not a
+    /// reason for a parameter to be renamed.
+    /// </remarks>
+    private string? AggregateStem(Expression expr)
+    {
+        if (expr is UnaryExpression convert && convert.NodeType == ExpressionType.Convert)
+            expr = convert.Operand;
+
+        if (expr is not MethodCallExpression call)
+            return null;
+
+        string? function = call.Method.Name switch
+        {
+            "Count" => "count",
+            "Sum" => "sum",
+            "Avg" or "Average" => "avg",
+            "Min" => "min",
+            "Max" => "max",
+            _ => null
+        };
+
+        if (function is null)
+            return null;
+
+        if (call.Arguments.Count == 0)
+            return function;
+
+        string? column = AggregateColumnStem(call.Arguments[0]);
+        return column is null ? function : function + "_" + column;
+    }
+
+    /// <summary>
+    /// The qualified column an aggregate's selector reads, reduced to an identifier, or null when
+    /// the selector is anything else (a literal, or a shape this visitor would refuse to render).
+    /// </summary>
+    private string? AggregateColumnStem(Expression? expr)
+    {
+        while (expr is UnaryExpression unary &&
+               (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        {
+            expr = unary.Operand;
+        }
+
+        if (expr is not LambdaExpression lambda)
+            return null;
+
+        Expression body = lambda.Body;
+
+        if (body is UnaryExpression unaryBody &&
+            (unaryBody.NodeType == ExpressionType.Convert || unaryBody.NodeType == ExpressionType.Quote))
+        {
+            body = unaryBody.Operand;
+        }
+
+        if (body is not MemberExpression member)
+            return null;
+
+        int paramIndex = GetParameterIndex(member, lambda.Parameters);
+        string stem = JoinParameterNaming.Sanitize(GetQualifiedColumnName(paramIndex, member.Member.Name));
+
+        return stem.Length == 0 ? null : stem;
     }
 
     /// <summary>
@@ -114,7 +191,7 @@ internal sealed class JoinedGroupByExpressionVisitor
     /// a value (literal constant, captured local, or method parameter) which is bound as a
     /// query parameter rather than being inlined into the SQL text.
     /// </summary>
-    private string TranslateHavingOperand(Expression expr)
+    private string TranslateHavingOperand(Expression expr, string? stem)
     {
         if (expr is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
             expr = unary.Operand;
@@ -138,7 +215,7 @@ internal sealed class JoinedGroupByExpressionVisitor
 
         if (expr is ConstantExpression constant)
         {
-            return AddHavingParameter(constant.Value);
+            return AddHavingParameter(constant.Value, stem);
         }
 
         // Captured local variables, method parameters, and other closed-over values compile
@@ -146,7 +223,7 @@ internal sealed class JoinedGroupByExpressionVisitor
         // ConstantExpression - evaluate it (gap #14's closure-safety fix).
         if (expr is MemberExpression or UnaryExpression)
         {
-            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr));
+            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr), stem);
         }
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
@@ -157,10 +234,31 @@ internal sealed class JoinedGroupByExpressionVisitor
     /// name, instead of inlining it into the SQL text - matches
     /// <c>GroupedQueryBuilder.AddHavingParameter</c>'s fix for the same anti-pattern.
     /// </summary>
-    private string AddHavingParameter(object? value)
+    /// <remarks>
+    /// AUD-R35-016. The name used to be <c>{prefix}jhp{seq++}</c> from a per-visitor counter, while
+    /// the collection it landed in belongs to the join every grouped builder is derived from, so
+    /// two groupings both minted <c>@jhp0</c> and the second threw on a name the caller never
+    /// chose. It was patched by renaming the minted names afterwards, in a regex pass over the
+    /// rendered HAVING text; minting against the collection removes both the collision and the
+    /// window in which a value and its name were separate strings.
+    /// <para>
+    /// <paramref name="stem"/> is the aggregate on the other side of the comparison, so a caller
+    /// reading <c>HAVING SUM(p.unit_price) &gt; @sum_p_unit_price</c> in a log can see which
+    /// comparison a bound value feeds. Its absence is not a failure: a comparison with no aggregate
+    /// on either side has nothing to name the value after and keeps the positional form.
+    /// </para>
+    /// </remarks>
+    private string AddHavingParameter(object? value, string? stem)
     {
-        string name = $"{_dialect.ParameterPrefix}jhp{_havingParamSeq++}";
-        _havingParameters.Add((name, value));
+        ParameterCollection parameters = _havingParameters
+            ?? throw new InvalidOperationException(
+                "HAVING operands can only be bound while TranslateHavingPredicate is running.");
+
+        string name = stem is null
+            ? parameters.CreateUniqueName(_dialect.ParameterPrefix, "jhp")
+            : parameters.CreateDerivedName(_dialect.ParameterPrefix, stem);
+
+        parameters.Add(name, value);
         return name;
     }
 

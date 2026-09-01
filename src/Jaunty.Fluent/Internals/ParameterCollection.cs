@@ -96,6 +96,42 @@ internal sealed class ParameterCollection
         return candidate;
     }
 
+    /// <summary>
+    /// A placeholder built from a stem the builder derived itself, suffixed only where the query
+    /// has already claimed that name.
+    /// </summary>
+    /// <param name="parameterPrefix">The dialect's parameter sigil, e.g. <c>"@"</c>.</param>
+    /// <param name="stem">The derived stem, e.g. <c>sum_p_unit_price</c>.</param>
+    /// <remarks>
+    /// The difference from <see cref="CreateUniqueName"/> is the unconditional <c>_&lt;count&gt;</c>
+    /// suffix, which exists there to keep two distinct <em>caller-supplied</em> texts apart
+    /// (AUD-R35-014). A stem the builder rendered has no second text to collide with, so spending
+    /// the suffix only on a real collision is what gives <c>@sum_p_unit_price</c> rather than
+    /// <c>@sum_p_unit_price_3</c> - the same argument <see cref="JoinParameterNaming"/> documents
+    /// for the WHERE and ON sites.
+    /// <para>
+    /// The taken test asks both name sets, because <see cref="Add"/> throws on either: a candidate
+    /// that clears <c>_names</c> but not <c>_strippedNames</c> would look free here and still fail
+    /// to bind (AUD-R35-201).
+    /// </para>
+    /// </remarks>
+    public string CreateDerivedName(string parameterPrefix, string stem)
+    {
+        string sanitized = Sanitize(stem);
+        string candidate = parameterPrefix + sanitized;
+
+        for (var suffix = 2; IsTaken(candidate); suffix++)
+        {
+            candidate = parameterPrefix + sanitized + "_" +
+                        suffix.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        return candidate;
+    }
+
+    private bool IsTaken(string candidate)
+        => _names.Contains(candidate) || _strippedNames.Contains(StripSigil(candidate));
+
     private static string Sanitize(string name)
     {
         char[] chars = name.ToCharArray();
