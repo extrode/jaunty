@@ -148,3 +148,54 @@ an alias and a column rather than free text.
 - New: `src/Jaunty.Fluent/Internals/AliasInference.cs`
 - `tests/Jaunty.Fluent.Tests/` — 8 files assert join SQL; new `Unit/Builders/Join/AliasInferenceTests.cs`
 - `README.md`
+
+---
+
+## Outcome (2026-09-01)
+
+Branch `feat/elegant-join-sql`, commit `70260f1d`.
+
+| AC | Status | Evidence |
+| --- | --- | --- |
+| 1. Target SQL | met on SQLite and the bracket TestDialect | `FluentJoinSqlShapeTests.KeySelectorOn_InfersAliasesFromLambdaParameterNames` |
+| 2. Self-join | met | `SelfJoin_WithoutUsableNames_TakesThePositionalScheme`, `SelfJoin_WithDistinctNames_UsesThem` |
+| 3. Byte-identical fallback | met | `AliasEscapingFallbackTests`, `GroupedJoinPrefixAndHavingParameterTests` |
+| 4. Explicit aliases win | met, after a fix | `ExplicitAliasesBeatInferredOnes`; arities 3 and 4 ignored `_alias` and were overwriting it |
+| 5. Derived, unique parameters | met | `TwoFiltersOnOneColumn_NumberTheSecondParameter`, `FluentJoinPredicateOnTests` |
+| 6. Full suite both TFMs | met | net10.0 and net8.0: 0 failed, 8,704 passed |
+| 7. RED-phase check | met | three mutation rounds, below |
+| 8. NativeAOT publish | not run | inference reads `ParameterExpression.Name`, which is tree data, so no new reflection surface; the publish leg still has to be run |
+
+### RED-phase rounds
+
+Each of the 12 new tests fails under at least one mutation.
+
+| Round | Mutation | Tests it kills |
+| --- | --- | --- |
+| 1 | `ForJoin` returns `Fallback(...)` unconditionally; `JoinParameterNaming.Derive` gets an empty stem | 27, including 6 shape tests and every derived-name assertion |
+| 2 | `Sanction` accepts every candidate; `MapEntity` drops the ordinal offset | 15, including all 4 fallback tests and `SelectBoth_MapsEachEntityFromItsOwnColumns` |
+| 3 | `Infer` is passed null for both explicit aliases; the string `On` path forwards `"p"`/`"c"` | `ExplicitAliasesBeatInferredOnes`, `StringOn_DoesNotInfer` |
+
+### Two source defects the suite found
+
+- `AliasInference.ForAddedJoin` accepted a candidate equal to the table it aliases, emitting
+  `JOIN suppliers suppliers`. It now declines, which is what leaves the unaliased form the
+  caller's own column references expect.
+- `JoinedQueryBuilder3.Infer` and `JoinedQueryBuilder4.Infer` inferred over the caller's explicit
+  alias instead of returning it. Every existing test passed by coincidence, because each one had
+  chosen an explicit alias equal to its lambda parameter name.
+
+### Breaking change
+
+A query that mixes a lambda `On` with a string column reference naming a table now fails at the
+database: `On(p => p.CategoryId, c => c.CategoryId).Where("products.unit_price > 10")` renders
+`FROM products p`, so `products.` no longer resolves. 21 tests across five files were written that
+way and were updated to the alias. There is no way to keep both — an alias hides the table name —
+so this is the cost of the elegant form.
+
+### Not done
+
+`JoinedGroupByExpressionVisitor.cs:162` still mints `@jhp0` for HAVING operands. Deferred rather
+than dropped: `GroupedJoinPrefixAndHavingParameterTests` asserts that two groupings off one builder
+get distinct operand names, and a name derived from `COUNT(*)` collides by construction, so that
+site wants its own pass against those tests.
