@@ -56,6 +56,7 @@ $targets = @(
     'feat/elegant-join-sql'
     'docs/readme-gfm'
     'chore/elegant-join-sql-followup'
+    'fix/positional-alias-collision'
 )
 
 foreach ($target in $targets) {
