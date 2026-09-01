@@ -32,7 +32,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .InnerJoin<Supplier>()
             .On(p => p.SupplierId, s => s.SupplierId)
             .InnerJoin<Product, Category, Supplier, Order>()
-            .On("products.supplier_id", "orders.employee_id")
+            .On("p.supplier_id", "orders.employee_id")
             .ToSql();
 
         Assert.Contains("SELECT", sql);
@@ -54,7 +54,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .InnerJoin<Supplier>()
             .On(p => p.SupplierId, s => s.SupplierId)
             .RightJoin<Product, Category, Supplier, Order>()
-            .On("products.supplier_id", "orders.employee_id")
+            .On("p.supplier_id", "orders.employee_id")
             .ToSql();
 
         Assert.Contains("RIGHT JOIN", sql);
@@ -69,7 +69,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .InnerJoin<Supplier>()
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
-            .On("products.supplier_id", "orders.employee_id")
+            .On("p.supplier_id", "orders.employee_id")
             .ToSql();
 
         Assert.Contains("INNER JOIN", sql);
@@ -158,10 +158,10 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .InnerJoin<Supplier>()
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
-            .On("products.supplier_id", "orders.employee_id")
+            .On("p.supplier_id", "orders.employee_id")
             .ToSql();
 
-        Assert.Contains("products.supplier_id = orders.employee_id", sql);
+        Assert.Contains("p.supplier_id = orders.employee_id", sql);
     }
 
     [Fact]
@@ -245,7 +245,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id > 0")
-            .Where("products.unit_price > 10")
+            .Where("p.unit_price > 10")
             .ToSql();
 
         Assert.Contains("WHERE", sql);
@@ -271,7 +271,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id > 0")
-            .Where("products.unit_price > 100")
+            .Where("p.unit_price > 100")
             .Select();
 
         Assert.True(filtered.Count <= all.Count);
@@ -291,11 +291,11 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id > 0")
-            .Where("products.product_name", "Chai")
+            .Where("p.product_name", "Chai")
             .ToSql();
 
         Assert.Contains("WHERE", sql);
-        Assert.Contains("products.product_name =", sql);
+        Assert.Contains("p.product_name =", sql);
         Assert.DoesNotContain("'Chai'", sql);
     }
 
@@ -458,7 +458,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id > 0")
-            .Where("products.product_name = 'this-product-does-not-exist-xyz'")
+            .Where("p.product_name = 'this-product-does-not-exist-xyz'")
             .SelectFirstOrDefault();
 
         Assert.Null(result);
@@ -497,7 +497,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id > 0")
-            .Where("products.product_name = 'this-product-does-not-exist-xyz'")
+            .Where("p.product_name = 'this-product-does-not-exist-xyz'")
             .SelectFirstOrDefaultAsync();
 
         Assert.Null(result);
@@ -515,7 +515,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id = 1")
-            .Where("products.product_id = 1")
+            .Where("p.product_id = 1")
             .SelectSingleAsync();
 
         Assert.NotNull(result);
@@ -532,7 +532,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id > 0")
-            .Where("products.product_id = -999")
+            .Where("p.product_id = -999")
             .SelectSingleOrDefaultAsync();
 
         Assert.Null(result);
@@ -554,7 +554,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id = 1")
-            .Where("products.product_id = 1")
+            .Where("p.product_id = 1")
             .SelectSingle();
 
         Assert.NotNull(result);
@@ -571,7 +571,7 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .LeftJoin<Product, Category, Supplier, Order>()
             .On("orders.order_id > 0")
-            .Where("products.product_id = -999")
+            .Where("p.product_id = -999")
             .SelectSingleOrDefault();
 
         Assert.Null(result);
@@ -833,6 +833,6 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
                 .On(p => p.SupplierId, s => s.SupplierId)
                 .LeftJoin<Product, Category, Supplier, Order>()
                 .On("orders.order_id > 0")
-                .Where("products.product name", "Chai"));
+                .Where("p.product name", "Chai"));
     }
 }
