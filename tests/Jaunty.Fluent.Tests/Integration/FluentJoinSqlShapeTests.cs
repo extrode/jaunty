@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -207,5 +209,21 @@ public class FluentJoinSqlShapeTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.Contains("p.category_id > @p_category_id)", sql, StringComparison.Ordinal);
         Assert.EndsWith("WHERE (p.category_id = @p_category_id_2)", sql, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void APositionalFallbackNameTheCallerAlreadyUsed_DoesNotProduceTwoT3s()
+    {
+        var query = _fixture.Connection.From<Product>("t3")
+            .InnerJoin<Category>()
+            .On((p, c) => p.CategoryId == c.CategoryId)
+            .InnerJoin<Product>()
+            .On((p, c, t3) => c.CategoryId == t3.CategoryId);
+
+        var sql = query.ToSql();
+
+        Assert.Equal(1, Regex.Matches(sql, @"(?<=\s)t3(?=\s|$)").Count);
+        Assert.Contains("INNER JOIN products t4", sql, StringComparison.Ordinal);
+        query.SelectAll();
     }
 }
