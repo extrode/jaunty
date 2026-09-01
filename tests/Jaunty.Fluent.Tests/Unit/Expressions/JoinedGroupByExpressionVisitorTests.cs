@@ -88,9 +88,10 @@ public class JoinedGroupByExpressionVisitorTests
         var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
 
         Expression<Func<IGroupingJoined<object, Product, Category>, int>> havingExpr = g => g.Count();
-        var (sql, parameters) = visitor.TranslateHavingPredicate(havingExpr);
+        var parameters = new ParameterCollection();
+        string sql = visitor.TranslateHavingPredicate(havingExpr, parameters);
 
         Assert.Equal("COUNT(*)", sql);
-        Assert.Empty(parameters);
+        Assert.Equal(0, parameters.Count);
     }
 }

@@ -1046,6 +1046,7 @@ BulkCopyConfiguration.DefaultTimeout = 30;
 For more detailed documentation, see:
 
 - [`docs/08-learn/migrating/`](docs/08-learn/migrating/README.md) - Migrating from Dapper or EF Core, and the strict-mapping rule to read first
+- [`docs/08-learn/error-messages.md`](docs/08-learn/error-messages.md) - Error messages explained: the query that produces each one, and the fix
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contributing guide
 - [`docs/03-development/api-design-guidelines.md`](docs/03-development/api-design-guidelines.md) - API design guidelines
 - [`docs/03-development/code-review-checklist.md`](docs/03-development/code-review-checklist.md) - Code review checklist

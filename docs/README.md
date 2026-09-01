@@ -117,6 +117,7 @@ Hands-on guides for people writing Jaunty code for the first time, or porting to
 
 - **[08-learn/](08-learn/README.md)** - Your first hour with Jaunty, a runnable walkthrough
   - [Exercises](08-learn/exercises.md)
+  - [Error Messages, Explained](08-learn/error-messages.md) - what a message means, the query that produces it, and the fix
   - [Migrating to Jaunty](08-learn/migrating/README.md) - from [Dapper](08-learn/migrating/from-dapper.md) or [EF Core](08-learn/migrating/from-ef-core.md), and the [strict-mapping rule](08-learn/migrating/strict-mapping.md) to read first
 
 ### Decisions
