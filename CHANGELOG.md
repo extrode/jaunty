@@ -9,7 +9,24 @@ default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- **Read path: a `decimal` property on a column that reports `double` is read through `GetDouble`
+  and cast, decided once per result set.** Microsoft.Data.Sqlite implements `GetDecimal` on a REAL
+  column as text formatting plus `decimal.Parse`; SQLite formats REAL with 15 significant digits,
+  the same rounding `decimal(double)` applies, so the value is unchanged. Measured on SQLite,
+  10k rows: `GetDecimal` 4.8 ms, `GetDouble` 1.8 ms. Providers whose column is a real decimal
+  still reach `GetDecimal`. A `float`/`double precision` column can now be read into a `decimal`
+  property on every provider; before, SqlClient and Npgsql threw from `GetDecimal`.
+- **Read path: the generated mapper no longer calls `IsDBNull` ahead of every non-nullable
+  value-type column.** The typed getter throws on NULL on every supported provider; the mapper
+  catches that, names the property in the same `InvalidOperationException` as before, and
+  carries the provider's exception as `InnerException`. Any other getter failure propagates
+  unchanged. On Microsoft.Data.Sqlite the pre-check was one native call per column per row:
+  1.8 ms of a 6.2 ms 10k-row read.
+- **Read path: a custom mapper from `CommandOptions<T>.WithMapper` runs without a wrapping
+  delegate on the `DbDataReader` path.** One closure per query and one delegate call per row
+  fewer; the mapper you pass is the one that runs.
 
 ## [1.0.0-rc.2] - 2026-09-02
 
