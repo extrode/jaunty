@@ -21,8 +21,9 @@ remains governed by ISL-R.
 
 **Relationship to the ISL-EULA.** Jaunty's `LICENSE-EULA.md` was the instrument of the paid,
 Order-conditioned model that decision 002 retired. It does not govern Jaunty as distributed under
-the free model and is retained for the historical record and for any pre-existing Order. Where a
-Licensee holds no Order, ISL-R as modified by this Exception is the whole of the grant.
+the free model. It was removed from the repository on 2026-09-02 and remains in the git history
+for the historical record and for any pre-existing Order. Where a Licensee holds no Order, ISL-R
+as modified by this Exception is the whole of the grant.
 
 ---
 
@@ -109,10 +110,9 @@ Recorded rather than resolved, so a reviewer sees what the project already knows
    a rider for the same structural reason — ISL-R was drafted for software that is run, not for
    software that is linked. A reusable "ISL Linking Exception" would serve both and anyone else
    licensing a library under ISL-R.
-4. **The retained `LICENSE-EULA.md`** creates an interpretive risk: a reader may take the presence
-   of a EULA in the repository as evidence that operational use requires an Order. The header note
-   above is the mitigation. A reviewer should say whether that is sufficient or whether the file
-   should be moved out of the repository root.
+4. **The retained `LICENSE-EULA.md`** created an interpretive risk: a reader could take the
+   presence of a EULA in the repository as evidence that operational use requires an Order.
+   Resolved 2026-09-02 by removing the file from the tree; it remains in history.
 
 *This document was drafted by the project, not by counsel. It should be reviewed by a qualified
 attorney — and, for the ethical-scope questions, referred to qualified scholars — before
