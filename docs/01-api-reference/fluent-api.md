@@ -809,6 +809,32 @@ var groupedProducts = connection.From<Product>()
 The aggregate methods on the group are `Count`, `Sum`, `Avg`, `Min` and `Max`; there is no LINQ
 `Average` because `IGrouping<TKey, T>` is Jaunty's own interface, not `System.Linq`'s.
 
+#### HAVING parameter names
+
+The alias rule reaches the parameters a `HAVING` clause binds. An operand is named after the
+aggregate it is compared to, read off the expression tree rather than the rendered SQL:
+
+```csharp
+var sql = connection.From<Product>()
+    .InnerJoin<Category>()
+    .On((p, c) => p.CategoryId == c.CategoryId)
+    .GroupBy((p, c) => p.CategoryId)
+    .Having(g => g.Sum((p, c) => p.UnitPrice) > 150m)
+    .ToSql(g => new { g.Key, Count = g.Count() });
+```
+
+```sql
+SELECT p.category_id AS "Key", COUNT(*) AS Count
+FROM products p
+INNER JOIN categories c ON (p.category_id = c.category_id)
+GROUP BY p.category_id
+HAVING SUM(p.unit_price) > @sum_p_unit_price
+```
+
+`g.Count() > 3` binds `@count`, and so does `3 < g.Count()`: the side that is an aggregate names
+the side that is a value, whichever way round you wrote it. A number is spent only where one query
+compares the same aggregate twice, which gives `@count_2`.
+
 ## Kitchen Sink Example
 
 A single query combining a join, multi-condition filtering and ordering. Aliases come from the
