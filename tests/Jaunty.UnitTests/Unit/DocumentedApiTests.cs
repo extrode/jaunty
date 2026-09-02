@@ -16,6 +16,8 @@ public class DocumentedApiTests
     [
         "NamingConvention",
         "ExecuteStoredProcedureWithOutput",
+        "OnColumns",
+        "OnRaw",
     ];
 
     private static readonly string[] ScannedRoots = ["README.md", "SECURITY.md", "docs"];
