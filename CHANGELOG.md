@@ -48,6 +48,13 @@ default lives in `src/Directory.Build.props`.
   in July), RepoDb's SQLite bool workaround is registered for SQLite only, and the warm job
   runs 15 iterations. The README tables and charts are regenerated from it.
 
+### Removed
+
+- `LICENSE-EULA.md`. The Order-conditioned EULA stopped governing Jaunty at the 2026-08-30 model
+  decision and had been kept at the root for the record; a EULA at the root reads as a condition
+  on use, so it is gone from the tree and stays in history. `LICENSE-DISTRIBUTION-EXCEPTION.md`
+  says where it went; `LicenseFileTests` now checks `LICENSE.md` for unfilled placeholders.
+
 ## [1.0.0-rc.2] - 2026-09-02
 
 ### Breaking changes since 1.0.0-rc.1
