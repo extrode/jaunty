@@ -82,6 +82,9 @@ Every pull request must carry the statement at the end of [CLA.md](CLA.md), and 
 
 ## Development Workflow
 
+The path from a fork to `dev`, the approval gates and who acts at each one, is in
+[docs/03-development/contribution-workflow.md](docs/03-development/contribution-workflow.md).
+
 ### Branch Naming
 
 - `feature/` - New features
