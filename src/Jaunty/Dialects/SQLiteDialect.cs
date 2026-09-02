@@ -5,9 +5,26 @@ namespace Jaunty.Dialects;
 /// <summary>
 /// SQLite dialect.
 /// Uses "quotes" only for SQL keywords.
-/// Default schema: the empty string (SQLite doesn't support schemas). AUD-R35-165: this said
-/// "null" while GetDefaultSchema has always returned string.Empty.
+/// Default schema: the empty string, meaning unqualified, which SQLite resolves to
+/// <c>main</c>. AUD-R35-165: this said "null" while GetDefaultSchema has always returned
+/// string.Empty.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>SQLite does have schemas.</b> They are <c>main</c>, <c>temp</c>, and the name given to
+/// every <c>ATTACH DATABASE ... AS name</c>, and a schema-qualified <c>archive.products</c> is
+/// valid wherever an unqualified name is - in FROM, in a JOIN, as a column prefix
+/// (<c>archive.products.id</c>), and in INSERT, UPDATE and DELETE.
+/// </para>
+/// <para>
+/// This dialect used to drop <c>schemaName</c> on the floor, on the belief - stated as fact in a
+/// comment here and in three places in Jaunty.Scaffolding - that SQLite had no schemas. The
+/// consequence was silent rather than loud: an entity mapped to <c>[Table("products",
+/// "archive")]</c> emitted <c>SELECT ... FROM products</c>, which resolves to <c>main</c>, so
+/// reads returned the wrong table's rows and <c>Insert</c> wrote into the wrong database, with no
+/// error at any layer. Pinned by SqliteSchemaQualificationTests.
+/// </para>
+/// </remarks>
 internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDecimalBindingDialect
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
@@ -31,14 +48,21 @@ internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDeci
 
     public string ParameterPrefix => "@";
 
-    public string GetDefaultSchema() => string.Empty; // SQLite doesn't support schemas
+    public string GetDefaultSchema() => string.Empty; // unqualified; SQLite resolves that to main
 
     public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);
 
     public string EscapeTableName(string? schemaName, string tableName)
     {
         SqlIdentifierValidator.Validate(tableName, nameof(tableName));
-        return IsKeyword(tableName) ? $"\"{tableName}\"" : tableName;
+        var escapedTable = IsKeyword(tableName) ? $"\"{tableName}\"" : tableName;
+
+        if (string.IsNullOrWhiteSpace(schemaName))
+            return escapedTable;
+
+        SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName));
+        var escapedSchema = IsKeyword(schemaName!) ? $"\"{schemaName}\"" : schemaName;
+        return $"{escapedSchema}.{escapedTable}";
     }
 
     public string EscapeColumnName(string columnName)
