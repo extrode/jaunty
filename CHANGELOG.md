@@ -63,11 +63,20 @@ default lives in `src/Directory.Build.props`.
 - **CI: the nightly workflow runs on hosted runners again.** The fuzz job installed only the 8.0
   SDK for a tree that targets net10.0, the benchmark job ran a multi-targeted project without
   `--framework`, and the full suite could pass with SQL Server unreachable; all three fixed, and
-  `Jaunty.UnitTests` compiles on net472 again.
+  `Jaunty.UnitTests` compiles on net472 again. The net472 test legs now run in their own
+  Windows job, because a Linux runner has no .NET Framework runtime for them.
 - **Docs: second public-readiness pass.** Personal paths removed from two archived scripts, one
   cleanup script and one tasklist; CONTRIBUTING names the 10.0 SDK and no longer tells a newcomer
   to sign a draft CLA; the release runbook's branch-protection item is unblocked; the
   Redistribution Exception's note 4 no longer calls the removed EULA "retained".
+- **Docs: third public-readiness pass.** The CI docs describe the hosted runners that run today
+  instead of the retired self-hosted one; the testing-strategy plan and the runner notes drop
+  machine details; the commercial templates cite ISL-R 1.2 and no longer mention an EULA or an
+  Individual tier; two links and the release index's version fixed; `scripts/build-docs.sh`
+  fails with a message when the external docs tool is absent.
+- **Tests: two CSV import tests reopen the pooled SQLite connection inside the no-GC region.**
+  On .NET Framework a collection landed between the import and the reopen, the pool handed back
+  a fresh handle, and the temp table the test had built was gone.
 
 ### Added
 

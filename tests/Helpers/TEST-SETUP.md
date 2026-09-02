@@ -36,7 +36,7 @@ scripts only recreate the 13 Northwind tables, so test-created ones (`bulk_*`,
 
 ## Apple Silicon (macOS arm64)
 
-This guide was written from the Windows machine, where everything below is a non-issue.
+This guide was written from a Windows machine, where everything below is a non-issue.
 Three things differ on an arm64 Mac. Measured 2026-07-29.
 
 ### 1. SQLite is not setup-free
@@ -77,7 +77,7 @@ Use Rosetta for x86_64/amd64 emulation on Apple Silicon**, or pointing
 
 ### 3. `dotnet test` at solution level aborts
 
-`Jaunty.Tests` multi-targets `net8.0;net472`, and .NET Framework cannot host on macOS. The
+`Jaunty.Tests` multi-targets `net8.0;net10.0;net472`, and .NET Framework cannot host on macOS. The
 net472 run does not fail — it **aborts the whole invocation**, so projects queued behind it
 never execute and the summary looks short rather than broken.
 
@@ -85,8 +85,8 @@ never execute and the summary looks short rather than broken.
 dotnet test tests/Jaunty.Tests/Jaunty.Tests.csproj -f net8.0    # not `dotnet test`
 ```
 
-That also means the Mac cannot cover net472 at all. The Windows machine is the only place
-that TFM runs, which is worth remembering before concluding a change is verified.
+That also means the Mac cannot cover net472 at all. Windows is the only place that TFM
+runs, which is worth remembering before concluding a change is verified.
 
 ### Measured baseline, unconfigured
 

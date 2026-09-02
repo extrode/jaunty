@@ -54,9 +54,9 @@ flowchart LR
 ```
 
 Every `runs-on` except the mutation job is `${{ vars.CI_RUNNER || 'ubuntu-latest' }}`. The
-variable is an escape hatch: set `CI_RUNNER` and everything moves without a commit. It currently
-resolves to the WSL2 self-hosted runner, which is **why deleting it is a prerequisite for making
-the repository public** — a self-hosted runner on a public repo executes fork-PR code on the
+variable is an escape hatch: set `CI_RUNNER` and everything moves without a commit. It is unset on
+the public repository, so every job resolves to `ubuntu-latest`. It was deleted before the
+repository went public because a self-hosted runner on a public repo executes fork-PR code on the
 owner's hardware.
 
 ---
@@ -203,7 +203,7 @@ suite must be added to that filter by hand.**
 
 | Item | Owner action | Blocks |
 |---|---|---|
-| `gh variable delete CI_RUNNER --repo extrode/jaunty` | one command; workflows already fall back to `ubuntu-latest` | **the public flip** — self-hosted runner + public repo is arbitrary fork-PR execution |
+| Delete `CI_RUNNER` | done before the public release; every job resolves to `ubuntu-latest` | — |
 | First real Blacksmith mutation run | `gh workflow run nightly.yml` | replacing the extrapolated 70-90 min estimate with an observed duration and cost |
 | `ci.yml` least-privilege review | done — `contents: read` is in place | — |
 
