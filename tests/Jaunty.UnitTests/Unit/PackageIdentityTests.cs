@@ -31,6 +31,7 @@ public class PackageIdentityTests
     [
         ".md", ".cs", ".csproj", ".props", ".targets", ".slnx", ".json", ".yml", ".yaml",
         ".sh", ".ps1", ".py", ".mjs", ".js", ".html", ".txt", ".sql", ".xml", ".svg", ".editorconfig",
+        ".mailmap",
     ];
 
     private static readonly string[] RetiredOwnerScanSkippedFragments =
@@ -232,8 +233,6 @@ public class PackageIdentityTests
 
             if (RetiredOwnerScanSkippedFragments.Any(f => relative.Contains(f, StringComparison.OrdinalIgnoreCase)))
                 continue;
-            if (relative.EndsWith("/.mailmap", StringComparison.Ordinal))
-                continue;
             if (relative.EndsWith("/PackageIdentityTests.cs", StringComparison.Ordinal))
                 continue;
             if (!RetiredOwnerScanExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
@@ -247,7 +246,7 @@ public class PackageIdentityTests
         }
 
         Assert.True(offences.Count == 0,
-            $"The retired owner name must not appear in the tree (.mailmap is the one exception):" +
+            $"The retired owner name must not appear in the tree:" +
             Environment.NewLine + string.Join(Environment.NewLine, offences));
     }
 
