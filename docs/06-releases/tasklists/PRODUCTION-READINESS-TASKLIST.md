@@ -153,7 +153,7 @@ Assessment basis: [PRODUCTION-READINESS-2026-07-02.md](../../05-quality/reports/
 ## Done
 
 ### PRD-010: Interception and observability hooks
-- Status: `Done (2026-03, merge 6f2eac6)`
+- Status: `Done (2026-03, merge 64d28d8)`
 - Delivered: `ICommandInterceptor`, `InterceptorPipeline`, `LoggingInterceptor`, `AuditInterceptor`, `LoggingConfiguration` with sensitive-parameter redaction, plus unit tests.
 
 ## Work Log

@@ -374,7 +374,7 @@ SQLiteDialect is the expected result. No src change required.</p>
 to tests/Jaunty.Tests/Jaunty.Tests.csproj. <code>dotnet test</code> without -f now runs net8.0
 then net472 sequentially, eliminating the ~7-30 MariaDB/Postgres Write test failures
 caused by concurrent TFM runs hitting the same live databases.
-Acceptance run pending (Task 1 commit: 120a268).</p>
+Acceptance run pending (Task 1 commit: c51e01c).</p>
 </li>
 <li><p>Task 2 (EF Core SqlServer identity INSERT): Two fixes in benchmarks/Jaunty.Benchmarks.
 (a) EfProduct.cs OnModelCreating: added ValueGeneratedOnAdd() on product_id so EF Core
@@ -383,7 +383,7 @@ reset product_id = 0 on each EfProduct before every iteration — after SaveChan
 Core writes back db-assigned IDs; subsequent iterations carried non-zero keys that
 SqlServer rejected as explicit identity values. Smoke-checked --quick against SqlServer;
 all three BatchSize runs completed without error (exit code 0, no NA).
-Commit: 27a1119.</p>
+Commit: 111e51f.</p>
 </li>
 <li><p>Task 3 (TryEnhanceWithBulkCopy silent failure): Not a defect. TryEnhanceWithBulkCopy
 resolves BulkCopyDialectFactory via Type.GetType and successfully invokes GetDialect,
@@ -391,7 +391,7 @@ but BulkCopyDialectFactory._enabled defaults to false. UseNativeBulkCopy() sets 
 benchmarks call UseNativeBulkCopy() in GlobalSetup, tests do not. Tests opt out by
 design; SqliteBulkPathDiagnosticTests seeing a plain SQLiteDialect is correct.
 No exception swallowed, no load failure, no src change required. Documented in
-PROD-121 residual section above. Commit: 147c871.</p>
+PROD-121 residual section above. Commit: e1b6ac8.</p>
 </li>
 <li><p>Task 4 (git housekeeping): Deleted 83 local branches fully merged into dev
 (audit/<em>, chore/</em>, docs/<em>, feat/</em>, feature/<em>, features/</em>, fix/<em>, fixes/</em>,

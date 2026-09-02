@@ -391,7 +391,7 @@ July, now confirmed across all four providers rather than two.</p>
 Pomelo <code>_connection.ConnectionString</code>, and MySqlConnector strips the password out of that once
 the connection is open unless <code>PersistSecurityInfo=true</code>. Every iteration threw
 <code>Access denied for user 'root' (using password: NO)</code>.</p>
-<p>Fixed in <code>3203492</code> by adding <code>DatabaseSetup.GetConnectionString(provider)</code>, which returns the
+<p>Fixed in <code>03e0dee</code> by adding <code>DatabaseSetup.GetConnectionString(provider)</code>, which returns the
 string as configured. Verified over 279 cases with zero <code>Access denied</code>. Provisional EF Core
 MariaDB figures from that short-job run — <strong>not</strong> comparable in precision to the tables above:</p>
 <table>

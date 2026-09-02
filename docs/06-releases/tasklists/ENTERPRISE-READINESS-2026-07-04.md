@@ -223,7 +223,7 @@ Let's use #if / #else compiler directives to target both
   to tests/Jaunty.Tests/Jaunty.Tests.csproj. `dotnet test` without -f now runs net8.0
   then net472 sequentially, eliminating the ~7-30 MariaDB/Postgres Write test failures
   caused by concurrent TFM runs hitting the same live databases.
-  Acceptance run pending (Task 1 commit: 120a268).
+  Acceptance run pending (Task 1 commit: c51e01c).
 
 - Task 2 (EF Core SqlServer identity INSERT): Two fixes in benchmarks/Jaunty.Benchmarks.
   (a) EfProduct.cs OnModelCreating: added ValueGeneratedOnAdd() on product_id so EF Core
@@ -232,7 +232,7 @@ Let's use #if / #else compiler directives to target both
   Core writes back db-assigned IDs; subsequent iterations carried non-zero keys that
   SqlServer rejected as explicit identity values. Smoke-checked --quick against SqlServer;
   all three BatchSize runs completed without error (exit code 0, no NA).
-  Commit: 27a1119.
+  Commit: 111e51f.
 
 - Task 3 (TryEnhanceWithBulkCopy silent failure): Not a defect. TryEnhanceWithBulkCopy
   resolves BulkCopyDialectFactory via Type.GetType and successfully invokes GetDialect,
@@ -240,7 +240,7 @@ Let's use #if / #else compiler directives to target both
   benchmarks call UseNativeBulkCopy() in GlobalSetup, tests do not. Tests opt out by
   design; SqliteBulkPathDiagnosticTests seeing a plain SQLiteDialect is correct.
   No exception swallowed, no load failure, no src change required. Documented in
-  PROD-121 residual section above. Commit: 147c871.
+  PROD-121 residual section above. Commit: e1b6ac8.
 
 - Task 4 (git housekeeping): Deleted 83 local branches fully merged into dev
   (audit/*, chore/*, docs/*, feat/*, feature/*, features/*, fix/*, fixes/*,

@@ -61,7 +61,7 @@ Both are now `readonly struct` types -- **consistent**. Both use:
 | DuckDB README (`src/Jaunty.FlatFiles.DuckDB/README.md`) | Present |
 | FlatFiles README (`src/Jaunty.FlatFiles/README.md`) | Present |
 | Core Jaunty overall XML coverage | 94% (268/284 methods) |
-| Private helper methods in DuckDb | Documented (per recent commit `f9bc921`) |
+| Private helper methods in DuckDb | Documented (per recent commit `7afd373`) |
 
 **No TODO/FIXME/HACK comments** found in any DuckDb-related files.
 

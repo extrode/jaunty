@@ -45,7 +45,7 @@ files** are untouched.
   the false `:194` justification, replace the stale `:202` `AOT-SAFE` marker — files:
   `src/Jaunty/Interceptors/LoggingInterceptor.cs` — covers: §3.3, AC2, AC8-adjacent — done when:
   clean net10 build drops the `IL2111` with no suppression added.
-  **DONE 2026-07-30, merged `218b1258`.** Measured 3 → 2 in `.worktrees/net10-measure` via
+  **DONE 2026-07-30, merged `237b1493`.** Measured 3 → 2 in `.worktrees/net10-measure` via
   `dotnet build src/Jaunty/Jaunty.csproj -f net10.0 --no-incremental`. net8 clean build 0/0. Unit
   suite 2913 passed / 0 failed. Perturbation-checked: gutting the method fails exactly 2 tests.
 - [x] **T2** 009 scope amendment — files: `docs/specs/009-aot-annotation-pass/009-spec.md` —
@@ -62,7 +62,7 @@ files** are untouched.
   closure is not allocated on the hit path — files:
   `src/Jaunty/Internals/Parameters/ParameterCache.cs` — covers: §3.3, AC2 — done when: clean net10
   build shows one fewer `IL2111` and nothing new.
-  **DONE UPSTREAM 2026-07-30, `da094f6f` (spec 011), merged here as `54f6b60d`.** It went further
+  **DONE UPSTREAM 2026-07-30, `eb8e5436` (spec 011), merged here as `100200c7`.** It went further
   than this task asked and was right to: rather than keep the annotation and close over it, spec 011
   **deleted** the `[DynamicallyAccessedMembers]` from `Get(Type)` — it could never be satisfied,
   since every caller arrives through `parameters.GetType()` on an `object` — and arranged real
@@ -117,7 +117,7 @@ files** are untouched.
 
 ## PR2 — the retarget
 
-- [x] **T8** 2026-07-30. Run launched from the `1280ccc8` tree (pre-T10), completed exit 0:
+- [x] **T8** 2026-07-30. Run launched from the `e1c17d05` tree (pre-T10), completed exit 0:
   692 cases, 672 with results; the 20 failures are all comparison libraries (EF Core / RepoDb
   identity-insert + Npgsql type mismatches), zero Jaunty cases failed. Recorded in
   `benchmarks/BENCHMARK-RESULTS.md` § "Spec 010 net8 baseline"; full joined CSV at
