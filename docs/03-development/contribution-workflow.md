@@ -1,19 +1,20 @@
 # Contribution workflow
 
 How a change from outside the organisation reaches `dev`, and which GitHub setting guards each
-step. [CONTRIBUTING.md](../../CONTRIBUTING.md) states the rules (licence, CLA, no AI-generated
-code); this page is the mechanics.
+step. [CONTRIBUTING.md](../../CONTRIBUTING.md) states the rules (licence, the ISL-CLA and how
+Jaunty adopts it, no AI-generated code); this page is the mechanics.
 
-> The CLA is a draft pending legal review, so **pull requests are not yet accepted**. Until it is
-> signed off, the workflow below stops at step 2: open an issue, describe the change, and the
-> maintainers implement it. Everything from step 3 on describes what happens once the CLA is live.
+> The ISL-CLA is a draft pending legal review, so **pull requests are not yet accepted**. Until it
+> is in force, the workflow below stops at step 2: open an issue, describe the change, and the
+> maintainers implement it. Everything from step 3 on describes what happens once the ISL-CLA is
+> live.
 
 ## The path of a change
 
 ```mermaid
 flowchart TD
     A[Contributor finds a defect or wants a feature] --> B[Opens an issue with a reproduction]
-    B --> C{CLA signed?}
+    B --> C{Willing to sign the ISL-CLA?}
     C -- no --> D[Maintainer implements from the issue]
     C -- yes --> E[Contributor forks and branches]
     E --> F[Opens a pull request against dev]
@@ -25,7 +26,7 @@ flowchart TD
     J -- no --> K[Contributor pushes a fix]
     K --> I
     J -- yes --> L[Maintainer reviews the diff]
-    L --> M{CLA statement present and true?}
+    L --> M{CONTRIBUTORS.md row and certification present?}
     M -- no --> N[Changes requested]
     N --> K
     M -- yes --> O[Squash-merge into dev]
@@ -97,15 +98,20 @@ Taking a concrete case: someone clones the repository, changes a file, and wants
    For an account that has had a PR merged before, this step does not appear.
 4. **Checks run.** Build, the unit and SQLite suites, the SQL Server leg, AOT verification. A red
    check blocks the merge button under branch protection.
-5. **A maintainer reviews.** The CLA statement from the end of [CLA.md](../../CLA.md) must be in
-   the PR description, and the code must be theirs; either missing means changes requested.
+5. **A maintainer reviews.** The contributor's row must be in `CONTRIBUTORS.md` (added in this PR
+   if it is their first), the certification from the CONTRIBUTING.md template must be in the PR
+   description, and the code must be theirs; any of the three missing means changes requested.
+   ISL-CLA Section 9.6 makes the row the record of agreement, and the commit that adds it, from
+   the contributor's own account, the signature.
 6. **Squash-merge.** One commit lands on `dev` under the contributor's name. Their fork branch can
    be deleted by them; nothing here deletes it.
 
 ## Maintainer checklist per pull request
 
 - Approve the workflow run only after reading any change under `.github/`.
-- Confirm the CLA statement is present and the account has signed.
+- Confirm the `CONTRIBUTORS.md` row exists at the adopted ISL-CLA version and the certification is
+  in the PR description. A row added by a maintainer from an emailed statement needs that statement
+  kept.
 - Confirm the change has tests in the same PR, and that the tests fail without the change.
 - Run the container-database legs locally if the change touches a dialect: CI covers SQL Server
   and SQLite only.
