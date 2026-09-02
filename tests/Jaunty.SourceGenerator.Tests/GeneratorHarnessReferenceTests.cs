@@ -2,23 +2,21 @@ using Xunit;
 
 namespace Jaunty.SourceGenerator.Tests;
 
+// These assertions go by file name on purpose: a typeof(System.Data.IDbCommand) would load
+// System.Data.Common into the test process and make the loaded-assembly scan find it, which is the
+// very order dependence under test.
 public sealed class GeneratorHarnessReferenceTests
 {
     [Fact]
     public void ReferenceAssemblyPaths_AlwaysIncludeSystemDataCommon()
     {
-        string expected = typeof(System.Data.IDbCommand).Assembly.Location;
-
-        Assert.Contains(expected, GeneratorHarness.ReferenceAssemblyPaths(), StringComparer.OrdinalIgnoreCase);
+        Assert.Contains(GeneratorHarness.ReferenceAssemblyPaths(), p => FileNameIs(p, "System.Data.Common.dll"));
     }
 
     [Fact]
-    public void ReferenceAssemblyPaths_AlwaysIncludeJauntyAndItsInterfaces()
+    public void ReferenceAssemblyPaths_AlwaysIncludeJaunty()
     {
-        IEnumerable<string> paths = GeneratorHarness.ReferenceAssemblyPaths();
-
-        Assert.Contains(typeof(global::Jaunty.Attributes.TableAttribute).Assembly.Location, paths, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains(typeof(global::Jaunty.Interfaces.IGeneratedAccessors<>).Assembly.Location, paths, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains(GeneratorHarness.ReferenceAssemblyPaths(), p => FileNameIs(p, "Jaunty.dll"));
     }
 
     [Fact]
@@ -47,4 +45,7 @@ public sealed class GeneratorHarnessReferenceTests
         Assert.Single(sources);
         Assert.Empty(compileErrors);
     }
+
+    private static bool FileNameIs(string path, string name)
+        => string.Equals(Path.GetFileName(path), name, StringComparison.OrdinalIgnoreCase);
 }
