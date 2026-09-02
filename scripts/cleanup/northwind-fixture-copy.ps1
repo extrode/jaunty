@@ -3,7 +3,7 @@
 #   .worktrees/fix-northwind-fixture-copy   created because the main worktree held uncommitted
 #                                           work and could not check dev out. Its branch,
 #                                           fix/northwind-fixture-copy, is merged into dev at
-#                                           17ba3d90.
+#                                           d754bf31.
 #
 # The per-process database copies the fix creates under
 # tests/Jaunty.Tests/bin/*/northwind-work/ are NOT listed here. They live in build output, they
