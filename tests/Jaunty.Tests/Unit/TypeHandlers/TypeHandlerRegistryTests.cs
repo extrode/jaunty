@@ -1,7 +1,7 @@
 ﻿using Jaunty.Attributes;
 using Jaunty.Configuration;
-using Jaunty.Extensions.Reflection;
 using Jaunty.TypeHandlers;
+using Jaunty.Tests.Helpers;
 
 namespace Jaunty.Tests.Unit.TypeHandlers;
 
@@ -163,7 +163,7 @@ public class TypeHandlerRegistryTests : IDisposable
         // Act — Reset() is the API under test; restore reflection mapping afterwards
         // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
+        TestInitializer.Initialize();
         if (interceptorsBeforeReset is { Length: > 0 })
             JauntyConfig.AddInterceptors(interceptorsBeforeReset);
 
@@ -209,7 +209,7 @@ public class TypeHandlerRegistryTests : IDisposable
         // Act — Reset() is the API under test; restore reflection mapping afterwards
         // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
+        TestInitializer.Initialize();
         if (interceptorsBeforeReset is { Length: > 0 })
             JauntyConfig.AddInterceptors(interceptorsBeforeReset);
 
