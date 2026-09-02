@@ -54,9 +54,27 @@ public class GeneratedBindingSupportTests
     }
 
     [Fact]
-    public void ToDbEnumValue_ExplicitNumeric_PassesTheEnumThrough()
+    public void ToDbEnumValue_ExplicitNumeric_WritesTheUnderlyingInteger()
     {
-        Assert.Equal(SupportState.Busy, GeneratedBindingSupport.ToDbEnumValue(SupportState.Busy, EnumStorage.Numeric));
+        object? bound = GeneratedBindingSupport.ToDbEnumValue(SupportState.Busy, EnumStorage.Numeric);
+
+        Assert.IsType<int>(bound);
+        Assert.Equal(1, bound);
+    }
+
+    [Fact]
+    public void ToDbEnumValue_ByteBackedEnum_WritesAByte()
+    {
+        object? bound = GeneratedBindingSupport.ToDbEnumValue(Narrow.Two, EnumStorage.Numeric);
+
+        Assert.IsType<byte>(bound);
+        Assert.Equal((byte)2, bound);
+    }
+
+    private enum Narrow : byte
+    {
+        One = 1,
+        Two = 2
     }
 
     [Fact]
@@ -69,7 +87,7 @@ public class GeneratedBindingSupportTests
             Assert.Equal("Idle", GeneratedBindingSupport.ToDbEnumValue(SupportState.Idle, null));
 
             JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
-            Assert.Equal(SupportState.Idle, GeneratedBindingSupport.ToDbEnumValue(SupportState.Idle, null));
+            Assert.Equal(0, GeneratedBindingSupport.ToDbEnumValue(SupportState.Idle, null));
         }
         finally
         {

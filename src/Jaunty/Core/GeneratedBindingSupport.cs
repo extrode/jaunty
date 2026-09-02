@@ -2,6 +2,7 @@ using System.ComponentModel;
 
 using Jaunty.Attributes;
 using Jaunty.Configuration;
+using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 using Jaunty.TypeHandlers;
 
@@ -61,7 +62,7 @@ public static class GeneratedBindingSupport
 
         return (storage ?? JauntyConfig.DefaultEnumStorage) == EnumStorage.String
             ? value.ToString()
-            : value;
+            : ParameterBinder.EnumToUnderlying(value, value.GetType());
     }
 
     /// <summary>
