@@ -1189,28 +1189,26 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         // 1b. CreateRowMapper - per-result-set factory: validates shape ONCE via
         // OrdinalMap.Resolve, then returns a closure that maps rows with zero
-        // per-row validation. A FieldCount guard falls back to the fully
-        // re-validating ReadEntity if the reader shape changes underneath a
-        // stale delegate (PRD-001 safety preserved; resolution happens per
-        // result set in DrDispatcher callers).
+        // per-row validation. The closure is valid for the result set it was
+        // created against and nothing else: every library caller resolves it
+        // per result set (DrDispatcher.Resolve, GridReader per NextResult).
+        // It used to compare reader.FieldCount on every row and fall back to
+        // ReadEntity when a stale delegate met a changed shape. Do not restore
+        // that guard: FieldCount is a native call per row on
+        // Microsoft.Data.Sqlite, about 0.4 ms per 10,000 rows, paid on every
+        // row to cover a misuse no caller in this repository commits.
+        // docs/decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md
         sb.AppendLine($"        public static Func<IDataReader, {className}> CreateRowMapper(IDataReader reader)");
         sb.AppendLine("        {");
         sb.AppendLine("            var entry = OrdinalMap.Resolve(reader);");
         sb.AppendLine("            var ord = entry.Ordinals;");
         if (hasDecimal)
             sb.AppendLine($"            var {RealColumnsLocal} = entry.DecimalAsDouble;");
-        sb.AppendLine("            int fieldCount = reader.FieldCount;");
         sb.AppendLine("            if (reader is DbDataReader)");
         sb.AppendLine("            {");
         sb.AppendLine("                return r =>");
         sb.AppendLine("                {");
         sb.AppendLine("                    var rr = (DbDataReader)r;");
-        sb.AppendLine("                    if (rr.FieldCount != fieldCount)");
-        sb.AppendLine("        #if NET8_0_OR_GREATER");
-        sb.AppendLine("                        return ReadEntity(r);");
-        sb.AppendLine("        #else");
-        sb.AppendLine($"                        return new {className}().ReadEntity(r);");
-        sb.AppendLine("        #endif");
         sb.AppendLine($"                    var entity = new {className}();");
         sb.AppendLine($"                    bool {TypeHandlerFlagLocal} = global::Jaunty.Core.GeneratedBindingSupport.HasHandlers;");
         string dbRowIndent = "                    ";
@@ -1234,12 +1232,6 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            }");
         sb.AppendLine("            return r =>");
         sb.AppendLine("            {");
-        sb.AppendLine("                if (r.FieldCount != fieldCount)");
-        sb.AppendLine("        #if NET8_0_OR_GREATER");
-        sb.AppendLine("                    return ReadEntity(r);");
-        sb.AppendLine("        #else");
-        sb.AppendLine($"                    return new {className}().ReadEntity(r);");
-        sb.AppendLine("        #endif");
         sb.AppendLine($"                var entity = new {className}();");
         sb.AppendLine($"                bool {TypeHandlerFlagLocal} = global::Jaunty.Core.GeneratedBindingSupport.HasHandlers;");
         string rowIndent = "                ";

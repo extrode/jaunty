@@ -153,7 +153,7 @@ public sealed class SqliteGeneratedMapperShapeTests : IDisposable
     }
 
     [Fact]
-    public void CreateRowMapper_ReaderShapeChangesUnderStaleDelegate_FallsBackToReadEntity()
+    public void CreateRowMapper_ResolvedPerResultSet_MapsAReorderedSecondSet()
     {
         using SqliteCommand cmd = _connection.CreateCommand();
         cmd.CommandText = """
@@ -164,21 +164,19 @@ public sealed class SqliteGeneratedMapperShapeTests : IDisposable
         using SqliteDataReader reader = cmd.ExecuteReader();
 
         Assert.True(reader.Read());
-        // Mapper is created once against the first result set's 4-column shape, simulating a
-        // caller that (incorrectly) keeps reusing the same delegate across NextResult() instead
-        // of calling CreateRowMapper again per result set.
-        Func<IDataReader, GenProduct> staleMapper = GenProduct.CreateRowMapper(reader);
-        GenProduct first = staleMapper(reader);
+        Func<IDataReader, GenProduct> firstMapper = GenProduct.CreateRowMapper(reader);
+        GenProduct first = firstMapper(reader);
         Assert.Equal(1, first.ProductId);
         Assert.Equal("Chai", first.ProductName);
 
         Assert.True(reader.NextResult());
         Assert.True(reader.Read());
-        // The second result set has 5 columns (noise + reordered) vs. the first's 4, so the
-        // mapper's FieldCount guard must trip and fall back to ReadEntity's full ordinal
-        // resolution instead of reusing the first result set's cached column positions - which
-        // would otherwise silently misread "noise" or the wrong column into each property.
-        GenProduct second = staleMapper(reader);
+        // The closure is valid for the result set it was created against and nothing else
+        // (decision 011): the per-row FieldCount guard that used to rescue a delegate reused
+        // across NextResult() is gone, so the contract is a fresh CreateRowMapper per result set,
+        // which is what DrDispatcher.Resolve and GridReader already do.
+        Func<IDataReader, GenProduct> secondMapper = GenProduct.CreateRowMapper(reader);
+        GenProduct second = secondMapper(reader);
         Assert.Equal(2, second.ProductId);
         Assert.Equal("Chang", second.ProductName);
         Assert.Equal(19.0m, second.UnitPrice);

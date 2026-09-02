@@ -42,6 +42,19 @@ public sealed class GeneratedNullDiagnosisTests
     }
 
     [Fact]
+    public void ARow_ThroughTheRowMapper_DoesNotReadFieldCount()
+    {
+        var reader = new CountingReader(Columns, [1, "Chai", 10.25m, false]);
+        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Assert.True(reader.Read());
+        int resolved = reader.FieldCountCalls;
+
+        mapper(reader);
+
+        Assert.Equal(resolved, reader.FieldCountCalls);
+    }
+
+    [Fact]
     public void AGetterFailure_ThatIsNotANull_PropagatesUnchanged()
     {
         var reader = new CountingReader(Columns, [1, "Chai", 10.25m, false], failOn: "discontinued");
@@ -93,7 +106,16 @@ public sealed class GeneratedNullDiagnosisTests
 
         public List<string> IsDBNullColumns { get; } = [];
 
-        public int FieldCount => names.Length;
+        public int FieldCountCalls { get; private set; }
+
+        public int FieldCount
+        {
+            get
+            {
+                FieldCountCalls++;
+                return names.Length;
+            }
+        }
         public string GetName(int i) => names[i];
         public int GetOrdinal(string name) => Array.FindIndex(names, n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
         public object GetValue(int i) => values[i];
