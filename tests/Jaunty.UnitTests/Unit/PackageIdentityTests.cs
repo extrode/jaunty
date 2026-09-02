@@ -244,7 +244,8 @@ public class PackageIdentityTests
                 continue;
 
             string include = (string?)none.Attribute("Include") ?? string.Empty;
-            packed.Add(include.Replace('\\', '/').Split('/')[^1]);
+            string[] segments = include.Replace('\\', '/').Split('/');
+            packed.Add(segments[segments.Length - 1]);
         }
 
         Assert.Contains(ExpectedLicenseFile, packed);
