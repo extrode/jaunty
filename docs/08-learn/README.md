@@ -412,6 +412,6 @@ writes, transactions, a custom mapper, attribute mapping, async, and streaming. 
   operations, upserts, stored procedures, `GridReader` for multiple result sets, and
   interceptors for logging and auditing.
 - [How Jaunty got fast](how-jaunty-got-fast.md) walks the read path from 1.80x slower than
-  hand-coded ADO.NET to 1.42x faster, with the code before and after each step and the
-  measurements that drove it. Step 7's custom mapper above already uses the `GetDouble` trick
+  hand-coded ADO.NET to the closest of the micro-ORMs to it, with the code before and after
+  each step, the measurements that drove it, and the baseline defect found on the way. Step 7's custom mapper above already uses the `GetDouble` trick
   from that story.

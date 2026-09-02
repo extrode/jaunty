@@ -49,12 +49,17 @@ public class QueryBenchmarks
 
     // --- ADO.NET (hand-coded baseline) ---
 
+    // The loop a careful developer would write: typed getters, the list sized up front, and the
+    // price read as the type the column reports. On SQLite unit_price is REAL and GetDecimal is a
+    // text round-trip (4.8 ms vs 1.8 ms per 10k rows, 2026-09-02); until that run the baseline
+    // paid it, which is why two libraries measured "faster than ADO.NET" in the July reports.
     [Benchmark(Description = "ADO.NET (hand-coded)", Baseline = true)]
     public List<JauntyProduct> AdoNet_Query()
     {
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products";
         using var reader = cmd.ExecuteReader();
+        bool priceIsDouble = reader.GetFieldType(2) == typeof(double);
         var results = new List<JauntyProduct>(RowCount);
         while (reader.Read())
         {
@@ -62,7 +67,7 @@ public class QueryBenchmarks
             {
                 ProductId = reader.GetInt32(0),
                 ProductName = reader.GetString(1),
-                UnitPrice = reader.GetDecimal(2),
+                UnitPrice = priceIsDouble ? (decimal)reader.GetDouble(2) : reader.GetDecimal(2),
                 UnitsInStock = reader.GetInt32(3),
                 Discontinued = reader.GetBoolean(4)
             });

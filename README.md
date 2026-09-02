@@ -765,8 +765,13 @@ the ones that favor the other library.
 
 ### Benchmarks
 
-Read path, warm job, 10,000 rows, measured 2026-07-29 on four providers. Every number is relative
-to a hand-coded ADO.NET loop on the same provider, and lower is better.
+Read path, warm job, 10,000 rows, measured 2026-09-02 on four providers. Every number is relative
+to a hand-coded ADO.NET loop on the same provider, and lower is better. The loop uses typed
+getters, sizes its list up front, and reads each column as the type the provider reports; an
+earlier version of it paid a text round-trip on SQLite's `REAL` column, which is why the July
+reports showed two libraries faster than ADO.NET. The SQLite column is from a separate 10,000-row run on the same
+harness, because the 38-minute four-provider run drifted on that in-process column; the report
+shows both.
 
 ![Read path, 10,000 rows, relative to ADO.NET](docs/_assets/benchmarks/read-path-10k-rows-table.svg)
 
@@ -786,27 +791,29 @@ Allocation at 10,000 rows on SQL Server. Lower is better here too.
 | Method | SQLite | SQL Server | PostgreSQL | MariaDB |
 |---|---|---|---|---|
 | ADO.NET (hand-coded) | baseline | baseline | baseline | baseline |
-| Jaunty `Query<T>` | 1.12x | 1.17x | 1.77x | 1.36x |
-| Jaunty (`WithExpectedRowCount`) | 1.04x | 1.02x | 1.05x | 1.13x |
-| Dapper | 1.02x faster | 1.49x | 1.60x | 1.82x |
-| RepoDb | 1.37x faster | 1.23x | 1.49x | 1.33x |
-| linq2db | 1.01x | 1.23x | 1.75x | 1.47x |
-| EF Core | 1.47x | 1.96x | 2.59x | not measured |
+| Jaunty `Query<T>` | 1.33x | 1.15x | 1.60x | 1.37x |
+| Jaunty (`WithExpectedRowCount`) | 1.28x | 1.14x | 1.14x faster | 1.05x faster |
+| Dapper | 1.84x | 1.42x | 1.28x | 1.64x |
+| RepoDb | 1.42x | 1.22x | 1.06x | 1.32x |
+| linq2db | 1.94x | 1.25x | 1.34x | 1.62x |
+| EF Core | 3.06x | 2.59x | 1.83x | 4.27x |
 
 | Method | Allocated | vs ADO.NET |
 |---|---|---|
-| ADO.NET (hand-coded) | 1,122 KB | baseline |
-| Jaunty (`WithExpectedRowCount`) | 1,123 KB | 1.00x |
-| Jaunty `Query<T>` | 1,305 KB | 1.16x |
-| RepoDb | 1,625 KB | 1.45x |
-| Dapper | 2,105 KB | 1.88x |
-| EF Core | 3,323 KB | 2.96x |
+| ADO.NET (hand-coded) | 1,096 KB | baseline |
+| Jaunty (`WithExpectedRowCount`) | 1,097 KB | 1.00x |
+| Jaunty `Query<T>` | 1,274 KB | 1.16x |
+| RepoDb | 1,274 KB | 1.16x |
+| linq2db | 1,277 KB | 1.17x |
+| Dapper | 2,056 KB | 1.88x |
+| EF Core | 3,241 KB | 2.96x |
 
 </details>
 
-The full run, the machine, the 100-row tables, the harness defect that was found along the way and
-the comparison with the July numbers are in
-[benchmarks-2026-07-29.md](docs/05-quality/reports/benchmarks-2026-07-29.md). The earlier report is
+The full run, the machine, the 100-row tables, the harness corrections and the comparison with
+the July numbers are in
+[benchmarks-2026-09-02.md](docs/05-quality/reports/benchmarks-2026-09-02.md). The earlier reports
+are [benchmarks-2026-07-29.md](docs/05-quality/reports/benchmarks-2026-07-29.md) and
 [BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md). How the read path
 got from 1.80x slower than ADO.NET to where it is, step by step with the code, is in
 [How Jaunty got fast](docs/08-learn/how-jaunty-got-fast.md).

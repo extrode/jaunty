@@ -1,9 +1,11 @@
 # How Jaunty got fast
 
 The read path went from 1.80x slower than a hand-coded ADO.NET loop to 1.42x faster than it,
-in five steps over two months. This is the record of each step: what was slow, how it was
-found, what the code looked like before and after, and what it measured. Every number here
-came from a run you can repeat; the commands are at the end.
+in five steps over two months, and then the loop itself turned out to be wrong and was fixed,
+which put the finish line back where it belongs: a careful hand-written loop is still the
+floor, and Jaunty is the closest of the five libraries to it. This is the record of each step:
+what was slow, how it was found, what the code looked like before and after, and what it
+measured. Every number here came from a run you can repeat; the commands are at the end.
 
 Two things run through the whole story. **Correctness came first every time**, and twice a
 correctness fix was the thing that made Jaunty slow. And **nothing was fixed from reasoning
@@ -231,10 +233,10 @@ instance that went in.
 
 ## Where it is now
 
-SQLite, 10,000 rows, warm, quiet machine, 2026-09-02. The baseline still calls `GetDecimal`,
-because that is what the benchmark has measured since July and changing it is a separate
-decision. Two runs are quoted because a single BenchmarkDotNet run on a laptop is not a
-measurement.
+SQLite, 10,000 rows, warm, quiet machine, 2026-09-02. In these two runs the baseline still
+calls `GetDecimal`, so that the before and after of step 4 are against the same loop; the
+corrected baseline follows below. Two runs are quoted because a single BenchmarkDotNet run on
+a laptop is not a measurement.
 
 | Method | Run 1 | Run 2 | vs baseline (run 2) |
 |---|---|---|---|
@@ -271,6 +273,20 @@ The first row had the widest error bar of the run (0.82 ms standard deviation ag
 worth about 2 ms, the hint about 0.2 ms and 300 KB, and with both a custom mapper lands where
 the generated one does. The generated mapper gets the getter for free, because it picks it from
 the column's reported type; the hint is yours to pass either way.
+
+### With the baseline corrected
+
+The runs above compare against the July baseline so that the before and after are the same
+loop. The baseline was then fixed to read the price as the type the column reports, RepoDb's
+SQLite-only bool workaround was confined to SQLite, and the warm job went from 5 to 15
+iterations. The full four-provider run on that harness is
+[benchmarks-2026-09-02.md](../05-quality/reports/benchmarks-2026-09-02.md), and it is what the
+README quotes. On that harness, SQLite at 10,000 rows measured alone: the hand-coded loop 4.08 ms, Jaunty
+`Query<T>` 5.42 ms, RepoDb 5.77 ms, Dapper 7.45 ms. So the honest sentence is this: Jaunty is
+the fastest of the five libraries measured on SQLite and SQL Server, level with RepoDb on the
+others, and a hand-written loop that reads each column as its reported type is still 1.3x
+faster than any of them on SQLite. The next 1 ms is known: a per-row `FieldCount` guard and an
+`IsDBNull` on the nullable string column, each one native call per row.
 
 ## What the story says about measuring
 
