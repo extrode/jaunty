@@ -419,8 +419,8 @@ connection methods.
 using var grid = connection.QueryMultiple(@"
     SELECT * FROM products WHERE category_id = @CategoryId;
     SELECT * FROM categories WHERE id = @CategoryId;
-    SELECT COUNT(*) FROM products;
-", new { CategoryId = 1 });
+    SELECT COUNT(*) FROM products;",
+    new { CategoryId = 1 });
 
 var products = grid.Read<Product>();          // strict
 var category = grid.ReadFirst<Category>();    // strict, throws if empty
@@ -518,7 +518,10 @@ transaction.Commit();
 
 ## Naming: attributes and conventions
 
-Attributes override names per entity:
+Attributes override names per entity. Jaunty ships its own set in `Jaunty.Attributes`, and it also
+honors the ones from `System.ComponentModel.DataAnnotations` (`[Table]`, `[Column]`, `[Key]`,
+`[NotMapped]`, `[DatabaseGenerated]`), so an entity you already annotated for EF Core works as it
+is. Both the source generator and the reflection mapper recognize both sets.
 
 ```csharp
 using Jaunty.Attributes;
@@ -731,21 +734,28 @@ lowest-allocating of the compared ORMs and competitive with Dapper on throughput
 
 ## Comparison
 
+![Feature comparison: Jaunty, Dapper, EF Core](docs/_assets/benchmarks/comparison.svg)
+
+<details>
+<summary>Text version</summary>
+
 | Feature | Jaunty | Dapper | EF Core |
 |---------|:------:|:------:|:-------:|
-| Raw SQL execution | 🟢 ✔ | 🟢 ✔ | 🟢 ✔ |
-| Strict mapping mode | 🟢 ✔ | 🔴 ✘ | 🔴 ✘ |
-| Partial mapping mode | 🟢 ✔ | 🟢 ✔ | 🟢 ✔ |
-| Positional parameters | 🟢 ✔ | 🔴 ✘ | 🔴 ✘ |
-| Zero dependencies | 🟢 ✔ | 🟢 ✔ | 🔴 ✘ |
-| Bulk operations | 🟢 ✔ | 🔴 ✘ | 🟢 ✔ |
-| Upsert support | 🟢 ✔ | 🔴 ✘ | 🟢 ✔ |
-| Streaming (IAsyncEnumerable) | 🟢 ✔ | 🔴 ✘ | 🟢 ✔ |
-| Multiple result sets | 🟢 ✔ | 🟢 ✔ | 🟡 limited |
-| Stored procedures | 🟢 ✔ | 🟢 ✔ | 🟢 ✔ |
-| NativeAOT in the box | 🟢 ✔ | 🟡 separate package | 🟡 partial |
-| LINQ translation | 🔴 ✘ | 🔴 ✘ | 🟢 ✔ |
-| Change tracking | 🔴 ✘ | 🔴 ✘ | 🟢 ✔ |
+| Raw SQL execution | ✔ | ✔ | ✔ |
+| Strict mapping mode | ✔ | ✘ | ✘ |
+| Partial mapping mode | ✔ | ✔ | ✔ |
+| Positional parameters | ✔ | ✘ | ✘ |
+| Zero dependencies | ✔ | ✔ | ✘ |
+| Bulk operations | ✔ | ✘ | ✔ |
+| Upsert support | ✔ | ✘ | ✔ |
+| Streaming (IAsyncEnumerable) | ✔ | ✘ | ✔ |
+| Multiple result sets | ✔ | ✔ | limited |
+| Stored procedures | ✔ | ✔ | ✔ |
+| NativeAOT in the box | ✔ | separate package | partial |
+| LINQ translation | ✘ | ✘ | ✔ |
+| Change tracking | ✘ | ✘ | ✔ |
+
+</details>
 
 This compares what each library ships in the box. A cross means the package itself does not provide
 the feature, not that it cannot be done: several rows are covered for Dapper by `Dapper.Contrib` or
@@ -755,8 +765,23 @@ the ones that favor the other library.
 
 ### Benchmarks
 
-Read path, warm job, 10,000 rows, measured 2026-07-29 against hand-coded ADO.NET on each provider.
-Lower is slower relative to ADO.NET; "faster" means the library beat the hand-coded loop.
+Read path, warm job, 10,000 rows, measured 2026-07-29 on four providers. Every number is relative
+to a hand-coded ADO.NET loop on the same provider, and lower is better.
+
+![Read path, 10,000 rows, relative to ADO.NET](docs/_assets/benchmarks/read-path-10k-rows-table.svg)
+
+The same numbers as the extra time each library spends over ADO.NET:
+
+![Read path, 10,000 rows, time over ADO.NET](docs/_assets/benchmarks/read-path-10k-rows.svg)
+
+Allocation at 10,000 rows on SQL Server. Lower is better here too.
+
+![Allocation, 10,000 rows on SQL Server](docs/_assets/benchmarks/allocation-10k-rows-table.svg)
+
+![Allocation, 10,000 rows on SQL Server, bytes over ADO.NET](docs/_assets/benchmarks/allocation-10k-rows.svg)
+
+<details>
+<summary>Text version</summary>
 
 | Method | SQLite | SQL Server | PostgreSQL | MariaDB |
 |---|---|---|---|---|
@@ -766,9 +791,7 @@ Lower is slower relative to ADO.NET; "faster" means the library beat the hand-co
 | Dapper | 1.02x faster | 1.49x | 1.60x | 1.82x |
 | RepoDb | 1.37x faster | 1.23x | 1.49x | 1.33x |
 | linq2db | 1.01x | 1.23x | 1.75x | 1.47x |
-| EF Core | 1.47x | 1.96x | 2.59x | see report |
-
-Allocation at 10,000 rows on SQL Server:
+| EF Core | 1.47x | 1.96x | 2.59x | not measured |
 
 | Method | Allocated | vs ADO.NET |
 |---|---|---|
@@ -778,6 +801,8 @@ Allocation at 10,000 rows on SQL Server:
 | RepoDb | 1,625 KB | 1.45x |
 | Dapper | 2,105 KB | 1.88x |
 | EF Core | 3,323 KB | 2.96x |
+
+</details>
 
 The full run, the machine, the 100-row tables, the harness defect that was found along the way and
 the comparison with the July numbers are in
@@ -814,10 +839,5 @@ is sold is support. Two documents apply:
 > They bind a user who pays nothing as they bind one who pays, and they travel with the
 > redistributed binaries.
 
-This is not an open-source license. [LICENSE-EULA.md](LICENSE-EULA.md) is the instrument of the
-previous paid model, retained for the record; it does not govern use under the free model.
-Support pricing: [docs/06-releases/pricing.md](docs/06-releases/pricing.md).
-
----
-
-Built by [Syed Beparey](https://github.com/sbeparey)
+This is not an open-source license. Support pricing:
+[docs/06-releases/pricing.md](docs/06-releases/pricing.md).
