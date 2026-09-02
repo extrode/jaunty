@@ -340,6 +340,129 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     }
 
     [Fact]
+    public void ImportCsv_Sqlite_TempSchema_ImportsIntoTheCallersConnection()
+    {
+        // The sqlite3 CLI is a separate process with its own temp database, so "--schema temp"
+        // there exits 0, imports into a database that dies with the process, and leaves the
+        // caller's connection seeing nothing while the reported row count comes from the CSV.
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_temp_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+
+            using (var create = connection.CreateCommand())
+            {
+                create.CommandText =
+                    $"CREATE TEMP TABLE {TableName} (Name TEXT, Age INTEGER, City TEXT, Email TEXT)";
+                create.ExecuteNonQuery();
+            }
+
+            long rows = connection.ImportCsv("temp." + TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            using var count = connection.CreateCommand();
+            count.CommandText = $"SELECT COUNT(*) FROM temp.{TableName}";
+            Assert.Equal((long)ExpectedRowCount, Convert.ToInt64(count.ExecuteScalar()));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_Sqlite_AttachedSchema_ImportsIntoTheAttachedFile()
+    {
+        var csvPath = ResolveCsvPath();
+        var dir = Path.Combine(Path.GetTempPath(), $"jaunty_csv_attach_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        var mainDb = Path.Combine(dir, "main.db");
+        var archiveDb = Path.Combine(dir, "archive.db");
+
+        try
+        {
+            using (var seed = new SQLiteConnection($"Data Source={archiveDb}"))
+            {
+                seed.Open();
+                CreateTable(seed, DialectProvider.SystemSqlite);
+            }
+
+            using var connection = new SQLiteConnection($"Data Source={mainDb}");
+            connection.Open();
+            CreateTable(connection, DialectProvider.SystemSqlite);
+
+            using (var attach = connection.CreateCommand())
+            {
+                attach.CommandText = $"ATTACH DATABASE '{archiveDb.Replace("'", "''")}' AS archive";
+                attach.ExecuteNonQuery();
+            }
+
+            long rows = connection.ImportCsv("archive." + TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            using var archiveCount = connection.CreateCommand();
+            archiveCount.CommandText = $"SELECT COUNT(*) FROM archive.{TableName}";
+            Assert.Equal((long)ExpectedRowCount, Convert.ToInt64(archiveCount.ExecuteScalar()));
+
+            using var mainCount = connection.CreateCommand();
+            mainCount.CommandText = $"SELECT COUNT(*) FROM main.{TableName}";
+            Assert.Equal(0L, Convert.ToInt64(mainCount.ExecuteScalar()));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_Sqlite_SecondAliasForTheSameFile_ImportsIntoThatFile()
+    {
+        // The same file attached under a second alias is reachable by the CLI, which holds that
+        // file open as its own main - so the schema check compares files, not the name "main".
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_alias_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+            CreateTable(connection, DialectProvider.SystemSqlite);
+
+            using (var attach = connection.CreateCommand())
+            {
+                attach.CommandText = $"ATTACH DATABASE '{tempDb.Replace("'", "''")}' AS alias2";
+                attach.ExecuteNonQuery();
+            }
+
+            long rows = connection.ImportCsv("alias2." + TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+            Assert.Equal(ExpectedRowCount, GetRowCount(connection, DialectProvider.SystemSqlite));
+
+            // Both paths write to this one file, so the row counts above hold either way. Only the
+            // CLI path rejects a non-default quote character, so this is what proves the alias was
+            // resolved to the CLI's own file rather than falling through to prepared statements.
+            Assert.Throws<NotSupportedException>(() =>
+                connection.ImportCsv("alias2." + TableName, csvPath, new CsvImportOptions { Quote = '\'' }));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
     public void ImportCsv_SqliteCli_DotQualifiedTableName_ImportsSuccessfully()
     {
         // Regression test: the top-level ImportCsv/ImportCsvAsync entry point's own
