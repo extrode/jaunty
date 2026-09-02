@@ -224,6 +224,10 @@ public static class CsvImportExtensions
             // process, so the alias is rewritten rather than passed through.
             tableName = "main." + tableName.Substring(schemaDot + 1);
         }
+        else if (!SqliteUnqualifiedNameResolvesToMain(connection, tableName))
+        {
+            return ImportViaPreparedStatements(connection, tableName, filePath, options);
+        }
 
         // Use sqlite3 CLI for file-based databases
         return ImportViaSqliteCli(dbPath, tableName, filePath, options);
@@ -287,6 +291,94 @@ public static class CsvImportExtensions
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Whether an unqualified <paramref name="tableName"/> names a table in main on
+    /// <paramref name="connection"/>, and so means the same table to the sqlite3 CLI.
+    /// </summary>
+    /// <remarks>
+    /// SQLite resolves an unqualified name against the connection's own schema set - temp first,
+    /// then main, then each attached database in ATTACH order - while the CLI resolves it against
+    /// its own main, where a caller's temp table and attached tables do not exist. Finding nothing
+    /// there, .import creates the table from the CSV's first line and exits 0, so the caller is
+    /// told the file's row count while its own connection still sees the table it meant, untouched.
+    /// A name that resolves nowhere on the connection is left to the CLI: creating the table is
+    /// what an import into a table that does not exist yet already does, and there is no other
+    /// table for it to be confused with.
+    /// </remarks>
+    private static bool SqliteUnqualifiedNameResolvesToMain(IDbConnection connection, string tableName)
+    {
+        // A closed connection has no temp tables and no attachments - both are dropped with the
+        // connection - so on reopen only main can hold the table, which is what the CLI assumes.
+        if (connection.State == ConnectionState.Closed)
+            return true;
+
+        List<string> schemas = new List<string>();
+        using (IDbCommand command = connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA database_list";
+
+            using IDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+                schemas.Add(reader.GetString(1));
+        }
+
+        // database_list reports main at seq 0 and temp at seq 1, which is not the order names are
+        // resolved in, so the list is reordered to temp, main, then the attachments in seq order.
+        List<string> resolutionOrder = new List<string>(schemas.Count);
+        AddSqliteSchemasNamed(resolutionOrder, schemas, "temp");
+        AddSqliteSchemasNamed(resolutionOrder, schemas, "main");
+        for (int i = 0; i < schemas.Count; i++)
+        {
+            if (!string.Equals(schemas[i], "temp", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(schemas[i], "main", StringComparison.OrdinalIgnoreCase))
+            {
+                resolutionOrder.Add(schemas[i]);
+            }
+        }
+
+        for (int i = 0; i < resolutionOrder.Count; i++)
+        {
+            if (!SqliteSchemaHasObjectNamed(connection, resolutionOrder[i], tableName))
+                continue;
+
+            return string.Equals(resolutionOrder[i], "main", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return true;
+    }
+
+    private static void AddSqliteSchemasNamed(List<string> target, List<string> schemas, string name)
+    {
+        for (int i = 0; i < schemas.Count; i++)
+        {
+            if (string.Equals(schemas[i], name, StringComparison.OrdinalIgnoreCase))
+                target.Add(schemas[i]);
+        }
+    }
+
+    /// <summary>
+    /// Whether <paramref name="schema"/> on <paramref name="connection"/> holds a table or view
+    /// named <paramref name="name"/>. A view counts: it shadows the same unqualified name, and an
+    /// import the prepared-statement path rejects out loud beats one the CLI redirects in silence.
+    /// </summary>
+    private static bool SqliteSchemaHasObjectNamed(IDbConnection connection, string schema, string name)
+    {
+        using IDbCommand command = connection.CreateCommand();
+
+        // sqlite_master rather than sqlite_schema: the newer name arrived in SQLite 3.33, and the
+        // bundled provider versions are not the only ones this runs against.
+        command.CommandText = "SELECT 1 FROM \"" + schema.Replace("\"", "\"\"")
+            + "\".sqlite_master WHERE type IN ('table', 'view') AND name = @jauntyImportName LIMIT 1";
+
+        IDbDataParameter parameter = command.CreateParameter();
+        parameter.ParameterName = "@jauntyImportName";
+        parameter.DbType = DbType.String;
+        parameter.Value = name;
+        command.Parameters.Add(parameter);
+
+        return command.ExecuteScalar() is not null;
     }
 
     private static bool IsSqliteInMemoryDataSource(string dbPath)
