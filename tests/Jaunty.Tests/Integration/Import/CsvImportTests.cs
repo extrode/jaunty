@@ -856,12 +856,184 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
-    private static bool SchemaHasObjectNamed(SQLiteConnection connection, string schema, string name)
+    // =============================================
+    // SQLite file-based, both providers
+    // =============================================
+    //
+    // Every file-backed SQLite test above opens System.Data.SQLite. Microsoft.Data.Sqlite parses
+    // the same "Data Source=" key, pools by default since 6.0 and keeps temp tables across
+    // Close() the same way, so the routing has to be proven on it too, not assumed from the
+    // other provider. These theories run each case on both.
+
+    public static TheoryData<DialectProvider> SqliteProviders =>
+        new() { DialectProvider.SystemSqlite, DialectProvider.MicrosoftSqlite };
+
+    private static DbConnection OpenSqliteFile(DialectProvider provider, string path, string settings = "")
+    {
+        string connectionString = $"Data Source={path};{settings}";
+        DbConnection connection = provider == DialectProvider.MicrosoftSqlite
+            ? new SqliteConnection(connectionString)
+            : new SQLiteConnection(connectionString);
+        connection.Open();
+        return connection;
+    }
+
+    private static void ClearSqlitePools()
+    {
+        SQLiteConnection.ClearAllPools();
+        SqliteConnection.ClearAllPools();
+    }
+
+    [Theory]
+    [MemberData(nameof(SqliteProviders))]
+    public void ImportCsv_SqliteFile_EitherProvider_ImportsAllRowsThroughTheCli(DialectProvider provider)
+    {
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_{provider}_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = OpenSqliteFile(provider, tempDb);
+            CreateTable(connection, provider);
+
+            // Quote is rejected by the CLI path alone, so this proves which path was taken.
+            Assert.Throws<NotSupportedException>(() =>
+                connection.ImportCsv(TableName, csvPath, new CsvImportOptions { Quote = '\'' }));
+
+            long rows = connection.ImportCsv(TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+            Assert.Equal(ExpectedRowCount, GetRowCount(connection, provider));
+            Assert.Equal("Alice Brown", GetFirstName(connection, provider));
+        }
+        finally
+        {
+            ClearSqlitePools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SqliteProviders))]
+    public void ImportCsv_SqliteFile_EitherProvider_TempTableShadow_ImportsIntoTheTempTable(DialectProvider provider)
+    {
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_{provider}_temp_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = OpenSqliteFile(provider, tempDb);
+
+            using (var create = connection.CreateCommand())
+            {
+                create.CommandText =
+                    $"CREATE TEMP TABLE {TableName} (Name TEXT, Age INTEGER, City TEXT, Email TEXT)";
+                create.ExecuteNonQuery();
+            }
+
+            long rows = connection.ImportCsv(TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            using var tempCount = connection.CreateCommand();
+            tempCount.CommandText = $"SELECT COUNT(*) FROM temp.{TableName}";
+            Assert.Equal((long)ExpectedRowCount, Convert.ToInt64(tempCount.ExecuteScalar()));
+
+            Assert.False(SchemaHasObjectNamed(connection, "main", TableName));
+        }
+        finally
+        {
+            ClearSqlitePools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SqliteProviders))]
+    public void ImportCsv_SqliteFile_EitherProvider_ClosedPooledConnectionWithATempTable_ImportsIntoTheTempTable(DialectProvider provider)
+    {
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_{provider}_pool_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            // Microsoft.Data.Sqlite pools by default and System.Data.SQLite does not; the case
+            // under test is a pooled handle coming back with its temp table, so both are told.
+            using var connection = OpenSqliteFile(provider, tempDb, "Pooling=True");
+            CreateTable(connection, provider);
+
+            using (var create = connection.CreateCommand())
+            {
+                create.CommandText =
+                    $"CREATE TEMP TABLE {TableName} (Name TEXT, Age INTEGER, City TEXT, Email TEXT)";
+                create.ExecuteNonQuery();
+            }
+
+            connection.Close();
+
+            long rows = connection.ImportCsv(TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            connection.Open();
+
+            using var tempCount = connection.CreateCommand();
+            tempCount.CommandText = $"SELECT COUNT(*) FROM temp.{TableName}";
+            Assert.Equal((long)ExpectedRowCount, Convert.ToInt64(tempCount.ExecuteScalar()));
+
+            using var mainCount = connection.CreateCommand();
+            mainCount.CommandText = $"SELECT COUNT(*) FROM main.{TableName}";
+            Assert.Equal(0L, Convert.ToInt64(mainCount.ExecuteScalar()));
+        }
+        finally
+        {
+            ClearSqlitePools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SqliteProviders))]
+    public void ImportCsv_SqliteFile_EitherProvider_MainQualifiedName_ImportsThroughTheCli(DialectProvider provider)
+    {
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_{provider}_main_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = OpenSqliteFile(provider, tempDb);
+            CreateTable(connection, provider);
+
+            Assert.Throws<NotSupportedException>(() =>
+                connection.ImportCsv("main." + TableName, csvPath, new CsvImportOptions { Quote = '\'' }));
+
+            long rows = connection.ImportCsv("main." + TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+            Assert.Equal(ExpectedRowCount, GetRowCount(connection, provider));
+        }
+        finally
+        {
+            ClearSqlitePools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    private static bool SchemaHasObjectNamed(DbConnection connection, string schema, string name)
     {
         using var command = connection.CreateCommand();
         command.CommandText =
             $"SELECT 1 FROM \"{schema}\".sqlite_master WHERE type IN ('table', 'view') AND name = @name COLLATE NOCASE LIMIT 1";
-        command.Parameters.AddWithValue("@name", name);
+
+        DbParameter parameter = command.CreateParameter();
+        parameter.ParameterName = "@name";
+        parameter.Value = name;
+        command.Parameters.Add(parameter);
+
         return command.ExecuteScalar() is not null;
     }
 
