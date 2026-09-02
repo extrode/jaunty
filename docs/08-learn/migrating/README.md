@@ -23,7 +23,7 @@ first guide in the table.
 
 ## When not to migrate
 
-Stated plainly in [the README](../../../README.md#when-to-use-jaunty--and-when-not-to). The short
+Stated plainly in [the README](../../../README.md#jaunty-and-dapper). The short
 version: if you need change tracking, a unit of work, lazy loading or migrations, that is EF Core's
 job and Jaunty does not do it. If your team knows Dapper and your data layer is not causing you
 problems, "it is stricter" is not on its own worth a port.

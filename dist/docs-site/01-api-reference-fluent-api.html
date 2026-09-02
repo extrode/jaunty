@@ -1141,6 +1141,37 @@ been silently discarded.</p>
 </div>
 <p>The aggregate methods on the group are <code>Count</code>, <code>Sum</code>, <code>Avg</code>, <code>Min</code> and <code>Max</code>; there is no LINQ
 <code>Average</code> because <code>IGrouping&lt;TKey, T&gt;</code> is Jaunty's own interface, not <code>System.Linq</code>'s.</p>
+<h4 id="having-parameter-names">HAVING parameter names</h4>
+<p>The alias rule reaches the parameters a <code>HAVING</code> clause binds. An operand is named after the
+aggregate it is compared to, read off the expression tree rather than the rendered SQL:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> sql = connection.From&lt;Product&gt;()
+    .InnerJoin&lt;Category&gt;()
+    .On((p, c) =&gt; p.CategoryId == c.CategoryId)
+    .GroupBy((p, c) =&gt; p.CategoryId)
+    .Having(g =&gt; g.Sum((p, c) =&gt; p.UnitPrice) &gt; <span class="tok-num">150m</span>)
+    .ToSql(g =&gt; <span class="tok-kw">new</span> { g.Key, Count = g.Count() });
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">SELECT</span> p.category_id <span class="tok-kw">AS</span> &quot;Key&quot;, <span class="tok-kw">COUNT</span>(*) <span class="tok-kw">AS</span> Count
+<span class="tok-kw">FROM</span> products p
+<span class="tok-kw">INNER</span> <span class="tok-kw">JOIN</span> categories c <span class="tok-kw">ON</span> (p.category_id = c.category_id)
+<span class="tok-kw">GROUP</span> <span class="tok-kw">BY</span> p.category_id
+HAVING <span class="tok-kw">SUM</span>(p.unit_price) &gt; @sum_p_unit_price
+</code></pre>
+</div>
+<p><code>g.Count() &gt; 3</code> binds <code>@count</code>, and so does <code>3 &lt; g.Count()</code>: the side that is an aggregate names
+the side that is a value, whichever way round you wrote it. A number is spent only where one query
+compares the same aggregate twice, which gives <code>@count_2</code>.</p>
 <h2 id="kitchen-sink-example">Kitchen Sink Example</h2>
 <p>A single query combining a join, multi-condition filtering and ordering. Aliases come from the
 lambda parameter names, so <code>p</code> and <code>c</code> below are what the SQL uses:</p>
