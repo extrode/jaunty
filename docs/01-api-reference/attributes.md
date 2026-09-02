@@ -30,7 +30,10 @@ public partial class Product
 
 **Notes:**
 - Takes precedence over `JauntyConfig.TableNameResolver`
-- If schema is not specified, the default schema will be used
+- If schema is not specified, the table name is emitted unqualified and the database resolves it:
+  the login's default schema on SQL Server, `search_path` on PostgreSQL, `main` on SQLite, the
+  connection's database on MySQL. Jaunty never substitutes a default of its own —
+  see [`schemas.md`](schemas.md)
 - Attribute takes highest priority in naming resolution
 - `schema` is positional, not a named argument. `[Table("products", Schema = "inventory")]` does
   not compile: `Schema` is a read-only property, so the compiler reports CS0617.
@@ -48,9 +51,11 @@ public partial class ArchivedWidget { /* ... */ }
 SELECT id, name FROM archive.widgets
 ```
 
-The connection has to have attached that database first — `ATTACH DATABASE 'archive.db' AS archive`
-— because the schema name is a property of the connection, not of the file. Ask for a schema the
-connection has not attached and SQLite names it: `SQLite Error 1: 'no such table: archive.widgets'`.
+The alias is whatever you choose: `archive`, `master`, `dbo`. The connection has to have attached
+that database first (`ATTACH DATABASE 'archive.db' AS archive`), because the schema set is a
+property of the connection, not of the file. Ask for a schema the connection has not attached and
+SQLite says so, for example `SQLite Error 1: 'no such table: archive.widgets'` from
+Microsoft.Data.Sqlite. Full detail in [`schemas.md`](schemas.md).
 
 > Before 2026-09-02 the SQLite dialect discarded the schema instead, on the belief that SQLite had
 > no schemas. Nothing failed when it did: the statement went out unqualified, SQLite resolved it
