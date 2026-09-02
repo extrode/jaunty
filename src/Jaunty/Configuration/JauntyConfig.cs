@@ -61,6 +61,12 @@ public static class JauntyConfig
     /// Gets or sets the initial capacity for query result lists.
     /// Default: 64. Suitable for most queries without immediate reallocation.
     /// </summary>
+    /// <remarks>
+    /// The default is not raised for large reads, and there is no growth logic to keep an unhinted
+    /// list under the large-object threshold: a caller reading thousands of rows passes
+    /// <c>CommandOptions&lt;T&gt;.WithExpectedRowCount(n)</c>. Measured and decided 2026-09-02,
+    /// docs/decisions/2026-09-02-012-result-list-default-capacity-stays-64.md.
+    /// </remarks>
     public static int QueryResultCapacity
     {
         get => _queryResultCapacity;
