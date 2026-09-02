@@ -3,7 +3,7 @@
 ## Supported versions
 
 Security fixes are applied to the latest released version. Older releases do not receive
-backported fixes. The current release is `v1.0.0-rc.1`; while the 1.0 line is in release
+backported fixes. The current release is `v1.0.0-rc.2`; while the 1.0 line is in release
 candidate, "latest" means the newest tag, not the newest stable.
 
 ## Reporting a vulnerability

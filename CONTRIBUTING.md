@@ -8,7 +8,7 @@ about them after you have done the work would waste your time.
 
 ### 1. Jaunty is not open source, and you need a signed CLA to contribute
 
-The source is published under the **Islamic Software License – Restricted (ISL-R) v1.0**
+The source is published under the **Islamic Software License – Restricted (ISL-R) v1.2**
 (`LICENSE.md`). You may read it and use it. You may **not** modify or redistribute it — except that
 ISL-R Section 2 allows exactly that "with prior written consent from the Licensor."
 
@@ -29,7 +29,7 @@ Project states here:
 
 | | Statement |
 |---|---|
-| (a) Project License | ISL-R, Version 1.0, as applied by Extrode LLC in `LICENSE.md`. ISL-CLA Section 2 therefore applies: signing is the prior written consent ISL-R Section 2 requires. |
+| (a) Project License | ISL-R, Version 1.2, as applied by Extrode LLC in `LICENSE.md`. ISL-CLA Section 2 therefore applies: signing is the prior written consent ISL-R Section 2 requires. |
 | (b) Section 6, No AI-Generated Contributions | **Adopted.** |
 | (c) Governing law | The laws of the Commonwealth of Virginia, United States of America. |
 | (d) Licensor | Extrode LLC, the party named in Section 1.2 of `LICENSE.md`. |
