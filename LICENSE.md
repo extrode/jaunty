@@ -1,6 +1,6 @@
-# Islamic Software License - Restricted (ISL-R), Version 1.0
+# Islamic Software License - Restricted (ISL-R), Version 1.2
 
-**Effective Date:** July 2026
+**Effective Date:** August 2026
 
 **Copyright (c) 2026 Extrode LLC. All rights reserved.**
 
@@ -12,14 +12,19 @@ This license is rooted in the principles of Islam, which commands justice (*'adl
 forbids oppression (*dhulm*), and prohibits that which is harmful (*haram*) to individuals
 and societies. The Quran states:
 
-> *"Cooperate with one another in goodness and righteousness, and do not cooperate in sin
-> and transgression."* — Quran 5:2
+> *"...And cooperate in righteousness and piety, but do not cooperate in sin and
+> aggression..."* — Quran 5:2
 
-> *"O you who believe, do not consume one another's wealth unjustly but only in lawful
-> transactions by mutual consent."* — Quran 4:29
+> *"O you who have believed, do not consume one another's wealth unjustly but only [in
+> lawful] business by mutual consent..."* — Quran 4:29
 
-> *"And whoever kills a soul — it is as if he had slain all of mankind. And whoever saves
-> one — it is as if he had saved all of mankind."* — Quran 5:32
+> *"...whoever kills a soul unless for a soul or for corruption [done] in the land - it is
+> as if he had slain mankind entirely. And whoever saves one - it is as if he had saved
+> mankind entirely..."* — Quran 5:32
+
+Quotations from the Quran are the Saheeh International translation (Al-Muntada Al-Islami /
+Abul-Qasim Publishing House), reproduced verbatim; an ellipsis marks words omitted from a
+verse.
 
 This License grants the right to use the Software, including for internal commercial and
 non-commercial purposes, subject to the ethical restrictions in Sections 4 and 5. The
@@ -38,13 +43,20 @@ transparency and inspection purposes only.
 ## Notice on Reproducing This License
 
 This document (the text of this License) may be copied, reproduced, published, and
-distributed, verbatim and unmodified in its entirety, by any person and for any purpose —
+distributed, verbatim and unmodified in its entirety, by any person and for any purpose --
 including to apply it to a work, to catalogue or reference it (e.g., in an SPDX license
-list or license-comparison resource), or to critique or compare it — without such
+list or license-comparison resource), or to critique or compare it -- without such
 reproduction, by itself, constituting a Prohibited Activity or being subject to Section 4
 or Section 5 of this License. This right extends only to the unmodified text of this
 License document; it does not extend to the Software distributed under it, and does not
 permit publishing a modified version of this text under an "ISL" name.
+
+Completing the bracketed fields this License provides for -- the copyright line at the top,
+the `[LICENSOR]` placeholder in the Licensor definition, and any further bracketed placeholder
+this variant defines -- is not a modification of this text for the purposes of this notice. A
+copy so completed remains an unmodified reproduction of this License, and may be published,
+distributed, and applied to a work under its ISL name. A copy in which those fields are left
+unfilled is likewise unmodified, but names no Licensor and grants nothing anyone can rely on.
 
 ---
 
@@ -54,6 +66,11 @@ permit publishing a modified version of this text under an "ISL" name.
 files distributed under this License.
 
 **1.2 "Licensor"** means Extrode LLC and any authorized successors or assigns.
+
+> **Completing this definition.** `[LICENSOR]` is the party applying this License to a work -- fill
+> in your legal name or entity where you apply it, alongside the copyright line above. Where Ikhbat
+> Foundation licenses its own work under this text, the Foundation is the Licensor. A copy left
+> unfilled names no one, and grants nothing anyone can rely on.
 
 **1.3 "Licensee"** means any individual, organization, company, government entity, or
 other legal person exercising rights under this License.
@@ -129,7 +146,7 @@ The following are expressly prohibited without prior written consent from the Li
 
 **3.1 Attribution.** Any use of the Software must preserve the copyright notice and a
 clear acknowledgment that the Software is licensed under the Islamic Software License -
-Restricted (ISL-R), Version 1.0.
+Restricted (ISL-R), Version 1.2.
 
 **3.2 No Transfer.** The Licensee may not sublicense, assign, or transfer this License or
 any rights granted herein to any third party without prior written consent from the
@@ -151,8 +168,8 @@ engaged in, and not having a Material Association with, any of the following.
 
 The Quran states:
 
-> *"Indeed, Allah does not forgive association with Him, but He forgives what is less than
-> that for whom He wills."* — Quran 4:48
+> *"Indeed, Allāh does not forgive association with Him, but He forgives what is less than
+> that for whom He wills..."* — Quran 4:48
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the promotion, propagation, or organized facilitation of polytheism (*shirk*),
@@ -246,12 +263,12 @@ The Software may not be used by any entity whose Primary Business involves:
 
 The Quran states:
 
-> *"And do not cause corruption on the earth after it has been set in order. That is
-> better for you, if you are believers."* — Quran 7:85
+> *"...and cause not corruption upon the earth after its reformation. That is better for
+> you, if you should be believers."* — Quran 7:85
 
-> *"And of the people are some who say, 'We believe in Allah and the Last Day,' but they
-> are not believers. They seek to deceive Allah and those who believe, but they deceive
-> not except themselves and perceive it not."* — Quran 2:8-9
+> *"And of the people are some who say, "We believe in Allāh and the Last Day," but they
+> are not believers. They [think to] deceive Allāh and those who believe, but they deceive
+> not except themselves and perceive [it] not."* — Quran 2:8-9
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the organized promotion, propagation, or institutional advocacy of atheism,
@@ -276,10 +293,10 @@ restricted.
 
 The Quran states:
 
-> *"He created you from one soul. Then He made from it its mate."* — Quran 39:6
+> *"He created you from one soul. Then He made from it its mate..."* — Quran 39:6
 
-> *"[Satan said]: 'I will command them and they will change the creation of Allah.'"*
-> — Quran 4:119
+> *"...and I will command them so they will change the creation of Allāh..."*
+> — Quran 4:119, Satan's words continuing from 4:118
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the promotion, facilitation, or provision of surgical or hormonal procedures for
@@ -297,6 +314,7 @@ The Software may not be used by any entity whose Primary Business involves:
 hospitals, or medical institutions that may offer such services among a broader range of
 medical care. It targets entities whose Primary Business is the activities described
 above.
+
 ### 4.11 Zina and Fahisha (Extra-Marital Relations, Lewdness, and Sexual Promiscuity)
 
 The Quran states:
@@ -304,8 +322,9 @@ The Quran states:
 > *"And do not approach unlawful sexual intercourse. Indeed, it is ever an immorality
 > and is evil as a way."* — Quran 17:32
 
-> *"Those who love that immorality should be spread among the believers will have a
-> painful punishment in this world and the Hereafter."* — Quran 24:19
+> *"Indeed, those who like that immorality should be spread [or publicized] among those
+> who have believed will have a painful punishment in this world and the Hereafter..."*
+> — Quran 24:19
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the operation of platforms, applications, or services whose primary purpose is
@@ -329,7 +348,8 @@ The Quran states:
 > *"And do not kill your children for fear of poverty. We provide for them and for you.
 > Indeed, their killing is ever a great sin."* — Quran 17:31
 
-> *"And when the girl buried alive is asked for what sin she was killed."* — Quran 81:8-9
+> *"And when the girl [who was] buried alive is asked*
+> *For what sin she was killed"* — Quran 81:8-9
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the performance or provision of abortion procedures as a primary medical service,
@@ -428,7 +448,7 @@ journalists, academics, and civil society groups operating within or from a coun
 identified under this Section are not subject to this restriction solely by reason of
 their nationality or residence, provided they are not themselves engaged in or materially
 associated with the Prohibited Activities described herein. This License does not
-collectively punish populations — it restricts complicit entities.
+collectively punish populations -- it restricts complicit entities.
 
 ---
 
@@ -449,11 +469,11 @@ Licensee shall have sixty (60) days from receipt of such notice to:
 **6.3 Governing Principles.** In the event of ambiguity in the interpretation of this
 License, the following principles of Islamic jurisprudence (*usul al-fiqh*) shall guide
 interpretation:
-  - (a) **La darar wa la dirar** — No harm shall be inflicted or reciprocated;
-  - (b) **Al-umur bi-maqasidiha** — Matters are judged by their purposes and intentions;
-  - (c) **Dar' al-mafasid muqaddam 'ala jalb al-masalih** — Preventing harm takes
+  - (a) **La darar wa la dirar**: No harm shall be inflicted or reciprocated;
+  - (b) **Al-umur bi-maqasidiha**: Matters are judged by their purposes and intentions;
+  - (c) **Dar' al-mafasid muqaddam 'ala jalb al-masalih**: Preventing harm takes
     precedence over securing benefit; and
-  - (d) **Al-yaqin la yazul bi'l-shakk** — Certainty is not overturned by doubt.
+  - (d) **Al-yaqin la yazul bi'l-shakk**: Certainty is not overturned by doubt.
 
 **6.4 Governing Law.** This License shall be governed by and construed in accordance with
 the laws of the jurisdiction in which the Licensor resides, without regard to conflict of
@@ -552,12 +572,12 @@ Licensor.
 Include the following notice in your source files:
 
 ```
-SPDX-License-Identifier: LicenseRef-ISL-R-1.0
+SPDX-License-Identifier: LicenseRef-ISL-R-1.2
 
 Copyright (c) [Year] [Copyright Holder]
 
 Licensed under the Islamic Software License - Restricted (ISL-R), Version
-1.0 (the "License"). You may not use this file except in compliance with
+1.2 (the "License"). You may not use this file except in compliance with
 the License. You may obtain a copy of the License at:
 
   [URL to license]
@@ -570,7 +590,7 @@ regarding prohibited industries, activities, and associations.
 
 ---
 
-*The Islamic Software License - Restricted (ISL-R) v1.0 was drafted to align source-viewable
+*The Islamic Software License - Restricted (ISL-R) v1.2 was drafted to align source-viewable
 software licensing with Islamic ethical principles and universal human rights. It is a
 proprietary, source-viewable license with ethical use restrictions. It is not certified by
 the Open Source Initiative or the Free Software Foundation and does not claim to be an
