@@ -222,6 +222,12 @@ Aliases are inferred per join and only when every name a join needs is usable. A
 keyword, is already taken, or matches a table in the query is declined, and that join keeps the
 fully qualified form. An explicit `From<Product>("prd")` always wins.
 
+An alias retires the table name — SQL's rule, not Jaunty's — so a string condition written after one
+has to use it. `Where("p.unit_price > 20")` runs; `Where("products.unit_price > 20")` is rejected by
+the database, naming the token to change. A subquery inside the string is its own scope and may name
+the table freely, and a query that uses no lambda `On` aliases nothing, so `products.` keeps working
+there. [Error Messages, Explained](docs/08-learn/error-messages.md) has the failure and its fixes.
+
 The same rule reaches the parameters a `HAVING` clause binds. An operand is named after the
 aggregate it is compared to, read off the expression tree rather than the rendered SQL:
 
