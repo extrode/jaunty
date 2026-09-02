@@ -57,8 +57,9 @@ default lives in `src/Directory.Build.props`.
   `error-messages.md` and `exercises.md` now state the self-join `t1`/`t2` fallback and every
   reason a name is declined, the rendered `ON (...)` matches the builder's output, and
   `DocumentedApiTests` now also scans HTML under `docs/` and the XML doc comments in `src/`.
-- **Docs: the owner name retired on 2026-08-26 no longer appears anywhere in the tree** apart
-  from `.mailmap`; `PackageIdentityTests` scans every text file to keep it that way.
+- **The owner name retired on 2026-08-26 no longer appears anywhere in the tree.** `.mailmap` is
+  gone too: every commit on `dev` and `main` already carries one author identity, so it mapped
+  nothing. `PackageIdentityTests` scans every text file to keep the name out.
 
 ### Added
 
