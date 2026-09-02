@@ -1,6 +1,7 @@
 using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection;
+using Jaunty.Tests.Helpers;
 
 using Microsoft.Data.Sqlite;
 
@@ -22,7 +23,7 @@ public class InsertCoreGuardTests : IDisposable
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        JauntyReflectionExtensions.UseReflectionMapping();
+        TestInitializer.Initialize();
     }
 
     [Table("identity_only_rows")]

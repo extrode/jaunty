@@ -5,6 +5,7 @@ using System.Buffers;
 
 using Jaunty.Configuration;
 using Jaunty.Tests.Entities;
+using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read.Configuration;
@@ -36,8 +37,7 @@ public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
         var interceptorsBeforeReset = JauntyConfig.CaptureAndClearInterceptors();
 
         JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
-        SpecialTypeMappers.Register();
+        TestInitializer.Initialize();
 
         if (interceptorsBeforeReset is { Length: > 0 })
             JauntyConfig.AddInterceptors(interceptorsBeforeReset);
