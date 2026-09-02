@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="714" height="300" viewBox="0 0 714 300" role="img" aria-label="Read path, 10,000 rows, relative to hand-coded ADO.NET (lower is better)" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+<title>Read path, 10,000 rows, relative to hand-coded ADO.NET (lower is better)</title>
+<rect width="714" height="300" fill="#ffffff"/>
+<text x="1" y="20" font-size="15" text-anchor="start" font-weight="bold" fill="#24292f">Read path, 10,000 rows, relative to hand-coded ADO.NET (lower is better)</text>
+<rect x="1" y="30" width="240" height="34" fill="#f6f8fa" stroke="#d0d7de" rx="0"/>
+<text x="13" y="52.0" font-size="13" text-anchor="start" font-weight="bold" fill="#24292f">Method</text>
+<rect x="241" y="30" width="118" height="34" fill="#f6f8fa" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="52.0" font-size="13" text-anchor="middle" font-weight="bold" fill="#24292f">SQLite</text>
+<rect x="359" y="30" width="118" height="34" fill="#f6f8fa" stroke="#d0d7de" rx="0"/>
+<text x="418.0" y="52.0" font-size="13" text-anchor="middle" font-weight="bold" fill="#24292f">SQL Server</text>
+<rect x="477" y="30" width="118" height="34" fill="#f6f8fa" stroke="#d0d7de" rx="0"/>
+<text x="536.0" y="52.0" font-size="13" text-anchor="middle" font-weight="bold" fill="#24292f">PostgreSQL</text>
+<rect x="595" y="30" width="118" height="34" fill="#f6f8fa" stroke="#d0d7de" rx="0"/>
+<text x="654.0" y="52.0" font-size="13" text-anchor="middle" font-weight="bold" fill="#24292f">MariaDB</text>
+<rect x="1" y="64" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
+<text x="13" y="84.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">ADO.NET (hand-coded)</text>
+<rect x="241" y="64" width="118" height="30" fill="#d7eebf" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="84.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">baseline</text>
+<rect x="359" y="64" width="118" height="30" fill="#d7eebf" stroke="#d0d7de" rx="0"/>
+<text x="418.0" y="84.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">baseline</text>
+<rect x="477" y="64" width="118" height="30" fill="#d7eebf" stroke="#d0d7de" rx="0"/>
+<text x="536.0" y="84.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">baseline</text>
+<rect x="595" y="64" width="118" height="30" fill="#d7eebf" stroke="#d0d7de" rx="0"/>
+<text x="654.0" y="84.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">baseline</text>
+<rect x="1" y="94" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
+<text x="13" y="114.0" font-size="12" text-anchor="start" font-weight="bold" fill="#24292f">Jaunty Query&lt;T&gt;</text>
+<rect x="241" y="94" width="118" height="30" fill="#deedb9" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="114.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.12x</text>
+<rect x="359" y="94" width="118" height="30" fill="#e1edb6" stroke="#d0d7de" rx="0"/>
+<text x="418.0" y="114.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.17x</text>
+<rect x="477" y="94" width="118" height="30" fill="#ffe79a" stroke="#d0d7de" rx="0"/>
+<text x="536.0" y="114.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.77x</text>
+<rect x="595" y="94" width="118" height="30" fill="#edecac" stroke="#d0d7de" rx="0"/>
+<text x="654.0" y="114.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.36x</text>
+<rect x="1" y="124" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
+<text x="13" y="144.0" font-size="12" text-anchor="start" font-weight="bold" fill="#24292f">Jaunty (WithExpectedRowCount)</text>
+<rect x="241" y="124" width="118" height="30" fill="#d9eebd" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="144.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.04x</text>
+<rect x="359" y="124" width="118" height="30" fill="#d8eebe" stroke="#d0d7de" rx="0"/>
+<text x="418.0" y="144.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.02x</text>
+<rect x="477" y="124" width="118" height="30" fill="#daeebd" stroke="#d0d7de" rx="0"/>
+<text x="536.0" y="144.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.05x</text>
+<rect x="595" y="124" width="118" height="30" fill="#dfedb8" stroke="#d0d7de" rx="0"/>
+<text x="654.0" y="144.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.13x</text>
+<rect x="1" y="154" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
+<text x="13" y="174.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">Dapper</text>
+<rect x="241" y="154" width="118" height="30" fill="#d5eec1" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="174.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.02x faster</text>
+<rect x="359" y="154" width="118" height="30" fill="#f5eca5" stroke="#d0d7de" rx="0"/>
+<text x="418.0" y="174.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.49x</text>
+<rect x="477" y="154" width="118" height="30" fill="#fbeb9f" stroke="#d0d7de" rx="0"/>
+<text x="536.0" y="174.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.60x</text>
+<rect x="595" y="154" width="118" height="30" fill="#ffe599" stroke="#d0d7de" rx="0"/>
+<text x="654.0" y="174.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.82x</text>
+<rect x="1" y="184" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
+<text x="13" y="204.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">RepoDb</text>
+<rect x="241" y="184" width="118" height="30" fill="#c6efce" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="204.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.37x faster</text>
+<rect x="359" y="184" width="118" height="30" fill="#e5edb3" stroke="#d0d7de" rx="0"/>
+<text x="418.0" y="204.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.23x</text>
+<rect x="477" y="184" width="118" height="30" fill="#f5eca5" stroke="#d0d7de" rx="0"/>
+<text x="536.0" y="204.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.49x</text>
+<rect x="595" y="184" width="118" height="30" fill="#ebecae" stroke="#d0d7de" rx="0"/>
+<text x="654.0" y="204.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.33x</text>
+<rect x="1" y="214" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
+<text x="13" y="234.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">linq2db</text>
+<rect x="241" y="214" width="118" height="30" fill="#d7eebf" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="234.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.01x</text>
+<rect x="359" y="214" width="118" height="30" fill="#e5edb3" stroke="#d0d7de" rx="0"/>
+<text x="418.0" y="234.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.23x</text>
+<rect x="477" y="214" width="118" height="30" fill="#ffe89a" stroke="#d0d7de" rx="0"/>
+<text x="536.0" y="234.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.75x</text>
+<rect x="595" y="214" width="118" height="30" fill="#f3eca6" stroke="#d0d7de" rx="0"/>
+<text x="654.0" y="234.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.47x</text>
+<rect x="1" y="244" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
+<text x="13" y="264.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">EF Core</text>
+<rect x="241" y="244" width="118" height="30" fill="#f3eca6" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="264.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.47x</text>
+<rect x="359" y="244" width="118" height="30" fill="#ffdf97" stroke="#d0d7de" rx="0"/>
+<text x="418.0" y="264.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.96x</text>
+<rect x="477" y="244" width="118" height="30" fill="#ffc78c" stroke="#d0d7de" rx="0"/>
+<text x="536.0" y="264.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">2.59x</text>
+<rect x="595" y="244" width="118" height="30" fill="#f6f8fa" stroke="#d0d7de" rx="0"/>
+<text x="654.0" y="264.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">not measured</text>
+<text x="1" y="292" font-size="11" text-anchor="start" font-weight="normal" fill="#57606a">Warm job, 2026-07-29. Green is closest to ADO.NET, orange is furthest.</text>
+</svg>
