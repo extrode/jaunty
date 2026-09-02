@@ -63,9 +63,12 @@ qualifier resolves to the wrong table is well-formed SQL returning the wrong row
 would tell you. The database rejecting the statement, naming the token to change, is the outcome
 to want.
 
-**How to see the alias:** call `ToSql()` before executing. The alias is always the lambda
-parameter name; where Jaunty cannot use that name — it is a SQL keyword, or another table in the
-query already has it — the table stays unaliased and the full name keeps working.
+**How to see the alias:** call `ToSql()` before executing. The alias is the lambda parameter name
+when Jaunty can use it: not a SQL keyword, not the name of a table already in the query, not an
+alias an earlier join locked in, and valid as a plain identifier on every engine. When a join step
+cannot use a name, that step keeps the full table names, with one exception: a self-join with
+neither side aliased takes the positional `t1`/`t2` scheme, because two bare occurrences of one
+table are ambiguous SQL.
 
 ## `No metadata found for type 'Product'.`
 
@@ -119,7 +122,7 @@ string sql = db.From<Product>()
 SELECT p.product_id, p.product_name, p.category_id, p.unit_price, p.units_in_stock, p.discontinued,
        c.category_id, c.category_name, c.description
 FROM products p
-INNER JOIN categories c ON p.category_id = c.category_id
+INNER JOIN categories c ON (p.category_id = c.category_id)
 WHERE (p.category_id = @p_category_id)
 ```
 
