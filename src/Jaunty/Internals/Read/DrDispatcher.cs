@@ -48,27 +48,28 @@ internal static class DrDispatcher
         return null;
     }
 
+    // Func<in T, out TResult> is contravariant in its argument, so a Func<IDataReader, T> is a
+    // Func<DbDataReader, T> as it stands. Each arm below used to wrap the delegate in a lambda, which
+    // cost a closure per query and a second delegate call per row - the entire pipeline overhead
+    // left on the custom-mapper path once the mapper itself is the caller's.
     internal static Func<DbDataReader, T> Resolve<T>(DbDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         // 1. User override
         if (options.Mapper is not null)
-            return dbReader => options.Mapper(dbReader);
+            return options.Mapper;
 
         // 2. IMapped<T> implementation (Source Generated)
         // Only safe for strict/full-shape mapping. Projection/partial queries may omit columns.
         // Prefer the per-result-set factory: shape validated once here instead of per row.
         if (mode == MappingMode.Strict && MappedCache<T>.MapperFactory is not null)
-        {
-            Func<IDataReader, T> rowMapper = MappedCache<T>.MapperFactory(reader);
-            return dbReader => rowMapper(dbReader);
-        }
+            return MappedCache<T>.MapperFactory(reader);
         if (mode == MappingMode.Strict && MappedCache<T>.Mapper is not null)
-            return dbReader => MappedCache<T>.Mapper(dbReader);
+            return MappedCache<T>.Mapper;
 
         // 3. Special Types
         Func<IDataReader, T>? specialMapper = TryResolveSpecialTypeFromExtension<T>(reader);
         if (specialMapper is not null)
-            return dbReader => specialMapper(dbReader);
+            return specialMapper;
 
         // 4. Fallback to Reflection Extension (if loaded)
         if (JauntyConfig.ReflectionMapperResolver is not null)
@@ -79,7 +80,7 @@ internal static class DrDispatcher
                 return dbMapper;
 
             if (resolved is Func<IDataReader, T> dataReaderMapper)
-                return dbReader => dataReaderMapper(dbReader);
+                return dataReaderMapper;
         }
 
         // 5. Fail

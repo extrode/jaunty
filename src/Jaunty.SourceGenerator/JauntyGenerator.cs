@@ -1038,6 +1038,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // GetValue (which boxes) rather than GetFieldValue<T> on providers that specialise it -
         // paid only by types that were previously broken or provider-dependent.
         var needsFallbackHelper = properties.Any(p => GetReaderTypeInfo(p.TypeName).Getter == "reader.GetValue");
+        var hasDecimal = properties.Any(p => GetReaderTypeInfo(p.TypeName).Getter == DecimalGetter);
+        var hasNonNullable = properties.Any(p => p.IsNonNullableValueType);
         if (needsFallbackHelper)
         {
             sb.AppendLine("        /// <summary>Converts a value read via GetValue to the property's type. See AUD-R25.</summary>");
@@ -1133,13 +1135,24 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public {className} ReadEntity(IDataReader reader)");
         sb.AppendLine("        #endif");
         sb.AppendLine("        {");
-        sb.AppendLine("            var ord = OrdinalMap.Resolve(reader);");
+        sb.AppendLine("            var entry = OrdinalMap.Resolve(reader);");
+        sb.AppendLine("            var ord = entry.Ordinals;");
+        if (hasDecimal)
+            sb.AppendLine($"            var {RealColumnsLocal} = entry.DecimalAsDouble;");
         sb.AppendLine($"            var entity = new {className}();");
         sb.AppendLine($"            bool {TypeHandlerFlagLocal} = global::Jaunty.Core.GeneratedBindingSupport.HasHandlers;");
         sb.AppendLine("            bool isDbReader = reader is DbDataReader;");
-        sb.AppendLine("            if (isDbReader)");
-        sb.AppendLine("            {");
-        sb.AppendLine("                var dbReader = (DbDataReader)reader;");
+        string blockIndent = "            ";
+        if (hasNonNullable)
+        {
+            sb.AppendLine("            try");
+            sb.AppendLine("            {");
+            blockIndent = "                ";
+        }
+        string readIndent = blockIndent + "    ";
+        sb.AppendLine($"{blockIndent}if (isDbReader)");
+        sb.AppendLine($"{blockIndent}{{");
+        sb.AppendLine($"{readIndent}var dbReader = (DbDataReader)reader;");
         for (int i = 0; i < properties.Count; i++)
         {
             PropertyMetadata p = properties[i];
@@ -1150,11 +1163,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // ReadFallback<T> over GetValue for the catch-all types (TimeSpan/DateTimeOffset/
             // enums/unknown) - see the AUD-R25 note on the emitted helper above.
             var dbValue = ReadExpression(typeInfo, typeForGetFieldValue, "dbReader", i, isDbDataReader: true, p.IsEnum);
-            AppendPropertyRead(sb, "                ", p, typeInfo, "dbReader", i, dbValue);
+            AppendPropertyRead(sb, readIndent, p, typeInfo, "dbReader", i, dbValue);
         }
-        sb.AppendLine("            }");
-        sb.AppendLine("            else");
-        sb.AppendLine("            {");
+        sb.AppendLine($"{blockIndent}}}");
+        sb.AppendLine($"{blockIndent}else");
+        sb.AppendLine($"{blockIndent}{{");
         for (int i = 0; i < properties.Count; i++)
         {
             PropertyMetadata p = properties[i];
@@ -1166,9 +1179,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
             var value = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "reader", i, isDbDataReader: false, p.IsEnum);
 
             // Fallback IDataReader path
-            AppendPropertyRead(sb, "                ", p, typeInfo, "reader", i, value);
+            AppendPropertyRead(sb, readIndent, p, typeInfo, "reader", i, value);
         }
-        sb.AppendLine("            }");
+        sb.AppendLine($"{blockIndent}}}");
+        if (hasNonNullable)
+            AppendNullDiagnosisCatch(sb, "            ", "reader");
         sb.AppendLine("            return entity;");
         sb.AppendLine("        }");
 
@@ -1180,7 +1195,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // result set in DrDispatcher callers).
         sb.AppendLine($"        public static Func<IDataReader, {className}> CreateRowMapper(IDataReader reader)");
         sb.AppendLine("        {");
-        sb.AppendLine("            var ord = OrdinalMap.Resolve(reader);");
+        sb.AppendLine("            var entry = OrdinalMap.Resolve(reader);");
+        sb.AppendLine("            var ord = entry.Ordinals;");
+        if (hasDecimal)
+            sb.AppendLine($"            var {RealColumnsLocal} = entry.DecimalAsDouble;");
         sb.AppendLine("            int fieldCount = reader.FieldCount;");
         sb.AppendLine("            if (reader is DbDataReader)");
         sb.AppendLine("            {");
@@ -1195,13 +1213,22 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        #endif");
         sb.AppendLine($"                    var entity = new {className}();");
         sb.AppendLine($"                    bool {TypeHandlerFlagLocal} = global::Jaunty.Core.GeneratedBindingSupport.HasHandlers;");
+        string dbRowIndent = "                    ";
+        if (hasNonNullable)
+        {
+            sb.AppendLine("                    try");
+            sb.AppendLine("                    {");
+            dbRowIndent = "                        ";
+        }
         for (int i = 0; i < properties.Count; i++)
         {
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "rr", i, isDbDataReader: true, p.IsEnum);
-            AppendPropertyRead(sb, "                    ", p, typeInfo, "rr", i, rowValue);
+            AppendPropertyRead(sb, dbRowIndent, p, typeInfo, "rr", i, rowValue);
         }
+        if (hasNonNullable)
+            AppendNullDiagnosisCatch(sb, "                    ", "rr");
         sb.AppendLine("                    return entity;");
         sb.AppendLine("                };");
         sb.AppendLine("            }");
@@ -1215,17 +1242,46 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        #endif");
         sb.AppendLine($"                var entity = new {className}();");
         sb.AppendLine($"                bool {TypeHandlerFlagLocal} = global::Jaunty.Core.GeneratedBindingSupport.HasHandlers;");
+        string rowIndent = "                ";
+        if (hasNonNullable)
+        {
+            sb.AppendLine("                try");
+            sb.AppendLine("                {");
+            rowIndent = "                    ";
+        }
         for (int i = 0; i < properties.Count; i++)
         {
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "r", i, isDbDataReader: false, p.IsEnum);
-            AppendPropertyRead(sb, "                ", p, typeInfo, "r", i, rowValue);
+            AppendPropertyRead(sb, rowIndent, p, typeInfo, "r", i, rowValue);
         }
+        if (hasNonNullable)
+            AppendNullDiagnosisCatch(sb, "                ", "r");
         sb.AppendLine("                return entity;");
         sb.AppendLine("            };");
         sb.AppendLine("        }");
         sb.AppendLine();
+
+        if (hasNonNullable)
+        {
+            // Perf: the per-column IsDBNull pre-check this replaces cost a native call per column
+            // per row on Microsoft.Data.Sqlite (1.8 ms of a 6.2 ms 10k-row read, measured
+            // 2026-09-02), and every supported provider already throws from its typed getter on a
+            // NULL. The named error AUD-R35-069 introduced is kept: a try region is free until an
+            // exception is thrown, and the catch re-examines the row to name the property.
+            sb.AppendLine("        private static void ThrowIfNonNullableColumnIsNull(IDataReader reader, int[] ord, Exception inner)");
+            sb.AppendLine("        {");
+            for (int i = 0; i < properties.Count; i++)
+            {
+                if (!properties[i].IsNonNullableValueType)
+                    continue;
+                sb.AppendLine($"            if (reader.IsDBNull(ord[{i}]))");
+                sb.AppendLine($"                throw new global::System.InvalidOperationException(\"Cannot assign NULL to non-nullable property '{properties[i].PropertyName}'.\", inner);");
+            }
+            sb.AppendLine("        }");
+            sb.AppendLine();
+        }
 
         // AUD-R30: the write path must apply the same value conversion the reflection binder's
         // BuildValueConverter does - TypeHandlerRegistry first, then [EnumStorage] /
@@ -1322,16 +1378,16 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            [ThreadStatic]");
         sb.AppendLine("            private static WeakReference<CacheEntry>? _last;");
         sb.AppendLine();
-        sb.AppendLine($"            public static int[] Resolve(IDataReader reader)");
+        sb.AppendLine($"            public static CacheEntry Resolve(IDataReader reader)");
         sb.AppendLine("            {");
         sb.AppendLine("                var lastRef = _last;");
         sb.AppendLine("                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))");
-        sb.AppendLine("                    return last.Ordinals;");
+        sb.AppendLine("                    return last;");
         sb.AppendLine();
         sb.AppendLine("                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))");
         sb.AppendLine("                {");
         sb.AppendLine("                    SetLast(cached);");
-        sb.AppendLine("                    return cached.Ordinals;");
+        sb.AppendLine("                    return cached;");
         sb.AppendLine("                }");
         sb.AppendLine();
         sb.AppendLine($"                var ords = new int[{properties.Count}];");
@@ -1354,7 +1410,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("                }");
         sb.AppendLine("#endif");
         sb.AppendLine("                SetLast(entry);");
-        sb.AppendLine("                return ords;");
+        sb.AppendLine("                return entry;");
         sb.AppendLine("            }");
         sb.AppendLine();
         sb.AppendLine("            private static void SetLast(CacheEntry entry)");
@@ -1366,7 +1422,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("                    lastRef.SetTarget(entry);");
         sb.AppendLine("            }");
         sb.AppendLine();
-        sb.AppendLine("            private sealed class CacheEntry");
+        sb.AppendLine("            public sealed class CacheEntry");
         sb.AppendLine("            {");
         sb.AppendLine("                private readonly IDataReader _reader;");
         sb.AppendLine("                private readonly int _fieldCount;");
@@ -1376,9 +1432,24 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("                    _reader = reader;");
         sb.AppendLine("                    _fieldCount = reader.FieldCount;");
         sb.AppendLine("                    Ordinals = ordinals;");
+        if (hasDecimal)
+        {
+            sb.AppendLine($"                    DecimalAsDouble = new bool[{properties.Count}];");
+            for (int i = 0; i < properties.Count; i++)
+            {
+                if (GetReaderTypeInfo(properties[i].TypeName).Getter == DecimalGetter)
+                    sb.AppendLine($"                    DecimalAsDouble[{i}] = reader.GetFieldType(ordinals[{i}]) == typeof(double);");
+            }
+        }
         sb.AppendLine("                }");
         sb.AppendLine();
         sb.AppendLine("                public int[] Ordinals { get; }");
+        if (hasDecimal)
+        {
+            sb.AppendLine();
+            sb.AppendLine("                /// <summary>True where a decimal property's column reports double, so it is read through GetDouble.</summary>");
+            sb.AppendLine("                public bool[] DecimalAsDouble { get; }");
+        }
         sb.AppendLine();
         sb.AppendLine("                public bool Matches(IDataReader reader)");
         sb.AppendLine("                {");
@@ -1718,10 +1789,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
         int ordinalIndex,
         string valueExpression)
     {
+        // A non-nullable value type reads unguarded: the typed getter throws on NULL on every
+        // supported provider, and the enclosing catch (AppendNullDiagnosisCatch) turns that into the
+        // named error. The per-column IsDBNull pre-check that used to sit here was one native call
+        // per column per row on Microsoft.Data.Sqlite.
         if (property.IsNonNullableValueType)
         {
-            sb.AppendLine($"{indent}if ({readerLocal}.IsDBNull(ord[{ordinalIndex}]))");
-            sb.AppendLine($"{indent}    throw new global::System.InvalidOperationException(\"Cannot assign NULL to non-nullable property '{property.PropertyName}'.\");");
             sb.AppendLine($"{indent}entity.{property.PropertyName} = {valueExpression};");
             return;
         }
@@ -1823,6 +1896,37 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// </summary>
     private const string TypeHandlerFlagLocal = "__jauntyHasHandlers";
 
+    /// <summary>The getter <see cref="GetReaderTypeInfo"/> assigns to <c>decimal</c> and <c>decimal?</c>.</summary>
+    private const string DecimalGetter = "reader.GetDecimal";
+
+    /// <summary>
+    /// The local holding <c>CacheEntry.DecimalAsDouble</c>: one flag per property, true when the
+    /// column behind a decimal property reports <c>typeof(double)</c> from <c>GetFieldType</c>.
+    /// </summary>
+    /// <remarks>
+    /// Microsoft.Data.Sqlite implements <c>GetDecimal</c> on a REAL column as text formatting plus
+    /// <c>decimal.Parse</c>; measured 2026-09-02 at 4.8 ms per 10k rows against 1.8 ms for
+    /// <c>GetDouble</c>. SQLite formats REAL to text with 15 significant digits, the same rounding
+    /// the <c>decimal(double)</c> constructor applies, so the cast yields the same value. Decided
+    /// once per result set from <c>GetFieldType</c>; on providers whose column is a real decimal
+    /// the flag is false and <c>GetDecimal</c> is reached unchanged.
+    /// </remarks>
+    private const string RealColumnsLocal = "__real";
+
+    /// <summary>
+    /// Closes the try region opened around a row's reads and emits the catch that names the
+    /// non-nullable property whose column was NULL, re-throwing anything else untouched.
+    /// </summary>
+    private static void AppendNullDiagnosisCatch(StringBuilder sb, string indent, string readerVariable)
+    {
+        sb.AppendLine($"{indent}}}");
+        sb.AppendLine($"{indent}catch (Exception ex)");
+        sb.AppendLine($"{indent}{{");
+        sb.AppendLine($"{indent}    ThrowIfNonNullableColumnIsNull({readerVariable}, ord, ex);");
+        sb.AppendLine($"{indent}    throw;");
+        sb.AppendLine($"{indent}}}");
+    }
+
     /// <summary>
     /// AUD-R35: routes a read through a registered <c>ITypeHandler</c> when one exists.
     /// </summary>
@@ -1872,6 +1976,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
     private static string FastReadExpression(
         ReaderTypeInfo typeInfo, string typeArgument, string readerVariable, int ordinalIndex, bool isDbDataReader, bool isEnum)
     {
+        // See RealColumnsLocal: a REAL column is read through GetDouble and cast.
+        if (typeInfo.Getter == DecimalGetter)
+            return $"({RealColumnsLocal}[{ordinalIndex}] ? (decimal){readerVariable}.GetDouble(ord[{ordinalIndex}]) : {readerVariable}.GetDecimal(ord[{ordinalIndex}]))";
+
         // Typed getters are unchanged - GetInt32, GetString and friends were never in question.
         if (typeInfo.Getter != "reader.GetValue")
             return $"{readerVariable}.{typeInfo.Getter.Substring("reader.".Length)}(ord[{ordinalIndex}])";
