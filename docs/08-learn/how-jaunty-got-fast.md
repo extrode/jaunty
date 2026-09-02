@@ -99,6 +99,15 @@ PostgreSQL, and it made Jaunty the fastest micro-ORM measured on SQL Server, Pos
 MariaDB. A hand-coded loop that knows its row count would do the same thing, and the benchmark
 baseline does.
 
+The 2026-09-02 run put a number on what the doubling costs. Every unhinted case on every
+provider shows Gen2 collections in the log, every hinted case shows none, and so do Dapper, RepoDb
+and linq2db, because none of them pre-size. On PostgreSQL the unhinted read was 8.2 ms against
+4.5 ms hinted. Setting the default capacity to 10,000 in the harness and re-running that one
+case gave 4.2 ms with no Gen2, so the growth is the whole gap. The default stays 64 all the same:
+a default sized for a 10,000-row read is the wrong default for a library whose most common query
+returns one row, and the hint costs one argument
+([decision 012](../decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
+
 ## The number that did not fit
 
 The 2026-07-29 regression check showed no regression and one oddity. On SQLite at 10,000 rows
