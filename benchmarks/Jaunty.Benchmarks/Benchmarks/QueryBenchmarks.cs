@@ -84,6 +84,26 @@ public class QueryBenchmarks
             options: options);
     }
 
+    // Same getters, same ordinals as the hand-coded baseline, so the difference between the two
+    // is Jaunty's pipeline overhead with mapping taken out of the comparison.
+    private static readonly CommandOptions<JauntyProduct> CustomMapper =
+        CommandOptions<JauntyProduct>.WithMapper(static reader => new JauntyProduct
+        {
+            ProductId = reader.GetInt32(0),
+            ProductName = reader.GetString(1),
+            UnitPrice = reader.GetDecimal(2),
+            UnitsInStock = reader.GetInt32(3),
+            Discontinued = reader.GetBoolean(4)
+        });
+
+    [Benchmark(Description = "Jaunty Query<T> (custom mapper)")]
+    public List<JauntyProduct> Jaunty_QueryWithCustomMapper()
+    {
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: CustomMapper);
+    }
+
     // --- Dapper ---
 
     [Benchmark(Description = "Dapper Query<T>")]
