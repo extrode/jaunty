@@ -186,9 +186,11 @@ The routing rule, in full:
 
 Both paths import the same rows; the prepared-statement path is slower on large files.
 
-A closed connection is opened for the check and closed again. That matters because a pooled
-connection keeps its temp tables and its ATTACH set across a `Close()` — the same native handle
-comes back on the next `Open()` — so "closed" does not mean "nothing attached".
+A closed connection is opened for the check, and the import runs inside that same open. Both
+halves matter. A pooled `Close()` does not discard temp tables or the ATTACH set — a handle from
+the pool comes back with them intact — so "closed" does not mean "nothing attached". And the pool
+is FIFO, so checking on one open and importing on the next would take two different handles, with
+the rows landing in whatever the second one called the table.
 
 ## See also
 
