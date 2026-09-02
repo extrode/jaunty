@@ -90,6 +90,8 @@ Quality assurance and testing documentation:
   - [Production Readiness Report](05-quality/reports/PRODUCTION-READINESS-2026-07-02.md)
   - [Coverage Gap Inventory](05-quality/reports/COVERAGE-GAPS-2026-07-04.md)
   - [Benchmarks](05-quality/reports/benchmarks-2026-07-29.md)
+  - [How Jaunty got fast](08-learn/how-jaunty-got-fast.md) - the read-path story, code before
+    and after each step, with the numbers
 
 ### 6. Releases & Planning
 
