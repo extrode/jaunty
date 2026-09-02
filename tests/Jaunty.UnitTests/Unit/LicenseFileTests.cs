@@ -8,24 +8,25 @@ using Xunit;
 namespace Jaunty.Tests.Unit;
 
 /// <summary>
-/// LICENSE-EULA.md is not documentation: <c>src/Directory.Build.props</c> names it as
+/// The packed licence is not documentation: <c>src/Directory.Build.props</c> names it as
 /// <c>PackageLicenseFile</c>, so it is packed into every Extrode.Jaunty.* package and is the
-/// agreement a customer actually receives. It shipped in v1.0.0-rc.1 with all ten of its
-/// bracketed placeholders unfilled - naming no licensor and no governing law - and nothing
-/// failed, because nothing was looking.
+/// agreement a customer actually receives. The EULA that filled that role until the 2026-08-30
+/// model decision (removed from the tree 2026-09-02, still in history) shipped in v1.0.0-rc.1
+/// with all ten of its bracketed placeholders unfilled - naming no licensor and no governing
+/// law - and nothing failed, because nothing was looking.
 /// </summary>
 public class LicenseFileTests
 {
     private const string Licensor = "Extrode LLC";
 
     [Fact]
-    public void ThePackagedEulaCarriesNoUnfilledPlaceholders()
+    public void ThePackagedLicenceCarriesNoUnfilledPlaceholders()
     {
         List<string> placeholders = new();
 
         // The 1.2 texts mention `[LICENSOR]` in their reproduction notice, in backticks, as prose
         // about the field rather than the field itself; only an unbackticked match is unfilled.
-        foreach (Match match in Regex.Matches(ReadRepositoryFile("LICENSE-EULA.md"), @"(?<!`)\[[A-Z][A-Z ]{2,}\](?!`)"))
+        foreach (Match match in Regex.Matches(ReadRepositoryFile("LICENSE.md"), @"(?<!`)\[[A-Z][A-Z ]{2,}\](?!`)"))
             placeholders.Add(match.Value);
 
         Assert.Equal(new string[0], placeholders.ToArray());
@@ -92,7 +93,7 @@ public class LicenseFileTests
             StringComparison.Ordinal);
     }
 
-    private static string[] LicenseFiles() => new[] { "LICENSE.md", "LICENSE-EULA.md" };
+    private static string[] LicenseFiles() => new[] { "LICENSE.md" };
 
     private static string ReadRepositoryFile(string relativePath)
     {
