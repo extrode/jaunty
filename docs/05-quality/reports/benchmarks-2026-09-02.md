@@ -104,7 +104,18 @@ on this machine drifts its clock down over ten minutes or more, and cases run at
 points on that curve. The SQLite numbers the README quotes are from the separate run below.
 
 Elsewhere in the table: `WithExpectedRowCount` beating the baseline on PostgreSQL and MariaDB is
-inside the run's noise and should be read as parity. EF Core's 100-row MariaDB case at 9 ms is
+inside the run's noise and should be read as parity.
+
+**Why the unhinted `Query<T>` trails the hinted case by 3.7 ms on PostgreSQL and 1.4 ms on
+MariaDB.** The GC columns of the summary say it: every unhinted case has Gen2 collections
+(62.5 per 1,000 operations on both providers) and every hinted case has none. A `List<T>` that
+starts at the default 64 doubles to 16,384 slots for 10,000 rows, and that last array is
+131,072 bytes on 64-bit, over the 85,000-byte large-object threshold; `new List<T>(10_000)` is
+80,000 bytes and never crosses it. Dapper, RepoDb and linq2db carry the same Gen2 signature.
+Confirmed the same evening by setting the default to 10,000 in the harness and re-running
+PostgreSQL at 10,000 rows: unhinted `Query<T>` 4,228 us, no Gen2, the hinted case's allocation.
+The default stays 64; the reasoning is in
+[decision 012](../../decisions/2026-09-02-012-result-list-default-capacity-stays-64.md). EF Core's 100-row MariaDB case at 9 ms is
 `ServerVersion.AutoDetect` making a round trip inside the measured region, a harness cost, not a
 library one.
 
