@@ -1,10 +1,10 @@
 using System.Data;
 
 using Jaunty.Configuration;
-using Jaunty.Extensions.Reflection;
 using Jaunty.Interfaces;
 using Jaunty.Internals.Read;
 using Jaunty.Internals.Write;
+using Jaunty.Tests.Helpers;
 
 namespace Jaunty.Tests.Unit.Internals;
 
@@ -40,7 +40,7 @@ public class GeneratedAccessorsResolutionTests : IDisposable
     {
         GC.SuppressFinalize(this);
         JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
+        TestInitializer.Initialize();
     }
 
     #region Entities
