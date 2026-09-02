@@ -501,6 +501,47 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     }
 
     [Fact]
+    public void ImportCsv_Sqlite_UnqualifiedNameInBothTempAndMain_ImportsIntoTemp()
+    {
+        // The one case the search order decides: both schemas hold the name, and SQLite gives it
+        // to temp while the CLI can only give it to main.
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_bare_shadow_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+            CreateTable(connection, DialectProvider.SystemSqlite);
+
+            using (var create = connection.CreateCommand())
+            {
+                create.CommandText =
+                    $"CREATE TEMP TABLE {TableName} (Name TEXT, Age INTEGER, City TEXT, Email TEXT)";
+                create.ExecuteNonQuery();
+            }
+
+            long rows = connection.ImportCsv(TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            using var tempCount = connection.CreateCommand();
+            tempCount.CommandText = $"SELECT COUNT(*) FROM temp.{TableName}";
+            Assert.Equal((long)ExpectedRowCount, Convert.ToInt64(tempCount.ExecuteScalar()));
+
+            using var mainCount = connection.CreateCommand();
+            mainCount.CommandText = $"SELECT COUNT(*) FROM main.{TableName}";
+            Assert.Equal(0L, Convert.ToInt64(mainCount.ExecuteScalar()));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
     public void ImportCsv_Sqlite_UnqualifiedNameShadowedByTempView_FailsInsteadOfImportingElsewhere()
     {
         var csvPath = ResolveCsvPath();
