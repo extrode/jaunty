@@ -16,7 +16,7 @@ Command: dotnet run -c Release -f net10.0 -- --filter "*.Benchmarks.QueryBenchma
 Global total time: 00:38:31, 264 benchmark cases
 ```
 
-**Headline: against a corrected baseline Jaunty is the fastest of the five libraries on SQL Server, and with `WithExpectedRowCount` on PostgreSQL and MariaDB it is within noise of the hand-coded loop. On SQLite the hand-coded loop is now the floor, 1.33x below Jaunty, and no library reaches it. Every "faster than ADO.NET" from the July reports was the baseline's `GetDecimal` round-trip.**
+**Headline: against a corrected baseline Jaunty is the fastest of the five libraries on SQL Server, and with `WithExpectedRowCount` on PostgreSQL and MariaDB it is within noise of the hand-coded loop. On SQLite the hand-coded loop is now the floor, 1.17x below Jaunty once the per-row `FieldCount` guard came out later the same day (1.33x before), and no library reaches it. Every "faster than ADO.NET" from the July reports was the baseline's `GetDecimal` round-trip.**
 
 ## What changed since the July report
 
@@ -122,7 +122,7 @@ library one.
 ## SQLite, 10,000 rows, measured alone
 
 The same harness, the same day, SQLite and 10,000 rows only, after the machine had cooled:
-3m37s for 22 cases. The 10,000-row SQLite rows in the README come from this run.
+3m37s for 22 cases. The README quoted this run until the guard removal below.
 
 | Method | Mean | vs ADO.NET | Allocated |
 |---|---|---|---|
@@ -138,11 +138,35 @@ The same harness, the same day, SQLite and 10,000 rows only, after the machine h
 | linq2db | 7,867 us | 1.94x | 1.70 MB |
 | EF Core | 12,415 us | 3.06x | 3.44 MB |
 
-Two of the remaining 1.3 ms between the generated mapper and the hand-coded loop are known. The
-generated row mapper checks `reader.FieldCount` on every row as a guard against a stale
+Two of the remaining 1.3 ms between the generated mapper and the hand-coded loop were known. The
+generated row mapper checked `reader.FieldCount` on every row as a guard against a stale
 delegate meeting a changed shape, and on Microsoft.Data.Sqlite that is a native call, about
-0.4 ms per 10,000 rows; and it calls `IsDBNull` on the nullable `product_name` column, which
-the hand loop does not, about the same again. Both are candidates for the next pass.
+0.4 ms per 10,000 rows; that guard is gone, and the section below is the run without it. The
+`IsDBNull` on the nullable `product_name` column stays, because NULL is a legitimate value there.
+
+## SQLite, 10,000 rows, after the `FieldCount` guard removal
+
+Later the same day the per-row `reader.FieldCount` check was removed from the generated row mapper
+([decision 011](../../decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)) and
+the run above was repeated on the same harness: 3m40s for 22 cases. **The 10,000-row SQLite rows in
+the README come from this run.**
+
+| Method | Mean | vs ADO.NET | Allocated |
+|---|---|---|---|
+| ADO.NET (hand-coded) | 4,222 us | baseline | 1.07 MB |
+| **Jaunty `Query<T>`** | 4,945 us | 1.17x | 1.24 MB |
+| **Jaunty (`WithExpectedRowCount`)** | 5,139 us | 1.22x (SD 705 us) | 1.07 MB |
+| Jaunty (custom mapper) | 9,812 us | 2.32x | 1.55 MB |
+| Jaunty (custom mapper, `WithExpectedRowCount`) | 8,276 us | 1.96x | 1.37 MB |
+| Jaunty (custom mapper, `GetDouble`) | 4,383 us | 1.04x | 1.24 MB |
+| Jaunty (custom mapper, `GetDouble`, `WithExpectedRowCount`) | 4,161 us | 1.01x faster | 1.07 MB |
+| Dapper | 7,505 us | 1.78x | 2.16 MB |
+| RepoDb | 5,480 us | 1.30x | 1.55 MB |
+| linq2db | 7,615 us | 1.80x | 1.70 MB |
+| EF Core | 11,446 us | 2.71x | 3.44 MB |
+
+Jaunty `Query<T>` went from 5,417 us to 4,945 us; the hinted case's 705 us standard deviation makes its
+change unreadable. The log is `tmp/bench-sqlite-10k-noguard.log` in the private tree.
 
 ## Allocation, 10,000 rows on SQL Server
 

@@ -24,8 +24,8 @@
 <text x="654.0" y="84.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">baseline</text>
 <rect x="1" y="94" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="114.0" font-size="12" text-anchor="start" font-weight="bold" fill="#24292f">Jaunty Query&lt;T&gt;</text>
-<rect x="241" y="94" width="118" height="30" fill="#d5eec1" stroke="#d0d7de" rx="0"/>
-<text x="300.0" y="114.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.33x</text>
+<rect x="241" y="94" width="118" height="30" fill="#d0eec5" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="114.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.17x</text>
 <rect x="359" y="94" width="118" height="30" fill="#cfeec6" stroke="#d0d7de" rx="0"/>
 <text x="418.0" y="114.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.15x</text>
 <rect x="477" y="94" width="118" height="30" fill="#deedb9" stroke="#d0d7de" rx="0"/>
@@ -34,8 +34,8 @@
 <text x="654.0" y="114.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.37x</text>
 <rect x="1" y="124" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="144.0" font-size="12" text-anchor="start" font-weight="bold" fill="#24292f">Jaunty (WithExpectedRowCount)</text>
-<rect x="241" y="124" width="118" height="30" fill="#d3eec2" stroke="#d0d7de" rx="0"/>
-<text x="300.0" y="144.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.28x</text>
+<rect x="241" y="124" width="118" height="30" fill="#d1eec4" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="144.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.22x</text>
 <rect x="359" y="124" width="118" height="30" fill="#cfeec6" stroke="#d0d7de" rx="0"/>
 <text x="418.0" y="144.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.14x</text>
 <rect x="477" y="124" width="118" height="30" fill="#c6efce" stroke="#d0d7de" rx="0"/>
@@ -44,8 +44,8 @@
 <text x="654.0" y="144.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.05x faster</text>
 <rect x="1" y="154" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="174.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">Dapper</text>
-<rect x="241" y="154" width="118" height="30" fill="#e6edb2" stroke="#d0d7de" rx="0"/>
-<text x="300.0" y="174.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.84x</text>
+<rect x="241" y="154" width="118" height="30" fill="#e4edb3" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="174.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.78x</text>
 <rect x="359" y="154" width="118" height="30" fill="#d8eebe" stroke="#d0d7de" rx="0"/>
 <text x="418.0" y="174.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.42x</text>
 <rect x="477" y="154" width="118" height="30" fill="#d3eec2" stroke="#d0d7de" rx="0"/>
@@ -54,8 +54,8 @@
 <text x="654.0" y="174.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.64x</text>
 <rect x="1" y="184" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="204.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">RepoDb</text>
-<rect x="241" y="184" width="118" height="30" fill="#d8eebe" stroke="#d0d7de" rx="0"/>
-<text x="300.0" y="204.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.42x</text>
+<rect x="241" y="184" width="118" height="30" fill="#d4eec2" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="204.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.30x</text>
 <rect x="359" y="184" width="118" height="30" fill="#d1eec4" stroke="#d0d7de" rx="0"/>
 <text x="418.0" y="204.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.22x</text>
 <rect x="477" y="184" width="118" height="30" fill="#ccefc9" stroke="#d0d7de" rx="0"/>
@@ -64,8 +64,8 @@
 <text x="654.0" y="204.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.32x</text>
 <rect x="1" y="214" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="234.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">linq2db</text>
-<rect x="241" y="214" width="118" height="30" fill="#eaecaf" stroke="#d0d7de" rx="0"/>
-<text x="300.0" y="234.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.94x</text>
+<rect x="241" y="214" width="118" height="30" fill="#e5edb3" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="234.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.80x</text>
 <rect x="359" y="214" width="118" height="30" fill="#d2eec3" stroke="#d0d7de" rx="0"/>
 <text x="418.0" y="234.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.25x</text>
 <rect x="477" y="214" width="118" height="30" fill="#d5eec0" stroke="#d0d7de" rx="0"/>
@@ -74,8 +74,8 @@
 <text x="654.0" y="234.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">1.62x</text>
 <rect x="1" y="244" width="240" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="264.0" font-size="12" text-anchor="start" font-weight="normal" fill="#24292f">EF Core</text>
-<rect x="241" y="244" width="118" height="30" fill="#ffe197" stroke="#d0d7de" rx="0"/>
-<text x="300.0" y="264.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">3.06x</text>
+<rect x="241" y="244" width="118" height="30" fill="#ffe89b" stroke="#d0d7de" rx="0"/>
+<text x="300.0" y="264.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">2.71x</text>
 <rect x="359" y="244" width="118" height="30" fill="#ffeb9c" stroke="#d0d7de" rx="0"/>
 <text x="418.0" y="264.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#24292f">2.59x</text>
 <rect x="477" y="244" width="118" height="30" fill="#e6edb2" stroke="#d0d7de" rx="0"/>

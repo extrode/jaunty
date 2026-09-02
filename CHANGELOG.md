@@ -38,6 +38,15 @@ default lives in `src/Directory.Build.props`.
   pre-sizing the harness to 10,000 removed the whole 3.7 ms gap on PostgreSQL. README, report,
   article and `QueryResultCapacity` say to pass `WithExpectedRowCount`
   ([decision 012](docs/decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
+- **Docs: the accuracy pass over the README, `SECURITY.md`, the docs index and the quick-start.**
+  The README, the quick-start, the learn and API-reference indexes and the comparison chart
+  claimed positional parameter binding; there is none. A lone scalar binds the one parameter the
+  SQL names and throws against two or more, and the quoted "Parameter count mismatch" message
+  never existed. Also corrected: `net472` is a test leg, not a target of `src/Jaunty`; two
+  interceptors ship, not three; the SQLite benchmark column now shows the run after the
+  `FieldCount` guard removal; the quick-start's build, test, layout and dependency pages describe
+  the current tree (ten test projects, `Category=AllocationBudget` as the only trait, the
+  coverage script, the seeded server databases, the nightly cadence).
 
 ### Added
 

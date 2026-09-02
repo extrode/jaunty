@@ -7,8 +7,8 @@ Welcome to Jaunty! This guide gets you up and running quickly.
 Jaunty is a lightweight, high-performance micro-ORM for .NET that:
 - Executes your SQL and maps results to objects
 - Uses strict mapping by default (catches bugs early)
-- Has zero external dependencies
-- Targets `netstandard2.0` and `net8.0`
+- Has no package dependencies on `net8.0` and `net10.0`
+- Targets `netstandard2.0`, `net8.0` and `net10.0`
 
 ```csharp
 var products = connection.Query<Product>(
@@ -18,16 +18,17 @@ var products = connection.Query<Product>(
 
 ## Prerequisites
 
-- .NET SDK 8.0 or later
+- .NET SDK 10.0 (the solution targets `net10.0`; CI installs 8.0, 9.0 and 10.0)
 - Visual Studio 2022 or VS Code
-- SQLite (for running tests)
+- Nothing else for the SQLite suites. The SQL Server, PostgreSQL, MySQL and MariaDB suites need a
+  running server (`docker-compose.yml` starts all four) and skip when none is reachable
 
 ## Build the Project
 
 ```bash
 # Clone the repository
 git clone https://github.com/extrode/jaunty.git
-cd Jaunty
+cd jaunty
 
 # Build all targets
 dotnet build
@@ -39,14 +40,14 @@ dotnet build -f net8.0
 ## Run Tests
 
 ```bash
-# Run all tests
-dotnet test
+# Every project, every framework
+dotnet test Jaunty.slnx
 
-# Run integration tests only
-dotnet test --filter "Category=Integration"
+# One project, one framework
+dotnet test tests/Jaunty.Tests -f net10.0
 
-# Run specific test class
-dotnet test --filter "FullyQualifiedName~QueryTests"
+# One test class
+dotnet test tests/Jaunty.Tests -f net10.0 --filter "FullyQualifiedName~QueryTests"
 ```
 
 ## Basic Usage
@@ -93,7 +94,7 @@ var filtered = connection.Query<Product>(
 
 | Mode | Method | Behavior |
 |------|--------|----------|
-| **Strict** | `Query<T>()` | Throws on an unmatched property **or** an unmatched column |
+| **Strict** | `Query<T>()` | Throws on a property with no column; a column with no property throws under the reflection mapper and is ignored by the generated one |
 | **Partial** | `QueryPartial<T>()` | Only maps existing columns, ignores rest |
 
 ### Connection Management
@@ -118,9 +119,12 @@ var products = connection.Query<Product>(sql);
 // Named parameters (anonymous object)
 connection.Query<Product>(sql, new { CategoryId = 1, MinPrice = 100 });
 
-// Positional parameters (parsed from SQL)
-connection.Query<Product>(sql, 1, 100);  // @CategoryId=1, @MinPrice=100
+// A single scalar, when the SQL names exactly one parameter
+connection.Query<Product>("SELECT * FROM products WHERE category_id = @CategoryId", 1);
 ```
+
+There is no positional binding: SQL that names two or more parameters takes an object or a
+dictionary, and a lone scalar against such SQL throws before anything is sent.
 
 ## Next Steps
 
@@ -144,15 +148,17 @@ SqlClient - rather than this message. The reverse case - a column with no proper
 under the reflection mapper; see
 [which mapper enforces which direction](../01-api-reference/query-partial-methods.md#which-mapper-enforces-which-direction).
 
-### "Parameter count mismatch"
+### "No property found on type 'X' matching SQL parameter '@Name'"
 
-You passed more/fewer parameters than your SQL contains. Check:
+The SQL names a parameter your object has no property for. Check:
 - Parameter names match between SQL and object
 - No typos in `@ParameterName`
-- SQL comments don't contain false `@params`
+- SQL comments and string literals are skipped by the parser, so a stray `@word` in prose is not
+  the cause; a real parameter with no value is
+
+The reverse, a property the SQL never names, throws "Unused parameter properties on type 'X'".
 
 ## Getting Help
 
 - **Documentation**: Browse this `docs/` directory
 - **API Reference**: [`../01-api-reference/README.md`](../01-api-reference/README.md)
-
