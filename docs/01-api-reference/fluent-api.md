@@ -328,31 +328,75 @@ Specifies the join condition using a strongly-typed expression predicate.
 IJoinedQuery<T, TJoin> On(Expression<Func<T, TJoin, bool>> predicate)
 ```
 
-#### OnColumns(string leftColumn, string rightColumn)
+#### On(string leftColumn, string rightColumn)
 
-Specifies the join condition using column names.
+Specifies the join condition as an equality between two column names. Each side is qualified, by
+alias or by table name.
 
 **Signature:**
 ```csharp
-IJoinedQuery<T, TJoin> OnColumns(string leftColumn, string rightColumn)
+IJoinedQuery<T, TJoin> On(string leftColumn, string rightColumn)
 ```
 
-#### OnRaw(string condition)
+#### On(string condition)
 
-Specifies the join condition using raw SQL.
+Specifies the join condition as raw SQL, passed through untouched.
 
 **Signature:**
 ```csharp
-IJoinedQuery<T, TJoin> OnRaw(string condition)
+IJoinedQuery<T, TJoin> On(string condition)
 ```
 
 **Example:**
 ```csharp
 var products = connection.From<Product>("p")
     .InnerJoin<Category>("c")
-    .OnColumns("category_id", "id")
+    .On("p.category_id", "c.category_id")
     .Select();
 ```
+
+### Aliases and string conditions
+
+A lambda `On` aliases both tables after the parameter names you wrote, and **an alias retires the
+table name for the rest of the statement**. Which qualifier a later string may use therefore depends
+on what the earlier `On` did.
+
+```csharp
+connection.From<Product>()
+    .InnerJoin<Category>()
+    .On((p, cat) => p.CategoryId == cat.CategoryId)
+```
+
+```sql
+FROM products p INNER JOIN categories cat ON (p.category_id = cat.category_id)
+```
+
+From that point `p` and `cat` are the qualifiers, and every string-form call on the query is passed
+through as written:
+
+| string | result |
+|---|---|
+| `Where("p.unit_price > 20")` | runs |
+| `Where("p.product_id IN (SELECT product_id FROM products WHERE discontinued = 0)")` | runs — the subquery opens its own scope, where `products` is a table again |
+| `Where("products.unit_price > 20")` | **fails.** SQLite: `SQLite Error 1: 'no such column: products.unit_price'.`; SQL Server: `Msg 4104, The multi-part identifier "products.unit_price" could not be bound.` |
+
+A query that never uses a lambda `On` has nothing aliased, so the table name stays valid throughout:
+
+```csharp
+connection.From<Product>()
+    .InnerJoin<Category>()
+    .On("products.category_id", "categories.category_id")
+    .Where("products.unit_price > 20")     // runs
+```
+
+Inference is per join and all-or-nothing. A parameter name that is a SQL keyword in the dialect,
+that another table or alias in the query already holds, or that equals the table it would alias, is
+declined, and that join keeps the fully qualified form. An explicit `From<Product>("prd")` or
+`InnerJoin<Category>("cat")` always wins. A self-join with neither side aliased takes `t1`/`t2`,
+because two occurrences of one table name cannot be told apart.
+
+**Call `ToSql()` if you are unsure** — it returns the statement without executing it, so the
+qualifier to use is visible before the query runs.
 
 ### DISTINCT
 
