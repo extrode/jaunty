@@ -95,9 +95,9 @@ public class DocumentedApiTests
         int blockStart = Math.Max(0, index - 400);
         string preceding = text.Substring(blockStart, index - blockStart);
 
-        return preceding.Contains("never existed", StringComparison.OrdinalIgnoreCase)
-            || preceding.Contains("does not exist", StringComparison.OrdinalIgnoreCase)
-            || preceding.Contains("Sketch only", StringComparison.OrdinalIgnoreCase);
+        return preceding.IndexOf("never existed", StringComparison.OrdinalIgnoreCase) >= 0
+            || preceding.IndexOf("does not exist", StringComparison.OrdinalIgnoreCase) >= 0
+            || preceding.IndexOf("Sketch only", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static IEnumerable<(string Relative, string Text)> PublishedMarkdown()
@@ -120,7 +120,7 @@ public class DocumentedApiTests
                                       .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                                       .Replace('\\', '/');
 
-                if (SkippedPathFragments.Any(f => ("/" + relative).Contains(f, StringComparison.OrdinalIgnoreCase)))
+                if (SkippedPathFragments.Any(f => ("/" + relative).IndexOf(f, StringComparison.OrdinalIgnoreCase) >= 0))
                     continue;
 
                 yield return (relative, File.ReadAllText(file));
