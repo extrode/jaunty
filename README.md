@@ -816,6 +816,17 @@ JauntyConfig.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
 JauntyConfig.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
 ```
 
+**`SchemaNameResolver` is global and dialect-blind.** It sees the entity type and nothing else,
+so `_ => "dbo"` emits `dbo.products` against PostgreSQL and SQLite too. Scope it by type, or
+return `string.Empty` for the types that should stay unqualified — Jaunty emits a schema only
+when one is named, and never substitutes an engine default of its own. Per-engine detail is in
+[`docs/01-api-reference/schemas.md`](docs/01-api-reference/schemas.md).
+
+```csharp
+JauntyConfig.SchemaNameResolver = type =>
+    type.Namespace?.EndsWith(".Archive", StringComparison.Ordinal) == true ? "archive" : string.Empty;
+```
+
 **Resolvers may be changed after queries have run.** Setting any of them bumps a configuration
 generation, and metadata compiled under an older generation — including the per-reader setter
 caches, which would otherwise map through setters built for the old column names — is retired and
