@@ -160,10 +160,11 @@ public class SqlDialectFactoryTests
         private readonly SQLiteDialect _dialect = new();
 
         [Fact]
-        public void EscapeTableName_SchemaIgnored()
+        public void EscapeTableName_QualifiesWithSchema()
         {
-            // SQLite doesn't support schemas, so schema is ignored
-            Assert.Equal("products", _dialect.EscapeTableName("myschema", "products"));
+            // This asserted "products" until 2026-09-02, on the belief that SQLite has no schemas.
+            // It has: main, temp, and every ATTACH alias.
+            Assert.Equal("myschema.products", _dialect.EscapeTableName("myschema", "products"));
         }
 
         [Fact]
