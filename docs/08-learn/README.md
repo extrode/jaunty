@@ -411,3 +411,7 @@ writes, transactions, a custom mapper, attribute mapping, async, and streaming. 
 - The root `README.md` in the repository documents the full API surface, including bulk
   operations, upserts, stored procedures, `GridReader` for multiple result sets, and
   interceptors for logging and auditing.
+- [How Jaunty got fast](how-jaunty-got-fast.md) walks the read path from 1.80x slower than
+  hand-coded ADO.NET to 1.42x faster, with the code before and after each step and the
+  measurements that drove it. Step 7's custom mapper above already uses the `GetDouble` trick
+  from that story.
