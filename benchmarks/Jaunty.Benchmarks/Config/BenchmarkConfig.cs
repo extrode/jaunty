@@ -24,11 +24,13 @@ public class BenchmarkConfig : ManualConfig
             .WithUnrollFactor(1));
 
         // Warm: 2 warmup iterations populate all ORM caches before measurement begins.
-        // Measures steady-state throughput with all caches hot.
+        // Measures steady-state throughput with all caches hot. 15 iterations, not 5: the
+        // libraries sit within a few percent of each other at 10k rows, and 5 iterations gave
+        // error bars of 5-10% of the mean, wider than the differences being reported.
         AddJob(Job.Default
             .WithId("Warm")
             .WithWarmupCount(2)
-            .WithIterationCount(5));
+            .WithIterationCount(15));
 
         AddDiagnoser(MemoryDiagnoser.Default);
         AddLogger(ConsoleLogger.Default);
