@@ -104,6 +104,17 @@ public class QueryBenchmarks
             options: CustomMapper);
     }
 
+    // The baseline sizes its list up front; this gives the custom mapper the same hint, so the two
+    // differ only in what Jaunty adds around the loop.
+    [Benchmark(Description = "Jaunty Query<T> (custom mapper, WithExpectedRowCount)")]
+    public List<JauntyProduct> Jaunty_QueryWithCustomMapperAndExpectedRowCount()
+    {
+        var options = new CommandOptions<JauntyProduct>(mapper: CustomMapper.Mapper, expectedRowCount: RowCount);
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: options);
+    }
+
     // --- Dapper ---
 
     [Benchmark(Description = "Dapper Query<T>")]

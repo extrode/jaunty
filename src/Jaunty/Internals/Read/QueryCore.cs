@@ -360,10 +360,7 @@ public static partial class Jaunty
 
         // 1. User override
         if (options.Mapper is not null)
-        {
-            Func<IDataReader, T> userMapper = options.Mapper;
-            mapper = dbReader => userMapper(dbReader);
-        }
+            mapper = options.Mapper;
         // 2. Source-generated - prefer MapperFactory (shape validated once here instead of per
         // row) over the plain per-row Mapper delegate, matching DrDispatcher.Resolve's ordering.
         // MapperFactory needs a reader to build the row mapper, so leave 'mapper' unset here and
@@ -373,8 +370,7 @@ public static partial class Jaunty
             && Internals.Read.MappedCache<T>.MapperFactory is null
             && Internals.Read.MappedCache<T>.Mapper is not null)
         {
-            Func<IDataReader, T> sgMapper = Internals.Read.MappedCache<T>.Mapper;
-            mapper = dbReader => sgMapper(dbReader);
+            mapper = Internals.Read.MappedCache<T>.Mapper;
         }
 
         // If we couldn't resolve without reader, we'll need to resolve after opening
