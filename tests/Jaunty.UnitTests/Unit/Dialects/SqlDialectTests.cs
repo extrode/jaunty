@@ -312,9 +312,33 @@ public class SqlDialectTests
 
     [Theory]
     [InlineData("", "select", "\"select\"")]
+    [InlineData("archive", "widgets", "archive.widgets")]
+    [InlineData("main", "widgets", "main.widgets")]
+    [InlineData("temp", "widgets", "\"temp\".widgets")]
+    [InlineData("archive", "select", "archive.\"select\"")]
+    [InlineData("order", "widgets", "\"order\".widgets")]
+    [InlineData("order", "select", "\"order\".\"select\"")]
     public void Sqlite_EscapeTableName_WithSchema_Keyword_Escaped(string schema, string table, string expected)
     {
         Assert.Equal(expected, _sqlite.EscapeTableName(schema, table));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Sqlite_EscapeTableName_NoSchema_LeavesTheTableUnqualified(string? schema)
+    {
+        Assert.Equal("widgets", _sqlite.EscapeTableName(schema, "widgets"));
+    }
+
+    [Theory]
+    [InlineData("arch ive")]
+    [InlineData("arch;ive")]
+    [InlineData("arch.ive")]
+    public void Sqlite_EscapeTableName_InvalidSchema_Throws(string schema)
+    {
+        Assert.Throws<ArgumentException>(() => _sqlite.EscapeTableName(schema, "widgets"));
     }
 
     [Theory]
