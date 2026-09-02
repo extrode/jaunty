@@ -36,6 +36,11 @@ default lives in `src/Directory.Build.props`.
   rather than pre-checking, and the audit record lists it under fixes that were later reworked.
 - `QueryBenchmarks`: two custom-mapper cases that read the SQLite `REAL` price through
   `GetDouble`, with and without `WithExpectedRowCount`, beside the two `GetDecimal` cases.
+- `docs/05-quality/reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
+  harness. The hand-coded baseline reads each column as its reported type (it paid a text
+  round-trip on SQLite `REAL` before, which is why two libraries measured faster than ADO.NET
+  in July), RepoDb's SQLite bool workaround is registered for SQLite only, and the warm job
+  runs 15 iterations. The README tables and charts are regenerated from it.
 
 ## [1.0.0-rc.2] - 2026-09-02
 

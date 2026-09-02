@@ -4,79 +4,80 @@
 <text x="1" y="20" font-size="15" text-anchor="start" font-weight="bold" fill="#24292f">Read path, 10,000 rows: time over hand-coded ADO.NET (lower is better)</text>
 <text x="1" y="52" font-size="13" text-anchor="start" font-weight="bold" fill="#24292f">SQLite</text>
 <text x="220" y="78" font-size="12" text-anchor="end" font-weight="bold" fill="#24292f">Jaunty Query&lt;T&gt;</text>
-<rect x="361.0" y="64" width="27.1" height="18" fill="#deedb9" stroke="#8c959f" rx="2"/>
-<text x="394.07754189067225" y="78" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+12%</text>
+<rect x="314.9" y="64" width="40.9" height="18" fill="#d5eec1" stroke="#8c959f" rx="2"/>
+<text x="361.75221238938053" y="78" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+33%</text>
 <text x="220" y="100" font-size="12" text-anchor="end" font-weight="bold" fill="#24292f">Jaunty (WithExpectedRowCount)</text>
-<rect x="361.0" y="86" width="9.0" height="18" fill="#d9eebd" stroke="#8c959f" rx="2"/>
-<text x="376.0137346466272" y="100" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+4%</text>
+<rect x="314.9" y="86" width="34.7" height="18" fill="#d3eec2" stroke="#8c959f" rx="2"/>
+<text x="355.5575221238938" y="100" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+28%</text>
 <text x="220" y="122" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">Dapper</text>
-<rect x="356.6" y="108" width="4.4" height="18" fill="#d5eec1" stroke="#8c959f" rx="2"/>
-<text x="350.55442728831906" y="122" font-size="11" text-anchor="end" font-weight="normal" fill="#24292f">-2%</text>
+<rect x="314.9" y="108" width="104.1" height="18" fill="#e6edb2" stroke="#8c959f" rx="2"/>
+<text x="424.9380530973452" y="122" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+84%</text>
 <text x="220" y="144" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">RepoDb</text>
-<rect x="300.0" y="130" width="61.0" height="18" fill="#c6efce" stroke="#8c959f" rx="2"/>
-<text x="294.0" y="144" font-size="11" text-anchor="end" font-weight="normal" fill="#24292f">-27%</text>
+<rect x="314.9" y="130" width="52.0" height="18" fill="#d8eebe" stroke="#8c959f" rx="2"/>
+<text x="372.9026548672566" y="144" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+42%</text>
 <text x="220" y="166" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">linq2db</text>
-<rect x="361.0" y="152" width="2.3" height="18" fill="#d7eebf" stroke="#8c959f" rx="2"/>
-<text x="369.23980693011026" y="166" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+1%</text>
+<rect x="314.9" y="152" width="116.5" height="18" fill="#eaecaf" stroke="#8c959f" rx="2"/>
+<text x="437.32743362831866" y="166" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+94%</text>
 <text x="220" y="188" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">EF Core</text>
-<rect x="361.0" y="174" width="106.1" height="18" fill="#f3eca6" stroke="#8c959f" rx="2"/>
-<text x="473.1066985833693" y="188" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+47%</text>
+<rect x="314.9" y="174" width="255.2" height="18" fill="#ffe197" stroke="#8c959f" rx="2"/>
+<text x="576.0884955752213" y="188" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+206%</text>
 <text x="1" y="224" font-size="13" text-anchor="start" font-weight="bold" fill="#24292f">SQL Server</text>
 <text x="220" y="250" font-size="12" text-anchor="end" font-weight="bold" fill="#24292f">Jaunty Query&lt;T&gt;</text>
-<rect x="361.0" y="236" width="38.4" height="18" fill="#e1edb6" stroke="#8c959f" rx="2"/>
-<text x="405.36742141820037" y="250" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+17%</text>
+<rect x="314.9" y="236" width="18.6" height="18" fill="#cfeec6" stroke="#8c959f" rx="2"/>
+<text x="339.4513274336283" y="250" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+15%</text>
 <text x="220" y="272" font-size="12" text-anchor="end" font-weight="bold" fill="#24292f">Jaunty (WithExpectedRowCount)</text>
-<rect x="361.0" y="258" width="4.5" height="18" fill="#d8eebe" stroke="#8c959f" rx="2"/>
-<text x="371.4977828356159" y="272" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+2%</text>
+<rect x="314.9" y="258" width="17.3" height="18" fill="#cfeec6" stroke="#8c959f" rx="2"/>
+<text x="338.21238938053096" y="272" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+14%</text>
 <text x="220" y="294" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">Dapper</text>
-<rect x="361.0" y="280" width="110.6" height="18" fill="#f5eca5" stroke="#8c959f" rx="2"/>
-<text x="477.62265039438057" y="294" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+49%</text>
+<rect x="314.9" y="280" width="52.0" height="18" fill="#d8eebe" stroke="#8c959f" rx="2"/>
+<text x="372.9026548672566" y="294" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+42%</text>
 <text x="220" y="316" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">RepoDb</text>
-<rect x="361.0" y="302" width="51.9" height="18" fill="#e5edb3" stroke="#8c959f" rx="2"/>
-<text x="418.9152768512341" y="316" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+23%</text>
+<rect x="314.9" y="302" width="27.3" height="18" fill="#d1eec4" stroke="#8c959f" rx="2"/>
+<text x="348.12389380530976" y="316" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+22%</text>
 <text x="220" y="338" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">linq2db</text>
-<rect x="361.0" y="324" width="51.9" height="18" fill="#e5edb3" stroke="#8c959f" rx="2"/>
-<text x="418.9152768512341" y="338" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+23%</text>
+<rect x="314.9" y="324" width="31.0" height="18" fill="#d2eec3" stroke="#8c959f" rx="2"/>
+<text x="351.8407079646018" y="338" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+25%</text>
 <text x="220" y="360" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">EF Core</text>
-<rect x="361.0" y="346" width="216.8" height="18" fill="#ffdf97" stroke="#8c959f" rx="2"/>
-<text x="583.7475179531452" y="360" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+96%</text>
+<rect x="314.9" y="346" width="197.0" height="18" fill="#ffeb9c" stroke="#8c959f" rx="2"/>
+<text x="517.8584070796461" y="360" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+159%</text>
 <text x="1" y="396" font-size="13" text-anchor="start" font-weight="bold" fill="#24292f">PostgreSQL</text>
 <text x="220" y="422" font-size="12" text-anchor="end" font-weight="bold" fill="#24292f">Jaunty Query&lt;T&gt;</text>
-<rect x="361.0" y="408" width="173.9" height="18" fill="#ffe79a" stroke="#8c959f" rx="2"/>
-<text x="540.8459757485382" y="422" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+77%</text>
+<rect x="314.9" y="408" width="74.3" height="18" fill="#deedb9" stroke="#8c959f" rx="2"/>
+<text x="395.20353982300884" y="422" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+60%</text>
 <text x="220" y="444" font-size="12" text-anchor="end" font-weight="bold" fill="#24292f">Jaunty (WithExpectedRowCount)</text>
-<rect x="361.0" y="430" width="11.3" height="18" fill="#daeebd" stroke="#8c959f" rx="2"/>
-<text x="378.2717105521328" y="444" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+5%</text>
+<rect x="300.0" y="430" width="14.9" height="18" fill="#c6efce" stroke="#8c959f" rx="2"/>
+<text x="294.0" y="444" font-size="11" text-anchor="end" font-weight="normal" fill="#24292f">-12%</text>
 <text x="220" y="466" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">Dapper</text>
-<rect x="361.0" y="452" width="135.5" height="18" fill="#fbeb9f" stroke="#8c959f" rx="2"/>
-<text x="502.46038535494256" y="466" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+60%</text>
+<rect x="314.9" y="452" width="34.7" height="18" fill="#d3eec2" stroke="#8c959f" rx="2"/>
+<text x="355.5575221238938" y="466" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+28%</text>
 <text x="220" y="488" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">RepoDb</text>
-<rect x="361.0" y="474" width="110.6" height="18" fill="#f5eca5" stroke="#8c959f" rx="2"/>
-<text x="477.62265039438057" y="488" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+49%</text>
+<rect x="314.9" y="474" width="7.4" height="18" fill="#ccefc9" stroke="#8c959f" rx="2"/>
+<text x="328.3008849557522" y="488" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+6%</text>
 <text x="220" y="510" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">linq2db</text>
-<rect x="361.0" y="496" width="169.3" height="18" fill="#ffe89a" stroke="#8c959f" rx="2"/>
-<text x="536.3300239375269" y="510" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+75%</text>
+<rect x="314.9" y="496" width="42.1" height="18" fill="#d5eec0" stroke="#8c959f" rx="2"/>
+<text x="362.9911504424779" y="510" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+34%</text>
 <text x="220" y="532" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">EF Core</text>
-<rect x="361.0" y="518" width="359.0" height="18" fill="#ffc78c" stroke="#8c959f" rx="2"/>
-<text x="726.0" y="532" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+159%</text>
+<rect x="314.9" y="518" width="102.8" height="18" fill="#e6edb2" stroke="#8c959f" rx="2"/>
+<text x="423.69911504424783" y="532" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+83%</text>
 <text x="1" y="568" font-size="13" text-anchor="start" font-weight="bold" fill="#24292f">MariaDB</text>
 <text x="220" y="594" font-size="12" text-anchor="end" font-weight="bold" fill="#24292f">Jaunty Query&lt;T&gt;</text>
-<rect x="361.0" y="580" width="81.3" height="18" fill="#edecac" stroke="#8c959f" rx="2"/>
-<text x="448.2689636228074" y="594" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+36%</text>
+<rect x="314.9" y="580" width="45.8" height="18" fill="#d6eec0" stroke="#8c959f" rx="2"/>
+<text x="366.70796460176996" y="594" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+37%</text>
 <text x="220" y="616" font-size="12" text-anchor="end" font-weight="bold" fill="#24292f">Jaunty (WithExpectedRowCount)</text>
-<rect x="361.0" y="602" width="29.4" height="18" fill="#dfedb8" stroke="#8c959f" rx="2"/>
-<text x="396.3355177961778" y="616" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+13%</text>
+<rect x="308.7" y="602" width="6.2" height="18" fill="#c8efcc" stroke="#8c959f" rx="2"/>
+<text x="302.6725663716814" y="616" font-size="11" text-anchor="end" font-weight="normal" fill="#24292f">-5%</text>
 <text x="220" y="638" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">Dapper</text>
-<rect x="361.0" y="624" width="185.2" height="18" fill="#ffe599" stroke="#8c959f" rx="2"/>
-<text x="552.1358552760664" y="638" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+82%</text>
+<rect x="314.9" y="624" width="79.3" height="18" fill="#e0edb8" stroke="#8c959f" rx="2"/>
+<text x="400.15929203539827" y="638" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+64%</text>
 <text x="220" y="660" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">RepoDb</text>
-<rect x="361.0" y="646" width="74.5" height="18" fill="#ebecae" stroke="#8c959f" rx="2"/>
-<text x="441.49503590629047" y="660" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+33%</text>
+<rect x="314.9" y="646" width="39.6" height="18" fill="#d5eec1" stroke="#8c959f" rx="2"/>
+<text x="360.5132743362832" y="660" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+32%</text>
 <text x="220" y="682" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">linq2db</text>
-<rect x="361.0" y="668" width="106.1" height="18" fill="#f3eca6" stroke="#8c959f" rx="2"/>
-<text x="473.1066985833693" y="682" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+47%</text>
+<rect x="314.9" y="668" width="76.8" height="18" fill="#dfedb8" stroke="#8c959f" rx="2"/>
+<text x="397.6814159292036" y="682" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+62%</text>
 <text x="220" y="704" font-size="12" text-anchor="end" font-weight="normal" fill="#24292f">EF Core</text>
-<text x="366.9818310246046" y="704" font-size="11" text-anchor="start" font-weight="normal" fill="#57606a">not measured</text>
-<line x1="361.0" y1="34" x2="361.0" y2="716" stroke="#8c959f" stroke-dasharray="3 3"/>
-<text x="360.9818310246046" y="730" font-size="11" text-anchor="middle" font-weight="normal" fill="#57606a">ADO.NET hand-coded = 0%</text>
+<rect x="314.9" y="690" width="405.1" height="18" fill="#ffc78c" stroke="#8c959f" rx="2"/>
+<text x="726.0" y="704" font-size="11" text-anchor="start" font-weight="normal" fill="#24292f">+327%</text>
+<line x1="314.9" y1="34" x2="314.9" y2="716" stroke="#8c959f" stroke-dasharray="3 3"/>
+<text x="314.86725663716817" y="730" font-size="11" text-anchor="middle" font-weight="normal" fill="#57606a">ADO.NET hand-coded = 0%</text>
 </svg>
