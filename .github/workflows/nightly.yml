@@ -93,6 +93,7 @@ jobs:
       - name: Test (every framework each project targets)
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
+          JAUNTY_REQUIRE_SQLSERVER: "1"
         run: dotnet test Jaunty.slnx -c Release --no-build --logger "trx;LogFileName=nightly-full.trx"
 
       - name: Upload test results
@@ -122,7 +123,9 @@ jobs:
         env:
           DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Publish the harness
         run: dotnet publish tools/Jaunty.Fuzz -c Release -o out/fuzz
@@ -283,7 +286,7 @@ jobs:
       # regression gate. The artifact exists so a suspected regression has something to compare
       # against, and so the benchmarks are proven to still build and run.
       - name: Run benchmarks
-        run: dotnet run --project benchmarks/Jaunty.Benchmarks -c Release -- --filter '*' --job short
+        run: dotnet run --project benchmarks/Jaunty.Benchmarks -c Release --framework net10.0 -- --filter '*' --job short
 
       - name: Upload benchmark results
         if: always()
