@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dependencies — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Dependencies</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html" class="active" aria-current="page">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#the-short-version">The short version</a><a class="toc-l2" href="#core-extrode.jaunty">Core: Extrode.Jaunty</a><a class="toc-l3" href="#why-netstandard2.0-is-different">Why netstandard2.0 is different</a><a class="toc-l3" href="#what-used-to-be-here">What used to be here</a><a class="toc-l2" href="#optional-extrode.jaunty.extensions.logging">Optional: Extrode.Jaunty.Extensions.Logging</a><a class="toc-l3" href="#if-you-do-not-want-the-dependency">If you do not want the dependency</a><a class="toc-l2" href="#optional-extrode.jaunty.extensions.npgsql">Optional: Extrode.Jaunty.Extensions.Npgsql</a><a class="toc-l2" href="#other-packages">Other packages</a><a class="toc-l3" href="#ado.net-providers">ADO.NET providers</a><a class="toc-l2" href="#nativeaot">NativeAOT</a><a class="toc-l2" href="#how-the-contract-is-enforced">How the contract is enforced</a><a class="toc-l2" href="#see-also">See also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Dependencies</nav>
+        <article>
+<h1 id="dependencies">Dependencies</h1>
+<p>What each shipped package drags into your project, and why. Nothing here is a surprise by design:
+if a package reference exists, this page names it and says what it is for.</p>
+<hr />
+<h2 id="the-short-version">The short version</h2>
+<p><strong><code>Extrode.Jaunty</code> has no dependencies on <code>net8.0</code> or <code>net10.0</code>.</strong> Not &quot;few&quot;, not &quot;only
+Microsoft ones&quot; — the dependency groups in the shipped <code>.nuspec</code> are empty:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">XML</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="xml"><code class="language-xml">&lt;group targetFramework=&quot;net8.0&quot; /&gt;
+&lt;group targetFramework=&quot;net10.0&quot; /&gt;
+&lt;group targetFramework=&quot;.NETStandard2.0&quot;&gt;
+  &lt;dependency id=&quot;Microsoft.Bcl.AsyncInterfaces&quot; version=&quot;10.0.10&quot; /&gt;
+  &lt;dependency id=&quot;System.Diagnostics.DiagnosticSource&quot; version=&quot;10.0.10&quot; /&gt;
+&lt;/group&gt;
+</code></pre>
+</div>
+<p><code>netstandard2.0</code> carries two, and both are <strong>backports of types that are built into modern .NET</strong>
+rather than third-party libraries. Details below.</p>
+<hr />
+<h2 id="core-extrode.jaunty">Core: <code>Extrode.Jaunty</code></h2>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>net10.0</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>net8.0</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>netstandard2.0</code></td>
+<td><code>System.Diagnostics.DiagnosticSource</code>, <code>Microsoft.Bcl.AsyncInterfaces</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="why-netstandard2.0-is-different">Why <code>netstandard2.0</code> is different</h3>
+<p><code>netstandard2.0</code> exists for consumers who <strong>cannot move off an older framework</strong> — .NET Framework
+4.6.1+ and older .NET Core, typically because something else in the application pins them there.
+It is a compatibility target, not the recommended one.</p>
+<p>That target predates two things Jaunty uses, so on that target only, they arrive as packages:</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>What it backports</th>
+<th>In-box since</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Microsoft.Bcl.AsyncInterfaces</code></td>
+<td><code>IAsyncEnumerable&lt;T&gt;</code>, <code>IAsyncDisposable</code></td>
+<td>.NET Core 3.0</td>
+</tr>
+<tr>
+<td><code>System.Diagnostics.DiagnosticSource</code></td>
+<td><code>DiagnosticSource</code>, <code>DiagnosticListener</code>, <code>Activity</code></td>
+<td>.NET Core 3.0</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>Microsoft.Bcl.AsyncInterfaces</code> is what makes the async and streaming API the same shape on both
+targets.</strong> Without it, <code>netstandard2.0</code> consumers would have no <code>IAsyncEnumerable&lt;T&gt;</code>, and
+<code>QueryUnbuffered</code>, <code>GetAllStream</code> and the <code>GridReader</code> async paths would have to be absent there —
+a different public surface per target, which is a worse trade than one package reference. If you
+target <code>net8.0</code> or <code>net10.0</code> you get those APIs with no package at all, because the types are in
+<code>Microsoft.NETCore.App</code>.</p>
+<p>Neither package is a library in the ordinary sense. Both are published by Microsoft as part of the
+platform, both are assembly-identity-compatible with the in-box types, and on a modern runtime the
+reference unifies to the in-box assembly rather than loading a second copy.</p>
+<h3 id="what-used-to-be-here">What used to be here</h3>
+<p><code>Microsoft.Extensions.Logging.Abstractions</code> and <code>Microsoft.Extensions.DependencyInjection.Abstractions</code>
+were referenced by core on <strong>every</strong> target framework until the split described below.</p>
+<p>A comment in <code>Jaunty.csproj</code> claimed they were &quot;built in on net8.0+&quot; and referenced only &quot;for
+compatibility&quot;. <strong>That was wrong.</strong> Those two packages ship in the <strong>ASP.NET Core</strong> shared
+framework, which a class library never gets — only <code>Microsoft.NETCore.App</code> is available to one.
+They were real dependencies on every target, and they are gone now.</p>
+<hr />
+<h2 id="optional-extrode.jaunty.extensions.logging">Optional: <code>Extrode.Jaunty.Extensions.Logging</code></h2>
+<p>The <code>ILogger</code> interceptor and the dependency-injection registration extensions live here, and this
+package carries the two Microsoft.Extensions references so that core does not have to.</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>all</td>
+<td><code>Microsoft.Extensions.Logging.Abstractions</code>, <code>Microsoft.Extensions.DependencyInjection.Abstractions</code></td>
+</tr>
+</tbody>
+</table>
+<p>Install it if you use any of:</p>
+<table>
+<thead>
+<tr>
+<th>Type or member</th>
+<th>Namespace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AddJauntyLogging(...)</code></td>
+<td><code>Jaunty</code></td>
+</tr>
+<tr>
+<td><code>AddJauntyInterceptor&lt;T&gt;(...)</code></td>
+<td><code>Jaunty</code></td>
+</tr>
+<tr>
+<td><code>ApplyJauntyInterceptors(...)</code></td>
+<td><code>Jaunty</code></td>
+</tr>
+<tr>
+<td><code>LoggingInterceptor</code></td>
+<td><code>Jaunty.Interceptors</code></td>
+</tr>
+<tr>
+<td><code>LoggingConfiguration</code></td>
+<td><code>Jaunty.Configuration</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Namespaces are unchanged</strong>, so migrating is a package reference and nothing else — no <code>using</code>
+edits, no renames, no code changes.</p>
+<h3 id="if-you-do-not-want-the-dependency">If you do not want the dependency</h3>
+<p>You do not need this package to observe what Jaunty is doing. Core has two hooks that cost nothing:</p>
+<ul>
+<li><strong><code>ICommandInterceptor</code></strong>, registered with <code>JauntyConfig.AddInterceptor</code>. This is the same
+pipeline <code>LoggingInterceptor</code> plugs into — implement it against your own logger.</li>
+<li><strong><code>JauntyDiagnosticListener</code></strong>, built on <code>System.Diagnostics.DiagnosticSource</code>, which is in-box on
+<code>net8.0</code>/<code>net10.0</code>. This is the route for OpenTelemetry and anything else that consumes
+<code>DiagnosticListener</code>.</li>
+</ul>
+<p><code>JauntyConfig.Logger</code> also exists as a plain <code>Action&lt;string, object?&gt;</code>. <strong>It performs no redaction</strong> —
+the second argument is your parameter object exactly as supplied, passwords included. Masking lives
+in <code>LoggingInterceptor</code>, in the satellite package.</p>
+<hr />
+<h2 id="optional-extrode.jaunty.extensions.npgsql">Optional: <code>Extrode.Jaunty.Extensions.Npgsql</code></h2>
+<p>PostgreSQL client-side <code>COPY ... FROM STDIN</code> for <code>ImportCsv</code>, and the only place in the Jaunty
+packages that references a database driver.</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>net8.0</code>, <code>net10.0</code></td>
+<td><code>Npgsql</code> 10.0.1</td>
+</tr>
+<tr>
+<td><code>netstandard2.0</code></td>
+<td><code>Npgsql</code> 8.0.7 — 10.x no longer targets it</td>
+</tr>
+</tbody>
+</table>
+<p>Install it and call <code>JauntyNpgsql.Use()</code> once at startup if you import CSV into PostgreSQL:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">JauntyNpgsql.Use();
+connection.ImportCsv(&quot;products&quot;, &quot;products.csv&quot;);
+</code></pre>
+</div>
+<p>Core reached Npgsql's copy API by reflection until 2026-08-29 — five
+<code>connection.GetType().GetMethod(...)</code> probes. Under trimming they all returned null: the
+<code>BeginTextImport</code> probe fell through to server-side <code>COPY FROM '&lt;path&gt;'</code>, silently changing which
+machine opens the file, and the <code>Cancel</code> probes committed the rows written before a mid-file
+failure while the caller saw an exception saying the import had failed. Core now takes an
+<code>ICopyImportWriter</code> from <code>JauntyConfig.CopyImportFactory</code> and this package supplies one with
+direct, compile-time calls.</p>
+<p><strong>Without a provider, an Npgsql connection is rejected by name</strong> rather than falling back quietly.
+To use the server-side path deliberately — where the database server opens the file, not your
+process — set <code>JauntyConfig.CopyImportFactory</code> to a factory that returns <code>null</code>. You can also
+register your own implementation for any driver with an equivalent API.</p>
+<p>Every other engine is unaffected: SQLite, MySQL/MariaDB and SQL Server never consult the factory.</p>
+<hr />
+<h2 id="other-packages">Other packages</h2>
+<p>Every extension depends on <code>Extrode.Jaunty</code> itself, which is not repeated below. &quot;None&quot; means no
+<em>third-party</em> dependency beyond the Jaunty packages named.</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Targets</th>
+<th><code>net8.0</code> / <code>net10.0</code></th>
+<th><code>netstandard2.0</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Extrode.Jaunty.Extensions.Reflection</code></td>
+<td>all three</td>
+<td>none</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>Extrode.Jaunty.Fluent</code></td>
+<td>all three</td>
+<td>none</td>
+<td><code>Microsoft.Bcl.AsyncInterfaces</code>, <code>Microsoft.CSharp</code></td>
+</tr>
+<tr>
+<td><code>Extrode.Jaunty.FlatFiles</code></td>
+<td>all three</td>
+<td>none</td>
+<td><code>Microsoft.Bcl.AsyncInterfaces</code></td>
+</tr>
+<tr>
+<td><code>Extrode.Jaunty.Extensions.Logging</code></td>
+<td>all three</td>
+<td>the two Microsoft.Extensions packages above</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>Extrode.Jaunty.Extensions.Npgsql</code></td>
+<td>all three</td>
+<td><code>Npgsql</code> 10.0.1</td>
+<td><code>Npgsql</code> 8.0.7</td>
+</tr>
+<tr>
+<td><code>Extrode.Jaunty.Scaffolding</code></td>
+<td><code>net8.0</code>, <code>net10.0</code></td>
+<td>none</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>Extrode.Jaunty.FlatFiles.DuckDB</code></td>
+<td><code>net8.0</code>, <code>net10.0</code></td>
+<td><code>DuckDB.NET.Data.Full</code></td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>Extrode.Jaunty.Scaffolding.Cli</code></td>
+<td><code>net8.0</code>, <code>net10.0</code></td>
+<td>packed as a tool — see below</td>
+<td>n/a</td>
+</tr>
+</tbody>
+</table>
+<p><code>Extrode.Jaunty.FlatFiles.DuckDB</code> is the one package with an unavoidable third-party dependency:
+the embedded query engine <strong>is</strong> the feature, so there is no version of it without DuckDB.</p>
+<p><code>Extrode.Jaunty.Scaffolding.Cli</code> is a <strong>dotnet tool, not a library</strong>. It references
+<code>System.CommandLine</code>, <code>Microsoft.Data.SqlClient</code>, <code>Npgsql</code>, <code>MySqlConnector</code>,
+<code>Microsoft.Data.Sqlite</code> and <code>SQLitePCLRaw.bundle_e_sqlite3</code> because it reads live database schemas
+and needs a driver for every engine it supports. A tool package ships its dependencies inside
+itself and declares none, so <strong>nothing it references can reach your application</strong>.</p>
+<h3 id="ado.net-providers">ADO.NET providers</h3>
+<p>Jaunty core references <strong>no database driver</strong>. It works against <code>System.Data.Common</code>, so you bring
+the provider you already use — <code>Microsoft.Data.SqlClient</code>, <code>Npgsql</code>, <code>MySqlConnector</code>,
+<code>Microsoft.Data.Sqlite</code> or any other ADO.NET implementation. Jaunty never picks one for you and
+never pulls one in transitively.</p>
+<hr />
+<h2 id="nativeaot">NativeAOT</h2>
+<p>Fewer dependencies is directly an AOT win: a package you do not reference cannot produce a trim
+warning. Verified after the split, 2026-08-29:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scripts/Verify-NativeAOT.ps1</code></td>
+<td>PASS — 21 reflection sites, all carrying a reviewed <code>AOT-SAFE</code> justification</td>
+</tr>
+<tr>
+<td>NativeAOT publish, <code>net8.0</code> win-x64 (control)</td>
+<td>binary produced, 36.98 MB</td>
+</tr>
+<tr>
+<td>NativeAOT publish, <code>net10.0</code> win-x64</td>
+<td>binary produced and runs, 34.63 MB</td>
+</tr>
+<tr>
+<td>Trim/AOT warnings from any <strong>Jaunty</strong> assembly</td>
+<td><strong>none</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Every <code>IL2104</code>/<code>IL3053</code> warning in that publish names a third-party driver or a BCL serialization
+assembly reached through <code>Jaunty.Scaffolding.Cli</code> — <code>Microsoft.Data.SqlClient</code>, <code>MySqlConnector</code>,
+<code>Microsoft.IdentityModel.Tokens</code>, <code>System.Data.Common</code>, <code>System.Private.Xml</code>. <strong>None of these is
+referenced by Jaunty core</strong>, so they cannot reach a consumer who does not install the CLI tool.</p>
+<p><code>IsTrimmable</code> and <code>IsAotCompatible</code> are set for every <code>net8.0</code>+ target in
+<code>src/Directory.Build.props</code>, and <code>TreatWarningsAsErrors</code> is on, so an AOT regression in Jaunty's own
+code fails the build rather than being reported.</p>
+<p><code>Jaunty.Extensions.Reflection</code> is excluded from the AOT scan by design — reflection is its purpose,
+and referencing it is how a consumer opts out of the guarantee.</p>
+<hr />
+<h2 id="how-the-contract-is-enforced">How the contract is enforced</h2>
+<p>Adding a <code>PackageReference</code> to a csproj succeeds silently; the only symptom is a dependency group in
+a <code>.nuspec</code> that nobody reads. So it is asserted in tests rather than left to review:</p>
+<p><code>tests/Jaunty.UnitTests/Unit/PackageDependencyTests.cs</code></p>
+<table>
+<thead>
+<tr>
+<th>Fact</th>
+<th>What it stops</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CoreReferencesNothingButTheNetStandardBackports</code></td>
+<td>Any new package reference in core</td>
+</tr>
+<tr>
+<td><code>EveryCoreReferenceIsGatedToNetStandard20</code></td>
+<td>A backport referenced unconditionally, which lands in every dependency group</td>
+</tr>
+<tr>
+<td><code>TheAsyncInterfacesFlagIsSetOnlyByNetStandard20</code></td>
+<td>Widening the <code>DefineConstants</code> flag that gates the backport, which would defeat the fact above</td>
+</tr>
+<tr>
+<td><code>TheLoggingSatelliteCarriesTheMicrosoftExtensionsPackages</code></td>
+<td>Dropping the references instead of moving them</td>
+</tr>
+</tbody>
+</table>
+<p>To check the shipped artifact directly rather than the build files:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet pack src/Jaunty/Jaunty.csproj -c Release -o tmp/packtest
+unzip -o -q tmp/packtest/Extrode.Jaunty.*.nupkg Extrode.Jaunty.nuspec -d tmp/packtest/nuspec-out
+</code></pre>
+</div>
+<p>The <code>&lt;dependencies&gt;</code> element is the answer, and the <code>net8.0</code> and <code>net10.0</code> groups should be empty.</p>
+<hr />
+<h2 id="see-also">See also</h2>
+<ul>
+<li><a href="04-extensions-README.html"><code>docs/04-extensions/README.md</code></a> — what each extension package does</li>
+<li><a href="02-architecture-design-philosophy.html"><code>docs/02-architecture/design-philosophy.md</code></a> — why the core is kept this small</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-bulk-copy-architecture.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Bulk copy architecture</span>
+</a><a class="pn-next" href="02-architecture-design-philosophy.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Design philosophy</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

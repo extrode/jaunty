@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schemas — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Schemas</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html" class="active" aria-current="page">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#the-one-rule">The one rule</a><a class="toc-l2" href="#per-engine">Per engine</a><a class="toc-l3" href="#sql-server">SQL Server</a><a class="toc-l3" href="#postgresql">PostgreSQL</a><a class="toc-l3" href="#mysql-mariadb">MySQL / MariaDB</a><a class="toc-l3" href="#sqlite">SQLite</a><a class="toc-l2" href="#mixing-default-and-named-schemas">Mixing default and named schemas</a><a class="toc-l2" href="#jauntyconfig.schemanameresolver">JauntyConfig.SchemaNameResolver</a><a class="toc-l2" href="#isqldialect.getdefaultschema">ISqlDialect.GetDefaultSchema()</a><a class="toc-l2" href="#csv-import-on-sqlite">CSV import on SQLite</a><a class="toc-l2" href="#see-also">See also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Schemas</nav>
+        <article>
+<h1 id="schemas">Schemas</h1>
+<p>How each engine understands a schema, and what Jaunty emits.</p>
+<h2 id="the-one-rule">The one rule</h2>
+<p><strong>Jaunty emits a schema when you name one, and nothing when you do not.</strong> It never substitutes a
+default. The unqualified name is the engine's own indirection mechanism, and every engine has one.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;orders&quot;)]                    <span class="tok-com">// SELECT ... FROM orders</span>
+[Table(&quot;orders&quot;, &quot;sales&quot;)]           <span class="tok-com">// SELECT ... FROM sales.orders</span>
+</code></pre>
+</div>
+<h2 id="per-engine">Per engine</h2>
+<table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Conventional default</th>
+<th>What it means</th>
+<th>What resolves a bare name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL Server</td>
+<td><code>dbo</code></td>
+<td>A namespace inside a database, owned by a principal</td>
+<td>The <strong>login's</strong> <code>DEFAULT_SCHEMA</code>, then <code>dbo</code></td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td><code>public</code></td>
+<td>A namespace inside a database</td>
+<td><code>search_path</code>, per session</td>
+</tr>
+<tr>
+<td>MySQL / MariaDB</td>
+<td>none</td>
+<td>Schema and database are the same thing</td>
+<td>The database the connection selected</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>none</td>
+<td>An <strong>attached database</strong>, not a namespace</td>
+<td><code>main</code></td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td><code>main</code></td>
+<td>A namespace inside a database</td>
+<td><code>main</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="sql-server">SQL Server</h3>
+<p><code>dbo</code> is the server's convention, not a guarantee. A login can be given another default:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">CREATE</span> USER app_user FOR LOGIN app_login <span class="tok-kw">WITH</span> DEFAULT_SCHEMA = sales;
+</code></pre>
+</div>
+<p>For that login, bare <code>orders</code> resolves to <code>sales.orders</code> first and falls back to <code>dbo.orders</code>.
+If Jaunty emitted <code>dbo.orders</code> it would either fail on a table the user can see with hand-written
+SQL, read a different table that happens to exist, or be denied by a schema-scoped <code>GRANT</code>.</p>
+<h3 id="postgresql">PostgreSQL</h3>
+<p><code>search_path</code> is the documented mechanism for schema-per-tenant and per-role selection:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">SET</span> search_path = tenant_42, public;
+</code></pre>
+</div>
+<p>Tenant tables are mapped <strong>without</strong> a schema on purpose, because the correct schema varies per
+connection, not per type. Emitting <code>public.</code> would send every tenant to the same physical tables.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;events&quot;)]                      <span class="tok-com">// resolved per session by search_path</span>
+[Table(&quot;tenants&quot;, &quot;admin&quot;)]            <span class="tok-com">// fixed, shared across tenants</span>
+</code></pre>
+</div>
+<h3 id="mysql-mariadb">MySQL / MariaDB</h3>
+<p>There is no <code>dbo</code>/<code>public</code> equivalent: <code>CREATE SCHEMA</code> and <code>CREATE DATABASE</code> are synonyms, and
+tables live directly in that one namespace. The connection string already selected it, so Jaunty
+emits nothing. Naming a schema is how you reach <strong>another database</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;archive_orders&quot;, &quot;reporting&quot;)]   <span class="tok-com">// SELECT ... FROM reporting.archive_orders</span>
+</code></pre>
+</div>
+<h3 id="sqlite">SQLite</h3>
+<p>SQLite's schema names are attached databases. The set is <code>main</code>, <code>temp</code>, and every <code>ATTACH</code>
+alias — and the alias is whatever you choose:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql">ATTACH DATABASE <span class="tok-str">'archive.db'</span> <span class="tok-kw">AS</span> archive;
+ATTACH DATABASE <span class="tok-str">'reports.db'</span> <span class="tok-kw">AS</span> master;    -- any name; nothing is reserved
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;widgets&quot;, &quot;archive&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">partial</span> <span class="tok-kw">class</span> ArchivedWidget
+{
+    [Key][Column(&quot;id&quot;)] <span class="tok-kw">public</span> long Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    [Column(&quot;name&quot;)]    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+}
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">SELECT</span> id, name <span class="tok-kw">FROM</span> archive.widgets
+<span class="tok-kw">INSERT</span> <span class="tok-kw">INTO</span> archive.widgets (id, name) <span class="tok-kw">VALUES</span> (@id, @name)
+<span class="tok-kw">UPDATE</span> archive.widgets <span class="tok-kw">SET</span> name = @name <span class="tok-kw">WHERE</span> id = @id
+<span class="tok-kw">DELETE</span> <span class="tok-kw">FROM</span> archive.widgets <span class="tok-kw">WHERE</span> id = @id
+</code></pre>
+</div>
+<p>Three facts that follow from schemas being attached databases:</p>
+<p><strong>The schema set belongs to the connection, not the file.</strong> Ask for a schema this connection has
+not attached and SQLite says so, for example
+<code>SQLite Error 1: 'no such table: archive.widgets'</code> from Microsoft.Data.Sqlite. Re-issue <code>ATTACH</code>
+on every connection you open; pooling does not carry it.</p>
+<p><strong>A bare name resolves to <code>main</code>, silently.</strong> There is no error to catch. This is why Jaunty
+qualifies when you name a schema, and why it does not add <code>main.</code> when you do not.</p>
+<p><strong>A keyword schema is quoted.</strong> <code>temp</code> is a SQLite keyword, so:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;scratch&quot;, &quot;temp&quot;)]   <span class="tok-com">// SELECT ... FROM &quot;temp&quot;.scratch</span>
+</code></pre>
+</div>
+<p>Grep your logs for <code>&quot;temp&quot;.scratch</code>, not <code>temp.scratch</code>.</p>
+<blockquote>
+<p>Before 2026-09-02 the SQLite dialect discarded the schema, on the belief that SQLite had no
+schemas. Nothing failed when it did: the statement went out unqualified, SQLite resolved it
+against <code>main</code>, and reads returned another table's rows while writes landed in another file. If
+you pinned an earlier version and mapped an entity to a schema, check which database it wrote to.</p>
+</blockquote>
+<h2 id="mixing-default-and-named-schemas">Mixing default and named schemas</h2>
+<p>The ordinary case, and it works because Jaunty omits rather than guesses:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;orders&quot;)]                     <span class="tok-com">// wherever the session resolves it</span>
+<span class="tok-kw">public</span> <span class="tok-kw">partial</span> <span class="tok-kw">class</span> Order { }
+
+[Table(&quot;audit_log&quot;, &quot;audit&quot;)]         <span class="tok-com">// pinned</span>
+<span class="tok-kw">public</span> <span class="tok-kw">partial</span> <span class="tok-kw">class</span> AuditLog { }
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">SELECT</span> ... <span class="tok-kw">FROM</span> orders
+<span class="tok-kw">SELECT</span> ... <span class="tok-kw">FROM</span> audit.audit_log
+</code></pre>
+</div>
+<h2 id="jauntyconfig.schemanameresolver"><code>JauntyConfig.SchemaNameResolver</code></h2>
+<p>The resolver is <strong>global and dialect-blind</strong>. It receives a <code>Type</code> and nothing else, so one
+resolver serves every connection in the process:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">JauntyConfig.SchemaNameResolver = _ =&gt; &quot;dbo&quot;;     <span class="tok-com">// applies to SQLite too</span>
+</code></pre>
+</div>
+<p>That emits <code>dbo.products</code> on SQLite and PostgreSQL as well as SQL Server. Scope it by type, and
+return <code>string.Empty</code> for entities that should stay unqualified:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">JauntyConfig.SchemaNameResolver = t =&gt;
+    t.Namespace?.StartsWith(&quot;App.Sqlite&quot;, StringComparison.Ordinal) == <span class="tok-kw">true</span>
+        ? string.Empty
+        : &quot;dbo&quot;;
+</code></pre>
+</div>
+<p>It is consulted on the reflection mapping path only. Source-generated entities read the <code>[Table]</code>
+attribute at compile time and ignore it. A <code>[Table]</code> schema wins over the resolver either way.</p>
+<h2 id="isqldialect.getdefaultschema"><code>ISqlDialect.GetDefaultSchema()</code></h2>
+<p>Informational. It reports the engine's conventional default (<code>dbo</code>, <code>public</code>, <code>main</code>, or empty)
+and <strong>Jaunty never emits it</strong>. The effective default is session state — the login's default schema,
+<code>search_path</code>, the connection's ATTACH set — so any constant substituted for it is wrong for some
+session, silently so when a same-named table exists elsewhere.</p>
+<h2 id="csv-import-on-sqlite">CSV import on SQLite</h2>
+<p><code>ImportCsv</code> on a file-backed SQLite database shells out to the <code>sqlite3</code> CLI, which is a separate
+process holding its own connection. It has attached nothing, so it can reach only the file it was
+given: your <code>temp</code> tables and your ATTACHed databases do not exist for it.</p>
+<p>Jaunty checks the target against your connection before choosing a path, and imports through
+prepared statements instead whenever the CLI would reach a different table. The check covers the
+unqualified case too, because a bare name is where the two disagree most quietly:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">connection.Execute(&quot;CREATE TEMP TABLE people (id INTEGER, name TEXT)&quot;);
+
+<span class="tok-com">// &quot;people&quot; is temp.people to this connection, and would be a new main.people to the CLI.</span>
+<span class="tok-com">// Jaunty takes the prepared-statement path, and the rows land in temp.people.</span>
+connection.ImportCsv(&quot;people&quot;, &quot;people.csv&quot;);
+</code></pre>
+</div>
+<p>The routing rule, in full:</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Path taken</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Names a schema backed by the same file the CLI was given</td>
+<td>CLI, with the alias rewritten to <code>main</code></td>
+</tr>
+<tr>
+<td>Names any other schema — <code>temp</code>, or an ATTACHed file</td>
+<td>Prepared statements</td>
+</tr>
+<tr>
+<td>Unqualified, and your connection resolves it to <code>main</code></td>
+<td>CLI</td>
+</tr>
+<tr>
+<td>Unqualified, and your connection resolves it to <code>temp</code> or an attachment</td>
+<td>Prepared statements</td>
+</tr>
+<tr>
+<td>Unqualified, and nothing of that name exists anywhere</td>
+<td>CLI, which creates the table from the CSV header</td>
+</tr>
+<tr>
+<td>In-memory database</td>
+<td>Prepared statements</td>
+</tr>
+</tbody>
+</table>
+<p>Both paths import the same rows; the prepared-statement path is slower on large files.</p>
+<p>A closed connection is opened for the check, and the import runs inside that same open. Both
+halves matter. A pooled <code>Close()</code> does not discard temp tables or the ATTACH set — a handle from
+the pool comes back with them intact — so &quot;closed&quot; does not mean &quot;nothing attached&quot;. And the pool
+is FIFO, so checking on one open and importing on the next would take two different handles, with
+the rows landing in whatever the second one called the table.</p>
+<h2 id="see-also">See also</h2>
+<ul>
+<li><a href="01-api-reference-attributes.html"><code>attributes.md</code></a> — <code>[Table]</code> and the rest of the mapping attributes</li>
+<li><a href="01-api-reference-configuration.html"><code>configuration.md</code></a> — <code>SchemaNameResolver</code> and the other resolvers</li>
+<li><code>docs/decisions/2026-09-02-009-schema-qualification-policy.md</code> — why the policy is omission</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-scalar-methods.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Scalar methods</span>
+</a><a class="pn-next" href="01-api-reference-single-result-methods.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Single result methods</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>
