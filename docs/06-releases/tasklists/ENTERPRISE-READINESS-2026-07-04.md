@@ -115,7 +115,7 @@ candidates land in "Needs decision").
    processed via ImageMagick (crop/smooth/128px, transparent corners) into
    docs/_assets/icon.png; packed into all packages.
 
-I've dropped jaunty.png an image / logo under docs/_assets/, let's convert it to an appopriate icon but smooth out the edges first through one of the vision compatible models under openrouter or if you're able to then do it youself, or use imagemagick: C:\home\tools\ImageMagick
+I've dropped jaunty.png an image / logo under docs/_assets/, let's convert it to an appopriate icon but smooth out the edges first through one of the vision compatible models under openrouter or if you're able to then do it youself, or use ImageMagick
 
 6. ~~CalVer vs SemVer~~ **RESOLVED (PROD-109, 2026-07-04)**: SemVer; dev baseline
    `1.0.0-rc.1`, release tags `vMAJOR.MINOR.PATCH`.
