@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Reorganization Plan — Dialect Attribute Architecture — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Test Reorganization Plan — Dialect Attribute Architecture</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html" class="active" aria-current="page">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#goal">Goal</a><a class="toc-l2" href="#architecture">Architecture</a><a class="toc-l3" href="#pattern-theory-dialect-dataattribute-subclasses">Pattern: [Theory] + Dialect DataAttribute Subclasses</a><a class="toc-l3" href="#connection-setup-iclassfixturedialectfixture">Connection Setup: IClassFixture&lt;DialectFixture&gt;</a><a class="toc-l3" href="#write-test-isolation-iclassfixturewritedialectfixture">Write Test Isolation: IClassFixture&lt;WriteDialectFixture&gt;</a><a class="toc-l2" href="#target-directory-structure">Target Directory Structure</a><a class="toc-l2" href="#implementation-phases">Implementation Phases</a><a class="toc-l3" href="#phase-1-infrastructure-new-files">Phase 1: Infrastructure (new files)</a><a class="toc-l3" href="#phase-2-file-moves-via-powershell-script">Phase 2: File Moves via PowerShell Script</a><a class="toc-l3" href="#phase-3-rewrite-test-classes">Phase 3: Rewrite Test Classes</a><a class="toc-l3" href="#phase-4-absorb-provider-specific-core-tests">Phase 4: Absorb Provider-Specific Core Tests</a><a class="toc-l3" href="#phase-5-cleanup-documentation">Phase 5: Cleanup &amp; Documentation</a><a class="toc-l2" href="#sql-dialect-differences-reference">SQL Dialect Differences Reference</a><a class="toc-l2" href="#data-isolation-rules">Data Isolation Rules</a><a class="toc-l2" href="#file-manifest">File Manifest</a><a class="toc-l3" href="#new-files-10">New Files (10)</a><a class="toc-l3" href="#moved-files-75-files-via-powershell-script">Moved Files (~75 files via PowerShell script)</a><a class="toc-l3" href="#modified-files-all-moved-files-these">Modified Files (all moved files + these)</a><a class="toc-l3" href="#deleted-files-after-migration">Deleted Files (after migration)</a><a class="toc-l2" href="#verification">Verification</a><a class="toc-l2" href="#execution-order">Execution Order</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Test Reorganization Plan — Dialect Attribute Architecture</nav>
+        <article>
+<h1 id="test-reorganization-plan-dialect-attribute-architecture">Test Reorganization Plan — Dialect Attribute Architecture</h1>
+<h2 id="goal">Goal</h2>
+<p>Reorganize <code>Jaunty.Tests</code> so that cross-dialect tests mirror <code>src/Jaunty/</code>'s directory structure, each test method carries dialect attributes, and each dialect shows as a <strong>separate entry</strong> in Test Explorer.</p>
+<h2 id="architecture">Architecture</h2>
+<h3 id="pattern-theory-dialect-dataattribute-subclasses">Pattern: <code>[Theory]</code> + Dialect <code>DataAttribute</code> Subclasses</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Theory]
+[SqlServer]
+[MicrosoftSqlite]
+[SystemSqlite]
+[MariaDB]
+[Postgres]
+<span class="tok-kw">public</span> <span class="tok-kw">void</span> Query_ReturnsResults(DialectInfo dialect)
+{
+    <span class="tok-kw">using</span> <span class="tok-kw">var</span> connection = _fixture.GetConnection(dialect);
+    <span class="tok-kw">var</span> results = connection.Query&lt;Product&gt;(&quot;...&quot;);
+    Assert.NotEmpty(results);
+}
+</code></pre>
+</div>
+<ul>
+<li>Each dialect attribute is a <code>DataAttribute</code> subclass that yields <code>new object[] { new DialectInfo(...) }</code></li>
+<li>If the DB is unavailable, the attribute sets <code>Skip</code> → test shows as skipped in Test Explorer</li>
+<li><code>DialectInfo.ToString()</code> → <code>&quot;SqlServer&quot;</code> / <code>&quot;SystemSqlite&quot;</code> etc. for Test Explorer display names</li>
+<li>For async tests without SQLite support: simply omit <code>[MicrosoftSqlite]</code> and <code>[SystemSqlite]</code></li>
+</ul>
+<h3 id="connection-setup-iclassfixturedialectfixture">Connection Setup: <code>IClassFixture&lt;DialectFixture&gt;</code></h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> QueryTests : IClassFixture&lt;DialectFixture&gt;
+{
+    <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> DialectFixture _fixture;
+    <span class="tok-kw">public</span> QueryTests(DialectFixture fixture) =&gt; _fixture = fixture;
+}
+</code></pre>
+</div>
+<p><code>DialectFixture</code> opens connections once per class, caches them, disposes on teardown.</p>
+<h3 id="write-test-isolation-iclassfixturewritedialectfixture">Write Test Isolation: <code>IClassFixture&lt;WriteDialectFixture&gt;</code></h3>
+<ul>
+<li><strong>SystemSqlite / MicrosoftSqlite</strong>: In-memory DB with schema + seed data (fresh per class)</li>
+<li><strong>SqlServer / Postgres / MariaDB</strong>: <code>CommandOptions.WithTransaction()</code> + <code>Rollback()</code> in <code>Dispose()</code></li>
+</ul>
+<hr />
+<h2 id="target-directory-structure">Target Directory Structure</h2>
+<pre><code>tests/Jaunty.Tests/
+├── Helpers/
+│   ├── Dialects/
+│   │   ├── DialectInfo.cs              # Wrapper: Name, Provider enum, ToString()
+│   │   ├── DialectFixture.cs           # IClassFixture — read-only connections
+│   │   ├── WriteDialectFixture.cs      # IClassFixture — write isolation
+│   │   ├── SqlServerAttribute.cs       # DataAttribute → DialectInfo
+│   │   ├── PostgresAttribute.cs        # DataAttribute → DialectInfo
+│   │   ├── MariaDBAttribute.cs         # DataAttribute → DialectInfo
+│   │   ├── MicrosoftSqliteAttribute.cs # DataAttribute → DialectInfo (net8.0 only)
+│   │   └── SystemSqliteAttribute.cs    # DataAttribute → DialectInfo
+│   ├── Database.cs                     # (keep for backward compat during migration)
+│   ├── TestConfiguration.cs            # (add MariaDB/MySQL support)
+│   └── ...existing helpers...
+├── Integration/
+│   ├── Read/                           # Mirrors src/Jaunty/Read/
+│   │   ├── QueryTests.cs              # [Theory] + dialect attrs
+│   │   ├── QueryAsyncTests.cs         # omit SQLite attrs
+│   │   ├── QueryFirstTests.cs
+│   │   ├── QueryFirstAsyncTests.cs
+│   │   ├── QuerySingleTests.cs
+│   │   ├── QuerySingleAsyncTests.cs
+│   │   ├── QueryScalarTests.cs
+│   │   ├── QueryScalarAsyncTests.cs
+│   │   ├── ExecuteScalarTests.cs
+│   │   ├── ExecuteScalarAsyncTests.cs
+│   │   └── ...all other Read/ tests
+│   ├── Write/                          # Mirrors src/Jaunty/Write/
+│   │   ├── InsertTests.cs
+│   │   ├── InsertAsyncTests.cs
+│   │   ├── UpdateTests.cs
+│   │   ├── DeleteTests.cs
+│   │   ├── UpsertTests.cs
+│   │   ├── BulkInsertTests.cs
+│   │   └── ...all other Write/ tests
+│   ├── Multiple/                       # Mirrors src/Jaunty/Multiple/
+│   │   ├── GridReaderTests.cs
+│   │   ├── GridReaderAsyncTests.cs
+│   │   ├── QueryMultipleTests.cs
+│   │   └── QueryMultipleAsyncTests.cs
+│   ├── Streaming/                      # Mirrors src/Jaunty/Streaming/
+│   │   ├── QueryPartialStreamTests.cs
+│   │   ├── QueryPartialStreamAsyncTests.cs
+│   │   ├── QueryPartialUnbufferedTests.cs
+│   │   └── QueryPartialUnbufferedAsyncTests.cs
+│   ├── Configuration/                  # Cross-dialect config tests
+│   │   └── ConfigurationTests.cs
+│   ├── StoredProcedure/                # Stays dialect-specific (SQL differences too large)
+│   │   ├── StoredProcedureTestBase.cs
+│   │   └── StoredProcedureAsyncTestBase.cs
+│   ├── SqlServer/                      # Dialect-specific tests only
+│   │   └── StoredProcedure/
+│   ├── Postgres/                       # Dialect-specific tests only
+│   │   └── StoredProcedure/
+│   ├── MySql/                          # Dialect-specific tests only
+│   │   └── StoredProcedure/
+│   └── Sqlite/                         # Dialect-specific tests only (if any remain)
+│       └── Configuration/
+</code></pre>
+<hr />
+<h2 id="implementation-phases">Implementation Phases</h2>
+<h3 id="phase-1-infrastructure-new-files">Phase 1: Infrastructure (new files)</h3>
+<p><strong>Step 1.1</strong> — Create <code>Helpers/Dialects/</code> directory with 8 new files:</p>
+<ol>
+<li><p><strong><code>DialectInfo.cs</code></strong> — Enum <code>DialectProvider { SystemSqlite, MicrosoftSqlite, SqlServer, Postgres, MariaDB }</code> + wrapper class with <code>Name</code>, <code>Provider</code>, <code>ConnectionString</code>, <code>ToString()</code>.</p>
+</li>
+<li><p><strong><code>DialectFixture.cs</code></strong> — <code>IDisposable</code> class. Lazy-opens connections per <code>DialectProvider</code>. <code>GetConnection(DialectInfo)</code> returns an open <code>IDbConnection</code>. Creates:</p>
+<ul>
+<li><code>System.Data.SQLite.SQLiteConnection</code> for SystemSqlite (Northwind.db path)</li>
+<li><code>Microsoft.Data.Sqlite.SqliteConnection</code> for MicrosoftSqlite (Northwind.db path) — <code>#if NET8_0_OR_GREATER</code></li>
+<li><code>SqlConnection</code> for SqlServer</li>
+<li><code>NpgsqlConnection</code> for Postgres</li>
+<li><code>MySqlConnection</code> for MariaDB</li>
+</ul>
+</li>
+<li><p><strong><code>WriteDialectFixture.cs</code></strong> — Like <code>DialectFixture</code> but for write tests:</p>
+<ul>
+<li>SQLite variants: in-memory DB with schema + seed data</li>
+<li>Server DBs: wraps connection in transaction, rollback on dispose</li>
+</ul>
+</li>
+<li><p><strong><code>SqlServerAttribute.cs</code></strong> — <code>DataAttribute</code> subclass:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> SqlServerAttribute : DataAttribute
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">override</span> IEnumerable&lt;object[]&gt; GetData(MethodInfo method)
+    {
+        <span class="tok-kw">if</span> (!TestConfiguration.HasSqlServer)
+            <span class="tok-kw">yield</span> <span class="tok-kw">break</span>; <span class="tok-com">// or set Skip</span>
+        <span class="tok-kw">yield</span> <span class="tok-kw">return</span> <span class="tok-kw">new</span> object[] { DialectInfo.SqlServer };
+    }
+    <span class="tok-kw">public</span> <span class="tok-kw">override</span> string Skip =&gt; TestConfiguration.HasSqlServer ? <span class="tok-kw">null</span> : &quot;SQL Server <span class="tok-kw">not</span> available&quot;;
+}
+</code></pre>
+</div>
+</li>
+<li><p><strong><code>PostgresAttribute.cs</code></strong> — Same pattern for Postgres</p>
+</li>
+<li><p><strong><code>MariaDBAttribute.cs</code></strong> — Same pattern for MariaDB/MySQL</p>
+</li>
+<li><p><strong><code>MicrosoftSqliteAttribute.cs</code></strong> — Always available on net8.0, skipped on netstandard2.0</p>
+</li>
+<li><p><strong><code>SystemSqliteAttribute.cs</code></strong> — Always available (System.Data.SQLite)</p>
+</li>
+</ol>
+<p><strong>Step 1.2</strong> — Update <code>TestConfiguration.cs</code>:</p>
+<ul>
+<li>Add <code>MariaDbConnectionString</code>, <code>HasMariaDb</code>, <code>JAUNTY_TEST_MARIADB</code> env var (if not already present)</li>
+</ul>
+<h3 id="phase-2-file-moves-via-powershell-script">Phase 2: File Moves via PowerShell Script</h3>
+<p><strong>Script</strong>: <code>scripts/Reorganize-Tests.ps1</code></p>
+<p>The script will:</p>
+<ol>
+<li>Create target directories (<code>Integration/Read/</code>, <code>Integration/Write/</code>, <code>Integration/Multiple/</code>, <code>Integration/Streaming/</code>)</li>
+<li><code>git mv</code> files from <code>Integration/Sqlite/Read/*.cs</code> → <code>Integration/Read/</code></li>
+<li><code>git mv</code> files from <code>Integration/Sqlite/Write/*.cs</code> → <code>Integration/Write/</code></li>
+<li><code>git mv</code> files from <code>Integration/Sqlite/Multiple/*.cs</code> → <code>Integration/Multiple/</code></li>
+<li><code>git mv</code> files from <code>Integration/Sqlite/Streaming/*.cs</code> → <code>Integration/Streaming/</code></li>
+<li>Update namespaces in moved files (replace <code>Integration.Sqlite.Read</code> → <code>Integration.Read</code>, etc.)</li>
+<li>Remove empty <code>Integration/Sqlite/Read/</code>, <code>Integration/Sqlite/Write/</code>, etc. directories</li>
+<li>Keep <code>Integration/Sqlite/Configuration/</code> and <code>Integration/Sqlite/StoredProcedure/</code> in place (dialect-specific)</li>
+</ol>
+<p><strong>Files moved (~75 files)</strong>:</p>
+<ul>
+<li><code>Integration/Sqlite/Read/</code> → <code>Integration/Read/</code> (26+ files)</li>
+<li><code>Integration/Sqlite/Write/</code> → <code>Integration/Write/</code> (15+ files)</li>
+<li><code>Integration/Sqlite/Multiple/</code> → <code>Integration/Multiple/</code> (8+ files)</li>
+<li><code>Integration/Sqlite/Streaming/</code> → <code>Integration/Streaming/</code> (6+ files)</li>
+</ul>
+<h3 id="phase-3-rewrite-test-classes">Phase 3: Rewrite Test Classes</h3>
+<p>For each moved test class, transform from:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// OLD</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> QueryTests : IDisposable
+{
+    <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> Database _db = <span class="tok-kw">new</span>();
+
+    [Fact]
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> Query_ReturnsResults()
+    {
+        <span class="tok-kw">var</span> results = _db.Connection.Query&lt;Product&gt;(...);
+        Assert.NotEmpty(results);
+    }
+
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> Dispose() =&gt; _db.Dispose();
+}
+</code></pre>
+</div>
+<p>To:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// NEW</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> QueryTests : IClassFixture&lt;DialectFixture&gt;
+{
+    <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> DialectFixture _fixture;
+    <span class="tok-kw">public</span> QueryTests(DialectFixture fixture) =&gt; _fixture = fixture;
+
+    [Theory]
+    [SqlServer]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [MariaDB]
+    [Postgres]
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> Query_ReturnsResults(DialectInfo dialect)
+    {
+        <span class="tok-kw">using</span> <span class="tok-kw">var</span> connection = _fixture.GetConnection(dialect);
+        <span class="tok-kw">var</span> results = connection.Query&lt;Product&gt;(...);
+        Assert.NotEmpty(results);
+    }
+}
+</code></pre>
+</div>
+<p><strong>Dialect-specific SQL differences</strong> handled via helper methods on <code>DialectInfo</code>:</p>
+<ul>
+<li><code>dialect.SelectTopN(5, &quot;products&quot;)</code> → <code>SELECT TOP 5 ...</code> (SqlServer) vs <code>SELECT ... LIMIT 5</code> (others)</li>
+<li><code>dialect.CountReturnType</code> → <code>typeof(int)</code> (SqlServer) vs <code>typeof(long)</code> (others)</li>
+<li><code>dialect.ParameterPrefix</code> → <code>@</code> (SqlServer/SQLite) vs empty/named (Postgres)</li>
+</ul>
+<p><strong>Write tests</strong> use <code>WriteDialectFixture</code> instead of <code>DialectFixture</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> InsertTests : IClassFixture&lt;WriteDialectFixture&gt;
+{
+    [Theory]
+    [SqlServer]
+    [SystemSqlite]
+    [MariaDB]
+    [Postgres]
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> Insert_SingleEntity_Succeeds(DialectInfo dialect)
+    {
+        <span class="tok-kw">using</span> <span class="tok-kw">var</span> ctx = _fixture.GetWriteContext(dialect);
+        <span class="tok-com">// ctx.Connection + ctx.CommandOptions (with transaction)</span>
+        <span class="tok-kw">var</span> result = ctx.Connection.Insert(entity, ctx.CommandOptions);
+        Assert.True(result &gt; <span class="tok-num">0</span>);
+        <span class="tok-com">// Transaction rolled back on ctx.Dispose()</span>
+    }
+}
+</code></pre>
+</div>
+<h3 id="phase-4-absorb-provider-specific-core-tests">Phase 4: Absorb Provider-Specific Core Tests</h3>
+<p>Current provider-specific tests under <code>Integration/SqlServer/</code>, <code>Integration/Postgres/</code>, <code>Integration/MySql/</code> that duplicate SQLite test logic get <strong>deleted</strong> — their coverage is now handled by dialect attributes on the shared tests.</p>
+<p><strong>Keep dialect-specific</strong>:</p>
+<ul>
+<li><code>StoredProcedure/</code> tests (SQL syntax varies too much between providers)</li>
+<li><code>Sqlite/Configuration/</code> tests (SQLite-specific config behavior)</li>
+</ul>
+<h3 id="phase-5-cleanup-documentation">Phase 5: Cleanup &amp; Documentation</h3>
+<ol>
+<li>Remove empty directories left after moves</li>
+<li>Remove obsolete helper classes:
+<ul>
+<li><code>SkipIfNoSqlServerAttribute.cs</code> → replaced by <code>SqlServerAttribute</code></li>
+<li><code>SkipIfNoPostgresAttribute.cs</code> → replaced by <code>PostgresAttribute</code></li>
+<li><code>SkipIfNoMySqlAttribute.cs</code> → replaced by <code>MariaDBAttribute</code></li>
+<li><code>SkipSQLiteAsyncAttribute.cs</code> → no longer needed (omit SQLite attrs)</li>
+<li><code>SQLiteTestBase.cs</code> → replaced by <code>DialectFixture</code></li>
+</ul>
+</li>
+<li>Remove <code>Database.cs</code> if no remaining references</li>
+<li>Update the coding standards with new architecture</li>
+</ol>
+<hr />
+<h2 id="sql-dialect-differences-reference">SQL Dialect Differences Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>SqlServer</th>
+<th>Postgres</th>
+<th>MariaDB</th>
+<th>SystemSqlite</th>
+<th>MicrosoftSqlite</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Top N</td>
+<td><code>SELECT TOP N ...</code></td>
+<td><code>LIMIT N</code></td>
+<td><code>LIMIT N</code></td>
+<td><code>LIMIT N</code></td>
+<td><code>LIMIT N</code></td>
+</tr>
+<tr>
+<td>COUNT type</td>
+<td><code>int</code></td>
+<td><code>long</code></td>
+<td><code>long</code></td>
+<td><code>long</code></td>
+<td><code>long</code></td>
+</tr>
+<tr>
+<td>Identity insert</td>
+<td><code>SCOPE_IDENTITY()</code></td>
+<td><code>RETURNING id</code></td>
+<td><code>LAST_INSERT_ID()</code></td>
+<td><code>last_insert_rowid()</code></td>
+<td><code>last_insert_rowid()</code></td>
+</tr>
+<tr>
+<td>Param prefix</td>
+<td><code>@</code></td>
+<td><code>@</code></td>
+<td><code>@</code></td>
+<td><code>@</code></td>
+<td><code>@</code></td>
+</tr>
+<tr>
+<td>Async DataReader</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><strong>No</strong></td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td>Stored Procedures</td>
+<td>Yes</td>
+<td>Yes (functions)</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="data-isolation-rules">Data Isolation Rules</h2>
+<table>
+<thead>
+<tr>
+<th>Dialect</th>
+<th>Read Tests</th>
+<th>Write Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SystemSqlite</td>
+<td>Northwind.db file</td>
+<td>In-memory DB (<code>:memory:</code>)</td>
+</tr>
+<tr>
+<td>MicrosoftSqlite</td>
+<td>Northwind.db file</td>
+<td>In-memory DB (<code>:memory:</code>)</td>
+</tr>
+<tr>
+<td>SqlServer</td>
+<td>Direct connection</td>
+<td>Transaction + Rollback</td>
+</tr>
+<tr>
+<td>Postgres</td>
+<td>Direct connection</td>
+<td>Transaction + Rollback</td>
+</tr>
+<tr>
+<td>MariaDB</td>
+<td>Direct connection</td>
+<td>Transaction + Rollback</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="file-manifest">File Manifest</h2>
+<h3 id="new-files-10">New Files (10)</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Helpers/Dialects/DialectInfo.cs</code></td>
+<td>Enum + wrapper with dialect metadata</td>
+</tr>
+<tr>
+<td><code>Helpers/Dialects/DialectFixture.cs</code></td>
+<td>Read-only connection fixture</td>
+</tr>
+<tr>
+<td><code>Helpers/Dialects/WriteDialectFixture.cs</code></td>
+<td>Write-isolated connection fixture</td>
+</tr>
+<tr>
+<td><code>Helpers/Dialects/SqlServerAttribute.cs</code></td>
+<td>DataAttribute for SQL Server</td>
+</tr>
+<tr>
+<td><code>Helpers/Dialects/PostgresAttribute.cs</code></td>
+<td>DataAttribute for PostgreSQL</td>
+</tr>
+<tr>
+<td><code>Helpers/Dialects/MariaDBAttribute.cs</code></td>
+<td>DataAttribute for MariaDB</td>
+</tr>
+<tr>
+<td><code>Helpers/Dialects/MicrosoftSqliteAttribute.cs</code></td>
+<td>DataAttribute for Microsoft.Data.Sqlite</td>
+</tr>
+<tr>
+<td><code>Helpers/Dialects/SystemSqliteAttribute.cs</code></td>
+<td>DataAttribute for System.Data.SQLite</td>
+</tr>
+<tr>
+<td><code>scripts/Reorganize-Tests.ps1</code></td>
+<td>PowerShell script for git mv + namespace updates</td>
+</tr>
+<tr>
+<td><code>data/mysql/create-stored-procedures.sql</code></td>
+<td>MySQL SP creation script</td>
+</tr>
+</tbody>
+</table>
+<h3 id="moved-files-75-files-via-powershell-script">Moved Files (~75 files via PowerShell script)</h3>
+<table>
+<thead>
+<tr>
+<th>From</th>
+<th>To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Integration/Sqlite/Read/*.cs</code> (26 files)</td>
+<td><code>Integration/Read/</code></td>
+</tr>
+<tr>
+<td><code>Integration/Sqlite/Write/*.cs</code> (15 files)</td>
+<td><code>Integration/Write/</code></td>
+</tr>
+<tr>
+<td><code>Integration/Sqlite/Multiple/*.cs</code> (8 files)</td>
+<td><code>Integration/Multiple/</code></td>
+</tr>
+<tr>
+<td><code>Integration/Sqlite/Streaming/*.cs</code> (6 files)</td>
+<td><code>Integration/Streaming/</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="modified-files-all-moved-files-these">Modified Files (all moved files + these)</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Changes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Helpers/TestConfiguration.cs</code></td>
+<td>Add MariaDB connection string support</td>
+</tr>
+<tr>
+<td>All moved test files</td>
+<td>Theory + dialect attrs + DialectFixture</td>
+</tr>
+</tbody>
+</table>
+<h3 id="deleted-files-after-migration">Deleted Files (after migration)</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Helpers/SkipIfNoSqlServerAttribute.cs</code></td>
+<td>Replaced by <code>SqlServerAttribute</code></td>
+</tr>
+<tr>
+<td><code>Helpers/SkipIfNoPostgresAttribute.cs</code></td>
+<td>Replaced by <code>PostgresAttribute</code></td>
+</tr>
+<tr>
+<td><code>Helpers/SkipIfNoMySqlAttribute.cs</code></td>
+<td>Replaced by <code>MariaDBAttribute</code></td>
+</tr>
+<tr>
+<td><code>Helpers/SkipSQLiteAsyncAttribute.cs</code></td>
+<td>No longer needed</td>
+</tr>
+<tr>
+<td><code>Helpers/SQLiteTestBase.cs</code></td>
+<td>Replaced by <code>DialectFixture</code></td>
+</tr>
+<tr>
+<td><code>Helpers/Database.cs</code></td>
+<td>Replaced by <code>DialectFixture</code></td>
+</tr>
+<tr>
+<td>Provider-specific duplicates in <code>Integration/SqlServer/</code>, <code>Integration/Postgres/</code></td>
+<td>Covered by dialect attrs</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="verification">Verification</h2>
+<p>After each phase:</p>
+<ol>
+<li><code>dotnet build</code> — 0 errors</li>
+<li><code>dotnet test --filter &quot;FullyQualifiedName~Integration.Read&quot;</code> — verify moved tests pass</li>
+<li><code>dotnet test</code> — full suite, 0 new failures</li>
+<li>Visual Studio Test Explorer: verify separate dialect entries per test method</li>
+<li><code>git diff data/sqlite/Northwind.db</code> — no changes (Northwind.db untouched)</li>
+</ol>
+<hr />
+<h2 id="execution-order">Execution Order</h2>
+<ol>
+<li><strong>Phase 1</strong> — Create infrastructure files (DialectInfo, fixtures, attributes)</li>
+<li><strong>Phase 1 verify</strong> — <code>dotnet build</code> passes</li>
+<li><strong>Phase 2</strong> — Run PowerShell script to move files + update namespaces</li>
+<li><strong>Phase 2 verify</strong> — <code>dotnet build</code> passes (namespaces correct)</li>
+<li><strong>Phase 3</strong> — Rewrite test classes (batch: Read/ first, then Write/, Multiple/, Streaming/)</li>
+<li><strong>Phase 3 verify</strong> — <code>dotnet test</code> per category</li>
+<li><strong>Phase 4</strong> — Delete provider-specific duplicates</li>
+<li><strong>Phase 5</strong> — Cleanup helpers, update docs</li>
+<li><strong>Final verify</strong> — Full <code>dotnet test</code>, Test Explorer screenshots</li>
+</ol>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Tasklists / PRODUCTION READINESS TASKLIST</span>
+</a><a class="pn-next" href="07-design-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">README</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

@@ -205,7 +205,7 @@ public sealed class Scaffolder
     /// in full (columns, keys, defaults) before the unwanted ones were discarded client-side.
     /// <see cref="Abstractions.SchemaReaderOptions.IncludeSchemas"/> is applied in the readers'
     /// table loops by the SQL Server, PostgreSQL and MySQL providers, so pushing it down here skips
-    /// the per-table reads rather than merely moving the filter. SQLite has no schemas and ignores
+    /// the per-table reads rather than merely moving the filter. The SQLite reader lists `main` only and ignores
     /// it, which is why <c>IncludeTables</c>/<c>ExcludeTables</c> are the filters that demonstrate
     /// this path there.
     /// </remarks>
