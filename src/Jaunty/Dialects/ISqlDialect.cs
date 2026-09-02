@@ -9,8 +9,17 @@ namespace Jaunty.Dialects;
 public interface ISqlDialect
 {
     /// <summary>
-    /// Gets the default schema for this database.
+    /// Gets the engine's conventional default schema ("dbo", "public", "main", or empty).
+    /// Informational only.
     /// </summary>
+    /// <remarks>
+    /// Jaunty never emits this value, and it must never be used to fill in a missing schema.
+    /// The effective default is session state, not a dialect constant: the login's DEFAULT_SCHEMA
+    /// on SQL Server, search_path on PostgreSQL, the connection's ATTACH set on SQLite, the
+    /// selected database on MySQL. Any constant substituted for it is wrong for some session, and
+    /// silently so whenever a table of the same name exists in the schema it guessed. A schema
+    /// reaches the SQL only when the caller names one; see docs/decisions/2026-09-02-009.
+    /// </remarks>
     string GetDefaultSchema();
 
     /// <summary>

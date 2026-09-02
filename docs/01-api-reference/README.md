@@ -35,6 +35,7 @@ Complete API documentation for Jaunty micro-ORM.
 | Component | Purpose | Documentation |
 |-----------|---------|---------------|
 | **Attributes** | `[Table]`, `[Column]`, `[Ignore]`, `[Key]`, `[DatabaseGenerated]` | [`attributes.md`](attributes.md) |
+| **Schemas** | What a schema means per engine, and when Jaunty emits one | [`schemas.md`](schemas.md) |
 | **JauntyConfig** | Global configuration, naming conventions | [`configuration.md`](configuration.md) |
 | **CommandOptions** | Transaction, timeout, custom mapper | [`command-options.md`](command-options.md) |
 
