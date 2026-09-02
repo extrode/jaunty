@@ -1,10 +1,10 @@
-# Islamic Software End User License Agreement (ISL-EULA), Version 1.0
+# Islamic Software End User License Agreement (ISL-EULA), Version 1.2
 
 **Product:** Jaunty
 
 **Licensor:** Extrode LLC
 
-**Effective Date:** July 2026 (template version); the effective date as to a given
+**Effective Date:** August 2026 (template version); the effective date as to a given
 Licensee is the date on which that Licensee accepts this Agreement or first installs,
 accesses, or uses the Software, whichever occurs first.
 
@@ -18,17 +18,23 @@ This Agreement is rooted in the principles of Islam, which commands justice (*'a
 forbids oppression (*dhulm*), and prohibits that which is harmful (*haram*) to individuals
 and societies. The Quran states:
 
-> *"Cooperate with one another in goodness and righteousness, and do not cooperate in sin
-> and transgression."* — Quran 5:2
+> *"...And cooperate in righteousness and piety, but do not cooperate in sin and
+> aggression..."* — Quran 5:2
 
-> *"O you who believe, do not consume one another's wealth unjustly but only in lawful
-> transactions by mutual consent."* — Quran 4:29
+> *"O you who have believed, do not consume one another's wealth unjustly but only [in
+> lawful] business by mutual consent..."* — Quran 4:29
 
-> *"And whoever kills a soul — it is as if he had slain all of mankind. And whoever saves
-> one — it is as if he had saved all of mankind."* — Quran 5:32
+> *"...whoever kills a soul unless for a soul or for corruption [done] in the land - it is
+> as if he had slain mankind entirely. And whoever saves one - it is as if he had saved
+> mankind entirely..."* — Quran 5:32
+
+Quotations from the Quran are the Saheeh International translation (Al-Muntada Al-Islami /
+Abul-Qasim Publishing House), reproduced verbatim; an ellipsis marks words omitted from a
+verse.
 
 This is an End User License Agreement ("Agreement") between Licensee and Licensor governing
-Licensee's use of the Software, which is distributed only in executable, object-code form.
+Licensee's use of the Software, which is distributed only in executable, object-code form,
+or made available only as a hosted service Licensee accesses over a network, or both.
 No source code is provided or licensed under this Agreement.
 
 **This is not an open-source or source-available license.** This is a **proprietary
@@ -44,13 +50,20 @@ ACCESS, OR USE THE SOFTWARE, AND SHOULD PROMPTLY DELETE ANY COPY IN ITS POSSESSI
 ## Notice on Reproducing This License
 
 This document (the text of this License) may be copied, reproduced, published, and
-distributed, verbatim and unmodified in its entirety, by any person and for any purpose —
+distributed, verbatim and unmodified in its entirety, by any person and for any purpose --
 including to apply it to a work, to catalogue or reference it (e.g., in an SPDX license
-list or license-comparison resource), or to critique or compare it — without such
+list or license-comparison resource), or to critique or compare it -- without such
 reproduction, by itself, constituting a Prohibited Activity or being subject to Section 4
 or Section 5 of this License. This right extends only to the unmodified text of this
 License document; it does not extend to the Software distributed under it, and does not
 permit publishing a modified version of this text under an "ISL" name.
+
+Completing the bracketed fields this License provides for -- the copyright line at the top,
+the `[LICENSOR]` placeholder in the Licensor definition, and any further bracketed placeholder
+this variant defines -- is not a modification of this text for the purposes of this notice. A
+copy so completed remains an unmodified reproduction of this License, and may be published,
+distributed, and applied to a work under its ISL name. A copy in which those fields are left
+unfilled is likewise unmodified, but names no Licensor and grants nothing anyone can rely on.
 
 ---
 
@@ -58,8 +71,11 @@ permit publishing a modified version of this text under an "ISL" name.
 
 **1.1 "Software"** means the object code, executable, and binary form of Jaunty
 provided by Licensor, together with any accompanying Documentation, and any Updates
-Licensor makes available under this Agreement. "Software" does not include source code,
-which is not licensed, provided, or made available under this Agreement.
+Licensor makes available under this Agreement. "Software" also includes any instance of
+the foregoing that Licensor operates and makes available for Licensee to access and use
+over a network (a **"Hosted Service"**), whether or not any copy is delivered to Licensee.
+"Software" does not include source code, which is not licensed, provided, or made
+available under this Agreement, under either form.
 
 **1.2 "Licensor"** means Extrode LLC, and any authorized successors or assigns.
 
@@ -79,7 +95,10 @@ or subscription agreement.
 document executed or accepted by Licensor and Licensee that specifies the scope of the
 license granted under Section 2, including the number of Seats, Authorized Users,
 devices, or entities covered, the license term, and the applicable fees. The Order is
-incorporated into and forms part of this Agreement.
+incorporated into and forms part of this Agreement. Where Licensor makes the Software or a
+Hosted Service available without an Order -- for example, by self-serve registration for a
+free or trial service -- no Order is required, and the scope of the license granted is as
+stated in Section 2.4.
 
 **1.7 "Seat" or "Authorized User"** means an individual, device, server, or instance
 authorized to install or use the Software, as quantified in the applicable Order. Where
@@ -120,12 +139,13 @@ Material Association with, any Prohibited Activity.
 
 ## 2. Grant of License
 
-**2.1 License Grant.** Subject to the terms of this Agreement and the applicable Order,
+**2.1 License Grant.** Subject to the terms of this Agreement and any applicable Order,
 and provided Licensee is and remains a Compliant Licensee, Licensor grants Licensee a
-non-exclusive, non-transferable, revocable license to install and use the Software,
-solely in object code form, for the number of Seats or Authorized Users, or by the single
-Licensee entity, specified in the applicable Order, for Licensee's own internal business
-or personal purposes.
+non-exclusive, non-transferable, revocable license to install and use the Software in
+object code form, and to access and use any Hosted Service, for the number of Seats or
+Authorized Users, or by the single Licensee entity, specified in the applicable Order, for
+Licensee's own internal business or personal purposes. Where no Order exists, the scope of
+this grant is as stated in Section 2.4.
 
 **2.2 Commercial and Non-Commercial Use.** The Software may be used for commercial or
 non-commercial purposes, in each case only to the extent and within the scope expressly
@@ -140,6 +160,15 @@ interest in and to the Software, including all intellectual property rights. No 
 are granted to Licensee other than as expressly set forth in this Agreement. All rights
 not expressly granted are reserved by Licensor.
 
+**2.4 Default Scope Where No Order Exists.** Where no Order exists, and provided Licensee
+is and remains a Compliant Licensee, Licensor grants Licensee a non-exclusive,
+non-transferable, revocable license to access and use the Hosted Service, and to install
+and use any client software Licensor makes generally available for use with it, for
+Licensee's own personal or internal business purposes, limited to one account per
+individual unless Licensor states otherwise. This default scope does not include any use
+that Section 6.3 reserves to a written Order, and Licensor may modify or withdraw it as to
+future use on reasonable notice.
+
 ---
 
 ## 3. Restrictions
@@ -147,7 +176,8 @@ not expressly granted are reserved by Licensor.
 Licensee shall not, and shall not permit any third party to:
 
 **3.1 No Source Access.** Access, or attempt to access, the source code of the Software;
-the Software is licensed solely in object code form.
+the Software is licensed solely in object code form, or made available solely as a Hosted
+Service, and in neither case is source code licensed or provided.
 
 **3.2 No Reverse Engineering.** Reverse engineer, decompile, disassemble, or otherwise
 attempt to derive the source code, underlying structure, ideas, or algorithms of the
@@ -169,8 +199,8 @@ the Software.
 notice contained in or displayed by the Software or Documentation.
 
 **3.6 Unauthorized Use.** Use the Software beyond the scope of Seats, Authorized Users, or
-entities specified in the applicable Order, or in a manner not authorized by this
-Agreement.
+entities specified in the applicable Order where one exists, or beyond the default scope
+in Section 2.4 where none does, or in a manner not authorized by this Agreement.
 
 ---
 
@@ -183,8 +213,8 @@ engaged in, and not having a Material Association with, any of the following.
 
 The Quran states:
 
-> *"Indeed, Allah does not forgive association with Him, but He forgives what is less than
-> that for whom He wills."* — Quran 4:48
+> *"Indeed, Allāh does not forgive association with Him, but He forgives what is less than
+> that for whom He wills..."* — Quran 4:48
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the promotion, propagation, or organized facilitation of polytheism (*shirk*),
@@ -278,12 +308,12 @@ The Software may not be used by any entity whose Primary Business involves:
 
 The Quran states:
 
-> *"And do not cause corruption on the earth after it has been set in order. That is
-> better for you, if you are believers."* — Quran 7:85
+> *"...and cause not corruption upon the earth after its reformation. That is better for
+> you, if you should be believers."* — Quran 7:85
 
-> *"And of the people are some who say, 'We believe in Allah and the Last Day,' but they
-> are not believers. They seek to deceive Allah and those who believe, but they deceive
-> not except themselves and perceive it not."* — Quran 2:8-9
+> *"And of the people are some who say, "We believe in Allāh and the Last Day," but they
+> are not believers. They [think to] deceive Allāh and those who believe, but they deceive
+> not except themselves and perceive [it] not."* — Quran 2:8-9
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the organized promotion, propagation, or institutional advocacy of atheism,
@@ -308,10 +338,10 @@ restricted.
 
 The Quran states:
 
-> *"He created you from one soul. Then He made from it its mate."* — Quran 39:6
+> *"He created you from one soul. Then He made from it its mate..."* — Quran 39:6
 
-> *"[Satan said]: 'I will command them and they will change the creation of Allah.'"*
-> — Quran 4:119
+> *"...and I will command them so they will change the creation of Allāh..."*
+> — Quran 4:119, Satan's words continuing from 4:118
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the promotion, facilitation, or provision of surgical or hormonal procedures for
@@ -329,6 +359,7 @@ The Software may not be used by any entity whose Primary Business involves:
 hospitals, or medical institutions that may offer such services among a broader range of
 medical care. It targets entities whose Primary Business is the activities described
 above.
+
 ### 4.11 Zina and Fahisha (Extra-Marital Relations, Lewdness, and Sexual Promiscuity)
 
 The Quran states:
@@ -336,8 +367,9 @@ The Quran states:
 > *"And do not approach unlawful sexual intercourse. Indeed, it is ever an immorality
 > and is evil as a way."* — Quran 17:32
 
-> *"Those who love that immorality should be spread among the believers will have a
-> painful punishment in this world and the Hereafter."* — Quran 24:19
+> *"Indeed, those who like that immorality should be spread [or publicized] among those
+> who have believed will have a painful punishment in this world and the Hereafter..."*
+> — Quran 24:19
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the operation of platforms, applications, or services whose primary purpose is
@@ -361,7 +393,8 @@ The Quran states:
 > *"And do not kill your children for fear of poverty. We provide for them and for you.
 > Indeed, their killing is ever a great sin."* — Quran 17:31
 
-> *"And when the girl buried alive is asked for what sin she was killed."* — Quran 81:8-9
+> *"And when the girl [who was] buried alive is asked*
+> *For what sin she was killed"* — Quran 81:8-9
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the performance or provision of abortion procedures as a primary medical service,
@@ -460,15 +493,16 @@ journalists, academics, and civil society groups operating within or from a coun
 identified under this Section are not subject to this restriction solely by reason of
 their nationality or residence, provided they are not themselves engaged in or materially
 associated with the Prohibited Activities described herein. This Agreement does not
-collectively punish populations — it restricts complicit entities.
+collectively punish populations -- it restricts complicit entities.
 
 ---
 
 ## 6. Fees and Commercial Licensing
 
-**6.1 Fees.** Licensee's right to install and use the Software is contingent on payment of
-all fees set forth in the applicable Order. Licensor may suspend Licensee's access to the
-Software, on reasonable prior notice, for failure to pay undisputed fees when due.
+**6.1 Fees.** Licensee's right to install, access, and use the Software is contingent on
+payment of all fees set forth in the applicable Order. Licensor may suspend Licensee's
+access to the Software, on reasonable prior notice, for failure to pay undisputed fees
+when due. Where no Order exists and no fee is stated, no fee is due under this Section.
 
 **6.2 Taxes.** Fees stated in an Order are exclusive of any applicable sales, use, value
 added, or similar taxes, which are Licensee's responsibility except for taxes based on
@@ -497,11 +531,11 @@ Licensee shall have sixty (60) days from receipt of such notice to:
 **7.3 Governing Principles.** In the event of ambiguity in the interpretation of this
 Agreement, the following principles of Islamic jurisprudence (*usul al-fiqh*) shall guide
 interpretation:
-  - (a) **La darar wa la dirar** — No harm shall be inflicted or reciprocated;
-  - (b) **Al-umur bi-maqasidiha** — Matters are judged by their purposes and intentions;
-  - (c) **Dar' al-mafasid muqaddam 'ala jalb al-masalih** — Preventing harm takes
+  - (a) **La darar wa la dirar**: No harm shall be inflicted or reciprocated;
+  - (b) **Al-umur bi-maqasidiha**: Matters are judged by their purposes and intentions;
+  - (c) **Dar' al-mafasid muqaddam 'ala jalb al-masalih**: Preventing harm takes
     precedence over securing benefit; and
-  - (d) **Al-yaqin la yazul bi'l-shakk** — Certainty is not overturned by doubt.
+  - (d) **Al-yaqin la yazul bi'l-shakk**: Certainty is not overturned by doubt.
 
 **7.4 Governing Law.** This Agreement shall be governed by and construed in accordance
 with the laws of the Commonwealth of Virginia, United States of America, without regard to conflict of law principles, and the
@@ -514,7 +548,9 @@ any dispute arising out of or relating to this Agreement.
 
 **8.1 Term.** This Agreement commences on the Effective Date and continues for the term
 specified in the applicable Order (whether a fixed subscription term or a perpetual term),
-unless earlier terminated as provided herein.
+unless earlier terminated as provided herein. Where no Order exists, this Agreement
+continues until Licensee ceases all use of the Software and closes or deletes any account
+it holds for a Hosted Service, or until terminated as provided herein.
 
 **8.2 Termination for Ethical Violation.** If Licensor determines, following the notice
 and cure process in Section 7.2, that Licensee has failed to demonstrate it is not in
@@ -527,10 +563,14 @@ notice, and this Agreement terminates automatically if the breach is not cured w
 thirty (30) days of such notice, or immediately if the breach is incapable of cure.
 
 **8.4 Effect of Termination.** Upon termination or expiration, Licensee must immediately:
-  - (a) cease all use of the Software;
+  - (a) cease all use of the Software, including all access to any Hosted Service;
   - (b) uninstall and permanently delete all copies of the Software in its possession or
-    control, including from all devices, servers, and backup media; and
+    control, if any, including from all devices, servers, and backup media -- a Licensee
+    holding no copies satisfies this subsection by ceasing access; and
   - (c) upon request, certify in writing to Licensor that it has done so.
+
+Licensor may disable Licensee's access to any Hosted Service upon termination or
+expiration.
 
 Sections 3, 4, 5, 8.4, 9, 10, 11, 12, and 14 survive termination or expiration of this
 Agreement.
@@ -617,31 +657,42 @@ consent.
 
 ## How to Apply This Agreement
 
-Licensor should present this Agreement to Licensee at the point of purchase, download, or
-installation, and require affirmative acceptance (for example, a clickwrap "I Agree"
-mechanism) before the Software is installed or activated. Licensor should complete the
-bracketed placeholders below before use:
+Licensor should present this Agreement to Licensee at the point of purchase, download,
+installation, or account creation, and require affirmative acceptance (for example, a
+clickwrap "I Agree" mechanism) before the Software is installed or activated or the
+account is created.
+
+**The two surfaces take the same text at different moments.** Where the Software is
+delivered as a copy, present it at or before installation. Where it is made available as a
+Hosted Service, present it at registration, before the account exists -- there is no
+installation step to attach it to, and first access is otherwise the only trigger. A
+Licensor offering both should present it once, at whichever comes first, and record which
+version the Licensee accepted: Section 15 provides that a later revision does not bind a
+Licensee without consent, which is only administrable if the accepted version is known.
+
+Licensor should complete the bracketed placeholders below before use:
 
 ```
-SPDX-License-Identifier: LicenseRef-ISL-EULA-1.0
+SPDX-License-Identifier: LicenseRef-ISL-EULA-1.2
 
 Product: Jaunty
 Licensor: Extrode LLC
 Governing Jurisdiction: the Commonwealth of Virginia, United States of America
 
 This Software is licensed, not sold, under the Islamic Software End User
-License Agreement (ISL-EULA), Version 1.0. No source code is provided.
+License Agreement (ISL-EULA), Version 1.2. No source code is provided.
 Reverse engineering, redistribution, and sublicensing are prohibited
 except as expressly permitted herein. Use is subject to the Ethical Use
 Restrictions in Sections 4 and 5 of the Agreement.
 
-BY INSTALLING OR USING THIS SOFTWARE, YOU AGREE TO BE BOUND BY THE FULL
-TEXT OF THE ISL-EULA, AVAILABLE AT: [URL to license]
+BY INSTALLING, CREATING AN ACCOUNT FOR, ACCESSING, OR USING THIS SOFTWARE,
+YOU AGREE TO BE BOUND BY THE FULL TEXT OF THE ISL-EULA, AVAILABLE AT:
+[URL to license]
 ```
 
 ---
 
-*The Islamic Software End User License Agreement (ISL-EULA) v1.0 was drafted to align
+*The Islamic Software End User License Agreement (ISL-EULA) v1.2 was drafted to align
 proprietary, closed-source software licensing with Islamic ethical principles and
 universal human rights. It is a proprietary license and is not source-available, open
 source, or free software. It is not certified by the Open Source Initiative or the Free

@@ -1106,7 +1106,7 @@ For more detailed documentation, see:
 
 **Jaunty is free to use, including in commercial production.** No seat count, no Order, no expiry. What is sold is support. Two documents apply:
 
-- **The Islamic Software License - Restricted (ISL-R), Version 1.0** - see [LICENSE.md](LICENSE.md) - governs both the source in this repository and the published packages. Section 2 grants a worldwide, royalty-free right to use the software for any lawful purpose, including internal commercial use, and to read the source. It does not grant modification, redistribution as a library, or derivative works.
+- **The Islamic Software License - Restricted (ISL-R), Version 1.2** - see [LICENSE.md](LICENSE.md) - governs both the source in this repository and the published packages. Section 2 grants a worldwide, royalty-free right to use the software for any lawful purpose, including internal commercial use, and to read the source. It does not grant modification, redistribution as a library, or derivative works.
 - **The Jaunty Redistribution Exception, Version 1.0** - see [LICENSE-DISTRIBUTION-EXCEPTION.md](LICENSE-DISTRIBUTION-EXCEPTION.md) - permits you to ship the unmodified packages inside your own application, container image, installer or hosted service. Without it, ISL-R's no-distribution clause would make deploying an application that references Jaunty impossible. It is royalty-free and does not expire.
 
 > [!CAUTION]
