@@ -30,6 +30,13 @@ JauntyQ candidates, each as transparent, `-dark` and `-light`:
 - `logo/jauntyq-badge*.svg`: the mark with a small Q in a disc at the lower right
 - `logo/jauntyq-ring*.svg`: the mark inside a Q ring whose tail breaks out at the lower right
 
+### Benchmarks
+
+`benchmarks/` holds the README's comparison table and the 2026-07-29 read-path and allocation
+charts as SVGs with colored cells, generated from the numbers in
+`docs/05-quality/reports/benchmarks-2026-07-29.md`. GitHub strips cell colors from Markdown
+tables, which is why they are images; the README keeps a text copy under each one.
+
 ### Diagrams
 
 Architecture and flow diagrams:
