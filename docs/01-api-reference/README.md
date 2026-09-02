@@ -138,8 +138,8 @@ var category = multi.ReadFirst<Category>();
 // Named parameters
 connection.Query<Product>(sql, new { CategoryId = 1, MinPrice = 100 });
 
-// Positional parameters (parsed from SQL)
-connection.Query<Product>(sql, 1, 100);  // @CategoryId=1, @MinPrice=100
+// A single scalar, when the SQL names exactly one parameter
+connection.Query<Product>("SELECT * FROM products WHERE category_id = @CategoryId", 1);
 
 // Collection expansion
 connection.Query<Product>(

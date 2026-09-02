@@ -76,10 +76,9 @@ var summaries = connection.QueryPartial<ProductSummary>(
 // Scalars
 var count = connection.QueryScalar<long>("SELECT COUNT(*) FROM products");
 
-// Parameters, named or positional
+// Parameters: an object binds by name; a single scalar binds the one parameter the SQL names
 var filtered = connection.Query<Product>(sql, new { CategoryId = 1 });
-var filtered = connection.Query<Product>(sql, 1);
-var filtered = connection.Query<Product>(sql, 1, "active", 50.00m);
+var filtered = connection.Query<Product>("SELECT * FROM products WHERE category_id = @Id", 1);
 
 // Async with cancellation
 var products = await connection.QueryAsync<Product>(sql, cancellationToken);
@@ -113,7 +112,7 @@ public class Product
 
 // Throws: no 'Price' column
 var products = connection.Query<Product>("SELECT id, name FROM products");
-// InvalidOperationException: "Strict mapping failed: property 'Price' has no matching column"
+// InvalidOperationException: "Strict mapping failed: property 'Price' has no matching column in result set for type 'MyApp.Product'."
 ```
 
 Silent partial mapping is a bug that surfaces far from where it started. If you wanted all three
@@ -161,8 +160,8 @@ library benchmarks faster on a given path.
 
 Jaunty is a good fit when you publish under NativeAOT, when dependency count matters, when you want
 SQL you can read in the source and find in the query log, or when you need bulk copy, scaffolding or
-DuckDB without assembling three more vendors. It also targets `net472` and `netstandard2.0`
-alongside modern .NET from one codebase.
+DuckDB without assembling three more vendors. It also targets `netstandard2.0`, so a .NET Framework
+application uses the same package as modern .NET; the test suite runs on `net472` as well.
 
 It is not the tool for change tracking, a unit of work, lazy loading or migrations. That is EF Core's
 job, and using both together is a reasonable architecture. It is also not a LINQ provider: the
@@ -477,23 +476,22 @@ var orders = connection.Query<Order>(
     new { CustomerId = "ALFKI", Status = "shipped" });
 ```
 
-Positional parameters are the part Dapper does not have. Jaunty parses your SQL for parameter names,
-skipping string literals and comments, and binds the values in order:
+When the SQL names exactly one parameter, a single scalar is enough. Jaunty parses your SQL for
+parameter names, skipping string literals and comments, and binds the value to the one it finds:
 
 ```csharp
-var order  = connection.Query<Order>("SELECT * FROM orders WHERE order_id = @Id", 42);
-var orders = connection.Query<Order>(
-    "SELECT * FROM orders WHERE customer_id = @Customer AND total > @MinTotal",
-    "ALFKI", 100.00m);
+var order = connection.Query<Order>("SELECT * FROM orders WHERE order_id = @Id", 42);
+
+connection.Query<Product>("... WHERE category_id = @Id OR supplier_id = @Id", 7);   // one name, one value
 ```
 
-A parameter used twice in the SQL takes one value, and the count is checked before anything is sent:
+That is a shorthand for the one-parameter case, not positional binding. SQL that names two or more
+parameters takes an object or a dictionary, and the mismatch is caught before anything is sent:
 
 ```csharp
-connection.Query<Product>("... WHERE category_id = @Id OR supplier_id = @Id", 7);   // one value
-
-connection.Query<Product>(sql, 1, 2, 3);
-// ArgumentException: "Parameter count mismatch: SQL contains 2 unique parameter(s), but 3 value(s) provided."
+connection.Query<Product>("... WHERE category_id = @CategoryId AND price > @MinPrice", 1);
+// ArgumentException: "A single scalar parameter value cannot be bound to SQL containing 2 distinct
+//   parameters (CategoryId, MinPrice). Pass an object or dictionary with a value per parameter instead."
 ```
 
 ---
@@ -568,7 +566,7 @@ run, and cached metadata is rebuilt on next use. Per-engine detail is in
 
 ## Logging and diagnostics
 
-Jaunty runs every command through an interceptor pipeline. Three interceptors ship, and yours plug in
+Jaunty runs every command through an interceptor pipeline. Two interceptors ship, and yours plug in
 the same way.
 
 **LoggingInterceptor** lives in `Extrode.Jaunty.Extensions.Logging`, so the `ILogger` dependency
@@ -744,7 +742,6 @@ lowest-allocating of the compared ORMs and competitive with Dapper on throughput
 | Raw SQL execution | ✔ | ✔ | ✔ |
 | Strict mapping mode | ✔ | ✘ | ✘ |
 | Partial mapping mode | ✔ | ✔ | ✔ |
-| Positional parameters | ✔ | ✘ | ✘ |
 | Zero dependencies | ✔ | ✔ | ✘ |
 | Bulk operations | ✔ | ✘ | ✔ |
 | Upsert support | ✔ | ✘ | ✔ |
@@ -770,8 +767,8 @@ to a hand-coded ADO.NET loop on the same provider, and lower is better. The loop
 getters, sizes its list up front, and reads each column as the type the provider reports; an
 earlier version of it paid a text round-trip on SQLite's `REAL` column, which is why the July
 reports showed two libraries faster than ADO.NET. The SQLite column is from a separate 10,000-row run on the same
-harness, because the 38-minute four-provider run drifted on that in-process column; the report
-shows both.
+harness, repeated after the generated mapper's per-row `FieldCount` guard was removed, because the
+38-minute four-provider run drifted on that in-process column; the report shows all three.
 
 ![Read path, 10,000 rows, relative to ADO.NET](docs/_assets/benchmarks/read-path-10k-rows-table.svg)
 
@@ -791,12 +788,12 @@ Allocation at 10,000 rows on SQL Server. Lower is better here too.
 | Method | SQLite | SQL Server | PostgreSQL | MariaDB |
 |---|---|---|---|---|
 | ADO.NET (hand-coded) | baseline | baseline | baseline | baseline |
-| Jaunty `Query<T>` | 1.33x | 1.15x | 1.60x | 1.37x |
-| Jaunty (`WithExpectedRowCount`) | 1.28x | 1.14x | 1.14x faster | 1.05x faster |
-| Dapper | 1.84x | 1.42x | 1.28x | 1.64x |
-| RepoDb | 1.42x | 1.22x | 1.06x | 1.32x |
-| linq2db | 1.94x | 1.25x | 1.34x | 1.62x |
-| EF Core | 3.06x | 2.59x | 1.83x | 4.27x |
+| Jaunty `Query<T>` | 1.17x | 1.15x | 1.60x | 1.37x |
+| Jaunty (`WithExpectedRowCount`) | 1.22x | 1.14x | 1.14x faster | 1.05x faster |
+| Dapper | 1.78x | 1.42x | 1.28x | 1.64x |
+| RepoDb | 1.30x | 1.22x | 1.06x | 1.32x |
+| linq2db | 1.80x | 1.25x | 1.34x | 1.62x |
+| EF Core | 2.71x | 2.59x | 1.83x | 4.27x |
 
 | Method | Allocated | vs ADO.NET |
 |---|---|---|

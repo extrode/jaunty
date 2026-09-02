@@ -8,7 +8,7 @@ Jaunty is a micro-ORM for .NET: you write SQL, it gives you objects back, and it
 
 **The reflection tax.** Jaunty resolves row mappers through a fixed ladder, and reflection is the last rung, not the first. See the diagram below - this is the design decision most users never notice, and the reason Jaunty works under Native AOT where reflection-based mappers break.
 
-**Allocation overhead.** Measured against Dapper, EF Core, RepoDb, and linq2db in the in-repo benchmark suite, Jaunty is the lowest-allocating of the compared ORMs and competitive with Dapper on throughput (see the [quality section](../05-quality/README.md) for the published benchmark reports - the claims here are measured, not aspirational; the full numbers live in `docs/05-quality/reports/BENCHMARKS-2026-07-04.md` in the repository).
+**Allocation overhead.** Measured against Dapper, EF Core, RepoDb, and linq2db in the in-repo benchmark suite, Jaunty is the lowest-allocating of the compared ORMs and competitive with Dapper on throughput (see the [quality section](../05-quality/README.md) for the published benchmark reports - the claims here are measured, not aspirational; the full numbers are in [benchmarks-2026-09-02.md](../05-quality/reports/benchmarks-2026-09-02.md)).
 
 **Slow bulk writes.** `Jaunty.Extensions.Reflection` routes 100+ row operations to native bulk APIs per provider: `SqlBulkCopy` on SQL Server, binary `COPY` on PostgreSQL, chunked multi-row `INSERT` on MySQL/MariaDB, and a prepared-statement loop on SQLite (where "clever" bulk paths measured slower than the simple one, so Jaunty does the simple one).
 
@@ -47,13 +47,13 @@ If you need these, Jaunty is the wrong tool, and that is by design:
 - **No change tracking, unit-of-work, or identity map.** Objects are plain data. You decide what to save and when.
 - **No lazy loading.** Every query is explicit. N+1 problems are visible in your code, not hidden in a proxy.
 - **No migrations engine.** Your schema lifecycle is your own (though the sibling product JauntyQ understands migration scripts at build time - see below).
-- **Not open source.** Jaunty is a commercial product: binaries ship under the ISL-EULA (the license grant is tied to your order), and source access at higher tiers is governed by the ISL-R inspection license. See [pricing](../06-releases/pricing.md) - there is a 30-day full trial. If OSS licensing is a hard requirement, use Dapper - it is a fine library and this page will not pretend otherwise.
+- **Not open source.** Jaunty is free to use, including in commercial production, under [ISL-R 1.2](../../LICENSE.md) plus the [Redistribution Exception](../../LICENSE-DISTRIBUTION-EXCEPTION.md) that lets you ship the unmodified packages inside your application; what is sold is [support](../06-releases/pricing.md). ISL-R is not OSI-approved: no modification, no redistribution as a library, and the ethical restrictions in its Sections 4 and 5 are conditions of the grant. If OSS licensing is a hard requirement, use Dapper - it is a fine library and this page will not pretend otherwise.
 
 There is a feature-by-feature comparison with Dapper and EF Core in the repository README.
 
 ## Jaunty or JauntyQ?
 
-Jaunty has a sibling: [JauntyQ](https://extrode.com/jauntyq) moves the entire ORM to compile time. Your SQL lives in `.sql` files, is validated against a committed schema snapshot during the build, and becomes generated C# with typed ordinal getters - a renamed column is a build error, not a production incident.
+Jaunty has a sibling: [JauntyQ](https://github.com/extrode/jauntyq) moves the entire ORM to compile time. Your SQL lives in `.sql` files, is validated against a committed schema snapshot during the build, and becomes generated C# with typed ordinal getters - a renamed column is a build error, not a production incident.
 
 ```mermaid
 flowchart TD
@@ -71,4 +71,4 @@ Rule of thumb: JauntyQ when your queries are known at build time and you can com
 
 - [Quick start](README.md) - install and first query in five minutes.
 - [Learn by doing](../08-learn/README.md) - a guided tutorial and coding exercises.
-- Design decisions - why strict mapping, why `CommandOptions`, why parsed positional parameters: see the "Design Decisions" section of the repository README.
+- Design decisions - why strict mapping, why `CommandOptions`, why the single-scalar parameter shorthand stops at one name: [Under the hood](../../README.md#under-the-hood) in the repository README and [ARCHITECTURE-DECISIONS.md](../02-architecture/ARCHITECTURE-DECISIONS.md).

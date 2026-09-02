@@ -32,7 +32,7 @@ scope is Jaunty putting something into a command that you did not put there, or 
 neutralise something it undertook to neutralise:
 
 - **Parameter binding** — flaws that could enable SQL injection through the documented APIs,
-  such as collection expansion or positional binding
+  such as collection expansion or the single-scalar shorthand
 - **Identifier handling** — a table, column or CTE name reaching SQL without passing
   `SqlIdentifierValidator`, in any dialect, builder or bulk-copy provider
 - **Bulk copy and CSV import** — paths that execute a statement other than the one intended
