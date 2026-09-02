@@ -64,7 +64,7 @@ var products = connection.Query<Product>("SELECT * FROM products");
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Beparey.Jaunty" Version="2026.01.01" />
+    <PackageReference Include="Extrode.Jaunty" Version="2026.01.01" />
     <!-- Do NOT include Jaunty.Extensions.Reflection -->
   </ItemGroup>
 </Project>
@@ -97,8 +97,8 @@ var dictResults = connection.Query<Dictionary<string, object>>(
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Beparey.Jaunty" Version="2026.01.01" />
-    <PackageReference Include="Beparey.Jaunty.Extensions.Reflection" Version="2026.01.01" />
+    <PackageReference Include="Extrode.Jaunty" Version="2026.01.01" />
+    <PackageReference Include="Extrode.Jaunty.Extensions.Reflection" Version="2026.01.01" />
   </ItemGroup>
   
   <!-- Prevent trimming of reflection extension -->
@@ -294,6 +294,6 @@ Each sample uses in-memory SQLite and can be run with `dotnet run --project samp
 ## Support
 
 For issues or questions:
-1. Check the [GitHub Issues](https://github.com/beparey/jaunty/issues)
+1. Check the [GitHub Issues](https://github.com/extrode/jaunty/issues)
 2. Review the [Migration Plan](NATIVEAOT-MIGRATION-PLAN.md)
 3. Check current [Status](NATIVEAOT-STATUS.md)
