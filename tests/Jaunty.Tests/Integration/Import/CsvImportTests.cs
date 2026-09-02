@@ -501,6 +501,55 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     }
 
     [Fact]
+    public void ImportCsv_Sqlite_PoolHoldingTwoHandles_ProbesAndImportsOnTheSameOne()
+    {
+        // The pool is FIFO. A check that opens and closes hands its handle to the back of the
+        // queue, so the import that follows takes the next one - which has no temp table, and
+        // whose main does hold a table of that name. The rows would land in main.
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_two_handles_{Guid.NewGuid():N}.db");
+        var connectionString = $"Data Source={tempDb};Pooling=True";
+
+        try
+        {
+            var withTemp = new SQLiteConnection(connectionString);
+            var withoutTemp = new SQLiteConnection(connectionString);
+            withTemp.Open();
+            withoutTemp.Open();
+
+            CreateTable(withTemp, DialectProvider.SystemSqlite);
+
+            using (var create = withTemp.CreateCommand())
+            {
+                create.CommandText =
+                    $"CREATE TEMP TABLE {TableName} (Name TEXT, Age INTEGER, City TEXT, Email TEXT)";
+                create.ExecuteNonQuery();
+            }
+
+            withTemp.Close();
+            withoutTemp.Close();
+
+            using var connection = new SQLiteConnection(connectionString);
+
+            long rows = connection.ImportCsv(TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            connection.Open();
+
+            using var mainCount = connection.CreateCommand();
+            mainCount.CommandText = $"SELECT COUNT(*) FROM main.{TableName}";
+            Assert.Equal(0L, Convert.ToInt64(mainCount.ExecuteScalar()));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
     public void ImportCsv_Sqlite_PooledConnectionClosedWithASecondAlias_StaysOnTheCliPath()
     {
         // The alias survives the Close on a pooled connection, so the schema check has to open the

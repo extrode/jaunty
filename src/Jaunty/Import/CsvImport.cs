@@ -206,27 +206,49 @@ public static class CsvImportExtensions
             return ImportViaPreparedStatements(connection, tableName, filePath, options);
         }
 
-        // The sqlite3 CLI is a separate process: it opens dbPath as its own "main" and has attached
-        // nothing, so the caller's ATTACH aliases and temp tables do not exist for it. Targeting one
-        // of those through the CLI fails two ways, and the quiet one is the reason for this check:
-        // an unknown alias exits 1 ("unknown database"), but "--schema temp" exits 0, imports into
-        // the CLI's own throwaway temp database, and leaves the caller's connection seeing nothing
-        // while CountCsvRows still reports the file's row count.
-        int schemaDot = tableName.IndexOf('.');
-        if (schemaDot >= 0)
-        {
-            if (!SqliteCliCanReach(connection, tableName.Substring(0, schemaDot), dbPath))
-                return ImportViaPreparedStatements(connection, tableName, filePath, options);
+        // The schema checks below read the connection's own schema set, and so does the
+        // prepared-statement path they can route to. Both have to see one connection: the pool is
+        // FIFO, so a probe that opens and closes hands its handle to the back of the queue and the
+        // next Open takes a different one (measured: two handles, temp table on the first, the
+        // second open sees it and the one after does not). Probing on one handle and importing on
+        // another puts the rows in whatever that second handle calls the table.
+        bool wasClosed = connection.State == ConnectionState.Closed;
+        if (wasClosed)
+            connection.Open();
 
-            // Reachable means the schema names the file the CLI was handed, and the CLI knows that
-            // file by its own name for it: main. A caller's second alias for the same file
-            // ("ATTACH 'app.db' AS alias2" where app.db is already main) does not exist in the CLI
-            // process, so the alias is rewritten rather than passed through.
-            tableName = "main." + tableName.Substring(schemaDot + 1);
-        }
-        else if (!SqliteUnqualifiedNameResolvesToMain(connection, tableName))
+        try
         {
-            return ImportViaPreparedStatements(connection, tableName, filePath, options);
+            // The sqlite3 CLI is a separate process: it opens dbPath as its own "main" and has
+            // attached nothing, so the caller's ATTACH aliases and temp tables do not exist for it.
+            // Targeting one of those through the CLI fails two ways, and the quiet one is the
+            // reason for this check: an unknown alias exits 1 ("unknown database"), but
+            // "--schema temp" exits 0, imports into the CLI's own throwaway temp database, and
+            // leaves the caller's connection seeing nothing while CountCsvRows still reports the
+            // file's row count.
+            int schemaDot = tableName.IndexOf('.');
+            if (schemaDot >= 0)
+            {
+                if (!SqliteCliCanReach(connection, tableName.Substring(0, schemaDot), dbPath))
+                    return ImportViaPreparedStatements(connection, tableName, filePath, options);
+
+                // Reachable means the schema names the file the CLI was handed, and the CLI knows
+                // that file by its own name for it: main. A caller's second alias for the same file
+                // ("ATTACH 'app.db' AS alias2" where app.db is already main) does not exist in the
+                // CLI process, so the alias is rewritten rather than passed through.
+                tableName = "main." + tableName.Substring(schemaDot + 1);
+            }
+            else if (!SqliteUnqualifiedNameResolvesToMain(connection, tableName))
+            {
+                return ImportViaPreparedStatements(connection, tableName, filePath, options);
+            }
+        }
+        finally
+        {
+            // Closed before the CLI is spawned, not after it returns: the subprocess writes the
+            // file, and holding a handle the caller had closed across that is a lock the caller
+            // never asked for.
+            if (wasClosed)
+                connection.Close();
         }
 
         // Use sqlite3 CLI for file-based databases
@@ -242,43 +264,30 @@ public static class CsvImportExtensions
     /// file can be attached again under another alias (PRAGMA database_list then reports two rows
     /// with one path), and that alias is reachable too because the CLI has the file open. temp
     /// reports an empty file and is per-connection, so it is never reachable.
+    ///
+    /// The connection must already be open, and must be the one the import will use: a closed
+    /// connection does not mean nothing is attached, and a pooled probe that opens and closes gets
+    /// a different handle from the import that follows it. ImportSqlite owns the single open.
     /// </remarks>
     private static bool SqliteCliCanReach(IDbConnection connection, string schema, string dbPath)
     {
-        // A closed connection is opened to be asked, and closed again afterwards. Assuming a closed
-        // connection has nothing attached is wrong: with Pooling=True, System.Data.SQLite hands the
-        // same native handle back on the next Open with the ATTACH set intact (measured). Where
-        // there is no pool the reopened connection holds only main, which is what the probe then
-        // reports, so opening gives the right answer either way.
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            connection.Open();
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "PRAGMA database_list";
 
-        try
+        using IDataReader reader = command.ExecuteReader();
+        while (reader.Read())
         {
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = "PRAGMA database_list";
+            if (!string.Equals(reader.GetString(1), schema, StringComparison.OrdinalIgnoreCase))
+                continue;
 
-            using IDataReader reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                if (!string.Equals(reader.GetString(1), schema, StringComparison.OrdinalIgnoreCase))
-                    continue;
+            if (reader.IsDBNull(2))
+                return false;
 
-                if (reader.IsDBNull(2))
-                    return false;
-
-                string file = reader.GetString(2);
-                return file.Length > 0 && SamePath(file, dbPath);
-            }
-
-            return false;
+            string file = reader.GetString(2);
+            return file.Length > 0 && SamePath(file, dbPath);
         }
-        finally
-        {
-            if (wasClosed)
-                connection.Close();
-        }
+
+        return false;
     }
 
     private static bool SamePath(string left, string right)
@@ -316,58 +325,47 @@ public static class CsvImportExtensions
     /// A name that resolves nowhere on the connection is left to the CLI: creating the table is
     /// what an import into a table that does not exist yet already does, and there is no other
     /// table for it to be confused with.
+    ///
+    /// As with SqliteCliCanReach, the connection must already be open and must be the one the
+    /// import will use.
     /// </remarks>
     private static bool SqliteUnqualifiedNameResolvesToMain(IDbConnection connection, string tableName)
     {
-        // See SqliteCliCanReach: a closed connection is opened to be asked, because a pooled one
-        // keeps its temp tables and its ATTACH set across the Close.
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            connection.Open();
-
-        try
+        List<string> schemas = new List<string>();
+        using (IDbCommand command = connection.CreateCommand())
         {
-            List<string> schemas = new List<string>();
-            using (IDbCommand command = connection.CreateCommand())
-            {
-                command.CommandText = "PRAGMA database_list";
+            command.CommandText = "PRAGMA database_list";
 
-                using IDataReader reader = command.ExecuteReader();
-                while (reader.Read())
-                    schemas.Add(reader.GetString(1));
-            }
-
-            // database_list reports main at seq 0 and temp at seq 1, which is not the order names
-            // are resolved in, so the list is reordered to temp, main, then the rest as reported.
-            // The rest is slot order rather than ATTACH order - a DETACH frees a slot and the next
-            // ATTACH reuses it - and slot order is what SQLite itself searches.
-            List<string> resolutionOrder = new List<string>(schemas.Count);
-            AddSqliteSchemasNamed(resolutionOrder, schemas, "temp");
-            AddSqliteSchemasNamed(resolutionOrder, schemas, "main");
-            for (int i = 0; i < schemas.Count; i++)
-            {
-                if (!string.Equals(schemas[i], "temp", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(schemas[i], "main", StringComparison.OrdinalIgnoreCase))
-                {
-                    resolutionOrder.Add(schemas[i]);
-                }
-            }
-
-            for (int i = 0; i < resolutionOrder.Count; i++)
-            {
-                if (!SqliteSchemaHasObjectNamed(connection, resolutionOrder[i], tableName))
-                    continue;
-
-                return string.Equals(resolutionOrder[i], "main", StringComparison.OrdinalIgnoreCase);
-            }
-
-            return true;
+            using IDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+                schemas.Add(reader.GetString(1));
         }
-        finally
+
+        // database_list reports main at seq 0 and temp at seq 1, which is not the order names are
+        // resolved in, so the list is reordered to temp, main, then the rest as reported. The rest
+        // is slot order rather than ATTACH order - a DETACH frees a slot and the next ATTACH reuses
+        // it - and slot order is what SQLite itself searches.
+        List<string> resolutionOrder = new List<string>(schemas.Count);
+        AddSqliteSchemasNamed(resolutionOrder, schemas, "temp");
+        AddSqliteSchemasNamed(resolutionOrder, schemas, "main");
+        for (int i = 0; i < schemas.Count; i++)
         {
-            if (wasClosed)
-                connection.Close();
+            if (!string.Equals(schemas[i], "temp", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(schemas[i], "main", StringComparison.OrdinalIgnoreCase))
+            {
+                resolutionOrder.Add(schemas[i]);
+            }
         }
+
+        for (int i = 0; i < resolutionOrder.Count; i++)
+        {
+            if (!SqliteSchemaHasObjectNamed(connection, resolutionOrder[i], tableName))
+                continue;
+
+            return string.Equals(resolutionOrder[i], "main", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return true;
     }
 
     private static void AddSqliteSchemasNamed(List<string> target, List<string> schemas, string name)
