@@ -370,6 +370,14 @@ public class CsvImportTests : IClassFixture<DialectFixture>
 
             importConn.Open();
             Assert.Equal(ExpectedRowCount, GetRowCount(importConn, DialectProvider.SystemSqlite));
+
+            // The sqlite3 CLI's ".import" takes a bare table name. Handed "main.csv_import_test" as
+            // one argument it creates a table with that literal dotted name, fills it, and exits 0 -
+            // so the row count above is the only thing between this path and a silent wrong target,
+            // and this asserts the wrong target was not created either.
+            using var cmd = importConn.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%.%'";
+            Assert.Equal(0L, Convert.ToInt64(cmd.ExecuteScalar()));
         }
         finally
         {
