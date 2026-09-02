@@ -45,7 +45,7 @@ internal sealed class ListTablesCommand : Command
                 // AUD-R35-079: push --schemas down to the reader so the unwanted schemas' tables
                 // are never read, rather than reading every table in the database and discarding
                 // them here. The client-side pass below is still needed: SQLite ignores
-                // IncludeSchemas (it has no schemas) and MySQL treats it as an accept/reject on the
+                // IncludeSchemas (its reader lists main only) and MySQL treats it as an accept/reject on the
                 // attached database name, so neither narrows a multi-schema listing on its own.
                 IReadOnlyList<(string Schema, string Table)> tables = await scaffolder.ListTablesAsync(
                     connection,

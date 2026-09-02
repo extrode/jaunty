@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Coverage — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Code Coverage</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html" class="active" aria-current="page">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#running-it">Running it</a><a class="toc-l2" href="#coverage.runsettings">coverage.runsettings</a><a class="toc-l2" href="#the-2026-08-27-baseline">The 2026-08-27 baseline</a><a class="toc-l2" href="#what-the-baseline-found">What the baseline found</a><a class="toc-l2" href="#coverage-is-not-the-gate">Coverage is not the gate</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Code Coverage</nav>
+        <article>
+<h1 id="code-coverage">Code Coverage</h1>
+<h2 id="running-it">Running it</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">powershell</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="powershell"><code class="language-powershell">pwsh -NoProfile -File scripts/coverage.ps1                       # every suite under tests/
+pwsh -NoProfile -File scripts/coverage.ps1 -Suite Jaunty.Tests   # one suite
+</code></pre>
+</div>
+<p>Parameters: <code>-Suite</code>, <code>-Configuration</code> (default <code>Release</code>), <code>-Framework</code> (default <code>net10.0</code>).</p>
+<p>Reports land in <code>tmp/coverage/&lt;suite&gt;/</code> as cobertura XML. The directory is gitignored, nothing is
+deleted, and re-runs overwrite. Each suite's target directory is cleared first, because
+<code>dotnet test</code> writes into a fresh GUID subdirectory per run and a stale one would be aggregated
+twice.</p>
+<p>The script warns when the number of cobertura files does not match the number of suites that ran.
+That case matters: <strong>a suite that passes while emitting no report reads as uncovered product
+code</strong>, which looks like a coverage problem and is a tooling problem.</p>
+<p>The four <code>samples/torture-test-*</code> ports are out of scope by design. They sit outside
+<code>Jaunty.slnx</code>, are not part of <code>dotnet test Jaunty.slnx</code>, and carry no collector.</p>
+<h2 id="coverage.runsettings">coverage.runsettings</h2>
+<p>Coverage settings live in <code>coverage.runsettings</code> at the repository root. They are applied by
+<code>scripts/coverage.ps1</code> and <strong>not</strong> by an ordinary <code>dotnet test</code> run.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">XML</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="xml"><code class="language-xml">&lt;ExcludeByAttribute&gt;Obsolete,GeneratedCodeAttribute&lt;/ExcludeByAttribute&gt;
+</code></pre>
+</div>
+<p>That one line is the reason the file exists. Coverlet's own default also excludes
+<code>CompilerGeneratedAttribute</code>, which hides lambda and closure bodies. Measured on
+<code>Jaunty.FlatFiles.Tests</code> with <code>coverlet.collector</code> 10.0.1, the same run reports:</p>
+<table>
+<thead>
+<tr>
+<th><code>ExcludeByAttribute</code></th>
+<th style="text-align: right;">Classes</th>
+<th style="text-align: right;">State machines</th>
+<th style="text-align: right;">Lines</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Obsolete,GeneratedCodeAttribute</code> (what we use)</td>
+<td style="text-align: right;">583</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">38,130</td>
+</tr>
+<tr>
+<td>plus <code>CompilerGeneratedAttribute</code></td>
+<td style="text-align: right;">485</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">35,652</td>
+</tr>
+<tr>
+<td><strong>hidden by the wider exclusion</strong></td>
+<td style="text-align: right;"><strong>98</strong></td>
+<td style="text-align: right;"><strong>0</strong></td>
+<td style="text-align: right;"><strong>2,478</strong></td>
+</tr>
+</tbody>
+</table>
+<p>On this collector version async and iterator state machines are unaffected either way. What the
+wider exclusion hides is 77 <code>&lt;&gt;c__DisplayClass</code> closures, 18 <code>&lt;&gt;c</code> lambda caches and 3
+option/payload types - 2,478 lines of predicate and callback bodies reading as &quot;not there&quot;.
+<code>GeneratedCodeAttribute</code> is what the source generator stamps on emitted code, and that genuinely
+should not be measured.</p>
+<p>Every project under <code>tests/</code> already references <code>coverlet.collector</code> 10.0.1, so no project file
+needs changing to be included.</p>
+<hr />
+<h2 id="the-2026-08-27-baseline">The 2026-08-27 baseline</h2>
+<p>Measured across 8 suites and 8,471 tests, 0 failures. Reports were union-merged per <code>(file, line)</code>,
+with nested compiler-generated classes folded into their outer class and partial classes keyed by
+name - both aggregation traps that inflate the numbers if skipped.</p>
+<p><strong>Product total: 88.8 % line coverage over 25,469 lines, with 1,128 units of cyclomatic complexity
+that no test executes.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Assembly</th>
+<th style="text-align: right;">Cx</th>
+<th style="text-align: right;">Lines</th>
+<th style="text-align: right;">Cov %</th>
+<th style="text-align: right;">Uncovered Cx</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jaunty</td>
+<td style="text-align: right;">6950</td>
+<td style="text-align: right;">12,895</td>
+<td style="text-align: right;">89.2</td>
+<td style="text-align: right;">746</td>
+</tr>
+<tr>
+<td>Jaunty.Fluent</td>
+<td style="text-align: right;">1897</td>
+<td style="text-align: right;">5,812</td>
+<td style="text-align: right;">87.0</td>
+<td style="text-align: right;">251</td>
+</tr>
+<tr>
+<td>Jaunty.Extensions.Reflection</td>
+<td style="text-align: right;">420</td>
+<td style="text-align: right;">1,411</td>
+<td style="text-align: right;">86.0</td>
+<td style="text-align: right;">73</td>
+</tr>
+<tr>
+<td>Jaunty.Scaffolding</td>
+<td style="text-align: right;">465</td>
+<td style="text-align: right;">1,521</td>
+<td style="text-align: right;">81.9</td>
+<td style="text-align: right;">31</td>
+</tr>
+<tr>
+<td>Jaunty.SourceGenerator</td>
+<td style="text-align: right;">205</td>
+<td style="text-align: right;">1,099</td>
+<td style="text-align: right;">91.5</td>
+<td style="text-align: right;">18</td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles.DuckDB</td>
+<td style="text-align: right;">168</td>
+<td style="text-align: right;">2,072</td>
+<td style="text-align: right;">94.5</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles</td>
+<td style="text-align: right;">64</td>
+<td style="text-align: right;">358</td>
+<td style="text-align: right;">99.2</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>Jaunty.Scaffolding.Cli</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">301</td>
+<td style="text-align: right;">98.7</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p>Ranking by <em>uncovered complexity</em> rather than by percentage is the point of the exercise: a class
+at 60 % with two branches is not a target, and a class at 85 % with 232 units of complexity is.</p>
+<h2 id="what-the-baseline-found">What the baseline found</h2>
+<p>The top-ranked class, <code>Internals.Parameters.SqlParameterParser</code> at 53.3 %, turned out not to be a
+testing gap at all. The parser ships <strong>twice</strong>: <code>ExtractParameterNamesSpan</code> behind
+<code>#if NET8_0_OR_GREATER</code>, and <code>ExtractParameterNamesClassic</code>, a hand-maintained duplicate compiled
+into every target but only <em>called</em> on netstandard2.0 - the assembly .NET Framework consumers
+load.</p>
+<table>
+<thead>
+<tr>
+<th>Implementation</th>
+<th style="text-align: right;">Lines</th>
+<th style="text-align: right;">Covered</th>
+<th style="text-align: right;">Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>…Span</code>, live on net8.0/net10.0</td>
+<td style="text-align: right;">81</td>
+<td style="text-align: right;">81</td>
+<td style="text-align: right;">100 %</td>
+</tr>
+<tr>
+<td><code>…Classic</code>, live on netstandard2.0</td>
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3.8 %</td>
+</tr>
+</tbody>
+</table>
+<p><code>Jaunty.Tests</code> does target net472 and 50 parser tests pass there locally. But <code>ci.yml</code> is
+<code>ubuntu-latest</code> throughout and <strong>has no net472 leg</strong>, so no CI run has ever executed the code path
+.NET Framework users get. Two hand-maintained parsers that have to agree, one of them tested only
+when someone happens to run the net472 leg on a Windows box, is a silent wrong-parameter-set
+waiting to ship.</p>
+<p>That is the shape of finding a coverage×complexity pass is for: the number pointed at a class, and
+the reason behind the number was not the one the number implied.</p>
+<hr />
+<h2 id="coverage-is-not-the-gate">Coverage is not the gate</h2>
+<p>Line coverage says a line ran, not that anything asserted on what it did. Where coverage is
+already high, the deficit is usually the oracle rather than the input generation, and mutation
+testing is what shows it. Stryker configuration lives per test-project directory
+(<code>tests/*/stryker-config.json</code>), scoped by the ranking above rather than run whole, with
+<code>break: 0</code> - the score is an artifact to read, not a build gate.</p>
+<p><strong>Do not run the full mutation tier on a development machine.</strong> The measured runs and where they
+belong are in <a href="03-development-ci-architecture.html"><code>../03-development/ci-architecture.md</code></a>.</p>
+<p>The full testing strategy, its phases and its measurements are in
+<code>../plans/2026-08-27-003-testing-strategy-implementation.md</code>.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="05-quality-README.html"><code>README.md</code></a> - the quality section index</li>
+<li><a href="00-quick-start-build-and-test.html"><code>../00-quick-start/build-and-test.md</code></a> - the ordinary build and test loop</li>
+<li><a href="03-development-ci-architecture.html"><code>../03-development/ci-architecture.md</code></a> - where each tier runs</li>
+<li><a href="03-development-multi-targeting.html"><code>../03-development/multi-targeting.md</code></a> - why netstandard2.0 code needs its own leg</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="05-quality-audit-record.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Audit record</span>
+</a><a class="pn-next" href="05-quality-comprehensive-audit.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Comprehensive audit</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

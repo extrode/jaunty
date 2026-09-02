@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Write Methods — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Write Methods</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html" class="active" aria-current="page">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#return-values">Return values</a><a class="toc-l2" href="#single-entity-methods">Single-entity methods</a><a class="toc-l2" href="#upsert">Upsert</a><a class="toc-l2" href="#bulk-methods">Bulk methods</a><a class="toc-l3" href="#transactions">Transactions</a><a class="toc-l3" href="#how-bulkinsert-routes">How BulkInsert routes</a><a class="toc-l3" href="#constraints">Constraints</a><a class="toc-l3" href="#configuration">Configuration</a><a class="toc-l2" href="#observability">Observability</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Write Methods</nav>
+        <article>
+<h1 id="write-methods">Write Methods</h1>
+<h2 id="overview">Overview</h2>
+<p>Jaunty's write surface is four operations - insert, update, delete, upsert - each with a
+single-entity form and a bulk form, each with a synchronous and an asynchronous variant, and each
+with and without <code>CommandOptions</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Single entity</th>
+<th>Bulk</th>
+<th>Constraint-bypassing bulk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Insert</td>
+<td><code>Insert&lt;T&gt;</code></td>
+<td><code>BulkInsert&lt;T&gt;</code></td>
+<td><code>BulkInsertIgnoreConstraints&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Update</td>
+<td><code>Update&lt;T&gt;</code></td>
+<td><code>BulkUpdate&lt;T&gt;</code></td>
+<td><code>BulkUpdateIgnoreConstraints&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Delete</td>
+<td><code>Delete&lt;T&gt;</code></td>
+<td><code>BulkDelete&lt;T&gt;</code></td>
+<td><code>BulkDeleteIgnoreConstraints&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Upsert</td>
+<td><code>Upsert&lt;T&gt;</code></td>
+<td>(none)</td>
+<td>(none)</td>
+</tr>
+</tbody>
+</table>
+<p>Every one of these has an <code>Async</code> twin returning <code>ValueTask&lt;...&gt;</code> and taking a trailing
+<code>CancellationToken cancellationToken = default</code>.</p>
+<p>Overload-by-overload documentation for the single-entity insert, update and delete methods is in
+<a href="01-api-reference-crud-operations.html"><code>crud-operations.md</code></a>. This page is the family reference: return values,
+bulk routing, transaction behaviour, and the parts of the surface that page does not cover.</p>
+<hr />
+<h2 id="return-values">Return values</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Insert&lt;T&gt;</code></td>
+<td><code>long</code></td>
+<td>see below</td>
+</tr>
+<tr>
+<td><code>Update&lt;T&gt;</code></td>
+<td><code>int</code></td>
+<td>rows affected</td>
+</tr>
+<tr>
+<td><code>Delete&lt;T&gt;</code></td>
+<td><code>int</code></td>
+<td>rows affected</td>
+</tr>
+<tr>
+<td><code>Upsert&lt;T&gt;</code></td>
+<td><code>int</code></td>
+<td>rows affected, provider-defined</td>
+</tr>
+<tr>
+<td><code>BulkInsert&lt;T&gt;</code></td>
+<td><code>int</code></td>
+<td>rows inserted</td>
+</tr>
+<tr>
+<td><code>BulkUpdate&lt;T&gt;</code></td>
+<td><code>int</code></td>
+<td>rows updated</td>
+</tr>
+<tr>
+<td><code>BulkDelete&lt;T&gt;</code></td>
+<td><code>int</code></td>
+<td>rows deleted</td>
+</tr>
+</tbody>
+</table>
+<p><code>Insert&lt;T&gt;</code> returns two different things depending on the entity:</p>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Return</th>
+<th>Side effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Has an identity key</td>
+<td>the generated key</td>
+<td>the key is written back onto the entity's id property</td>
+</tr>
+<tr>
+<td>Has an identity key, but the provider returned no key</td>
+<td>0</td>
+<td>none; an id the caller already set is not clobbered</td>
+</tr>
+<tr>
+<td>Has no identity key</td>
+<td>rows affected, from <code>ExecuteNonQuery</code></td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<p>A negative identity is ordinary and is returned and written back like any other. SQL Server's
+standard wide-range seed is <code>IDENTITY(-2147483648, 1)</code>, so treating &quot;not positive&quot; as &quot;no key&quot; is
+wrong (AUD-R35-133).</p>
+<p><code>Upsert</code> is the one to be careful with. MySQL and MariaDB report <strong>2</strong> for a row that was updated
+rather than inserted, so a test for <code>== 1</code> fails against those providers on a path that worked.
+Check <code>result &gt; 0</code>.</p>
+<hr />
+<h2 id="single-entity-methods">Single-entity methods</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> long Insert&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> long Insert&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Update&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Update&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Delete&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Delete&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Delete&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, object id) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Delete&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, object id, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Delete&lt;T, TId&gt;(<span class="tok-kw">this</span> IDbConnection connection, TId id) <span class="tok-kw">where</span> T : IEntity&lt;TId&gt;, <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Delete&lt;T, TId&gt;(<span class="tok-kw">this</span> IDbConnection connection, TId id, CommandOptions options) <span class="tok-kw">where</span> T : IEntity&lt;TId&gt;, <span class="tok-kw">new</span>();
+</code></pre>
+</div>
+<p><code>Delete</code> has three shapes. The <code>object id</code> overload boxes the key; the <code>Delete&lt;T, TId&gt;</code> overload
+avoids the box but constrains <code>T</code> to <code>IEntity&lt;TId&gt;</code>. Prefer the two-parameter generic form where
+the entity implements the interface.</p>
+<p>Note that these take the <strong>non-generic</strong> <code>CommandOptions</code>, not <code>CommandOptions&lt;T&gt;</code>. A write has no
+result set to map, so there is no <code>Mapper</code> and no <code>ExpectedRowCount</code> to carry. The implicit
+conversion from <code>CommandOptions&lt;T&gt;</code> compiles and silently drops both;
+<a href="01-api-reference-command-options.html#the-implicit-conversion-loses-two-fields"><code>command-options.md</code></a> says more.</p>
+<h2 id="upsert">Upsert</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> int Upsert&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Upsert&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; UpsertAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; UpsertAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+</code></pre>
+</div>
+<p>The primary key on the entity decides: a row with that key is updated, otherwise one is inserted.
+Jaunty emits the dialect's native form - <code>MERGE</code> on SQL Server, <code>INSERT ... ON CONFLICT</code> on
+PostgreSQL and SQLite, <code>INSERT ... ON DUPLICATE KEY UPDATE</code> on MySQL.</p>
+<p><code>InvalidOperationException</code> is thrown when the entity has no primary key, when the dialect does
+not support upsert, or when there are no upsertable columns.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> product = <span class="tok-kw">new</span> Product { Id = <span class="tok-num">1</span>, Name = &quot;Widget&quot;, Price = <span class="tok-num">19.99m</span> };
+int affected = connection.Upsert(product);   <span class="tok-com">// inserts, then updates on a second call</span>
+</code></pre>
+</div>
+<p>There is no <code>BulkUpsert</code>. Loop over <code>Upsert</code>, or use <code>BulkInsertIgnoreConstraints</code> into a staging
+table and merge.</p>
+<hr />
+<h2 id="bulk-methods">Bulk methods</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> int BulkInsert&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int BulkInsert&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int BulkInsertIgnoreConstraints&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int BulkInsertIgnoreConstraints&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+</code></pre>
+</div>
+<p><code>BulkUpdate</code>, <code>BulkDelete</code> and their <code>IgnoreConstraints</code> and <code>Async</code> forms have the identical
+shape. An empty collection returns 0 without opening the connection. A <code>null</code> element throws
+<code>ArgumentException</code> naming the index.</p>
+<h3 id="transactions">Transactions</h3>
+<p>A bulk method runs inside a transaction whether or not you supply one:</p>
+<ul>
+<li><strong>You supplied <code>options.Transaction</code></strong> - Jaunty uses it and does not commit. Commit or roll back
+yourself.</li>
+<li><strong>You did not</strong> - Jaunty calls <code>BeginTransaction()</code>, commits on success, rolls back on any
+exception, and disposes the transaction it created.</li>
+</ul>
+<p>The connection is treated the same way: opened if closed, and closed again afterwards only if
+Jaunty was the one that opened it.</p>
+<h3 id="how-bulkinsert-routes">How BulkInsert routes</h3>
+<p><code>BulkInsert</code> picks one of three paths, and which one it picks changes what you get back:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Chosen when</th>
+<th>Identity write-back</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Native bulk copy</td>
+<td><code>BulkCopyConfiguration.EnableNativeBulkCopy</code> and the dialect supports it and <code>entities.Count &gt;= BulkCopyConfiguration.MinimumRowsForNativeBulkCopy</code> (default 100)</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Multi-row <code>VALUES</code></td>
+<td>the dialect supports multi-row insert, more than one entity, and the dialect is not SQLite</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Prepared loop</td>
+<td>everything else, including every SQLite bulk insert</td>
+<td><strong>yes</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Only the loop populates the identity property back onto each entity, because there is no
+provider-agnostic way to map a single &quot;last inserted id&quot; onto individual rows of a batched
+statement. If you need populated IDs, call single-row <code>Insert</code> in a loop, or read the rows back.</p>
+<p>SQLite is deliberately excluded from the multi-row path: <code>Microsoft.Data.Sqlite</code> binds multi-row
+<code>VALUES</code> parameters quadratically, measured about 16x slower than the prepared loop (PROD-120).</p>
+<p><code>BulkUpdate</code> and <code>BulkDelete</code> have no batched path at all. Each issues one round trip per entity
+in a sequential loop inside the transaction, so for large collections the round-trip count is the
+dominant cost.</p>
+<h3 id="constraints">Constraints</h3>
+<p><strong>Plain <code>BulkInsert</code>, <code>BulkUpdate</code> and <code>BulkDelete</code> enforce CHECK and FOREIGN KEY constraints on
+every route.</strong> That has not always been true: on SQL Server above the native-bulk-copy threshold,
+<code>BulkInsert</code> used to reach <code>SqlBulkCopy</code> without its <code>CheckConstraints</code> option, so the same call
+validated at 50 rows and did not at 50,000 (AUD-R26). It now validates at both.</p>
+<p>To bypass validation, say so:</p>
+<ul>
+<li>Per call - <code>BulkInsertIgnoreConstraints</code> and its two siblings.</li>
+<li>Globally - <code>BulkCopyConfiguration.DefaultCheckConstraints = false</code>.</li>
+</ul>
+<p>The bypass mechanism differs by size, and the two are not guaranteed equivalent:</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Mechanism</th>
+<th>Failure mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>At or above the native threshold</td>
+<td>the provider's bulk-copy <code>CheckConstraints</code> option</td>
+<td>none</td>
+</tr>
+<tr>
+<td>Below the native threshold</td>
+<td>session-level foreign-key toggle SQL</td>
+<td><code>NotSupportedException</code> on providers with no session-level toggle, including SQL Server</td>
+</tr>
+</tbody>
+</table>
+<p>So <code>BulkInsertIgnoreConstraints</code> on SQL Server succeeds with 200 rows and throws with 50. That is
+the documented behaviour, not a defect, but it makes the method size-sensitive in a way the plain
+form is not.</p>
+<h3 id="configuration">Configuration</h3>
+<p><code>BulkCopyConfiguration</code> (static, in <code>Jaunty.Configuration</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DefaultBatchSize</code></td>
+<td>10000</td>
+<td>throws <code>ArgumentOutOfRangeException</code> when set to 0 or less</td>
+</tr>
+<tr>
+<td><code>DefaultTimeout</code></td>
+<td>30</td>
+<td>seconds; 0 means no timeout; negative throws</td>
+</tr>
+<tr>
+<td><code>DefaultIdentityMode</code></td>
+<td><code>BulkCopyIdentityMode.Default</code></td>
+<td>undefined enum values throw</td>
+</tr>
+<tr>
+<td><code>DefaultCheckConstraints</code></td>
+<td><code>true</code></td>
+<td><code>false</code> restores the pre-AUD-R26 bypass globally</td>
+</tr>
+<tr>
+<td><code>MinimumRowsForNativeBulkCopy</code></td>
+<td>100</td>
+<td>0 means always take the native path where one exists; negative throws</td>
+</tr>
+<tr>
+<td><code>EnableNativeBulkCopy</code></td>
+<td><code>true</code></td>
+<td><code>false</code> forces standard INSERT everywhere</td>
+</tr>
+</tbody>
+</table>
+<p><code>BulkCopyConfiguration.Reset()</code> restores all six. These throw on bad input rather than clamping,
+unlike <code>JauntyConfig</code>'s capacity hints: a batch size or a timeout is an instruction to the
+database, and quietly substituting a different one is how a misconfiguration reaches production
+looking as though it took effect.</p>
+<p>Native bulk copy itself - <code>SqlBulkCopy</code>, PostgreSQL <code>COPY</code>, the MySQL chunked writer - is covered
+in <a href="01-api-reference-bulk-copy-methods.html"><code>bulk-copy-methods.md</code></a>.</p>
+<hr />
+<h2 id="observability">Observability</h2>
+<p>A bulk operation reports <strong>one</strong> interceptor event, not one per row. A 100,000-row <code>BulkUpdate</code> is
+one logical write; firing the pipeline per statement would swamp an auditor and cost more than the
+bulk path saves. The event carries a <code>BulkOperationParameters</code> payload with the operation name,
+entity type and row count.</p>
+<p>The foreign-key toggle issued by the <code>IgnoreConstraints</code> methods goes to <code>JauntyConfig.Logger</code> and
+deliberately not to the interceptor pipeline, for the same reason.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="01-api-reference-crud-operations.html"><code>crud-operations.md</code></a> - per-overload reference for <code>Insert</code>, <code>Update</code>, <code>Delete</code></li>
+<li><a href="01-api-reference-bulk-copy-methods.html"><code>bulk-copy-methods.md</code></a> - the native bulk-copy providers</li>
+<li><a href="01-api-reference-get-and-execute-operations.html"><code>get-and-execute-operations.md</code></a> - <code>Get</code>, <code>GetAll</code>, <code>Execute</code>, <code>ExecuteBatch</code></li>
+<li><a href="01-api-reference-command-options.html"><code>command-options.md</code></a> - transactions, timeouts, command type</li>
+<li><a href="01-api-reference-attributes.html"><code>attributes.md</code></a> - <code>[Key]</code>, <code>[DatabaseGenerated]</code>, <code>[Column]</code>, <code>[Ignore]</code></li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-streaming-methods.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Streaming methods</span>
+</a><a class="pn-next" href="02-architecture-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">README</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

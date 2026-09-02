@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migrating from Dapper — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Migrating from Dapper</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html" class="active" aria-current="page">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#the-shape-is-the-same">The shape is the same</a><a class="toc-l2" href="#method-mapping">Method mapping</a><a class="toc-l2" href="#coming-from-dapper.contrib">Coming from Dapper.Contrib</a><a class="toc-l2" href="#coming-from-dapper-plus">Coming from Dapper Plus</a><a class="toc-l2" href="#multi-mapping-and-multiple-result-sets">Multi-mapping and multiple result sets</a><a class="toc-l2" href="#what-you-gain-concretely">What you gain, concretely</a><a class="toc-l2" href="#what-you-give-up">What you give up</a><a class="toc-l2" href="#a-suggested-order">A suggested order</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Migrating from Dapper</nav>
+        <article>
+<h1 id="migrating-from-dapper">Migrating from Dapper</h1>
+<p>Dapper is a good library and this guide does not pretend otherwise. If your data layer is not causing
+you problems, the honest advice is to stay. The reasons people move are specific: strict mapping,
+NativeAOT without a separate package, zero runtime dependencies, and bulk copy in the box.</p>
+<p><strong>Read <a href="08-learn-migrating-strict-mapping.html">strict mapping</a> before you start.</strong> It is the only behavioural difference
+that matters and everything else on this page is mechanical.</p>
+<h2 id="the-shape-is-the-same">The shape is the same</h2>
+<p>Jaunty is extension methods on <code>IDbConnection</code>, like Dapper. There is no context, no registration,
+and no ownership of the connection. <strong>You can run both in the same method against the same
+connection</strong>, which is what makes an incremental port possible.</p>
+<p>One caveat on mixing them: both libraries define <code>Query&lt;T&gt;</code> as an extension on <code>IDbConnection</code>, so a
+file with <code>using Dapper;</code> and <code>using Jaunty;</code> together gets ambiguous-call errors. <strong>Port file by
+file, not line by line</strong> - swap the <code>using</code> and convert that whole file. Different files in the same
+project, and different methods on the same connection, are fine.</p>
+<h2 id="method-mapping">Method mapping</h2>
+<p><strong>The important row is the first one.</strong> Dapper's <code>Query&lt;T&gt;</code> is lenient, so its direct behavioural
+equivalent is <code>QueryPartial&lt;T&gt;</code>, not <code>Query&lt;T&gt;</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Dapper</th>
+<th>Jaunty (same behaviour)</th>
+<th>Jaunty (stricter, usually what you want)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Query&lt;T&gt;(sql, param)</code></td>
+<td><code>QueryPartial&lt;T&gt;(sql, param)</code></td>
+<td><code>Query&lt;T&gt;(sql, param)</code></td>
+</tr>
+<tr>
+<td><code>QueryFirst&lt;T&gt;</code></td>
+<td><code>QueryPartialFirst&lt;T&gt;</code></td>
+<td><code>QueryFirst&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>QueryFirstOrDefault&lt;T&gt;</code></td>
+<td><code>QueryPartialFirstOrDefault&lt;T&gt;</code></td>
+<td><code>QueryFirstOrDefault&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>QuerySingle&lt;T&gt;</code></td>
+<td><code>QueryPartialSingle&lt;T&gt;</code></td>
+<td><code>QuerySingle&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>QuerySingleOrDefault&lt;T&gt;</code></td>
+<td><code>QueryPartialSingleOrDefault&lt;T&gt;</code></td>
+<td><code>QuerySingleOrDefault&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>Execute(sql, param)</code></td>
+<td><code>Execute(sql, param)</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>ExecuteScalar&lt;T&gt;(sql, param)</code></td>
+<td><code>ExecuteScalar&lt;T&gt;</code> or <code>QueryScalar&lt;T&gt;</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>QueryMultiple</code></td>
+<td><code>QueryMultiple</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Query&lt;T&gt;(..., buffered: false)</code></td>
+<td><code>GetAllStream&lt;T&gt;</code> / <code>GetAllStreamAsync&lt;T&gt;</code></td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<p>Every method has an <code>...Async</code> counterpart. Jaunty's async methods return <code>ValueTask&lt;T&gt;</code> rather than
+<code>Task&lt;T&gt;</code>; <code>await</code> works the same, but if you are storing the result in a variable or passing it to
+<code>Task.WhenAll</code>, call <code>.AsTask()</code>.</p>
+<p><strong>Parameters are unchanged.</strong> Anonymous objects work the same way:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">connection.Query&lt;Product&gt;(&quot;SELECT * FROM products WHERE price &gt; @MinPrice&quot;, <span class="tok-kw">new</span> { MinPrice = <span class="tok-num">100</span> });
+</code></pre>
+</div>
+<h2 id="coming-from-dapper.contrib">Coming from Dapper.Contrib</h2>
+<p>Contrib's CRUD helpers have direct equivalents built into Jaunty core - no extra package.</p>
+<table>
+<thead>
+<tr>
+<th>Dapper.Contrib</th>
+<th>Jaunty</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Get&lt;T&gt;(id)</code></td>
+<td><code>Get&lt;T&gt;(id)</code>, or <code>GetRequired&lt;T&gt;(id)</code> to throw instead of returning null</td>
+</tr>
+<tr>
+<td><code>GetAll&lt;T&gt;()</code></td>
+<td><code>GetAll&lt;T&gt;()</code></td>
+</tr>
+<tr>
+<td><code>Insert(entity)</code></td>
+<td><code>Insert(entity)</code> - returns <code>long</code></td>
+</tr>
+<tr>
+<td><code>Update(entity)</code></td>
+<td><code>Update(entity)</code></td>
+</tr>
+<tr>
+<td><code>Delete(entity)</code></td>
+<td><code>Delete(entity)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Jaunty adds <code>Upsert</code>, and <code>BulkInsert</code> / <code>BulkUpdate</code> / <code>BulkDelete</code>.</p>
+<p><strong>Attributes.</strong> <code>[Table]</code>, <code>[Key]</code>, <code>[Column]</code>, <code>[Ignore]</code> and <code>[DatabaseGenerated]</code> live in
+<code>Jaunty.Attributes</code>. <code>[NotMapped]</code> from <code>System.ComponentModel.DataAnnotations.Schema</code> is also
+honoured, so entities annotated for EF Core mostly work as they are.</p>
+<h2 id="coming-from-dapper-plus">Coming from Dapper Plus</h2>
+<p><code>BulkInsert</code>, <code>BulkUpdate</code> and <code>BulkDelete</code> are in Jaunty core across SQL Server, PostgreSQL and
+MySQL, and cost nothing. There is also an <code>...IgnoreConstraints</code> variant of each.</p>
+<p>The APIs are not identical - Dapper Plus has a large fluent configuration surface that Jaunty does
+not attempt to match. Check <a href="01-api-reference-bulk-copy-methods.html">bulk copy methods</a> for what
+is actually supported before assuming a per-option equivalence.</p>
+<h2 id="multi-mapping-and-multiple-result-sets">Multi-mapping and multiple result sets</h2>
+<p>Dapper's <code>splitOn</code> multi-mapping has an equivalent, with a different shape - see
+<a href="01-api-reference-multi-entity-mapping.html">multi-entity mapping</a>. <code>QueryMultiple</code> and its grid
+reader are covered in <a href="01-api-reference-multiple-result-sets.html">multiple result sets</a>.</p>
+<p><strong>Port these last.</strong> They are the least mechanical part of the move and the easiest to get subtly
+wrong while you are still learning the strict/partial distinction.</p>
+<h2 id="what-you-gain-concretely">What you gain, concretely</h2>
+<ul>
+<li><strong>A silent bug class becomes an exception.</strong> <a href="08-learn-migrating-strict-mapping.html">Strict mapping</a></li>
+<li><strong>NativeAOT works with no extra package and no runtime reflection in core.</strong> Dapper needs
+Dapper.AOT for this; Jaunty's source generator is in the box</li>
+<li><strong>Zero runtime dependencies</strong> on net8.0 and net10.0</li>
+<li><strong>Bulk copy, a scaffolding CLI, DuckDB and flat-file querying, and four dialects</strong>, all included</li>
+</ul>
+<h2 id="what-you-give-up">What you give up</h2>
+<ul>
+<li><strong>Ecosystem.</strong> Fifteen years of Stack Overflow answers, blog posts and third-party extensions are
+about Dapper. This is a real cost and it is the main reason not to move</li>
+<li><strong>Team familiarity.</strong> Everyone you hire knows Dapper</li>
+<li><strong>An OSI-approved licence.</strong> Jaunty is under ISL-R, which is not OSI-approved and not SPDX-listed.
+If your organisation has an approved-licence list, check it before you start the port, not after</li>
+</ul>
+<h2 id="a-suggested-order">A suggested order</h2>
+<ol>
+<li>Pick the smallest repository or data-access class you have</li>
+<li>Replace <code>using Dapper;</code> with <code>using Jaunty;</code> and switch every call to the <code>QueryPartial</code> family -
+behaviour is now identical</li>
+<li>Run your tests. Anything failing here is a genuine port issue, not a mapping-strictness issue</li>
+<li>Promote full-entity and per-query-DTO calls to the strict family, one file at a time</li>
+<li>Fix what it finds. That step is the point of the exercise</li>
+<li>Only then look at multi-mapping, <code>QueryMultiple</code>, and bulk operations</li>
+</ol>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="08-learn-migrating-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Migrating / README</span>
+</a><a class="pn-next" href="08-learn-migrating-from-ef-core.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Migrating / From ef core</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

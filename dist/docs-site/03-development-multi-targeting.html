@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Targeting — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Multi-Targeting</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html" class="active" aria-current="page">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#what-ships-where">What ships where</a><a class="toc-l2" href="#why-netstandard2.0-at-all">Why netstandard2.0 at all</a><a class="toc-l3" href="#the-dependency-contract">The dependency contract</a><a class="toc-l2" href="#conditional-compilation">Conditional compilation</a><a class="toc-l3" href="#the-argument-guard-idiom">The argument-guard idiom</a><a class="toc-l3" href="#nullable-reference-types">Nullable reference types</a><a class="toc-l2" href="#apis-that-are-not-there-on-netstandard2.0">APIs that are not there on netstandard2.0</a><a class="toc-l3" href="#guarding-is-a-last-resort">Guarding is a last resort</a><a class="toc-l2" href="#building-and-testing-a-single-leg">Building and testing a single leg</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Multi-Targeting</nav>
+        <article>
+<h1 id="multi-targeting">Multi-Targeting</h1>
+<h2 id="what-ships-where">What ships where</h2>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Targets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Jaunty</code></td>
+<td><code>netstandard2.0</code> <code>net8.0</code> <code>net10.0</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.Fluent</code></td>
+<td><code>netstandard2.0</code> <code>net8.0</code> <code>net10.0</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.FlatFiles</code></td>
+<td><code>netstandard2.0</code> <code>net8.0</code> <code>net10.0</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.Extensions.Reflection</code></td>
+<td><code>netstandard2.0</code> <code>net8.0</code> <code>net10.0</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.Extensions.Logging</code></td>
+<td><code>netstandard2.0</code> <code>net8.0</code> <code>net10.0</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.Extensions.Npgsql</code></td>
+<td><code>netstandard2.0</code> <code>net8.0</code> <code>net10.0</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.FlatFiles.DuckDB</code></td>
+<td><code>net8.0</code> <code>net10.0</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.Scaffolding</code>, <code>Jaunty.Scaffolding.Cli</code></td>
+<td><code>net8.0</code> <code>net10.0</code></td>
+</tr>
+<tr>
+<td><code>Jaunty.SourceGenerator</code></td>
+<td><code>netstandard2.0</code> only</td>
+</tr>
+</tbody>
+</table>
+<p>Test projects target <code>net8.0</code> and <code>net10.0</code>; <code>Jaunty.Tests</code> and <code>Jaunty.UnitTests</code> add <code>net472</code>,
+which is how the netstandard2.0 build is exercised against a real .NET Framework runtime rather
+than only compiled.</p>
+<p><code>Jaunty.SourceGenerator</code> is netstandard2.0 and cannot be anything else: Roslyn analyzers load into
+the compiler, which is what dictates the target. It is referenced with
+<code>SetTargetFramework=&quot;TargetFramework=netstandard2.0&quot;</code> so the reference does not renegotiate per
+consuming TFM.</p>
+<p><code>LangVersion</code> is pinned to <code>13.0</code> at the repository root, deliberately, so the language available
+does not drift with whatever SDK happens to be installed. Note what that pin does <strong>not</strong> cover:
+expression trees in <code>Jaunty.Fluent</code> are built by the <em>consumer's</em> compiler, so the pin protects
+this build and not the shipped product.</p>
+<hr />
+<h2 id="why-netstandard2.0-at-all">Why netstandard2.0 at all</h2>
+<p>It is what makes Jaunty usable from .NET Framework 4.6.1+, Unity, Xamarin and older
+<code>netstandard</code>-targeting libraries. The cost is that <code>netstandard2.0</code> predates a decade of BCL
+convenience, so a chunk of core is written twice.</p>
+<h3 id="the-dependency-contract">The dependency contract</h3>
+<p><strong>On net8.0 and net10.0, <code>src/Jaunty</code> has no package references at all.</strong> Nothing conditional,
+nothing transitive. <code>PackageDependencyTests</code> asserts it, and that assertion is the reason to be
+careful here: it is easy to add a <code>PackageReference</code> without a TFM condition and break the
+contract for every modern consumer to satisfy one old one.</p>
+<p>netstandard2.0 carries exactly two, both backports of types that are in-box on modern .NET:</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Backports</th>
+<th>In-box since</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>System.Diagnostics.DiagnosticSource</code></td>
+<td><code>DiagnosticSource</code>, <code>Activity</code></td>
+<td>.NET Core 3.0</td>
+</tr>
+<tr>
+<td><code>Microsoft.Bcl.AsyncInterfaces</code></td>
+<td><code>IAsyncEnumerable&lt;T&gt;</code>, <code>IAsyncDisposable</code></td>
+<td>.NET Core 3.0</td>
+</tr>
+</tbody>
+</table>
+<p>Neither is a third-party library. Anything that is one belongs in an extension package. That is
+why <code>Microsoft.Extensions.Logging.Abstractions</code> and <code>.DependencyInjection.Abstractions</code> moved out
+to <code>Jaunty.Extensions.Logging</code> - an old comment claimed they were built in on net8.0, which is
+false; they ship in the ASP.NET Core shared framework, and a class library never gets it. See
+<a href="02-architecture-dependencies.html"><code>../02-architecture/dependencies.md</code></a>.</p>
+<hr />
+<h2 id="conditional-compilation">Conditional compilation</h2>
+<p>Four symbols are in use across <code>src/</code>, in this proportion:</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Sites</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NET8_0_OR_GREATER</code></td>
+<td>~905</td>
+<td>modern BCL available</td>
+</tr>
+<tr>
+<td><code>NET5_0_OR_GREATER</code></td>
+<td>~73</td>
+<td>narrower modern-BCL guards</td>
+</tr>
+<tr>
+<td><code>ASYNC_ENUMERABLE_SUPPORT</code></td>
+<td>~12</td>
+<td><code>IAsyncEnumerable&lt;T&gt;</code> usable</td>
+</tr>
+<tr>
+<td><code>!NET8_0_OR_GREATER</code></td>
+<td>4</td>
+<td>the netstandard-only arm, written explicitly</td>
+</tr>
+</tbody>
+</table>
+<p><code>ASYNC_ENUMERABLE_SUPPORT</code> is defined on <strong>every</strong> target, including netstandard2.0, because
+<code>Microsoft.Bcl.AsyncInterfaces</code> supplies the interfaces there. Both TFMs therefore expose the same
+streaming API. The symbol exists so the intent reads as &quot;async streaming is available&quot; rather than
+as a framework-version test; do not replace it with a TFM check.</p>
+<h3 id="the-argument-guard-idiom">The argument-guard idiom</h3>
+<p>By far the most common <code>#if</code> in the codebase, and worth writing the same way every time:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+    ArgumentNullException.ThrowIfNull(connection);
+    ArgumentNullException.ThrowIfNull(sql);
+    ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#<span class="tok-kw">else</span>
+    <span class="tok-kw">if</span> (connection <span class="tok-kw">is</span> <span class="tok-kw">null</span>) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentNullException(nameof(connection));
+    <span class="tok-kw">if</span> (sql <span class="tok-kw">is</span> <span class="tok-kw">null</span>) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentNullException(nameof(sql));
+    <span class="tok-kw">if</span> (string.IsNullOrWhiteSpace(sql)) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(&quot;SQL cannot be empty <span class="tok-kw">or</span> whitespace.&quot;, nameof(sql));
+#endif
+</code></pre>
+</div>
+<p>The two arms must throw the <strong>same exception type with the same parameter name</strong>. A test that
+asserts on <code>ArgumentException.ParamName</code> runs on net472 as well.</p>
+<h3 id="nullable-reference-types">Nullable reference types</h3>
+<p><code>&lt;Nullable&gt;enable&lt;/Nullable&gt;</code> is set only for targets compatible with net8.0. The netstandard2.0
+build compiles the same annotated source without the analysis, so a nullability mistake surfaces
+on the modern legs and silently compiles on the old one. Do not read a green netstandard2.0 build
+as nullability having been checked.</p>
+<hr />
+<h2 id="apis-that-are-not-there-on-netstandard2.0">APIs that are not there on netstandard2.0</h2>
+<p>The recurring ones, with what to write instead:</p>
+<table>
+<thead>
+<tr>
+<th>Modern API</th>
+<th>netstandard2.0 replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ArgumentNullException.ThrowIfNull</code></td>
+<td>explicit <code>if (x is null) throw</code></td>
+</tr>
+<tr>
+<td><code>string.Contains(string, StringComparison)</code></td>
+<td><code>IndexOf(value, comparison) &gt;= 0</code></td>
+</tr>
+<tr>
+<td><code>DateOnly</code>, <code>TimeOnly</code></td>
+<td>no equivalent; guard the test, do not fake it</td>
+</tr>
+<tr>
+<td>static abstract interface members</td>
+<td>no equivalent; the whole member is guarded out</td>
+</tr>
+<tr>
+<td><code>Span</code>/<code>Memory</code> overloads on BCL types</td>
+<td>often absent; check before using</td>
+</tr>
+<tr>
+<td><code>HashCode.Combine</code></td>
+<td>manual combination</td>
+</tr>
+</tbody>
+</table>
+<p><code>string.Contains(string, StringComparison)</code> has broken <code>dev</code> on the net472 leg <strong>three separate
+times</strong>, most recently in <code>DecimalBindingDialectTests</code>. It is netstandard2.1+, it compiles clean
+on every modern leg, and it fails CS1501 on net472 only. If you write a <code>Contains</code> with a
+<code>StringComparison</code>, build the net472 leg before merging.</p>
+<h3 id="guarding-is-a-last-resort">Guarding is a last resort</h3>
+<p>A <code>#if</code> around a whole test is a coverage hole that outlives whoever wrote it. Seventeen guards in
+<code>tests/</code> were removed in one pass after each was proved stale by building and running net472 -
+that pass took the suite from 4,787 to 5,006 passing. Every guard that survives now has either an
+<code>#else</code> arm implementing the behaviour a different way, or a one-line comment saying why the
+construct cannot exist on that framework.</p>
+<p>The two genuinely impossible categories are <code>DateOnly</code>/<code>TimeOnly</code> (CS0246 on net472) and static
+abstract interface members. Everything else deserves an attempt at an <code>#else</code> arm first.</p>
+<hr />
+<h2 id="building-and-testing-a-single-leg">Building and testing a single leg</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet build Jaunty.slnx -c Release -f net10.0
+dotnet test  tests/Jaunty.UnitTests -c Release -f net472 --nologo -v q
+</code></pre>
+</div>
+<p>CI runs net8.0 and net10.0 as separate legs and invokes each test project by name in both. Adding
+a project to one leg only is a bug <code>SolutionLayoutTests</code> exists to catch.</p>
+<p>One known interaction: running the net8.0 and net10.0 legs of <code>Jaunty.Tests</code> concurrently on one
+machine makes <code>SqlServerSchemaReaderTests</code> race itself, because it drops and recreates
+fixed-name <code>scaffold_test_*</code> tables in the shared database. Each leg alone passes; CI runs them
+as separate legs, so CI is unaffected. Run one framework at a time locally.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="03-development-adding-new-methods.html"><code>adding-new-methods.md</code></a> - where a new method goes and what it must ship with</li>
+<li><a href="02-architecture-dependencies.html"><code>../02-architecture/dependencies.md</code></a> - the dependency graph and why it is empty</li>
+<li><a href="00-quick-start-build-and-test.html"><code>../00-quick-start/build-and-test.md</code></a> - the ordinary build and test loop</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-limitations.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Limitations</span>
+</a><a class="pn-next" href="03-development-optimization-checklist.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Optimization checklist</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

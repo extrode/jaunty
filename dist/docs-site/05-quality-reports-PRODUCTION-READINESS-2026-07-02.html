@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty Production Readiness Report (2026-07-02) — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty Production Readiness Report (2026-07-02)</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html" class="active" aria-current="page">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#scope-and-method">Scope and Method</a><a class="toc-l2" href="#verdict">Verdict</a><a class="toc-l2" href="#verified-test-results-2026-07-02-local-release-net8.0">Verified Test Results (2026-07-02, local, Release, net8.0)</a><a class="toc-l2" href="#defects-verified">Defects (verified)</a><a class="toc-l3" href="#d1-release-solution-build-fails-breaks-ci">D1 — Release solution build fails (breaks CI)</a><a class="toc-l3" href="#d2-nullable-reference-warnings-in-shipping-code">D2 — Nullable-reference warnings in shipping code</a><a class="toc-l3" href="#d3-prd-001-schema-safe-ordinal-cache-still-open">D3 — PRD-001 (schema-safe ordinal cache) still open</a><a class="toc-l2" href="#missing-for-production">Missing for Production</a><a class="toc-l3" href="#m1-no-release-pipeline">M1 — No release pipeline</a><a class="toc-l3" href="#m2-incomplete-nuget-package-metadata">M2 — Incomplete NuGet package metadata</a><a class="toc-l3" href="#m3-ci-test-coverage-gap">M3 — CI test coverage gap</a><a class="toc-l3" href="#m4-documentation-staleness-and-conflicts">M4 — Documentation staleness and conflicts</a><a class="toc-l2" href="#what-is-in-good-shape-verified">What Is in Good Shape (verified)</a><a class="toc-l2" href="#recommended-path-to-production">Recommended Path to Production</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty Production Readiness Report (2026-07-02)</nav>
+        <article>
+<h1 id="jaunty-production-readiness-report-2026-07-02">Jaunty Production Readiness Report (2026-07-02)</h1>
+<h2 id="scope-and-method">Scope and Method</h2>
+<ul>
+<li>Full local validation on branch <code>dev</code> (commit <code>aea430f</code>): <code>dotnet build Jaunty.slnx -c Release</code>, full test suites per project, package metadata audit, dependency vulnerability scan, secrets scan, CI workflow review, documentation review.</li>
+<li>Unlike the 2026-03-03 report (source/document review only), this assessment executed the build and the complete test suite.</li>
+<li>Supersedes: PRODUCTION-READINESS-2026-03-03.md.</li>
+</ul>
+<h2 id="verdict">Verdict</h2>
+<p><strong>Not production-ready as-is.</strong> The library code itself is in good shape (healthy test suite, no vulnerable dependencies, no dead TODOs, interception/logging shipped), but three things block release today:</p>
+<ol>
+<li>The Release solution build is broken (CI is red on its primary job).</li>
+<li>There is no release pipeline at all: no <code>main</code> branch, no publish workflow, no changelog, incomplete NuGet package metadata.</li>
+<li>CI verifies only ~2.7% of the core test suite (97 of 3,589 tests), so cross-provider correctness claims are unproven in automation.</li>
+</ol>
+<p>The P0 correctness risk from March (schema-safe ordinal caching, PRD-001) remains formally open — &quot;runtime validation pending&quot;.</p>
+<p>With the defect fixed and a focused release-engineering pass (est. 2-3 weeks), the project is releasable for controlled workloads.</p>
+<h2 id="verified-test-results-2026-07-02-local-release-net8.0">Verified Test Results (2026-07-02, local, Release, net8.0)</h2>
+<table>
+<thead>
+<tr>
+<th>Suite</th>
+<th>Passed</th>
+<th>Failed</th>
+<th>Skipped</th>
+<th>Total</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jaunty.Tests</td>
+<td>2,931</td>
+<td>658</td>
+<td>0</td>
+<td>3,589</td>
+<td>All 658 failures are SQL Server connection errors (no local instance). Every failed test name matches SqlServer/Mssql. Zero logic failures.</td>
+</tr>
+<tr>
+<td>Jaunty.Tests (SQLite filter, CI-equivalent)</td>
+<td>97</td>
+<td>0</td>
+<td>0</td>
+<td>97</td>
+<td>This is all CI runs of the core suite.</td>
+</tr>
+<tr>
+<td>Jaunty.Fluent.Tests</td>
+<td>787</td>
+<td>0</td>
+<td>0</td>
+<td>787</td>
+<td></td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles.Tests</td>
+<td>20</td>
+<td>0</td>
+<td>0</td>
+<td>20</td>
+<td></td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles.DuckDB.Tests</td>
+<td>301</td>
+<td>0</td>
+<td>1</td>
+<td>302</td>
+<td></td>
+</tr>
+<tr>
+<td>Jaunty.Scaffolding.Tests</td>
+<td>177</td>
+<td>0</td>
+<td>0</td>
+<td>177</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>4,216</strong></td>
+<td><strong>658</strong></td>
+<td><strong>1</strong></td>
+<td><strong>4,875</strong></td>
+<td>All failures are missing-infrastructure, not defects.</td>
+</tr>
+</tbody>
+</table>
+<p>PostgreSQL / MySQL / MariaDB connection strings exist in <code>tests/Jaunty.Tests/appsettings.json</code> but those providers are exercised neither locally nor in CI.</p>
+<h2 id="defects-verified">Defects (verified)</h2>
+<h3 id="d1-release-solution-build-fails-breaks-ci">D1 — Release solution build fails (breaks CI)</h3>
+<p><code>dotnet build Jaunty.slnx -c Release</code> fails with 3 errors:</p>
+<pre><code>benchmarks/Jaunty.Benchmarks/Entities/JauntyProduct.cs(10,38): error CS0535: 'JauntyProduct' does not implement interface member 'IMapped&lt;JauntyProduct&gt;.ReadEntity(IDataReader)'
+benchmarks/Jaunty.Benchmarks/Entities/TpcLineItem.cs(9,36): error CS0535 (same)
+benchmarks/Jaunty.Benchmarks/Entities/TpcOrder.cs(9,33): error CS0535 (same)
+</code></pre>
+<p>Root cause: the benchmark entities are <code>partial class X : IMapped&lt;X&gt;</code> and rely on <code>Jaunty.SourceGenerator</code> to emit <code>ReadEntity</code>. <code>Jaunty.slnx</code> excludes the generator from Release solution builds:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">XML</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="xml"><code class="language-xml">&lt;Project Path=&quot;src/Jaunty.SourceGenerator/Jaunty.SourceGenerator.csproj&quot;&gt;
+  &lt;Build Solution=&quot;Release|*&quot; Project=&quot;false&quot; /&gt;
+&lt;/Project&gt;
+</code></pre>
+</div>
+<p>So in a Release solution build the analyzer assembly is never produced, generation does not run, and compilation fails. Debug builds succeed. <strong>CI runs exactly this Release solution build (<code>.github/workflows/ci.yml</code>), so the Build &amp; Test job — and everything gated on it — fails on a fresh checkout.</strong></p>
+<h3 id="d2-nullable-reference-warnings-in-shipping-code">D2 — Nullable-reference warnings in shipping code</h3>
+<p>Observed during the Release build (before it aborted): <code>CS8603</code> in <code>src/Jaunty.Fluent/Builders/Join/JoinedQueryBuilderSelect.cs:164</code> and <code>CS8604</code> in <code>src/Jaunty/Internals/Write/DeleteCore.cs:84</code>, among others. <code>TreatWarningsAsErrors</code> is not set anywhere, so these can accumulate silently.</p>
+<h3 id="d3-prd-001-schema-safe-ordinal-cache-still-open">D3 — PRD-001 (schema-safe ordinal cache) still open</h3>
+<p>The March P0 — source-generated mapper ordinal cache vulnerable to stale mappings when result shape changes — is marked &quot;In Progress ... runtime validation pending&quot; and no completing commit was found. The generator's <code>CacheEntry</code> uses an <code>_initialized</code> boolean rather than shape validation (per commit history <code>9d307b7</code>, <code>4386abd</code>). This remains the top correctness risk for the source-generated path.</p>
+<h2 id="missing-for-production">Missing for Production</h2>
+<h3 id="m1-no-release-pipeline">M1 — No release pipeline</h3>
+<ul>
+<li>The remote has <strong>only <code>origin/dev</code></strong> — no <code>main</code>/release branch despite the documented release flow (<code>/release-cut</code>, <code>/release-ship</code>).</li>
+<li>Only one workflow (<code>ci.yml</code>, dev-only). <strong>No NuGet publish workflow</strong>, no tag-triggered release, no GitHub Releases.</li>
+<li><strong>No CHANGELOG or release notes</strong> anywhere in the repo.</li>
+<li>All packages are pinned at <code>Version 2026.01.01</code> (six months stale); no versioning strategy is documented.</li>
+</ul>
+<h3 id="m2-incomplete-nuget-package-metadata">M2 — Incomplete NuGet package metadata</h3>
+<p><code>GeneratePackageOnBuild</code> is <code>true</code>, but across all 7 packable projects the following are absent:</p>
+<ul>
+<li><code>PackageLicenseFile</code> / license asset packed into the nupkg (critical: the license is a custom proprietary one, so nuget.org will reject or mislabel the package without an explicit license file; <code>PackageRequireLicenseAcceptance</code> should also be considered).</li>
+<li><code>PackageReadmeFile</code>, <code>PackageIcon</code>.</li>
+<li><code>GenerateDocumentationFile</code> (XML docs were written — merge <code>a0c9626</code> — but are not packed).</li>
+<li>SourceLink / <code>PublishRepositoryUrl</code> / <code>EmbedUntrackedSources</code> / <code>ContinuousIntegrationBuild</code> / symbol packages (<code>snupkg</code>).</li>
+<li>Only the FlatFiles projects set <code>PackageTags</code>.</li>
+</ul>
+<p>As configured, publishing today would ship packages with no license, no readme, and no IntelliSense.</p>
+<h3 id="m3-ci-test-coverage-gap">M3 — CI test coverage gap</h3>
+<p>CI runs 97 SQLite tests + FlatFiles/DuckDB. Not run in CI: 3,492 core tests (SQL Server portion ~658 requires a server), Fluent (787), Scaffolding (177). No SQL Server service container / Testcontainers usage. PostgreSQL/MySQL/MariaDB paths (including the README's native bulk copy performance claims for those providers) have no automated verification at all. No code-coverage measurement in CI; the coverage reports in <code>docs/05-quality/code-coverage/</code> are manual and dated January 2026.</p>
+<h3 id="m4-documentation-staleness-and-conflicts">M4 — Documentation staleness and conflicts</h3>
+<ul>
+<li><code>PRODUCTION-READINESS-TASKLIST.md</code> was last updated 2026-03-03 and does not reflect merged work (interception/logging <code>6f2eac6</code> fulfills PRD-010; XML docs merged).</li>
+<li>Multiple overlapping status/assessment documents (already flagged as P1 finding #6 in March) remain unconsolidated.</li>
+<li>No <code>SECURITY.md</code> / vulnerability-reporting policy — expected for a data-access library asking for production trust.</li>
+</ul>
+<h2 id="what-is-in-good-shape-verified">What Is in Good Shape (verified)</h2>
+<ul>
+<li><strong>Test suite quality</strong>: 4,875 tests, zero logic failures; failures are purely environmental.</li>
+<li><strong>Dependencies</strong>: <code>dotnet list package --vulnerable</code> and <code>--deprecated</code> are clean for the core package.</li>
+<li><strong>Code hygiene</strong>: zero <code>TODO</code>/<code>FIXME</code>/<code>HACK</code> comments in <code>src/</code> and <code>tests/</code>; all <code>NotSupportedException</code> usages are legitimate documented guards.</li>
+<li><strong>Secrets</strong>: no credentials in the repo (test appsettings use localhost with empty passwords).</li>
+<li><strong>Features shipped since March</strong>: command interception pipeline (<code>ICommandInterceptor</code>, <code>InterceptorPipeline</code>, <code>LoggingInterceptor</code>, <code>AuditInterceptor</code>) with sensitive-parameter redaction (closes PRD-010); complete XML documentation; DI integration design in progress (<code>aea430f</code>).</li>
+<li><strong>CI structure</strong>: sound skeleton (restore/build/test/AOT verify/AOT publish, NuGet caching, concurrency groups) — it just fails at the build step and under-tests.</li>
+</ul>
+<h2 id="recommended-path-to-production">Recommended Path to Production</h2>
+<p>Ordered execution plan with acceptance criteria: <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">PRODUCTION-READINESS-TASKLIST.md</a> (updated 2026-07-02).</p>
+<p>Summary of the critical path:</p>
+<ol>
+<li>Fix the Release build / CI (D1) — hours.</li>
+<li>Close PRD-001 runtime validation (D3) — days.</li>
+<li>Release engineering: package metadata, publish workflow, <code>main</code> branch, versioning + changelog (M1, M2) — ~1 week.</li>
+<li>CI hardening: SQL Server container, full suite, coverage reporting (M3) — days.</li>
+<li>Then the carried-over P1/P2 API-consistency and feature-parity items.</li>
+</ol>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Reports / COVERAGE GAPS 2026 07 04</span>
+</a><a class="pn-next" href="05-quality-reports-benchmarks-2026-07-29.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Reports / Benchmarks 2026 07 29</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

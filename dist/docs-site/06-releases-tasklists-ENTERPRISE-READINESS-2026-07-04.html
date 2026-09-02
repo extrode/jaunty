@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Readiness Pass — 2026-07-04 — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Enterprise Readiness Pass — 2026-07-04</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html" class="active" aria-current="page">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#verified-state-2026-07-04-local-release-net8.0">Verified state (2026-07-04, local, Release, net8.0)</a><a class="toc-l2" href="#workstreams-executed-this-pass-priority-order">Workstreams — executed this pass (priority order)</a><a class="toc-l3" href="#prod-101-p1-configureawaitfalse-sweep-fixprod-101-configureawait">PROD-101 (P1): ConfigureAwait(false) sweep — fix/prod-101-configureawait</a><a class="toc-l3" href="#prod-102-p1-versioning-packaging-consistency-fixprod-102-packaging">PROD-102 (P1): Versioning &amp; packaging consistency — fix/prod-102-packaging</a><a class="toc-l3" href="#prod-103-p1-dependency-hygiene-fixprod-103-dependencies">PROD-103 (P1): Dependency hygiene — fix/prod-103-dependencies</a><a class="toc-l3" href="#prod-104-p1-cisupply-chain-hardening-fixprod-104-ci">PROD-104 (P1): CI/supply-chain hardening — fix/prod-104-ci</a><a class="toc-l3" href="#prod-105-p1-coverage-instrumentation-gap-inventory-fixprod-105-coverage">PROD-105 (P1): Coverage instrumentation + gap inventory — fix/prod-105-coverage</a><a class="toc-l3" href="#prod-106-p2-docs-truth-pass-fixprod-106-docs">PROD-106 (P2): Docs truth pass — fix/prod-106-docs</a><a class="toc-l2" href="#needs-decision-user-not-executed">Needs decision (user) — not executed</a><a class="toc-l2" href="#handoff-tasklist-follow-up-work-testscommentsdocs-per-scope-not-done-here">Handoff tasklist — follow-up work (tests/comments/docs; per scope, not done here)</a><a class="toc-l2" href="#deferred-feature-gaps-tracked-intentionally-not-in-this-pass">Deferred / feature gaps (tracked, intentionally not in this pass)</a><a class="toc-l2" href="#manual-cleanups-user-carried-from-prd-014-this-pass">Manual cleanups (user) — carried from PRD-014 + this pass</a><a class="toc-l2" href="#work-log">Work log</a><a class="toc-l2" href="#prod-120-resolved-2026-07-04-bulk-path-defects-found-by-measurement">PROD-120 (RESOLVED 2026-07-04): bulk-path defects found by measurement</a><a class="toc-l2" href="#prod-121-resolved-2026-07-04-sqlserver-native-bulk-was-never-functional">PROD-121 (RESOLVED 2026-07-04): SqlServer native bulk was never functional</a><a class="toc-l2" href="#prod-122-in-progress-2026-07-04-cleanup-sprint">PROD-122 (IN PROGRESS 2026-07-04): cleanup sprint</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Enterprise Readiness Pass — 2026-07-04</nav>
+        <article>
+<h1 id="enterprise-readiness-pass-2026-07-04">Enterprise Readiness Pass — 2026-07-04</h1>
+<p>Full-repo comb for paying-enterprise-customer readiness. Hybrid method: fresh sweep
+cross-checked against <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">PRODUCTION-READINESS-2026-07-02.md</a>,
+<a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">PRODUCTION-READINESS-TASKLIST.md</a> (PRD-*), and the
+merged audit fix series (<code>fix/audit-001</code> … <code>fix/audit-015</code>).</p>
+<p>Constraint for this pass: <strong>additive-only public API</strong> (no breaking changes; breaking
+candidates land in &quot;Needs decision&quot;).</p>
+<h2 id="verified-state-2026-07-04-local-release-net8.0">Verified state (2026-07-04, local, Release, net8.0)</h2>
+<ul>
+<li><code>dotnet build Jaunty.slnx -c Release</code>: <strong>success, 0 errors, 0 src warnings</strong>
+(2 CS8600 warnings in <code>tests/Jaunty.Tests</code> — src-only <code>TreatWarningsAsErrors</code>).</li>
+<li><code>dotnet test</code> (net8.0, no local DB containers): <strong>4369 passed / 0 failed / 714 skipped</strong>.
+Skips are SqlServer/MySql/Postgres dialect tests needing containers.
+| Suite | Passed | Skipped |
+|---|---|---|
+| Jaunty.Tests | 3079 | 713 |
+| Jaunty.Fluent.Tests | 787 | 0 |
+| Jaunty.FlatFiles.DuckDB.Tests | 301 | 1 |
+| Jaunty.Scaffolding.Tests | 177 | 0 |
+| Jaunty.FlatFiles.Tests | 20 | 0 |
+| Jaunty.SourceGenerator.Tests | 5 | 0 |</li>
+<li>PRD-012/001/013/014(code)/015/016 confirmed done in repo (release.yml, SourceLink,
+snupkg, TreatWarningsAsErrors, CHANGELOG, SECURITY.md all present).</li>
+</ul>
+<h2 id="workstreams-executed-this-pass-priority-order">Workstreams — executed this pass (priority order)</h2>
+<h3 id="prod-101-p1-configureawaitfalse-sweep-fixprod-101-configureawait">PROD-101 (P1): ConfigureAwait(false) sweep — <code>fix/prod-101-configureawait</code></h3>
+<ul>
+<li>774 <code>await</code> vs 459 <code>ConfigureAwait</code> in <code>src/</code>; ~33 files with awaits and zero
+ConfigureAwait, including core read paths (<code>QueryAsync</code>, <code>QueryFirstAsync</code>, …),
+streaming, stored procedures, scaffolding readers, bulk-copy providers.</li>
+<li>Library targets netstandard2.0 → sync-context deadlock risk for WinForms/WPF/legacy
+ASP.NET consumers calling <code>.Result</code>/<code>.Wait()</code> on our tasks.</li>
+<li>Scope: add <code>.ConfigureAwait(false)</code> to all awaits in <code>src/</code> libraries (incl.
+<code>await using</code> / <code>await foreach</code> forms). Exclude <code>Jaunty.Scaffolding.Cli</code> <code>Program.cs</code>
+(app entry point, no sync context concern) — include the rest of the Cli for consistency.</li>
+<li>Guard: enable CA2007 as error for <code>src/</code> so it cannot regress.</li>
+<li>Acceptance: zero unconfigured awaits in <code>src/</code> libraries; Release build green.</li>
+</ul>
+<h3 id="prod-102-p1-versioning-packaging-consistency-fixprod-102-packaging">PROD-102 (P1): Versioning &amp; packaging consistency — <code>fix/prod-102-packaging</code></h3>
+<ul>
+<li><code>&lt;Version&gt;2026.01.01&lt;/Version&gt;</code> hardcoded in 7 csproj while release.yml overrides with
+<code>-p:Version=&lt;tag&gt;</code> → local packs and tag packs disagree; CHANGELOG documents CalVer.
+Centralize version in <code>src/Directory.Build.props</code>; remove per-project copies.</li>
+<li><code>GeneratePackageOnBuild=true</code> in 6 projects: packs on every build (slow, litters bin/,
+and local packs carry the stale hardcoded version). Release pipeline packs explicitly.
+Remove the property.</li>
+<li><code>Microsoft.Bcl.AsyncInterfaces</code> pinned 10.0.3 in 3 projects but 10.0.1 in
+Jaunty.Scaffolding — align to 10.0.3.</li>
+<li>Add <code>EnablePackageValidation</code> to packable projects.</li>
+<li>Acceptance: <code>dotnet pack -p:Version=X</code> produces consistently versioned packages;
+build green.</li>
+<li><strong>Found during execution (fixed):</strong> <code>dotnet pack Jaunty.slnx</code> packed
+<code>Jaunty.Benchmarks</code> and the 3 <code>NativeAOT-*</code> samples — release.yml pushes
+<code>packout/*.nupkg</code>, so a tagged release would have published sample apps to
+nuget.org. Fixed with <code>IsPackable=false</code> (also on SourceGenerator, which ships
+inside Beparey.Jaunty and errored NU5128 when packed standalone).</li>
+<li><strong>Found during execution (baselined, see decision 7):</strong> package validation
+detected 15 public members present in netstandard2.0 but missing from net8.0
+(<code>QueryStreamAsync</code>/<code>QueryPartialStreamAsync</code>/<code>QueryPartialUnbufferedAsync</code>/
+<code>GetAllStreamAsync</code> ValueTask variants; <code>EntityMetadata.ParameterMap</code>).
+Baselined in <code>src/Jaunty/CompatibilitySuppressions.xml</code> so validation still
+catches <em>new</em> divergence.</li>
+</ul>
+<h3 id="prod-103-p1-dependency-hygiene-fixprod-103-dependencies">PROD-103 (P1): Dependency hygiene — <code>fix/prod-103-dependencies</code></h3>
+<ul>
+<li>Run <code>dotnet list package --vulnerable --include-transitive</code> and <code>--deprecated</code>;
+record results here; bump any flagged pins (additive version bumps only).</li>
+<li>netstandard2.0 path pins Microsoft.Extensions.* <strong>6.0.0</strong> (out of support Nov 2024);
+net8.0 path pins 8.0.0. Bump ns2.0 pins to 8.0.x (still ns2.0-compatible).</li>
+<li>Acceptance: vulnerable/deprecated scans clean; build + tests green on both TFMs.</li>
+</ul>
+<h3 id="prod-104-p1-cisupply-chain-hardening-fixprod-104-ci">PROD-104 (P1): CI/supply-chain hardening — <code>fix/prod-104-ci</code></h3>
+<ul>
+<li>Add <code>.github/dependabot.yml</code> (nuget + github-actions ecosystems).</li>
+<li>Verify release.yml step-level <code>if: secrets.NUGET_API_KEY</code> behavior and pin
+action versions where floating.</li>
+<li>Acceptance: workflows lint clean (actionlint if available), dependabot config valid.</li>
+</ul>
+<h3 id="prod-105-p1-coverage-instrumentation-gap-inventory-fixprod-105-coverage">PROD-105 (P1): Coverage instrumentation + gap inventory — <code>fix/prod-105-coverage</code></h3>
+<ul>
+<li>No coverage collector in any test project today. Add <code>coverlet.collector</code> to the 6
+test projects (infra only — <strong>no test authoring</strong>, per scope).</li>
+<li>Run <code>dotnet test --collect:&quot;XPlat Code Coverage&quot;</code>, aggregate, and write
+<code>docs/05-quality/reports/COVERAGE-GAPS-2026-07-04.md</code>: per-assembly coverage,
+files/members below threshold, and the 713 env-skipped test inventory.</li>
+<li>Acceptance: report exists with concrete uncovered-member list for handoff.</li>
+</ul>
+<h3 id="prod-106-p2-docs-truth-pass-fixprod-106-docs">PROD-106 (P2): Docs truth pass — <code>fix/prod-106-docs</code></h3>
+<ul>
+<li>PRD-017 remainder: archive superseded status/coverage docs into <code>docs/99-archive/</code>
+(move, not delete), update PRODUCTION-READINESS-TASKLIST.md statuses to reflect
+2026-07-03/04 work, refresh README claims that lack automated backing.</li>
+<li>Acceptance: single authoritative readiness trail; no doc contradicts CI reality.</li>
+</ul>
+<h2 id="needs-decision-user-not-executed">Needs decision (user) — not executed</h2>
+<ol>
+<li><p><del>Full <code>Microsoft.Extensions.DependencyInjection</code> dependency</del> <strong>RESOLVED
+(PROD-108, 2026-07-04)</strong>: Abstractions-only; the ASP0000-pattern
+<code>ApplyJauntyInterceptors(IServiceCollection)</code> overload removed (breaking,
+pre-first-publish).</p>
+</li>
+<li><p><del><code>System.CommandLine</code> beta in Jaunty.Scaffolding.Cli</del> <strong>RESOLVED (PROD-107)</strong>:
+2.0.9 stable exists; CLI migrated to the GA API (<code>SetAction</code>/<code>ParseResult</code>),
+smoke-tested against the Northwind SQLite reference db (list-tables, scaffold
+--dry-run, required-option validation).</p>
+</li>
+<li><p><strong>Sync-over-async</strong> (<code>.GetAwaiter().GetResult()</code>) in 5 sync internals
+(<code>ExecuteReader.cs</code> ×3, <code>QueryCore.cs</code>, <code>ExecuteNonQueryCore.cs</code>). With PROD-101's
+ConfigureAwait(false) the deadlock risk is mitigated, but true sync ADO.NET calls
+would be cleaner. Fixing may change sync-path behavior — decide appetite.</p>
+</li>
+<li><p><del><code>JauntyConfig</code> mutable global statics</del> <strong>RESOLVED (PROD-111, 2026-07-04)</strong>:
+implemented - volatile fields, synchronized interceptor mutation, synchronized
+TypeHandlerRegistry counts; contract documented on the class (Reset() is
+test-only and not atomic as a whole).</p>
+</li>
+<li><p><del>PackageIcon</del> <strong>RESOLVED (PROD-110, 2026-07-04)</strong>: docs/_assets/jaunty.png
+processed via ImageMagick (crop/smooth/128px, transparent corners) into
+docs/_assets/icon.png; packed into all packages.</p>
+</li>
+</ol>
+<p>I've dropped jaunty.png an image / logo under docs/_assets/, let's convert it to an appopriate icon but smooth out the edges first through one of the vision compatible models under openrouter or if you're able to then do it youself, or use imagemagick: C:\home\tools\ImageMagick</p>
+<ol start="6">
+<li><p><del>CalVer vs SemVer</del> <strong>RESOLVED (PROD-109, 2026-07-04)</strong>: SemVer; dev baseline
+<code>1.0.0-rc.1</code>, release tags <code>vMAJOR.MINOR.PATCH</code>.</p>
+</li>
+<li><p><del>TFM public-API divergence</del> <strong>RESOLVED (PROD-112, 2026-07-04)</strong>:
+ASYNC_ENUMERABLE_SUPPORT extended to netstandard2.0 (Bcl.AsyncInterfaces), so both
+TFMs expose identical IAsyncEnumerable streaming; ValueTask variants removed
+(breaking on ns2.0, pre-first-publish). EntityMetadata.ParameterMap unified to
+IReadOnlyDictionary. CompatibilitySuppressions.xml deleted - validation now has a
+zero baseline. net472 suite (ns2.0 assembly) green: 2522/0. Still open (folded
+into decision 3's category): making <code>Jaunty.Internals.*</code> public types internal.</p>
+</li>
+</ol>
+<p>Let's use #if / #else compiler directives to target both</p>
+<h2 id="handoff-tasklist-follow-up-work-testscommentsdocs-per-scope-not-done-here">Handoff tasklist — follow-up work (tests/comments/docs; per scope, not done here)</h2>
+<ol>
+<li>Fix 2 <code>CS8600</code> warnings in <code>tests/Jaunty.Tests/Integration/TypeHandlers/TypeHandlerRoundTripTests.cs</code>
+(lines 157, 229); then extend <code>TreatWarningsAsErrors</code> to <code>tests/</code>.</li>
+<li>Write tests for every member listed in <code>COVERAGE-GAPS-2026-07-04.md</code> (produced by
+PROD-105) below the agreed threshold.</li>
+<li>XML doc comments for <code>Jaunty.SourceGenerator</code> internals (March audit gap) and any
+public member the build's doc-file generation flags.</li>
+<li>README files for <code>Jaunty.Scaffolding</code> / <code>Jaunty.Scaffolding.Cli</code> project directories.</li>
+<li>MySQL test-isolation cleanup in <code>Jaunty.Tests</code> (March audit: 47 Release-mode failures
+from shared table state; env-dependent).</li>
+<li>Benchmark result hygiene (PRD-002): re-run and publish BenchmarkDotNet results,
+replace stale README numbers.</li>
+</ol>
+<h2 id="deferred-feature-gaps-tracked-intentionally-not-in-this-pass">Deferred / feature gaps (tracked, intentionally not in this pass)</h2>
+<ul>
+<li>PRD-003 async API consistency remainder, PRD-004 reflection-free hot paths,
+PRD-005 sync/async parity tuning, PRD-006 upsert optimization (P1 carried; perf
+workstreams need benchmark baselines first — see handoff #6).</li>
+<li>PRD-007 Fluent 3-way join parity, PRD-008 CTE async completion, PRD-009 scaffolding
+navigation properties, PRD-011 retry/resilience (features, not readiness blockers).</li>
+<li>SplitOn implementation (explicitly deferred by owner in spec 002).</li>
+</ul>
+<h2 id="manual-cleanups-user-carried-from-prd-014-this-pass">Manual cleanups (user) — carried from PRD-014 + this pass</h2>
+<ol>
+<li>Create <code>main</code> branch on origin; protect it.</li>
+<li>Configure <code>NUGET_API_KEY</code> secret in GitHub repo settings.</li>
+<li>Decisions 1-6 above.</li>
+</ol>
+<h2 id="work-log">Work log</h2>
+<ul>
+<li>2026-07-04: Pass started. Recon + verified state recorded. Workstreams defined.</li>
+<li>2026-07-04: PROD-101..107 executed and merged to dev (--no-ff each):
+ConfigureAwait sweep + CA2007 gate; version centralization + package validation
+<ul>
+<li>IsPackable hygiene (release would have published sample apps to nuget.org);
+CVE remediation (SQLitePCLRaw 2.1.x, Regex 4.3.0) + EOL ME.* 6.0.0 bumps;
+dependabot; coverlet + COVERAGE-GAPS-2026-07-04.md; docs consolidation;
+System.CommandLine beta4 -&gt; 2.0.9. Final gate: Release build 0 errors,
+4369 passed / 0 failed / 714 env-skips, 7 packages pack clean,
+vulnerable+deprecated scans clean (xunit v2 'legacy' notice excepted).</li>
+</ul>
+</li>
+</ul>
+<h2 id="prod-120-resolved-2026-07-04-bulk-path-defects-found-by-measurement">PROD-120 (RESOLVED 2026-07-04): bulk-path defects found by measurement</h2>
+<ul>
+<li>SQLite <code>BulkInsert</code> is 16x SLOWER than a plain transactional ADO.NET loop
+(334ms vs 20.6ms @ 10k rows). Provider code looks right but has 0% coverage;
+core <code>SQLiteDialect.CreateBulkCopyProvider()</code> returns null - verify which path
+actually executes (native provider vs BulkInsertLoop) and profile.</li>
+<li>MariaDB native bulk errors outright (NA in benchmarks) while linq2db works on
+the same server - suspect MySqlBulkLoader local-infile config; provider should
+fail with an actionable message.</li>
+<li>SQL Server bulk unverified: needs correct JAUNTY_TEST_SQLSERVER credentials
+for the local container (or CI container job).</li>
+<li>Evidence: docs/05-quality/reports/BENCHMARKS-2026-07-04.md Update 3.</li>
+<li>Resolution (Updates 4-5): MySQL/MariaDB provider rewritten to chunked
+multi-row INSERT (16.1x @10k, live-tested); SQLite routed to the prepared
+loop via IsSqliteDialect() (1.005x parity, provider deleted).</li>
+</ul>
+<h2 id="prod-121-resolved-2026-07-04-sqlserver-native-bulk-was-never-functional">PROD-121 (RESOLVED 2026-07-04): SqlServer native bulk was never functional</h2>
+<ul>
+<li><p><code>SqlServerBulkCopyProvider</code> threw <code>MissingMethodException</code> on every call:
+<code>MapBulkCopyOptions</code> passed a boxed <code>Int32</code> where the <code>SqlBulkCopy</code> ctor
+takes the <code>SqlBulkCopyOptions</code> enum. Fixed with <code>Enum.ToObject</code>.</p>
+</li>
+<li><p>Second defect: no <code>ColumnMappings</code>, so ordinal mapping hit the destination
+IDENTITY column. Fixed with by-name mappings from the source reader.</p>
+</li>
+<li><p>Measured (Warm): 3.5x @100, 17.6x @1k, <strong>36.6x @10k</strong> vs transactional
+loop; matches linq2db's SqlBulkCopy within noise; 6.6x less allocation.</p>
+</li>
+<li><p>Live tests: tests/Jaunty.Tests/Unit/BulkCopy/SqlServerBulkCopyProviderTests.cs.</p>
+</li>
+<li><p>Evidence: BENCHMARKS-2026-07-04.md Update 5.</p>
+</li>
+<li><p>Residual (harness only, open): the EF Core competitor benchmark fails on
+SqlServer (&quot;Cannot insert explicit value for identity column&quot;) - EfProduct
+key not ValueGeneratedOnAdd for this provider. Competitor number missing;
+no Jaunty impact.</p>
+</li>
+<li><p>Residual resolved (PROD-122 task 2): EfProduct key lacked ValueGeneratedOnAdd()
+and IterationSetup did not reset product_id to 0 between iterations. Both fixed.</p>
+</li>
+<li><p>TryEnhanceWithBulkCopy mystery resolved (PROD-122 task 3): TryEnhanceWithBulkCopy
+in SqlDialectFactory reflection-calls BulkCopyDialectFactory.GetDialect, but that
+method guards on BulkCopyDialectFactory._enabled (default false). The enabled flag
+is only set by JauntyReflectionExtensions.UseNativeBulkCopy(), which benchmarks
+call in GlobalSetup but tests never call. Result: in the test process the factory
+type resolves successfully via Type.GetType, GetDialect is invoked, but _enabled
+is false so it returns the base dialect unchanged — identical to the unenhanced
+path. No exception is swallowed; no assembly load fails; no initialization defect.
+The &quot;silent failure&quot; is correct by design: tests opt out of native bulk copy by not
+calling UseNativeBulkCopy(), and SqliteBulkPathDiagnosticTests seeing a plain
+SQLiteDialect is the expected result. No src change required.</p>
+</li>
+</ul>
+<h2 id="prod-122-in-progress-2026-07-04-cleanup-sprint">PROD-122 (IN PROGRESS 2026-07-04): cleanup sprint</h2>
+<ul>
+<li><p>Task 1 (cross-TFM contention): Added <code>&lt;TestTfmsInParallel&gt;false&lt;/TestTfmsInParallel&gt;</code>
+to tests/Jaunty.Tests/Jaunty.Tests.csproj. <code>dotnet test</code> without -f now runs net8.0
+then net472 sequentially, eliminating the ~7-30 MariaDB/Postgres Write test failures
+caused by concurrent TFM runs hitting the same live databases.
+Acceptance run pending (Task 1 commit: 120a268).</p>
+</li>
+<li><p>Task 2 (EF Core SqlServer identity INSERT): Two fixes in benchmarks/Jaunty.Benchmarks.
+(a) EfProduct.cs OnModelCreating: added ValueGeneratedOnAdd() on product_id so EF Core
+metadata is correct for all four providers. (b) BulkCopyBenchmarks.cs IterationSetup:
+reset product_id = 0 on each EfProduct before every iteration — after SaveChanges EF
+Core writes back db-assigned IDs; subsequent iterations carried non-zero keys that
+SqlServer rejected as explicit identity values. Smoke-checked --quick against SqlServer;
+all three BatchSize runs completed without error (exit code 0, no NA).
+Commit: 27a1119.</p>
+</li>
+<li><p>Task 3 (TryEnhanceWithBulkCopy silent failure): Not a defect. TryEnhanceWithBulkCopy
+resolves BulkCopyDialectFactory via Type.GetType and successfully invokes GetDialect,
+but BulkCopyDialectFactory._enabled defaults to false. UseNativeBulkCopy() sets it;
+benchmarks call UseNativeBulkCopy() in GlobalSetup, tests do not. Tests opt out by
+design; SqliteBulkPathDiagnosticTests seeing a plain SQLiteDialect is correct.
+No exception swallowed, no load failure, no src change required. Documented in
+PROD-121 residual section above. Commit: 147c871.</p>
+</li>
+<li><p>Task 4 (git housekeeping): Deleted 83 local branches fully merged into dev
+(audit/<em>, chore/</em>, docs/<em>, feat/</em>, feature/<em>, features/</em>, fix/<em>, fixes/</em>,
+organizations/<em>, refactors/</em>, specs/*). Remote prune completed. Working tree clean.</p>
+</li>
+<li><p>Task 5 (tasklist bookkeeping): This section.</p>
+</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Tasklists / COMMERCIAL TASKLIST</span>
+</a><a class="pn-next" href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Tasklists / PRODUCTION READINESS TASKLIST</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>
