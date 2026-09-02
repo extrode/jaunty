@@ -33,9 +33,11 @@ permissions:
 # ci.yml's fork guard would place an outside contributor's code on the maintainer's own machine.
 
 jobs:
-  # Everything ci.yml runs on two frameworks, run on all three, with no --framework filter.
+  # Everything ci.yml runs, on net8.0 and net10.0 with SQL Server required. The net472 legs
+  # need a real .NET Framework runtime (a Linux runner would need mono, which ubuntu-latest does
+  # not ship), so they run in the full-suite-net472 job below on a Windows runner.
   full-suite:
-    name: Full suite (all frameworks)
+    name: Full suite (net8.0 + net10.0)
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     services:
       mssql:
@@ -90,17 +92,60 @@ jobs:
       - name: Build
         run: dotnet build Jaunty.slnx -c Release --no-restore --no-incremental
 
-      - name: Test (every framework each project targets)
+      - name: Test net8.0 (every project)
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
           JAUNTY_REQUIRE_SQLSERVER: "1"
-        run: dotnet test Jaunty.slnx -c Release --no-build --logger "trx;LogFileName=nightly-full.trx"
+        run: dotnet test Jaunty.slnx -c Release --no-build --framework net8.0 --logger "trx;LogFileName=nightly-net8.trx"
+
+      - name: Test net10.0 (every project)
+        env:
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
+          JAUNTY_REQUIRE_SQLSERVER: "1"
+        run: dotnet test Jaunty.slnx -c Release --no-build --framework net10.0 --logger "trx;LogFileName=nightly-net10.trx"
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: nightly-test-results
+          path: '**/TestResults/*.trx'
+          if-no-files-found: ignore
+
+  # The two projects that target net472 (Jaunty.Tests and Jaunty.UnitTests), on the .NET
+  # Framework runtime itself. Windows runners cannot host service containers, so this leg runs
+  # against SQLite only; SQL Server coverage for the same tests is the job above.
+  full-suite-net472:
+    name: Full suite (net472, Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore Jaunty.slnx
+
+      - name: Build
+        run: dotnet build Jaunty.slnx -c Release --no-restore --no-incremental
+
+      - name: Test net472 - Core
+        run: dotnet test tests/Jaunty.Tests -c Release --no-build --framework net472 --logger "trx;LogFileName=nightly-net472-core.trx"
+
+      - name: Test net472 - Core unit
+        run: dotnet test tests/Jaunty.UnitTests -c Release --no-build --framework net472 --logger "trx;LogFileName=nightly-net472-unit.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightly-test-results-net472
           path: '**/TestResults/*.trx'
           if-no-files-found: ignore
 

@@ -63,7 +63,8 @@ default lives in `src/Directory.Build.props`.
 - **CI: the nightly workflow runs on hosted runners again.** The fuzz job installed only the 8.0
   SDK for a tree that targets net10.0, the benchmark job ran a multi-targeted project without
   `--framework`, and the full suite could pass with SQL Server unreachable; all three fixed, and
-  `Jaunty.UnitTests` compiles on net472 again.
+  `Jaunty.UnitTests` compiles on net472 again. The net472 test legs now run in their own
+  Windows job, because a Linux runner has no .NET Framework runtime for them.
 - **Docs: second public-readiness pass.** Personal paths removed from two archived scripts, one
   cleanup script and one tasklist; CONTRIBUTING names the 10.0 SDK and no longer tells a newcomer
   to sign a draft CLA; the release runbook's branch-protection item is unblocked; the
