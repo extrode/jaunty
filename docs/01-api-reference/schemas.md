@@ -186,6 +186,10 @@ The routing rule, in full:
 
 Both paths import the same rows; the prepared-statement path is slower on large files.
 
+A closed connection is opened for the check and closed again. That matters because a pooled
+connection keeps its temp tables and its ATTACH set across a `Close()` — the same native handle
+comes back on the next `Open()` — so "closed" does not mean "nothing attached".
+
 ## See also
 
 - [`attributes.md`](attributes.md) — `[Table]` and the rest of the mapping attributes
