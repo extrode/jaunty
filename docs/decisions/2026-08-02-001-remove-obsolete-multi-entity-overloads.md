@@ -9,7 +9,7 @@
 Delete all 13 `[Obsolete]` multi-entity overloads — 7 sync, 6 async — with no replacement, and
 document the supported mapping routes in `docs/01-api-reference/multi-entity-mapping.md` instead.
 
-The 13 were marked obsolete on 2026-02-19 (`2e72774a`) and never removed. All shared one shape,
+The 13 were marked obsolete on 2026-02-19 (`27a38e32`) and never removed. All shared one shape,
 everything after `sql` optional:
 
 ```csharp

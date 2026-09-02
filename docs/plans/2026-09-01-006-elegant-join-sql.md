@@ -153,7 +153,7 @@ an alias and a column rather than free text.
 
 ## Outcome (2026-09-01)
 
-Branch `feat/elegant-join-sql`, commit `70260f1d`.
+Branch `feat/elegant-join-sql`, commit `c24d3a02`.
 
 | AC | Status | Evidence |
 | --- | --- | --- |

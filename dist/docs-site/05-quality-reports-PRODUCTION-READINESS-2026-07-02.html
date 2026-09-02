@@ -138,7 +138,7 @@
 <h1 id="jaunty-production-readiness-report-2026-07-02">Jaunty Production Readiness Report (2026-07-02)</h1>
 <h2 id="scope-and-method">Scope and Method</h2>
 <ul>
-<li>Full local validation on branch <code>dev</code> (commit <code>aea430f</code>): <code>dotnet build Jaunty.slnx -c Release</code>, full test suites per project, package metadata audit, dependency vulnerability scan, secrets scan, CI workflow review, documentation review.</li>
+<li>Full local validation on branch <code>dev</code> (commit <code>64d1171</code>): <code>dotnet build Jaunty.slnx -c Release</code>, full test suites per project, package metadata audit, dependency vulnerability scan, secrets scan, CI workflow review, documentation review.</li>
 <li>Unlike the 2026-03-03 report (source/document review only), this assessment executed the build and the complete test suite.</li>
 <li>Supersedes: PRODUCTION-READINESS-2026-03-03.md.</li>
 </ul>
@@ -245,7 +245,7 @@ benchmarks/Jaunty.Benchmarks/Entities/TpcOrder.cs(9,33): error CS0535 (same)
 <h3 id="d2-nullable-reference-warnings-in-shipping-code">D2 — Nullable-reference warnings in shipping code</h3>
 <p>Observed during the Release build (before it aborted): <code>CS8603</code> in <code>src/Jaunty.Fluent/Builders/Join/JoinedQueryBuilderSelect.cs:164</code> and <code>CS8604</code> in <code>src/Jaunty/Internals/Write/DeleteCore.cs:84</code>, among others. <code>TreatWarningsAsErrors</code> is not set anywhere, so these can accumulate silently.</p>
 <h3 id="d3-prd-001-schema-safe-ordinal-cache-still-open">D3 — PRD-001 (schema-safe ordinal cache) still open</h3>
-<p>The March P0 — source-generated mapper ordinal cache vulnerable to stale mappings when result shape changes — is marked &quot;In Progress ... runtime validation pending&quot; and no completing commit was found. The generator's <code>CacheEntry</code> uses an <code>_initialized</code> boolean rather than shape validation (per commit history <code>9d307b7</code>, <code>4386abd</code>). This remains the top correctness risk for the source-generated path.</p>
+<p>The March P0 — source-generated mapper ordinal cache vulnerable to stale mappings when result shape changes — is marked &quot;In Progress ... runtime validation pending&quot; and no completing commit was found. The generator's <code>CacheEntry</code> uses an <code>_initialized</code> boolean rather than shape validation (per commit history <code>139df6b</code>, <code>a352f4c</code>). This remains the top correctness risk for the source-generated path.</p>
 <h2 id="missing-for-production">Missing for Production</h2>
 <h3 id="m1-no-release-pipeline">M1 — No release pipeline</h3>
 <ul>
@@ -259,7 +259,7 @@ benchmarks/Jaunty.Benchmarks/Entities/TpcOrder.cs(9,33): error CS0535 (same)
 <ul>
 <li><code>PackageLicenseFile</code> / license asset packed into the nupkg (critical: the license is a custom proprietary one, so nuget.org will reject or mislabel the package without an explicit license file; <code>PackageRequireLicenseAcceptance</code> should also be considered).</li>
 <li><code>PackageReadmeFile</code>, <code>PackageIcon</code>.</li>
-<li><code>GenerateDocumentationFile</code> (XML docs were written — merge <code>a0c9626</code> — but are not packed).</li>
+<li><code>GenerateDocumentationFile</code> (XML docs were written — merge <code>dee8b2e</code> — but are not packed).</li>
 <li>SourceLink / <code>PublishRepositoryUrl</code> / <code>EmbedUntrackedSources</code> / <code>ContinuousIntegrationBuild</code> / symbol packages (<code>snupkg</code>).</li>
 <li>Only the FlatFiles projects set <code>PackageTags</code>.</li>
 </ul>
@@ -268,7 +268,7 @@ benchmarks/Jaunty.Benchmarks/Entities/TpcOrder.cs(9,33): error CS0535 (same)
 <p>CI runs 97 SQLite tests + FlatFiles/DuckDB. Not run in CI: 3,492 core tests (SQL Server portion ~658 requires a server), Fluent (787), Scaffolding (177). No SQL Server service container / Testcontainers usage. PostgreSQL/MySQL/MariaDB paths (including the README's native bulk copy performance claims for those providers) have no automated verification at all. No code-coverage measurement in CI; the coverage reports in <code>docs/05-quality/code-coverage/</code> are manual and dated January 2026.</p>
 <h3 id="m4-documentation-staleness-and-conflicts">M4 — Documentation staleness and conflicts</h3>
 <ul>
-<li><code>PRODUCTION-READINESS-TASKLIST.md</code> was last updated 2026-03-03 and does not reflect merged work (interception/logging <code>6f2eac6</code> fulfills PRD-010; XML docs merged).</li>
+<li><code>PRODUCTION-READINESS-TASKLIST.md</code> was last updated 2026-03-03 and does not reflect merged work (interception/logging <code>64d28d8</code> fulfills PRD-010; XML docs merged).</li>
 <li>Multiple overlapping status/assessment documents (already flagged as P1 finding #6 in March) remain unconsolidated.</li>
 <li>No <code>SECURITY.md</code> / vulnerability-reporting policy — expected for a data-access library asking for production trust.</li>
 </ul>
@@ -278,7 +278,7 @@ benchmarks/Jaunty.Benchmarks/Entities/TpcOrder.cs(9,33): error CS0535 (same)
 <li><strong>Dependencies</strong>: <code>dotnet list package --vulnerable</code> and <code>--deprecated</code> are clean for the core package.</li>
 <li><strong>Code hygiene</strong>: zero <code>TODO</code>/<code>FIXME</code>/<code>HACK</code> comments in <code>src/</code> and <code>tests/</code>; all <code>NotSupportedException</code> usages are legitimate documented guards.</li>
 <li><strong>Secrets</strong>: no credentials in the repo (test appsettings use localhost with empty passwords).</li>
-<li><strong>Features shipped since March</strong>: command interception pipeline (<code>ICommandInterceptor</code>, <code>InterceptorPipeline</code>, <code>LoggingInterceptor</code>, <code>AuditInterceptor</code>) with sensitive-parameter redaction (closes PRD-010); complete XML documentation; DI integration design in progress (<code>aea430f</code>).</li>
+<li><strong>Features shipped since March</strong>: command interception pipeline (<code>ICommandInterceptor</code>, <code>InterceptorPipeline</code>, <code>LoggingInterceptor</code>, <code>AuditInterceptor</code>) with sensitive-parameter redaction (closes PRD-010); complete XML documentation; DI integration design in progress (<code>64d1171</code>).</li>
 <li><strong>CI structure</strong>: sound skeleton (restore/build/test/AOT verify/AOT publish, NuGet caching, concurrency groups) — it just fails at the build step and under-tests.</li>
 </ul>
 <h2 id="recommended-path-to-production">Recommended Path to Production</h2>

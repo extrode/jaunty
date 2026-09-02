@@ -25,7 +25,7 @@ after Insert:
 ```
 
 No exception. Reads returned another table's rows; writes landed in another file. Fixed in
-`62ce2fe1`, merged `31c6c518`. The wrong premise was stated in five places in `src/`, and the only
+`19012846`, merged `35ca2f3f`. The wrong premise was stated in five places in `src/`, and the only
 schema test passed `""`.
 
 That raised the general question: when no schema is supplied, should Jaunty fill in the default?
@@ -124,7 +124,7 @@ instead.
 ## Consequences
 
 - No behaviour change: omission is what the code already did.
-- SQLite honouring a supplied schema is a behaviour change, shipped in `31c6c518`. An application
+- SQLite honouring a supplied schema is a behaviour change, shipped in `35ca2f3f`. An application
   that set a global `SchemaNameResolver` for another engine and also opens SQLite now gets
   `no such table: dbo.products` where the schema used to be silently dropped. Loud, and documented
   in `docs/01-api-reference/schemas.md`.
