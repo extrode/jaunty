@@ -1157,14 +1157,18 @@ internal static class ParameterBinder
             return TypeHandlerRegistry.ToDbValueOrThrow(handler, value);
         }
 
-        // Handle enums based on storage strategy
+        // Handle enums based on storage strategy. Numeric storage binds the underlying integral
+        // value rather than the boxed enum: SqlClient, MySqlConnector and the SQLite providers
+        // convert an enum themselves, Npgsql refuses it ("Writing values of 'X' is not supported
+        // for parameters having no NpgsqlDbType"), so leaving the conversion to the provider made
+        // every numeric enum write fail on PostgreSQL. Found 2026-09-02, the first time the
+        // PostgreSQL suite ran on this tree.
         if (valueType.IsEnum)
         {
             EnumStorage storage = GetEnumStorage(propertyInfo, enumStorageOverride);
-            if (storage == EnumStorage.String)
-            {
-                return value.ToString();
-            }
+            return storage == EnumStorage.String
+                ? value.ToString()
+                : EnumToUnderlying(value, valueType);
         }
         // AUD-R25: an "else if (valueType.IsGenericType)" branch here, commented "Handle nullable
         // enums", was unreachable. valueType comes from value.GetType() above, and boxing a
@@ -1175,6 +1179,9 @@ internal static class ParameterBinder
 
         return value;
     }
+
+    internal static object EnumToUnderlying(object value, Type enumType) =>
+        System.Convert.ChangeType(value, Enum.GetUnderlyingType(enumType), System.Globalization.CultureInfo.InvariantCulture);
 
     // AUD-R35: the override is checked before the reflection lookup because the source-generated
     // path has no PropertyInfo to reflect over - ColumnMetadata.Property is null there - so

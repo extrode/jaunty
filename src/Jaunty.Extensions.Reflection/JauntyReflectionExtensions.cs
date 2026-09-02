@@ -319,11 +319,11 @@ public static class JauntyReflectionExtensions
             {
                 return enumAttr.Storage == EnumStorage.String
                     ? value => ConvertWithTypeHandlerOrElse(value, static v => v.ToString())
-                    : value => ConvertWithTypeHandlerOrElse(value, static v => v);
+                    : value => ConvertWithTypeHandlerOrElse(value, static v => global::Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(v, EnumStorage.Numeric));
             }
 
             return value => ConvertWithTypeHandlerOrElse(value, static v =>
-                JauntyConfig.DefaultEnumStorage == EnumStorage.String ? v.ToString() : v);
+                JauntyConfig.DefaultEnumStorage == EnumStorage.String ? v.ToString() : global::Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(v, EnumStorage.Numeric));
         }
 
         return value => ConvertWithTypeHandlerOrElse(value, static v => v);
