@@ -55,7 +55,7 @@ candidates land in "Needs decision").
   `Jaunty.Benchmarks` and the 3 `NativeAOT-*` samples — release.yml pushes
   `packout/*.nupkg`, so a tagged release would have published sample apps to
   nuget.org. Fixed with `IsPackable=false` (also on SourceGenerator, which ships
-  inside Beparey.Jaunty and errored NU5128 when packed standalone).
+  inside Extrode.Jaunty and errored NU5128 when packed standalone).
 - **Found during execution (baselined, see decision 7):** package validation
   detected 15 public members present in netstandard2.0 but missing from net8.0
   (`QueryStreamAsync`/`QueryPartialStreamAsync`/`QueryPartialUnbufferedAsync`/
