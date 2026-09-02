@@ -125,7 +125,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
 
         return new TableSchema
         {
-            SchemaName = string.Empty, // SQLite doesn't have schemas
+            SchemaName = string.Empty, // main only: ATTACHed databases and temp are not read
             TableName = tableName,
             Columns = columns,
             PrimaryKey = primaryKey,

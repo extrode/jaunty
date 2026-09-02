@@ -1,4 +1,5 @@
 using Jaunty.Configuration;
+using Jaunty.Tests.Helpers;
 using Jaunty.TypeHandlers;
 
 using Xunit;
@@ -20,6 +21,7 @@ public class NullableTypeHandlerParseTests : IDisposable
     {
         GC.SuppressFinalize(this);
         JauntyConfig.Reset();
+        TestInitializer.Initialize();
     }
 
     private sealed class NullReturningStringHandler : TypeHandler<string>

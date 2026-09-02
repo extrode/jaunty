@@ -21,7 +21,24 @@ public class PackageIdentityTests
     private const string RetiredLicenseFile = "LICENSE-EULA.md";
     private const string RedistributionExceptionFile = "LICENSE-DISTRIBUTION-EXCEPTION.md";
 
-    private static readonly string[] RetiredOwnerNames = ["Beparey LLC", "Beparey.com"];
+    // Spelled in two halves so the retired name is absent from the tree as text; the guard
+    // below is what keeps it absent everywhere else.
+    private static readonly string RetiredOwnerWord = string.Concat("Bep", "arey");
+
+    private static readonly string[] RetiredOwnerNames = [RetiredOwnerWord + " LLC", RetiredOwnerWord + ".com"];
+
+    private static readonly string[] RetiredOwnerScanExtensions =
+    [
+        ".md", ".cs", ".csproj", ".props", ".targets", ".slnx", ".json", ".yml", ".yaml",
+        ".sh", ".ps1", ".py", ".mjs", ".js", ".html", ".txt", ".sql", ".xml", ".svg", ".editorconfig",
+        ".mailmap",
+    ];
+
+    private static readonly string[] RetiredOwnerScanSkippedFragments =
+    [
+        "/.git/", "/bin/", "/obj/", "/node_modules/", "/tmp/", "/TestResults/", "/.worktrees/",
+        "/.claude/", "/work/", "/audit/",
+    ];
 
     private static readonly string[] PackCriticalProperties =
     [
@@ -203,6 +220,37 @@ public class PackageIdentityTests
     }
 
     [Fact]
+    public void NoTextFileInTheTreeNamesTheRetiredOwner()
+    {
+        DirectoryInfo root = LocateRepositoryRoot();
+        List<string> offences = new();
+
+        foreach (string file in Directory.EnumerateFiles(root.FullName, "*", SearchOption.AllDirectories))
+        {
+            string relative = "/" + file.Substring(root.FullName.Length)
+                                        .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                                        .Replace('\\', '/');
+
+            if (RetiredOwnerScanSkippedFragments.Any(f => relative.Contains(f, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            if (relative.EndsWith("/PackageIdentityTests.cs", StringComparison.Ordinal))
+                continue;
+            if (!RetiredOwnerScanExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            string text = File.ReadAllText(file);
+            int index = text.IndexOf(RetiredOwnerWord, StringComparison.OrdinalIgnoreCase);
+
+            if (index >= 0)
+                offences.Add($"{relative.TrimStart('/')}:{text.Take(index).Count(c => c == '\n') + 1}");
+        }
+
+        Assert.True(offences.Count == 0,
+            $"The retired owner name must not appear in the tree:" +
+            Environment.NewLine + string.Join(Environment.NewLine, offences));
+    }
+
+    [Fact]
     public void ThePackagesDeclareIslrAndNotTheRetiredEula()
     {
         List<string> wrong = new();
@@ -244,7 +292,8 @@ public class PackageIdentityTests
                 continue;
 
             string include = (string?)none.Attribute("Include") ?? string.Empty;
-            packed.Add(include.Replace('\\', '/').Split('/')[^1]);
+            string[] segments = include.Replace('\\', '/').Split('/');
+            packed.Add(segments[segments.Length - 1]);
         }
 
         Assert.Contains(ExpectedLicenseFile, packed);

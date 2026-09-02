@@ -35,6 +35,10 @@ public class QueryBenchmarks
         _connection.Open();
         DatabaseSetup.CreateSchema(_connection, Provider);
         DatabaseSetup.SeedData(_connection, Provider, RowCount);
+
+        var doubleMapper = Provider == DatabaseProvider.Sqlite ? SqliteDoubleMapper.Mapper : CustomMapper.Mapper;
+        _doubleMapper = new CommandOptions<JauntyProduct>(mapper: doubleMapper);
+        _doubleMapperWithHint = new CommandOptions<JauntyProduct>(mapper: doubleMapper, expectedRowCount: RowCount);
     }
 
     [GlobalCleanup]
@@ -45,12 +49,17 @@ public class QueryBenchmarks
 
     // --- ADO.NET (hand-coded baseline) ---
 
+    // The loop a careful developer would write: typed getters, the list sized up front, and the
+    // price read as the type the column reports. On SQLite unit_price is REAL and GetDecimal is a
+    // text round-trip (4.8 ms vs 1.8 ms per 10k rows, 2026-09-02); until that run the baseline
+    // paid it, which is why two libraries measured "faster than ADO.NET" in the July reports.
     [Benchmark(Description = "ADO.NET (hand-coded)", Baseline = true)]
     public List<JauntyProduct> AdoNet_Query()
     {
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products";
         using var reader = cmd.ExecuteReader();
+        bool priceIsDouble = reader.GetFieldType(2) == typeof(double);
         var results = new List<JauntyProduct>(RowCount);
         while (reader.Read())
         {
@@ -58,7 +67,7 @@ public class QueryBenchmarks
             {
                 ProductId = reader.GetInt32(0),
                 ProductName = reader.GetString(1),
-                UnitPrice = reader.GetDecimal(2),
+                UnitPrice = priceIsDouble ? (decimal)reader.GetDouble(2) : reader.GetDecimal(2),
                 UnitsInStock = reader.GetInt32(3),
                 Discontinued = reader.GetBoolean(4)
             });
@@ -82,6 +91,71 @@ public class QueryBenchmarks
         return _connection.Query(
             "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
             options: options);
+    }
+
+    // Same getters, same ordinals as the hand-coded baseline, so the difference between the two
+    // is Jaunty's pipeline overhead with mapping taken out of the comparison.
+    private static readonly CommandOptions<JauntyProduct> CustomMapper =
+        CommandOptions<JauntyProduct>.WithMapper(static reader => new JauntyProduct
+        {
+            ProductId = reader.GetInt32(0),
+            ProductName = reader.GetString(1),
+            UnitPrice = reader.GetDecimal(2),
+            UnitsInStock = reader.GetInt32(3),
+            Discontinued = reader.GetBoolean(4)
+        });
+
+    [Benchmark(Description = "Jaunty Query<T> (custom mapper)")]
+    public List<JauntyProduct> Jaunty_QueryWithCustomMapper()
+    {
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: CustomMapper);
+    }
+
+    // The baseline sizes its list up front; this gives the custom mapper the same hint, so the two
+    // differ only in what Jaunty adds around the loop.
+    [Benchmark(Description = "Jaunty Query<T> (custom mapper, WithExpectedRowCount)")]
+    public List<JauntyProduct> Jaunty_QueryWithCustomMapperAndExpectedRowCount()
+    {
+        var options = new CommandOptions<JauntyProduct>(mapper: CustomMapper.Mapper, expectedRowCount: RowCount);
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: options);
+    }
+
+    // The lesson the generated mapper learned, applied by hand. Microsoft.Data.Sqlite implements
+    // GetDecimal on a REAL column as text formatting plus decimal.Parse, so on SQLite the price is
+    // read as the double it is stored as and cast (measured 2026-09-02: 4.8 ms vs 1.8 ms per 10k
+    // rows). The other providers store a real decimal and GetDouble would throw, so there Setup
+    // falls back to CustomMapper and the two cases read the same; only the SQLite column compares.
+    private static readonly CommandOptions<JauntyProduct> SqliteDoubleMapper =
+        CommandOptions<JauntyProduct>.WithMapper(static reader => new JauntyProduct
+        {
+            ProductId = reader.GetInt32(0),
+            ProductName = reader.GetString(1),
+            UnitPrice = (decimal)reader.GetDouble(2),
+            UnitsInStock = reader.GetInt32(3),
+            Discontinued = reader.GetBoolean(4)
+        });
+
+    private CommandOptions<JauntyProduct> _doubleMapper;
+    private CommandOptions<JauntyProduct> _doubleMapperWithHint;
+
+    [Benchmark(Description = "Jaunty Query<T> (custom mapper, GetDouble)")]
+    public List<JauntyProduct> Jaunty_QueryWithDoubleMapper()
+    {
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: _doubleMapper);
+    }
+
+    [Benchmark(Description = "Jaunty Query<T> (custom mapper, GetDouble, WithExpectedRowCount)")]
+    public List<JauntyProduct> Jaunty_QueryWithDoubleMapperAndExpectedRowCount()
+    {
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: _doubleMapperWithHint);
     }
 
     // --- Dapper ---

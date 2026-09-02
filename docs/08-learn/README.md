@@ -13,6 +13,9 @@ here is safe to rely on.
 or EF Core, and the [strict-mapping rule](migrating/strict-mapping.md) that catches people out in
 their first hour.
 
+**Hit an error?** [Error Messages, Explained](error-messages.md) takes the messages you can reach
+from ordinary code and gives, for each, the query that produces it and the change that fixes it.
+
 ## Setup
 
 Create a new console project and add the packages:
@@ -163,11 +166,11 @@ var cheap = connection.Query<Product>(
     new { MaxPrice = 15.00m });
 ```
 
-Or skip the object entirely and pass values positionally — Jaunty parses the SQL to find the
-parameter names and binds your values in order:
+Or, when the SQL names exactly one parameter, pass the value on its own. Jaunty parses the SQL,
+finds the one name and binds it; two or more names take an object:
 
 ```csharp
-var cheapPositional = connection.Query<Product>(
+var cheapScalar = connection.Query<Product>(
     "SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products WHERE unit_price < @MaxPrice",
     15.00m);
 ```
@@ -301,7 +304,7 @@ names while pointing at whatever the database actually calls things:
 using Jaunty.Attributes;
 
 [Table("products")]
-public class ProductEntity
+public partial class ProductEntity
 {
     [Key]
     [Column("product_id")]
@@ -318,6 +321,13 @@ public class ProductEntity
     public bool Discontinued { get; set; }
 }
 ```
+
+**The `partial` keyword is required, not stylistic.** Jaunty's source generator writes the mapper
+for this class into a second file at build time, which is what keeps the library free of runtime
+reflection. Leave `partial` off and the generator reports `JAUNTYGEN004` as a warning and emits
+nothing, and the first call using the entity throws `No parameter binder found for type
+'ProductEntity'`. If you cannot make a class partial, `UseReflectionMapping()` from
+`Jaunty.Extensions.Reflection` is the deliberate opt-out.
 
 `[Table]` overrides the table name Jaunty infers from the class name. `[Column]` does the same
 for a property's column. `[Key]` marks the primary key, and
@@ -393,6 +403,15 @@ You've now touched every core building block: strict mapping, partial mapping, p
 writes, transactions, a custom mapper, attribute mapping, async, and streaming. From here:
 
 - Read the [`exercises.md`](exercises.md) in this folder to practice each of these on your own.
+  Exercise 6 is the one to do before you write your first join: a lambda `On` aliases both tables
+  after the parameter names you wrote, and an alias retires the table name, so a string condition
+  added afterwards has to use the alias. `ToSql()` shows which is which.
+- [Error Messages, Explained](error-messages.md) covers the messages you can reach from the code
+  above, including the strict-mapping exception you triggered on purpose in Step 2.
 - The root `README.md` in the repository documents the full API surface, including bulk
   operations, upserts, stored procedures, `GridReader` for multiple result sets, and
   interceptors for logging and auditing.
+- [How Jaunty got fast](how-jaunty-got-fast.md) walks the read path from 1.80x slower than
+  hand-coded ADO.NET to the closest of the micro-ORMs to it, with the code before and after
+  each step, the measurements that drove it, and the baseline defect found on the way. Step 7's custom mapper above already uses the `GetDouble` trick
+  from that story.

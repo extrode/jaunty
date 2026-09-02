@@ -206,8 +206,204 @@ public static class CsvImportExtensions
             return ImportViaPreparedStatements(connection, tableName, filePath, options);
         }
 
+        // The schema checks below read the connection's own schema set, and so does the
+        // prepared-statement path they can route to. Both have to see one connection: the pool is
+        // FIFO, so a probe that opens and closes hands its handle to the back of the queue and the
+        // next Open takes a different one (measured: two handles, temp table on the first, the
+        // second open sees it and the one after does not). Probing on one handle and importing on
+        // another puts the rows in whatever that second handle calls the table.
+        bool wasClosed = connection.State == ConnectionState.Closed;
+        if (wasClosed)
+            connection.Open();
+
+        try
+        {
+            // The sqlite3 CLI is a separate process: it opens dbPath as its own "main" and has
+            // attached nothing, so the caller's ATTACH aliases and temp tables do not exist for it.
+            // Targeting one of those through the CLI fails two ways, and the quiet one is the
+            // reason for this check: an unknown alias exits 1 ("unknown database"), but
+            // "--schema temp" exits 0, imports into the CLI's own throwaway temp database, and
+            // leaves the caller's connection seeing nothing while CountCsvRows still reports the
+            // file's row count.
+            int schemaDot = tableName.IndexOf('.');
+            if (schemaDot >= 0)
+            {
+                if (!SqliteCliCanReach(connection, tableName.Substring(0, schemaDot), dbPath))
+                    return ImportViaPreparedStatements(connection, tableName, filePath, options);
+
+                // Reachable means the schema names the file the CLI was handed, and the CLI knows
+                // that file by its own name for it: main. A caller's second alias for the same file
+                // ("ATTACH 'app.db' AS alias2" where app.db is already main) does not exist in the
+                // CLI process, so the alias is rewritten rather than passed through.
+                tableName = "main." + tableName.Substring(schemaDot + 1);
+            }
+            else if (!SqliteUnqualifiedNameResolvesToMain(connection, tableName))
+            {
+                return ImportViaPreparedStatements(connection, tableName, filePath, options);
+            }
+        }
+        finally
+        {
+            // Closed before the CLI is spawned, not after it returns: the subprocess writes the
+            // file, and holding a handle the caller had closed across that is a lock the caller
+            // never asked for.
+            if (wasClosed)
+                connection.Close();
+        }
+
         // Use sqlite3 CLI for file-based databases
         return ImportViaSqliteCli(dbPath, tableName, filePath, options);
+    }
+
+    /// <summary>
+    /// Whether the sqlite3 CLI, launched against <paramref name="dbPath"/>, can reach the schema
+    /// <paramref name="schema"/> as it is named on <paramref name="connection"/>.
+    /// </summary>
+    /// <remarks>
+    /// The comparison is by file, not by name. "main" is not the only reachable schema: the same
+    /// file can be attached again under another alias (PRAGMA database_list then reports two rows
+    /// with one path), and that alias is reachable too because the CLI has the file open. temp
+    /// reports an empty file and is per-connection, so it is never reachable.
+    ///
+    /// The connection must already be open, and must be the one the import will use: a closed
+    /// connection does not mean nothing is attached, and a pooled probe that opens and closes gets
+    /// a different handle from the import that follows it. ImportSqlite owns the single open.
+    /// </remarks>
+    private static bool SqliteCliCanReach(IDbConnection connection, string schema, string dbPath)
+    {
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "PRAGMA database_list";
+
+        using IDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            if (!string.Equals(reader.GetString(1), schema, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (reader.IsDBNull(2))
+                return false;
+
+            string file = reader.GetString(2);
+            return file.Length > 0 && SamePath(file, dbPath);
+        }
+
+        return false;
+    }
+
+    private static bool SamePath(string left, string right)
+    {
+        try
+        {
+            return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), SqlitePathComparison);
+        }
+        catch (ArgumentException)
+        {
+            // A path GetFullPath rejects cannot be shown to be the CLI's own file, so treat it as
+            // unreachable and let the prepared-statement path handle the import.
+            return false;
+        }
+        catch (NotSupportedException)
+        {
+            return false;
+        }
+        catch (PathTooLongException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Whether an unqualified <paramref name="tableName"/> names a table in main on
+    /// <paramref name="connection"/>, and so means the same table to the sqlite3 CLI.
+    /// </summary>
+    /// <remarks>
+    /// SQLite resolves an unqualified name against the connection's own schema set - temp first,
+    /// then main, then each attached database in slot order - while the CLI resolves it against
+    /// its own main, where a caller's temp table and attached tables do not exist. Finding nothing
+    /// there, .import creates the table from the CSV's first line and exits 0, so the caller is
+    /// told the file's row count while its own connection still sees the table it meant, untouched.
+    /// A name that resolves nowhere on the connection is left to the CLI: creating the table is
+    /// what an import into a table that does not exist yet already does, and there is no other
+    /// table for it to be confused with.
+    ///
+    /// As with SqliteCliCanReach, the connection must already be open and must be the one the
+    /// import will use.
+    /// </remarks>
+    private static bool SqliteUnqualifiedNameResolvesToMain(IDbConnection connection, string tableName)
+    {
+        List<string> schemas = new List<string>();
+        using (IDbCommand command = connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA database_list";
+
+            using IDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+                schemas.Add(reader.GetString(1));
+        }
+
+        // database_list reports main at seq 0 and temp at seq 1, which is not the order names are
+        // resolved in, so the list is reordered to temp, main, then the rest as reported. The rest
+        // is slot order rather than ATTACH order - a DETACH frees a slot and the next ATTACH reuses
+        // it - and slot order is what SQLite itself searches.
+        List<string> resolutionOrder = new List<string>(schemas.Count);
+        AddSqliteSchemasNamed(resolutionOrder, schemas, "temp");
+        AddSqliteSchemasNamed(resolutionOrder, schemas, "main");
+        for (int i = 0; i < schemas.Count; i++)
+        {
+            if (!string.Equals(schemas[i], "temp", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(schemas[i], "main", StringComparison.OrdinalIgnoreCase))
+            {
+                resolutionOrder.Add(schemas[i]);
+            }
+        }
+
+        for (int i = 0; i < resolutionOrder.Count; i++)
+        {
+            if (!SqliteSchemaHasObjectNamed(connection, resolutionOrder[i], tableName))
+                continue;
+
+            return string.Equals(resolutionOrder[i], "main", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return true;
+    }
+
+    private static void AddSqliteSchemasNamed(List<string> target, List<string> schemas, string name)
+    {
+        for (int i = 0; i < schemas.Count; i++)
+        {
+            if (string.Equals(schemas[i], name, StringComparison.OrdinalIgnoreCase))
+                target.Add(schemas[i]);
+        }
+    }
+
+    /// <summary>
+    /// Whether <paramref name="schema"/> on <paramref name="connection"/> holds a table or view
+    /// named <paramref name="name"/>. A view counts: it shadows the same unqualified name, and an
+    /// import the prepared-statement path rejects out loud beats one the CLI redirects in silence.
+    /// </summary>
+    private static bool SqliteSchemaHasObjectNamed(IDbConnection connection, string schema, string name)
+    {
+        using IDbCommand command = connection.CreateCommand();
+
+        // sqlite_master rather than sqlite_schema: the newer name arrived in SQLite 3.33, and the
+        // bundled provider versions are not the only ones this runs against. COLLATE NOCASE
+        // because sqlite_master.name has no declared collation and so compares as BINARY, while
+        // SQLite resolves identifiers case-insensitively: without it, ImportCsv("People") against
+        // a temp table named "people" finds nothing, hands the name to the CLI, and lands back in
+        // the silent wrong target this check exists to close. NOCASE folds ASCII only, which is
+        // the same fold SQLite applies to identifiers.
+        command.CommandText = "SELECT 1 FROM \"" + schema.Replace("\"", "\"\"")
+            + "\".sqlite_master WHERE type IN ('table', 'view')"
+            + " AND name = @jauntyImportName COLLATE NOCASE LIMIT 1";
+
+        IDbDataParameter parameter = command.CreateParameter();
+        parameter.ParameterName = "@jauntyImportName";
+        parameter.DbType = DbType.String;
+        parameter.Value = name;
+        command.Parameters.Add(parameter);
+
+        return command.ExecuteScalar() is not null;
     }
 
     private static bool IsSqliteInMemoryDataSource(string dbPath)
@@ -237,7 +433,19 @@ public static class CsvImportExtensions
         // needs dialect escaping/quoting here to match ImportViaPreparedStatements' behavior for
         // keyword-collision table names (e.g. "GROUP") - the sqlite3 CLI's dot-command tokenizer
         // accepts double-quoted arguments the same way ImportViaPreparedStatements' SQL does.
-        string escapedTableName = EscapeQualifiedTableName(new SQLiteDialect(), tableName);
+        //
+        // A schema-qualified name cannot be passed to ".import" as one argument. The dot-command's
+        // TABLE parameter is a bare table name: given "main.people" the CLI creates and fills a
+        // table literally called `main.people` and exits 0, leaving the real target empty - the
+        // silent wrong-target case. Its own "--schema S" option is the mechanism, so the two
+        // segments are escaped separately and the schema travels as that option.
+        var sqliteDialect = new SQLiteDialect();
+        int schemaDot = tableName.IndexOf('.');
+        string escapedTableName = sqliteDialect.EscapeTableName(
+            null, schemaDot >= 0 ? tableName.Substring(schemaDot + 1) : tableName);
+        string schemaOption = schemaDot >= 0
+            ? $"--schema {sqliteDialect.EscapeTableName(null, tableName.Substring(0, schemaDot))} "
+            : string.Empty;
 
         // filePath comes from the caller and is embedded verbatim in the sqlite3 CLI's dot-command
         // script (piped over stdin); a quote or newline would let it break out of the quoted argument
@@ -266,9 +474,9 @@ public static class CsvImportExtensions
             commands.AppendLine($".separator \"{options.Delimiter}\"");
 
         if (options.HasHeader)
-            commands.AppendLine($".import --skip 1 \"{filePath.Replace("\\", "/")}\" {escapedTableName}");
+            commands.AppendLine($".import --skip 1 {schemaOption}\"{filePath.Replace("\\", "/")}\" {escapedTableName}");
         else
-            commands.AppendLine($".import \"{filePath.Replace("\\", "/")}\" {escapedTableName}");
+            commands.AppendLine($".import {schemaOption}\"{filePath.Replace("\\", "/")}\" {escapedTableName}");
 
         var psi = new ProcessStartInfo
         {
@@ -612,12 +820,6 @@ public static class CsvImportExtensions
     private const int CopyBufferChars = 4096;
 
     /// <summary>
-    /// Aborts an in-progress <c>COPY ... FROM STDIN</c> (AUD-R34-011). Npgsql's copy writer
-    /// completes the operation on <c>Dispose</c>, so a failure part-way through the file has to
-    /// call <c>Cancel()</c> or the rows already written are committed. Reflected for the same
-    /// reason <c>BeginTextImport</c> is - Jaunty does not reference Npgsql.
-    /// </summary>
-    /// <summary>
     /// PostgreSQL only: fail loudly when the connection can stream a client-side COPY but no
     /// provider is registered to do it.
     /// </summary>
@@ -855,6 +1057,16 @@ public static class CsvImportExtensions
         new(@"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$", RegexOptions.Compiled);
 
     private static readonly char[] SqliteCliUnsafeChars = { '"', '\r', '\n' };
+
+    // Windows and macOS resolve paths case-insensitively, Linux does not, and SqliteCliCanReach
+    // compares a PRAGMA database_list file against the connection string's own path. Determined
+    // with RuntimeInformation rather than an #if: netstandard2.0 runs on Linux too, and hardcoding
+    // OrdinalIgnoreCase there would call /data/Archive.db and /data/archive.db - two files on ext4 -
+    // the same, which is the silent wrong-target case this check exists to prevent.
+    private static readonly StringComparison SqlitePathComparison =
+        System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
+            ? StringComparison.Ordinal
+            : StringComparison.OrdinalIgnoreCase;
 
     private static void ValidateIdentifier(string identifier, string paramName)
     {

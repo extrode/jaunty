@@ -4,6 +4,7 @@ using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Dialects;
 using Jaunty.Extensions.Reflection;
+using Jaunty.Tests.Helpers;
 
 using Microsoft.Data.Sqlite;
 
@@ -47,7 +48,7 @@ public class ConfigurationGenerationTests : IDisposable
     {
         GC.SuppressFinalize(this);
         JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
+        TestInitializer.Initialize();
     }
 
     // Each test owns its entity type. The defect is per-T and permanent, so a type another test has

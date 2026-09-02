@@ -75,7 +75,7 @@ public class EnumStorageOverrideCallSiteTests
 
             object? bound = ParameterBinder.ApplyTypeHandlerIfNeeded(Ticket.Closed, column.Property);
 
-            Assert.Equal(Ticket.Closed, bound);
+            Assert.Equal((int)Ticket.Closed, bound);
         }
         finally
         {
@@ -84,7 +84,7 @@ public class EnumStorageOverrideCallSiteTests
     }
 
     [Fact]
-    public void ANumericOverrideStillWritesTheEnum()
+    public void ANumericOverrideStillWritesTheEnumNumber()
     {
         ColumnMetadata column = GeneratedColumn(EnumStorage.Numeric);
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
@@ -94,7 +94,7 @@ public class EnumStorageOverrideCallSiteTests
 
             object? bound = ParameterBinder.ApplyTypeHandlerIfNeeded(Ticket.Closed, column.Property, column.EnumStorageOverride);
 
-            Assert.Equal(Ticket.Closed, bound);
+            Assert.Equal((int)Ticket.Closed, bound);
         }
         finally
         {

@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html" class="active" aria-current="page">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#executive-summary">Executive Summary</a><a class="toc-l2" href="#api-design-inconsistencies">1. API Design Inconsistencies</a><a class="toc-l3" href="#high-missing-query-method-in-iflatfiledatabase">HIGH: Missing Query() Method in IFlatFileDatabase</a><a class="toc-l3" href="#medium-inconsistent-dispose-pattern">MEDIUM: Inconsistent Dispose Pattern</a><a class="toc-l3" href="#medium-missing-queryasync-raw-sql-method">MEDIUM: Missing QueryAsync Raw SQL Method</a><a class="toc-l3" href="#low-inconsistent-method-overloading-style">LOW: Inconsistent Method Overloading Style</a><a class="toc-l2" href="#performance-issues">2. Performance Issues</a><a class="toc-l3" href="#high-reflection-in-hot-paths-constitution-article-iii-violation">HIGH: Reflection in Hot Paths (Constitution Article III Violation)</a><a class="toc-l3" href="#high-expression-compilation-in-hot-path">HIGH: Expression Compilation in Hot Path</a><a class="toc-l3" href="#medium-unnecessary-linq-allocations-in-import-pipeline">MEDIUM: Unnecessary LINQ Allocations in Import Pipeline</a><a class="toc-l3" href="#medium-entities.tolist-in-batch-insert">MEDIUM: entities.ToList() in Batch Insert</a><a class="toc-l3" href="#low-stringbuilder-not-pre-sized">LOW: StringBuilder Not Pre-sized</a><a class="toc-l3" href="#low-duckdbparameter-object-allocations">LOW: DuckDBParameter Object Allocations</a><a class="toc-l2" href="#error-handling-issues">3. Error Handling Issues</a><a class="toc-l3" href="#medium-silent-exception-swallow-in-validatetargetschema">MEDIUM: Silent Exception Swallow in ValidateTargetSchema</a><a class="toc-l3" href="#low-inconsistent-error-message-formatting">LOW: Inconsistent Error Message Formatting</a><a class="toc-l2" href="#threading-concurrency">4. Threading &amp; Concurrency</a><a class="toc-l3" href="#medium-race-condition-in_modified-tracking">MEDIUM: Race Condition in _modified Tracking</a><a class="toc-l3" href="#low-cancellationtoken-not-propagated-to-file-io">LOW: CancellationToken Not Propagated to File I/O</a><a class="toc-l2" href="#documentation-xml-comments">5. Documentation &amp; XML Comments</a><a class="toc-l3" href="#low-missing-xml-comments-on-internal-helpers">LOW: Missing XML Comments on Internal Helpers</a><a class="toc-l3" href="#low-inconsistent-parameter-documentation">LOW: Inconsistent Parameter Documentation</a><a class="toc-l2" href="#test-coverage-gaps">6. Test Coverage Gaps</a><a class="toc-l3" href="#medium-no-tests-for-edge-cases">MEDIUM: No Tests for Edge Cases</a><a class="toc-l2" href="#nativeaot-compatibility">7. NativeAOT Compatibility</a><a class="toc-l3" href="#medium-reflection-usage-may-break-trimming">MEDIUM: Reflection Usage May Break Trimming</a><a class="toc-l2" href="#priority-matrix">Priority Matrix</a><a class="toc-l2" href="#recommended-action-plan">Recommended Action Plan</a><a class="toc-l3" href="#phase-1-critical-p0">Phase 1 (Critical - P0)</a><a class="toc-l3" href="#phase-2-important-p1">Phase 2 (Important - P1)</a><a class="toc-l3" href="#phase-3-nice-to-have-p2">Phase 3 (Nice-to-have - P2)</a><a class="toc-l2" href="#conclusion">Conclusion</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</nav>
+        <article>
+<h1 id="jaunty.flatfiles-code-analysis-inconsistencies-performance-issues">Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</h1>
+<blockquote>
+<p>Analysis date: March 2026
+Scope: All Jaunty.FlatFiles and Jaunty.FlatFiles.DuckDB source files</p>
+</blockquote>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p><strong>Critical Issues:</strong> 0
+<strong>High Priority Issues:</strong> 3
+<strong>Medium Priority Issues:</strong> 5
+<strong>Low Priority Issues:</strong> 4</p>
+<p>The Jaunty.FlatFiles implementation is <strong>functionally correct</strong> but has several inconsistencies with Jaunty core patterns and performance optimization opportunities.</p>
+<hr />
+<h2 id="api-design-inconsistencies">1. API Design Inconsistencies</h2>
+<h3 id="high-missing-query-method-in-iflatfiledatabase">HIGH: Missing Query<T>() Method in IFlatFileDatabase</h3>
+<p><strong>Issue:</strong> The interface defines CRUD, write-back, and import operations but <strong>lacks the core <code>Query&lt;T&gt;()</code> method</strong> that users need to actually read data from flat files.</p>
+<p><strong>Current State:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">interface</span> IFlatFileDatabase
+{
+    <span class="tok-com">// CRUD, Write-Back, Import methods exist...</span>
+    <span class="tok-com">// But NO Query&lt;T&gt;() method!</span>
+}
+</code></pre>
+</div>
+<p><strong>Impact:</strong> Users cannot query flat files through the interface. They must cast to <code>DuckDbFlatFileDatabase</code> or use a different pattern.</p>
+<p><strong>Expected (per spec.md User Stories):</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> results = <span class="tok-kw">await</span> db.Query&lt;SalesRecord&gt;()
+    .Where(x =&gt; x.Revenue &gt; <span class="tok-num">10000</span>)
+    .ToListAsync();
+</code></pre>
+</div>
+<p><strong>Fix Required:</strong> Add <code>IQueryable&lt;T&gt; Query&lt;T&gt;()</code> to <code>IFlatFileDatabase</code> and implement in <code>DuckDbFlatFileDatabase</code>.</p>
+<hr />
+<h3 id="medium-inconsistent-dispose-pattern">MEDIUM: Inconsistent Dispose Pattern</h3>
+<p><strong>Issue:</strong> <code>IFlatFileDatabase</code> conditionally implements <code>IAsyncDisposable</code> only for non-netstandard2.0 targets:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">interface</span> IFlatFileDatabase : IDisposable
+#<span class="tok-kw">if</span> !NETSTANDARD2_0
+    , IAsyncDisposable
+#endif
+</code></pre>
+</div>
+<p><strong>But</strong> <code>DuckDbFlatFileDatabase</code> unconditionally implements both:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> DuckDbFlatFileDatabase : IFlatFileDatabase
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> Dispose() { ... }
+    <span class="tok-kw">public</span> <span class="tok-kw">async</span> ValueTask DisposeAsync() { ... }
+}
+</code></pre>
+</div>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>netstandard2.0 consumers see <code>IAsyncDisposable</code> on the class but not the interface</li>
+<li>Violates Liskov Substitution Principle for netstandard2.0</li>
+</ul>
+<p><strong>Fix:</strong> Either:</p>
+<ol>
+<li>Remove conditional compilation from interface (preferable - netstandard2.0 has IAsyncDisposable via package)</li>
+<li>Add conditional compilation to class implementation</li>
+</ol>
+<hr />
+<h3 id="medium-missing-queryasync-raw-sql-method">MEDIUM: Missing <code>QueryAsync</code> Raw SQL Method</h3>
+<p><strong>Issue:</strong> The original spec (data-model.md) shows:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(string rawSql, <span class="tok-kw">params</span> object[] parameters);
+</code></pre>
+</div>
+<p>This is <strong>not implemented</strong> in <code>IFlatFileDatabase</code>.</p>
+<p><strong>Impact:</strong> Users cannot execute raw SQL queries through the interface.</p>
+<p><strong>Fix:</strong> Add method to interface and implement in <code>DuckDbFlatFileDatabase</code>.</p>
+<hr />
+<h3 id="low-inconsistent-method-overloading-style">LOW: Inconsistent Method Overloading Style</h3>
+<p><strong>Issue:</strong> Jaunty core uses <strong>method overloading</strong> instead of optional parameters (per the coding standards). FlatFiles mostly follows this but has inconsistencies:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good - overloads</span>
+ValueTask SaveAsync&lt;T&gt;(string outputPath, CancellationToken);
+ValueTask SaveAsync&lt;T&gt;(WriteBackMode mode, CancellationToken);
+
+<span class="tok-com">// Inconsistent - optional parameter</span>
+ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(
+    DbConnection targetConnection,
+    Action&lt;ImportOptions&gt;? configure = <span class="tok-kw">null</span>,  <span class="tok-com">// ← Optional parameter</span>
+    CancellationToken cancellationToken = <span class="tok-kw">default</span>);
+</code></pre>
+</div>
+<p><strong>Fix:</strong> Add overloads:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, CancellationToken);
+ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Action&lt;ImportOptions&gt; configure, CancellationToken);
+</code></pre>
+</div>
+<hr />
+<h2 id="performance-issues">2. Performance Issues</h2>
+<h3 id="high-reflection-in-hot-paths-constitution-article-iii-violation">HIGH: Reflection in Hot Paths (Constitution Article III Violation)</h3>
+<p><strong>Issue:</strong> <code>FlatFileExpressionHelper.GetColumnMappings()</code> and <code>GetDateTimeColumnNames()</code> use <strong>uncached reflection</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(string ColumnName, PropertyInfo Property)&gt; GetColumnMappings(Type entityType)
+{
+    <span class="tok-kw">var</span> result = <span class="tok-kw">new</span> List&lt;(string, PropertyInfo)&gt;();
+    <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> prop <span class="tok-kw">in</span> entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))  <span class="tok-com">// ← Reflection!</span>
+    {
+        <span class="tok-kw">if</span> (!prop.CanRead || !prop.CanWrite) <span class="tok-kw">continue</span>;
+        result.Add((GetColumnName(prop), prop));  <span class="tok-com">// ← GetColumnName calls GetCustomAttribute</span>
+    }
+    <span class="tok-kw">return</span> result;
+}
+</code></pre>
+</div>
+<p><strong>Called:</strong> Every <code>InsertAsync</code>, <code>UpdateAsync</code>, <code>DeleteAsync</code>, and import operation.</p>
+<p><strong>Constitution Article III Violation:</strong></p>
+<blockquote>
+<p>No runtime reflection in the abstractions layer</p>
+</blockquote>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>~500-1000ns overhead per call for reflection</li>
+<li>Multiplied by entity count in batch operations</li>
+</ul>
+<p><strong>Fix:</strong> Cache column mappings per type:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> ConcurrentDictionary&lt;Type, List&lt;(string, PropertyInfo)&gt;&gt; _columnCache = <span class="tok-kw">new</span>();
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(string ColumnName, PropertyInfo Property)&gt; GetColumnMappings(Type entityType)
+{
+    <span class="tok-kw">return</span> _columnCache.GetOrAdd(entityType, type =&gt;
+    {
+        <span class="tok-kw">var</span> result = <span class="tok-kw">new</span> List&lt;(string, PropertyInfo)&gt;();
+        <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> prop <span class="tok-kw">in</span> type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            <span class="tok-kw">if</span> (!prop.CanRead || !prop.CanWrite) <span class="tok-kw">continue</span>;
+            result.Add((GetColumnName(prop), prop));
+        }
+        <span class="tok-kw">return</span> result;
+    });
+}
+</code></pre>
+</div>
+<hr />
+<h3 id="high-expression-compilation-in-hot-path">HIGH: Expression Compilation in Hot Path</h3>
+<p><strong>Issue:</strong> <code>FlatFileExpressionHelper.EvaluateExpression()</code> <strong>compiles expressions at runtime</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> object? EvaluateExpression(Expression expression)
+{
+    <span class="tok-com">// ...</span>
+    <span class="tok-com">// Compile and invoke for complex expressions (closures, field access, etc.)</span>
+    <span class="tok-kw">var</span> lambda = Expression.Lambda(expression);
+    <span class="tok-kw">var</span> compiled = lambda.Compile();  <span class="tok-com">// ← Expensive!</span>
+    <span class="tok-kw">return</span> compiled.DynamicInvoke();
+}
+</code></pre>
+</div>
+<p><strong>Called:</strong> Every predicate evaluation in WHERE clauses.</p>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>Expression compilation: ~5-10μs</li>
+<li>Should be &lt;100ns for cached delegates</li>
+</ul>
+<p><strong>Fix:</strong> Cache compiled delegates:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> ConcurrentDictionary&lt;Expression, Func&lt;object?&gt;&gt; _expressionCache = <span class="tok-kw">new</span>();
+
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> object? EvaluateExpression(Expression expression)
+{
+    <span class="tok-kw">if</span> (expression <span class="tok-kw">is</span> ConstantExpression constant)
+        <span class="tok-kw">return</span> constant.Value;
+    
+    <span class="tok-kw">if</span> (expression <span class="tok-kw">is</span> UnaryExpression { NodeType: ExpressionType.Convert } unary)
+        <span class="tok-kw">return</span> EvaluateExpression(unary.Operand);
+    
+    <span class="tok-kw">return</span> _expressionCache.GetOrAdd(expression, expr =&gt;
+    {
+        <span class="tok-kw">var</span> lambda = Expression.Lambda&lt;Func&lt;object?&gt;&gt;(expr);
+        <span class="tok-kw">return</span> lambda.Compile();
+    })();
+}
+</code></pre>
+</div>
+<hr />
+<h3 id="medium-unnecessary-linq-allocations-in-import-pipeline">MEDIUM: Unnecessary LINQ Allocations in Import Pipeline</h3>
+<p><strong>Issue:</strong> <code>ImportExecutor.ExecuteAsync()</code> creates LINQ allocations on every import:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columnNames = mappings.Select(m =&gt; m.ColumnName).ToList();  <span class="tok-com">// ← Allocation</span>
+<span class="tok-kw">var</span> parameterNames = Enumerable.Range(<span class="tok-num">0</span>, mappings.Count).Select(i =&gt; $&quot;@p{i}&quot;).ToList();  <span class="tok-com">// ← Allocation</span>
+</code></pre>
+</div>
+<p><strong>Called:</strong> Every import operation.</p>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>~100-200 bytes allocated per import setup</li>
+<li>String interpolation in loop creates multiple string objects</li>
+</ul>
+<p><strong>Fix:</strong> Use pre-sized collections:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columnNames = <span class="tok-kw">new</span> List&lt;string&gt;(mappings.Count);
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> mapping <span class="tok-kw">in</span> mappings)
+    columnNames.Add(mapping.ColumnName);
+
+<span class="tok-kw">var</span> parameterNames = <span class="tok-kw">new</span> List&lt;string&gt;(mappings.Count);
+<span class="tok-kw">for</span> (int i = <span class="tok-num">0</span>; i &lt; mappings.Count; i++)
+    parameterNames.Add($&quot;@p{i}&quot;);
+</code></pre>
+</div>
+<hr />
+<h3 id="medium-entities.tolist-in-batch-insert">MEDIUM: entities.ToList() in Batch Insert</h3>
+<p><strong>Issue:</strong> <code>InsertAsync(IEnumerable&lt;T&gt;)</code> eagerly materializes the entire sequence:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entityList = entities <span class="tok-kw">as</span> IList&lt;T&gt; ?? entities.ToList();  <span class="tok-com">// ← Full enumeration</span>
+</code></pre>
+</div>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>Defeats purpose of <code>IEnumerable&lt;T&gt;</code> for streaming</li>
+<li>OOM risk for large sequences</li>
+<li>Unnecessary allocation if already a list</li>
+</ul>
+<p><strong>Fix:</strong> Check for common collection types first:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entityList = entities <span class="tok-kw">switch</span>
+{
+    IList&lt;T&gt; list =&gt; list,
+    ICollection&lt;T&gt; collection =&gt; collection.ToList(), <span class="tok-com">// At least we know the count</span>
+    _ =&gt; entities.ToList()
+};
+</code></pre>
+</div>
+<p>Better: Support true streaming with a configurable max batch size.</p>
+<hr />
+<h3 id="low-stringbuilder-not-pre-sized">LOW: StringBuilder Not Pre-sized</h3>
+<p><strong>Issue:</strong> Multiple <code>StringBuilder</code> usages don't specify initial capacity:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columns = <span class="tok-kw">new</span> StringBuilder();  <span class="tok-com">// Default: 16 chars</span>
+<span class="tok-kw">var</span> values = <span class="tok-kw">new</span> StringBuilder();
+</code></pre>
+</div>
+<p><strong>Impact:</strong> Multiple buffer reallocations for entities with many columns.</p>
+<p><strong>Fix:</strong> Estimate capacity:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columns = <span class="tok-kw">new</span> StringBuilder(mappings.Count * <span class="tok-num">20</span>);  <span class="tok-com">// ~20 chars per column name</span>
+<span class="tok-kw">var</span> values = <span class="tok-kw">new</span> StringBuilder(mappings.Count * <span class="tok-num">10</span>);   <span class="tok-com">// ~10 chars per parameter</span>
+</code></pre>
+</div>
+<hr />
+<h3 id="low-duckdbparameter-object-allocations">LOW: DuckDBParameter Object Allocations</h3>
+<p><strong>Issue:</strong> CRUD operations create new <code>DuckDBParameter</code> objects for every operation:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">parameters.Add(<span class="tok-kw">new</span> DuckDBParameter { Value = prop.GetValue(entity) ?? DBNull.Value });
+</code></pre>
+</div>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>GC pressure in high-throughput scenarios</li>
+<li>~48 bytes per parameter</li>
+</ul>
+<p><strong>Fix:</strong> Reuse parameters where possible (requires DuckDB.NET API support for parameter reset).</p>
+<hr />
+<h2 id="error-handling-issues">3. Error Handling Issues</h2>
+<h3 id="medium-silent-exception-swallow-in-validatetargetschema">MEDIUM: Silent Exception Swallow in ValidateTargetSchema</h3>
+<p><strong>Issue:</strong> <code>ImportExecutor.ValidateTargetSchema()</code> catches all exceptions and silently continues:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">catch</span> (Exception ex) <span class="tok-kw">when</span> (ex <span class="tok-kw">is</span> <span class="tok-kw">not</span> InvalidOperationException)
+{
+    <span class="tok-com">// Table doesn't exist — if CreateTableIfMissing was true, it should have been created already.</span>
+    <span class="tok-com">// If not, the INSERT will fail with a clear error anyway.</span>
+}
+</code></pre>
+</div>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>Hides potential bugs (connection issues, permission errors, etc.)</li>
+<li>Makes debugging harder</li>
+</ul>
+<p><strong>Fix:</strong> Log or re-wrap exception:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">catch</span> (Exception ex) <span class="tok-kw">when</span> (ex <span class="tok-kw">is</span> <span class="tok-kw">not</span> InvalidOperationException)
+{
+    <span class="tok-com">// Only swallow if we expect the table to be created later</span>
+    <span class="tok-kw">if</span> (!createTableIfMissing)
+        <span class="tok-kw">throw</span> <span class="tok-kw">new</span> InvalidOperationException(
+            $&quot;Target table <span class="tok-str">'{tableName}'</span> does <span class="tok-kw">not</span> exist <span class="tok-kw">and</span> CreateTableIfMissing <span class="tok-kw">is</span> <span class="tok-kw">false</span>.&quot;, ex);
+}
+</code></pre>
+</div>
+<hr />
+<h3 id="low-inconsistent-error-message-formatting">LOW: Inconsistent Error Message Formatting</h3>
+<p><strong>Issue:</strong> Error messages use different formats:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Format 1</span>
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> InvalidOperationException(
+    $&quot;No file source registered <span class="tok-kw">for</span> entity type <span class="tok-str">'{typeof(T).Name}'</span>. &quot; +
+    $&quot;Register it via AddCsv&lt;{<span class="tok-kw">typeof</span>(T).Name}&gt;(), AddParquet&lt;{<span class="tok-kw">typeof</span>(T).Name}&gt;(), etc.&quot;);
+
+<span class="tok-com">// Format 2</span>
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(
+    $&quot;Cannot infer output format from extension <span class="tok-str">'{ext}'</span>. Supported: .csv, .tsv, .parquet, .json, .ndjson&quot;,
+    nameof(path));
+</code></pre>
+</div>
+<p><strong>Fix:</strong> Standardize on one format (preferably Format 2 with <code>nameof</code>).</p>
+<hr />
+<h2 id="threading-concurrency">4. Threading &amp; Concurrency</h2>
+<h3 id="medium-race-condition-in_modified-tracking">MEDIUM: Race Condition in _modified Tracking</h3>
+<p><strong>Issue:</strong> <code>_modified</code> dictionary is concurrent, but the check-then-set pattern is not atomic:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">if</span> (result &gt; <span class="tok-num">0</span>) _modified[<span class="tok-kw">typeof</span>(T)] = <span class="tok-kw">true</span>;  <span class="tok-com">// ← Race condition if concurrent calls</span>
+</code></pre>
+</div>
+<p><strong>Impact:</strong> Lost updates if multiple threads call CRUD operations simultaneously (unlikely but possible).</p>
+<p><strong>Fix:</strong> Use atomic operation:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">if</span> (result &gt; <span class="tok-num">0</span>) _modified.TryAdd(<span class="tok-kw">typeof</span>(T), <span class="tok-kw">true</span>);  <span class="tok-com">// Or use Interlocked</span>
+</code></pre>
+</div>
+<hr />
+<h3 id="low-cancellationtoken-not-propagated-to-file-io">LOW: CancellationToken Not Propagated to File I/O</h3>
+<p><strong>Issue:</strong> <code>SaveAsync&lt;T&gt;(WriteBackMode.Overwrite)</code> doesn't pass cancellation token to file operations:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">File.Delete(originalPath);  <span class="tok-com">// ← No cancellation</span>
+File.Move(tempPath, originalPath);
+</code></pre>
+</div>
+<p><strong>Fix:</strong> Use async file I/O with cancellation (requires .NET 8+ or custom wrapper).</p>
+<hr />
+<h2 id="documentation-xml-comments">5. Documentation &amp; XML Comments</h2>
+<h3 id="low-missing-xml-comments-on-internal-helpers">LOW: Missing XML Comments on Internal Helpers</h3>
+<p><strong>Issue:</strong> Several internal methods lack XML documentation:</p>
+<ul>
+<li><code>ApplyPreload()</code></li>
+<li><code>InferFormatFromExtension()</code></li>
+<li><code>GetSourceOrThrow&lt;T&gt;()</code></li>
+</ul>
+<p><strong>Fix:</strong> Add summary comments.</p>
+<hr />
+<h3 id="low-inconsistent-parameter-documentation">LOW: Inconsistent Parameter Documentation</h3>
+<p><strong>Issue:</strong> Some methods document <code>cancellationToken</code>, others don't:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;cancellationToken&quot;&gt;A token to monitor for cancellation.&lt;/param&gt;  // ← Present</span>
+<span class="tok-com">// ...or missing entirely</span>
+</code></pre>
+</div>
+<p><strong>Fix:</strong> Add to all async methods.</p>
+<hr />
+<h2 id="test-coverage-gaps">6. Test Coverage Gaps</h2>
+<h3 id="medium-no-tests-for-edge-cases">MEDIUM: No Tests for Edge Cases</h3>
+<p><strong>Missing test scenarios:</strong></p>
+<ol>
+<li>Concurrent CRUD operations on same entity type</li>
+<li>Expression compilation caching verification</li>
+<li>Large batch insert (&gt;10K entities)</li>
+<li>DateTime column casting edge cases</li>
+<li>Schema validation with nullable types</li>
+</ol>
+<hr />
+<h2 id="nativeaot-compatibility">7. NativeAOT Compatibility</h2>
+<h3 id="medium-reflection-usage-may-break-trimming">MEDIUM: Reflection Usage May Break Trimming</h3>
+<p><strong>Issue:</strong> While the abstractions package is marked <code>IsAotCompatible</code>, the reflection usage in:</p>
+<ul>
+<li><code>GetColumnMappings()</code></li>
+<li><code>GetDateTimeColumnNames()</code></li>
+<li><code>EvaluateExpression()</code></li>
+</ul>
+<p>May be trimmed if not properly annotated.</p>
+<p><strong>Fix:</strong> Add <code>[DynamicallyAccessedMembers]</code> attributes:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(string ColumnName, PropertyInfo Property)&gt; GetColumnMappings(
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
+    Type entityType)
+</code></pre>
+</div>
+<hr />
+<h2 id="priority-matrix">Priority Matrix</h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Severity</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Missing Query<T>()</td>
+<td>High</td>
+<td>Low</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>Reflection in hot paths</td>
+<td>High</td>
+<td>Medium</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>Expression compilation</td>
+<td>High</td>
+<td>Medium</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>Inconsistent Dispose pattern</td>
+<td>Medium</td>
+<td>Low</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>LINQ allocations in import</td>
+<td>Medium</td>
+<td>Low</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>entities.ToList() eager materialization</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>Race condition in _modified</td>
+<td>Medium</td>
+<td>Low</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>Missing QueryAsync raw SQL</td>
+<td>Medium</td>
+<td>Low</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>Optional parameter vs overloads</td>
+<td>Low</td>
+<td>Low</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>StringBuilder not pre-sized</td>
+<td>Low</td>
+<td>Low</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>DuckDBParameter allocations</td>
+<td>Low</td>
+<td>High</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>Silent exception swallow</td>
+<td>Low</td>
+<td>Low</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>NativeAOT annotations</td>
+<td>Medium</td>
+<td>Low</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recommended-action-plan">Recommended Action Plan</h2>
+<h3 id="phase-1-critical-p0">Phase 1 (Critical - P0)</h3>
+<ol>
+<li>Add <code>Query&lt;T&gt;()</code> method to interface and implementation</li>
+<li>Cache column mappings to eliminate reflection</li>
+<li>Cache compiled expressions</li>
+</ol>
+<h3 id="phase-2-important-p1">Phase 2 (Important - P1)</h3>
+<ol start="4">
+<li>Fix Dispose pattern consistency</li>
+<li>Add <code>QueryAsync(string rawSql)</code> method</li>
+<li>Optimize LINQ allocations in import pipeline</li>
+<li>Add NativeAOT annotations</li>
+<li>Fix race condition in _modified tracking</li>
+</ol>
+<h3 id="phase-3-nice-to-have-p2">Phase 3 (Nice-to-have - P2)</h3>
+<ol start="9">
+<li>Convert optional parameters to overloads</li>
+<li>Pre-size StringBuilders</li>
+<li>Improve error handling consistency</li>
+<li>Add missing XML documentation</li>
+</ol>
+<hr />
+<h2 id="conclusion">Conclusion</h2>
+<p>The Jaunty.FlatFiles implementation is <strong>functionally complete</strong> but has <strong>performance and consistency issues</strong> that should be addressed before v1.0 release. The most critical issues are:</p>
+<ol>
+<li><strong>Missing Query<T>()</strong> - Core functionality gap</li>
+<li><strong>Uncached reflection</strong> - Violates Constitution Article III</li>
+<li><strong>Expression compilation</strong> - Significant performance impact</li>
+</ol>
+<p>Addressing these three issues should be the top priority.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="04-extensions-flatfiles-architecture.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Flatfiles / Architecture</span>
+</a><a class="pn-next" href="04-extensions-flatfiles-flatfile-spec.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Flatfiles / Flatfile spec</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

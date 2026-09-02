@@ -130,7 +130,7 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         // but it is not redundant to Jaunty.SourceGenerator, whose GetSemanticTargetForGeneration
         // requires a [Table] attribute to consider a class at all. The elided case is the *normal*
         // one for two of the four providers - MySqlSchemaReader hardcodes '' AS SchemaName and
-        // SQLite has no schemas - so a SQLite table named `Customer` scaffolded to a `Customer`
+        // SQLiteSchemaReader reports an empty schema (it reads `main` only) - so a SQLite table named `Customer` scaffolded to a `Customer`
         // class with no attribute, got no generated mapper, and silently fell back to reflection
         // (or threw, if UseReflectionMapping() was never called) with nothing to indicate why.
         //

@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 
@@ -42,10 +42,11 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
         string leftColumn = GetColumnName<T1>(leftProp, _parent.FromAlias);
-        string rightColumn = GetColumnName<T3>(rightProp, _alias);
+        string? alias = Infer(rightKey.Parameters[0].Name);
+        string rightColumn = GetColumnName<T3>(rightProp, alias);
 
         string condition = $"{leftColumn} = {rightColumn}";
-        return CreateJoinedQuery3(condition);
+        return CreateJoinedQuery3(condition, alias);
     }
 
     public IJoinedQuery3<T1, T2, T3> OnFromSecond<TLeftKey, TRightKey>(Expression<Func<T2, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey)
@@ -54,25 +55,28 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
         string leftColumn = GetColumnName<T2>(leftProp, _parent.Joins[0].Alias);
-        string rightColumn = GetColumnName<T3>(rightProp, _alias);
+        string? alias = Infer(rightKey.Parameters[0].Name);
+        string rightColumn = GetColumnName<T3>(rightProp, alias);
 
         string condition = $"{leftColumn} = {rightColumn}";
-        return CreateJoinedQuery3(condition);
+        return CreateJoinedQuery3(condition, alias);
     }
 
     public IJoinedQuery3<T1, T2, T3> On(Expression<Func<T1, T2, T3, bool>> predicate)
     {
+        string? alias = Infer(predicate.Parameters[2].Name);
+
         var visitor = new JoinExpressionVisitor3<T1, T2, T3>(
             _parent.Dialect,
             _parent.FromAlias,
             _parent.Joins[0].Alias,
-            _alias);
+            alias);
 
         (string condition, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
 
         // Renumbered against the query-wide sequence: each visitor mints its value parameters
         // from a counter that restarts at 0, so by the third join "jp0" is usually already bound.
-        return CreateJoinedQuery3(_parent.RegisterExpressionParameters(condition, parameters));
+        return CreateJoinedQuery3(_parent.RegisterExpressionParameters(condition, parameters), alias);
     }
 
     /// <inheritdoc cref="JoinClauseBuilder{TFrom, TJoin}.On(string, string)"/>
@@ -103,13 +107,33 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         return joinedQuery;
     }
 
+    /// <summary>
+    /// The alias for T3, inferred from the lambda parameter naming it when the caller supplied none.
+    /// </summary>
+    /// <remarks>
+    /// Only this join's own table is at stake: T1's and T2's aliases were settled by the two-table
+    /// <c>On</c>, whose condition is already a rendered string, so they are read here as constraints
+    /// rather than revised.
+    /// </remarks>
+    private string? Infer(string? name)
+        => _alias ?? AliasInference.ForAddedJoin(
+            _parent.Dialect,
+            new[] { _parent.FromAlias, _parent.Joins[0].Alias },
+            new[] { _parent.FromTable, _parent.Joins[0].TableName },
+            _metadata.TableName,
+            name,
+            2);
+
     private JoinedQuery3Builder<T1, T2, T3> CreateJoinedQuery3(string onCondition)
+        => CreateJoinedQuery3(onCondition, _alias);
+
+    private JoinedQuery3Builder<T1, T2, T3> CreateJoinedQuery3(string onCondition, string? alias)
     {
         var joinInfo = new JoinInfo(
             _joinType,
             _metadata.TableName,
             _metadata.SchemaName,
-            _alias,
+            alias,
             onCondition);
 
         if (_addedJoin is JoinInfo previous)
@@ -353,9 +377,9 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         EntityMetadata t2Metadata = FluentMetadataCache.GetMetadata<T2>();
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
 
-        string[] t1Columns = _parent.GetPrefixedColumnsWithAlias(t1Metadata, _parent.FromAlias, "t1_");
-        string[] t2Columns = _parent.GetPrefixedColumnsWithAlias(t2Metadata, _parent.Joins[0].Alias, "t2_");
-        string[] t3Columns = _parent.GetPrefixedColumnsWithAlias(t3Metadata, _parent.Joins[1].Alias, "t3_");
+        string[] t1Columns = _parent.GetPrefixedColumns(t1Metadata, _parent.FromAlias);
+        string[] t2Columns = _parent.GetPrefixedColumns(t2Metadata, _parent.Joins[0].Alias);
+        string[] t3Columns = _parent.GetPrefixedColumns(t3Metadata, _parent.Joins[1].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).ToArray();
 
         string sql = _parent.BuildSelectSql(allColumns);
@@ -381,13 +405,12 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
             try
             {
                 using IDataReader reader = command.ExecuteReader();
-                Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
 
                 while (reader.Read())
                 {
-                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
-                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
-                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
+                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, 0);
+                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, t1Columns.Length);
+                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, t1Columns.Length + t2Columns.Length);
                     results.Add((t1, t2, t3));
                 }
             }
@@ -494,9 +517,9 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         EntityMetadata t2Metadata = FluentMetadataCache.GetMetadata<T2>();
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
 
-        string[] t1Columns = _parent.GetPrefixedColumnsWithAlias(t1Metadata, _parent.FromAlias, "t1_");
-        string[] t2Columns = _parent.GetPrefixedColumnsWithAlias(t2Metadata, _parent.Joins[0].Alias, "t2_");
-        string[] t3Columns = _parent.GetPrefixedColumnsWithAlias(t3Metadata, _parent.Joins[1].Alias, "t3_");
+        string[] t1Columns = _parent.GetPrefixedColumns(t1Metadata, _parent.FromAlias);
+        string[] t2Columns = _parent.GetPrefixedColumns(t2Metadata, _parent.Joins[0].Alias);
+        string[] t3Columns = _parent.GetPrefixedColumns(t3Metadata, _parent.Joins[1].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).ToArray();
 
         string sql = _parent.BuildSelectSql(allColumns);
@@ -522,13 +545,12 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
             try
             {
                 using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-                Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
 
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
-                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
-                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
+                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, 0);
+                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, t1Columns.Length);
+                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, t1Columns.Length + t2Columns.Length);
                     results.Add((t1, t2, t3));
                 }
             }

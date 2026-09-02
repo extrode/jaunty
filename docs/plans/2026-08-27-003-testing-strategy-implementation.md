@@ -337,7 +337,7 @@ trimmed, so unset is correct there. The plan said verify and add nothing; nothin
 ### 2. Dialect boundary theories — **done, and it found a defect**
 
 The decimal half was already closed by `Unit/Dialects/DecimalBindingBoundaryTests.cs` (227 lines,
-`7521c281`) alongside the pre-existing `DecimalBindingDialectTests.cs`. The open half was
+`93fafe26`) alongside the pre-existing `DecimalBindingDialectTests.cs`. The open half was
 temporal, and there was no cross-dialect temporal round-trip coverage anywhere — only unit-level
 string-to-temporal conversion tests.
 
@@ -457,7 +457,7 @@ before it.
 #### Why the re-run was stopped — twice
 
 **First attempt**: `concurrency: 12` on a 16-thread box, with 49 `dotnet` processes live between
-Stryker's testhosts and MSBuild's node reuse. Committed as `f0028eea`: both configs now pin **4**,
+Stryker's testhosts and MSBuild's node reuse. Committed as `bc891670`: both configs now pin **4**,
 and the nightly overrides upward via `CI_MUTATION_CONCURRENCY` (default 8).
 
 **Second attempt, at concurrency 4: also cancelled, at 106 minutes.** Concurrency 4 was not enough
@@ -515,7 +515,7 @@ current score and it supersedes the 90.75 % baseline.
 
 ## Phase 2 — new additive capabilities
 
-### 1 and 2 — fuzz harness and nightly workflow: DONE (`7224b6d7`)
+### 1 and 2 — fuzz harness and nightly workflow: DONE (`1511f297`)
 
 `tools/Jaunty.Fuzz` (csproj, `Program.cs`, 20-seed `corpus/`, `README.md`),
 `.github/workflows/nightly.yml`, the `Jaunty.Fuzz` `InternalsVisibleTo` entry in
@@ -574,7 +574,7 @@ Measured rather than assumed, because Stryker cannot be re-run on this machine. 
 | Before | 39 | 73.8 % |
 | After `ExistsVisitorDispatchTests` (16 facts) | **0** | **100 %** |
 
-`5d962f84` had already closed the value-emission half on 2026-08-27, after the baseline was taken;
+`760c76c6` had already closed the value-emission half on 2026-08-27, after the baseline was taken;
 what remained was the **dispatcher** — the `Visit*` overrides, which only run when a node arrives
 through the base traversal rather than through `VisitBinary`'s direct call to `AnalyzeExpression`.
 

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Error Messages, Explained — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Error Messages, Explained</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html" class="active" aria-current="page">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#no-such-column-products.supplier_id">no such column: products.supplier_id</a><a class="toc-l2" href="#no-metadata-found-for-type-product">No metadata found for type 'Product'.</a><a class="toc-l2" href="#invalidoperationexception-naming-a-property-with-no-column">InvalidOperationException naming a property with no column</a><a class="toc-l2" href="#reading-generated-sql">Reading generated SQL</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Error Messages, Explained</nav>
+        <article>
+<h1 id="error-messages-explained">Error Messages, Explained</h1>
+<p>Each entry is a message you can hit from ordinary code, the query that produces it, and the change
+that fixes it. Messages quoted here were captured from a run, not paraphrased; the wording of a
+database error varies by engine, so the SQLite form is given and the SQL Server equivalent noted
+where it reads differently.</p>
+<p>If a message you hit is not here, the ones that are should still show the shape of the answer:
+Jaunty generates SQL you can read, so <code>ToSql()</code> on the query is the first move in every case.</p>
+<h2 id="no-such-column-products.supplier_id"><code>no such column: products.supplier_id</code></h2>
+<p><strong>SQL Server:</strong> <code>The multi-part identifier &quot;products.supplier_id&quot; could not be bound.</code></p>
+<p>You wrote a lambda <code>On</code>, which aliases the table, and then a string that names the table.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">db.From&lt;Product&gt;()
+  .InnerJoin&lt;Category&gt;().On((p, c) =&gt; p.CategoryId == c.CategoryId)
+  .InnerJoin&lt;Supplier&gt;().On(&quot;products.supplier_id = suppliers.supplier_id&quot;);
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">FROM</span> products p
+<span class="tok-kw">INNER</span> <span class="tok-kw">JOIN</span> categories c <span class="tok-kw">ON</span> (p.category_id = c.category_id)
+<span class="tok-kw">INNER</span> <span class="tok-kw">JOIN</span> suppliers <span class="tok-kw">ON</span> products.supplier_id = suppliers.supplier_id
+                        ^^^^^^^^
+</code></pre>
+</div>
+<p>Jaunty took <code>p</code> and <code>c</code> from the names you wrote in the lambda, so the FROM clause reads
+<code>FROM products p</code>. In SQL, aliasing a table retires its name as a qualifier for the rest of the
+statement — there is no dialect where <code>products.</code> and <code>p.</code> both work once <code>p</code> is declared. The
+string was passed through untouched, so <code>products</code> refers to nothing.</p>
+<p><strong>Fix:</strong> use the alias the lambda established.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">.InnerJoin&lt;Supplier&gt;().On(&quot;p.supplier_id = suppliers.supplier_id&quot;);
+</code></pre>
+</div>
+<p>The same applies to every string-form API on such a query — <code>Where(&quot;products.unit_price &gt; 10&quot;)</code>,
+<code>Where(&quot;products.x&quot;, value)</code>, <code>SelectPartial(&quot;products.unit_price, categories.category_name&quot;)</code>.</p>
+<p><strong>Strings are not the problem; the qualifier is.</strong> Once the alias exists, string conditions keep
+working as long as they use it:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">.Where(&quot;p.unit_price &gt; <span class="tok-num">20</span>&quot;)                    <span class="tok-com">// runs</span>
+</code></pre>
+</div>
+<p>A subquery inside the string is a separate scope, so naming the table <em>there</em> is still right — the
+alias belongs to the outer statement only:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">.Where(&quot;p.product_id IN (SELECT product_id FROM products WHERE discontinued = <span class="tok-num">0</span>)&quot;)   <span class="tok-com">// runs</span>
+</code></pre>
+</div>
+<p>Both were executed against Jaunty's own SQLite test database rather than reasoned about, and both
+returned rows.</p>
+<p><strong>Why it fails rather than silently working.</strong> It would be worse if it didn't. A query whose
+qualifier resolves to the wrong table is well-formed SQL returning the wrong rows, and nothing
+would tell you. The database rejecting the statement, naming the token to change, is the outcome
+to want.</p>
+<p><strong>How to see the alias:</strong> call <code>ToSql()</code> before executing. The alias is always the lambda
+parameter name; where Jaunty cannot use that name — it is a SQL keyword, or another table in the
+query already has it — the table stays unaliased and the full name keeps working.</p>
+<h2 id="no-metadata-found-for-type-product"><code>No metadata found for type 'Product'.</code></h2>
+<p>Full text:</p>
+<blockquote>
+<p>No metadata found for type 'Product'. Ensure the class has [Table] and is processed by the Jaunty
+source generator (the class must be declared 'partial'), or call Jaunty.Extensions.Reflection's
+UseReflectionMapping().</p>
+</blockquote>
+<p>Jaunty reads entity metadata that its source generator emits at compile time — that is what keeps
+it free of runtime reflection and NativeAOT-safe. The message means the generator produced nothing
+for this type. Three causes, in the order they occur:</p>
+<ol>
+<li><strong>The class is not <code>partial</code>.</strong> The generator adds to your class, so it needs the keyword.
+<code>public partial class Product</code>.</li>
+<li><strong>The generator is not referenced.</strong> In a project that references <code>Jaunty</code> through a project
+reference rather than the NuGet package, the analyzer has to be wired up explicitly:
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">XML</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="xml"><code class="language-xml">&lt;ProjectReference Include=&quot;..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj&quot;
+                  OutputItemType=&quot;Analyzer&quot; ReferenceOutputAssembly=&quot;false&quot; /&gt;
+</code></pre>
+</div>
+The NuGet package does this for you.</li>
+<li><strong>The type has no <code>[Table]</code> attribute</strong> and no convention picked it up.</li>
+</ol>
+<p>If you want runtime reflection instead — for a prototype, or a type you cannot make <code>partial</code> —
+<code>UseReflectionMapping()</code> from <code>Jaunty.Extensions.Reflection</code> supplies it, at the cost of the
+NativeAOT guarantee.</p>
+<h2 id="invalidoperationexception-naming-a-property-with-no-column"><code>InvalidOperationException</code> naming a property with no column</h2>
+<p><code>Query&lt;T&gt;</code> maps strictly: every public writable property must have a column in the result set. A
+property that does not is an error at the call site rather than a silently-null field.</p>
+<p>This one has its own page, because it is the difference people meet first when porting from
+another ORM: <a href="08-learn-migrating-strict-mapping.html">strict mapping</a>. <code>QueryPartial&lt;T&gt;</code> is the opt-out when
+you genuinely want a partial shape.</p>
+<h2 id="reading-generated-sql">Reading generated SQL</h2>
+<p>Every fluent query answers <code>ToSql()</code> without executing, which resolves most questions in this file
+faster than the exception does:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">string sql = db.From&lt;Product&gt;()
+    .InnerJoin&lt;Category&gt;().On((p, c) =&gt; p.CategoryId == c.CategoryId)
+    .Where((p, c) =&gt; p.CategoryId == <span class="tok-num">1</span>)
+    .ToSql();
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">SELECT</span> p.product_id, p.product_name, p.category_id, p.unit_price, p.units_in_stock, p.discontinued,
+       c.category_id, c.category_name, c.description
+<span class="tok-kw">FROM</span> products p
+<span class="tok-kw">INNER</span> <span class="tok-kw">JOIN</span> categories c <span class="tok-kw">ON</span> p.category_id = c.category_id
+<span class="tok-kw">WHERE</span> (p.category_id = @p_category_id)
+</code></pre>
+</div>
+<p>Parameters are named after the column they filter, and HAVING operands after the aggregate they are
+compared to (<code>HAVING COUNT(*) &gt; @count</code>), so a name in a command log can be searched for in the
+query that produced it.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="08-learn-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="08-learn-exercises.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Exercises</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

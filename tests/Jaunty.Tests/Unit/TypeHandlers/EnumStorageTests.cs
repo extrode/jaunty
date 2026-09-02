@@ -1,6 +1,6 @@
 using Jaunty.Attributes;
 using Jaunty.Configuration;
-using Jaunty.Extensions.Reflection;
+using Jaunty.Tests.Helpers;
 
 namespace Jaunty.Tests.Unit.TypeHandlers;
 
@@ -104,7 +104,7 @@ public class EnumStorageTests : IDisposable
         // Act — Reset() is the API under test here; restore reflection mapping afterwards
         // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
+        TestInitializer.Initialize();
         if (interceptorsBeforeReset is { Length: > 0 })
             JauntyConfig.AddInterceptors(interceptorsBeforeReset);
 

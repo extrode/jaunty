@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adding a New Method — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Adding a New Method</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html" class="active" aria-current="page">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#decide-whether-it-belongs-in-core">1. Decide whether it belongs in core</a><a class="toc-l2" href="#put-the-public-method-where-its-family-lives">2. Put the public method where its family lives</a><a class="toc-l2" href="#keep-the-public-method-a-thin-wrapper">3. Keep the public method a thin wrapper</a><a class="toc-l2" href="#ship-the-whole-overload-family-not-a-subset">4. Ship the whole overload family, not a subset</a><a class="toc-l2" href="#write-the-tests-first-in-both-suites">5. Write the tests first, in both suites</a><a class="toc-l2" href="#document-it-in-the-same-branch">6. Document it in the same branch</a><a class="toc-l2" href="#before-opening-the-merge">7. Before opening the merge</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Adding a New Method</nav>
+        <article>
+<h1 id="adding-a-new-method">Adding a New Method</h1>
+<p>How a new public method gets from an idea to a merged, tested, documented part of Jaunty's API
+surface. The shape below is not a style preference; it is what the 680 existing <code>IDbConnection</code> extension
+methods in <code>src/Jaunty</code> already do, and a method that departs from it reads as an exception
+forever.</p>
+<p>Before starting, read <a href="03-development-api-design-guidelines.html"><code>api-design-guidelines.md</code></a>. The constitution
+(<code>docs/constitution.md</code>) is binding: no LINQ in hot paths, no runtime reflection in core, tests
+before implementation.</p>
+<hr />
+<h2 id="decide-whether-it-belongs-in-core">1. Decide whether it belongs in core</h2>
+<p><code>src/Jaunty</code> has <strong>no package references on net8.0 or net10.0</strong> - not one, nothing transitive -
+and <code>PackageDependencyTests</code> asserts it. On netstandard2.0 it carries exactly two backports of
+types that are in-box on modern .NET. If your method needs a dependency, it belongs in an
+extension package, not in core:</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Jaunty.Extensions.Reflection</code></td>
+<td>anything that reflects at runtime</td>
+</tr>
+<tr>
+<td><code>Jaunty.Extensions.Logging</code></td>
+<td><code>ILogger</code>, DI registration</td>
+</tr>
+<tr>
+<td><code>Jaunty.Extensions.Npgsql</code></td>
+<td>PostgreSQL-specific surface</td>
+</tr>
+<tr>
+<td><code>Jaunty.Fluent</code></td>
+<td>the expression-tree query builder</td>
+</tr>
+<tr>
+<td><code>Jaunty.FlatFiles</code></td>
+<td>CSV, Parquet, DuckDB</td>
+</tr>
+</tbody>
+</table>
+<p>Core stays AOT- and trim-clean. <code>IsTrimmable</code> and <code>IsAotCompatible</code> are set for every net8.0+
+target in <code>src/Directory.Build.props</code>, so a new reflection call in core is a build warning before
+it is a review comment.</p>
+<h2 id="put-the-public-method-where-its-family-lives">2. Put the public method where its family lives</h2>
+<p>One file per method family, named for the method:</p>
+<pre><code>src/Jaunty/Read/     Query.cs  QueryAsync.cs  QueryPartialFirst.cs  QueryScalar.cs  ...
+src/Jaunty/Write/    Insert.cs  BulkInsertAsync.cs  Upsert.cs  ...
+src/Jaunty/Execute/  Multiple/  Streaming/  StoredProcedure/
+</code></pre>
+<p>Every one of these files is <code>public static partial class Jaunty</code>, so the whole surface is one
+class spread across files. A new <code>QuerySomething</code> goes in <code>src/Jaunty/Read/QuerySomething.cs</code>, and
+its async twin in <code>QuerySomethingAsync.cs</code> - never both in one file.</p>
+<h2 id="keep-the-public-method-a-thin-wrapper">3. Keep the public method a thin wrapper</h2>
+<p>Public methods guard their arguments and delegate. They contain no logic:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; QueryPartial&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+{
+#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+    ArgumentNullException.ThrowIfNull(connection);
+    ArgumentNullException.ThrowIfNull(sql);
+    ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#<span class="tok-kw">else</span>
+    <span class="tok-kw">if</span> (connection <span class="tok-kw">is</span> <span class="tok-kw">null</span>) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentNullException(nameof(connection));
+    <span class="tok-kw">if</span> (sql <span class="tok-kw">is</span> <span class="tok-kw">null</span>) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentNullException(nameof(sql));
+    <span class="tok-kw">if</span> (string.IsNullOrWhiteSpace(sql)) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(&quot;SQL cannot be empty <span class="tok-kw">or</span> whitespace.&quot;, nameof(sql));
+#endif
+    <span class="tok-kw">return</span> QueryCore&lt;T&gt;(connection, sql, <span class="tok-kw">null</span>, <span class="tok-kw">default</span>, MappingMode.Projection);
+}
+</code></pre>
+</div>
+<p>The work lives in <code>src/Jaunty/Internals/</code>, in a <code>*Core</code> method that every overload of the family
+funnels into. That is what makes the overload count affordable: <code>QueryPartial&lt;T&gt;</code> has four
+synchronous arities and all four are four lines each.</p>
+<p>See <a href="03-development-multi-targeting.html"><code>multi-targeting.md</code></a> for why the guard is written twice.</p>
+<h2 id="ship-the-whole-overload-family-not-a-subset">4. Ship the whole overload family, not a subset</h2>
+<p>The families are uniform on purpose, and a partial family is the thing reviewers push back on
+hardest. For a read method that means eight methods:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>no options</th>
+<th>with options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>sync</strong></td>
+<td><code>(sql)</code></td>
+<td><code>(sql, CommandOptions&lt;T&gt; options)</code></td>
+</tr>
+<tr>
+<td><strong>sync + params</strong></td>
+<td><code>(sql, object parameters)</code></td>
+<td><code>(sql, object parameters, CommandOptions&lt;T&gt; options)</code></td>
+</tr>
+<tr>
+<td><strong>async</strong></td>
+<td><code>(sql, CancellationToken = default)</code></td>
+<td><code>(sql, CommandOptions&lt;T&gt; options, CancellationToken = default)</code></td>
+</tr>
+<tr>
+<td><strong>async + params</strong></td>
+<td><code>(sql, object parameters, CancellationToken = default)</code></td>
+<td><code>(sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken = default)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Rules that fall out of this:</p>
+<ul>
+<li>Async methods return <code>ValueTask&lt;T&gt;</code>, not <code>Task&lt;T&gt;</code>, and take the <code>CancellationToken</code> <strong>last</strong>
+with a <code>default</code>.</li>
+<li>A method that maps entities takes <code>CommandOptions&lt;T&gt;</code>. One that does not takes the non-generic
+<code>CommandOptions</code>. Never the other way round: the implicit conversion silently drops <code>Mapper</code> and
+<code>ExpectedRowCount</code> (see <a href="01-api-reference-command-options.html#the-implicit-conversion-loses-two-fields"><code>../01-api-reference/command-options.md</code></a>).</li>
+<li>Do not add an overload that creates ambiguity between the strict and partial variants of a
+family. This is the one rule the module's coding notes calls out by name.</li>
+</ul>
+<h2 id="write-the-tests-first-in-both-suites">5. Write the tests first, in both suites</h2>
+<table>
+<thead>
+<tr>
+<th>Suite</th>
+<th>Scope</th>
+<th>Frameworks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tests/Jaunty.UnitTests</code></td>
+<td>isolated internals, no database</td>
+<td>net8.0, net10.0, net472</td>
+</tr>
+<tr>
+<td><code>tests/Jaunty.Tests</code></td>
+<td>observable API behaviour, live engines</td>
+<td>net8.0, net10.0, net472</td>
+</tr>
+</tbody>
+</table>
+<p>Unit tests go under a directory mirroring the source (<code>Unit/Read/</code>, <code>Unit/Write/</code>). Integration
+tests go under <code>Integration/</code> and should be dialect-parameterized where the behaviour is
+SQL-generating rather than provider-neutral.</p>
+<p>Two rules that are enforced rather than advisory:</p>
+<ul>
+<li><strong>A new test that passes on its first run is not yet trusted.</strong> Change the input, or break the
+code under it, and confirm the test fails. A test that passes because the code never executed
+asserts nothing.</li>
+<li><strong>A new test project must be added to <code>Jaunty.slnx</code> and named by both CI framework legs.</strong>
+<code>SolutionLayoutTests</code> fails the build otherwise - being in the solution only gets a suite
+compiled; a workflow step has to invoke it or it never runs.</li>
+</ul>
+<h2 id="document-it-in-the-same-branch">6. Document it in the same branch</h2>
+<p>Three places, and the link checker gates the last one:</p>
+<ol>
+<li><strong>XML doc comments</strong> on every public overload - summary, every <code>typeparam</code> and <code>param</code>,
+<code>returns</code>, <code>exception</code> for each one the method can throw, and at least one <code>example</code>. The house
+style is <a href="03-development-xml-documentation-style.html"><code>xml-documentation-style.md</code></a>.</li>
+<li><strong><code>docs/01-api-reference/</code></strong> - add the method to the family page, and to the table in
+<a href="01-api-reference-README.html"><code>README.md</code></a> and
+<a href="01-api-reference-api-summary.html"><code>api-summary.md</code></a>.</li>
+<li>Run <code>node scripts/check-doc-links.mjs</code>. It exits non-zero on any broken relative link.</li>
+</ol>
+<h2 id="before-opening-the-merge">7. Before opening the merge</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet build Jaunty.slnx -c Release            # 0 warnings; analyzers are errors here
+dotnet test  Jaunty.slnx -c Release            # all frameworks
+pwsh scripts/Verify-NativeAOT.ps1              # markers-only reflection scan over src/
+node scripts/check-doc-links.mjs
+</code></pre>
+</div>
+<p><code>Verify-NativeAOT.ps1</code> fails on any reflection call in <code>src/</code> that is not annotated with an
+<code>AOT-SAFE:</code> marker in the contiguous comment block immediately above it. The marker has to say
+<em>why</em> the call is safe. Putting it anywhere else is silently ignored - it reads as an ordinary
+failure with no hint that a marker was present.</p>
+<p>If the method touches a database, reset the fixtures afterwards:
+<code>pwsh scripts/reset-test-databases.ps1 -e</code>.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="03-development-api-design-guidelines.html"><code>api-design-guidelines.md</code></a> - the API surface rules in full</li>
+<li><a href="03-development-xml-documentation-style.html"><code>xml-documentation-style.md</code></a> - doc comment house style</li>
+<li><a href="03-development-multi-targeting.html"><code>multi-targeting.md</code></a> - netstandard2.0, net8.0, net10.0, net472</li>
+<li><a href="03-development-code-review-checklist.html"><code>code-review-checklist.md</code></a> - what a reviewer will look for</li>
+<li><a href="02-architecture-parameter-binding-spec.html"><code>../02-architecture/parameter-binding-spec.md</code></a> - how parameters reach the command</li>
+<li><a href="01-api-reference-README.html"><code>../01-api-reference/README.md</code></a> - the surface you are adding to</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-OPTIMIZATIONS.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">OPTIMIZATIONS</span>
+</a><a class="pn-next" href="03-development-api-design-guidelines.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Api design guidelines</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

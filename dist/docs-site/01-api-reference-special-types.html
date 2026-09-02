@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Special Types — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Special Types</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html" class="active" aria-current="page">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#registration-is-required">Registration is required</a><a class="toc-l3" href="#nativeaot">NativeAOT</a><a class="toc-l2" href="#dictionary">Dictionary</a><a class="toc-l2" href="#dynamic">dynamic</a><a class="toc-l2" href="#keyvaluepair">KeyValuePair</a><a class="toc-l2" href="#valuetuple">ValueTuple</a><a class="toc-l2" href="#duplicate-column-names">Duplicate column names</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Special Types</nav>
+        <article>
+<h1 id="special-types">Special Types</h1>
+<h2 id="overview">Overview</h2>
+<p>Four result shapes have no properties for Jaunty to map, so they are handled by a dedicated
+resolver rather than by the source generator or the ordinary reflection mapper:</p>
+<table>
+<thead>
+<tr>
+<th><code>T</code></th>
+<th>Shape</th>
+<th>Mapping</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Dictionary&lt;string, object&gt;</code></td>
+<td>one entry per column</td>
+<td>by column name, case-<strong>insensitive</strong></td>
+</tr>
+<tr>
+<td><code>Dictionary&lt;string, TValue&gt;</code></td>
+<td>one entry per column, values converted to <code>TValue</code></td>
+<td>by column name, case-<strong>insensitive</strong></td>
+</tr>
+<tr>
+<td><code>dynamic</code> (<code>object</code>)</td>
+<td>an <code>ExpandoObject</code></td>
+<td>by column name, case-<strong>sensitive</strong></td>
+</tr>
+<tr>
+<td><code>KeyValuePair&lt;TKey, TValue&gt;</code></td>
+<td>first two columns</td>
+<td>positional</td>
+</tr>
+<tr>
+<td><code>ValueTuple&lt;...&gt;</code></td>
+<td>first <em>n</em> columns</td>
+<td>positional</td>
+</tr>
+</tbody>
+</table>
+<p>They work with any read method that takes a <code>T</code>: <code>Query&lt;T&gt;</code>, <code>QueryFirst&lt;T&gt;</code>,
+<code>QuerySingleOrDefault&lt;T&gt;</code>, the streaming forms, and the async twins of all of them.</p>
+<p>For untyped rows without any of this machinery, see
+<a href="01-api-reference-query-partial-methods.html#querypartiallist---untyped-rows"><code>QueryPartialList</code></a>, which returns
+<code>List&lt;IDictionary&lt;string, object?&gt;&gt;</code> with no registration and no reflection extension.</p>
+<hr />
+<h2 id="registration-is-required">Registration is required</h2>
+<p>Special-type mapping lives in <code>Jaunty.Extensions.Reflection</code>, not in the core package. Nothing is
+wired up until you register it:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> Jaunty.Extensions.Reflection;
+
+JauntyReflectionExtensions.UseReflectionMapping();   <span class="tok-com">// registers special types as well</span>
+</code></pre>
+</div>
+<p><code>UseReflectionMapping()</code> calls <code>SpecialTypeMappers.Register()</code> for you, because
+<code>DrDispatcher</code> has to resolve these types through the special-type hook before it ever reaches the
+property-based reflection mapper - and these types have no mappable properties, so reaching that
+mapper would fail. If you want the special-type hook and nothing else:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">SpecialTypeMappers.Register();
+</code></pre>
+</div>
+<p><code>Register()</code> is idempotent and non-clobbering: it assigns <code>JauntyConfig.SpecialTypeMapperResolver</code>
+only when that property is still null, so a custom resolver you installed yourself survives a
+later call.</p>
+<p>Without registration, <code>Query&lt;Dictionary&lt;string, object&gt;&gt;</code> throws
+<em>No mapper found for type 'Dictionary`2'</em>.</p>
+<h3 id="nativeaot">NativeAOT</h3>
+<p><code>SpecialTypeMappers</code> is <strong>not</strong> AOT-safe. It builds dictionaries and tuples through
+<code>Activator.CreateInstance</code> and <code>MakeGenericType</code>. In a trimmed or AOT-published application, use
+strongly-typed entities, or a DTO plus strict mapping (see
+<a href="01-api-reference-query-partial-methods.html#partial-mapping-does-not-use-the-source-generated-mapper"><code>query-partial-methods.md</code></a>),
+or exclude the assembly from trimming.</p>
+<hr />
+<h2 id="dictionary">Dictionary</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> rows = connection.Query&lt;Dictionary&lt;string, object&gt;&gt;(
+    &quot;SELECT ProductID, ProductName FROM Products&quot;);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> row <span class="tok-kw">in</span> rows)
+    Console.WriteLine($&quot;{row[&quot;productid&quot;]}: {row[&quot;productname&quot;]}&quot;);
+</code></pre>
+</div>
+<p>The dictionary is built with <code>StringComparer.OrdinalIgnoreCase</code>, so <code>row[&quot;productid&quot;]</code> and
+<code>row[&quot;ProductID&quot;]</code> both resolve.</p>
+<p><code>Dictionary&lt;string, TValue&gt;</code> converts each value to <code>TValue</code>; a <code>NULL</code> becomes the default for
+<code>TValue</code>. A key type other than <code>string</code> throws <code>NotSupportedException</code>.</p>
+<h2 id="dynamic">dynamic</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> rows = connection.Query&lt;dynamic&gt;(&quot;SELECT ProductID, ProductName FROM Products&quot;);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> row <span class="tok-kw">in</span> rows)
+    Console.WriteLine($&quot;{row.ProductID}: {row.ProductName}&quot;);
+</code></pre>
+</div>
+<p>Rows are <code>ExpandoObject</code>. Member access is case-sensitive, because C# is.</p>
+<p><strong>This does not match <code>Dictionary</code>.</strong> An <code>ExpandoObject</code>'s backing
+<code>IDictionary&lt;string, object?&gt;</code> is ordinal case-sensitive and takes no comparer, so:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> dict = connection.QueryFirst&lt;Dictionary&lt;string, object&gt;&gt;(sql);
+dict[&quot;customerid&quot;];                                         <span class="tok-com">// resolves against CustomerID</span>
+
+<span class="tok-kw">var</span> dyn  = connection.QueryFirst&lt;dynamic&gt;(sql);
+((IDictionary&lt;string, object?&gt;)dyn)[&quot;customerid&quot;];           <span class="tok-com">// KeyNotFoundException</span>
+</code></pre>
+</div>
+<p>The asymmetry is not fixable in the mapper: aligning the two would mean not returning an
+<code>ExpandoObject</code> from <code>Query&lt;dynamic&gt;</code>, which is the documented contract. Recorded as AUD-R35-226.
+Use the exact column casing when indexing a <code>dynamic</code> row as a dictionary.</p>
+<h2 id="keyvaluepair">KeyValuePair</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> pairs = connection.Query&lt;KeyValuePair&lt;int, string&gt;&gt;(
+    &quot;SELECT CategoryID, CategoryName FROM Categories&quot;);
+</code></pre>
+</div>
+<p>Positional: column 0 is the key, column 1 is the value. Extra columns are ignored. Fewer than two
+columns throws <code>InvalidOperationException</code> naming the actual field count. A <code>NULL</code> becomes the
+default for that side.</p>
+<h2 id="valuetuple">ValueTuple</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> rows = connection.Query&lt;(int Id, string Name, decimal Price)&gt;(
+    &quot;SELECT ProductID, ProductName, UnitPrice FROM Products&quot;);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> (id, name, price) <span class="tok-kw">in</span> rows)
+    Console.WriteLine($&quot;{id} {name} {price:C}&quot;);
+</code></pre>
+</div>
+<p>Positional, left to right. The query must return at least as many columns as the tuple has
+elements; fewer throws <code>InvalidOperationException</code> listing the expected types.</p>
+<p><strong>Eight or more elements throws <code>NotSupportedException</code>.</strong> C# nests beyond seven elements into a
+<code>Rest</code> field, and a positional mapper would bind that nested tuple as a single column - silently
+truncating. Failing fast is deliberate. Use a DTO instead.</p>
+<p>Tuple element <em>names</em> are compiler sugar and are not used for matching; only position matters.</p>
+<hr />
+<h2 id="duplicate-column-names">Duplicate column names</h2>
+<p>A join that returns two columns called <code>Id</code> would collapse into one dictionary entry. Jaunty
+disambiguates instead, in all three untyped paths - <code>Dictionary</code>, <code>dynamic</code>, and
+<code>QueryPartialList</code> - so both columns survive as distinct keys.</p>
+<p>The rule is shared rather than copied between the sites (<code>DuplicateColumnNames.Disambiguate</code>),
+because the two were found drifted apart once already: <code>QueryPartialList</code> and <code>Dictionary</code> were
+aligned by AUD-R26, and <code>dynamic</code> was carried over later by AUD-R34-024, having silently kept only
+the last of two <code>Id</code> columns until then.</p>
+<p>Prefer aliasing in SQL (<code>SELECT p.Id AS ProductId, c.Id AS CategoryId</code>) over relying on the
+disambiguated names.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="01-api-reference-query-methods.html"><code>query-methods.md</code></a> - the read methods these types plug into</li>
+<li><a href="01-api-reference-query-partial-methods.html"><code>query-partial-methods.md</code></a> - <code>QueryPartialList</code> and projection mapping</li>
+<li><a href="01-api-reference-configuration.html"><code>configuration.md</code></a> - <code>JauntyConfig.SpecialTypeMapperResolver</code></li>
+<li><a href="04-extensions-README.html"><code>../04-extensions/README.md</code></a> - the reflection extension package</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-single-result-methods.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Single result methods</span>
+</a><a class="pn-next" href="01-api-reference-stored-procedures.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Stored procedures</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

@@ -443,8 +443,11 @@ public static class DatabaseSetup
     }
 
     /// <summary>
-    /// Initializes RepoDb for all providers. Must be called once during GlobalSetup.
-    /// Registers all providers at once since BDN may run multiple providers in the same process.
+    /// Initializes RepoDb. Must be called once during GlobalSetup. All four providers are
+    /// registered because BDN's process holds one <see cref="DatabaseProvider"/> per run but
+    /// the registration is global and cheap; the bool mapping is SQLite-only because it is
+    /// global too, and on SQL Server, PostgreSQL and MariaDB it made RepoDb round-trip a native
+    /// bit/boolean through Int64 and a property handler on every row.
     /// </summary>
     public static void InitializeRepoDb(DatabaseProvider provider)
     {
@@ -456,6 +459,9 @@ public static class DatabaseSetup
             .UseSqlServer()
             .UsePostgreSql()
             .UseMySqlConnector();
+
+        if (provider != DatabaseProvider.Sqlite)
+            return;
 
         TypeMapper.Add(typeof(bool), DbType.Int64);
 

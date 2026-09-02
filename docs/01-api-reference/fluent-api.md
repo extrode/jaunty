@@ -328,31 +328,75 @@ Specifies the join condition using a strongly-typed expression predicate.
 IJoinedQuery<T, TJoin> On(Expression<Func<T, TJoin, bool>> predicate)
 ```
 
-#### OnColumns(string leftColumn, string rightColumn)
+#### On(string leftColumn, string rightColumn)
 
-Specifies the join condition using column names.
+Specifies the join condition as an equality between two column names. Each side is qualified, by
+alias or by table name.
 
 **Signature:**
 ```csharp
-IJoinedQuery<T, TJoin> OnColumns(string leftColumn, string rightColumn)
+IJoinedQuery<T, TJoin> On(string leftColumn, string rightColumn)
 ```
 
-#### OnRaw(string condition)
+#### On(string condition)
 
-Specifies the join condition using raw SQL.
+Specifies the join condition as raw SQL, passed through untouched.
 
 **Signature:**
 ```csharp
-IJoinedQuery<T, TJoin> OnRaw(string condition)
+IJoinedQuery<T, TJoin> On(string condition)
 ```
 
 **Example:**
 ```csharp
 var products = connection.From<Product>("p")
     .InnerJoin<Category>("c")
-    .OnColumns("category_id", "id")
+    .On("p.category_id", "c.category_id")
     .Select();
 ```
+
+### Aliases and string conditions
+
+A lambda `On` aliases both tables after the parameter names you wrote, and **an alias retires the
+table name for the rest of the statement**. Which qualifier a later string may use therefore depends
+on what the earlier `On` did.
+
+```csharp
+connection.From<Product>()
+    .InnerJoin<Category>()
+    .On((p, cat) => p.CategoryId == cat.CategoryId)
+```
+
+```sql
+FROM products p INNER JOIN categories cat ON (p.category_id = cat.category_id)
+```
+
+From that point `p` and `cat` are the qualifiers, and every string-form call on the query is passed
+through as written:
+
+| string | result |
+|---|---|
+| `Where("p.unit_price > 20")` | runs |
+| `Where("p.product_id IN (SELECT product_id FROM products WHERE discontinued = 0)")` | runs — the subquery opens its own scope, where `products` is a table again |
+| `Where("products.unit_price > 20")` | **fails.** SQLite: `SQLite Error 1: 'no such column: products.unit_price'.`; SQL Server: `Msg 4104, The multi-part identifier "products.unit_price" could not be bound.` |
+
+A query that never uses a lambda `On` has nothing aliased, so the table name stays valid throughout:
+
+```csharp
+connection.From<Product>()
+    .InnerJoin<Category>()
+    .On("products.category_id", "categories.category_id")
+    .Where("products.unit_price > 20")     // runs
+```
+
+Inference is per join and all-or-nothing. A parameter name that is a SQL keyword in the dialect,
+that another table or alias in the query already holds, or that equals the table it would alias, is
+declined, and that join keeps the fully qualified form. An explicit `From<Product>("prd")` or
+`InnerJoin<Category>("cat")` always wins. A self-join with neither side aliased takes `t1`/`t2`,
+because two occurrences of one table name cannot be told apart.
+
+**Call `ToSql()` if you are unsure** — it returns the statement without executing it, so the
+qualifier to use is visible before the query runs.
 
 ### DISTINCT
 
@@ -380,7 +424,7 @@ Limits the number of results returned (equivalent to LIMIT/TOP).
 
 **Signature:**
 ```csharp
-IFromClause<T> Take(int count)
+IPagedClause<T> Take(int count)
 ```
 
 #### Skip(int count)
@@ -389,8 +433,12 @@ Skips the specified number of results (equivalent to OFFSET).
 
 **Signature:**
 ```csharp
-IFromClause<T> Skip(int count)
+IPagedClause<T> Skip(int count)
 ```
+
+`IPagedClause<T>` derives from `IFromClause<T>`, so the chain continues as before; the narrower
+type exists so a paged query cannot reach `DeleteAll` or `UpdateAll`, where the paging would have
+been silently discarded.
 
 **Example:**
 ```csharp
@@ -732,8 +780,11 @@ var sql = connection.From<Product>()
     .Where(p => p.CategoryId == 1)
     .OrderBy(p => p.ProductName)
     .ToSql();
-// Returns: "SELECT * FROM products WHERE category_id = @p0 ORDER BY product_name"
+// SELECT product_id, product_name, category_id, price FROM products
+// WHERE (category_id = @category_id) ORDER BY product_name
 ```
+
+Every mapped column is listed, never `*`, and a parameter is named after its column.
 
 ## Advanced Features
 
@@ -752,25 +803,65 @@ IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector)
 ```csharp
 var groupedProducts = connection.From<Product>()
     .GroupBy(p => p.CategoryId)
-    .Select(g => new { g.Key, Count = g.Count(), AveragePrice = g.Average(p => p.Price) });
+    .Select(g => new { g.Key, Count = g.Count(), AveragePrice = g.Avg(p => p.Price) });
 ```
+
+The aggregate methods on the group are `Count`, `Sum`, `Avg`, `Min` and `Max`; there is no LINQ
+`Average` because `IGrouping<TKey, T>` is Jaunty's own interface, not `System.Linq`'s.
+
+#### HAVING parameter names
+
+The alias rule reaches the parameters a `HAVING` clause binds. An operand is named after the
+aggregate it is compared to, read off the expression tree rather than the rendered SQL:
+
+```csharp
+var sql = connection.From<Product>()
+    .InnerJoin<Category>()
+    .On((p, c) => p.CategoryId == c.CategoryId)
+    .GroupBy((p, c) => p.CategoryId)
+    .Having(g => g.Sum((p, c) => p.UnitPrice) > 150m)
+    .ToSql(g => new { g.Key, Count = g.Count() });
+```
+
+```sql
+SELECT p.category_id AS "Key", COUNT(*) AS Count
+FROM products p
+INNER JOIN categories c ON (p.category_id = c.category_id)
+GROUP BY p.category_id
+HAVING SUM(p.unit_price) > @sum_p_unit_price
+```
+
+`g.Count() > 3` binds `@count`, and so does `3 < g.Count()`: the side that is an aggregate names
+the side that is a value, whichever way round you wrote it. A number is spent only where one query
+compares the same aggregate twice, which gives `@count_2`.
 
 ## Kitchen Sink Example
 
-A single query combining a join, multi-condition filtering, ordering, and pagination:
+A single query combining a join, multi-condition filtering and ordering. Aliases come from the
+lambda parameter names, so `p` and `c` below are what the SQL uses:
 
 ```csharp
-var products = connection.From<Product>("p")
-    .InnerJoin<Category>("c")
+var products = connection.From<Product>()
+    .InnerJoin<Category>()
     .On((p, c) => p.CategoryId == c.Id)
-    .WhereIn(p => p.CategoryId, new[] { 1, 2, 3 })
-    .And(p => p.Price >= 10m)
-    .WhereBetween(p => p.Price, 10m, 250m)
+    .Where((p, c) => p.Price >= 10m && p.Price <= 250m)
+    .And((p, c) => c.Name == "Beverages")
     .OrderBy(p => p.ProductName)
-    .Skip(20)
-    .Take(10)
     .Select();
 ```
+
+```sql
+SELECT p.product_id, p.product_name, p.category_id, p.price
+FROM products p
+INNER JOIN categories c ON (p.category_id = c.id)
+WHERE (((p.price >= @p_price) AND (p.price <= @p_price_2)) AND (c.name = @c_name))
+ORDER BY p.product_name
+```
+
+After `On(...)` the query is an `IJoinedQuery<Product, Category>`: its `Where`/`And`/`Or` take a
+two-parameter lambda, and `WhereIn`, `WhereBetween`, `Skip` and `Take` are not available on a
+join. Page a joined result with `Take`/`Skip` on the single-table query before the join, or in
+SQL.
 
 ## Important Notes
 

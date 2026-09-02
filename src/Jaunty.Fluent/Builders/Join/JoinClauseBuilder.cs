@@ -29,25 +29,52 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
         string leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
-        string leftColumn = GetColumnName<TFrom>(leftProp, _fromBuilder.Alias);
-        string rightColumn = GetColumnName<TJoin>(rightProp, _joinAlias);
+        (string? fromAlias, string? joinAlias) = Infer(
+            leftKey.Parameters[0].Name,
+            rightKey.Parameters[0].Name);
+
+        string leftColumn = GetColumnName<TFrom>(leftProp, fromAlias);
+        string rightColumn = GetColumnName<TJoin>(rightProp, joinAlias);
 
         string condition = $"{leftColumn} = {rightColumn}";
-        return CreateJoinedQuery(condition);
+        return CreateJoinedQuery(condition, fromAlias, joinAlias);
     }
 
     public IJoinedQuery<TFrom, TJoin> On(Expression<Func<TFrom, TJoin, bool>> predicate)
     {
+        (string? fromAlias, string? joinAlias) = Infer(
+            predicate.Parameters[0].Name,
+            predicate.Parameters[1].Name);
+
         var visitor = new JoinExpressionVisitor<TFrom, TJoin>(
             _fromBuilder.Dialect,
-            _fromBuilder.Alias,
-            _joinAlias);
+            fromAlias,
+            joinAlias);
 
         (string condition, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
-        JoinedQueryBuilder<TFrom, TJoin> joinedQuery = CreateJoinedQuery(condition);
+        JoinedQueryBuilder<TFrom, TJoin> joinedQuery = CreateJoinedQuery(condition, fromAlias, joinAlias);
         joinedQuery.AddOnParameters(parameters);
         return joinedQuery;
     }
+
+    /// <summary>
+    /// Resolves the pair of table aliases for an expression-bearing <c>On</c>, falling back to the
+    /// caller's explicit aliases when a lambda parameter name cannot serve as one.
+    /// </summary>
+    /// <remarks>
+    /// Called before the ON condition is rendered, which is the only moment it can be: the
+    /// condition is a string by the time <see cref="JoinedQueryBuilder{TFrom, TJoin}"/> exists, so
+    /// an alias decided later could not reach it.
+    /// </remarks>
+    private (string? From, string? Join) Infer(string? fromName, string? joinName)
+        => AliasInference.ForJoin(
+            _fromBuilder.Dialect,
+            _fromBuilder.Alias,
+            _joinAlias,
+            _fromBuilder.TableName,
+            _joinMetadata.TableName,
+            fromName,
+            joinName);
 
     public IJoinedQuery<TFrom, TJoin> On(string leftColumn, string rightColumn)
     {
@@ -82,12 +109,19 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
     }
 
     private JoinedQueryBuilder<TFrom, TJoin> CreateJoinedQuery(string onCondition)
+        => CreateJoinedQuery(onCondition, _fromBuilder.Alias, _joinAlias);
+
+    /// <summary>
+    /// Builds the joined query with the aliases this <c>On</c> settled on, which are the explicit
+    /// ones for the string-condition overloads and may be inferred for the expression overloads.
+    /// </summary>
+    private JoinedQueryBuilder<TFrom, TJoin> CreateJoinedQuery(string onCondition, string? fromAlias, string? joinAlias)
     {
         var joinInfo = new JoinInfo(
             _joinType,
             _joinMetadata.TableName,
             _joinMetadata.SchemaName,
-            _joinAlias,
+            joinAlias,
             onCondition);
 
         return new JoinedQueryBuilder<TFrom, TJoin>(
@@ -95,7 +129,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
             _fromBuilder.Dialect,
             _fromBuilder.TableName,
             _fromBuilder.SchemaName,
-            _fromBuilder.Alias,
+            fromAlias,
             joinInfo);
     }
 

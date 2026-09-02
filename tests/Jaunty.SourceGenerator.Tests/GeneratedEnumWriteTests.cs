@@ -35,7 +35,7 @@ public sealed class GeneratedEnumWriteTests
 
         GenTicket.BindInsert(command, new GenTicket { StateNumeric = GenTicketState.Closed });
 
-        Assert.Contains(command.Bound, p => p.ParameterName == "@state_numeric" && Equals(p.Value, GenTicketState.Closed));
+        Assert.Contains(command.Bound, p => p.ParameterName == "@state_numeric" && Equals(p.Value, (int)GenTicketState.Closed));
     }
 
     [Fact]

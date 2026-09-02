@@ -89,7 +89,11 @@ Quality assurance and testing documentation:
   - [Code Coverage](05-quality/code-coverage.md)
   - [Production Readiness Report](05-quality/reports/PRODUCTION-READINESS-2026-07-02.md)
   - [Coverage Gap Inventory](05-quality/reports/COVERAGE-GAPS-2026-07-04.md)
-  - [Benchmarks](05-quality/reports/benchmarks-2026-07-29.md)
+  - [Benchmarks](05-quality/reports/benchmarks-2026-09-02.md) - four providers against a corrected
+    hand-coded baseline; earlier reports [2026-07-29](05-quality/reports/benchmarks-2026-07-29.md)
+    and [2026-07-04](05-quality/reports/BENCHMARKS-2026-07-04.md)
+  - [How Jaunty got fast](08-learn/how-jaunty-got-fast.md) - the read-path story, code before
+    and after each step, with the numbers
 
 ### 6. Releases & Planning
 
@@ -117,6 +121,7 @@ Hands-on guides for people writing Jaunty code for the first time, or porting to
 
 - **[08-learn/](08-learn/README.md)** - Your first hour with Jaunty, a runnable walkthrough
   - [Exercises](08-learn/exercises.md)
+  - [Error Messages, Explained](08-learn/error-messages.md) - what a message means, the query that produces it, and the fix
   - [Migrating to Jaunty](08-learn/migrating/README.md) - from [Dapper](08-learn/migrating/from-dapper.md) or [EF Core](08-learn/migrating/from-ef-core.md), and the [strict-mapping rule](08-learn/migrating/strict-mapping.md) to read first
 
 ### Decisions
@@ -204,7 +209,7 @@ leaves a published site that disagrees with the markdown it came from, so the tw
 
 ### Adding New Documentation
 
-1. Choose the appropriate section (01-09)
+1. Choose the appropriate section (00-08)
 2. Follow naming conventions: `lowercase-with-hyphens.md`
 3. Add to the section's README.md
 4. Update this index if needed
@@ -221,4 +226,4 @@ When moving documentation:
 
 ---
 
-**Last updated**: 2026-08-31
+**Last updated**: 2026-09-02

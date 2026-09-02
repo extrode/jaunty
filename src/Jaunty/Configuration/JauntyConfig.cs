@@ -61,6 +61,12 @@ public static class JauntyConfig
     /// Gets or sets the initial capacity for query result lists.
     /// Default: 64. Suitable for most queries without immediate reallocation.
     /// </summary>
+    /// <remarks>
+    /// The default is not raised for large reads, and there is no growth logic to keep an unhinted
+    /// list under the large-object threshold: a caller reading thousands of rows passes
+    /// <c>CommandOptions&lt;T&gt;.WithExpectedRowCount(n)</c>. Measured and decided 2026-09-02,
+    /// docs/decisions/2026-09-02-012-result-list-default-capacity-stays-64.md.
+    /// </remarks>
     public static int QueryResultCapacity
     {
         get => _queryResultCapacity;
@@ -80,6 +86,15 @@ public static class JauntyConfig
     /// <summary>
     /// Gets or sets a custom resolver for schema names.
     /// </summary>
+    /// <remarks>
+    /// Global and dialect-blind: it receives only the entity type, so one resolver serves every
+    /// connection in the process and its return value is emitted verbatim on every engine. A
+    /// constant such as <c>_ => "dbo"</c> therefore produces "dbo.products" on SQLite and
+    /// PostgreSQL too. Scope it by type, or return <see cref="string.Empty"/> to leave an entity
+    /// unqualified, which is Jaunty's default. Consulted on the reflection mapping path only -
+    /// source-generated entities use the compile-time [Table] attribute. A [Table] schema wins
+    /// over this resolver either way.
+    /// </remarks>
     public static Func<Type, string>? SchemaNameResolver
     {
         get => _schemaNameResolver;

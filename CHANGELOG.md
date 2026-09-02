@@ -9,28 +9,103 @@ default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Read path: a `decimal` property on a column that reports `double` is read through `GetDouble`
+  and cast, decided once per result set.** Microsoft.Data.Sqlite implements `GetDecimal` on a REAL
+  column as text formatting plus `decimal.Parse`; SQLite formats REAL with 15 significant digits,
+  the same rounding `decimal(double)` applies, so the value is unchanged. Measured on SQLite,
+  10k rows: `GetDecimal` 4.8 ms, `GetDouble` 1.8 ms. Providers whose column is a real decimal
+  still reach `GetDecimal`. A `float`/`double precision` column can now be read into a `decimal`
+  property on every provider; before, SqlClient and Npgsql threw from `GetDecimal`.
+- **Read path: the generated mapper no longer calls `IsDBNull` ahead of every non-nullable
+  value-type column.** The typed getter throws on NULL on every supported provider; the mapper
+  catches that, names the property in the same `InvalidOperationException` as before, and
+  carries the provider's exception as `InnerException`. Any other getter failure propagates
+  unchanged. On Microsoft.Data.Sqlite the pre-check was one native call per column per row:
+  1.8 ms of a 6.2 ms 10k-row read.
+- **Read path: a custom mapper from `CommandOptions<T>.WithMapper` runs without a wrapping
+  delegate on the `DbDataReader` path.** One closure per query and one delegate call per row
+  fewer; the mapper you pass is the one that runs.
+- **Read path: the generated row mapper no longer compares `reader.FieldCount` on every row.**
+  The closure `CreateRowMapper` returns is valid for the result set it was created against,
+  which is how every library caller uses it; the per-row guard that fell back to `ReadEntity`
+  for a delegate reused across `NextResult()` was one native call per row on
+  Microsoft.Data.Sqlite. `Query<T>` at 10k rows on SQLite: 5.42 ms to 4.95 ms
+  ([decision 011](docs/decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
+- **Docs: why an unhinted `Query<T>` trails the hinted one at 10k rows, and why the default
+  capacity stays 64.** The list's last doubling lands on the large-object heap and costs a Gen2;
+  pre-sizing the harness to 10,000 removed the whole 3.7 ms gap on PostgreSQL. README, report,
+  article and `QueryResultCapacity` say to pass `WithExpectedRowCount`
+  ([decision 012](docs/decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
+- **Docs: the accuracy pass over the README, `SECURITY.md`, the docs index and the quick-start.**
+  The README, the quick-start, the learn and API-reference indexes and the comparison chart
+  claimed positional parameter binding; there is none. A lone scalar binds the one parameter the
+  SQL names and throws against two or more, and the quoted "Parameter count mismatch" message
+  never existed. Also corrected: `net472` is a test leg, not a target of `src/Jaunty`; two
+  interceptors ship, not three; the SQLite benchmark column now shows the run after the
+  `FieldCount` guard removal; the quick-start's build, test, layout and dependency pages describe
+  the current tree (ten test projects, `Category=AllocationBudget` as the only trait, the
+  coverage script, the seeded server databases, the nightly cadence).
+- **Docs: what this repository says about JauntyQ's pricing and licensing now matches JauntyQ's
+  own pricing page.** `docs/06-releases/pricing.md` had "boundary not yet drawn, no published
+  prices"; JauntyQ decided its free core, paid team-safety tier, flat per-organization tiers,
+  bundled support and pre-1.0 preview licenses on 2026-08-01 and 2026-08-30. The same page said
+  Jaunty's ISL-EULA was retained; it was withdrawn. The order-form template no longer offers a
+  JauntyQ or bundle order, and the quick-start decision tree no longer routes on target framework,
+  since both products ship a `netstandard2.0` runtime. Also: the Fluent alias notes in
+  `error-messages.md` and `exercises.md` now state the self-join `t1`/`t2` fallback and every
+  reason a name is declined, the rendered `ON (...)` matches the builder's output, and
+  `DocumentedApiTests` now also scans HTML under `docs/` and the XML doc comments in `src/`.
+- **The owner name retired on 2026-08-26 no longer appears anywhere in the tree.** `.mailmap` is
+  gone too: every commit on `dev` and `main` already carries one author identity, so it mapped
+  nothing. `PackageIdentityTests` scans every text file to keep the name out.
+
+### Added
+
+- `docs/08-learn/how-jaunty-got-fast.md`: the read path from 1.80x slower than hand-coded
+  ADO.NET to 1.42x faster, each step with the code before and after and the measurement that
+  drove it. Decision 010 records why the generated mapper names a NULL column by catching
+  rather than pre-checking, and the audit record lists it under fixes that were later reworked.
+- `QueryBenchmarks`: two custom-mapper cases that read the SQLite `REAL` price through
+  `GetDouble`, with and without `WithExpectedRowCount`, beside the two `GetDecimal` cases.
+- `docs/05-quality/reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
+  harness. The hand-coded baseline reads each column as its reported type (it paid a text
+  round-trip on SQLite `REAL` before, which is why two libraries measured faster than ADO.NET
+  in July), RepoDb's SQLite bool workaround is registered for SQLite only, and the warm job
+  runs 15 iterations. The README tables and charts are regenerated from it.
+
+### Removed
+
+- `LICENSE-EULA.md`. The Order-conditioned EULA stopped governing Jaunty at the 2026-08-30 model
+  decision and had been kept at the root for the record; a EULA at the root reads as a condition
+  on use, so it is gone from the tree and stays in history. `LICENSE-DISTRIBUTION-EXCEPTION.md`
+  says where it went; `LicenseFileTests` now checks `LICENSE.md` for unfilled placeholders.
+
+## [1.0.0-rc.2] - 2026-09-02
+
 ### Breaking changes since 1.0.0-rc.1
 
 Anyone on `1.0.0-rc.1` should read this section before upgrading. Each item is a change a
 recompile alone will not surface.
 
-- **Every package was renamed. `Beparey.Jaunty.*` → `Extrode.Jaunty.*` (2026-08-26).** The
-  assembly names, namespaces and public API are unchanged; only the NuGet package IDs moved, along
-  with the repository, to `github.com/extrode/jaunty`. A consumer still referencing
-  `Beparey.Jaunty` will never be offered an update, because nothing will ever be published under
-  that ID again.
+- **Every package ID carries the `Extrode.Jaunty.` prefix (2026-08-26).** The assembly names,
+  namespaces and public API are unchanged; only the NuGet package IDs moved, along with the
+  repository, to `github.com/extrode/jaunty`. A consumer still referencing the rc.1 package IDs
+  from the private feed will never be offered an update, because nothing will ever be published
+  under those IDs again.
 
-  | 1.0.0-rc.1 | Now |
+  | Package | Since |
   |---|---|
-  | `Beparey.Jaunty` | `Extrode.Jaunty` |
-  | `Beparey.Jaunty.Fluent` | `Extrode.Jaunty.Fluent` |
-  | `Beparey.Jaunty.FlatFiles` | `Extrode.Jaunty.FlatFiles` |
-  | `Beparey.Jaunty.FlatFiles.DuckDB` | `Extrode.Jaunty.FlatFiles.DuckDB` |
-  | `Beparey.Jaunty.Extensions.Reflection` | `Extrode.Jaunty.Extensions.Reflection` |
-  | `Beparey.Jaunty.Scaffolding` | `Extrode.Jaunty.Scaffolding` |
-  | `Beparey.Jaunty.Scaffolding.Cli` | `Extrode.Jaunty.Scaffolding.Cli` |
-  | (did not exist) | `Extrode.Jaunty.Extensions.Logging` |
-  | (did not exist) | `Extrode.Jaunty.Extensions.Npgsql` |
+  | `Extrode.Jaunty` | rc.1 |
+  | `Extrode.Jaunty.Fluent` | rc.1 |
+  | `Extrode.Jaunty.FlatFiles` | rc.1 |
+  | `Extrode.Jaunty.FlatFiles.DuckDB` | rc.1 |
+  | `Extrode.Jaunty.Extensions.Reflection` | rc.1 |
+  | `Extrode.Jaunty.Scaffolding` | rc.1 |
+  | `Extrode.Jaunty.Scaffolding.Cli` | rc.1 |
+  | `Extrode.Jaunty.Extensions.Logging` | new |
+  | `Extrode.Jaunty.Extensions.Npgsql` | new |
 
   The two new packages are not new functionality so much as relocated functionality:
   `Extensions.Logging` holds the `ILogger` interceptor and the DI registration extensions that
@@ -314,7 +389,7 @@ Every item here was reachable from caller-supplied input.
 
 - **Versioning switched from CalVer to SemVer.** Dev baseline is `1.0.0-rc.1`;
   the first GA tag should be `v1.0.0`.
-- **BREAKING:** `Beparey.Jaunty` no longer depends on the full
+- **BREAKING:** `Extrode.Jaunty` no longer depends on the full
   `Microsoft.Extensions.DependencyInjection` container package - only
   `.Abstractions`. `ApplyJauntyInterceptors(IServiceCollection)` was removed
   (it built a throwaway provider - ASP0000); use
@@ -367,7 +442,7 @@ Every item here was reachable from caller-supplied input.
   `DbDataReader` fast path mapped SQL `NULL` to `0`/`false`/default instead of
   `null` for nullable value type properties (`decimal?`, `int?`, `bool?`, ...).
   The generated ternary now uses a property-typed `default`. (PRD-001)
-- **Packaging:** `Beparey.Jaunty` now ships `Jaunty.SourceGenerator.dll` under
+- **Packaging:** `Extrode.Jaunty` now ships `Jaunty.SourceGenerator.dll` under
   `analyzers/dotnet/cs`. Previously the published package contained no
   analyzer, so `IMapped<T>` mappers were never generated for package consumers.
   (PRD-013)

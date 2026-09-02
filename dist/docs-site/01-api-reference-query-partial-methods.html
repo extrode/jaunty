@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partial Query Methods — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Partial Query Methods</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html" class="active" aria-current="page">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#what-strict-and-partial-mean">What &quot;strict&quot; and &quot;partial&quot; mean</a><a class="toc-l2" href="#partial-mapping-does-not-use-the-source-generated-mapper">Partial mapping does not use the source-generated mapper</a><a class="toc-l2" href="#which-mapper-enforces-which-direction">Which mapper enforces which direction</a><a class="toc-l2" href="#overloads">Overloads</a><a class="toc-l2" href="#querypartiallist-untyped-rows">QueryPartialList - untyped rows</a><a class="toc-l2" href="#notes">Notes</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Partial Query Methods</nav>
+        <article>
+<h1 id="partial-query-methods">Partial Query Methods</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code>QueryPartial*</code> family maps a result set in <strong>projection mode</strong>: only properties that have a
+matching column are set, and everything else keeps its default value. The <code>Query*</code> family maps in
+<strong>strict mode</strong>, where every property of the entity has to have a matching column - and, under the
+reflection mapper, every column has to have a matching property as well.</p>
+<p>Every partial method is a shape-for-shape twin of a strict one:</p>
+<table>
+<thead>
+<tr>
+<th>Strict</th>
+<th>Partial</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Query&lt;T&gt;</code></td>
+<td><code>QueryPartial&lt;T&gt;</code></td>
+<td><code>List&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>QueryFirst&lt;T&gt;</code></td>
+<td><code>QueryPartialFirst&lt;T&gt;</code></td>
+<td><code>T</code> (throws when empty)</td>
+</tr>
+<tr>
+<td><code>QueryFirstOrDefault&lt;T&gt;</code></td>
+<td><code>QueryPartialFirstOrDefault&lt;T&gt;</code></td>
+<td><code>T?</code></td>
+</tr>
+<tr>
+<td><code>QuerySingle&lt;T&gt;</code></td>
+<td><code>QueryPartialSingle&lt;T&gt;</code></td>
+<td><code>T</code> (throws when empty or when more than one row)</td>
+</tr>
+<tr>
+<td><code>QuerySingleOrDefault&lt;T&gt;</code></td>
+<td><code>QueryPartialSingleOrDefault&lt;T&gt;</code></td>
+<td><code>T?</code></td>
+</tr>
+<tr>
+<td><code>QueryStream&lt;T&gt;</code></td>
+<td><code>QueryPartialStream&lt;T&gt;</code></td>
+<td><code>IEnumerable&lt;T&gt;</code> / <code>IAsyncEnumerable&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>(none)</td>
+<td><code>QueryPartialUnbuffered&lt;T&gt;</code></td>
+<td><code>IEnumerable&lt;T&gt;</code> / <code>IAsyncEnumerable&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>(none)</td>
+<td><code>QueryPartialList</code></td>
+<td><code>List&lt;IDictionary&lt;string, object?&gt;&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Streaming variants are documented in <a href="01-api-reference-streaming-methods.html"><code>streaming-methods.md</code></a>. Overload-by-overload
+detail for <code>QueryPartial&lt;T&gt;</code> is in <a href="01-api-reference-query-methods.html#partial-mapping-variants"><code>query-methods.md</code></a>;
+for the single-result family, in <a href="01-api-reference-single-result-methods.html#partial-mapping-variants"><code>single-result-methods.md</code></a>.</p>
+<hr />
+<h2 id="what-strict-and-partial-mean">What &quot;strict&quot; and &quot;partial&quot; mean</h2>
+<p><code>MappingMode</code> (<code>src/Jaunty/Configuration/MappingMode.cs</code>) has two members, <code>Strict</code> and <code>Projection</code>.
+Partial methods request <code>Projection</code>; everything else requests <code>Strict</code>.</p>
+<p>Under the reflection mapper, strict mapping fails in <strong>both</strong> directions, which is more than the
+name suggests:</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Strict</th>
+<th>Partial</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Result column has no matching property</td>
+<td><code>InvalidOperationException</code>: <em>Mapping failed: Column 'X' does not map to any property of type 'T'</em></td>
+<td>column ignored</td>
+</tr>
+<tr>
+<td>Property has no matching column</td>
+<td><code>InvalidOperationException</code>: <em>Strict mapping failed: property 'X' has no matching column in result set for type 'T'</em></td>
+<td>property left at its default</td>
+</tr>
+<tr>
+<td>Duplicate column name</td>
+<td>first match wins, the rest are skipped</td>
+<td>same</td>
+</tr>
+</tbody>
+</table>
+<p>Both checks live in <code>MetadataCache&lt;T&gt;.BuildSetters</code> (<code>src/Jaunty.Extensions.Reflection</code>). They run
+once per distinct result-set shape, not once per row. The source-generated mapper is a different
+implementation with different behaviour - see
+<a href="#which-mapper-enforces-which-direction">Which mapper enforces which direction</a>.</p>
+<p>So <code>SELECT id, name FROM products</code> into a <code>Product</code> with four properties throws under <code>Query&lt;T&gt;</code> and
+succeeds under <code>QueryPartial&lt;T&gt;</code>. That is the whole distinction.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;;
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string? Description { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// Throws: Price and Description have no matching column.</span>
+<span class="tok-kw">var</span> bad = connection.Query&lt;Product&gt;(&quot;SELECT id, name FROM products&quot;);
+
+<span class="tok-com">// Succeeds: Price is 0m, Description is null.</span>
+<span class="tok-kw">var</span> ok = connection.QueryPartial&lt;Product&gt;(&quot;SELECT id, name FROM products&quot;);
+</code></pre>
+</div>
+<h2 id="partial-mapping-does-not-use-the-source-generated-mapper">Partial mapping does not use the source-generated mapper</h2>
+<p>This is the constraint to plan around, and it is not visible from the signatures.</p>
+<p><code>DrDispatcher.Resolve</code> picks a mapper in this order:</p>
+<ol>
+<li><code>options.Mapper</code>, when the caller supplied one.</li>
+<li>The source-generated <code>IMapped&lt;T&gt;</code> mapper - <strong>only when the mode is <code>Strict</code></strong>.</li>
+<li>A special-type mapper, when <code>SpecialTypeMappers.Register()</code> has been called
+(see <a href="01-api-reference-special-types.html"><code>special-types.md</code></a>).</li>
+<li>The reflection extension, when <code>Jaunty.Extensions.Reflection</code> is loaded.</li>
+<li>Otherwise it throws <em>No mapper found for type 'T'</em>.</li>
+</ol>
+<p>Step 2 is skipped for projection mode by design: a generated mapper is built for the entity's full
+shape and a partial result set may not carry every column it reads. The source generator emits no
+projection mapper, so on a partial query the dispatcher always falls through.</p>
+<p><strong>The practical consequence:</strong> in a source-generation-only build - the NativeAOT and
+zero-reflection configuration - <code>QueryPartial&lt;T&gt;</code> throws unless you either</p>
+<ul>
+<li>reference <code>Jaunty.Extensions.Reflection</code> and call <code>UseReflectionMapping()</code>, or</li>
+<li>pass your own mapper: <code>CommandOptions&lt;T&gt;.WithMapper(...)</code>.</li>
+</ul>
+<p>If neither is acceptable, the alternative is to keep strict mapping and declare a DTO whose
+properties are the columns the query actually selects. That is what
+<a href="01-api-reference-api-summary.html"><code>api-summary.md</code></a> means by &quot;projection type&quot;: a <code>ProductSummary</code> with exactly
+<code>Id</code> and <code>Name</code> maps under plain <code>Query&lt;T&gt;</code> with no reflection at all, and the compiler tells you
+when the query and the type drift apart. Prefer it for anything on a hot path.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Zero-reflection projection: strict mapping over a DTO shaped like the SELECT.</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductSummary
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;;
+}
+
+<span class="tok-kw">var</span> summaries = connection.Query&lt;ProductSummary&gt;(&quot;SELECT id, name FROM products&quot;);
+</code></pre>
+</div>
+<hr />
+<h2 id="which-mapper-enforces-which-direction">Which mapper enforces which direction</h2>
+<p>Strict mode has two mapper implementations, and they do not fail the same way. Which one runs
+follows the precedence list above: the generated mapper wins when the entity is <code>[Table]</code>-attributed
+and the generator package is referenced; the reflection mapper runs otherwise.</p>
+<table>
+<thead>
+<tr>
+<th>Result set vs entity</th>
+<th>Reflection mapper</th>
+<th>Source-generated mapper</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Property has no column</td>
+<td><code>InvalidOperationException</code>: <em>Strict mapping failed: property 'X' has no matching column in result set for type 'T'</em></td>
+<td>whatever the provider's <code>IDataReader.GetOrdinal</code> throws for an unknown name - <code>ArgumentOutOfRangeException</code> on Microsoft.Data.Sqlite, <code>IndexOutOfRangeException</code> on SqlClient</td>
+</tr>
+<tr>
+<td>Column has no property</td>
+<td><code>InvalidOperationException</code>: <em>Mapping failed: Column 'X' does not map to any property of type 'T'</em></td>
+<td><strong>ignored</strong> - no error</td>
+</tr>
+</tbody>
+</table>
+<p>The asymmetry is structural, not an oversight. The generated <code>OrdinalMap.Resolve</code> calls
+<code>reader.GetOrdinal(...)</code> once per mapped property and caches the resulting <code>int[]</code> against the
+reader; it never enumerates the result set's columns, so it has no way to notice one it was not
+looking for. <code>MetadataCache&lt;T&gt;.BuildSetters</code> walks the reader's fields instead, which is what lets
+it report an unmatched column.</p>
+<p><strong>What this means in practice:</strong> adding a column to a <code>SELECT *</code> is caught by the reflection mapper
+and silently accepted by the generated one. Do not rely on strict mode to catch a widened result
+set in a NativeAOT or generator-only build.</p>
+<p>Both mappers agree on the direction that matters most - a property with no column always fails -
+and both resolve once per result-set shape rather than per row. The exception <em>type</em> differs though:
+catch code that expects <code>InvalidOperationException</code> will not catch the generated path's failure.</p>
+<p><code>SqliteGeneratedMapperShapeTests</code> pins both halves against a real provider:
+<code>Query_ExtraAndReorderedColumns_MapsCorrectly</code> for the ignored column,
+<code>ReadEntity_SameReader_NextResult_MissingColumn_ThrowsInsteadOfStaleMapping</code> for the missing one.</p>
+<hr />
+<h2 id="overloads">Overloads</h2>
+<p>Every <code>QueryPartial*&lt;T&gt;</code> method has four synchronous and four asynchronous arities. The parameter
+list is uniform:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Arity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>(string sql)</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>(string sql, object parameters)</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>(string sql, CommandOptions&lt;T&gt; options)</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>(string sql, object parameters, CommandOptions&lt;T&gt; options)</code></td>
+</tr>
+</tbody>
+</table>
+<p>The async forms append <code>CancellationToken cancellationToken = default</code> and return <code>ValueTask&lt;...&gt;</code>.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; QueryPartial&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; QueryPartial&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; QueryPartial&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; QueryPartial&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;List&lt;T&gt;&gt; QueryPartialAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+<span class="tok-com">// ... and the three remaining arities, each ending in a CancellationToken.</span>
+</code></pre>
+</div>
+<p><code>QueryPartialFirst&lt;T&gt;</code>, <code>QueryPartialFirstOrDefault&lt;T&gt;</code>, <code>QueryPartialSingle&lt;T&gt;</code> and
+<code>QueryPartialSingleOrDefault&lt;T&gt;</code> follow the identical pattern, differing only in return type and in
+what they do with a row count that is not one.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>0 rows</th>
+<th>1 row</th>
+<th>2+ rows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QueryPartialFirst&lt;T&gt;</code></td>
+<td>throws <code>InvalidOperationException</code></td>
+<td>the row</td>
+<td>the first row</td>
+</tr>
+<tr>
+<td><code>QueryPartialFirstOrDefault&lt;T&gt;</code></td>
+<td><code>default</code></td>
+<td>the row</td>
+<td>the first row</td>
+</tr>
+<tr>
+<td><code>QueryPartialSingle&lt;T&gt;</code></td>
+<td>throws <code>InvalidOperationException</code></td>
+<td>the row</td>
+<td>throws <code>InvalidOperationException</code></td>
+</tr>
+<tr>
+<td><code>QueryPartialSingleOrDefault&lt;T&gt;</code></td>
+<td><code>default</code></td>
+<td>the row</td>
+<td>throws <code>InvalidOperationException</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="querypartiallist-untyped-rows">QueryPartialList - untyped rows</h2>
+<p><code>QueryPartialList</code> needs no entity type and no mapper at all. It returns one dictionary per row,
+keyed by column name.</p>
+<p><strong>Signatures:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;IDictionary&lt;string, object?&gt;&gt; QueryPartialList(<span class="tok-kw">this</span> IDbConnection connection, string sql);
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;IDictionary&lt;string, object?&gt;&gt; QueryPartialList(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters);
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;IDictionary&lt;string, object?&gt;&gt; QueryPartialList(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions options);
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;IDictionary&lt;string, object?&gt;&gt; QueryPartialList(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions options);
+</code></pre>
+</div>
+<p>plus the four <code>QueryPartialListAsync</code> forms returning <code>ValueTask&lt;List&lt;IDictionary&lt;string, object?&gt;&gt;&gt;</code>.</p>
+<p>Note the <strong>non-generic</strong> <code>CommandOptions</code> on these overloads: there is no <code>T</code>, so there is no
+<code>Mapper</code> and no <code>ExpectedRowCount</code>. See <a href="01-api-reference-command-options.html"><code>command-options.md</code></a>.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> rows = connection.QueryPartialList(&quot;SELECT id, name FROM products&quot;);
+<span class="tok-kw">foreach</span> (IDictionary&lt;string, object?&gt; row <span class="tok-kw">in</span> rows)
+    Console.WriteLine($&quot;{row[&quot;id&quot;]}: {row[&quot;name&quot;]}&quot;);
+</code></pre>
+</div>
+<p>Duplicate column names are disambiguated rather than collapsed - a join returning two <code>Id</code> columns
+yields two distinct keys rather than keeping only the last. The same rule applies to
+<code>Query&lt;Dictionary&lt;string, object&gt;&gt;</code> and <code>Query&lt;dynamic&gt;</code>; see
+<a href="01-api-reference-special-types.html#duplicate-column-names"><code>special-types.md</code></a>.</p>
+<hr />
+<h2 id="notes">Notes</h2>
+<div class="callout callout-tip"><ul>
+<li>Partial mapping changes which properties get set. It does not relax type conversion: a column
+whose value cannot be converted to the property type still fails.</li>
+<li>A <code>NULL</code> in a column mapped to a non-nullable value type throws in both modes.</li>
+<li>Connection ownership is the same as for every other read method: Jaunty opens a closed
+connection and closes it again, leaves an already-open one open, and never disposes a connection
+it did not open. See <a href="01-api-reference-query-methods.html#connection-ownership"><code>query-methods.md</code></a>.</li>
+</ul></div>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="01-api-reference-query-methods.html"><code>query-methods.md</code></a> - the strict family and the <code>QueryPartial&lt;T&gt;</code> overloads</li>
+<li><a href="01-api-reference-single-result-methods.html"><code>single-result-methods.md</code></a> - First/Single semantics in full</li>
+<li><a href="01-api-reference-streaming-methods.html"><code>streaming-methods.md</code></a> - <code>QueryPartialStream</code> and <code>QueryPartialUnbuffered</code></li>
+<li><a href="01-api-reference-special-types.html"><code>special-types.md</code></a> - <code>Dictionary</code>, <code>dynamic</code>, <code>KeyValuePair</code>, <code>ValueTuple</code></li>
+<li><a href="01-api-reference-command-options.html"><code>command-options.md</code></a> - <code>CommandOptions&lt;T&gt;</code> and its non-generic twin</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-query-methods.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Query methods</span>
+</a><a class="pn-next" href="01-api-reference-scalar-methods.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Scalar methods</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

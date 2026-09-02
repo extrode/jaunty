@@ -17,6 +17,11 @@ namespace Jaunty.Fluent.Tests.Unit.Builders.Join;
 /// This drops schema qualification and dialect escaping for every join/order-by/select whose
 /// table isn't explicitly aliased. Uses TestDialect, which always brackets identifiers, so the
 /// escaped-vs-raw distinction is visible regardless of whether the table name is a keyword.
+/// <para>
+/// Since alias inference landed, an unaliased table has to be asked for: a lambda parameter named
+/// after its own table is the one name inference declines, so these queries still reach the
+/// <c>alias ?? EscapeTableName(...)</c> fallback the tests were written for.
+/// </para>
 /// </summary>
 public class AliasEscapingFallbackTests
 {
@@ -35,7 +40,7 @@ public class AliasEscapingFallbackTests
         // JoinedQueryBuilder.GetPrefixedColumns (FROM select list).
         string sql = _connection.From<Product>()
             .InnerJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId)
+            .On(products => products.CategoryId, categories => categories.CategoryId)
             .ToSql();
 
         Assert.Contains("[products].[product_id]", sql);
@@ -68,7 +73,7 @@ public class AliasEscapingFallbackTests
         // Covers JoinedQueryBuilderOrderBy.GetColumnName.
         string sql = _connection.From<Product>()
             .InnerJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId)
+            .On(products => products.CategoryId, categories => categories.CategoryId)
             .OrderByJoined(c => c.CategoryName)
             .ToSql();
 
@@ -84,7 +89,7 @@ public class AliasEscapingFallbackTests
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>()
-            .On(p => p.SupplierId, s => s.SupplierId)
+            .On(p => p.SupplierId, suppliers => suppliers.SupplierId)
             .ToSql();
 
         Assert.Contains("[suppliers].[supplier_id]", sql);
@@ -99,7 +104,7 @@ public class AliasEscapingFallbackTests
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>()
-            .On(p => p.SupplierId, s => s.SupplierId)
+            .On(p => p.SupplierId, suppliers => suppliers.SupplierId)
             .OrderByJoined(s => s.CompanyName)
             .ToSql();
 
@@ -116,9 +121,9 @@ public class AliasEscapingFallbackTests
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>()
-            .On(p => p.SupplierId, s => s.SupplierId)
+            .On(p => p.SupplierId, suppliers => suppliers.SupplierId)
             .InnerJoin<Product, Category, Supplier, Order>()
-            .OnFromThird(s => s.SupplierId, o => o.EmployeeId)
+            .OnFromThird(s => s.SupplierId, orders => orders.EmployeeId)
             .ToSql();
 
         Assert.Contains("[orders].[employee_id]", sql);
@@ -133,9 +138,9 @@ public class AliasEscapingFallbackTests
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>()
-            .On(p => p.SupplierId, s => s.SupplierId)
+            .On(p => p.SupplierId, suppliers => suppliers.SupplierId)
             .InnerJoin<Product, Category, Supplier, Order>()
-            .OnFromThird(s => s.SupplierId, o => o.EmployeeId)
+            .OnFromThird(s => s.SupplierId, orders => orders.EmployeeId)
             .OrderByJoined((Order o) => o.OrderDate)
             .ToSql();
 

@@ -1,39 +1,106 @@
 # Jaunty
 
-**The micro-ORM that respects your SQL and your time.**
+<p align="center">
+  <img src="docs/_assets/logo/jaunty-mark.svg" alt="Jaunty" width="160">
+</p>
 
-**Free to use, including in commercial production** — no seat count, no order form, no expiry.
-Source-available under [ISL-R](LICENSE.md), which is not an OSI-approved open-source licence:
-you may use and read the source, but not modify or redistribute it as a library. Shipping the
-unmodified packages inside your own application is covered by the
-[Redistribution Exception](LICENSE-DISTRIBUTION-EXCEPTION.md), royalty-free and non-expiring.
-What is sold is [support](docs/06-releases/pricing.md), never the right to use the software.
+The micro-ORM that respects your SQL and your time.
 
-Jaunty is a high-performance data access library for .NET that does one thing exceptionally well: execute your SQL and map results to objects. No LINQ translation, no hidden query rewriting, no magic — the SQL that runs is the SQL you wrote.
+[![CI](https://github.com/extrode/jaunty/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/extrode/jaunty/actions/workflows/ci.yml)
+[![License: ISL-R](https://img.shields.io/badge/license-ISL--R-blue)](LICENSE.md)
+[![Targets](https://img.shields.io/badge/targets-netstandard2.0%20%7C%20net8.0%20%7C%20net10.0-512BD4)](#installation)
+[![NativeAOT](https://img.shields.io/badge/NativeAOT-verified%20in%20CI-brightgreen)](#nativeaot)
+[![Dependencies](https://img.shields.io/badge/dependencies-none%20on%20net8.0%2Fnet10.0-informational)](#installation)
 
-When you do want a builder, `Extrode.Jaunty.Fluent` is a separate, optional package that generates parameterized SQL from typed expressions. The core never depends on it.
+> [!IMPORTANT]
+> Jaunty is free to use, including in commercial production. No seat count, no order form, no expiry.
+> The source is published under [ISL-R](LICENSE.md), which is not an OSI-approved open-source license:
+> you may use it and read it, but not modify or redistribute it as a library. Shipping the unmodified
+> packages inside your own application is covered by the
+> [Redistribution Exception](LICENSE-DISTRIBUTION-EXCEPTION.md), royalty-free and non-expiring.
+> What is sold is [support](docs/06-releases/pricing.md), never the right to use the software.
+
+If you have used Dapper, you already know how Jaunty feels. It is a set of extension methods on the
+`IDbConnection` you already have, so any ADO.NET provider works and there is no context object to
+create, configure or dispose. You write the SQL, Jaunty runs it and hands back objects.
 
 ```csharp
+using Jaunty;
+
 var products = connection.Query<Product>(
     "SELECT * FROM products WHERE category_id = @CategoryId",
     new { CategoryId = 1 });
 ```
 
+The SQL that runs is the SQL you wrote. There is no LINQ translation and no query rewriting. When
+you want a builder, the optional `Extrode.Jaunty.Fluent` package generates parameterized SQL from
+typed expressions, and the core never depends on it.
+
 ---
 
-## Why Jaunty Exists
+## Contents
 
-Most micro-ORMs let you write SQL and get objects back. Jaunty does this too—but with deliberate design choices that catch bugs earlier and run faster.
+- [Quick start](#quick-start)
+- [Strict by default](#strict-by-default)
+- [Jaunty and Dapper](#jaunty-and-dapper)
+- [Jaunty or JauntyQ?](#jaunty-or-jauntyq)
+- [Three ways to write a query](#three-ways-to-write-a-query)
+- [Installation](#installation)
+- [How Jaunty picks a mapper](#how-jaunty-picks-a-mapper)
+- [API reference](#api-reference)
+- [Parameters](#parameters)
+- [Transactions and timeouts](#transactions-and-timeouts)
+- [Naming: attributes and conventions](#naming-attributes-and-conventions)
+- [Logging and diagnostics](#logging-and-diagnostics)
+- [Async and streaming](#async-and-streaming)
+- [Under the hood](#under-the-hood)
+- [Comparison](#comparison)
+- [Documentation](#documentation)
+- [License](#license)
 
-**The core philosophy:**
-- **Performant** — Compiled expression trees, not runtime reflection
-- **Efficient** — Minimal allocations, cached metadata, and no package dependencies at all on `net8.0`/`net10.0`
-- **AOT-ready** — Publishes under NativeAOT with no trim or AOT warnings from any Jaunty assembly
-- **Elegant** — Clean API that reads like intent, not ceremony
+---
 
-### Strict by Default
+## Quick start
 
-When you call `Query<T>`, Jaunty requires that the entity and the result set agree: every property must have a matching column. Under the reflection mapper the check runs **in both directions**, so an extra column throws too. This is intentional. ([Which mapper enforces which direction](docs/01-api-reference/query-partial-methods.md#which-mapper-enforces-which-direction))
+```csharp
+using Jaunty;
+
+// Strict mapping: every property needs a column
+var products = connection.Query<Product>(
+    "SELECT id AS Id, name AS Name, price AS Price FROM products");
+
+// Partial mapping: map what is there, leave the rest at default
+var summaries = connection.QueryPartial<ProductSummary>(
+    "SELECT id AS Id, name AS Name FROM products");
+
+// Scalars
+var count = connection.QueryScalar<long>("SELECT COUNT(*) FROM products");
+
+// Parameters: an object binds by name; a single scalar binds the one parameter the SQL names
+var filtered = connection.Query<Product>(sql, new { CategoryId = 1 });
+var filtered = connection.Query<Product>("SELECT * FROM products WHERE category_id = @Id", 1);
+
+// Async with cancellation
+var products = await connection.QueryAsync<Product>(sql, cancellationToken);
+
+// Insert, update, delete, upsert
+var id   = connection.Insert(product);   // identity value
+var rows = connection.Update(product);   // rows affected
+var rows = connection.Delete(product);
+var rows = connection.Upsert(product);   // insert if new, update if it exists
+
+// Bulk
+var rows = connection.BulkInsert(products);
+var rows = connection.BulkUpdate(products);
+var rows = connection.BulkDelete(products);
+```
+
+---
+
+## Strict by default
+
+`Query<T>` expects the entity and the result set to agree. If a property has no matching column,
+Jaunty throws at the call site instead of handing you a half-filled object.
 
 ```csharp
 public class Product
@@ -43,111 +110,115 @@ public class Product
     public decimal Price { get; set; }
 }
 
-// This throws immediately - missing 'Price' column
-var products = connection.Query<Product>(
-    "SELECT id, name FROM products");
-// InvalidOperationException: "Strict mapping failed: property 'Price' has no matching column"
+// Throws: no 'Price' column
+var products = connection.Query<Product>("SELECT id, name FROM products");
+// InvalidOperationException: "Strict mapping failed: property 'Price' has no matching column in result set for type 'MyApp.Product'."
 ```
 
-**Why?** Because silent partial mapping is a bug waiting to happen. If you wanted all three properties, you should know immediately that your query is wrong. If you intentionally want partial data, say so explicitly with `QueryPartial<T>`.
+Silent partial mapping is a bug that surfaces far from where it started. If you wanted all three
+properties, you should hear about it while you are still at your desk. If you want a subset, say so:
 
-This catches mismatches at development time, not when a customer reports weird behavior in production.
+```csharp
+var summaries = connection.QueryPartial<ProductSummary>(
+    "SELECT id AS Id, name AS Name FROM products");
+```
+
+`QueryPartial<T>` is not a workaround. Projections and DTOs legitimately select a subset, and
+partial mode is the right tool for them. The check runs once per distinct result-set shape, not
+once per row, so it costs nothing you would notice.
+
+| | `Query<T>` | `QueryPartial<T>` |
+|---|---|---|
+| Property with no column | throws | left at its default |
+| Column with no property | throws under the reflection mapper, ignored by the generated one | ignored |
+
+The full precedence, and which mapper enforces which direction, is in
+[query-partial-methods.md](docs/01-api-reference/query-partial-methods.md#which-mapper-enforces-which-direction).
+[Migrating to Jaunty](docs/08-learn/migrating/README.md) shows how to move a lenient codebase over
+without fighting it.
 
 ---
 
-## What Jaunty Does That Others Don't
+## Jaunty and Dapper
 
-Comparison is against Dapper, the micro-ORM most people are choosing between Jaunty and.
+Most people choosing Jaunty are choosing between it and Dapper, so here is the honest version.
 
-| Capability | Dapper | Jaunty |
+| | Dapper | Jaunty |
 |---|---|---|
-| **Strict-by-default mapping** — a missing column throws immediately | silent partial map | yes; `QueryPartial<T>` opts out per call |
+| Strict-by-default mapping | silent partial map | yes, `QueryPartial<T>` opts out per call |
 | Zero runtime dependencies on `net8.0`/`net10.0` | yes | yes |
-| NativeAOT via source generator | separate package (Dapper.AOT) | in the box, verified in CI on every build |
+| NativeAOT via source generator | separate package (Dapper.AOT) | in the box, verified in CI |
 | Fluent query builder | no | `Extrode.Jaunty.Fluent`, optional |
 | Bulk copy | paid add-on (Dapper Plus) | three providers, included |
 | Scaffolding CLI | no | `Extrode.Jaunty.Scaffolding.Cli` |
 | DuckDB and flat-file sources | no | `Extrode.Jaunty.FlatFiles.DuckDB` |
 | Dialect-aware SQL generation | no | SQL Server, PostgreSQL, MySQL, SQLite |
-| Built-in audit trail | no | `AuditInterceptor` — every command, phase, duration and failure, with no parameter values captured |
+| Built-in audit trail | no | `AuditInterceptor` |
 
-**Strict-by-default mapping is the one to weigh first.** It is not a performance claim, so it holds
-whichever library benchmarks faster on a given path: a query that stops matching your entity fails
-at the call site rather than silently handing back a half-populated object. Every other row in the
-table is something you could assemble from packages; that row is a different default.
+Strict mapping is the row to weigh first. It is not a performance claim, so it holds whichever
+library benchmarks faster on a given path.
 
-**`QueryPartial<T>` is not a workaround.** Strict mapping is the default because entities and
-per-query DTOs should match their result set exactly, but projections legitimately do not — and for
-those, `QueryPartial<T>` is the right method, not a concession. [The two mapping
-modes](#the-two-mapping-modes) covers the distinction, and [migrating to
-Jaunty](docs/08-learn/migrating/README.md) covers how to port an existing lenient codebase without
-fighting it.
+Jaunty is a good fit when you publish under NativeAOT, when dependency count matters, when you want
+SQL you can read in the source and find in the query log, or when you need bulk copy, scaffolding or
+DuckDB without assembling three more vendors. It also targets `netstandard2.0`, so a .NET Framework
+application uses the same package as modern .NET; the test suite runs on `net472` as well.
 
-## When to Use Jaunty — and When Not To
+It is not the tool for change tracking, a unit of work, lazy loading or migrations. That is EF Core's
+job, and using both together is a reasonable architecture. It is also not a LINQ provider: the
+Fluent package builds SQL from expressions, it does not translate `IQueryable`. Four dialects are
+supported; on any other database the core still executes your SQL through ADO.NET, but
+dialect-aware generation does not apply.
 
-**Reach for Jaunty when:**
+Team familiarity counts too. Dapper is the library your next hire already knows, and that is worth
+weighing. Learning Jaunty is not a big ask, though: the method names are the ones you expect, the
+parameters bind the way you expect, and a developer who knows Dapper is productive with Jaunty in an
+afternoon.
 
-- You are publishing under **NativeAOT** or trimming aggressively, and want mapping generated at
-  build time with no reflection in the core.
-- **Dependency count matters** — a plugin, a library, a container you are keeping small. On
-  `net8.0` and `net10.0` the dependency groups in the shipped `.nuspec` are empty.
-- You want **SQL you can read in the source and find in the query log**, unchanged.
-- A **wrong result matters more than a fast one**: strict mapping turns a silent data bug into an
-  exception during development.
-- You need **bulk copy, scaffolding, or DuckDB and flat-file querying** without assembling three
-  more vendors.
-- You target **`net472` or `netstandard2.0`** alongside modern .NET from one codebase.
-
-**Do not reach for Jaunty when:**
-
-- You want **change tracking, a unit of work, lazy loading, or migrations**. That is EF Core's job
-  and Jaunty does not try to do it. Using both together is a reasonable architecture.
-- You want to **write LINQ and have a database translate it**. Jaunty executes SQL; the Fluent
-  package builds SQL from expressions but is not a LINQ provider.
-- **Team familiarity is the binding constraint.** Dapper is the thing your next hire already knows,
-  and that is a real cost worth pricing honestly.
-- You need a **database Jaunty has no dialect for**. Four are supported; anything else means core
-  execution works through ADO.NET but dialect-aware generation does not.
-- You want an **OSI-approved licence**. Jaunty is source-available under ISL-R, not open source —
-  see [License](#license) before adopting it.
+---
 
 ## Jaunty or JauntyQ?
 
-**Jaunty starts from C#. [JauntyQ](https://github.com/extrode/jauntyq) starts from SQL.** They are two
-products, not two modes of one product, and the split is a question about you rather than about your
-database.
+Jaunty starts from C#. [JauntyQ](https://github.com/extrode/jauntyq) starts from SQL. They are two
+products, not two modes of one product, and the choice is about how you like to work.
 
-Jaunty is the traditional ORM of the pair. You solve the problem in the language you are already
-writing: typed expressions through the optional `Extrode.Jaunty.Fluent` builder, attribute-mapped
-entities, `Insert`/`Update`/`Delete` against a POCO, and a raw SQL string on the occasions where SQL
-is the clearer tool. What Jaunty takes off your hands is the part you should not have to think
-about. Values are parameterized by construction, so SQL injection is not a thing you defend against
-per query. Results map strictly, so `Query<T>` throws when an entity property has no matching column
-instead of handing you a half-populated object. Fluent is expression-first, not a LINQ provider: it
-builds SQL from typed expressions and does not translate arbitrary `IQueryable`.
+With Jaunty you solve the problem in the language you are already writing: attribute-mapped
+entities, `Insert`/`Update`/`Delete` against a POCO, typed expressions through the Fluent builder,
+and a hand-written SQL string whenever SQL is the clearer tool. Values are parameterized by
+construction and results map strictly.
 
-JauntyQ is for the developer whose position is: *I know SQL, I know what I want to run, validate it
-and otherwise stay out of my way.* It takes that seriously. Every query is a real `.sql` file you
-wrote, versioned next to the code; the generator validates it at build time against a committed
-schema snapshot and emits ADO.NET that reads by ordinal with explicit `DbType` binding, no
-reflection and no runtime SQL parsing. Neither product will silently map the wrong thing. They just
-catch it at different moments: JauntyQ at build time against a snapshot, Jaunty at the call site
-against the live result set.
+JauntyQ is for the developer who says: I know SQL, I know what I want to run, validate it and
+otherwise stay out of my way. Every query is a real `.sql` file versioned next to the code. The
+generator validates it at build time against a committed schema snapshot and emits ADO.NET that reads
+by ordinal, with no reflection and no runtime SQL parsing.
 
-### The two directions, and what each one produces
+Neither product silently maps the wrong thing. JauntyQ catches it at build time against a snapshot,
+Jaunty at the call site against the live result set. If the second description sounds like you, the
+[JauntyQ README](https://github.com/extrode/jauntyq) covers that direction in the same depth.
 
-The distinction is easiest to see by looking at what you write and what comes out the other side.
-**With Jaunty you write C# and get SQL. With JauntyQ you write SQL and get C#.** Every listing below
-is real output, not an illustration.
+---
 
-#### Jaunty: C# in, SQL out
+## Three ways to write a query
 
-The core API needs no query at all. The entity carries the mapping, and the source generator emits
-the SQL at build time:
+Every listing below is real output, not an illustration.
+
+### 1. Your own SQL
+
+Hand-written SQL is a first-class way to use Jaunty, not an escape hatch. This one selects three
+columns rather than a whole `Product`, so it is a projection and `QueryPartial<T>` is the right
+method:
 
 ```csharp
-using Jaunty;
+var products = connection.QueryPartial<Product>(
+    "SELECT product_id, product_name, unit_price FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 });
+```
 
+### 2. Let the entity carry the SQL
+
+For CRUD, the entity's mapping is all Jaunty needs, and the source generator emits the SQL at build
+time:
+
+```csharp
 var all      = connection.GetAll<Product>();
 var one      = connection.Get<Product>(1);
 long newId   = connection.Insert(product);
@@ -165,13 +236,14 @@ UPDATE products SET product_name = @product_name, category_id = @category_id, un
 DELETE FROM products WHERE product_id = @product_id
 ```
 
-Note what is *not* there: no `SELECT *`, so a column added to the table tomorrow cannot silently
-change the shape of your result. The identity fetch is dialect-specific: `last_insert_rowid()` on
-SQLite, `CAST(SCOPE_IDENTITY() AS BIGINT)` on SQL Server, `RETURNING` on PostgreSQL,
-`LAST_INSERT_ID()` on MySQL. Every value is a parameter, so SQL injection is not a thing you defend
-against per query.
+No `SELECT *` anywhere, so a column added to the table tomorrow cannot silently change the shape of
+your result. The identity fetch is dialect-specific: `last_insert_rowid()` on SQLite,
+`CAST(SCOPE_IDENTITY() AS BIGINT)` on SQL Server, `RETURNING` on PostgreSQL, `LAST_INSERT_ID()` on
+MySQL.
 
-For anything past CRUD, the Fluent builder takes typed expressions:
+### 3. The Fluent builder
+
+For anything past CRUD, the optional `Extrode.Jaunty.Fluent` package takes typed expressions:
 
 ```csharp
 using Jaunty.Fluent;
@@ -189,109 +261,24 @@ foreach (var (product, category) in rows)
 and produces:
 
 ```sql
-SELECT products.product_id AS f_product_id, products.product_name AS f_product_name,
-       products.category_id AS f_category_id, products.unit_price AS f_unit_price,
-       products.units_in_stock AS f_units_in_stock, products.discontinued AS f_discontinued,
-       categories.category_id AS j_category_id, categories.category_name AS j_category_name,
-       categories.description AS j_description
-FROM products
-INNER JOIN categories ON products.category_id = categories.category_id
-WHERE (products.category_id = @jp0)
+SELECT p.product_id, p.product_name, p.category_id, p.unit_price, p.units_in_stock, p.discontinued,
+       c.category_id, c.category_name, c.description
+FROM products p
+INNER JOIN categories c ON p.category_id = c.category_id
+WHERE (p.category_id = @p_category_id)
 ```
 
-The `f_`/`j_` aliases are why `SelectBoth()` can hand you both entities: `products.category_id` and
-`categories.category_id` would otherwise collide in one result set. `ToSql()` gives you that string
-without executing anything, so the SQL is reviewable rather than a black box.
+`p` and `c` are the names you wrote. A lambda parameter survives into the expression tree as data,
+so the builder aliases each table after the identifier already standing for it in your code.
+`@p_category_id` is a parameter you can grep for. `ToSql()` returns the string without executing
+anything, so the SQL is reviewable in a test.
 
-Raw SQL is a first-class option here, not an escape hatch. This one selects three columns rather
-than a whole `Product`, so it is a projection and `QueryPartial<T>` is the right method — `Query<T>`
-would throw on the properties with no matching column:
+Aliases are inferred per join and only when every name a join needs is usable; a name that is a SQL
+keyword, already taken, or the same as a table in the query is declined, and an explicit
+`From<Product>("prd")` always wins. Grouping, `HAVING`, paging and the rest are in the
+[Fluent API reference](docs/01-api-reference/fluent-api.md).
 
-```csharp
-var products = connection.QueryPartial<Product>(
-    "SELECT product_id, product_name, unit_price FROM products WHERE category_id = @CategoryId",
-    new { CategoryId = 1 });
-```
-
-#### JauntyQ: SQL in, C# out
-
-You write the file. This one ships as-is in `samples/JauntyQ.Northwind.Tests`:
-
-```sql
--- db/tables/Products/GetByCategory.sql
-select p.ProductId, p.ProductName, p.UnitPrice, p.UnitsInStock, c.CategoryName
-from Products p
-join Categories c on p.CategoryId = c.CategoryId
-where p.CategoryId = @CategoryId
-```
-
-The generator validates it against the committed schema snapshot and emits this, which is what your
-code calls:
-
-```csharp
-public class GetByCategory
-{
-    public required int ProductId { get; set; }
-    public required string ProductName { get; set; }
-    public required decimal? UnitPrice { get; set; }
-    public required short? UnitsInStock { get; set; }
-    public required string CategoryName { get; set; }
-}
-
-public List<Result.GetByCategory> GetByCategory(short? CategoryId)
-{
-    using var cmd = _conn.CreateCommand();
-    cmd.CommandText = @"select p.ProductId, ... where p.CategoryId = @CategoryId";
-
-    var p0 = cmd.CreateParameter();
-    p0.ParameterName = "@CategoryId";
-    p0.DbType = System.Data.DbType.Int16;
-    p0.Value = (object?)CategoryId ?? System.DBNull.Value;
-    cmd.Parameters.Add(p0);
-
-    using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-    JauntyQShapeGuard.Validate(reader, __GetByCategoryColumns, "Products.GetByCategory");
-    ...
-}
-```
-
-so you call:
-
-```csharp
-var db = new JauntyDb(connection);
-var rows = db.Products.GetByCategory(1);
-
-foreach (var row in rows)
-    Console.WriteLine($"{row.ProductName} ({row.CategoryName})");
-```
-
-Three things the schema snapshot decided for you without being asked: the parameter is `short?`
-because `CategoryId` is a `smallint`, its `DbType` is `Int16` rather than left to provider
-inference, and `UnitPrice` is `decimal?` because the column is nullable. Values are read by ordinal.
-Rename `CategoryName` in the database, re-pull the snapshot, and this file stops compiling.
-
-### Choose Jaunty if
-
-- You want data access solved in C#, reaching for SQL strings when they are the clearer tool rather
-  than as the default.
-- You want the mismatch between a query and an entity to throw at the call site, with
-  `QueryPartial<T>` marking a projection as deliberate.
-- Your queries take shape at runtime, or a committed schema snapshot and a generator step do not fit
-  your workflow.
-- You want bulk copy, scaffolding, DuckDB and flat-file querying, and NativeAOT publishing from one
-  library family.
-
-### Choose JauntyQ if
-
-- SQL is where you are most fluent, and you want every query to be SQL you wrote, versioned as
-  `.sql` files.
-- You want a renamed column or a dropped table to break the build rather than a request in
-  production.
-- You want the generated code to be the code you would have hand-written: ordinal reads, typed
-  parameters, no reflection, no runtime parsing.
-
-If the second list is you, JauntyQ is at [github.com/extrode/jauntyq](https://github.com/extrode/jauntyq)
-and you will be better served there.
+---
 
 ## Installation
 
@@ -299,201 +286,189 @@ and you will be better served there.
 dotnet add package Extrode.Jaunty
 ```
 
-Targets `netstandard2.0`, `net8.0` and `net10.0`. Works with any ADO.NET provider.
+Targets `netstandard2.0`, `net8.0` and `net10.0`, and works with any ADO.NET provider.
 
-**On `net8.0` and `net10.0`, `Extrode.Jaunty` has no dependencies at all** — the dependency groups
-in the shipped `.nuspec` are empty.
+On `net8.0` and `net10.0` the package has no dependencies at all; the dependency groups in the
+shipped `.nuspec` are empty. `netstandard2.0` is there for consumers who cannot move off an older
+framework, and it carries two Microsoft-published backports of types that are built into modern
+.NET: `Microsoft.Bcl.AsyncInterfaces` for `IAsyncEnumerable<T>` and
+`System.Diagnostics.DiagnosticSource`.
 
-`netstandard2.0` is there for consumers who cannot move off an older framework, and it is the one
-target that carries package references:
-
-| Package | What it backports | In-box since |
-|---|---|---|
-| `Microsoft.Bcl.AsyncInterfaces` | `IAsyncEnumerable<T>`, `IAsyncDisposable` | .NET Core 3.0 |
-| `System.Diagnostics.DiagnosticSource` | `DiagnosticSource`, `DiagnosticListener`, `Activity` | .NET Core 3.0 |
-
-Both are Microsoft-published backports of types that are built into modern .NET, not third-party
-libraries. `Microsoft.Bcl.AsyncInterfaces` is what keeps the async streaming API the same shape on
-that target instead of absent from it.
-
-`ILogger` and dependency-injection integration are a separate opt-in package,
-`Extrode.Jaunty.Extensions.Logging`, which is why core needs neither. Every dependency of every
-package is listed in [`docs/02-architecture/dependencies.md`](docs/02-architecture/dependencies.md).
+`ILogger` and dependency-injection integration live in a separate opt-in package,
+`Extrode.Jaunty.Extensions.Logging`, which is why the core needs neither. Every dependency of every
+package is listed in [dependencies.md](docs/02-architecture/dependencies.md).
 
 ---
 
-## Quick Start
+## How Jaunty picks a mapper
+
+You have the right to a mapper. If you cannot afford one, or do not provide one, one will be
+provided for you.
+
+Every read needs something that turns a row into a `T`. Jaunty asks in this order and takes the
+first answer:
+
+```mermaid
+flowchart TD
+    A["Query&lt;T&gt; needs a row mapper"] --> B{"Did you pass one in<br/>CommandOptions&lt;T&gt;.WithMapper?"}
+    B -- yes --> M1["Your mapper runs.<br/>Jaunty touches nothing."]
+    B -- no --> C{"Strict mode, and T has a<br/>source-generated mapper?"}
+    C -- yes --> M2["Generated mapper.<br/>No reflection, AOT-safe."]
+    C -- no --> D{"Dictionary or dynamic?"}
+    D -- yes --> M3["Special-type mapper"]
+    D -- no --> E{"Jaunty.Extensions.Reflection<br/>referenced and enabled?"}
+    E -- yes --> M4["Reflection mapper, compiled<br/>once per type and cached"]
+    E -- no --> X["InvalidOperationException:<br/>No mapper found for type 'T'"]
+```
+
+Your data is always yours to shape. The steps, from most control to least:
+
+**Bring your own mapper.** Hand Jaunty a delegate and it will not look at your type at all.
+Useful for a legacy table, a computed column, or a type you do not own.
 
 ```csharp
-using Jaunty;
-
-// Strict mapping - all properties must have matching columns
 var products = connection.Query<Product>(
-    "SELECT id AS Id, name AS Name, price AS Price FROM products");
-
-// Partial mapping - only map what exists
-var summaries = connection.QueryPartial<ProductSummary>(
-    "SELECT id AS Id, name AS Name FROM products");
-
-// Scalar values
-var count = connection.QueryScalar<long>("SELECT COUNT(*) FROM products");
-
-// Parameters - named or positional
-var filtered = connection.Query<Product>(sql, new { CategoryId = 1 });
-var filtered = connection.Query<Product>(sql, 1);  // positional
-var filtered = connection.Query<Product>(sql, 1, "active", 50.00m);  // multiple
-
-// Async with cancellation
-var products = await connection.QueryAsync<Product>(sql, cancellationToken);
-
-// Insert, Update, Delete
-var id = connection.Insert(product);        // Returns identity value
-var rows = connection.Update(product);      // Returns rows affected
-var rows = connection.Delete(product);      // Returns rows affected
-
-// Bulk operations
-var rows = connection.BulkInsert(products);   // Fast bulk insert
-var rows = connection.BulkUpdate(products);   // Fast bulk update
-var rows = connection.BulkDelete(products);   // Fast bulk delete
-
-// Native bulk copy path engages automatically for 100+ rows
-// Automatically enabled when Jaunty.Extensions.Reflection is loaded
-JauntyReflectionExtensions.UseNativeBulkCopy();
-var rows = connection.BulkInsert(largeProductList);  // Uses SqlBulkCopy, NpgsqlBinaryImporter, etc.
-
-// Upsert (insert or update)
-var rows = connection.Upsert(product);  // Inserts if new, updates if exists
+    "SELECT product_id, product_name, unit_price FROM products",
+    CommandOptions<Product>.WithMapper(r => new Product
+    {
+        Id    = r.GetInt32(0),
+        Name  = r.GetString(1),
+        Price = r.GetDecimal(2)
+    }));
 ```
+
+**Let the generator write it.** Mark the entity with `[Table]` and the bundled source generator
+emits a mapper at build time: ordinals resolved once per result set, no reflection, no trim or AOT
+warnings. This is the path to be on for NativeAOT.
+
+```csharp
+using Jaunty.Attributes;
+
+[Table("products")]
+public partial class Product
+{
+    [Key] public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+}
+```
+
+**Fall back to reflection.** Reference `Extrode.Jaunty.Extensions.Reflection`, call
+`JauntyReflectionExtensions.UseReflectionMapping()` once at startup, and any plain class maps with
+setters compiled on first use. This is the Dapper experience, and it is the one thing the core
+leaves out on purpose so that the core stays AOT-clean.
+
+```csharp
+JauntyReflectionExtensions.UseReflectionMapping();
+
+var products = connection.Query<Product>("SELECT id AS Id, name AS Name, price AS Price FROM products");
+```
+
+Attributes steer any of the three: `[Column("unit_price")]` renames, `[Ignore]` skips, `[Key]` marks
+the primary key. See [Naming](#naming-attributes-and-conventions).
 
 ---
 
-## The Two Mapping Modes
+## API reference
 
-### `Query<T>` — Strict Mode
-
-The entity and the result set must agree. A property with no matching column throws on every
-path; a column with no matching property throws only under the reflection mapper.
-
-| Condition | Reflection mapper | Source-generated mapper |
-|---|---|---|
-| Property has no column | `InvalidOperationException` — `Strict mapping failed: property 'Total' has no matching column in result set for type 'Order'.` | whatever the provider's `GetOrdinal` throws for an unknown name (`ArgumentOutOfRangeException` on SQLite, `IndexOutOfRangeException` on SqlClient) |
-| Column has no property | `InvalidOperationException` — `Mapping failed: Column 'shipped_on' does not map to any property of type 'Order'.` | **Ignored** — the generated `OrdinalMap` resolves the properties it knows and never enumerates the result columns |
-
-Which one runs is decided by `DrDispatcher`, which prefers the generated mapper in strict mode.
-[The full precedence order](docs/01-api-reference/query-partial-methods.md#which-mapper-enforces-which-direction).
-
-```csharp
-public class Order
-{
-    public int OrderId { get; set; }
-    public DateTime OrderDate { get; set; }
-    public decimal Total { get; set; }
-}
-
-// All 3 columns required
-var orders = connection.Query<Order>(
-    "SELECT order_id AS OrderId, order_date AS OrderDate, total AS Total FROM orders");
-
-// Missing 'Total' - throws InvalidOperationException
-var orders = connection.Query<Order>(
-    "SELECT order_id AS OrderId, order_date AS OrderDate FROM orders");
-
-// Extra 'shipped_on' - throws under the reflection mapper; ignored by the generated one
-var orders = connection.Query<Order>(
-    "SELECT order_id AS OrderId, order_date AS OrderDate, total AS Total, shipped_on FROM orders");
-```
-
-The checks run once per distinct result-set shape, not once per row.
-
-**Use strict mode when:** You expect complete entities. This is the default because it's the safer choice.
-
-### `QueryPartial<T>` — Partial Mode
-
-Map only the columns that exist. Unmatched properties keep their default values.
-
-```csharp
-public class OrderSummary
-{
-    public int OrderId { get; set; }
-    public DateTime OrderDate { get; set; }
-}
-
-// Only selecting what we need
-var summaries = connection.QueryPartial<OrderSummary>(
-    "SELECT order_id AS OrderId, order_date AS OrderDate FROM orders");
-
-// Extra columns in result? Ignored silently.
-var summaries = connection.QueryPartial<OrderSummary>(
-    "SELECT order_id AS OrderId, order_date AS OrderDate, total, customer_id FROM orders");
-```
-
-**Use partial mode when:** You're intentionally selecting a subset of columns, using DTOs, or working with projections.
-
----
-
-## Complete API Reference
-
-### Query Methods (Read Operations)
+<details open>
+<summary>Reading</summary>
 
 | Method | Returns | Mapping | Description |
 |--------|---------|---------|-------------|
-| `Query<T>()` | `List<T>` | Strict | Every property needs a column; under reflection every column needs a property too |
+| `Query<T>()` | `List<T>` | Strict | Every property needs a column |
 | `QueryPartial<T>()` | `List<T>` | Partial | Map only matching columns |
 | `QueryFirst<T>()` | `T` | Strict | First row, throws if empty |
 | `QueryFirstOrDefault<T>()` | `T?` | Strict | First row, null if empty |
 | `QuerySingle<T>()` | `T` | Strict | Exactly one row, throws otherwise |
 | `QuerySingleOrDefault<T>()` | `T?` | Strict | Single or null |
-| `QueryScalar<T>()` | `T` | — | First column of first row |
-| `QueryStream<T>()` | `IEnumerable<T>` | Strict | Streaming results |
-| `QueryPartialStream<T>()` | `IEnumerable<T>` | Partial | Streaming partial results |
-| `QueryMultiple()` | `GridReader` | — | Multiple result sets |
+| `QueryScalar<T>()` | `T` | | First column of first row |
+| `QueryStream<T>()` | `IEnumerable<T>` | Strict | Streams rows as they are read |
+| `QueryPartialStream<T>()` | `IEnumerable<T>` | Partial | Streams partial rows |
+| `QueryMultiple()` | `GridReader` | | Several result sets in one round trip |
+| `Get<T>(id)` / `GetAll<T>()` | `T?` / `List<T>` | Strict | SQL generated from the entity |
 
-All methods have async counterparts (`QueryAsync<T>()`, etc.) with `CancellationToken` support.
+Every method has an `Async` counterpart that takes a `CancellationToken`.
 
-### Write Operations
+</details>
+
+<details open>
+<summary>Writing</summary>
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `Insert<T>()` | `long` | Insert entity, returns identity value |
-| `Update<T>()` | `int` | Update entity by primary key |
-| `Delete<T>()` | `int` | Delete entity by primary key |
-| `Delete<T>(id)` | `int` | Delete by ID value |
-| `BulkInsert<T>()` | `int` | Bulk insert multiple entities |
-| `BulkUpdate<T>()` | `int` | Bulk update multiple entities |
-| `BulkDelete<T>()` | `int` | Bulk delete multiple entities |
+| `Insert<T>()` | `long` | Insert, returns the identity value |
+| `Update<T>()` | `int` | Update by primary key |
+| `Delete<T>()` / `Delete<T>(id)` | `int` | Delete by entity or by key |
 | `Upsert<T>()` | `int` | Insert or update by primary key |
+| `BulkInsert<T>()` / `BulkUpdate<T>()` / `BulkDelete<T>()` | `int` | Batched writes, native bulk copy for 100+ rows |
 
 All write methods have async counterparts.
 
-### Stored Procedures
+</details>
 
-Stored procedures take `SpParameters`, not an anonymous object. Direction has to be stated —
-that is the whole reason for the separate type — so there is no shorthand that guesses it.
+<details open>
+<summary>Multiple result sets: <code>QueryMultiple</code> and <code>GridReader</code></summary>
+
+`QueryMultiple` runs a batch and returns a `GridReader`. Each `Read*` call advances to the next
+result set, and the reader has the same strict, partial, first, single and scalar family as the
+connection methods.
 
 ```csharp
-// Rows back
+using var grid = connection.QueryMultiple(@"
+    SELECT * FROM products WHERE category_id = @CategoryId;
+    SELECT * FROM categories WHERE id = @CategoryId;
+    SELECT COUNT(*) FROM products;",
+    new { CategoryId = 1 });
+
+var products = grid.Read<Product>();          // strict
+var category = grid.ReadFirst<Category>();    // strict, throws if empty
+var total    = grid.ReadScalar<int>();
+```
+
+| On `GridReader` | Variants |
+|---|---|
+| `Read<T>()` | `ReadPartial<T>()`, `ReadStream<T>()`, `ReadPartialStream<T>()` |
+| `ReadFirst<T>()` | `ReadFirstOrDefault<T>()`, `ReadPartialFirst<T>()`, `ReadPartialFirstOrDefault<T>()` |
+| `ReadSingle<T>()` | `ReadSingleOrDefault<T>()`, `ReadPartialSingle<T>()`, `ReadPartialSingleOrDefault<T>()` |
+| `ReadScalar<T>()` | |
+
+Each takes an optional `CommandOptions<T>`, so a custom mapper applies per result set, and each has
+an `Async` counterpart. Dispose the grid; it closes the reader and, if Jaunty opened the connection,
+the connection.
+
+</details>
+
+<details open>
+<summary>Stored procedures</summary>
+
+Stored procedures take `SpParameters` rather than an anonymous object, because direction has to be
+stated and nothing should guess it.
+
+```csharp
 var results = connection.ExecuteStoredProcedure<Product>("GetProductsByCategory",
     new SpParameters().AddInput("CategoryId", 1));
 
-// Output parameters, no result set
 var parameters = new SpParameters()
     .AddInput("CategoryId", 1)
     .AddOutput("TotalCount", DbType.Int32);
 
 connection.ExecuteStoredProcedureNonQuery("GetProductCount", parameters);
-int? count = parameters.Get<int>("TotalCount");   // Get<T> returns T?
+int? count = parameters.Get<int>("TotalCount");
 ```
 
-The full set: `ExecuteStoredProcedure<T>` (a `List<T>`), `ExecuteStoredProcedureFirst<T>`,
+The set is `ExecuteStoredProcedure<T>`, `ExecuteStoredProcedureFirst<T>`,
 `ExecuteStoredProcedureFirstOrDefault<T>`, `ExecuteStoredProcedureScalar<T>` and
-`ExecuteStoredProcedureNonQuery` (the affected-row count). Each has an `Async` counterpart taking
-a `CancellationToken`. `SpParameters` also carries `AddInputOutput` and `AddReturnValue`.
+`ExecuteStoredProcedureNonQuery`, each with an `Async` form. `SpParameters` also has
+`AddInputOutput` and `AddReturnValue`.
+
+</details>
 
 ---
 
-## Parameter Binding
+## Parameters
 
-### Named Parameters
+Named parameters come from an object's properties, the way you would expect:
 
 ```csharp
 var orders = connection.Query<Order>(
@@ -501,93 +476,50 @@ var orders = connection.Query<Order>(
     new { CustomerId = "ALFKI", Status = "shipped" });
 ```
 
-### Positional Parameters
-
-Jaunty parses your SQL to extract parameter names, then binds values in order.
+When the SQL names exactly one parameter, a single scalar is enough. Jaunty parses your SQL for
+parameter names, skipping string literals and comments, and binds the value to the one it finds:
 
 ```csharp
-// Single value
-var order = connection.Query<Order>(
-    "SELECT * FROM orders WHERE order_id = @Id",
-    42);
+var order = connection.Query<Order>("SELECT * FROM orders WHERE order_id = @Id", 42);
 
-// Multiple values
-var orders = connection.Query<Order>(
-    "SELECT * FROM orders WHERE customer_id = @Customer AND total > @MinTotal",
-    "ALFKI", 100.00m);
-
-// Array
-var orders = connection.Query<Order>(sql, new object[] { "ALFKI", 100.00m });
+connection.Query<Product>("... WHERE category_id = @Id OR supplier_id = @Id", 7);   // one name, one value
 ```
 
-### Duplicate Parameters
-
-Same parameter used multiple times? Provide one value.
-
-```csharp
-// @Id appears twice, but we only pass it once
-var results = connection.Query<Product>(
-    "SELECT * FROM products WHERE category_id = @Id OR supplier_id = @Id",
-    7);
-```
-
-### Parameter Count Validation
-
-Jaunty validates immediately. No waiting for the database to complain.
+That is a shorthand for the one-parameter case, not positional binding. SQL that names two or more
+parameters takes an object or a dictionary, and the mismatch is caught before anything is sent:
 
 ```csharp
-// SQL has 2 unique parameters, but we passed 3 values
-connection.Query<Product>(sql, 1, 2, 3);
-// ArgumentException: "Parameter count mismatch: SQL contains 2 unique parameter(s), but 3 value(s) provided."
+connection.Query<Product>("... WHERE category_id = @CategoryId AND price > @MinPrice", 1);
+// ArgumentException: "A single scalar parameter value cannot be bound to SQL containing 2 distinct
+//   parameters (CategoryId, MinPrice). Pass an object or dictionary with a value per parameter instead."
 ```
 
 ---
 
-## Transactions and Timeouts
+## Transactions and timeouts
 
-Use `CommandOptions` to pass transaction or timeout settings. No overload confusion.
+`CommandOptions` carries the transaction, the timeout, or both. There is one way to pass them, so
+`Query(sql, 1, 30)` never has to mean two different things.
 
 ```csharp
 using var transaction = connection.BeginTransaction();
 
-// With transaction
-var orders = connection.Query<Order>(sql, parameters,
-    CommandOptions.WithTransaction(transaction));
+var orders = connection.Query<Order>(sql, parameters, CommandOptions.WithTransaction(transaction));
+var orders = connection.Query<Order>(sql, parameters, CommandOptions.WithTimeout(30));
+var orders = connection.Query<Order>(sql, parameters, CommandOptions.With(transaction, timeoutSeconds: 30));
 
-// With timeout
-var orders = connection.Query<Order>(sql, parameters,
-    CommandOptions.WithTimeout(30));
-
-// Both
-var orders = connection.Query<Order>(sql, parameters,
-    CommandOptions.With(transaction, timeoutSeconds: 30));
-
+connection.BulkInsert(products, CommandOptions.WithTransaction(transaction));
 transaction.Commit();
 ```
 
-### Bulk Operations with Transaction
-
-```csharp
-using var transaction = connection.BeginTransaction();
-
-try
-{
-    connection.BulkInsert(products, CommandOptions.WithTransaction(transaction));
-    connection.BulkInsert(orders, CommandOptions.WithTransaction(transaction));
-    transaction.Commit();
-}
-catch
-{
-    transaction.Rollback();
-    throw;
-}
-```
-
 ---
 
-## Attribute Mapping
+## Naming: attributes and conventions
 
-Override table and column names per-entity.
+Attributes override names per entity. Jaunty ships its own set in `Jaunty.Attributes`, and it also
+honors the ones from `System.ComponentModel.DataAnnotations` (`[Table]`, `[Column]`, `[Key]`,
+`[NotMapped]`, `[DatabaseGenerated]`), so an entity you already annotated for EF Core works as it
+is. Both the source generator and the reflection mapper recognize both sets.
 
 ```csharp
 using Jaunty.Attributes;
@@ -595,6 +527,7 @@ using Jaunty.Attributes;
 [Table("order_items")]
 public class OrderItem
 {
+    [Key]
     [Column("item_id")]
     public int Id { get; set; }
 
@@ -604,505 +537,319 @@ public class OrderItem
     [Column("unit_price")]
     public decimal Price { get; set; }
 
-    [Ignore]  // Not mapped from database
+    [Ignore]
     public decimal CalculatedDiscount { get; set; }
-    
-    [Key]  // Primary key
-    public int OrderId { get; set; }
-    
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
 }
-
-// SQL uses database column names
-var items = connection.QueryPartial<OrderItem>(
-    "SELECT item_id, product_name, unit_price FROM order_items");
 ```
 
-**Priority order:** `[Column]` attribute > `JauntyConfig.ColumnNameResolver` > Property name
+Conventions apply across every entity through three delegates on `JauntyConfig`. Each is nullable,
+and null means the .NET name is used unchanged. Jaunty ships no snake-case or pluralization helper;
+you supply the conversion, which is a line or two and keeps the core free of an inflector nobody
+agrees with.
+
+```csharp
+using Jaunty.Configuration;
+
+JauntyConfig.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
+JauntyConfig.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
+JauntyConfig.SchemaNameResolver = type =>
+    type.Namespace?.EndsWith(".Archive", StringComparison.Ordinal) == true ? "archive" : string.Empty;
+```
+
+Precedence is `[Column]`, then the resolver, then the property name. `SchemaNameResolver` sees only
+the type, so a blanket `_ => "dbo"` would qualify tables on PostgreSQL and SQLite too; return
+`string.Empty` for types that should stay unqualified. Resolvers may be changed after queries have
+run, and cached metadata is rebuilt on next use. Per-engine detail is in
+[schemas.md](docs/01-api-reference/schemas.md).
 
 ---
 
-## Logging and Diagnostics
+## Logging and diagnostics
 
-Jaunty provides built-in command interception for logging, auditing, and custom diagnostics.
+Jaunty runs every command through an interceptor pipeline. Two interceptors ship, and yours plug in
+the same way.
 
-### LoggingInterceptor
-
-Log SQL execution with configurable log levels, slow query detection, and parameter masking.
-
-> Ships in the optional `Extrode.Jaunty.Extensions.Logging` package, which is what keeps the
-> `ILogger` and dependency-injection references out of core:
-> `dotnet add package Extrode.Jaunty.Extensions.Logging`
->
-> To keep core dependency-free, implement `ICommandInterceptor` against your own logger, or consume
-> the built-in `DiagnosticSource` events. See
-> [`docs/02-architecture/dependencies.md`](docs/02-architecture/dependencies.md).
+**LoggingInterceptor** lives in `Extrode.Jaunty.Extensions.Logging`, so the `ILogger` dependency
+stays out of the core:
 
 ```csharp
-using Microsoft.Extensions.Logging;
 using Jaunty.Interceptors;
 using Jaunty.Configuration;
 
-// Create logger factory
-var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-
-// Configure logging
-var loggingConfig = new LoggingConfiguration
-{
-    MinimumLogLevel = LogLevel.Information,
-    SlowQueryThreshold = TimeSpan.FromSeconds(1),
-    LogSql = true,
-    LogParameters = true,
-    SensitiveParameterNames = new HashSet<string> { "Password", "SSN", "CreditCard" }
-};
-
-// Create interceptor
 var loggingInterceptor = new LoggingInterceptor(
     loggerFactory.CreateLogger<LoggingInterceptor>(),
-    loggingConfig);
+    new LoggingConfiguration
+    {
+        MinimumLogLevel = LogLevel.Information,
+        SlowQueryThreshold = TimeSpan.FromSeconds(1),
+        LogSql = true,
+        LogParameters = true,
+        SensitiveParameterNames = new HashSet<string> { "Password", "SSN", "CreditCard" }
+    });
 
-// Register with Jaunty
 JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { loggingInterceptor });
 ```
 
-**Configuration Options**:
-- `MinimumLogLevel` - Minimum log level (default: `LogLevel.Information`)
-- `SlowQueryThreshold` - Threshold for slow query warnings (default: `TimeSpan.Zero` = disabled)
-- `LogSql` - Whether to log SQL command text (default: `true`)
-- `LogParameters` - Whether to log parameter values (default: `true`)
-- `SensitiveParameterNames` - Parameter names to mask in logs (default: empty)
-
-### AuditInterceptor
-
-Track command execution for compliance and troubleshooting without logging sensitive data.
+**AuditInterceptor** keeps a bounded in-memory record of every command, its phase, duration and
+failure, with no parameter values captured:
 
 ```csharp
 using Jaunty.Diagnostics;
 
-var auditInterceptor = new AuditInterceptor(maxRecords: 1000);
-JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { auditInterceptor });
+var audit = new AuditInterceptor(maxRecords: 1000);
+JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { audit });
 
-// Get recent audit records
-var recentCommands = auditInterceptor.GetRecentRecords(50);
-foreach (var record in recentCommands)
-{
+foreach (var record in audit.GetRecentRecords(50))
     Console.WriteLine($"{record.Timestamp}: {record.Phase} - {record.CommandText}");
-}
-
-// Clear audit log
-auditInterceptor.Clear();
 ```
 
-**AuditRecord Properties**:
-- `Timestamp` - UTC timestamp
-- `Phase` - Executing, Executed, or Failed
-- `CommandText` - SQL command text
-- `CommandType` - Text, StoredProcedure, or TableDirect
-- `Database` - Database name
-- `ElapsedMilliseconds` - Execution duration
-- `Success` - Whether execution succeeded
-- `ExceptionType` / `ExceptionMessage` - Exception details on failure
+**DiagnosticSource** events (`Jaunty.Database.Command.Executing`, `.Executed`, `.Failed`) are
+emitted for OpenTelemetry, Application Insights and friends. Subscribe through
+`JauntyDiagnosticListener.Instance`.
 
-### DiagnosticSource Integration
-
-Jaunty emits events via `DiagnosticSource` for integration with OpenTelemetry, Application Insights, and other telemetry systems.
+**Your own interceptor** implements `ICommandInterceptor`:
 
 ```csharp
-using System.Diagnostics;
-using Jaunty.Diagnostics;
-
-// Subscribe to Jaunty events
-var listener = new DiagnosticListener("Jaunty");
-using var subscription = listener.Subscribe(new DiagnosticObserver());
-
-// Or use the singleton instance
-JauntyDiagnosticListener.Instance.Subscribe(new DiagnosticObserver());
-```
-
-**Event Names**:
-- `Jaunty.Database.Command.Executing` - Before command execution
-- `Jaunty.Database.Command.Executed` - After successful execution
-- `Jaunty.Database.Command.Failed` - When execution fails
-
-**Example Observer**:
-```csharp
-public class DiagnosticObserver : IObserver<KeyValuePair<string, object?>>
-{
-    public void OnNext(KeyValuePair<string, object?> evt)
-    {
-        switch (evt.Key)
-        {
-            case JauntyDiagnosticListener.CommandExecutingEventName:
-                var executing = (CommandExecutingPayload)evt.Value!;
-                Console.WriteLine($"Executing: {executing.CommandText}");
-                break;
-
-            case JauntyDiagnosticListener.CommandExecutedEventName:
-                var executed = (CommandExecutedPayload)evt.Value!;
-                Console.WriteLine($"Completed in {executed.ElapsedMilliseconds:F2}ms");
-                break;
-
-            case JauntyDiagnosticListener.CommandFailedEventName:
-                var failed = (CommandFailedPayload)evt.Value!;
-                Console.WriteLine($"Failed: {failed.ExceptionMessage}");
-                break;
-        }
-    }
-
-    public void OnError(Exception error) { }
-    public void OnCompleted() { }
-}
-```
-
-### Custom Interceptors
-
-Implement `ICommandInterceptor` for custom cross-cutting concerns.
-
-```csharp
-using Jaunty.Interceptors;
-
 public class TimingInterceptor : ICommandInterceptor
 {
-    public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken ct)
-    {
-        // Record start time, add custom headers, etc.
-        return new ValueTask();
-    }
+    public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken ct) => default;
 
     public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken ct)
     {
         Console.WriteLine($"Query took {context.Elapsed.TotalMilliseconds:F2}ms");
-        return new ValueTask();
+        return default;
     }
 
     public ValueTask OnCommandFailedAsync(CommandContext context, Exception ex, CancellationToken ct)
     {
         Console.WriteLine($"Query failed: {ex.Message}");
-        return new ValueTask();
+        return default;
     }
 }
 ```
 
-**Interceptor Lifecycle**:
-1. `OnCommandExecutingAsync` - Called before command execution
-2. `OnCommandExecutedAsync` - Called after successful execution
-3. `OnCommandFailedAsync` - Called when execution fails
-
-### Dependency Injection
-
-Register interceptors with `IServiceCollection`. These extension methods ship in the optional
-`Extrode.Jaunty.Extensions.Logging` package — **Jaunty core requires no DI container**, and
-`JauntyConfig.AddInterceptor` registers an interceptor without one.
-
-```csharp
-using Jaunty;
-
-var services = new ServiceCollection();
-
-// Add logging
-services.AddJauntyLogging(options =>
-{
-    options.MinimumLogLevel = LogLevel.Information;
-    options.SlowQueryThreshold = TimeSpan.FromSeconds(1);
-});
-
-// Add custom interceptors
-services.AddSingleton<TimingInterceptor>();
-services.AddSingleton<ICommandInterceptor>(sp => sp.GetRequiredService<TimingInterceptor>());
-
-// Apply interceptors after building the service provider
-var serviceProvider = services.BuildServiceProvider();
-serviceProvider.ApplyJauntyInterceptors();
-```
+With a DI container, `services.AddJauntyLogging(...)` and `serviceProvider.ApplyJauntyInterceptors()`
+from the Logging package do the wiring. Without one, `JauntyConfig.AddInterceptor` registers an
+interceptor directly, which is also the right call under NativeAOT.
 
 ---
 
-## Global Configuration
+## Async and streaming
 
-Naming is resolved through three delegates on `JauntyConfig`. Each is nullable, and null means
-"use the .NET name unchanged" — so a type with no resolver configured maps `ProductName` to a
-`ProductName` column.
+Every method has an async counterpart, and `CancellationToken` is optional everywhere.
 
 ```csharp
-using Jaunty.Configuration;
-
-public static Func<Type, string>?   SchemaNameResolver   // type   -> schema
-public static Func<Type, string>?   TableNameResolver    // type   -> table
-public static Func<string, string>? ColumnNameResolver   // member -> column
-```
-
-**Jaunty ships no built-in convention helpers.** There is no snake-case or pluralisation function
-to reach for; you supply the conversion, which is a few lines and keeps the core free of an
-inflector nobody agrees with:
-
-```csharp
-JauntyConfig.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
-JauntyConfig.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
-```
-
-**Resolvers may be changed after queries have run.** Setting any of them bumps a configuration
-generation, and metadata compiled under an older generation — including the per-reader setter
-caches, which would otherwise map through setters built for the old column names — is retired and
-rebuilt on next use. Startup is still the right place to configure them, for the obvious reason
-that a mid-flight change throws away work; it is no longer a correctness requirement.
-
----
-
-## Async Support
-
-Every method has an async counterpart. `CancellationToken` is optional.
-
-```csharp
-// Query async
-var products = await connection.QueryAsync<Product>(sql);
 var products = await connection.QueryAsync<Product>(sql, cancellationToken);
+var id       = await connection.InsertAsync(product);
+var rows     = await connection.BulkInsertAsync(products);
 
-// Write async
-var id = await connection.InsertAsync(product);
-var rows = await connection.BulkInsertAsync(products);
-var rows = await connection.UpsertAsync(product);
-
-// Streaming async
-await foreach (var product in connection.QueryStreamAsync<Product>(sql, cancellationToken))
-{
-    Console.WriteLine($"{product.Id}: {product.Name}");
-}
-
-// Multiple result sets async
 using var grid = await connection.QueryMultipleAsync(sql);
-var products = grid.Read<Product>();
-var categories = grid.Read<Category>();
+var products   = await grid.ReadAsync<Product>();
 ```
 
----
-
-## Multiple Result Sets
-
-Execute multiple queries in a single round-trip.
+For large result sets, stream instead of buffering:
 
 ```csharp
-using var grid = connection.QueryMultiple(@"
-    SELECT * FROM products WHERE category_id = @CategoryId;
-    SELECT * FROM categories WHERE id = @CategoryId;
-    SELECT COUNT(*) FROM products;
-", new { CategoryId = 1 });
-
-var products = grid.Read<Product>().ToList();
-var category = grid.ReadFirst<Category>();
-var totalProducts = grid.ReadScalar<int>();
-```
-
----
-
-## Streaming Large Result Sets
-
-For large result sets, use streaming to avoid buffering everything in memory.
-
-```csharp
-// Synchronous streaming
 foreach (var product in connection.QueryStream<Product>("SELECT * FROM products"))
-{
     Process(product);
-}
 
-// Async streaming (.NET 8+)
-await foreach (var product in connection.QueryStreamAsync<Product>("SELECT * FROM products"))
-{
+await foreach (var product in connection.QueryStreamAsync<Product>("SELECT * FROM products", cancellationToken))
     await ProcessAsync(product);
-}
 ```
 
 ---
 
-## How It Works
+## Under the hood
 
-### Connection Management
+### The pipeline
 
-Jaunty respects your connection state:
-- If the connection was closed, Jaunty opens it, executes, and closes it
-- If the connection was already open, Jaunty leaves it open
+Everything that can be decided once is decided once, at build time by the source generator or on
+the first use of a type. What is left per query is parameter binding and the reader loop.
 
-No surprises. No leaked connections.
+```mermaid
+flowchart LR
+    A["Your SQL<br/>+ parameters"] --> B["Parameter extraction<br/><i>literals and comments skipped</i>"]
+    B --> C["Command template<br/><i>cached per query</i>"]
+    C --> D["DbCommand"]
+    D --> E["DbDataReader"]
+    E --> F["Row mapper<br/><i>yours, generated, or compiled on first use</i>"]
+    F --> G["List&lt;T&gt;"]
 
-### Performance Architecture
+    M["MetadataCache&lt;T&gt;<br/><i>static, zero-alloc lookup</i>"] -.-> C
+    M -.-> F
+```
 
-1. **Compiled Setters** — Property setters are compiled via expression trees when a type is first used. No reflection during query execution.
+Column mappings live in static generic caches, parameter getters are compiled once per anonymous
+type, and the SQL scan for parameter names is cheap next to a network round trip.
 
-2. **Metadata Caching** — Column mappings are cached in static generic classes (`MetadataCache<T>`). Zero allocation per query for metadata lookup.
+### Connection management
 
-3. **Parameter Caching** — Named parameter property getters are compiled and cached per anonymous type.
+If the connection was closed, Jaunty opens it, runs the command and closes it again. If it was
+already open, Jaunty leaves it open. No surprises and no leaked connections.
 
-4. **SQL Parsing** — Parameter extraction skips string literals, comments, and quoted identifiers. Cheap compared to network roundtrip.
+### NULL handling
 
-5. **Command Template Caching** — SQL parameter templates cached per query type.
-
-6. **Bulk Copy Optimization** — Native bulk copy APIs (SqlBulkCopy, NpgsqlBinaryImporter, chunked multi-row INSERT on MySQL/MariaDB) automatically used for 100+ rows via `Jaunty.Extensions.Reflection`. The gain depends on provider and batch size; measurement status is tracked in [BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md).
+Nullable properties (`int?`, `string`) receive `null`. A non-nullable value type receiving a NULL
+throws `InvalidOperationException`, because a silent zero is a wrong answer.
 
 ### NativeAOT
 
-Jaunty is built to publish under NativeAOT. `IsTrimmable` and `IsAotCompatible` are set for every
-`net8.0`+ target, so the trim and AOT analyzers run on every build, and warnings are errors.
+`IsTrimmable` and `IsAotCompatible` are set for every `net8.0`+ target, so the trim and AOT
+analyzers run on every build and their warnings are errors. No Jaunty assembly produces a trim or
+AOT warning; the warnings that appear when publishing the scaffolding CLI all come from third-party
+ADO.NET drivers and BCL serialization assemblies that the core does not reference. Verified
+2026-08-29 by publishing the CLI on `net8.0` (36.98 MB) and `net10.0` (34.63 MB) for win-x64.
 
-Verified 2026-08-29 by publishing the scaffolding CLI on both legs:
+Every reflection site in the shipped assemblies carries a reviewed `AOT-SAFE` justification, checked
+by `scripts/Verify-NativeAOT.ps1` and listed in
+[reflection-and-trimming.md](docs/02-architecture/reflection-and-trimming.md). Two projects are
+excluded because AOT does not apply to them: `Jaunty.Extensions.Reflection`, whose purpose is
+reflection and which you reference to opt out of the guarantee, and `Jaunty.SourceGenerator`, which
+runs inside the compiler.
 
-| Leg | Binary | Size |
-|---|---|---|
-| `net8.0` win-x64 (control) | produced, runs | 36.98 MB |
-| `net10.0` win-x64 | produced, `--help` exits 0 | **34.63 MB** |
+For AOT, use the generated mappers and register interceptors through `JauntyConfig.AddInterceptor`
+rather than a DI container.
 
-**No Jaunty assembly produces a trim or AOT warning.** That is accurate about build output and is
-not by itself a proof of safety: a few sites are clean because of an `UnconditionalSuppressMessage`,
-which is an assertion by the author rather than a proof by the tool. The warnings that do appear all come from
-third-party ADO.NET drivers and BCL serialization assemblies pulled in by the CLI —
-`Microsoft.Data.SqlClient`, `MySqlConnector`, `Microsoft.IdentityModel.Tokens`,
-`System.Data.Common` — none of which are referenced by Jaunty core.
+### Bulk copy
 
-`scripts/Verify-NativeAOT.ps1` additionally checks that every reflection site in the shipped
-assemblies carries a reviewed `AOT-SAFE` justification: **15 sites, all justified.**
-[`docs/02-architecture/reflection-and-trimming.md`](docs/02-architecture/reflection-and-trimming.md)
-lists every one of them with its reason and what, if anything, you have to do about it.
+With `Jaunty.Extensions.Reflection` loaded and `UseNativeBulkCopy()` called, batches of 100 rows or
+more use the provider's native path:
 
-Two projects are deliberately excluded, because AOT does not apply to them:
-
-- **`Jaunty.Extensions.Reflection`** — reflection is its stated purpose. Referencing it is how a
-  consumer opts out of the AOT guarantee; the mapper ladder falls back to it only if you install it.
-- **`Jaunty.SourceGenerator`** — a `netstandard2.0` Roslyn component that runs inside the compiler
-  and is never published.
-
-For AOT, prefer source-generated mappers (`IMapped`, emitted by the bundled generator) and register
-interceptors directly via `JauntyConfig.AddInterceptor` rather than through a DI container.
-
-### NULL Handling
-
-- **Nullable types** (`int?`, `string`, etc.): NULL becomes `default`
-- **Non-nullable value types**: NULL throws `InvalidOperationException`
-
-```csharp
-public class Product
-{
-    public int Id { get; set; }           // NULL throws
-    public int? CategoryId { get; set; }  // NULL becomes null
-    public string Name { get; set; }      // NULL becomes null
-}
-```
-
----
-
-## Design Decisions
-
-### Why strict mapping by default?
-
-Silent partial mapping causes bugs that surface far from their origin. Strict mode fails fast with a clear message. If you want partial data, `QueryPartial<T>` makes that intent explicit.
-
-### Why parse SQL for positional parameters?
-
-The cost of scanning a SQL string for `@param` tokens is negligible compared to network latency and query execution. The benefit—natural syntax like `Query(sql, 1, 2, 3)`—is worth it.
-
-### Why `CommandOptions` instead of overloads?
-
-Overloads for every combination of transaction/timeout/parameters create ambiguity. `Query(sql, 1, 30)` could mean "parameter 1, timeout 30" or "parameters 1 and 30". `CommandOptions` eliminates confusion.
-
-### Why cache metadata in static constructors?
-
-Performance. Static generic classes initialize once per type and live for the application lifetime. Configuration should happen at startup before queries run—this is a feature, not a limitation.
-
-### Why separate Bulk operations?
-
-Bulk operations use optimized paths for batch inserts/updates/deletes. They're faster than individual operations when working with collections.
-
-### Native Bulk Copy Performance
-
-For large datasets (100+ rows), Jaunty automatically uses native bulk copy APIs when `Jaunty.Extensions.Reflection` is loaded:
-
-| Database | Native API | Advantage vs transactional loop |
+| Database | Native API | Measured against a transactional loop (2026-07-04) |
 |----------|-----------|------------------|
-| SQL Server | `SqlBulkCopy` | **3.5-36.6x (measured 2026-07-04)** |
-| PostgreSQL | `NpgsqlBinaryImporter` (COPY) | **6.9-7.6x (measured 2026-07-04)** |
-| MySQL/MariaDB | Chunked multi-row INSERT | **12.9-16.1x (measured 2026-07-04)** |
-| SQLite | Prepared-loop INSERT (no bulk API exists) | parity with hand-coded ADO.NET (measured) |
+| SQL Server | `SqlBulkCopy` | 3.5x to 36.6x |
+| PostgreSQL | `NpgsqlBinaryImporter` (COPY) | 6.9x to 7.6x |
+| MySQL/MariaDB | chunked multi-row INSERT | 12.9x to 16.1x |
+| SQLite | prepared-loop INSERT (no bulk API exists) | parity with hand-coded ADO.NET |
 
-All rows above are measured with the in-repo BulkCopyBenchmarks suite
-against a hand-coded transactional-loop baseline (100 to 10,000 rows;
-larger batches see the bigger gains). Measured read-path comparisons
-(vs ADO.NET, Dapper, EF Core, RepoDb, linq2db) are published in
-[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md):
-Jaunty is the lowest-allocating of the compared ORMs and competitive with
-Dapper on throughput.
-
-**Configuration**:
-```csharp
-using Jaunty.Configuration;
-
-// Enable/disable native bulk copy (default: true)
-BulkCopyConfiguration.EnableNativeBulkCopy = true;
-
-// Set minimum rows to trigger native bulk copy (default: 100)
-BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = 100;
-
-// Configure batch size (default: 10000)
-BulkCopyConfiguration.DefaultBatchSize = 10000;
-
-// Set timeout in seconds (default: 30)
-BulkCopyConfiguration.DefaultTimeout = 30;
-```
-
-**Note**: Native bulk UPDATE and DELETE are not available in most database providers. Jaunty uses optimized standard SQL within transactions for these operations.
+Thresholds, batch size and timeout are on `BulkCopyConfiguration`. Native bulk UPDATE and DELETE
+do not exist in most providers, so those run as optimized SQL inside a transaction. Read-path
+comparisons against ADO.NET, Dapper, EF Core, RepoDb and linq2db are in
+[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md): Jaunty is the
+lowest-allocating of the compared ORMs and competitive with Dapper on throughput.
 
 ---
 
 ## Comparison
 
-| Feature | Jaunty | Dapper | EF Core |
-|---------|--------|--------|---------|
-| Raw SQL execution | Yes | Yes | Yes |
-| Strict mapping mode | Yes | No | No |
-| Partial mapping mode | Yes | Yes | Yes |
-| Positional parameters | Yes | No | No |
-| Zero dependencies | Yes | Yes | No |
-| Connection state management | Yes | Yes | Yes |
-| Bulk operations | Yes | No | Yes |
-| Upsert support | Yes | No | Yes |
-| Streaming (IAsyncEnumerable) | Yes | No | Yes |
-| Multiple result sets | Yes | Yes | Limited |
-| Stored procedures | Yes | Yes | Yes |
-| LINQ translation | No | No | Yes |
-| Change tracking | No | No | Yes |
+![Feature comparison: Jaunty, Dapper, EF Core](docs/_assets/benchmarks/comparison.svg)
 
-**This compares what each library ships in the box.** A "No" means the package itself does not
-provide the feature, not that it cannot be done — several of these rows are covered for Dapper by
-add-on packages such as `Dapper.Contrib` or `Z.Dapper.Plus`, and for EF Core by
-`EFCore.BulkExtensions`. Pick on the whole picture, not this table: the
-[migration guides](docs/08-learn/migrating/README.md) are more honest about the trade-offs,
-including the ones that favour the other library.
+<details>
+<summary>Text version</summary>
+
+| Feature | Jaunty | Dapper | EF Core |
+|---------|:------:|:------:|:-------:|
+| Raw SQL execution | ✔ | ✔ | ✔ |
+| Strict mapping mode | ✔ | ✘ | ✘ |
+| Partial mapping mode | ✔ | ✔ | ✔ |
+| Zero dependencies | ✔ | ✔ | ✘ |
+| Bulk operations | ✔ | ✘ | ✔ |
+| Upsert support | ✔ | ✘ | ✔ |
+| Streaming (IAsyncEnumerable) | ✔ | ✘ | ✔ |
+| Multiple result sets | ✔ | ✔ | limited |
+| Stored procedures | ✔ | ✔ | ✔ |
+| NativeAOT in the box | ✔ | separate package | partial |
+| LINQ translation | ✘ | ✘ | ✔ |
+| Change tracking | ✘ | ✘ | ✔ |
+
+</details>
+
+This compares what each library ships in the box. A cross means the package itself does not provide
+the feature, not that it cannot be done: several rows are covered for Dapper by `Dapper.Contrib` or
+`Z.Dapper.Plus`, and for EF Core by `EFCore.BulkExtensions`. The
+[migration guides](docs/08-learn/migrating/README.md) are more candid about the trade-offs, including
+the ones that favor the other library.
+
+### Benchmarks
+
+Read path, warm job, 10,000 rows, measured 2026-09-02 on four providers. Every number is relative
+to a hand-coded ADO.NET loop on the same provider, and lower is better. The loop uses typed
+getters, sizes its list up front, and reads each column as the type the provider reports; an
+earlier version of it paid a text round-trip on SQLite's `REAL` column, which is why the July
+reports showed two libraries faster than ADO.NET. The SQLite column is from a separate 10,000-row run on the same
+harness, repeated after the generated mapper's per-row `FieldCount` guard was removed, because the
+38-minute four-provider run drifted on that in-process column; the report shows all three.
+
+![Read path, 10,000 rows, relative to ADO.NET](docs/_assets/benchmarks/read-path-10k-rows-table.svg)
+
+The same numbers as the extra time each library spends over ADO.NET:
+
+![Read path, 10,000 rows, time over ADO.NET](docs/_assets/benchmarks/read-path-10k-rows.svg)
+
+Allocation at 10,000 rows on SQL Server. Lower is better here too.
+
+![Allocation, 10,000 rows on SQL Server](docs/_assets/benchmarks/allocation-10k-rows-table.svg)
+
+![Allocation, 10,000 rows on SQL Server, bytes over ADO.NET](docs/_assets/benchmarks/allocation-10k-rows.svg)
+
+<details>
+<summary>Text version</summary>
+
+| Method | SQLite | SQL Server | PostgreSQL | MariaDB |
+|---|---|---|---|---|
+| ADO.NET (hand-coded) | baseline | baseline | baseline | baseline |
+| Jaunty `Query<T>` | 1.17x | 1.15x | 1.60x | 1.37x |
+| Jaunty (`WithExpectedRowCount`) | 1.22x | 1.14x | 1.14x faster | 1.05x faster |
+| Dapper | 1.78x | 1.42x | 1.28x | 1.64x |
+| RepoDb | 1.30x | 1.22x | 1.06x | 1.32x |
+| linq2db | 1.80x | 1.25x | 1.34x | 1.62x |
+| EF Core | 2.71x | 2.59x | 1.83x | 4.27x |
+
+| Method | Allocated | vs ADO.NET |
+|---|---|---|
+| ADO.NET (hand-coded) | 1,096 KB | baseline |
+| Jaunty (`WithExpectedRowCount`) | 1,097 KB | 1.00x |
+| Jaunty `Query<T>` | 1,274 KB | 1.16x |
+| RepoDb | 1,274 KB | 1.16x |
+| linq2db | 1,277 KB | 1.17x |
+| Dapper | 2,056 KB | 1.88x |
+| EF Core | 3,241 KB | 2.96x |
+
+</details>
+
+**If you know roughly how many rows are coming, say so.** `Query<T>` collects into a `List<T>`
+that starts at 64 slots and doubles; for 10,000 rows the last array lands on the large-object
+heap and costs a Gen2 collection, which is the whole of the gap between the two Jaunty rows on
+PostgreSQL and MariaDB above. `CommandOptions<T>.WithExpectedRowCount(n)` sizes it once. An
+estimate is enough; it does not have to be exact.
+
+The full run, the machine, the 100-row tables, the harness corrections and the comparison with
+the July numbers are in
+[benchmarks-2026-09-02.md](docs/05-quality/reports/benchmarks-2026-09-02.md). The earlier reports
+are [benchmarks-2026-07-29.md](docs/05-quality/reports/benchmarks-2026-07-29.md) and
+[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md). How the read path
+got from 1.80x slower than ADO.NET to where it is, step by step with the code, is in
+[How Jaunty got fast](docs/08-learn/how-jaunty-got-fast.md).
 
 ---
 
 ## Documentation
 
-For more detailed documentation, see:
-
-- [`docs/08-learn/migrating/`](docs/08-learn/migrating/README.md) - Migrating from Dapper or EF Core, and the strict-mapping rule to read first
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contributing guide
-- [`docs/03-development/api-design-guidelines.md`](docs/03-development/api-design-guidelines.md) - API design guidelines
-- [`docs/03-development/code-review-checklist.md`](docs/03-development/code-review-checklist.md) - Code review checklist
-- [`docs/02-architecture/ARCHITECTURE-DECISIONS.md`](docs/02-architecture/ARCHITECTURE-DECISIONS.md) - Architecture decision records
+- [Migrating from Dapper or EF Core](docs/08-learn/migrating/README.md), and the strict-mapping rule to read first
+- [Error messages, explained](docs/08-learn/error-messages.md): the query that produces each one, and the fix
+- [Fluent API reference](docs/01-api-reference/fluent-api.md)
+- [Architecture decisions](docs/02-architecture/ARCHITECTURE-DECISIONS.md)
+- [Contributing](CONTRIBUTING.md)
 
 ---
 
 ## License
 
-**Jaunty is free to use, including in commercial production.** No seat count, no Order, no expiry. What is sold is support. Two documents apply:
+Jaunty is free to use, including in commercial production. No seat count, no order, no expiry. What
+is sold is support. Two documents apply:
 
-- **The Islamic Software License - Restricted (ISL-R), Version 1.0** - see [LICENSE.md](LICENSE.md) - governs both the source in this repository and the published packages. Section 2 grants a worldwide, royalty-free right to use the software for any lawful purpose, including internal commercial use, and to read the source. It does not grant modification, redistribution as a library, or derivative works.
-- **The Jaunty Redistribution Exception, Version 1.0** - see [LICENSE-DISTRIBUTION-EXCEPTION.md](LICENSE-DISTRIBUTION-EXCEPTION.md) - permits you to ship the unmodified packages inside your own application, container image, installer or hosted service. Without it, ISL-R's no-distribution clause would make deploying an application that references Jaunty impossible. It is royalty-free and does not expire.
+- [The Islamic Software License - Restricted (ISL-R), Version 1.2](LICENSE.md) governs both the
+  source in this repository and the published packages. Section 2 grants a worldwide, royalty-free
+  right to use the software for any lawful purpose, including internal commercial use, and to read
+  the source. It does not grant modification, redistribution as a library, or derivative works.
+- [The Jaunty Redistribution Exception, Version 1.0](LICENSE-DISTRIBUTION-EXCEPTION.md) permits you
+  to ship the unmodified packages inside your own application, container image, installer or hosted
+  service. It is royalty-free and does not expire.
 
-**The ethical restrictions in ISL-R Sections 4 and 5 are conditions of the grant, not of payment.** They bind a user who pays nothing exactly as they bind one who pays. They also travel with the redistributed binaries.
+> [!CAUTION]
+> The ethical restrictions in ISL-R Sections 4 and 5 are conditions of the grant, not of payment.
+> They bind a user who pays nothing as they bind one who pays, and they travel with the
+> redistributed binaries.
 
-This is not an open-source license. [LICENSE-EULA.md](LICENSE-EULA.md) is the instrument of the previous paid, Order-conditioned model; it is retained for the historical record and does not govern use under the free model.
-
-Support pricing: [docs/06-releases/pricing.md](docs/06-releases/pricing.md).
-
----
-
-Built by [Syed Beparey](https://github.com/sbeparey)
+This is not an open-source license. Support pricing:
+[docs/06-releases/pricing.md](docs/06-releases/pricing.md).

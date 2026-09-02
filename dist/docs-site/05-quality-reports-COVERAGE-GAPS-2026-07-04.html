@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coverage Gap Inventory — 2026-07-04 — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Coverage Gap Inventory — 2026-07-04</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html" class="active" aria-current="page">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#test-suite-status-all-green">Test suite status (all green)</a><a class="toc-l2" href="#per-assembly-line-coverage-sqlite-only-run">Per-assembly line coverage (SQLite-only run)</a><a class="toc-l2" href="#genuinely-untested-suites-run-fully-locally-these-are-real-gaps-write-tests">Genuinely untested (suites run fully locally; these are real gaps — write tests)</a><a class="toc-l2" href="#only-because-containers-were-absent-verify-with-container-run-before-writing-tests">0% only because containers were absent (verify with container run before writing tests)</a><a class="toc-l2" href="#known-failingflaky-environmental-from-prior-reports">Known failing/flaky (environmental, from prior reports)</a><a class="toc-l2" href="#how-to-reproduce">How to reproduce</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Coverage Gap Inventory — 2026-07-04</nav>
+        <article>
+<h1 id="coverage-gap-inventory-2026-07-04">Coverage Gap Inventory — 2026-07-04</h1>
+<p>Produced by the enterprise readiness pass (PROD-105). Collected with
+<code>coverlet.collector</code> (now referenced by all 6 test projects) via
+<code>dotnet test -c Release --framework net8.0 --collect:&quot;XPlat Code Coverage&quot;</code>,
+<strong>without local DB containers</strong> — SqlServer/MySql/Postgres integration tests were
+skipped (713 skips), which matters for interpreting the zeros below.</p>
+<p>This is a handoff inventory: tests for these gaps are to be written by a follow-up
+work, not part of this pass.</p>
+<h2 id="test-suite-status-all-green">Test suite status (all green)</h2>
+<p>4,369 passed / 0 failed / 714 skipped. Skips = DB-dialect integration tests
+(SqlServer/MySql/Postgres) that require containers; the full core suite was last
+verified against a SQL Server 2022 container on 2026-07-03 (3,587/3,589).</p>
+<h2 id="per-assembly-line-coverage-sqlite-only-run">Per-assembly line coverage (SQLite-only run)</h2>
+<table>
+<thead>
+<tr>
+<th>Assembly</th>
+<th>Line coverage</th>
+<th>Lines</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jaunty</td>
+<td>71.8%</td>
+<td>2433/3390</td>
+</tr>
+<tr>
+<td>Jaunty.Fluent</td>
+<td>77.4%</td>
+<td>2331/3011</td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles.DuckDB</td>
+<td>69.6%</td>
+<td>533/766</td>
+</tr>
+<tr>
+<td>Jaunty.Scaffolding</td>
+<td>62.7%</td>
+<td>423/675</td>
+</tr>
+<tr>
+<td>Jaunty.FlatFiles</td>
+<td>51.5%</td>
+<td>159/309</td>
+</tr>
+<tr>
+<td>Jaunty.Extensions.Reflection</td>
+<td>50.4%</td>
+<td>586/1163</td>
+</tr>
+</tbody>
+</table>
+<h2 id="genuinely-untested-suites-run-fully-locally-these-are-real-gaps-write-tests">Genuinely untested (suites run fully locally; these are real gaps — write tests)</h2>
+<p>Priority order for the test-writing work:</p>
+<ol>
+<li><code>Jaunty.Fluent.JoinedQuery4Builder&lt;T1..T4&gt;</code> — 0/164 lines, and
+<code>Jaunty.Fluent.JoinClause4Builder&lt;T1..T4&gt;</code> — 0/43. The whole 4-entity join
+surface is untested (relates to PRD-007 3-way/4-way join parity).</li>
+<li><code>Jaunty.Fluent.Internals.QueryBuilderBase</code> — 0/72.</li>
+<li><code>Jaunty.JauntyLoggingExtensions</code> — 0/34 (public logging API, shipped in core).</li>
+<li><code>Jaunty.TypeHandlers.TypeHandlerRegistry</code> — 42% (15/36); Remove/replace paths
+untested.</li>
+<li><code>Jaunty.FlatFiles.FileSources.ExcelFileSource</code> (0/33),
+<code>DeltaLakeFileSource</code> (0/21), <code>IcebergFileSource</code> (0/24) — advertised file
+formats with zero tests (pure SQL-generation logic, no external deps needed).</li>
+<li><code>Jaunty.FlatFiles.Core.FlatFileOptions</code> — 38% (28/73).</li>
+<li><code>Jaunty.Scaffolding.Providers.MySql.MySqlTypeMapper</code> (0/53) and
+<code>PostgreSql.PostgreSqlTypeMapper</code> (0/63) — pure type-mapping logic, unit-testable
+without a database (SQLite/SqlServer mappers ARE tested; these two are not).</li>
+<li><code>Jaunty.FlatFiles.DuckDB.Internals.Import.ImportDialectResolver</code> — 30% (6/20).</li>
+<li><code>Jaunty.Extensions.Reflection.MetadataCache&lt;T&gt;</code> — 50% (77/155).</li>
+<li><code>Jaunty.Jaunty</code> (core static API surface) — 42% (419/1000): large #if-net472/
+ns2.0 sections and provider-conditional paths dilute this; needs member-level
+triage after container-backed collection (see below).</li>
+</ol>
+<h2 id="only-because-containers-were-absent-verify-with-container-run-before-writing-tests">0% only because containers were absent (verify with container run before writing tests)</h2>
+<ul>
+<li><code>Jaunty.Extensions.Reflection.BulkCopy.{MySql,PostgreSql,SQLite,SqlServer}BulkCopyProvider</code>
+and the 4 <code>*DialectWithBulkCopy</code> classes. Note: SQLiteBulkCopyProvider at 0/84 is
+suspicious even for a SQLite-capable run — likely genuinely untested; check first.</li>
+<li><code>Jaunty.FlatFiles.DuckDB.Internals.Import.{PostgreSql,SqlServer}ImportDialect</code>.</li>
+<li><code>Jaunty.Scaffolding.Providers.{MySql,PostgreSql,SqlServer}SchemaReader</code>.</li>
+</ul>
+<p>Action for CI (PRD-015 extension): run coverage collection in the CI job that has the
+SQL Server container, and publish the cobertura artifact so the two categories above
+can be separated definitively.</p>
+<h2 id="known-failingflaky-environmental-from-prior-reports">Known failing/flaky (environmental, from prior reports)</h2>
+<ul>
+<li>MySQL table-state isolation in <code>Jaunty.Tests</code> Release mode (47 failures when run
+against live MySQL; March 2026 audit finding, still open — test-fixture cleanup).</li>
+<li>2 <code>CS8600</code> warnings in <code>TypeHandlerRoundTripTests.cs</code> (lines 157, 229).</li>
+</ul>
+<h2 id="how-to-reproduce">How to reproduce</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet test Jaunty.slnx -c Release --framework net8.0 \
+  --collect:&quot;XPlat Code Coverage&quot; --results-directory ./coverage
+</code></pre>
+</div>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="05-quality-reports-BENCHMARKS-2026-07-04.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Reports / BENCHMARKS 2026 07 04</span>
+</a><a class="pn-next" href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Reports / PRODUCTION READINESS 2026 07 02</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

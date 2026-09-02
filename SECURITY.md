@@ -3,7 +3,7 @@
 ## Supported versions
 
 Security fixes are applied to the latest released version. Older releases do not receive
-backported fixes. The current release is `v1.0.0-rc.1`; while the 1.0 line is in release
+backported fixes. The current release is `v1.0.0-rc.2`; while the 1.0 line is in release
 candidate, "latest" means the newest tag, not the newest stable.
 
 ## Reporting a vulnerability
@@ -32,7 +32,7 @@ scope is Jaunty putting something into a command that you did not put there, or 
 neutralise something it undertook to neutralise:
 
 - **Parameter binding** — flaws that could enable SQL injection through the documented APIs,
-  such as collection expansion or positional binding
+  such as collection expansion or the single-scalar shorthand
 - **Identifier handling** — a table, column or CTE name reaching SQL without passing
   `SqlIdentifierValidator`, in any dialect, builder or bulk-copy provider
 - **Bulk copy and CSV import** — paths that execute a statement other than the one intended

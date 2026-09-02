@@ -7,10 +7,9 @@ namespace Jaunty.Fluent.Tests.Integration;
 
 /// <summary>
 /// CF-9 / AUD-R31-007: the 3-way and 4-way IJoinClause gained the predicate-expression
-/// On(...) overload the 2-way interface already had. The parameter-renumbering tests are the
-/// point of the file: each visitor mints its value parameters from a counter that restarts at
-/// 0, so an ON predicate on the third join produces "@jp0" again after the second join or a
-/// Where has already bound one.
+/// On(...) overload the 2-way interface already had. The parameter-distinctness tests are the
+/// point of the file: each visitor names its value parameters independently of the others, so an
+/// ON predicate on the third join can mint a name the second join or a Where already bound.
 /// </summary>
 public class FluentJoinPredicateOnTests : IClassFixture<FluentDatabaseFixture>
 {
@@ -19,7 +18,7 @@ public class FluentJoinPredicateOnTests : IClassFixture<FluentDatabaseFixture>
     public FluentJoinPredicateOnTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     private static IReadOnlyList<string> BoundParameterNames(string sql)
-        => Regex.Matches(sql, @"@jp\d+").Select(m => m.Value).Distinct().OrderBy(n => n).ToList();
+        => Regex.Matches(sql, @"@\w+").Select(m => m.Value).Distinct().OrderBy(n => n, StringComparer.Ordinal).ToList();
 
     [Fact]
     public void ThreeWay_OnPredicate_MatchesTheKeyExpressionOverloadRowForRow()
@@ -75,14 +74,14 @@ public class FluentJoinPredicateOnTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public void ThreeWay_OnPredicate_AfterATwoWayOnPredicateWithItsOwnValue_BindsTwoDistinctParameters()
     {
-        // Both visitors mint "@jp0" for their literal. Without renumbering against the
-        // query-wide counter the second binding throws a duplicate-key ArgumentException, or one
-        // bound value silently serves both conditions.
+        // Both literals are named after their own column, so they differ here. Where two
+        // conditions do filter one column, the second binding must be suffixed rather than
+        // throwing a duplicate-key ArgumentException or silently serving both conditions.
         var query = _fixture.Connection.From<Product>("p")
             .InnerJoin<Category>("c").On((p, c) => p.CategoryId == c.CategoryId && c.CategoryId > 0)
             .InnerJoin<Supplier>("s").On((p, c, s) => p.SupplierId == s.SupplierId && s.SupplierId == 1);
 
-        Assert.Equal(["@jp0", "@jp1"], BoundParameterNames(query.ToSql()));
+        Assert.Equal(["@c_category_id", "@s_supplier_id"], BoundParameterNames(query.ToSql()));
 
         var results = query.Select();
         Assert.NotEmpty(results);
@@ -97,7 +96,7 @@ public class FluentJoinPredicateOnTests : IClassFixture<FluentDatabaseFixture>
             .InnerJoin<Supplier>("s").On((p, c, s) => p.SupplierId == s.SupplierId && s.SupplierId == 1)
             .Where((p, c, s) => p.UnitPrice > 5m);
 
-        Assert.Equal(["@jp0", "@jp1"], BoundParameterNames(query.ToSql()));
+        Assert.Equal(["@p_unit_price", "@s_supplier_id"], BoundParameterNames(query.ToSql()));
 
         var results = query.Select();
         Assert.NotEmpty(results);
@@ -135,7 +134,9 @@ public class FluentJoinPredicateOnTests : IClassFixture<FluentDatabaseFixture>
             .InnerJoin<Product, Category, Supplier, Order>("o")
                 .On((p, c, s, o) => o.EmployeeId == p.SupplierId && o.EmployeeId == 1);
 
-        Assert.Equal(["@jp0", "@jp1", "@jp2"], BoundParameterNames(query.ToSql()));
+        Assert.Equal(
+            ["@c_category_id", "@o_employee_id", "@s_supplier_id"],
+            BoundParameterNames(query.ToSql()));
 
         var results = query.Select();
         Assert.NotEmpty(results);

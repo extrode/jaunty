@@ -64,10 +64,28 @@ internal static class GeneratorHarness
         return (sources, generatorDiagnostics, compileErrors, output);
     }
 
-    private static IEnumerable<MetadataReference> ReferenceAssemblies()
-        => AppDomain.CurrentDomain.GetAssemblies()
+    // The loaded-assembly scan alone is order-dependent: System.Data.Common is loaded by whichever
+    // test first touches a DbCommand, so a class that ran before that (a filtered run, or CI run
+    // 33617917013 on 2026-09-02) compiled the generated mapper against an error type for
+    // IDataReader. The required set is listed so the harness does not depend on what ran earlier.
+    internal static IEnumerable<string> ReferenceAssemblyPaths()
+    {
+        IEnumerable<string> loaded = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .Select(a => a.Location)
-            .Distinct()
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path));
+            .Select(a => a.Location);
+
+        string[] required =
+        [
+            typeof(global::Jaunty.Attributes.TableAttribute).Assembly.Location,
+            typeof(global::Jaunty.Interfaces.IGeneratedAccessors<>).Assembly.Location,
+            typeof(System.Data.IDbCommand).Assembly.Location,
+        ];
+
+        return loaded.Concat(required)
+            .Where(p => !string.IsNullOrEmpty(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<MetadataReference> ReferenceAssemblies()
+        => ReferenceAssemblyPaths().Select(path => (MetadataReference)MetadataReference.CreateFromFile(path));
 }
