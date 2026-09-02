@@ -166,11 +166,11 @@ var cheap = connection.Query<Product>(
     new { MaxPrice = 15.00m });
 ```
 
-Or skip the object entirely and pass values positionally — Jaunty parses the SQL to find the
-parameter names and binds your values in order:
+Or, when the SQL names exactly one parameter, pass the value on its own. Jaunty parses the SQL,
+finds the one name and binds it; two or more names take an object:
 
 ```csharp
-var cheapPositional = connection.Query<Product>(
+var cheapScalar = connection.Query<Product>(
     "SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products WHERE unit_price < @MaxPrice",
     15.00m);
 ```

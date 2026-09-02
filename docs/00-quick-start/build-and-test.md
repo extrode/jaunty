@@ -20,46 +20,59 @@ dotnet build --no-restore
 dotnet build -warnaserror
 ```
 
+The solution targets `net10.0`, so the .NET 10 SDK is required; CI installs 8.0, 9.0 and 10.0.
+
 ## Test Commands
 
 ### Run All Tests
 
 ```bash
-# All tests
-dotnet test
+# Every project, every framework
+dotnet test Jaunty.slnx
 
 # With output
-dotnet test -v n
+dotnet test Jaunty.slnx -v n
 
 # No build (use existing binaries)
-dotnet test --no-build
+dotnet test Jaunty.slnx --no-build
 ```
+
+Run the framework legs of `Jaunty.Tests` separately rather than in one `dotnet test` of the
+solution when SQL Server is reachable: the scaffolding reader tests drop and recreate fixed-name
+tables in the one shared database, and two legs running at once fail one or two of them at random.
 
 ### Filter Tests
 
+The suites carry one xUnit trait, `Category=AllocationBudget`; everything else is selected by name
+or by project.
+
 ```bash
-# By category
-dotnet test --filter "Category=Integration"
-dotnet test --filter "Category=Unit"
-
 # By test class name
-dotnet test --filter "FullyQualifiedName~QueryTests"
-dotnet test --filter "ClassName=ParameterBinderTests"
+dotnet test tests/Jaunty.Tests -f net10.0 --filter "FullyQualifiedName~QueryTests"
 
-# By trait
-dotnet test --filter "Priority=High"
+# By project
+dotnet test tests/Jaunty.Fluent.Tests
 
-# Combine filters
-dotnet test --filter "Category=Integration&FullyQualifiedName~Read"
+# The allocation budgets alone (they live in Jaunty.UnitTests)
+dotnet test tests/Jaunty.UnitTests -f net10.0 --filter "Category=AllocationBudget"
 ```
 
 ### Test Projects
 
 | Project | Purpose |
 |---------|---------|
-| `Jaunty.Tests` | Main test suite (~600+ tests) |
-| `Jaunty.Fluent.Tests` | Fluent API tests |
-| `Jaunty.Scaffolding.Tests` | Scaffolding tests |
+| `Jaunty.Tests` | Core integration suite against SQLite, SQL Server, PostgreSQL, MySQL and MariaDB; the server engines skip when unreachable |
+| `Jaunty.UnitTests` | Core unit tests, no database |
+| `Jaunty.SourceGenerator.Tests` | The bundled source generator: emitted source and generated-mapper behaviour |
+| `Jaunty.Fluent.Tests` | Fluent query builder |
+| `Jaunty.Fluent.ConfigTests` | Fluent builder configuration |
+| `Jaunty.Fluent.SourceGen.Tests` | Fluent builder's generator |
+| `Jaunty.FlatFiles.Tests` | Flat-file abstractions |
+| `Jaunty.FlatFiles.DuckDB.Tests` | DuckDB-backed flat-file querying |
+| `Jaunty.Scaffolding.Tests` | Schema readers and code generation |
+| `Jaunty.Scaffolding.Cli.Tests` | The scaffolding command-line tool |
+
+The whole solution on 2026-09-02, all frameworks: 10,429 passed, 37 skipped.
 
 ```bash
 # Specific test project
@@ -69,81 +82,64 @@ dotnet test tests/Jaunty.Fluent.Tests
 
 ## Code Coverage
 
-```bash
-# Collect coverage
-dotnet test --collect:"XPlat Code Coverage"
-
-# Coverage with filters
-dotnet test --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByAttribute="GeneratedCodeAttribute"
-```
-
-Coverage reports are generated in:
-- `TestResults/*/coverage.cobertura.xml`
-
 The repository has a configured coverage run that applies `coverage.runsettings` and lands
-cobertura reports in `tmp/coverage/`. Use it rather than the ad-hoc command above:
+cobertura reports in `tmp/coverage/`:
 
 ```powershell
 pwsh -NoProfile -File scripts/coverage.ps1
 ```
 
-See [`../05-quality/code-coverage.md`](../05-quality/code-coverage.md) for details, including why
-the settings file exists and what the current baseline measures.
+The ad-hoc equivalent, without the settings file, is `dotnet test --collect:"XPlat Code Coverage"`,
+which writes `TestResults/*/coverage.cobertura.xml`. Prefer the script; the settings file exists
+for a reason. See [`../05-quality/code-coverage.md`](../05-quality/code-coverage.md) for that
+reason and for what the current baseline measures.
 
 ## Test Infrastructure
 
 ### Database Setup
 
-Tests use SQLite with the Northwind sample database:
-- Location: `data/sqlite/Northwind.db`
-- Helper: `tests/Jaunty.Tests/Helpers/Database.cs`
+The SQLite suites use the Northwind sample database at `data/sqlite/Northwind.db`. The file is
+tracked in git; `tests/Jaunty.Tests/Helpers/NorthwindDatabase.cs` locates it by walking up from the
+test output directory and fails the run with "Could not locate data/sqlite/Northwind.db" rather than
+creating one. It is also the source that `scripts/generate-northwind.py` renders into the
+PostgreSQL and MySQL `create-northwind.sql` scripts under `data/`.
 
-### Test Helpers
-
-```csharp
-// Database connection helper
-public class Database : IDisposable
-{
-    public IDbConnection Connection { get; }
-}
-
-// Base class for integration tests
-public class SQLiteTestBase : IDisposable
-{
-    protected readonly Database _db;
-}
-```
+The server engines are seeded from `tests/*-setup.sql` and `data/<engine>/`; `docker-compose.yml`
+starts SQL Server, PostgreSQL, MySQL and MariaDB. Connection strings come from
+`tests/Jaunty.Tests/appsettings.json`, which is gitignored; copy `appsettings.example.json` to start.
+After a run against the servers, `scripts/reset-test-databases.ps1 -e` (or `.sh`) drops and
+recreates them so the next run starts from the seeded baseline.
 
 ## CI/CD
 
 ### GitHub Actions
 
-Tests run automatically on:
-- Pull requests
-- Push to main branches
-- Scheduled runs
+- `ci.yml` runs on every push and pull request to `dev` and `main`.
+- `nightly.yml` runs on a schedule, 05:00 UTC on weekdays and Saturday, with the mutation tier on
+  the Sunday run only.
+- `release.yml` runs on a version tag.
 
 ### Local Pre-commit
 
 ```bash
 # Build and test before commit
-dotnet build && dotnet test
+dotnet build && dotnet test Jaunty.slnx
 ```
 
 ## Troubleshooting
 
-### Tests Fail with "Database not found"
+### Tests fail with "Could not locate data/sqlite/Northwind.db"
 
-Ensure the SQLite database exists:
+The file is tracked; restore it:
 ```bash
-ls data/sqlite/Northwind.db
+git checkout -- data/sqlite/Northwind.db
 ```
 
-If missing, the test helper creates it from `data/sqlite/northwind.sql`.
+### Server suites all skip
 
-### Tests Hang on SQLite Async
-
-SQLite async has limitations. Some tests use `[SkipSQLiteAsync]` attribute.
+No server was reachable at the connection string in `tests/Jaunty.Tests/appsettings.json`. Start
+the containers with `docker compose up -d` and check the file exists; the skip reason names the
+engine.
 
 ### Build Fails with "Reference not found"
 
@@ -162,6 +158,8 @@ Benchmarks are in a separate project. Run with:
 ```bash
 dotnet run -c Release --project benchmarks/Jaunty.Benchmarks
 ```
+
+The published reports are under [`../05-quality/reports/`](../05-quality/README.md).
 
 ## See Also
 
