@@ -27,6 +27,12 @@ default lives in `src/Directory.Build.props`.
 - **Read path: a custom mapper from `CommandOptions<T>.WithMapper` runs without a wrapping
   delegate on the `DbDataReader` path.** One closure per query and one delegate call per row
   fewer; the mapper you pass is the one that runs.
+- **Read path: the generated row mapper no longer compares `reader.FieldCount` on every row.**
+  The closure `CreateRowMapper` returns is valid for the result set it was created against,
+  which is how every library caller uses it; the per-row guard that fell back to `ReadEntity`
+  for a delegate reused across `NextResult()` was one native call per row on
+  Microsoft.Data.Sqlite. `Query<T>` at 10k rows on SQLite: 5.42 ms to 4.95 ms
+  ([decision 011](docs/decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
 
 ### Added
 
