@@ -49,9 +49,10 @@ public static Func<IDataReader, Product> CreateRowMapper(IDataReader reader)
 }
 ```
 
-The dispatcher prefers the factory, and a per-row `FieldCount` guard falls back to the
-validating `ReadEntity` if a stale delegate ever meets a changed shape. 10,000 rows on SQLite
-went from 1.80x to 1.46x, and at 1,000 rows the absolute time dropped 35%.
+The dispatcher prefers the factory. As first written the closure also compared `FieldCount` on
+every row and fell back to the validating `ReadEntity` if a stale delegate ever met a changed
+shape; step 5 below removes that. 10,000 rows on SQLite went from 1.80x to 1.46x, and at
+1,000 rows the absolute time dropped 35%.
 
 ## Step 2: typed getters instead of `GetFieldValue<T>`
 
@@ -285,8 +286,18 @@ README quotes. On that harness, SQLite at 10,000 rows measured alone: the hand-c
 `Query<T>` 5.42 ms, RepoDb 5.77 ms, Dapper 7.45 ms. So the honest sentence is this: Jaunty is
 the fastest of the five libraries measured on SQLite and SQL Server, level with RepoDb on the
 others, and a hand-written loop that reads each column as its reported type is still 1.3x
-faster than any of them on SQLite. The next 1 ms is known: a per-row `FieldCount` guard and an
-`IsDBNull` on the nullable string column, each one native call per row.
+faster than any of them on SQLite.
+
+## Step 5: no per-row `FieldCount` guard
+
+The last known native call per row was the guard from step 1. Every library caller resolves
+the closure per result set, so the reuse it protected against never happens inside Jaunty, and
+a caller that keeps a delegate across `NextResult()` is misusing a per-result-set factory.
+Removing it took `Query<T>` at 10,000 rows on SQLite from 5.42 ms to 4.95 ms, 1.17x the hand
+loop, measured alone the same evening
+([decision 011](../decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
+What remains is the `IsDBNull` on the nullable `product_name` column, which the hand loop skips
+and the mapper cannot: NULL is a legitimate value there.
 
 ## What the story says about measuring
 
