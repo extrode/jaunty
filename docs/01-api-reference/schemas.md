@@ -159,7 +159,32 @@ session, silently so when a same-named table exists elsewhere.
 
 `ImportCsv` on a file-backed SQLite database shells out to the `sqlite3` CLI, which is a separate
 process holding its own connection. It has attached nothing, so it can reach only the file it was
-given. A schema-qualified target that names any other database is not importable through that path.
+given: your `temp` tables and your ATTACHed databases do not exist for it.
+
+Jaunty checks the target against your connection before choosing a path, and imports through
+prepared statements instead whenever the CLI would reach a different table. The check covers the
+unqualified case too, because a bare name is where the two disagree most quietly:
+
+```csharp
+connection.Execute("CREATE TEMP TABLE people (id INTEGER, name TEXT)");
+
+// "people" is temp.people to this connection, and would be a new main.people to the CLI.
+// Jaunty takes the prepared-statement path, and the rows land in temp.people.
+connection.ImportCsv("people", "people.csv");
+```
+
+The routing rule, in full:
+
+| Target | Path taken |
+|---|---|
+| Names a schema backed by the same file the CLI was given | CLI, with the alias rewritten to `main` |
+| Names any other schema — `temp`, or an ATTACHed file | Prepared statements |
+| Unqualified, and your connection resolves it to `main` | CLI |
+| Unqualified, and your connection resolves it to `temp` or an attachment | Prepared statements |
+| Unqualified, and nothing of that name exists anywhere | CLI, which creates the table from the CSV header |
+| In-memory database | Prepared statements |
+
+Both paths import the same rows; the prepared-statement path is slower on large files.
 
 ## See also
 
