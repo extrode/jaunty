@@ -1270,6 +1270,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // 2026-09-02), and every supported provider already throws from its typed getter on a
             // NULL. The named error AUD-R35-069 introduced is kept: a try region is free until an
             // exception is thrown, and the catch re-examines the row to name the property.
+            // Do not restore the pre-check: docs/decisions/2026-09-02-010-null-guard-by-catch-not-precheck.md
+            // has the measurements and the per-provider proof that typed getters throw on NULL.
             sb.AppendLine("        private static void ThrowIfNonNullableColumnIsNull(IDataReader reader, int[] ord, Exception inner)");
             sb.AppendLine("        {");
             for (int i = 0; i < properties.Count; i++)

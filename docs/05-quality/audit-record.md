@@ -56,6 +56,16 @@ prioritised worklist and save them the audit.
 This is a deliberate asymmetry and not a claim that the code is free of defects. If you find one,
 `SECURITY.md` says how to report it.
 
+## Fixes that were later reworked
+
+A finding's fix is not frozen. Where a later change kept a finding's guarantee but replaced the
+mechanism behind it, the change is listed here so that a future round reading the registry entry
+does not restore the old mechanism as a regression fix.
+
+| Finding | What it guaranteed | What changed, and where it is recorded |
+|---|---|---|
+| AUD-R35-069 | The generated mapper throws `Cannot assign NULL to non-nullable property 'X'.` for a NULL in a non-nullable value type, matching the reflection mapper | 2026-09-02: the per-column `IsDBNull` pre-check that produced it was replaced by a `try` around the row's reads and a `catch` that names the column. Same exception, same message, provider exception as `InnerException`. Reason and evidence in [decision 010](../decisions/2026-09-02-010-null-guard-by-catch-not-precheck.md); pinned by `GeneratedNullDiagnosisTests` |
+
 ## Citations elsewhere in this repository
 
 Specs and plans written while the audit directory was tracked cite it directly — paths of the

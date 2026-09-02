@@ -35,6 +35,10 @@ public class QueryBenchmarks
         _connection.Open();
         DatabaseSetup.CreateSchema(_connection, Provider);
         DatabaseSetup.SeedData(_connection, Provider, RowCount);
+
+        var doubleMapper = Provider == DatabaseProvider.Sqlite ? SqliteDoubleMapper.Mapper : CustomMapper.Mapper;
+        _doubleMapper = new CommandOptions<JauntyProduct>(mapper: doubleMapper);
+        _doubleMapperWithHint = new CommandOptions<JauntyProduct>(mapper: doubleMapper, expectedRowCount: RowCount);
     }
 
     [GlobalCleanup]
@@ -113,6 +117,40 @@ public class QueryBenchmarks
         return _connection.Query(
             "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
             options: options);
+    }
+
+    // The lesson the generated mapper learned, applied by hand. Microsoft.Data.Sqlite implements
+    // GetDecimal on a REAL column as text formatting plus decimal.Parse, so on SQLite the price is
+    // read as the double it is stored as and cast (measured 2026-09-02: 4.8 ms vs 1.8 ms per 10k
+    // rows). The other providers store a real decimal and GetDouble would throw, so there Setup
+    // falls back to CustomMapper and the two cases read the same; only the SQLite column compares.
+    private static readonly CommandOptions<JauntyProduct> SqliteDoubleMapper =
+        CommandOptions<JauntyProduct>.WithMapper(static reader => new JauntyProduct
+        {
+            ProductId = reader.GetInt32(0),
+            ProductName = reader.GetString(1),
+            UnitPrice = (decimal)reader.GetDouble(2),
+            UnitsInStock = reader.GetInt32(3),
+            Discontinued = reader.GetBoolean(4)
+        });
+
+    private CommandOptions<JauntyProduct> _doubleMapper;
+    private CommandOptions<JauntyProduct> _doubleMapperWithHint;
+
+    [Benchmark(Description = "Jaunty Query<T> (custom mapper, GetDouble)")]
+    public List<JauntyProduct> Jaunty_QueryWithDoubleMapper()
+    {
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: _doubleMapper);
+    }
+
+    [Benchmark(Description = "Jaunty Query<T> (custom mapper, GetDouble, WithExpectedRowCount)")]
+    public List<JauntyProduct> Jaunty_QueryWithDoubleMapperAndExpectedRowCount()
+    {
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: _doubleMapperWithHint);
     }
 
     // --- Dapper ---

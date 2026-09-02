@@ -807,7 +807,9 @@ Allocation at 10,000 rows on SQL Server. Lower is better here too.
 The full run, the machine, the 100-row tables, the harness defect that was found along the way and
 the comparison with the July numbers are in
 [benchmarks-2026-07-29.md](docs/05-quality/reports/benchmarks-2026-07-29.md). The earlier report is
-[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md).
+[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md). How the read path
+got from 1.80x slower than ADO.NET to where it is, step by step with the code, is in
+[How Jaunty got fast](docs/08-learn/how-jaunty-got-fast.md).
 
 ---
 
