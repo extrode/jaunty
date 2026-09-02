@@ -206,8 +206,86 @@ public static class CsvImportExtensions
             return ImportViaPreparedStatements(connection, tableName, filePath, options);
         }
 
+        // The sqlite3 CLI is a separate process: it opens dbPath as its own "main" and has attached
+        // nothing, so the caller's ATTACH aliases and temp tables do not exist for it. Targeting one
+        // of those through the CLI fails two ways, and the quiet one is the reason for this check:
+        // an unknown alias exits 1 ("unknown database"), but "--schema temp" exits 0, imports into
+        // the CLI's own throwaway temp database, and leaves the caller's connection seeing nothing
+        // while CountCsvRows still reports the file's row count.
+        int schemaDot = tableName.IndexOf('.');
+        if (schemaDot >= 0)
+        {
+            if (!SqliteCliCanReach(connection, tableName.Substring(0, schemaDot), dbPath))
+                return ImportViaPreparedStatements(connection, tableName, filePath, options);
+
+            // Reachable means the schema names the file the CLI was handed, and the CLI knows that
+            // file by its own name for it: main. A caller's second alias for the same file
+            // ("ATTACH 'app.db' AS alias2" where app.db is already main) does not exist in the CLI
+            // process, so the alias is rewritten rather than passed through.
+            tableName = "main." + tableName.Substring(schemaDot + 1);
+        }
+
         // Use sqlite3 CLI for file-based databases
         return ImportViaSqliteCli(dbPath, tableName, filePath, options);
+    }
+
+    /// <summary>
+    /// Whether the sqlite3 CLI, launched against <paramref name="dbPath"/>, can reach the schema
+    /// <paramref name="schema"/> as it is named on <paramref name="connection"/>.
+    /// </summary>
+    /// <remarks>
+    /// The comparison is by file, not by name. "main" is not the only reachable schema: the same
+    /// file can be attached again under another alias (PRAGMA database_list then reports two rows
+    /// with one path), and that alias is reachable too because the CLI has the file open. temp
+    /// reports an empty file and is per-connection, so it is never reachable.
+    /// </remarks>
+    private static bool SqliteCliCanReach(IDbConnection connection, string schema, string dbPath)
+    {
+        // A closed connection has no ATTACH set to read - the aliases would not survive the close
+        // anyway - so "main" is the only schema that can name the CLI's own file. Opening it here
+        // to ask would report the state after the open, not the state the caller built.
+        if (connection.State == ConnectionState.Closed)
+            return string.Equals(schema, "main", StringComparison.OrdinalIgnoreCase);
+
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "PRAGMA database_list";
+
+        using IDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            if (!string.Equals(reader.GetString(1), schema, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (reader.IsDBNull(2))
+                return false;
+
+            string file = reader.GetString(2);
+            return file.Length > 0 && SamePath(file, dbPath);
+        }
+
+        return false;
+    }
+
+    private static bool SamePath(string left, string right)
+    {
+        try
+        {
+            return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), SqlitePathComparison);
+        }
+        catch (ArgumentException)
+        {
+            // A path GetFullPath rejects cannot be shown to be the CLI's own file, so treat it as
+            // unreachable and let the prepared-statement path handle the import.
+            return false;
+        }
+        catch (NotSupportedException)
+        {
+            return false;
+        }
+        catch (PathTooLongException)
+        {
+            return false;
+        }
     }
 
     private static bool IsSqliteInMemoryDataSource(string dbPath)
@@ -867,6 +945,15 @@ public static class CsvImportExtensions
         new(@"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$", RegexOptions.Compiled);
 
     private static readonly char[] SqliteCliUnsafeChars = { '"', '\r', '\n' };
+
+    // Windows and macOS resolve paths case-insensitively, Linux does not, and SqliteCliCanReach
+    // compares a PRAGMA database_list file against the connection string's own path.
+#if NET5_0_OR_GREATER
+    private static readonly StringComparison SqlitePathComparison =
+        System.OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+#else
+    private static readonly StringComparison SqlitePathComparison = StringComparison.OrdinalIgnoreCase;
+#endif
 
     private static void ValidateIdentifier(string identifier, string paramName)
     {
