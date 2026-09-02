@@ -501,6 +501,88 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     }
 
     [Fact]
+    public void ImportCsv_Sqlite_UnqualifiedNameInDifferentCaseFromTheTempTable_ImportsIntoTheTempTable()
+    {
+        // SQLite resolves identifiers case-insensitively but stores the name as written, and
+        // sqlite_master.name compares as BINARY, so the shadow check has to fold case itself.
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_bare_case_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+
+            using (var create = connection.CreateCommand())
+            {
+                create.CommandText =
+                    $"CREATE TEMP TABLE {TableName} (Name TEXT, Age INTEGER, City TEXT, Email TEXT)";
+                create.ExecuteNonQuery();
+            }
+
+            long rows = connection.ImportCsv(TableName.ToUpperInvariant(), csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            using var tempCount = connection.CreateCommand();
+            tempCount.CommandText = $"SELECT COUNT(*) FROM temp.{TableName}";
+            Assert.Equal((long)ExpectedRowCount, Convert.ToInt64(tempCount.ExecuteScalar()));
+
+            Assert.False(SchemaHasObjectNamed(connection, "main", TableName));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_Sqlite_PooledConnectionClosedWithATempTable_ImportsIntoTheTempTable()
+    {
+        // A pooled connection hands the same native handle back on the next Open, so the temp
+        // table built before the Close is still there and still shadows the name. Treating a
+        // closed connection as having nothing attached puts the rows in main instead.
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_bare_pooled_{Guid.NewGuid():N}.db");
+        var connectionString = $"Data Source={tempDb};Pooling=True";
+
+        try
+        {
+            using (var setup = new SQLiteConnection(connectionString))
+            {
+                setup.Open();
+
+                using var create = setup.CreateCommand();
+                create.CommandText =
+                    $"CREATE TEMP TABLE {TableName} (Name TEXT, Age INTEGER, City TEXT, Email TEXT)";
+                create.ExecuteNonQuery();
+            }
+
+            using var connection = new SQLiteConnection(connectionString);
+
+            long rows = connection.ImportCsv(TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            connection.Open();
+
+            using var tempCount = connection.CreateCommand();
+            tempCount.CommandText = $"SELECT COUNT(*) FROM temp.{TableName}";
+            Assert.Equal((long)ExpectedRowCount, Convert.ToInt64(tempCount.ExecuteScalar()));
+
+            Assert.False(SchemaHasObjectNamed(connection, "main", TableName));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
     public void ImportCsv_Sqlite_UnqualifiedNameInBothTempAndMain_ImportsIntoTemp()
     {
         // The one case the search order decides: both schemas hold the name, and SQLite gives it
@@ -559,7 +641,9 @@ public class CsvImportTests : IClassFixture<DialectFixture>
                 create.ExecuteNonQuery();
             }
 
-            Assert.ThrowsAny<Exception>(() => connection.ImportCsv(TableName, csvPath));
+            // SQLiteException, not any exception: a missing sqlite3 CLI would also throw, and
+            // would leave main empty too, so a looser assertion passes with the routing wrong.
+            Assert.Throws<SQLiteException>(() => connection.ImportCsv(TableName, csvPath));
 
             Assert.False(SchemaHasObjectNamed(connection, "main", TableName));
         }
@@ -693,7 +777,8 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     {
         using var command = connection.CreateCommand();
         command.CommandText =
-            $"SELECT 1 FROM \"{schema}\".sqlite_master WHERE type IN ('table', 'view') AND name = '{name}' LIMIT 1";
+            $"SELECT 1 FROM \"{schema}\".sqlite_master WHERE type IN ('table', 'view') AND name = @name COLLATE NOCASE LIMIT 1";
+        command.Parameters.AddWithValue("@name", name);
         return command.ExecuteScalar() is not null;
     }
 
