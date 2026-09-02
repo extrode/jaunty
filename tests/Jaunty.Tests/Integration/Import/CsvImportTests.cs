@@ -38,6 +38,23 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         throw new FileNotFoundException("Could not locate data/basic.csv from test output directory.");
     }
 
+    // System.Data.SQLite's pool holds an idle handle through a WeakReference, so a GC between a
+    // Close and the next Open discards it and the reopen gets a fresh handle with nothing attached
+    // (CI run 33624807719, 2026-09-02; reproducible with DOTNET_GCgen0size=0x8000). The tests that
+    // assert on a handle surviving Close run that window inside a no-GC region.
+    private static IDisposable PinPooledHandles() => new NoGcRegion();
+
+    private sealed class NoGcRegion : IDisposable
+    {
+        public NoGcRegion()
+        {
+            if (!GC.TryStartNoGCRegion(16 * 1024 * 1024))
+                throw new InvalidOperationException("The runtime declined a 16 MB no-GC region.");
+        }
+
+        public void Dispose() => GC.EndNoGCRegion();
+    }
+
     private static void CreateTable(IDbConnection connection, DialectProvider provider)
     {
         using var cmd = connection.CreateCommand();
@@ -526,12 +543,15 @@ public class CsvImportTests : IClassFixture<DialectFixture>
                 create.ExecuteNonQuery();
             }
 
-            withTemp.Close();
-            withoutTemp.Close();
-
             using var connection = new SQLiteConnection(connectionString);
+            long rows;
 
-            long rows = connection.ImportCsv(TableName, csvPath);
+            using (PinPooledHandles())
+            {
+                withTemp.Close();
+                withoutTemp.Close();
+                rows = connection.ImportCsv(TableName, csvPath);
+            }
 
             Assert.Equal(ExpectedRowCount, rows);
 
@@ -560,20 +580,25 @@ public class CsvImportTests : IClassFixture<DialectFixture>
 
         try
         {
-            using (var setup = new SQLiteConnection(connectionString))
-            {
-                setup.Open();
-                CreateTable(setup, DialectProvider.SystemSqlite);
+            var setup = new SQLiteConnection(connectionString);
+            setup.Open();
+            CreateTable(setup, DialectProvider.SystemSqlite);
 
-                using var attach = setup.CreateCommand();
+            using (var attach = setup.CreateCommand())
+            {
                 attach.CommandText = $"ATTACH DATABASE '{tempDb.Replace("'", "''")}' AS alias2";
                 attach.ExecuteNonQuery();
             }
 
             using var connection = new SQLiteConnection(connectionString);
 
-            Assert.Throws<NotSupportedException>(() =>
-                connection.ImportCsv("alias2." + TableName, csvPath, new CsvImportOptions { Quote = '\'' }));
+            using (PinPooledHandles())
+            {
+                setup.Dispose();
+
+                Assert.Throws<NotSupportedException>(() =>
+                    connection.ImportCsv("alias2." + TableName, csvPath, new CsvImportOptions { Quote = '\'' }));
+            }
         }
         finally
         {
@@ -633,19 +658,24 @@ public class CsvImportTests : IClassFixture<DialectFixture>
 
         try
         {
-            using (var setup = new SQLiteConnection(connectionString))
-            {
-                setup.Open();
+            var setup = new SQLiteConnection(connectionString);
+            setup.Open();
 
-                using var create = setup.CreateCommand();
+            using (var create = setup.CreateCommand())
+            {
                 create.CommandText =
                     $"CREATE TEMP TABLE {TableName} (Name TEXT, Age INTEGER, City TEXT, Email TEXT)";
                 create.ExecuteNonQuery();
             }
 
             using var connection = new SQLiteConnection(connectionString);
+            long rows;
 
-            long rows = connection.ImportCsv(TableName, csvPath);
+            using (PinPooledHandles())
+            {
+                setup.Dispose();
+                rows = connection.ImportCsv(TableName, csvPath);
+            }
 
             Assert.Equal(ExpectedRowCount, rows);
 
@@ -971,9 +1001,13 @@ public class CsvImportTests : IClassFixture<DialectFixture>
                 create.ExecuteNonQuery();
             }
 
-            connection.Close();
+            long rows;
 
-            long rows = connection.ImportCsv(TableName, csvPath);
+            using (PinPooledHandles())
+            {
+                connection.Close();
+                rows = connection.ImportCsv(TableName, csvPath);
+            }
 
             Assert.Equal(ExpectedRowCount, rows);
 
