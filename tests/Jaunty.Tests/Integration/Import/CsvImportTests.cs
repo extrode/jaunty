@@ -501,6 +501,40 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     }
 
     [Fact]
+    public void ImportCsv_Sqlite_PooledConnectionClosedWithASecondAlias_StaysOnTheCliPath()
+    {
+        // The alias survives the Close on a pooled connection, so the schema check has to open the
+        // connection and read it rather than treat "main" as the only name for the CLI's own file.
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_alias_pooled_{Guid.NewGuid():N}.db");
+        var connectionString = $"Data Source={tempDb};Pooling=True";
+
+        try
+        {
+            using (var setup = new SQLiteConnection(connectionString))
+            {
+                setup.Open();
+                CreateTable(setup, DialectProvider.SystemSqlite);
+
+                using var attach = setup.CreateCommand();
+                attach.CommandText = $"ATTACH DATABASE '{tempDb.Replace("'", "''")}' AS alias2";
+                attach.ExecuteNonQuery();
+            }
+
+            using var connection = new SQLiteConnection(connectionString);
+
+            Assert.Throws<NotSupportedException>(() =>
+                connection.ImportCsv("alias2." + TableName, csvPath, new CsvImportOptions { Quote = '\'' }));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
     public void ImportCsv_Sqlite_UnqualifiedNameInDifferentCaseFromTheTempTable_ImportsIntoTheTempTable()
     {
         // SQLite resolves identifiers case-insensitively but stores the name as written, and
