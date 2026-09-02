@@ -422,3 +422,5 @@ dotnet run -c Release --project benchmarks/Jaunty.Benchmarks
 - [`architecture-specification.md`](architecture-specification.md) - Full architecture
 - [`metadata-system-spec.md`](metadata-system-spec.md) - Metadata caching
 - [`parameter-binding-spec.md`](parameter-binding-spec.md) - Parameter binding
+- [How Jaunty got fast](../08-learn/how-jaunty-got-fast.md) - the read-path optimizations in
+  order, each with before/after code and measurements

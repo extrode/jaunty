@@ -28,6 +28,15 @@ default lives in `src/Directory.Build.props`.
   delegate on the `DbDataReader` path.** One closure per query and one delegate call per row
   fewer; the mapper you pass is the one that runs.
 
+### Added
+
+- `docs/08-learn/how-jaunty-got-fast.md`: the read path from 1.80x slower than hand-coded
+  ADO.NET to 1.42x faster, each step with the code before and after and the measurement that
+  drove it. Decision 010 records why the generated mapper names a NULL column by catching
+  rather than pre-checking, and the audit record lists it under fixes that were later reworked.
+- `QueryBenchmarks`: two custom-mapper cases that read the SQLite `REAL` price through
+  `GetDouble`, with and without `WithExpectedRowCount`, beside the two `GetDecimal` cases.
+
 ## [1.0.0-rc.2] - 2026-09-02
 
 ### Breaking changes since 1.0.0-rc.1
