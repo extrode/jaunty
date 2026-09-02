@@ -1,4 +1,4 @@
-$basePath = "C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests"
+$basePath = "<repo>\tests\Jaunty.Tests"
 
 Get-ChildItem -Path $basePath -Recurse -Filter "*.cs" | ForEach-Object {
     $content = Get-Content $_.FullName -Raw

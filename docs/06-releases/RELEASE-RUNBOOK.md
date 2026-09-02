@@ -101,7 +101,7 @@ CHANGELOG.md: breaking = major, additive = minor, fixes = patch.
 
 ## Pre-release TODO (tracked)
 
-- [ ] **Branch protection for `main`** — blocked on GitHub Free for private
-  repos. Decide: GitHub Pro (~$4/mo), Team org, or accept unprotected until
-  the repo goes public/org. (Deferred 2026-07-04.)
+- [ ] **Branch protection for `main`** — was blocked on GitHub Free for private
+  repos (deferred 2026-07-04); unblocked when the repository went public on
+  2026-09-03. Enable it.
 - [ ] Delete leftover local container `jaunty-mssql3` when no longer needed.
