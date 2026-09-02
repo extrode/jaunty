@@ -88,14 +88,15 @@ be true.
 
 ### Prerequisites
 
-- .NET 8.0 SDK or later
+- .NET 10.0 SDK (the solution targets net8.0 and net10.0; the 10.0 SDK builds both)
 - Git for version control
 - IDE of choice (Visual Studio, VS Code, Rider)
 
 ### Setup
 
-0. **Sign the [CLA](CLA.md) first.** Forking and patching without it is a modification ISL-R does
-   not permit. This step is not a formality here; it is what makes the rest lawful.
+0. **Sign the [CLA](CLA.md) first, once it is final.** Forking and patching without it is a
+   modification ISL-R does not permit, which is why contributions are closed while the ISL-CLA
+   is a draft. The steps below describe the workflow that opens when it is in force.
 1. Fork the repository
 2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/jaunty.git`
 3. Create a branch: `git checkout -b feature/your-feature-name`

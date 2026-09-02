@@ -60,6 +60,14 @@ default lives in `src/Directory.Build.props`.
 - **The owner name retired on 2026-08-26 no longer appears anywhere in the tree.** `.mailmap` is
   gone too: every commit on `dev` and `main` already carries one author identity, so it mapped
   nothing. `PackageIdentityTests` scans every text file to keep the name out.
+- **CI: the nightly workflow runs on hosted runners again.** The fuzz job installed only the 8.0
+  SDK for a tree that targets net10.0, the benchmark job ran a multi-targeted project without
+  `--framework`, and the full suite could pass with SQL Server unreachable; all three fixed, and
+  `Jaunty.UnitTests` compiles on net472 again.
+- **Docs: second public-readiness pass.** Personal paths removed from two archived scripts, one
+  cleanup script and one tasklist; CONTRIBUTING names the 10.0 SDK and no longer tells a newcomer
+  to sign a draft CLA; the release runbook's branch-protection item is unblocked; the
+  Redistribution Exception's note 4 no longer calls the removed EULA "retained".
 
 ### Added
 

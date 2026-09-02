@@ -231,7 +231,7 @@ public class PackageIdentityTests
                                         .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                                         .Replace('\\', '/');
 
-            if (RetiredOwnerScanSkippedFragments.Any(f => relative.Contains(f, StringComparison.OrdinalIgnoreCase)))
+            if (RetiredOwnerScanSkippedFragments.Any(f => relative.IndexOf(f, StringComparison.OrdinalIgnoreCase) >= 0))
                 continue;
             if (relative.EndsWith("/PackageIdentityTests.cs", StringComparison.Ordinal))
                 continue;

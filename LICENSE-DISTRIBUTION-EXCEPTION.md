@@ -110,7 +110,7 @@ Recorded rather than resolved, so a reviewer sees what the project already knows
    a rider for the same structural reason — ISL-R was drafted for software that is run, not for
    software that is linked. A reusable "ISL Linking Exception" would serve both and anyone else
    licensing a library under ISL-R.
-4. **The retained `LICENSE-EULA.md`** created an interpretive risk: a reader could take the
+4. **The formerly retained `LICENSE-EULA.md`** created an interpretive risk: a reader could take the
    presence of a EULA in the repository as evidence that operational use requires an Order.
    Resolved 2026-09-02 by removing the file from the tree; it remains in history.
 

@@ -2,7 +2,6 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
-		<!--<TargetFramework>net8.0</TargetFramework>-->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AnalysisLevel>latest</AnalysisLevel>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
@@ -12,7 +11,6 @@
 		<!-- ASYNC_ENUMERABLE_SUPPORT on ns2.0 too (via Microsoft.Bcl.AsyncInterfaces):
 		     both TFMs expose the same IAsyncEnumerable streaming API. -->
 		<DefineConstants>$(DefineConstants);AsyncInterfaces;ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
-		<!--<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.10" />-->
 	</PropertyGroup>
 
 	<Choose>
