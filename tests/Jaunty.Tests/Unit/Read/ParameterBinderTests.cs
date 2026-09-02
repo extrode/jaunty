@@ -228,17 +228,18 @@ public class ParameterBinderTests
     }
 
     [Fact]
-    public void Bind_EnumParameter_WithDefaultNumericStorage_BindsUnconverted()
+    public void Bind_EnumParameter_WithDefaultNumericStorage_BindsTheUnderlyingInteger()
     {
-        // The default (EnumStorage.Numeric) path does NOT convert the value to its underlying
-        // numeric type at bind time - it binds the enum value unchanged and leaves any numeric
-        // conversion to the ADO.NET provider. (Contrast with EnumStorageTests.cs, which covers
-        // the String storage mode.)
+        // The default (EnumStorage.Numeric) path converts to the underlying integral type at bind
+        // time. It used to bind the enum unchanged and leave the conversion to the ADO.NET
+        // provider, which Npgsql refuses. (Contrast with EnumStorageTests.cs, which covers the
+        // String storage mode.)
         var command = new MockDbCommand("SELECT * FROM users WHERE status = @Status");
 
         ParameterBinder.Bind(command, new { Status = TestEnum.Active });
 
-        Assert.Equal(TestEnum.Active, command.Parameters[0].Value);
+        Assert.IsType<int>(command.Parameters[0].Value);
+        Assert.Equal(1, command.Parameters[0].Value);
     }
 
     #endregion
