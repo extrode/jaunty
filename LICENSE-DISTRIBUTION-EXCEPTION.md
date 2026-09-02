@@ -100,8 +100,8 @@ Recorded rather than resolved, so a reviewer sees what the project already knows
    to stop the Exception being used to ship a repackaged Jaunty as a competing micro-ORM, but the
    wording is not tight. A reviewer should sharpen it, and should confirm it does not accidentally
    catch a legitimate application that happens to expose data access to its own users.
-2. **Section 5's downstream depth** matches the choice already made for JauntyQ (Beparey,
-   2026-08-17): the ethical restrictions bind the Licensee's creation, operation and distribution
+2. **Section 5's downstream depth** matches the choice already made for JauntyQ
+   (2026-08-17): the ethical restrictions bind the Licensee's creation, operation and distribution
    of their application, but do not reach the end users of that application. Consistency between
    the two products was the reason for following it here; the reasoning itself is recorded in
    `LICENSE-OUTPUT-EXCEPTION.md` in the JauntyQ repository.

@@ -190,7 +190,7 @@ build green.</li>
 <code>Jaunty.Benchmarks</code> and the 3 <code>NativeAOT-*</code> samples — release.yml pushes
 <code>packout/*.nupkg</code>, so a tagged release would have published sample apps to
 nuget.org. Fixed with <code>IsPackable=false</code> (also on SourceGenerator, which ships
-inside Beparey.Jaunty and errored NU5128 when packed standalone).</li>
+inside Extrode.Jaunty and errored NU5128 when packed standalone).</li>
 <li><strong>Found during execution (baselined, see decision 7):</strong> package validation
 detected 15 public members present in netstandard2.0 but missing from net8.0
 (<code>QueryStreamAsync</code>/<code>QueryPartialStreamAsync</code>/<code>QueryPartialUnbufferedAsync</code>/

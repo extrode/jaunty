@@ -57,6 +57,8 @@ default lives in `src/Directory.Build.props`.
   `error-messages.md` and `exercises.md` now state the self-join `t1`/`t2` fallback and every
   reason a name is declined, the rendered `ON (...)` matches the builder's output, and
   `DocumentedApiTests` now also scans HTML under `docs/` and the XML doc comments in `src/`.
+- **Docs: the owner name retired on 2026-08-26 no longer appears anywhere in the tree** apart
+  from `.mailmap`; `PackageIdentityTests` scans every text file to keep it that way.
 
 ### Added
 
@@ -86,23 +88,23 @@ default lives in `src/Directory.Build.props`.
 Anyone on `1.0.0-rc.1` should read this section before upgrading. Each item is a change a
 recompile alone will not surface.
 
-- **Every package was renamed. `Beparey.Jaunty.*` → `Extrode.Jaunty.*` (2026-08-26).** The
-  assembly names, namespaces and public API are unchanged; only the NuGet package IDs moved, along
-  with the repository, to `github.com/extrode/jaunty`. A consumer still referencing
-  `Beparey.Jaunty` will never be offered an update, because nothing will ever be published under
-  that ID again.
+- **Every package ID carries the `Extrode.Jaunty.` prefix (2026-08-26).** The assembly names,
+  namespaces and public API are unchanged; only the NuGet package IDs moved, along with the
+  repository, to `github.com/extrode/jaunty`. A consumer still referencing the rc.1 package IDs
+  from the private feed will never be offered an update, because nothing will ever be published
+  under those IDs again.
 
-  | 1.0.0-rc.1 | Now |
+  | Package | Since |
   |---|---|
-  | `Beparey.Jaunty` | `Extrode.Jaunty` |
-  | `Beparey.Jaunty.Fluent` | `Extrode.Jaunty.Fluent` |
-  | `Beparey.Jaunty.FlatFiles` | `Extrode.Jaunty.FlatFiles` |
-  | `Beparey.Jaunty.FlatFiles.DuckDB` | `Extrode.Jaunty.FlatFiles.DuckDB` |
-  | `Beparey.Jaunty.Extensions.Reflection` | `Extrode.Jaunty.Extensions.Reflection` |
-  | `Beparey.Jaunty.Scaffolding` | `Extrode.Jaunty.Scaffolding` |
-  | `Beparey.Jaunty.Scaffolding.Cli` | `Extrode.Jaunty.Scaffolding.Cli` |
-  | (did not exist) | `Extrode.Jaunty.Extensions.Logging` |
-  | (did not exist) | `Extrode.Jaunty.Extensions.Npgsql` |
+  | `Extrode.Jaunty` | rc.1 |
+  | `Extrode.Jaunty.Fluent` | rc.1 |
+  | `Extrode.Jaunty.FlatFiles` | rc.1 |
+  | `Extrode.Jaunty.FlatFiles.DuckDB` | rc.1 |
+  | `Extrode.Jaunty.Extensions.Reflection` | rc.1 |
+  | `Extrode.Jaunty.Scaffolding` | rc.1 |
+  | `Extrode.Jaunty.Scaffolding.Cli` | rc.1 |
+  | `Extrode.Jaunty.Extensions.Logging` | new |
+  | `Extrode.Jaunty.Extensions.Npgsql` | new |
 
   The two new packages are not new functionality so much as relocated functionality:
   `Extensions.Logging` holds the `ILogger` interceptor and the DI registration extensions that
@@ -386,7 +388,7 @@ Every item here was reachable from caller-supplied input.
 
 - **Versioning switched from CalVer to SemVer.** Dev baseline is `1.0.0-rc.1`;
   the first GA tag should be `v1.0.0`.
-- **BREAKING:** `Beparey.Jaunty` no longer depends on the full
+- **BREAKING:** `Extrode.Jaunty` no longer depends on the full
   `Microsoft.Extensions.DependencyInjection` container package - only
   `.Abstractions`. `ApplyJauntyInterceptors(IServiceCollection)` was removed
   (it built a throwaway provider - ASP0000); use
@@ -439,7 +441,7 @@ Every item here was reachable from caller-supplied input.
   `DbDataReader` fast path mapped SQL `NULL` to `0`/`false`/default instead of
   `null` for nullable value type properties (`decimal?`, `int?`, `bool?`, ...).
   The generated ternary now uses a property-typed `default`. (PRD-001)
-- **Packaging:** `Beparey.Jaunty` now ships `Jaunty.SourceGenerator.dll` under
+- **Packaging:** `Extrode.Jaunty` now ships `Jaunty.SourceGenerator.dll` under
   `analyzers/dotnet/cs`. Previously the published package contained no
   analyzer, so `IMapped<T>` mappers were never generated for package consumers.
   (PRD-013)
