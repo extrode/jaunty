@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benchmark Results — 2026-07-04 (PRD-002 partial) — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Benchmark Results — 2026-07-04 (PRD-002 partial)</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html" class="active" aria-current="page">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#sqlite-in-proc-warm-job">SQLite (in-proc), Warm job</a><a class="toc-l2" href="#mariadb-local-10000-rows-warm-job">MariaDB (local), 10,000 rows, Warm job</a><a class="toc-l2" href="#honest-takeaways">Honest takeaways</a><a class="toc-l2" href="#remaining-for-prd-002">Remaining for PRD-002</a><a class="toc-l2" href="#update-same-day-after-prod-117-per-result-set-row-mapper">Update — same day, after PROD-117 (per-result-set row mapper)</a><a class="toc-l2" href="#update-2-typed-getters-prod-118">Update 2 — typed getters (PROD-118)</a><a class="toc-l2" href="#update-3-bulk-copy-suites-measured-prd-002-remainder">Update 3 — bulk-copy suites measured (PRD-002 remainder)</a><a class="toc-l2" href="#update-4-prod-120-fixes-verified">Update 4 — PROD-120 fixes verified</a><a class="toc-l2" href="#update-5-prod-121-resolved-sqlserver-native-bulk-measured">Update 5 — PROD-121 resolved: SqlServer native bulk measured</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Benchmark Results — 2026-07-04 (PRD-002 partial)</nav>
+        <article>
+<h1 id="benchmark-results-2026-07-04-prd-002-partial">Benchmark Results — 2026-07-04 (PRD-002 partial)</h1>
+<p>Measured with BenchmarkDotNet v0.14.0 on Windows 11, AMD Ryzen 7 7840HS
+(8C/16T laptop), .NET 8.0.26, <code>QueryBenchmarks</code> full config (Cold + Warm jobs).
+Command: <code>dotnet run -c Release -f net8.0 -- --filter &quot;*QueryBenchmarks*&quot;</code>
+from <code>benchmarks/Jaunty.Benchmarks</code>.</p>
+<p><strong>Scope and caveats</strong></p>
+<ul>
+<li>Read path only (<code>Query&lt;T&gt;</code> materialization). Bulk-copy suites were NOT
+properly measured in this pass (the <code>--quick</code> dry-job numbers were discarded
+as statistically meaningless); the README's per-provider bulk-copy ranges
+remain unverified against Jaunty and are tracked by PRD-002.</li>
+<li>Laptop hardware; treat ratios, not absolute times, as the signal.</li>
+<li>Warm-job rows below (steady-state); Cold rows in the raw artifacts.</li>
+</ul>
+<h2 id="sqlite-in-proc-warm-job">SQLite (in-proc), Warm job</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Rows</th>
+<th>Mean</th>
+<th>Ratio vs ADO.NET</th>
+<th>Allocated</th>
+<th>Alloc ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADO.NET (hand-coded)</td>
+<td>100</td>
+<td>143.6 us</td>
+<td>baseline</td>
+<td>44.93 KB</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Jaunty <code>Query&lt;T&gt;</code></td>
+<td>100</td>
+<td>211.6 us</td>
+<td>1.47x</td>
+<td>46.48 KB</td>
+<td>1.03x</td>
+</tr>
+<tr>
+<td>Dapper <code>Query&lt;T&gt;</code></td>
+<td>100</td>
+<td>199.3 us</td>
+<td>1.39x</td>
+<td>51.51 KB</td>
+<td>1.15x</td>
+</tr>
+<tr>
+<td>ADO.NET (hand-coded)</td>
+<td>1000</td>
+<td>1,163.3 us</td>
+<td>baseline</td>
+<td>425.89 KB</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Jaunty <code>Query&lt;T&gt;</code></td>
+<td>1000</td>
+<td>2,307.2 us</td>
+<td>1.99x (±0.34)</td>
+<td>427.44 KB</td>
+<td>1.00x</td>
+</tr>
+<tr>
+<td>Dapper <code>Query&lt;T&gt;</code></td>
+<td>1000</td>
+<td>1,705.4 us</td>
+<td>1.47x</td>
+<td>481.69 KB</td>
+<td>1.13x</td>
+</tr>
+<tr>
+<td>ADO.NET (hand-coded)</td>
+<td>10000</td>
+<td>13,522 us</td>
+<td>baseline</td>
+<td>4,357 KB</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Jaunty <code>Query&lt;T&gt;</code></td>
+<td>10000</td>
+<td>24,260 us</td>
+<td>1.80x</td>
+<td>4,359 KB</td>
+<td>1.00x</td>
+</tr>
+<tr>
+<td>Dapper <code>Query&lt;T&gt;</code></td>
+<td>10000</td>
+<td>17,613 us</td>
+<td>1.30x</td>
+<td>4,906 KB</td>
+<td>1.13x</td>
+</tr>
+</tbody>
+</table>
+<h2 id="mariadb-local-10000-rows-warm-job">MariaDB (local), 10,000 rows, Warm job</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Mean</th>
+<th>Ratio vs ADO.NET</th>
+<th>Alloc ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADO.NET (hand-coded)</td>
+<td>3,526 us</td>
+<td>baseline</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Jaunty <code>Query&lt;T&gt;</code></td>
+<td>6,085 us</td>
+<td>1.73x</td>
+<td>1.11x</td>
+</tr>
+<tr>
+<td>Jaunty <code>Query&lt;T&gt;</code> (WithExpectedRowCount)</td>
+<td>4,688 us</td>
+<td>1.33x</td>
+<td>1.00x</td>
+</tr>
+<tr>
+<td>Dapper <code>Query&lt;T&gt;</code></td>
+<td>5,979 us</td>
+<td>1.70x</td>
+<td>1.40x</td>
+</tr>
+<tr>
+<td>linq2db</td>
+<td>5,283 us</td>
+<td>1.50x</td>
+<td>1.11x</td>
+</tr>
+<tr>
+<td>RepoDb</td>
+<td>6,239 us</td>
+<td>1.77x</td>
+<td>1.30x</td>
+</tr>
+<tr>
+<td>EF Core <code>ToList</code></td>
+<td>16,767 us</td>
+<td>4.75x</td>
+<td>2.34x</td>
+</tr>
+</tbody>
+</table>
+<h2 id="honest-takeaways">Honest takeaways</h2>
+<ul>
+<li>Jaunty is <strong>allocation-leanest</strong> of the compared ORMs (1.00-1.11x over
+hand-coded ADO.NET vs Dapper's 1.13-1.40x) - the README's memory story holds.</li>
+<li>On throughput Jaunty is <strong>competitive with Dapper, not uniformly faster</strong>:
+ahead on the MariaDB path with <code>WithExpectedRowCount</code>, behind Dapper on
+large SQLite reads (1.80x vs 1.30x at 10k rows). The SQLite large-read gap
+is a real optimization target (relates to PRD-005 sync/async parity tuning).</li>
+<li>EF Core trails all micro-ORMs by 2.5-3.5x on these read paths.</li>
+</ul>
+<h2 id="remaining-for-prd-002">Remaining for PRD-002</h2>
+<ul>
+<li>Proper (non-dry) runs of BulkInsert/BulkCopy suites per provider, with
+containers for SqlServer/Postgres/MySQL, to replace the README's
+per-provider &quot;Nx faster&quot; bulk table with measured numbers.</li>
+<li>Publish runs from a quiet CI box rather than a laptop.</li>
+</ul>
+<h2 id="update-same-day-after-prod-117-per-result-set-row-mapper">Update — same day, after PROD-117 (per-result-set row mapper)</h2>
+<p>Root cause of the gap found and fixed: the generated <code>ReadEntity</code> ran the
+PRD-001 shape-safety validation (<code>GetName</code> + case-insensitive compare per
+column) on <strong>every row</strong>. The generator now also emits <code>CreateRowMapper</code>,
+a per-result-set factory that validates once and returns a zero-validation
+closure; the dispatcher prefers it and a per-row <code>FieldCount</code> guard falls
+back to the fully-validating <code>ReadEntity</code> if a stale delegate ever meets a
+changed shape. All shape-safety regression tests pass unchanged.</p>
+<p>Re-run of the same suite, same machine (Warm, SQLite):</p>
+<table>
+<thead>
+<tr>
+<th>Rows</th>
+<th>Jaunty before</th>
+<th>Jaunty after</th>
+<th>Dapper (same run)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>1.47x</td>
+<td>1.31x (177.3 us)</td>
+<td>1.07x</td>
+</tr>
+<tr>
+<td>1,000</td>
+<td>1.99x</td>
+<td>1.33x (1,494 us, -35% absolute)</td>
+<td>1.03x</td>
+</tr>
+<tr>
+<td>10,000</td>
+<td>1.80x</td>
+<td>1.46x (22,552 us)</td>
+<td>1.12x</td>
+</tr>
+</tbody>
+</table>
+<p>Multi-provider, 10,000 rows (Warm): Jaunty is now FASTER than Dapper on
+MariaDB (6,230 vs 7,130 us) and tied on PostgreSQL (5,510 vs 5,483 us;
+3,898 us with <code>WithExpectedRowCount</code> - well ahead). Remaining SQLite gap vs
+Dapper is <code>GetFieldValue&lt;T&gt;</code> vs provider-specific typed getters plus list
+growth - candidates for a future pass (PRD-005).</p>
+<h2 id="update-2-typed-getters-prod-118">Update 2 — typed getters (PROD-118)</h2>
+<p>The generated DbDataReader fast path used <code>GetFieldValue&lt;T&gt;</code> (generic
+dispatch inside the provider) for every column. The generator now emits
+direct typed getters (<code>GetInt32</code>, <code>GetString</code>, ...) for the 11 directly
+supported types, keeping <code>GetFieldValue&lt;T&gt;</code> only for the GetValue-fallback
+types (TimeSpan/DateTimeOffset/unknown).</p>
+<p>Re-run, same machine, 3-way SQLite suite (Warm):</p>
+<table>
+<thead>
+<tr>
+<th>Rows</th>
+<th>original</th>
+<th>after PROD-117</th>
+<th>after PROD-118</th>
+<th>Dapper (same run)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>1.47x</td>
+<td>1.31x</td>
+<td>1.17x (156.0 us)</td>
+<td>1.11x</td>
+</tr>
+<tr>
+<td>1,000</td>
+<td>1.99x</td>
+<td>1.33x</td>
+<td>1.37x (1,567 us)</td>
+<td>1.37x (exact tie)</td>
+</tr>
+<tr>
+<td>10,000</td>
+<td>1.80x</td>
+<td>1.46x</td>
+<td><strong>1.03x (14,447 us)</strong></td>
+<td>1.00x</td>
+</tr>
+</tbody>
+</table>
+<p>At 10k rows Jaunty is now at hand-coded ADO.NET / Dapper parity on SQLite.
+Multi-provider 10k (Warm): MariaDB Jaunty 4,479 us vs Dapper 6,797 us;
+PostgreSQL with <code>WithExpectedRowCount</code> 3,216 us - faster than the
+hand-coded ADO.NET baseline (3,623 us).</p>
+<p>The PRD-005 &quot;large SQLite read gap&quot; flagged in the first section of this
+report is closed.</p>
+<h2 id="update-3-bulk-copy-suites-measured-prd-002-remainder">Update 3 — bulk-copy suites measured (PRD-002 remainder)</h2>
+<p>Full-config <code>BulkCopyBenchmarks</code> run (SQLite in-proc; local PostgreSQL and
+MariaDB servers; SQL Server unreachable - container credentials mismatch, rows NA).
+Warm results, 10,000 rows:</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>ADO.NET loop (txn)</th>
+<th>Jaunty BulkInsert</th>
+<th>linq2db BulkCopy</th>
+<th>Dapper loop</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PostgreSQL</td>
+<td>368.7 ms</td>
+<td><strong>53.6 ms (6.9x faster)</strong></td>
+<td>72.6 ms</td>
+<td>1,596 ms</td>
+</tr>
+<tr>
+<td>PostgreSQL 1k</td>
+<td>48.6 ms</td>
+<td><strong>6.4 ms (7.6x faster)</strong></td>
+<td>7.6 ms</td>
+<td>187.9 ms</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>20.6 ms</td>
+<td><strong>334 ms — 16x SLOWER (defect)</strong></td>
+<td>16.2 ms</td>
+<td>97.3 ms</td>
+</tr>
+<tr>
+<td>MariaDB</td>
+<td>480.1 ms</td>
+<td><strong>NA — errored (defect/config)</strong></td>
+<td>64.4 ms</td>
+<td>20,231 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Findings:</p>
+<ol>
+<li><strong>PostgreSQL native bulk (NpgsqlBinaryImporter) verified</strong>: 6.9-7.6x vs a
+transactional ADO.NET loop, and faster than linq2db's COPY path. This
+replaces the README's unverified &quot;15-25x&quot; with a measured number.</li>
+<li><strong>SQLite bulk path is a real defect (PROD-120, open)</strong>: 16x slower than a
+plain transactional loop. <code>SQLiteBulkCopyProvider</code> code looks correct
+(single txn, prepared, reused params) but has 0% coverage and
+<code>SQLiteDialect.CreateBulkCopyProvider()</code> in core returns null - suspicion:
+the &quot;native&quot; path never engages and something upstream (dialect
+resolution, per-row binder, or the WAL pragma churn per call) burns
+~33us/row. Needs a profiling session.</li>
+<li><strong>MariaDB native bulk errors (NA)</strong> while linq2db succeeds on the same
+server - likely <code>MySqlBulkLoader</code>'s local-infile requirement
+(<code>AllowLoadLocalInfile=true</code> absent from the connection string); the
+provider should surface a clear error either way. Part of PROD-120.</li>
+<li>SQL Server: pending correct container credentials (JAUNTY_TEST_SQLSERVER).</li>
+</ol>
+<h2 id="update-4-prod-120-fixes-verified">Update 4 — PROD-120 fixes verified</h2>
+<ul>
+<li><strong>MySQL/MariaDB provider rewritten</strong> (chunked multi-row INSERT, no
+LOAD DATA LOCAL INFILE / local_infile dependency). Measured @10k rows:
+48.4 ms vs 781 ms transactional loop = <strong>16.1x faster</strong>, ahead of
+linq2db (65.9 ms). @1k: 7.6 ms = 12.9x. Live-tested against MariaDB
+(chunk boundaries, NULLs, external txn rollback, async).</li>
+<li><strong>SQLite routing fixed</strong>: the real root cause was the multi-row exclusion
+checking <code>dialect is not SQLiteDialect</code>, which missed the
+Extensions.Reflection wrapper dialect - SQLite fell into multi-row VALUES
+(quadratic parameter binding in Microsoft.Data.Sqlite) or the now-deleted
+provider, both ~16x slower. BulkInsert now routes SQLite to the prepared
+loop: measured @10k <strong>21.4 ms vs 21.3 ms hand-coded = 1.005x parity</strong>
+(was 334 ms).</li>
+<li>SQL Server local instance reachable this round for baselines; Jaunty's
+SqlServer native path (SqlBulkCopy) still returns NA in the harness -
+next investigation item (PROD-121).</li>
+</ul>
+<h2 id="update-5-prod-121-resolved-sqlserver-native-bulk-measured">Update 5 — PROD-121 resolved: SqlServer native bulk measured</h2>
+<p>Root cause of the NA: <code>SqlServerBulkCopyProvider</code> had never successfully
+constructed a <code>SqlBulkCopy</code>. <code>MapBulkCopyOptions</code> returned a boxed <code>Int32</code>,
+which <code>Activator.CreateInstance</code> refuses to bind to the <code>SqlBulkCopyOptions</code>
+ctor parameter -&gt; <code>MissingMethodException</code> on every call. Second latent
+defect fixed in the same pass: no <code>ColumnMappings</code> were set, so SqlBulkCopy's
+default ordinal mapping targeted the destination IDENTITY column. Live
+tests added (<code>SqlServerBulkCopyProviderTests</code>: identity destination, NULL
+round-trip, async, external txn rollback).</p>
+<p>BulkCopyBenchmarks, SqlServer (local instance), full config, Warm job:</p>
+<table>
+<thead>
+<tr>
+<th>Rows</th>
+<th style="text-align: right;">ADO.NET loop</th>
+<th style="text-align: right;">Jaunty native</th>
+<th style="text-align: right;">linq2db BulkCopy</th>
+<th style="text-align: right;">Jaunty vs loop</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td style="text-align: right;">7.3 ms</td>
+<td style="text-align: right;">2.1 ms</td>
+<td style="text-align: right;">2.9 ms</td>
+<td style="text-align: right;"><strong>3.5x</strong></td>
+</tr>
+<tr>
+<td>1k</td>
+<td style="text-align: right;">69.9 ms</td>
+<td style="text-align: right;">4.0 ms</td>
+<td style="text-align: right;">6.0 ms</td>
+<td style="text-align: right;"><strong>17.6x</strong></td>
+</tr>
+<tr>
+<td>10k</td>
+<td style="text-align: right;">822.6 ms</td>
+<td style="text-align: right;">22.5 ms</td>
+<td style="text-align: right;">21.1 ms</td>
+<td style="text-align: right;"><strong>36.6x</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Jaunty allocates 6.6x less than the loop baseline @10k (1.19 MB vs 7.8 MB)
+and matches linq2db's SqlBulkCopy within noise. Dapper loop: 1,926 ms @10k.</p>
+<p>Harness note: the EF Core competitor benchmark itself fails on SqlServer
+(&quot;Cannot insert explicit value for identity column&quot;) - EfProduct's key is
+not marked ValueGeneratedOnAdd for this provider. Competitor-benchmark
+defect only; does not affect Jaunty results.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="05-quality-comprehensive-audit.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Comprehensive audit</span>
+</a><a class="pn-next" href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Reports / COVERAGE GAPS 2026 07 04</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

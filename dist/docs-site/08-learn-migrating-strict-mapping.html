@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strict mapping: the one thing that will surprise you — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('dg-theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+    var s = parseFloat(localStorage.getItem('dg-fs'));
+    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Strict mapping: the one thing that will surprise you</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html" class="active" aria-current="page">Migrating / Strict mapping</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#why-it-works-this-way">Why it works this way</a><a class="toc-l2" href="#the-choice-in-one-table">The choice, in one table</a><a class="toc-l2" href="#the-three-things-people-hit">The three things people hit</a><a class="toc-l3" href="#select-against-an-entity-with-extra-properties">1. SELECT * against an entity with extra properties</a><a class="toc-l3" href="#column-names-that-do-not-match-property-names">2. Column names that do not match property names</a><a class="toc-l3" href="#a-non-nullable-property-receiving-null">3. A non-nullable property receiving NULL</a><a class="toc-l2" href="#porting-an-existing-codebase">Porting an existing codebase</a><a class="toc-l2" href="#the-full-pair-list">The full pair list</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Strict mapping: the one thing that will surprise you</nav>
+        <article>
+<h1 id="strict-mapping-the-one-thing-that-will-surprise-you">Strict mapping: the one thing that will surprise you</h1>
+<p><strong>The rule:</strong> <code>Query&lt;T&gt;</code> requires that every public writable property on <code>T</code> has a matching column in
+the result set. If one does not, it throws <code>InvalidOperationException</code> at the call site.
+<code>QueryPartial&lt;T&gt;</code> maps whatever matches and ignores the rest.</p>
+<p>Both are first-class. Neither is an escape hatch. <strong>Which one you want depends on what the type is
+for</strong>, and getting that choice right up front removes essentially all of the friction people hit in
+their first hour with Jaunty.</p>
+<h2 id="why-it-works-this-way">Why it works this way</h2>
+<p>Every other micro-ORM maps leniently: columns that match get mapped, properties that do not match
+keep their default value. That is convenient, and it fails silently in one specific case that costs
+real money.</p>
+<p>Someone renames a column. Someone edits a <code>SELECT</code> and drops a field. Someone adds a property to an
+entity and forgets one of the six queries that returns it. The lenient ORM hands you an object where
+that property is <code>0</code>, <code>null</code> or <code>false</code> - and <code>0</code> is a plausible value for a discount, a balance or a
+quantity. <strong>Nothing throws. The bug is now in your data</strong>, and it surfaces weeks later in a report
+nobody can reconcile.</p>
+<p>Jaunty turns that into an exception on the line that ran the query, with the property named in the
+message.</p>
+<h2 id="the-choice-in-one-table">The choice, in one table</h2>
+<table>
+<thead>
+<tr>
+<th>Your type is...</th>
+<th>Use</th>
+<th>Because</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>An entity mirroring a table, selected in full</td>
+<td><code>Query&lt;T&gt;</code></td>
+<td>Every property should be populated. A missing column is a bug</td>
+</tr>
+<tr>
+<td>A DTO shaped to a specific query</td>
+<td><code>Query&lt;T&gt;</code></td>
+<td>Same reasoning. The DTO exists to hold <em>that</em> result set exactly</td>
+</tr>
+<tr>
+<td>A projection - a few columns off a bigger entity</td>
+<td><code>QueryPartial&lt;T&gt;</code></td>
+<td>You are deliberately not selecting everything</td>
+</tr>
+<tr>
+<td>A reporting or ad-hoc query against a wide entity</td>
+<td><code>QueryPartial&lt;T&gt;</code></td>
+<td>The shape changes per query and the type is shared</td>
+</tr>
+<tr>
+<td>A type with computed or client-only properties</td>
+<td><code>Query&lt;T&gt;</code> <strong>plus</strong> <code>[Ignore]</code></td>
+<td>See below - the property should never have been a mapping target</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The DTO-per-query habit is the one that pays off.</strong> If a type describes exactly one result set,
+strict mapping is free correctness and costs nothing. If a type is shared across queries that select
+different subsets of it, <code>QueryPartial&lt;T&gt;</code> is the honest answer and you should use it without
+feeling like you are working around something.</p>
+<h2 id="the-three-things-people-hit">The three things people hit</h2>
+<h3 id="select-against-an-entity-with-extra-properties">1. <code>SELECT *</code> against an entity with extra properties</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;;
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string DisplayName =&gt; $&quot;{Name} ({Price:C})&quot;;   <span class="tok-com">// fine: no setter, not a mapping target</span>
+    <span class="tok-kw">public</span> List&lt;Review&gt; Reviews { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">new</span>();    <span class="tok-com">// problem: writable, no column</span>
+}
+</code></pre>
+</div>
+<p><code>Reviews</code> is a public writable property with no matching column, so <code>Query&lt;Product&gt;</code> throws. It
+should never have been a mapping target in the first place:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Ignore]
+<span class="tok-kw">public</span> List&lt;Review&gt; Reviews { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">new</span>();
+</code></pre>
+</div>
+<p><strong>Read-only properties are not affected.</strong> Computed values with no setter are not mapping targets and
+never need <code>[Ignore]</code>.</p>
+<h3 id="column-names-that-do-not-match-property-names">2. Column names that do not match property names</h3>
+<p>Snake case, prefixes, legacy names. Map them once on the property rather than aliasing in every
+query:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Column(&quot;product_name&quot;)]
+<span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;;
+</code></pre>
+</div>
+<h3 id="a-non-nullable-property-receiving-null">3. A non-nullable property receiving NULL</h3>
+<p><code>Query&lt;T&gt;</code> also throws when the column exists but the value is <code>NULL</code> and the property cannot hold
+<code>NULL</code>. This is the same bug class: lenient mapping would have given you <code>0</code> or <code>&quot;&quot;</code> and let it
+through. Fix it by making the property nullable if the column is nullable:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> decimal? Discount { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }   <span class="tok-com">// the column allows NULL, so the property must too</span>
+</code></pre>
+</div>
+<p>Where the column is genuinely non-nullable and the <code>NULL</code> comes from an outer join, that is a query
+shape question - the property belongs on a projection type, not on the entity.</p>
+<h2 id="porting-an-existing-codebase">Porting an existing codebase</h2>
+<p><strong>The fast path is a two-step.</strong></p>
+<ol>
+<li><strong>Change every call to <code>QueryPartial&lt;T&gt;</code> first</strong>, mechanically. <code>Query</code> to <code>QueryPartial</code>,
+<code>QueryFirstOrDefault</code> to <code>QueryPartialFirstOrDefault</code>, and so on. This reproduces your current
+ORM's behaviour exactly, so the port compiles and your tests pass with no semantic change.</li>
+<li><strong>Then promote back to <code>Query&lt;T&gt;</code> where the type is a full entity or a purpose-built DTO</strong>, one
+file at a time, and fix what it tells you about. Every exception you get in this step is a
+mismatch that was already in your codebase and was already silently producing a default value.</li>
+</ol>
+<p>Doing it in that order means you are never debugging a port and a behaviour change at the same time.</p>
+<p><strong>Expect the second step to find something.</strong> In a codebase of any age it usually does, and that
+finding is the entire argument for the feature.</p>
+<h2 id="the-full-pair-list">The full pair list</h2>
+<table>
+<thead>
+<tr>
+<th>Strict</th>
+<th>Lenient</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Query&lt;T&gt;</code></td>
+<td><code>QueryPartial&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>QueryFirst&lt;T&gt;</code></td>
+<td><code>QueryPartialFirst&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>QueryFirstOrDefault&lt;T&gt;</code></td>
+<td><code>QueryPartialFirstOrDefault&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>QuerySingle&lt;T&gt;</code></td>
+<td><code>QueryPartialSingle&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>QuerySingleOrDefault&lt;T&gt;</code></td>
+<td><code>QueryPartialSingleOrDefault&lt;T&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Each has an <code>...Async</code> counterpart with the same semantics.</p>
+<p><code>MappingMode.Strict</code> and <code>MappingMode.Projection</code> in <code>Jaunty.Configuration</code> are the same distinction
+where the mode is passed rather than chosen by method name.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="08-learn-migrating-from-ef-core.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Migrating / From ef core</span>
+</a><span></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

@@ -20,11 +20,21 @@ public class DocumentedApiTests
         "OnRaw",
     ];
 
-    private static readonly string[] ScannedRoots = ["README.md", "SECURITY.md", "docs"];
+    // Every root-level page, every markdown page under docs/, and the rendered site under
+    // dist/docs-site, which is tracked and is what a reader who never clones sees. The site is
+    // regenerated from docs/ by scripts/build-docs.sh and committed, so it drifts when that step
+    // is skipped; it documented OnColumns and OnRaw for a day after the markdown stopped.
+    private static readonly (string Root, string Pattern)[] Scanned =
+    [
+        (".", "*.md"),
+        ("docs", "*.md"),
+        ("dist/docs-site", "*.html"),
+    ];
 
     private static readonly string[] SkippedPathFragments =
     [
         "/docs/99-archive/", "/docs/plans/", "/docs/specs/", "/docs/decisions/",
+        "/dist/docs-site/99-archive-", "/dist/docs-site/plans-", "/dist/docs-site/decisions-",
     ];
 
     [Fact]
@@ -94,6 +104,11 @@ public class DocumentedApiTests
         if (line.TrimStart().StartsWith(">", StringComparison.Ordinal)) return true;
         if (line.TrimStart().StartsWith("//", StringComparison.Ordinal)) return true;
 
+        // The rendered site keeps the blockquote as an element rather than a line prefix.
+        int openQuote = text.LastIndexOf("<blockquote", index, StringComparison.Ordinal);
+        int closeQuote = text.LastIndexOf("</blockquote>", index, StringComparison.Ordinal);
+        if (openQuote >= 0 && openQuote > closeQuote) return true;
+
         int blockStart = Math.Max(0, index - 400);
         string preceding = text.Substring(blockStart, index - blockStart);
 
@@ -106,17 +121,15 @@ public class DocumentedApiTests
     {
         DirectoryInfo repoRoot = LocateRepositoryRoot();
 
-        foreach (string root in ScannedRoots)
+        foreach ((string root, string pattern) in Scanned)
         {
             string path = Path.Combine(repoRoot.FullName, root);
+            if (!Directory.Exists(path))
+                continue;
 
-            IEnumerable<string> files = File.Exists(path)
-                ? [path]
-                : Directory.Exists(path)
-                    ? Directory.GetFiles(path, "*.md", SearchOption.AllDirectories)
-                    : [];
+            SearchOption depth = root == "." ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories;
 
-            foreach (string file in files)
+            foreach (string file in Directory.GetFiles(path, pattern, depth))
             {
                 string relative = file.Substring(repoRoot.FullName.Length)
                                       .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)

@@ -424,7 +424,7 @@ Limits the number of results returned (equivalent to LIMIT/TOP).
 
 **Signature:**
 ```csharp
-IFromClause<T> Take(int count)
+IPagedClause<T> Take(int count)
 ```
 
 #### Skip(int count)
@@ -433,8 +433,12 @@ Skips the specified number of results (equivalent to OFFSET).
 
 **Signature:**
 ```csharp
-IFromClause<T> Skip(int count)
+IPagedClause<T> Skip(int count)
 ```
+
+`IPagedClause<T>` derives from `IFromClause<T>`, so the chain continues as before; the narrower
+type exists so a paged query cannot reach `DeleteAll` or `UpdateAll`, where the paging would have
+been silently discarded.
 
 **Example:**
 ```csharp
@@ -776,8 +780,11 @@ var sql = connection.From<Product>()
     .Where(p => p.CategoryId == 1)
     .OrderBy(p => p.ProductName)
     .ToSql();
-// Returns: "SELECT * FROM products WHERE category_id = @p0 ORDER BY product_name"
+// SELECT product_id, product_name, category_id, price FROM products
+// WHERE (category_id = @category_id) ORDER BY product_name
 ```
+
+Every mapped column is listed, never `*`, and a parameter is named after its column.
 
 ## Advanced Features
 
@@ -796,25 +803,39 @@ IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector)
 ```csharp
 var groupedProducts = connection.From<Product>()
     .GroupBy(p => p.CategoryId)
-    .Select(g => new { g.Key, Count = g.Count(), AveragePrice = g.Average(p => p.Price) });
+    .Select(g => new { g.Key, Count = g.Count(), AveragePrice = g.Avg(p => p.Price) });
 ```
+
+The aggregate methods on the group are `Count`, `Sum`, `Avg`, `Min` and `Max`; there is no LINQ
+`Average` because `IGrouping<TKey, T>` is Jaunty's own interface, not `System.Linq`'s.
 
 ## Kitchen Sink Example
 
-A single query combining a join, multi-condition filtering, ordering, and pagination:
+A single query combining a join, multi-condition filtering and ordering. Aliases come from the
+lambda parameter names, so `p` and `c` below are what the SQL uses:
 
 ```csharp
-var products = connection.From<Product>("p")
-    .InnerJoin<Category>("c")
+var products = connection.From<Product>()
+    .InnerJoin<Category>()
     .On((p, c) => p.CategoryId == c.Id)
-    .WhereIn(p => p.CategoryId, new[] { 1, 2, 3 })
-    .And(p => p.Price >= 10m)
-    .WhereBetween(p => p.Price, 10m, 250m)
+    .Where((p, c) => p.Price >= 10m && p.Price <= 250m)
+    .And((p, c) => c.Name == "Beverages")
     .OrderBy(p => p.ProductName)
-    .Skip(20)
-    .Take(10)
     .Select();
 ```
+
+```sql
+SELECT p.product_id, p.product_name, p.category_id, p.price
+FROM products p
+INNER JOIN categories c ON (p.category_id = c.id)
+WHERE (((p.price >= @p_price) AND (p.price <= @p_price_2)) AND (c.name = @c_name))
+ORDER BY p.product_name
+```
+
+After `On(...)` the query is an `IJoinedQuery<Product, Category>`: its `Where`/`And`/`Or` take a
+two-parameter lambda, and `WhereIn`, `WhereBetween`, `Skip` and `Take` are not available on a
+join. Page a joined result with `Take`/`Skip` on the single-table query before the join, or in
+SQL.
 
 ## Important Notes
 

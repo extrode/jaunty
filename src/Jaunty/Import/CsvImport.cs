@@ -820,12 +820,6 @@ public static class CsvImportExtensions
     private const int CopyBufferChars = 4096;
 
     /// <summary>
-    /// Aborts an in-progress <c>COPY ... FROM STDIN</c> (AUD-R34-011). Npgsql's copy writer
-    /// completes the operation on <c>Dispose</c>, so a failure part-way through the file has to
-    /// call <c>Cancel()</c> or the rows already written are committed. Reflected for the same
-    /// reason <c>BeginTextImport</c> is - Jaunty does not reference Npgsql.
-    /// </summary>
-    /// <summary>
     /// PostgreSQL only: fail loudly when the connection can stream a client-side COPY but no
     /// provider is registered to do it.
     /// </summary>
