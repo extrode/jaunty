@@ -15,7 +15,7 @@ nominal. **The ethical restrictions travel with the redistributed binaries by de
 not an unrestricted redistribution permission, and that limitation is deliberate.
 
 **Which licence this modifies.** This Exception is an additional permission under the Islamic
-Software License, Restricted, version 1.0 ("ISL-R"), the licence governing Jaunty's source and
+Software License, Restricted, version 1.2 ("ISL-R"), the licence governing Jaunty's source and
 its published packages. It modifies those terms only as stated below; everything not stated
 remains governed by ISL-R.
 

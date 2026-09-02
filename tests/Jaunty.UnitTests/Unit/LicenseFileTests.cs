@@ -23,7 +23,9 @@ public class LicenseFileTests
     {
         List<string> placeholders = new();
 
-        foreach (Match match in Regex.Matches(ReadRepositoryFile("LICENSE-EULA.md"), @"\[[A-Z][A-Z ]{2,}\]"))
+        // The 1.2 texts mention `[LICENSOR]` in their reproduction notice, in backticks, as prose
+        // about the field rather than the field itself; only an unbackticked match is unfilled.
+        foreach (Match match in Regex.Matches(ReadRepositoryFile("LICENSE-EULA.md"), @"(?<!`)\[[A-Z][A-Z ]{2,}\](?!`)"))
             placeholders.Add(match.Value);
 
         Assert.Equal(new string[0], placeholders.ToArray());

@@ -9,6 +9,10 @@ default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.0.0-rc.2] - 2026-09-02
+
 ### Breaking changes since 1.0.0-rc.1
 
 Anyone on `1.0.0-rc.1` should read this section before upgrading. Each item is a change a

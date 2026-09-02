@@ -18,7 +18,7 @@
 Written 2026-07-04. Answers: how do I show the product off, how do I distribute it
 after a sale, and can I give customers my private feed / repo / source?
 Companion to [COMMERCIAL-ANALYSIS-REPORT.md](COMMERCIAL-ANALYSIS-REPORT.md).
-License context: Jaunty ships under the proprietary Islamic Software License - Restricted (ISL-R) v1.0
+License context: Jaunty ships under the proprietary Islamic Software License - Restricted (ISL-R) v1.2
 (use permitted, modification/redistribution/sublicensing prohibited) — which is
 already the right shape for commercial licensing.
 
