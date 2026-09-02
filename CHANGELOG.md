@@ -33,6 +33,11 @@ default lives in `src/Directory.Build.props`.
   for a delegate reused across `NextResult()` was one native call per row on
   Microsoft.Data.Sqlite. `Query<T>` at 10k rows on SQLite: 5.42 ms to 4.95 ms
   ([decision 011](docs/decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
+- **Docs: why an unhinted `Query<T>` trails the hinted one at 10k rows, and why the default
+  capacity stays 64.** The list's last doubling lands on the large-object heap and costs a Gen2;
+  pre-sizing the harness to 10,000 removed the whole 3.7 ms gap on PostgreSQL. README, report,
+  article and `QueryResultCapacity` say to pass `WithExpectedRowCount`
+  ([decision 012](docs/decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
 
 ### Added
 

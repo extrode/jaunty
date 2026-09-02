@@ -810,6 +810,12 @@ Allocation at 10,000 rows on SQL Server. Lower is better here too.
 
 </details>
 
+**If you know roughly how many rows are coming, say so.** `Query<T>` collects into a `List<T>`
+that starts at 64 slots and doubles; for 10,000 rows the last array lands on the large-object
+heap and costs a Gen2 collection, which is the whole of the gap between the two Jaunty rows on
+PostgreSQL and MariaDB above. `CommandOptions<T>.WithExpectedRowCount(n)` sizes it once. An
+estimate is enough; it does not have to be exact.
+
 The full run, the machine, the 100-row tables, the harness corrections and the comparison with
 the July numbers are in
 [benchmarks-2026-09-02.md](docs/05-quality/reports/benchmarks-2026-09-02.md). The earlier reports
