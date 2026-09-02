@@ -522,7 +522,9 @@ table *there* stays right even while the outer statement is aliased:
 ```
 
 The rule to carry away: check `ToSql()` when a qualifier is in doubt. Aliases are inferred per join
-and only from names Jaunty can use — a parameter named after a SQL keyword, or after a table already
-in the query, is declined and that join keeps the full table name.
+and only from names Jaunty can use - a parameter named after a SQL keyword, after a table already
+in the query, or after an alias an earlier join locked in, is declined and that join keeps the full
+table names. The one exception is a self-join with neither side aliased, which takes `t1`/`t2`
+rather than emit ambiguous SQL.
 
 </details>

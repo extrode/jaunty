@@ -3,13 +3,14 @@
 **Jaunty is free.** Free to use, including in commercial production, with no seat count, no Order and
 no expiry. What is sold is **support**.
 
-**JauntyQ is partly free.** A free core, with the migration and analysis capabilities and support
-sold on top.
+**JauntyQ is a free core plus a paid team-safety tier**, and the paid commands run free under a
+preview license until JauntyQ 1.0.
 
-> **Status: Jaunty is settled, JauntyQ is not.** Jaunty's licence instrument and support numbers were
-> decided by the owner on 2026-08-29 and are stated below.
-> JauntyQ's free/paid boundary and price remain open; the figures in its section below are
-> indicative and commit to nothing.
+> **Status.** Jaunty's licence instrument and support numbers were decided by the owner on
+> 2026-08-29 and are stated below. JauntyQ's split and tiers are decided in the JauntyQ repository
+> (decisions 001, 003 and 004 there); the summary below was copied from its pricing page on
+> 2026-09-03 and that page governs. Two JauntyQ points stay open there: the customer-facing wording
+> of the preview, and whether the free tier is permanent.
 
 ---
 
@@ -62,30 +63,39 @@ puts a tier on the page that nobody purchases.
 
 JauntyQ is a separate product: SQL-first, with an incremental compilation pipeline, rowversion
 optimistic concurrency, migration intelligence, a Roslyn performance analyzer and no-box Npgsql
-parameters.
+parameters. Its commercial model is its own, not a variant of Jaunty's.
 
 | | |
 |---|---|
-| **Free core** | Yes. Boundary not yet drawn |
-| **Paid** | Migration intelligence is the flagship. Schema diff, impact classification and plan analysis are the candidates around it |
-| **Roslyn analyzer** | Free |
-| **Support** | Paid, same shape as above |
+| **Free core** | The source generator and runtime in full, every `JNT1xxx`-`JNT8xxx` build-time diagnostic including the deep query analysis, `jauntyq schema pull`, migration simulation and DDL-as-source |
+| **Paid team-safety tier** | `jauntyq migrate impact` (SAFE/RISKY/BREAKING classification of pending migrations against the query corpus), database contract testing (`jauntyq schema verify`, the `JauntyQ.Schema.Contract` assertion API, the startup guard), per-service contracts and the schema registry, usage export, live `jauntyq explain` |
+| **Tiers** | Community free (organizations under $1M annual revenue, non-commercial use, education); Team $349/year up to 10 developers; Business $999/year up to 50; Enterprise custom |
+| **Support** | Bundled into every paid tier. There is no separate support SKU, unlike Jaunty |
+| **Before 1.0** | The paid commands run free under a minted preview license. A preview license is honored by every 0.x build forever and by no 1.0 build |
+| **Lapse** | Entitled features keep working on the versions you have, with a renewal reminder; never a hard failure |
 
-JauntyQ is not public and has no published prices. Nothing on this page commits to one.
+Pricing is flat per organization: one signed license file, no seat counting, and CI agents never
+count. The repository is private as of 2026-09-03; a public repository holding the free core is
+specified (JauntyQ spec 020) and its first public release is 0.5.0.
 
 ## How licensing works
 
 - **Jaunty's packages and source** are governed by the **Islamic Software License - Restricted
-  (ISL-R)**. Section 2 grants a royalty-free right to use, including internal commercial use, to any
+  (ISL-R), Version 1.2**. Section 2 grants a royalty-free right to use, including internal commercial use, to any
   compliant licensee. That is the grant this page matches.
 - **Shipping Jaunty inside your application** is permitted by the **Jaunty Redistribution
   Exception**, a royalty-free rider on ISL-R with no term and no Order. ISL-R alone forbids
   distributing the software to third parties, which every deployment of an application that
   references a library does; the Exception is what makes the free grant usable. The ethical
   restrictions travel with the redistributed binaries.
-- **Jaunty's ISL-EULA does not apply** under the free model. It was the instrument of the paid,
-  Order-conditioned model and is retained for the historical record.
-- **JauntyQ's paid components** ship under the **ISL-EULA** with the grant conditioned on an Order.
+- **Jaunty has no ISL-EULA.** It was the instrument of the paid, Order-conditioned model; the file
+  was withdrawn on 2026-09-02 and survives only in history.
+- **JauntyQ's free core** is under ISL-R with the **JauntyQ Generated Output Exception**, which
+  makes the code, snapshots and reports the generator emits into your project yours to modify,
+  ship and sell; the ethical restrictions continue to apply to that output. The public core
+  repository moves both to the islamiclicense.org 1.2 texts, ISL-R 1.2 and ISL-OE 1.2.
+- **JauntyQ's paid components** ship under the **ISL-EULA** with the grant conditioned on an Order,
+  from a private feed to subscribers, verified offline from a signed license file.
 - **Enterprise continuity** is a rider on the support agreement granting contingent, internal-only
   rights to build and patch, triggered only by defined events such as the vendor ceasing operations.
 

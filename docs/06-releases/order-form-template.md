@@ -1,6 +1,6 @@
 # Order Form (Template)
 
-> Internal template - copy per customer, fill every bracketed field, attach to the countersigned ISL-EULA. This Order is incorporated into and forms part of the Islamic Software End User License Agreement (ISL-EULA) v1.0 under its Section 1.6.
+> Internal template from the paid-licence model, kept for the **support agreement** only. Jaunty has sold no licence since 2026-08-29 and withdrew its ISL-EULA on 2026-09-02, so nothing here is incorporated into a licence; the rows about seats, source access and licence scope are historical. JauntyQ Orders are placed under JauntyQ's own ISL-EULA and pricing page, and there is no bundle. Copy per customer, fill every bracketed field.
 
 **Order No.:** [YYYY-NNN]
 **Effective Date:** [date]
@@ -16,8 +16,8 @@
 
 | Field | Value |
 |---|---|
-| Product(s) | [ ] Jaunty  [ ] JauntyQ  [ ] Bundle |
-| Tier | [ ] Individual  [ ] Company  [ ] Enterprise (org-wide) |
+| Product(s) | Jaunty support subscription (JauntyQ has its own Order; no bundle) |
+| Tier | [ ] Company  [ ] Enterprise (org-wide) - see `pricing.md`; Individual is not offered |
 | Seats (named developers) | [n] - CI/build agents excluded |
 | Authorized Users | [names or "as designated by Licensee, up to seat count"] |
 | Term | [12] months from Effective Date |
