@@ -13,6 +13,7 @@ Guides for developing and extending Jaunty.
 | [`multi-targeting.md`](multi-targeting.md) | Supporting netstandard2.0 and net8.0 |
 | [`optimization-checklist.md`](optimization-checklist.md) | Performance optimization checklist |
 | [`ci-architecture.md`](ci-architecture.md) | **Where CI, the nightly tiers and the audit loop run** — diagrams, hosts, open items |
+| [`contribution-workflow.md`](contribution-workflow.md) | **Fork to `dev`: the approval gates, who acts at each, and what each GitHub setting guards** — with diagrams |
 
 ## Quick Reference
 

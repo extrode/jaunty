@@ -1,5 +1,12 @@
 # Jaunty
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/_assets/logo/jaunty-mark-dark.svg">
+    <img src="docs/_assets/logo/jaunty-mark-light.svg" alt="Jaunty" width="160">
+  </picture>
+</p>
+
 **The micro-ORM that respects your SQL and your time.**
 
 [![CI](https://github.com/extrode/jaunty/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/extrode/jaunty/actions/workflows/ci.yml)

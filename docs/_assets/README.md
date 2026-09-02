@@ -12,6 +12,15 @@ UI screenshots and visual examples:
 
 - [`screenshots/`](screenshots/) - Application screenshots
 
+### Logo
+
+Traced from the source artwork; `#FDCF32` on `#212121` for dark surfaces, on white for light ones,
+and the bare mark for anything else. All three share one path.
+
+- [`logo/jaunty-mark-dark.svg`](logo/jaunty-mark-dark.svg)
+- [`logo/jaunty-mark-light.svg`](logo/jaunty-mark-light.svg)
+- [`logo/jaunty-mark.svg`](logo/jaunty-mark.svg)
+
 ### Diagrams
 
 Architecture and flow diagrams:
