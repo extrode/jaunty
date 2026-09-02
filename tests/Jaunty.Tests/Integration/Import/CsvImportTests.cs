@@ -447,6 +447,12 @@ public class CsvImportTests : IClassFixture<DialectFixture>
 
             Assert.Equal(ExpectedRowCount, rows);
             Assert.Equal(ExpectedRowCount, GetRowCount(connection, DialectProvider.SystemSqlite));
+
+            // Both paths write to this one file, so the row counts above hold either way. Only the
+            // CLI path rejects a non-default quote character, so this is what proves the alias was
+            // resolved to the CLI's own file rather than falling through to prepared statements.
+            Assert.Throws<NotSupportedException>(() =>
+                connection.ImportCsv("alias2." + TableName, csvPath, new CsvImportOptions { Quote = '\'' }));
         }
         finally
         {

@@ -241,9 +241,10 @@ public static class CsvImportExtensions
     /// </remarks>
     private static bool SqliteCliCanReach(IDbConnection connection, string schema, string dbPath)
     {
-        // A closed connection has no ATTACH set to read - the aliases would not survive the close
-        // anyway - so "main" is the only schema that can name the CLI's own file. Opening it here
-        // to ask would report the state after the open, not the state the caller built.
+        // A closed connection cannot be asked, and opening it here would report the state after the
+        // open rather than the state the caller built, so "main" is the only schema taken as naming
+        // the CLI's own file. Anything else routes to the prepared-statement path, which opens the
+        // connection itself and then either finds the alias or fails loudly.
         if (connection.State == ConnectionState.Closed)
             return string.Equals(schema, "main", StringComparison.OrdinalIgnoreCase);
 
@@ -947,13 +948,14 @@ public static class CsvImportExtensions
     private static readonly char[] SqliteCliUnsafeChars = { '"', '\r', '\n' };
 
     // Windows and macOS resolve paths case-insensitively, Linux does not, and SqliteCliCanReach
-    // compares a PRAGMA database_list file against the connection string's own path.
-#if NET5_0_OR_GREATER
+    // compares a PRAGMA database_list file against the connection string's own path. Determined
+    // with RuntimeInformation rather than an #if: netstandard2.0 runs on Linux too, and hardcoding
+    // OrdinalIgnoreCase there would call /data/Archive.db and /data/archive.db - two files on ext4 -
+    // the same, which is the silent wrong-target case this check exists to prevent.
     private static readonly StringComparison SqlitePathComparison =
-        System.OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-#else
-    private static readonly StringComparison SqlitePathComparison = StringComparison.OrdinalIgnoreCase;
-#endif
+        System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
+            ? StringComparison.Ordinal
+            : StringComparison.OrdinalIgnoreCase;
 
     private static void ValidateIdentifier(string identifier, string paramName)
     {
