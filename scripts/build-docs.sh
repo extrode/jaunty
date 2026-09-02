@@ -7,4 +7,9 @@
 # site that disagrees with the markdown it was built from.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-dotnet run --project ../docs/src/Docs -- docs dist/docs-site --site-name jaunty
+tool="../docs/src/Docs"
+if [ ! -d "$tool" ]; then
+  echo "build-docs.sh: the shared Docs tool is not part of this repository; expected a sibling checkout at $tool" >&2
+  exit 1
+fi
+dotnet run --project "$tool" -- docs dist/docs-site --site-name jaunty

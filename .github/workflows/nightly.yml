@@ -251,7 +251,7 @@ jobs:
   mutation:
     name: Mutate ${{ matrix.project }}
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 0'
-    # The one job that does not follow CI_RUNNER. 2,364 mutants took 2 h 10 m on an M1 Max at
+    # The one job that does not follow CI_RUNNER. 2,364 mutants took 2 h 10 m on an Apple Silicon Mac at
     # concurrency 8; a 2-core hosted runner does not finish inside GitHub's limit at all, which is
     # what public-release T18 exists to resolve. Blacksmith documents no maximum job duration.
     #

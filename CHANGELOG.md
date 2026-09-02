@@ -69,6 +69,14 @@ default lives in `src/Directory.Build.props`.
   cleanup script and one tasklist; CONTRIBUTING names the 10.0 SDK and no longer tells a newcomer
   to sign a draft CLA; the release runbook's branch-protection item is unblocked; the
   Redistribution Exception's note 4 no longer calls the removed EULA "retained".
+- **Docs: third public-readiness pass.** The CI docs describe the hosted runners that run today
+  instead of the retired self-hosted one; the testing-strategy plan and the runner notes drop
+  machine details; the commercial templates cite ISL-R 1.2 and no longer mention an EULA or an
+  Individual tier; two links and the release index's version fixed; `scripts/build-docs.sh`
+  fails with a message when the external docs tool is absent.
+- **Tests: two CSV import tests reopen the pooled SQLite connection inside the no-GC region.**
+  On .NET Framework a collection landed between the import and the reopen, the pool handed back
+  a fresh handle, and the temp table the test had built was gone.
 
 ### Added
 

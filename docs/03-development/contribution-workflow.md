@@ -119,7 +119,7 @@ Taking a concrete case: someone clones the repository, changes a file, and wants
 
 ## Where audit findings enter
 
-The private nightly audit writes a report that a maintainer reproduces locally. A confirmed
+A nightly audit that lives in a private repository, not in this clone, writes a report that a maintainer reproduces locally. A confirmed
 finding becomes a public issue with its reproduction and an `audit` label, and is fixed on a branch
 that closes it. Refuted findings are recorded privately and never become issues, so the tracker
 holds only what has been reproduced.
