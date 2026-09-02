@@ -27,12 +27,25 @@ public static Func<Type, string>? SchemaNameResolver { get; set; }
 
 **Example:**
 ```csharp
-// Use 'dbo' schema for all tables
-JauntyConfig.SchemaNameResolver = type => "dbo";
-
 // Use schema based on namespace
-JauntyConfig.SchemaNameResolver = type => type.Namespace?.Split('.').Last() ?? "dbo";
+JauntyConfig.SchemaNameResolver = type => type.Namespace?.Split('.').Last() ?? string.Empty;
+
+// Scoped: SQL Server entities get a schema, SQLite entities stay unqualified
+JauntyConfig.SchemaNameResolver = type =>
+    type.Namespace?.StartsWith("App.Sqlite", StringComparison.Ordinal) == true
+        ? string.Empty
+        : "dbo";
 ```
+
+**The resolver is global and dialect-blind.** It receives a `Type` and nothing else, so one
+resolver serves every connection in the process. A constant such as `type => "dbo"` is emitted
+verbatim on PostgreSQL and SQLite as well as SQL Server, giving `dbo.products` and a
+"no such table" error there. Scope it by type, or return `string.Empty` to leave an entity
+unqualified. Returning `string.Empty` emits no schema at all, which is what Jaunty does by
+default — see [`schemas.md`](schemas.md).
+
+It is consulted on the reflection mapping path only. Source-generated entities read the `[Table]`
+attribute at compile time and ignore it.
 
 ### TableNameResolver
 
