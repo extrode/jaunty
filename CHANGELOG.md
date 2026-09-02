@@ -47,6 +47,16 @@ default lives in `src/Directory.Build.props`.
   `FieldCount` guard removal; the quick-start's build, test, layout and dependency pages describe
   the current tree (ten test projects, `Category=AllocationBudget` as the only trait, the
   coverage script, the seeded server databases, the nightly cadence).
+- **Docs: what this repository says about JauntyQ's pricing and licensing now matches JauntyQ's
+  own pricing page.** `docs/06-releases/pricing.md` had "boundary not yet drawn, no published
+  prices"; JauntyQ decided its free core, paid team-safety tier, flat per-organization tiers,
+  bundled support and pre-1.0 preview licenses on 2026-08-01 and 2026-08-30. The same page said
+  Jaunty's ISL-EULA was retained; it was withdrawn. The order-form template no longer offers a
+  JauntyQ or bundle order, and the quick-start decision tree no longer routes on target framework,
+  since both products ship a `netstandard2.0` runtime. Also: the Fluent alias notes in
+  `error-messages.md` and `exercises.md` now state the self-join `t1`/`t2` fallback and every
+  reason a name is declined, the rendered `ON (...)` matches the builder's output, and
+  `DocumentedApiTests` now also scans HTML under `docs/` and the XML doc comments in `src/`.
 
 ### Added
 

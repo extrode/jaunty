@@ -58,14 +58,12 @@ Jaunty has a sibling: [JauntyQ](https://github.com/extrode/jauntyq) moves the en
 ```mermaid
 flowchart TD
     S["You write SQL and map to POCOs"] --> Q1{"SQL known at compile time,<br/>schema snapshot acceptable?"}
-    Q1 -- yes --> Q2{"net8.0+ only?"}
-    Q2 -- yes --> JQ["JauntyQ<br/>build-time validation,<br/>zero-reflection generated code"]
-    Q2 -- "need netstandard2.0 /<br/>net472 consumers" --> J["Jaunty"]
-    Q1 -- "dynamic SQL, runtime shapes,<br/>gradual adoption" --> J
+    Q1 -- yes --> JQ["JauntyQ<br/>build-time validation,<br/>zero-reflection generated code"]
+    Q1 -- "dynamic SQL, runtime shapes,<br/>gradual adoption" --> J["Jaunty"]
     S2["You want the framework<br/>to write SQL, track changes,<br/>run migrations"] --> EF["EF Core"]
 ```
 
-Rule of thumb: JauntyQ when your queries are known at build time and you can commit a schema snapshot; Jaunty when you need runtime flexibility, older TFMs, or a drop-in Dapper upgrade path. They share a philosophy - SQL is yours, mapping is strict, reflection is a last resort - so moving between them is a change of mechanics, not mindset.
+Rule of thumb: JauntyQ when your queries are known at build time and you can commit a schema snapshot; Jaunty when you need runtime flexibility or a drop-in Dapper upgrade path. Both ship a `netstandard2.0` runtime, so the target framework does not decide it. They share a philosophy - SQL is yours, mapping is strict, reflection is a last resort - so moving between them is a change of mechanics, not mindset.
 
 ## Next steps
 

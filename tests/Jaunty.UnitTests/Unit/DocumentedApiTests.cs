@@ -20,15 +20,18 @@ public class DocumentedApiTests
         "OnRaw",
     ];
 
-    // Every root-level page, every markdown page under docs/, and the rendered site under
-    // dist/docs-site, which is tracked and is what a reader who never clones sees. The site is
+    // Every root-level page, every markdown and HTML page under docs/, the rendered site under
+    // dist/docs-site, which is tracked and is what a reader who never clones sees, and the XML
+    // doc comments in src/, which IntelliSense shows to every consumer. The site is
     // regenerated from docs/ by scripts/build-docs.sh and committed, so it drifts when that step
     // is skipped; it documented OnColumns and OnRaw for a day after the markdown stopped.
     private static readonly (string Root, string Pattern)[] Scanned =
     [
         (".", "*.md"),
         ("docs", "*.md"),
+        ("docs", "*.html"),
         ("dist/docs-site", "*.html"),
+        ("src", "*.cs"),
     ];
 
     private static readonly string[] SkippedPathFragments =
@@ -102,7 +105,8 @@ public class DocumentedApiTests
             : text.Length - start);
 
         if (line.TrimStart().StartsWith(">", StringComparison.Ordinal)) return true;
-        if (line.TrimStart().StartsWith("//", StringComparison.Ordinal)) return true;
+        string trimmed = line.TrimStart();
+        if (trimmed.StartsWith("//", StringComparison.Ordinal) && !trimmed.StartsWith("///", StringComparison.Ordinal)) return true;
 
         // The rendered site keeps the blockquote as an element rather than a line prefix.
         int openQuote = text.LastIndexOf("<blockquote", index, StringComparison.Ordinal);
