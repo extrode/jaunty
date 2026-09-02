@@ -1,6 +1,6 @@
 # Exercises
 
-These five exercises build directly on the SQLite database from
+These six exercises build directly on the SQLite database from
 [`README.md`](README.md) in this folder — the `products` table, plus whatever you insert as
 you go. Do them in order; each one leans on something the previous one set up. Every starter
 snippet compiles as-is (aside from the marked `TODO`s), so you can paste it straight into the
@@ -29,7 +29,7 @@ using (var cmd = connection.CreateCommand())
 using Jaunty.Attributes;
 
 // TODO: add [Table("categories")] to this class
-public class Category
+public partial class Category
 {
     // TODO: mark this the primary key and identity-generated,
     // and point it at the "category_id" column
@@ -55,6 +55,8 @@ var category = new Category { Name = "Beverages", Description = "Soft drinks, co
 - The `[Key]` and `[DatabaseGenerated(DatabaseGeneratedOption.Identity)]` attributes go
   together on the same property, exactly like `ProductEntity.Id` in Step 8 of the tutorial.
 - `Insert<T>()` returns the generated identity value as a `long`.
+- Keep the `partial` keyword. Without it the generator warns `JAUNTYGEN004` and writes no mapper,
+  and `Insert` throws `No parameter binder found for type 'Category'`.
 
 <details>
 <summary>Solution</summary>
@@ -63,7 +65,7 @@ var category = new Category { Name = "Beverages", Description = "Soft drinks, co
 using Jaunty.Attributes;
 
 [Table("categories")]
-public class Category
+public partial class Category
 {
     [Key]
     [Column("category_id")]
@@ -325,7 +327,7 @@ using System.Diagnostics;
 using Jaunty.Attributes;
 
 [Table("products")]
-public class BenchProduct
+public partial class BenchProduct
 {
     [Key]
     [Column("product_id")]
@@ -369,7 +371,7 @@ using System.Diagnostics;
 using Jaunty.Attributes;
 
 [Table("products")]
-public class BenchProduct
+public partial class BenchProduct
 {
     [Key]
     [Column("product_id")]
@@ -422,5 +424,105 @@ you'd get on those providers — but batching everything into a single transacti
 than committing per row. Try the same comparison against SQL Server or PostgreSQL if you have one
 available, and see the root README's "Native Bulk Copy Performance" table for measured numbers
 per database.
+
+</details>
+
+## Exercise 6: Fix a Qualifier That an Alias Retired
+
+**Goal:** Meet the one rule that catches people out when they mix a lambda `On` with a string
+condition, and fix the same query two different ways.
+
+This one needs the Fluent builder and the `categories` table you created in Exercise 1:
+
+```bash
+dotnet add package Extrode.Jaunty.Fluent
+```
+
+**Starter code:**
+
+```csharp
+using (var cmd = connection.CreateCommand())
+{
+    cmd.CommandText = """
+        ALTER TABLE products ADD COLUMN category_id INTEGER;
+        UPDATE products SET category_id = 1;
+        """;
+    cmd.ExecuteNonQuery();
+}
+
+// Add this property to the ProductEntity class from Step 8 of the tutorial:
+//     [Column("category_id")]
+//     public int CategoryId { get; set; }
+//
+// ProductEntity and Category both need the `partial` keyword here, as they have had since
+// Step 8 and Exercise 1 — the Fluent builder reads the same generated metadata Insert does.
+
+using Jaunty.Fluent;
+
+// TODO: this throws. Predict the message before you run it.
+var rows = connection.From<ProductEntity>()
+    .InnerJoin<Category>()
+    .On((p, c) => p.CategoryId == c.Id)
+    .Where("products.unit_price > 15")
+    .SelectBoth();
+```
+
+**Hints:**
+- Replace `.SelectBoth()` with `.ToSql()` and print the result. Read the `FROM` clause first.
+- Where did `p` and `c` in the generated SQL come from? You did write them somewhere.
+- There are two fixes, and neither one is "stop using strings".
+
+<details>
+<summary>Solution</summary>
+
+`ToSql()` shows what the database is being asked:
+
+```sql
+SELECT p.product_id, p.product_name, p.unit_price, p.discontinued, p.category_id
+FROM products p
+INNER JOIN categories c ON (p.category_id = c.category_id)
+WHERE products.unit_price > 15
+      ^^^^^^^^
+```
+
+Jaunty took the aliases from the lambda parameter names you wrote — `p` and `c`. In SQL, aliasing a
+table retires its name as a qualifier for the rest of the statement, so `products` now refers to
+nothing and SQLite says so:
+
+```
+Microsoft.Data.Sqlite.SqliteException
+SQLite Error 1: 'no such column: products.unit_price'.
+```
+
+On SQL Server the same query fails as
+`Msg 4104, The multi-part identifier "products.unit_price" could not be bound.`
+
+**Fix 1 — use the alias the lambda established:**
+
+```csharp
+.Where("p.unit_price > 15")     // 4 rows
+```
+
+**Fix 2 — do not establish an alias at all.** The string form of `On` infers nothing, so both tables
+keep their names and the filter you first wrote is correct as it stands:
+
+```csharp
+var rows = connection.From<ProductEntity>()
+    .InnerJoin<Category>()
+    .On("products.category_id", "categories.category_id")
+    .Where("products.unit_price > 15")
+    .SelectBoth();
+```
+
+**One thing that is not a mistake.** A subquery inside the string opens its own scope, so naming the
+table *there* stays right even while the outer statement is aliased:
+
+```csharp
+.Where("p.product_id IN (SELECT product_id FROM products WHERE discontinued = 0)")
+```
+
+The rule to carry away: check `ToSql()` when a qualifier is in doubt. Aliases are inferred per join
+and only from names Jaunty can use — a parameter named after a SQL keyword, or after a table already
+in the query, is declined and that join keeps the full table name.
 
 </details>

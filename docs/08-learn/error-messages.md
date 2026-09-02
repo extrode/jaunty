@@ -41,6 +41,23 @@ string was passed through untouched, so `products` refers to nothing.
 The same applies to every string-form API on such a query — `Where("products.unit_price > 10")`,
 `Where("products.x", value)`, `SelectPartial("products.unit_price, categories.category_name")`.
 
+**Strings are not the problem; the qualifier is.** Once the alias exists, string conditions keep
+working as long as they use it:
+
+```csharp
+.Where("p.unit_price > 20")                    // runs
+```
+
+A subquery inside the string is a separate scope, so naming the table *there* is still right — the
+alias belongs to the outer statement only:
+
+```csharp
+.Where("p.product_id IN (SELECT product_id FROM products WHERE discontinued = 0)")   // runs
+```
+
+Both were executed against Jaunty's own SQLite test database rather than reasoned about, and both
+returned rows.
+
 **Why it fails rather than silently working.** It would be worse if it didn't. A query whose
 qualifier resolves to the wrong table is well-formed SQL returning the wrong rows, and nothing
 would tell you. The database rejecting the statement, naming the token to change, is the outcome

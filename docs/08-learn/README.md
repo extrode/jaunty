@@ -304,7 +304,7 @@ names while pointing at whatever the database actually calls things:
 using Jaunty.Attributes;
 
 [Table("products")]
-public class ProductEntity
+public partial class ProductEntity
 {
     [Key]
     [Column("product_id")]
@@ -321,6 +321,13 @@ public class ProductEntity
     public bool Discontinued { get; set; }
 }
 ```
+
+**The `partial` keyword is required, not stylistic.** Jaunty's source generator writes the mapper
+for this class into a second file at build time, which is what keeps the library free of runtime
+reflection. Leave `partial` off and the generator reports `JAUNTYGEN004` as a warning and emits
+nothing, and the first call using the entity throws `No parameter binder found for type
+'ProductEntity'`. If you cannot make a class partial, `UseReflectionMapping()` from
+`Jaunty.Extensions.Reflection` is the deliberate opt-out.
 
 `[Table]` overrides the table name Jaunty infers from the class name. `[Column]` does the same
 for a property's column. `[Key]` marks the primary key, and
@@ -396,6 +403,9 @@ You've now touched every core building block: strict mapping, partial mapping, p
 writes, transactions, a custom mapper, attribute mapping, async, and streaming. From here:
 
 - Read the [`exercises.md`](exercises.md) in this folder to practice each of these on your own.
+  Exercise 6 is the one to do before you write your first join: a lambda `On` aliases both tables
+  after the parameter names you wrote, and an alias retires the table name, so a string condition
+  added afterwards has to use the alias. `ToSql()` shows which is which.
 - [Error Messages, Explained](error-messages.md) covers the messages you can reach from the code
   above, including the strict-mapping exception you triggered on purpose in Step 2.
 - The root `README.md` in the repository documents the full API surface, including bulk
