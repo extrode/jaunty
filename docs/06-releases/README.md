@@ -12,7 +12,8 @@ the market-analysis papers are held in the private work repository and are not p
 ## Commercial
 
 **Jaunty is free to use, including in commercial production. What is sold is support**, and
-its terms are available on request rather than published here.
+its terms are available on request rather than published here. To ask, open a
+[support enquiry](https://github.com/extrode/jaunty/issues/new?template=support-enquiry.yml).
 
 - [`order-form-template.md`](order-form-template.md) - Order form template
 - [`continuity-rider-template.md`](continuity-rider-template.md) - Escrow and continuity rider

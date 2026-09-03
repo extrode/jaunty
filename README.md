@@ -57,6 +57,7 @@ typed expressions, and the core never depends on it.
 - [Comparison](#comparison)
 - [Documentation](#documentation)
 - [License](#license)
+- [Support](#support)
 
 ---
 
@@ -869,3 +870,19 @@ is sold is support. Two documents apply:
 
 This is not an open-source license. Jaunty is free to use, including in commercial
 production; what is sold is support, and its terms are available on request.
+
+---
+
+## Support
+
+You do not need an agreement to use Jaunty, in production or anywhere else. Support is
+what is sold: a response-time commitment, direct access to the author, and an escrow and
+continuity rider where one is wanted. Terms and figures are sent on request rather than
+published here.
+
+To ask, open a [support enquiry](https://github.com/extrode/jaunty/issues/new?template=support-enquiry.yml). The issue is
+public, so it asks for no confidential detail — the reply moves to a private channel
+before any terms are exchanged.
+
+Bugs and usage questions are ordinary issues and are answered without an agreement. A
+security report goes through [SECURITY.md](SECURITY.md) and never through an issue.
