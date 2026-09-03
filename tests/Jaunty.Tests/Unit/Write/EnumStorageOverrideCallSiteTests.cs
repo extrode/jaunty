@@ -21,8 +21,8 @@ namespace Jaunty.Tests.Unit.Write;
 /// These pin the mechanism and the call-site shape. They do not execute the multi-row path itself:
 /// it is unreachable without a live SQL Server / PostgreSQL / MySQL <em>and</em> source-generated
 /// metadata, and the only suite with the generator (Jaunty.SourceGenerator.Tests) is SQLite-only,
-/// which BulkInsert explicitly excludes from the multi-row path. That gap is noted in
-/// <c>work/todo.md</c>.
+/// which BulkInsert explicitly excludes from the multi-row path. That gap is noted on the
+/// maintainers' backlog.
 /// </para>
 /// </summary>
 public class EnumStorageOverrideCallSiteTests

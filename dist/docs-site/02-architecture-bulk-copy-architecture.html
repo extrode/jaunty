@@ -11,12 +11,40 @@
    the page flash the wrong theme on every navigation. */
 (function () {
   var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
   try {
-    var t = localStorage.getItem('dg-theme');
-    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
-    var s = parseFloat(localStorage.getItem('dg-fs'));
-    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
-  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
 })();
 </script>
 </head>
@@ -28,10 +56,13 @@
     <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
     <div class="header-brand">
       <span class="brand-name">jaunty</span>
-      <span class="brand-crumb">Bulk Copy Architecture</span>
+      <span class="brand-crumb">Architecture &#8250; Bulk Copy Architecture</span>
     </div>
     <div class="header-spacer"></div>
     <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
       <div class="fs-group" role="group" aria-label="Text size">
         <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
         <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
@@ -58,82 +89,83 @@
         <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">Overview</span>
+    <span class="nav-group-label">General</span>
   </div>
-  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  <a href="jaunty-torture-test-gaps-log.html">Jaunty Torture Test — Gaps Log</a>  <a href="jaunty-torture-test-handoff.html">Jaunty Multi-DB Torture Test — Claude Code Handoff</a>  <a href="jaunty-torture-test-lessons-learned.html">Jaunty Torture Test — Lessons Learned</a>  <a href="jaunty-torture-test-results.html">Jaunty Torture Test — Results Matrix</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quick-start</span>
+    <span class="nav-group-label">Quick start</span>
   </div>
-  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">api-reference</span>
+    <span class="nav-group-label">Api reference</span>
   </div>
-  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">architecture</span>
+    <span class="nav-group-label">Architecture</span>
   </div>
-  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html" class="active" aria-current="page">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">Architecture Documentation</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">Architecture Decision Records (ADRs)</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html" class="active" aria-current="page">Bulk Copy Architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">development</span>
+    <span class="nav-group-label">Development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">extensions</span>
+    <span class="nav-group-label">Extensions</span>
   </div>
-  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quality</span>
+    <span class="nav-group-label">Quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">Quality &amp; Testing</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive Project Audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / Benchmark Results — 2026-07-04 (PRD-002 partial)</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / Coverage Gap Inventory — 2026-07-04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / Jaunty Production Readiness Report (2026-07-02)</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmark Results — 2026-07-29 (pre-GA regression check)</a>  <a href="05-quality-reports-benchmarks-2026-09-02.html">Reports / Benchmark Results — 2026-09-02 (corrected baseline, read-path changes)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">releases</span>
+    <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">Releases &amp; Planning</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">Selling and Distributing Jaunty — The Complete Flow</a>  <a href="06-releases-RELEASE-RUNBOOK.html">Release Runbook</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-order-form-template.html">Order Form (Template)</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / Commercial Tasklist (Archived)</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / Enterprise Readiness Pass — 2026-07-04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / Production Readiness Tasklist</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Test Reorganization Plan — Dialect Attribute Architecture</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">design</span>
+    <span class="nav-group-label">Design</span>
   </div>
-  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">07-design — Visual Design Source</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">learn</span>
+    <span class="nav-group-label">Learn</span>
   </div>
-  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-README.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
 </div>
 
       </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
     </nav>
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#architecture-components">Architecture Components</a><a class="toc-l3" href="#core-interfaces">Core Interfaces</a><a class="toc-l3" href="#entity-adapter">Entity Adapter</a><a class="toc-l3" href="#configuration">Configuration</a><a class="toc-l3" href="#enums">Enums</a><a class="toc-l2" href="#database-specific-implementations">Database-Specific Implementations</a><a class="toc-l3" href="#sql-server">SQL Server</a><a class="toc-l3" href="#postgresql">PostgreSQL</a><a class="toc-l3" href="#mysql-mariadb">MySQL / MariaDB</a><a class="toc-l3" href="#sqlite">SQLite</a><a class="toc-l2" href="#integration-with-bulkinsert">Integration with BulkInsert</a><a class="toc-l2" href="#performance-characteristics">Performance Characteristics</a><a class="toc-l3" href="#when-native-bulk-copy-is-used">When Native Bulk Copy Is Used</a><a class="toc-l3" href="#expected-performance-gains">Expected Performance Gains</a><a class="toc-l2" href="#error-handling">Error Handling</a><a class="toc-l3" href="#transaction-rollback">Transaction Rollback</a><a class="toc-l3" href="#provider-specific-errors">Provider-Specific Errors</a><a class="toc-l2" href="#nativeaot-compatibility">NativeAOT Compatibility</a><a class="toc-l3" href="#current-status">Current Status</a><a class="toc-l3" href="#future-enhancement">Future Enhancement</a><a class="toc-l2" href="#testing-strategy">Testing Strategy</a><a class="toc-l3" href="#unit-tests">Unit Tests</a><a class="toc-l3" href="#integration-tests">Integration Tests</a><a class="toc-l3" href="#performance-tests">Performance Tests</a><a class="toc-l2" href="#extensibility">Extensibility</a><a class="toc-l3" href="#adding-new-providers">Adding New Providers</a><a class="toc-l3" href="#example-oracle-provider">Example: Oracle Provider</a><a class="toc-l2" href="#configuration-examples">Configuration Examples</a><a class="toc-l3" href="#application-startup">Application Startup</a><a class="toc-l3" href="#per-operation-override">Per-Operation Override</a><a class="toc-l2" href="#limitations">Limitations</a><a class="toc-l2" href="#future-enhancements">Future Enhancements</a><a class="toc-l2" href="#references">References</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#architecture-components">Architecture Components</a><a class="toc-l3" href="#core-interfaces">Core Interfaces</a><a class="toc-l3" href="#entity-adapter">Entity Adapter</a><a class="toc-l3" href="#configuration">Configuration</a><a class="toc-l3" href="#enums">Enums</a><a class="toc-l2" href="#database-specific-implementations">Database-Specific Implementations</a><a class="toc-l3" href="#sql-server">SQL Server</a><a class="toc-l3" href="#postgresql">PostgreSQL</a><a class="toc-l3" href="#mysql--mariadb">MySQL / MariaDB</a><a class="toc-l3" href="#sqlite">SQLite</a><a class="toc-l2" href="#integration-with-bulkinsert">Integration with BulkInsert</a><a class="toc-l2" href="#performance-characteristics">Performance Characteristics</a><a class="toc-l3" href="#when-native-bulk-copy-is-used">When Native Bulk Copy Is Used</a><a class="toc-l3" href="#expected-performance-gains">Expected Performance Gains</a><a class="toc-l2" href="#error-handling">Error Handling</a><a class="toc-l3" href="#transaction-rollback">Transaction Rollback</a><a class="toc-l3" href="#provider-specific-errors">Provider-Specific Errors</a><a class="toc-l2" href="#nativeaot-compatibility">NativeAOT Compatibility</a><a class="toc-l3" href="#current-status">Current Status</a><a class="toc-l3" href="#future-enhancement">Future Enhancement</a><a class="toc-l2" href="#testing-strategy">Testing Strategy</a><a class="toc-l3" href="#unit-tests">Unit Tests</a><a class="toc-l3" href="#integration-tests">Integration Tests</a><a class="toc-l3" href="#performance-tests">Performance Tests</a><a class="toc-l2" href="#extensibility">Extensibility</a><a class="toc-l3" href="#adding-new-providers">Adding New Providers</a><a class="toc-l3" href="#example-oracle-provider">Example: Oracle Provider</a><a class="toc-l2" href="#configuration-examples">Configuration Examples</a><a class="toc-l3" href="#application-startup">Application Startup</a><a class="toc-l3" href="#per-operation-override">Per-Operation Override</a><a class="toc-l2" href="#limitations">Limitations</a><a class="toc-l2" href="#future-enhancements">Future Enhancements</a><a class="toc-l2" href="#references">References</a></nav>
       <div class="content-inner">
-        <nav class="breadcrumb" aria-label="Breadcrumb">Bulk Copy Architecture</nav>
+        <nav class="breadcrumb" aria-label="Breadcrumb">Architecture &#8250; Bulk Copy Architecture</nav>
         <article>
 <h1 id="bulk-copy-architecture">Bulk Copy Architecture</h1>
 <h2 id="overview">Overview</h2>
@@ -150,13 +182,13 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">interface</span> IBulkCopyProvider
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">interface</span> <span class="tok-type">IBulkCopyProvider</span>
 {
-    bool IsSupported { <span class="tok-kw">get</span>; }
-    int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options);
-    ValueTask&lt;int&gt; CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken);
+    <span class="tok-kw">bool</span> <span class="tok-type">IsSupported</span> { <span class="tok-kw">get</span>; }
+    <span class="tok-kw">int</span> <span class="tok-fn">CopyToServer</span>(<span class="tok-type">IDbConnection</span> connection, <span class="tok-kw">string</span> tableName, <span class="tok-type">IDataReader</span> data, <span class="tok-type">BulkCopyOptions</span> options);
+    <span class="tok-type">ValueTask</span>&lt;<span class="tok-kw">int</span>&gt; <span class="tok-fn">CopyToServerAsync</span>(<span class="tok-type">DbConnection</span> connection, <span class="tok-kw">string</span> tableName, <span class="tok-type">IDataReader</span> data, <span class="tok-type">BulkCopyOptions</span> options, <span class="tok-type">CancellationToken</span> cancellationToken);
 }
 </code></pre>
 </div>
@@ -173,9 +205,9 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> EntityDataReader&lt;T&gt; : IDataReader
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> <span class="tok-type">EntityDataReader</span>&lt;<span class="tok-type">T</span>&gt; : <span class="tok-type">IDataReader</span>
 </code></pre>
 </div>
 <p><strong>Purpose</strong>: Adapts <code>IEnumerable&lt;T&gt;</code> to <code>IDataReader</code> for bulk copy APIs.</p>
@@ -192,18 +224,18 @@ Getters are initialized once per type using double-check locking pattern:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> EntityDataReaderCache&lt;TEntity&gt; <span class="tok-kw">where</span> TEntity : <span class="tok-kw">new</span>()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> <span class="tok-type">EntityDataReaderCache</span>&lt;<span class="tok-type">TEntity</span>&gt; <span class="tok-kw">where</span> <span class="tok-type">TEntity</span> : <span class="tok-kw">new</span>()
 {
-    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> Initialize(ColumnMetadata[] columns)
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">Initialize</span>(<span class="tok-type">ColumnMetadata</span>[] columns)
     {
-        <span class="tok-kw">if</span> (_getters <span class="tok-kw">is</span> <span class="tok-kw">null</span>)
+        <span class="tok-ctl">if</span> (_getters <span class="tok-kw">is</span> <span class="tok-kw">null</span>)
         {
-            lock (columns)
+            <span class="tok-kw">lock</span> (columns)
             {
-                <span class="tok-kw">if</span> (_getters <span class="tok-kw">is</span> <span class="tok-kw">null</span>)
-                    _getters = BuildGetters(columns);
+                <span class="tok-ctl">if</span> (_getters <span class="tok-kw">is</span> <span class="tok-kw">null</span>)
+                    _getters = <span class="tok-fn">BuildGetters</span>(columns);
             }
         }
     }
@@ -214,11 +246,11 @@ Getters are initialized once per type using double-check locking pattern:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entities = GetEntities();
-<span class="tok-kw">var</span> metadata = MetadataCache&lt;T&gt;.Metadata;
-<span class="tok-kw">var</span> reader = <span class="tok-kw">new</span> EntityDataReader&lt;T&gt;(entities, metadata);
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entities = <span class="tok-fn">GetEntities</span>();
+<span class="tok-kw">var</span> metadata = <span class="tok-type">MetadataCache</span>&lt;<span class="tok-type">T</span>&gt;.<span class="tok-var">Metadata</span>;
+<span class="tok-kw">var</span> reader = <span class="tok-kw">new</span> <span class="tok-type">EntityDataReader</span>&lt;<span class="tok-type">T</span>&gt;(entities, metadata);
 <span class="tok-com">// Pass reader to bulk copy provider</span>
 </code></pre>
 </div>
@@ -227,16 +259,16 @@ Getters are initialized once per type using double-check locking pattern:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> BulkCopyConfiguration
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> <span class="tok-type">BulkCopyConfiguration</span>
 {
-    <span class="tok-kw">public</span> <span class="tok-kw">static</span> int DefaultBatchSize { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">10000</span>;
-    <span class="tok-kw">public</span> <span class="tok-kw">static</span> int DefaultTimeout { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">30</span>;
-    <span class="tok-kw">public</span> <span class="tok-kw">static</span> BulkCopyIdentityMode DefaultIdentityMode { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
-    <span class="tok-kw">public</span> <span class="tok-kw">static</span> bool DefaultCheckConstraints { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">false</span>;
-    <span class="tok-kw">public</span> <span class="tok-kw">static</span> int MinimumRowsForNativeBulkCopy { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">100</span>;
-    <span class="tok-kw">public</span> <span class="tok-kw">static</span> bool EnableNativeBulkCopy { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">true</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">int</span> <span class="tok-type">DefaultBatchSize</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">10000</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">int</span> <span class="tok-type">DefaultTimeout</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">30</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">BulkCopyIdentityMode</span> <span class="tok-type">DefaultIdentityMode</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">bool</span> <span class="tok-type">DefaultCheckConstraints</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">false</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">int</span> <span class="tok-type">MinimumRowsForNativeBulkCopy</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">100</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">bool</span> <span class="tok-type">EnableNativeBulkCopy</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">true</span>;
 }
 </code></pre>
 </div>
@@ -246,17 +278,17 @@ Getters are initialized once per type using double-check locking pattern:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> BulkCopyOptions
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> <span class="tok-type">BulkCopyOptions</span>
 {
-    <span class="tok-kw">public</span> int BatchSize { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">10000</span>;
-    <span class="tok-kw">public</span> int Timeout { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">30</span>;
-    <span class="tok-kw">public</span> BulkCopyIdentityMode IdentityMode { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
-    <span class="tok-kw">public</span> bool CheckConstraints { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
-    <span class="tok-kw">public</span> TableLockOption TableLock { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
-    <span class="tok-kw">public</span> bool EnableStreaming { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">true</span>;
-    <span class="tok-kw">public</span> IDbTransaction? Transaction { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> <span class="tok-kw">int</span> <span class="tok-type">BatchSize</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">10000</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">int</span> <span class="tok-type">Timeout</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">30</span>;
+    <span class="tok-kw">public</span> <span class="tok-type">BulkCopyIdentityMode</span> <span class="tok-type">IdentityMode</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> <span class="tok-kw">bool</span> <span class="tok-type">CheckConstraints</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> <span class="tok-type">TableLockOption</span> <span class="tok-type">TableLock</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> <span class="tok-kw">bool</span> <span class="tok-type">EnableStreaming</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">true</span>;
+    <span class="tok-kw">public</span> <span class="tok-type">IDbTransaction</span>? <span class="tok-type">Transaction</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
 }
 </code></pre>
 </div>
@@ -324,11 +356,11 @@ Getters are initialized once per type using double-check locking pattern:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Dynamically load from Microsoft.Data.SqlClient or System.Data.SqlClient</span>
-<span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> Type? SqlBulkCopyType = Type.GetType(&quot;Microsoft.Data.SqlClient.SqlBulkCopy, Microsoft.Data.SqlClient&quot;)
-    ?? Type.GetType(&quot;System.Data.SqlClient.SqlBulkCopy, System.Data&quot;);
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> <span class="tok-type">Type</span>? <span class="tok-type">SqlBulkCopyType</span> = <span class="tok-type">Type</span>.<span class="tok-fn">GetType</span>(<span class="tok-str">&quot;Microsoft.Data.SqlClient.SqlBulkCopy, Microsoft.Data.SqlClient&quot;</span>)
+    ?? <span class="tok-type">Type</span>.<span class="tok-fn">GetType</span>(<span class="tok-str">&quot;System.Data.SqlClient.SqlBulkCopy, System.Data&quot;</span>);
 </code></pre>
 </div>
 <p><strong>Performance</strong>: 10-100x faster than INSERT for 10K+ rows</p>
@@ -345,13 +377,13 @@ Getters are initialized once per type using double-check locking pattern:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">SQL</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="sql"><code class="language-sql">COPY table_name (col1, col2, ...) <span class="tok-kw">FROM</span> STDIN BINARY
 </code></pre>
 </div>
 <p><strong>Performance</strong>: 15-25x faster than INSERT for 10K+ rows</p>
-<h3 id="mysql-mariadb">MySQL / MariaDB</h3>
+<h3 id="mysql--mariadb">MySQL / MariaDB</h3>
 <p><strong>Provider</strong>: <code>MySqlBulkCopyProvider</code></p>
 <p><strong>Technology</strong>: Chunked multi-row parameterized INSERT
 (2,000-parameter budget per statement, chunk size adapts to column count)</p>
@@ -381,25 +413,25 @@ parameter binding is quadratic in Microsoft.Data.Sqlite.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> int BulkInsertCore&lt;T&gt;(...)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">int</span> <span class="tok-fn">BulkInsertCore</span>&lt;<span class="tok-type">T</span>&gt;(...)
 {
     <span class="tok-com">// ... validation ...</span>
     
-    ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+    <span class="tok-type">ISqlDialect</span> dialect = <span class="tok-type">SqlDialectFactory</span>.<span class="tok-fn">GetDialect</span>(connection);
     
     <span class="tok-com">// Use native bulk copy if:</span>
     <span class="tok-com">// 1. Provider supports it</span>
     <span class="tok-com">// 2. Enabled in configuration</span>
     <span class="tok-com">// 3. Row count &gt;= threshold</span>
-    <span class="tok-kw">if</span> (dialect.SupportsNativeBulkCopy &amp;&amp; 
-        BulkCopyConfiguration.EnableNativeBulkCopy &amp;&amp;
-        entityList.Count &gt;= BulkCopyConfiguration.MinimumRowsForNativeBulkCopy)
+    <span class="tok-ctl">if</span> (dialect.<span class="tok-var">SupportsNativeBulkCopy</span> &amp;&amp; 
+        <span class="tok-type">BulkCopyConfiguration</span>.<span class="tok-var">EnableNativeBulkCopy</span> &amp;&amp;
+        entityList.<span class="tok-var">Count</span> &gt;= <span class="tok-type">BulkCopyConfiguration</span>.<span class="tok-var">MinimumRowsForNativeBulkCopy</span>)
     {
-        <span class="tok-kw">var</span> bulkProvider = dialect.CreateBulkCopyProvider();
-        <span class="tok-kw">var</span> dataReader = <span class="tok-kw">new</span> EntityDataReader&lt;T&gt;(entityList, cached.Metadata);
-        <span class="tok-kw">return</span> bulkProvider.CopyToServer(connection, tableName, dataReader, options);
+        <span class="tok-kw">var</span> bulkProvider = dialect.<span class="tok-fn">CreateBulkCopyProvider</span>();
+        <span class="tok-kw">var</span> dataReader = <span class="tok-kw">new</span> <span class="tok-type">EntityDataReader</span>&lt;<span class="tok-type">T</span>&gt;(entityList, cached.<span class="tok-var">Metadata</span>);
+        <span class="tok-ctl">return</span> bulkProvider.<span class="tok-fn">CopyToServer</span>(connection, tableName, dataReader, options);
     }
     
     <span class="tok-com">// Fallback to existing multi-row/loop logic</span>
@@ -479,18 +511,18 @@ parameter binding is quadratic in Microsoft.Data.Sqlite.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
-<span class="tok-kw">try</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.<span class="tok-fn">BeginTransaction</span>();
+<span class="tok-ctl">try</span>
 {
-    connection.BulkInsert(entities, CommandOptions.WithTransaction(transaction));
-    transaction.Commit();
+    connection.<span class="tok-fn">BulkInsert</span>(entities, <span class="tok-type">CommandOptions</span>.<span class="tok-fn">WithTransaction</span>(transaction));
+    transaction.<span class="tok-fn">Commit</span>();
 }
-<span class="tok-kw">catch</span>
+<span class="tok-ctl">catch</span>
 {
-    transaction.Rollback();
-    <span class="tok-kw">throw</span>;
+    transaction.<span class="tok-fn">Rollback</span>();
+    <span class="tok-ctl">throw</span>;
 }
 </code></pre>
 </div>
@@ -558,13 +590,13 @@ Requires reflection permissions (not fully NativeAOT-safe)</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> OracleBulkCopyProvider : IBulkCopyProvider
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> <span class="tok-type">OracleBulkCopyProvider</span> : <span class="tok-type">IBulkCopyProvider</span>
 {
-    <span class="tok-kw">public</span> bool IsSupported =&gt; OracleBulkCopyType != <span class="tok-kw">null</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">bool</span> <span class="tok-type">IsSupported</span> =&gt; <span class="tok-type">OracleBulkCopyType</span> != <span class="tok-kw">null</span>;
     
-    <span class="tok-kw">public</span> int CopyToServer(...)
+    <span class="tok-kw">public</span> <span class="tok-kw">int</span> <span class="tok-fn">CopyToServer</span>(...)
     {
         <span class="tok-com">// Use OracleBulkCopy via reflection</span>
     }
@@ -576,33 +608,33 @@ Requires reflection permissions (not fully NativeAOT-safe)</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// In Program.cs or Startup.cs</span>
-BulkCopyConfiguration.DefaultBatchSize = <span class="tok-num">5000</span>;
-BulkCopyConfiguration.DefaultTimeout = <span class="tok-num">60</span>;
-BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = <span class="tok-num">50</span>; <span class="tok-com">// Use native for 50+ rows</span>
-BulkCopyConfiguration.EnableNativeBulkCopy = <span class="tok-kw">true</span>;
+<span class="tok-type">BulkCopyConfiguration</span>.<span class="tok-var">DefaultBatchSize</span> = <span class="tok-num">5000</span>;
+<span class="tok-type">BulkCopyConfiguration</span>.<span class="tok-var">DefaultTimeout</span> = <span class="tok-num">60</span>;
+<span class="tok-type">BulkCopyConfiguration</span>.<span class="tok-var">MinimumRowsForNativeBulkCopy</span> = <span class="tok-num">50</span>; <span class="tok-com">// Use native for 50+ rows</span>
+<span class="tok-type">BulkCopyConfiguration</span>.<span class="tok-var">EnableNativeBulkCopy</span> = <span class="tok-kw">true</span>;
 </code></pre>
 </div>
 <h3 id="per-operation-override">Per-Operation Override</h3>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> options = <span class="tok-kw">new</span> BulkCopyOptions
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> options = <span class="tok-kw">new</span> <span class="tok-type">BulkCopyOptions</span>
 {
-    BatchSize = <span class="tok-num">1000</span>,
-    Timeout = <span class="tok-num">120</span>,
-    IdentityMode = BulkCopyIdentityMode.KeepIdentity,
-    TableLock = TableLockOption.BulkLock,
-    Transaction = transaction
+    <span class="tok-type">BatchSize</span> = <span class="tok-num">1000</span>,
+    <span class="tok-type">Timeout</span> = <span class="tok-num">120</span>,
+    <span class="tok-type">IdentityMode</span> = <span class="tok-type">BulkCopyIdentityMode</span>.<span class="tok-var">KeepIdentity</span>,
+    <span class="tok-type">TableLock</span> = <span class="tok-type">TableLockOption</span>.<span class="tok-var">BulkLock</span>,
+    <span class="tok-type">Transaction</span> = transaction
 };
 
 <span class="tok-com">// Use options with bulk copy provider directly</span>
-<span class="tok-kw">var</span> provider = dialect.CreateBulkCopyProvider();
-provider.CopyToServer(connection, &quot;MyTable&quot;, reader, options);
+<span class="tok-kw">var</span> provider = dialect.<span class="tok-fn">CreateBulkCopyProvider</span>();
+provider.<span class="tok-fn">CopyToServer</span>(connection, <span class="tok-str">&quot;MyTable&quot;</span>, reader, options);
 </code></pre>
 </div>
 <h2 id="limitations">Limitations</h2>
@@ -635,7 +667,7 @@ provider.CopyToServer(connection, &quot;MyTable&quot;, reader, options);
         <div class="page-nav" id="page-nav">
           <div class="prev-next"><a class="pn-prev" href="02-architecture-architecture-visuals.html">
   <span class="pn-label">&#8592; prev</span>
-  <span class="pn-title">Architecture visuals</span>
+  <span class="pn-title">Architecture Visual Guide</span>
 </a><a class="pn-next" href="02-architecture-dependencies.html">
   <span class="pn-label">next &#8594;</span>
   <span class="pn-title">Dependencies</span>
@@ -648,7 +680,40 @@ provider.CopyToServer(connection, &quot;MyTable&quot;, reader, options);
   <!-- ===== status bar ===== -->
   <footer class="jt-statusbar">
     <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
   </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
 </div>
 <script src="nav.js"></script>
 </body>

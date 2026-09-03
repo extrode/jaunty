@@ -54,9 +54,9 @@ flowchart LR
 ```
 
 Every `runs-on` except the mutation job is `${{ vars.CI_RUNNER || 'ubuntu-latest' }}`. The
-variable is an escape hatch: set `CI_RUNNER` and everything moves without a commit. It currently
-resolves to the WSL2 self-hosted runner, which is **why deleting it is a prerequisite for making
-the repository public** — a self-hosted runner on a public repo executes fork-PR code on the
+variable is an escape hatch: set `CI_RUNNER` and everything moves without a commit. It is unset on
+the public repository, so every job resolves to `ubuntu-latest`. It was deleted before the
+repository went public because a self-hosted runner on a public repo executes fork-PR code on the
 owner's hardware.
 
 ---
@@ -168,6 +168,13 @@ Blacksmith documents no maximum job duration. Three numbers there only make sens
 | `timeout-minutes` | `240` | GitHub's **default is 360 and applies to every runner**, Blacksmith included, so "no maximum duration" upstream is not by itself a bound |
 | `--concurrency` | `16` | Blacksmith runners report the **host** CPU count, not the allocated vCPUs, so Stryker cannot size itself — the number must be passed and must move with the tier |
 
+**The tier is off until a runner answers to that label.** `runs-on` is a fallback expression, and a
+`runs-on` naming a label nothing carries does not fail the run — it queues, indefinitely, with no
+error and no badge. Both Mutate jobs sat queued through a whole nightly that way. So the job's
+`if:` additionally requires `vars.CI_MUTATION_ENABLED == 'true'`, which turns "pending forever" into
+a visible skip; set that variable once Blacksmith is installed on the org, or set
+`CI_MUTATION_RUNNER` alongside it to point the tier somewhere else.
+
 Blacksmith's 3,000 free minutes are **2vCPU-minutes consumed proportionally**: a 16 vCPU run bills
 at 8× wall clock, so one weekly jaunty run is roughly 2,400 a month — most of the org allowance,
 which is shared with jauntyq. Anything else moving to Blacksmith needs that arithmetic redone
@@ -203,7 +210,7 @@ suite must be added to that filter by hand.**
 
 | Item | Owner action | Blocks |
 |---|---|---|
-| `gh variable delete CI_RUNNER --repo extrode/jaunty` | one command; workflows already fall back to `ubuntu-latest` | **the public flip** — self-hosted runner + public repo is arbitrary fork-PR execution |
+| Delete `CI_RUNNER` | done before the public release; every job resolves to `ubuntu-latest` | — |
 | First real Blacksmith mutation run | `gh workflow run nightly.yml` | replacing the extrapolated 70-90 min estimate with an observed duration and cost |
 | `ci.yml` least-privilege review | done — `contents: read` is in place | — |
 

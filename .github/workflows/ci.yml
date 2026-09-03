@@ -170,7 +170,7 @@ jobs:
       # Named projects, not a solution-wide run: every test project needs its own step
       # here or it never executes in CI. Jaunty.Fluent.SourceGen.Tests and
       # Jaunty.Scaffolding.Cli.Tests had no step and ran nowhere until 2026-08-01.
-      # tests/Jaunty.Tests/Unit/SolutionLayoutTests.cs guards the solution file; this
+      # tests/Jaunty.UnitTests/Unit/SolutionLayoutTests.cs guards the solution file; this
       # list is the second half of the same contract and has to be extended by hand.
       - name: Test - Fluent source-gen (no reflection package reference)
         run: >-

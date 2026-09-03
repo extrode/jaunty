@@ -27,28 +27,28 @@ This document provides a comprehensive summary of all public APIs available in J
 ### Scalar Query Operations
 - `QueryScalar<T>(string sql)` - Get scalar value
 - `QueryScalar<T>(string sql, object parameters)` - Get scalar value from parameterized query
-- `QueryScalar<T>(string sql, CommandOptions options)` - Get scalar value with options
-- `QueryScalar<T>(string sql, object parameters, CommandOptions options)` - Get scalar value from parameterized query with options
+- `QueryScalar<T>(string sql, CommandOptions<T> options)` - Get scalar value with options
+- `QueryScalar<T>(string sql, object parameters, CommandOptions<T> options)` - Get scalar value from parameterized query with options
 
 ## Async Query Methods
 
 ### Async Basic Query Operations
-- `Task<List<T>> QueryAsync<T>(string sql, CancellationToken cancellationToken = default)`
-- `Task<List<T>> QueryAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default)`
-- `Task<List<T>> QueryAsync<T>(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)`
-- `Task<List<T>> QueryAsync<T>(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)`
+- `ValueTask<List<T>> QueryAsync<T>(string sql, CancellationToken cancellationToken = default)`
+- `ValueTask<List<T>> QueryAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default)`
+- `ValueTask<List<T>> QueryAsync<T>(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)`
+- `ValueTask<List<T>> QueryAsync<T>(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)`
 
 ### Async Single Result Operations
-- `Task<T> QueryFirstAsync<T>(string sql, CancellationToken cancellationToken = default)`
-- `Task<T?> QueryFirstOrDefaultAsync<T>(string sql, CancellationToken cancellationToken = default)`
-- `Task<T> QuerySingleAsync<T>(string sql, CancellationToken cancellationToken = default)`
-- `Task<T?> QuerySingleOrDefaultAsync<T>(string sql, CancellationToken cancellationToken = default)`
+- `ValueTask<T> QueryFirstAsync<T>(string sql, CancellationToken cancellationToken = default)`
+- `ValueTask<T?> QueryFirstOrDefaultAsync<T>(string sql, CancellationToken cancellationToken = default)`
+- `ValueTask<T> QuerySingleAsync<T>(string sql, CancellationToken cancellationToken = default)`
+- `ValueTask<T?> QuerySingleOrDefaultAsync<T>(string sql, CancellationToken cancellationToken = default)`
 
 ### Async Scalar Operations
-- `Task<T> QueryScalarAsync<T>(string sql, CancellationToken cancellationToken = default)`
-- `Task<T> QueryScalarAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default)`
-- `Task<T> QueryScalarAsync<T>(string sql, CommandOptions options, CancellationToken cancellationToken = default)`
-- `Task<T> QueryScalarAsync<T>(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)`
+- `ValueTask<T> QueryScalarAsync<T>(string sql, CancellationToken cancellationToken = default)`
+- `ValueTask<T> QueryScalarAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default)`
+- `ValueTask<T> QueryScalarAsync<T>(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)`
+- `ValueTask<T> QueryScalarAsync<T>(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)`
 
 ## Streaming Methods
 
@@ -78,40 +78,40 @@ This document provides a comprehensive summary of all public APIs available in J
 - `GridReader QueryMultiple(string sql, object parameters, CommandOptions options)` - Execute multiple parameterized result sets with options
 
 ### Async QueryMultiple
-- `Task<GridReader> QueryMultipleAsync(string sql, CancellationToken cancellationToken = default)` - Async multiple result sets
-- `Task<GridReader> QueryMultipleAsync(string sql, object parameters, CancellationToken cancellationToken = default)` - Async multiple parameterized result sets
-- `Task<GridReader> QueryMultipleAsync(string sql, CommandOptions options, CancellationToken cancellationToken = default)` - Async multiple result sets with options
-- `Task<GridReader> QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)` - Async multiple parameterized result sets with options
+- `ValueTask<GridReader> QueryMultipleAsync(string sql, CancellationToken cancellationToken = default)` - Async multiple result sets
+- `ValueTask<GridReader> QueryMultipleAsync(string sql, object parameters, CancellationToken cancellationToken = default)` - Async multiple parameterized result sets
+- `ValueTask<GridReader> QueryMultipleAsync(string sql, CommandOptions options, CancellationToken cancellationToken = default)` - Async multiple result sets with options
+- `ValueTask<GridReader> QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)` - Async multiple parameterized result sets with options
 
 ## CRUD Operations
 
 ### Insert Operations
 - `long Insert<T>(T entity)` - Insert entity and return identity
 - `long Insert<T>(T entity, CommandOptions options)` - Insert entity with options and return identity
-- `Task<long> InsertAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async insert entity and return identity
-- `Task<long> InsertAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async insert entity with options and return identity
+- `ValueTask<long> InsertAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async insert entity and return identity
+- `ValueTask<long> InsertAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async insert entity with options and return identity
 
 ### Update Operations
 - `int Update<T>(T entity)` - Update entity
 - `int Update<T>(T entity, CommandOptions options)` - Update entity with options
-- `Task<int> UpdateAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async update entity
-- `Task<int> UpdateAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async update entity with options
+- `ValueTask<int> UpdateAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async update entity
+- `ValueTask<int> UpdateAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async update entity with options
 
 ### Delete Operations
 - `int Delete<T>(T entity)` - Delete entity by primary key
 - `int Delete<T>(T entity, CommandOptions options)` - Delete entity with options
 - `int Delete<T>(object id)` - Delete entity by ID
 - `int Delete<T>(object id, CommandOptions options)` - Delete entity by ID with options
-- `Task<int> DeleteAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async delete entity
-- `Task<int> DeleteAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async delete entity with options
-- `Task<int> DeleteAsync<T>(object id, CancellationToken cancellationToken = default)` - Async delete entity by ID
-- `Task<int> DeleteAsync<T>(object id, CommandOptions options, CancellationToken cancellationToken = default)` - Async delete entity by ID with options
+- `ValueTask<int> DeleteAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async delete entity
+- `ValueTask<int> DeleteAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async delete entity with options
+- `ValueTask<int> DeleteAsync<T>(object id, CancellationToken cancellationToken = default)` - Async delete entity by ID
+- `ValueTask<int> DeleteAsync<T>(object id, CommandOptions options, CancellationToken cancellationToken = default)` - Async delete entity by ID with options
 
 ### Upsert Operations
 - `int Upsert<T>(T entity)` - Insert or update entity by key
 - `int Upsert<T>(T entity, CommandOptions options)` - Insert or update entity with options
-- `Task<int> UpsertAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async insert or update entity
-- `Task<int> UpsertAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async insert or update entity with options
+- `ValueTask<int> UpsertAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async insert or update entity
+- `ValueTask<int> UpsertAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async insert or update entity with options
 
 Upsert return values are provider-specific "rows affected" semantics:
 - SQL Server and PostgreSQL typically return `1` for a successful insert or update.
@@ -164,13 +164,13 @@ See [Multi-Entity Mapping](multi-entity-mapping.md) for full details.
 - `int ExecuteStoredProcedureNonQuery(string procedureName, object? parameters, CommandOptions options)` - Execute parameterized stored procedure with options that doesn't return results
 
 ### Async Stored Procedure Methods
-- `Task<List<T>> ExecuteStoredProcedureAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async stored procedure execution
-- `Task<T> ExecuteStoredProcedureFirstAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async first result from stored procedure
-- `Task<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async first result or default from stored procedure
-- `Task<T> ExecuteStoredProcedureSingleAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async single result from stored procedure
-- `Task<T?> ExecuteStoredProcedureSingleOrDefaultAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async single result or default from stored procedure
-- `Task<T> ExecuteStoredProcedureScalarAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async scalar from stored procedure
-- `Task<int> ExecuteStoredProcedureNonQueryAsync(string procedureName, CancellationToken cancellationToken = default)` - Async non-query stored procedure
+- `ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async stored procedure execution
+- `ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async first result from stored procedure
+- `ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async first result or default from stored procedure
+- `ValueTask<T> ExecuteStoredProcedureSingleAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async single result from stored procedure
+- `ValueTask<T?> ExecuteStoredProcedureSingleOrDefaultAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async single result or default from stored procedure
+- `ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(string procedureName, CancellationToken cancellationToken = default)` - Async scalar from stored procedure
+- `ValueTask<int> ExecuteStoredProcedureNonQueryAsync(string procedureName, CancellationToken cancellationToken = default)` - Async non-query stored procedure
 
 ### Stored Procedure Methods with SpParameters
 - Methods supporting input, output, and return parameters using the `SpParameters` class
@@ -186,8 +186,8 @@ See [Multi-Entity Mapping](multi-entity-mapping.md) for full details.
 - `IJoinClause<T, TJoin> InnerJoin<TJoin>()` - Add INNER JOIN
 - `IJoinClause<T, TJoin> LeftJoin<TJoin>()` - Add LEFT JOIN
 - `IDistinctClause<T> Distinct()` - Add DISTINCT
-- `IFromClause<T> Take(int count)` - Add LIMIT/TOP
-- `IFromClause<T> Skip(int count)` - Add OFFSET
+- `IPagedClause<T> Take(int count)` - Add LIMIT/TOP
+- `IPagedClause<T> Skip(int count)` - Add OFFSET
 
 ### Fluent Terminal Operations
 - `List<T> Select()` - Execute query and return all results

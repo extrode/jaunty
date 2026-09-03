@@ -11,12 +11,40 @@
    the page flash the wrong theme on every navigation. */
 (function () {
   var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
   try {
-    var t = localStorage.getItem('dg-theme');
-    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
-    var s = parseFloat(localStorage.getItem('dg-fs'));
-    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
-  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
 })();
 </script>
 </head>
@@ -28,10 +56,13 @@
     <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
     <div class="header-brand">
       <span class="brand-name">jaunty</span>
-      <span class="brand-crumb">Configuration</span>
+      <span class="brand-crumb">Api reference &#8250; Configuration</span>
     </div>
     <div class="header-spacer"></div>
     <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
       <div class="fs-group" role="group" aria-label="Text size">
         <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
         <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
@@ -58,82 +89,83 @@
         <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">Overview</span>
+    <span class="nav-group-label">General</span>
   </div>
-  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  <a href="jaunty-torture-test-gaps-log.html">Jaunty Torture Test — Gaps Log</a>  <a href="jaunty-torture-test-handoff.html">Jaunty Multi-DB Torture Test — Claude Code Handoff</a>  <a href="jaunty-torture-test-lessons-learned.html">Jaunty Torture Test — Lessons Learned</a>  <a href="jaunty-torture-test-results.html">Jaunty Torture Test — Results Matrix</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quick-start</span>
+    <span class="nav-group-label">Quick start</span>
   </div>
-  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">api-reference</span>
+    <span class="nav-group-label">Api reference</span>
   </div>
-  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html" class="active" aria-current="page">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html" class="active" aria-current="page">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">architecture</span>
+    <span class="nav-group-label">Architecture</span>
   </div>
-  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">Architecture Documentation</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">Architecture Decision Records (ADRs)</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">development</span>
+    <span class="nav-group-label">Development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">extensions</span>
+    <span class="nav-group-label">Extensions</span>
   </div>
-  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quality</span>
+    <span class="nav-group-label">Quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">Quality &amp; Testing</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive Project Audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / Benchmark Results — 2026-07-04 (PRD-002 partial)</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / Coverage Gap Inventory — 2026-07-04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / Jaunty Production Readiness Report (2026-07-02)</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmark Results — 2026-07-29 (pre-GA regression check)</a>  <a href="05-quality-reports-benchmarks-2026-09-02.html">Reports / Benchmark Results — 2026-09-02 (corrected baseline, read-path changes)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">releases</span>
+    <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">Releases &amp; Planning</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">Selling and Distributing Jaunty — The Complete Flow</a>  <a href="06-releases-RELEASE-RUNBOOK.html">Release Runbook</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-order-form-template.html">Order Form (Template)</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / Commercial Tasklist (Archived)</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / Enterprise Readiness Pass — 2026-07-04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / Production Readiness Tasklist</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Test Reorganization Plan — Dialect Attribute Architecture</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">design</span>
+    <span class="nav-group-label">Design</span>
   </div>
-  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">07-design — Visual Design Source</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">learn</span>
+    <span class="nav-group-label">Learn</span>
   </div>
-  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-README.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
 </div>
 
       </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
     </nav>
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#jauntyconfig-class">JauntyConfig Class</a><a class="toc-l3" href="#schemanameresolver">SchemaNameResolver</a><a class="toc-l3" href="#tablenameresolver">TableNameResolver</a><a class="toc-l3" href="#columnnameresolver">ColumnNameResolver</a><a class="toc-l3" href="#reset">Reset()</a><a class="toc-l3" href="#defaultenumstorage">DefaultEnumStorage</a><a class="toc-l3" href="#registertypehandler">RegisterTypeHandler</a><a class="toc-l3" href="#removetypehandlert">RemoveTypeHandler&lt;T&gt;()</a><a class="toc-l2" href="#naming-conventions">Naming conventions</a><a class="toc-l2" href="#commandoptions-class">CommandOptions Class</a><a class="toc-l3" href="#constructor">Constructor</a><a class="toc-l3" href="#static-factory-methods">Static Factory Methods</a><a class="toc-l2" href="#non-generic-commandoptions">Non-Generic CommandOptions</a><a class="toc-l3" href="#constructor-1">Constructor</a><a class="toc-l3" href="#static-factory-methods-1">Static Factory Methods</a><a class="toc-l2" href="#configuration-priority">Configuration Priority</a><a class="toc-l2" href="#best-practices">Best Practices</a><a class="toc-l3" href="#set-configuration-at-startup">1. Set Configuration at Startup</a><a class="toc-l3" href="#use-attributes-for-specific-overrides">2. Use Attributes for Specific Overrides</a><a class="toc-l3" href="#consider-thread-safety">3. Consider Thread Safety</a><a class="toc-l3" href="#reset-configuration-for-tests">4. Reset Configuration for Tests</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#jauntyconfig-class">JauntyConfig Class</a><a class="toc-l3" href="#schemanameresolver">SchemaNameResolver</a><a class="toc-l3" href="#tablenameresolver">TableNameResolver</a><a class="toc-l3" href="#columnnameresolver">ColumnNameResolver</a><a class="toc-l3" href="#reset">Reset()</a><a class="toc-l3" href="#defaultenumstorage">DefaultEnumStorage</a><a class="toc-l3" href="#registertypehandler">RegisterTypeHandler</a><a class="toc-l3" href="#removetypehandlert">RemoveTypeHandler&lt;T&gt;()</a><a class="toc-l2" href="#naming-conventions">Naming conventions</a><a class="toc-l2" href="#commandoptions-class">CommandOptions Class</a><a class="toc-l3" href="#constructor">Constructor</a><a class="toc-l3" href="#static-factory-methods">Static Factory Methods</a><a class="toc-l2" href="#non-generic-commandoptions">Non-Generic CommandOptions</a><a class="toc-l3" href="#constructor-1">Constructor</a><a class="toc-l3" href="#static-factory-methods-1">Static Factory Methods</a><a class="toc-l2" href="#configuration-priority">Configuration Priority</a><a class="toc-l2" href="#best-practices">Best Practices</a><a class="toc-l3" href="#1-set-configuration-at-startup">1. Set Configuration at Startup</a><a class="toc-l3" href="#2-use-attributes-for-specific-overrides">2. Use Attributes for Specific Overrides</a><a class="toc-l3" href="#3-consider-thread-safety">3. Consider Thread Safety</a><a class="toc-l3" href="#4-reset-configuration-for-tests">4. Reset Configuration for Tests</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
       <div class="content-inner">
-        <nav class="breadcrumb" aria-label="Breadcrumb">Configuration</nav>
+        <nav class="breadcrumb" aria-label="Breadcrumb">Api reference &#8250; Configuration</nav>
         <article>
 <h1 id="configuration">Configuration</h1>
 <h2 id="overview">Overview</h2>
@@ -153,25 +185,25 @@ still the right place, because changing configuration mid-flight throws away com
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Func&lt;Type, string&gt;? SchemaNameResolver { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-type">Type</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">SchemaNameResolver</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Use schema based on namespace</span>
-JauntyConfig.SchemaNameResolver = type =&gt; type.Namespace?.Split(<span class="tok-str">'.'</span>).Last() ?? string.Empty;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">SchemaNameResolver</span> = type =&gt; type.<span class="tok-var">Namespace</span>?.<span class="tok-fn">Split</span>(<span class="tok-str">'.'</span>).<span class="tok-fn">Last</span>() ?? <span class="tok-kw">string</span>.<span class="tok-var">Empty</span>;
 
 <span class="tok-com">// Scoped: SQL Server entities get a schema, SQLite entities stay unqualified</span>
-JauntyConfig.SchemaNameResolver = type =&gt;
-    type.Namespace?.StartsWith(&quot;App.Sqlite&quot;, StringComparison.Ordinal) == <span class="tok-kw">true</span>
-        ? string.Empty
-        : &quot;dbo&quot;;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">SchemaNameResolver</span> = type =&gt;
+    type.<span class="tok-var">Namespace</span>?.<span class="tok-fn">StartsWith</span>(<span class="tok-str">&quot;App.Sqlite&quot;</span>, <span class="tok-type">StringComparison</span>.<span class="tok-var">Ordinal</span>) == <span class="tok-kw">true</span>
+        ? <span class="tok-kw">string</span>.<span class="tok-var">Empty</span>
+        : <span class="tok-str">&quot;dbo&quot;</span>;
 </code></pre>
 </div>
 <p><strong>The resolver is global and dialect-blind.</strong> It receives a <code>Type</code> and nothing else, so one
@@ -188,22 +220,22 @@ attribute at compile time and ignore it.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Func&lt;Type, string&gt;? TableNameResolver { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-type">Type</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">TableNameResolver</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Use plural table names</span>
-JauntyConfig.TableNameResolver = type =&gt; $&quot;{type.Name}s&quot;;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-str">$&quot;<span class="tok-punc">{</span>type.<span class="tok-var">Name</span><span class="tok-punc">}</span>s&quot;</span>;
 
 <span class="tok-com">// Use snake_case table names</span>
-JauntyConfig.TableNameResolver = type =&gt; ToSnakeCase(type.Name) + &quot;s&quot;;   <span class="tok-com">// your own helper</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;   <span class="tok-com">// your own helper</span>
 </code></pre>
 </div>
 <h3 id="columnnameresolver">ColumnNameResolver</h3>
@@ -212,22 +244,22 @@ JauntyConfig.TableNameResolver = type =&gt; ToSnakeCase(type.Name) + &quot;s&quo
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Func&lt;string, string&gt;? ColumnNameResolver { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-kw">string</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">ColumnNameResolver</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Use snake_case column names</span>
-JauntyConfig.ColumnNameResolver = propertyName =&gt; ToSnakeCase(propertyName);   <span class="tok-com">// your own helper</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = propertyName =&gt; <span class="tok-fn">ToSnakeCase</span>(propertyName);   <span class="tok-com">// your own helper</span>
 
 <span class="tok-com">// Use lowercase column names</span>
-JauntyConfig.ColumnNameResolver = propertyName =&gt; propertyName.ToLower();
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = propertyName =&gt; propertyName.<span class="tok-fn">ToLower</span>();
 </code></pre>
 </div>
 <h3 id="reset">Reset()</h3>
@@ -236,19 +268,19 @@ JauntyConfig.ColumnNameResolver = propertyName =&gt; propertyName.ToLower();
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> Reset()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">Reset</span>()
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Reset all configuration to defaults</span>
-JauntyConfig.Reset();
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Reset</span>();
 </code></pre>
 </div>
 <h3 id="defaultenumstorage">DefaultEnumStorage</h3>
@@ -257,19 +289,19 @@ JauntyConfig.Reset();
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> EnumStorage DefaultEnumStorage { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">EnumStorage</span> <span class="tok-type">DefaultEnumStorage</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Store all enums as their string name instead of the numeric value</span>
-JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">DefaultEnumStorage</span> = <span class="tok-type">EnumStorage</span>.<span class="tok-var">String</span>;
 </code></pre>
 </div>
 <p>Use the <code>[EnumStorage(...)]</code> attribute (see <a href="01-api-reference-attributes.html">Attributes</a>) to override this global default on individual properties.</p>
@@ -279,48 +311,48 @@ JauntyConfig.DefaultEnumStorage = EnumStorage.String;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> RegisterTypeHandler&lt;T&gt;(Func&lt;object?, T&gt; fromDb, Func&lt;T?, object?&gt; toDb)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">Func</span>&lt;<span class="tok-kw">object</span>?, <span class="tok-type">T</span>&gt; fromDb, <span class="tok-type">Func</span>&lt;<span class="tok-type">T</span>?, <span class="tok-kw">object</span>?&gt; toDb)
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Store Guid values as strings</span>
-JauntyConfig.RegisterTypeHandler&lt;Guid&gt;(
-    fromDb: dbValue =&gt; dbValue <span class="tok-kw">is</span> string s ? Guid.Parse(s) : Guid.Empty,
-    toDb: value =&gt; value == Guid.Empty ? <span class="tok-kw">null</span> : value.Value.ToString(&quot;D&quot;));
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">Guid</span>&gt;(
+    fromDb: <span class="tok-type">dbValue</span> =&gt; dbValue <span class="tok-kw">is</span> <span class="tok-kw">string</span> s ? <span class="tok-type">Guid</span>.<span class="tok-fn">Parse</span>(s) : <span class="tok-type">Guid</span>.<span class="tok-var">Empty</span>,
+    toDb: <span class="tok-type">value</span> =&gt; value == <span class="tok-type">Guid</span>.<span class="tok-var">Empty</span> ? <span class="tok-kw">null</span> : <span class="tok-type">value</span>.<span class="tok-var">Value</span>.<span class="tok-fn">ToString</span>(<span class="tok-str">&quot;D&quot;</span>));
 </code></pre>
 </div>
 <p><strong>Class-based registration:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> RegisterTypeHandler&lt;T&gt;(TypeHandler&lt;T&gt; handler)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">TypeHandler</span>&lt;<span class="tok-type">T</span>&gt; handler)
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> GuidAsStringHandler : TypeHandler&lt;Guid&gt;
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> <span class="tok-type">GuidAsStringHandler</span> : <span class="tok-type">TypeHandler</span>&lt;<span class="tok-type">Guid</span>&gt;
 {
-    <span class="tok-kw">public</span> <span class="tok-kw">override</span> Guid Parse(object? dbValue) =&gt;
-        dbValue <span class="tok-kw">is</span> string s ? Guid.Parse(s) : Guid.Empty;
+    <span class="tok-kw">public</span> <span class="tok-kw">override</span> <span class="tok-type">Guid</span> <span class="tok-fn">Parse</span>(<span class="tok-kw">object</span>? dbValue) =&gt;
+        dbValue <span class="tok-kw">is</span> <span class="tok-kw">string</span> s ? <span class="tok-type">Guid</span>.<span class="tok-fn">Parse</span>(s) : <span class="tok-type">Guid</span>.<span class="tok-var">Empty</span>;
 
-    <span class="tok-kw">public</span> <span class="tok-kw">override</span> object? ToDbValue(Guid? value) =&gt;
-        value <span class="tok-kw">is</span> <span class="tok-kw">null</span> || value == Guid.Empty ? <span class="tok-kw">null</span> : value.Value.ToString(&quot;D&quot;);
+    <span class="tok-kw">public</span> <span class="tok-kw">override</span> <span class="tok-kw">object</span>? <span class="tok-fn">ToDbValue</span>(<span class="tok-type">Guid</span>? value) =&gt;
+        value <span class="tok-kw">is</span> <span class="tok-kw">null</span> || value == <span class="tok-type">Guid</span>.<span class="tok-var">Empty</span> ? <span class="tok-kw">null</span> : <span class="tok-type">value</span>.<span class="tok-var">Value</span>.<span class="tok-fn">ToString</span>(<span class="tok-str">&quot;D&quot;</span>);
 }
 
-JauntyConfig.RegisterTypeHandler(<span class="tok-kw">new</span> GuidAsStringHandler());
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">RegisterTypeHandler</span>(<span class="tok-kw">new</span> <span class="tok-type">GuidAsStringHandler</span>());
 </code></pre>
 </div>
 <h3 id="removetypehandlert">RemoveTypeHandler&lt;T&gt;()</h3>
@@ -329,9 +361,9 @@ JauntyConfig.RegisterTypeHandler(<span class="tok-kw">new</span> GuidAsStringHan
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> bool RemoveTypeHandler&lt;T&gt;()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">bool</span> <span class="tok-fn">RemoveTypeHandler</span>&lt;<span class="tok-type">T</span>&gt;()
 </code></pre>
 </div>
 <p><strong>Returns:</strong> <code>true</code> if a handler was registered and removed; <code>false</code> if no handler was registered for <code>T</code>.</p>
@@ -339,9 +371,9 @@ JauntyConfig.RegisterTypeHandler(<span class="tok-kw">new</span> GuidAsStringHan
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp">JauntyConfig.RemoveTypeHandler&lt;Guid&gt;();
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">RemoveTypeHandler</span>&lt;<span class="tok-type">Guid</span>&gt;();
 </code></pre>
 </div>
 <h2 id="naming-conventions">Naming conventions</h2>
@@ -385,26 +417,26 @@ pluralisation is language- and schema-specific and a wrong guess is worse than n
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">static</span> string ToSnakeCase(string name)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">static</span> <span class="tok-kw">string</span> <span class="tok-fn">ToSnakeCase</span>(<span class="tok-kw">string</span> name)
 {
-    <span class="tok-kw">var</span> sb = <span class="tok-kw">new</span> StringBuilder(name.Length + <span class="tok-num">8</span>);
-    <span class="tok-kw">for</span> (int i = <span class="tok-num">0</span>; i &lt; name.Length; i++)
+    <span class="tok-kw">var</span> sb = <span class="tok-kw">new</span> <span class="tok-type">StringBuilder</span>(name.<span class="tok-var">Length</span> + <span class="tok-num">8</span>);
+    <span class="tok-ctl">for</span> (<span class="tok-kw">int</span> i = <span class="tok-num">0</span>; i &lt; name.<span class="tok-var">Length</span>; i++)
     {
-        char c = name[i];
-        <span class="tok-kw">if</span> (char.IsUpper(c))
+        <span class="tok-kw">char</span> c = name[i];
+        <span class="tok-ctl">if</span> (<span class="tok-kw">char</span>.<span class="tok-fn">IsUpper</span>(c))
         {
-            <span class="tok-kw">if</span> (i &gt; <span class="tok-num">0</span>) sb.Append(<span class="tok-str">'_'</span>);
-            sb.Append(char.ToLowerInvariant(c));
+            <span class="tok-ctl">if</span> (i &gt; <span class="tok-num">0</span>) sb.<span class="tok-fn">Append</span>(<span class="tok-str">'_'</span>);
+            sb.<span class="tok-fn">Append</span>(<span class="tok-kw">char</span>.<span class="tok-fn">ToLowerInvariant</span>(c));
         }
-        <span class="tok-kw">else</span> sb.Append(c);
+        <span class="tok-ctl">else</span> sb.<span class="tok-fn">Append</span>(c);
     }
-    <span class="tok-kw">return</span> sb.ToString();
+    <span class="tok-ctl">return</span> sb.<span class="tok-fn">ToString</span>();
 }
 
-JauntyConfig.ColumnNameResolver = ToSnakeCase;
-JauntyConfig.TableNameResolver  = type =&gt; ToSnakeCase(type.Name) + &quot;s&quot;;   <span class="tok-com">// your pluralisation</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span>  = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;   <span class="tok-com">// your pluralisation</span>
 </code></pre>
 </div>
 <p>Setting any resolver bumps a configuration generation, so metadata already compiled for a type is
@@ -417,9 +449,10 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">readonly</span> <span class="tok-kw">struct</span> CommandOptions&lt;T&gt;(Func&lt;IDataReader, T&gt;? mapper = <span class="tok-kw">null</span>, IDbTransaction? transaction = <span class="tok-kw">null</span>, int? commandTimeout = <span class="tok-kw">null</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">readonly</span> <span class="tok-kw">struct</span> <span class="tok-fn">CommandOptions</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">Func</span>&lt;<span class="tok-type">IDataReader</span>, <span class="tok-type">T</span>&gt;? mapper = <span class="tok-kw">null</span>, <span class="tok-type">IDbTransaction</span>? transaction = <span class="tok-kw">null</span>,
+    <span class="tok-kw">int</span>? commandTimeout = <span class="tok-kw">null</span>, <span class="tok-type">CommandType</span> commandType = <span class="tok-type">CommandType</span>.<span class="tok-var">Text</span>, <span class="tok-kw">int</span>? expectedRowCount = <span class="tok-kw">null</span>)
 </code></pre>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -435,21 +468,21 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> CommandOptions&lt;T&gt; WithMapper(Func&lt;IDataReader, T&gt; mapper)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">CommandOptions</span>&lt;<span class="tok-type">T</span>&gt; <span class="tok-fn">WithMapper</span>(<span class="tok-type">Func</span>&lt;<span class="tok-type">IDataReader</span>, <span class="tok-type">T</span>&gt; mapper)
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> options = CommandOptions&lt;Product&gt;.WithMapper(reader =&gt; <span class="tok-kw">new</span> Product
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> options = <span class="tok-type">CommandOptions</span>&lt;<span class="tok-type">Product</span>&gt;.<span class="tok-fn">WithMapper</span>(reader =&gt; <span class="tok-kw">new</span> <span class="tok-type">Product</span>
 {
-    ProductId = reader.GetInt32(&quot;product_id&quot;),
-    ProductName = reader.GetString(&quot;product_name&quot;)
+    <span class="tok-type">ProductId</span> = reader.<span class="tok-fn">GetInt32</span>(<span class="tok-num">0</span>),
+    <span class="tok-type">ProductName</span> = reader.<span class="tok-fn">GetString</span>(<span class="tok-num">1</span>)
 });
 </code></pre>
 </div>
@@ -459,19 +492,19 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> CommandOptions&lt;T&gt; WithTransaction(IDbTransaction transaction)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">CommandOptions</span>&lt;<span class="tok-type">T</span>&gt; <span class="tok-fn">WithTransaction</span>(<span class="tok-type">IDbTransaction</span> transaction)
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
-<span class="tok-kw">var</span> options = CommandOptions&lt;Product&gt;.WithTransaction(transaction);
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.<span class="tok-fn">BeginTransaction</span>();
+<span class="tok-kw">var</span> options = <span class="tok-type">CommandOptions</span>&lt;<span class="tok-type">Product</span>&gt;.<span class="tok-fn">WithTransaction</span>(transaction);
 </code></pre>
 </div>
 <h4 id="withtimeoutint-seconds">WithTimeout(int seconds)</h4>
@@ -480,18 +513,18 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> CommandOptions&lt;T&gt; WithTimeout(int seconds)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">CommandOptions</span>&lt;<span class="tok-type">T</span>&gt; <span class="tok-fn">WithTimeout</span>(<span class="tok-kw">int</span> seconds)
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> options = CommandOptions&lt;Product&gt;.WithTimeout(<span class="tok-num">30</span>); <span class="tok-com">// 30 second timeout</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> options = <span class="tok-type">CommandOptions</span>&lt;<span class="tok-type">Product</span>&gt;.<span class="tok-fn">WithTimeout</span>(<span class="tok-num">30</span>); <span class="tok-com">// 30 second timeout</span>
 </code></pre>
 </div>
 <h4 id="withfuncidatareader-t-mapper-idbtransaction-transaction-int-timeoutseconds">With(Func&lt;IDataReader, T&gt; mapper, IDbTransaction transaction, int timeoutSeconds)</h4>
@@ -500,21 +533,21 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> CommandOptions&lt;T&gt; With(Func&lt;IDataReader, T&gt; mapper, IDbTransaction transaction, int timeoutSeconds)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">CommandOptions</span>&lt;<span class="tok-type">T</span>&gt; <span class="tok-fn">With</span>(<span class="tok-type">Func</span>&lt;<span class="tok-type">IDataReader</span>, <span class="tok-type">T</span>&gt; mapper, <span class="tok-type">IDbTransaction</span> transaction, <span class="tok-kw">int</span> timeoutSeconds)
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
-<span class="tok-kw">var</span> options = CommandOptions&lt;Product&gt;.With(
-    mapper: reader =&gt; <span class="tok-kw">new</span> Product { ProductId = reader.GetInt32(&quot;product_id&quot;) },
-    transaction: transaction,
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.<span class="tok-fn">BeginTransaction</span>();
+<span class="tok-kw">var</span> options = <span class="tok-type">CommandOptions</span>&lt;<span class="tok-type">Product</span>&gt;.<span class="tok-fn">With</span>(
+    mapper: <span class="tok-type">reader</span> =&gt; <span class="tok-kw">new</span> <span class="tok-type">Product</span> { <span class="tok-type">ProductId</span> = reader.<span class="tok-fn">GetInt32</span>(<span class="tok-num">0</span>) },
+    transaction: <span class="tok-type">transaction</span>,
     timeoutSeconds: <span class="tok-num">30</span>
 );
 </code></pre>
@@ -525,9 +558,10 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">readonly</span> <span class="tok-kw">struct</span> CommandOptions(IDbTransaction? transaction = <span class="tok-kw">null</span>, int? commandTimeout = <span class="tok-kw">null</span>)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">readonly</span> <span class="tok-kw">struct</span> <span class="tok-fn">CommandOptions</span>(<span class="tok-type">IDbTransaction</span>? transaction = <span class="tok-kw">null</span>, <span class="tok-kw">int</span>? commandTimeout = <span class="tok-kw">null</span>,
+    <span class="tok-type">CommandType</span> commandType = <span class="tok-type">CommandType</span>.<span class="tok-var">Text</span>)
 </code></pre>
 </div>
 <h3 id="static-factory-methods-1">Static Factory Methods</h3>
@@ -537,9 +571,9 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> CommandOptions WithTransaction(IDbTransaction transaction)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">CommandOptions</span> <span class="tok-fn">WithTransaction</span>(<span class="tok-type">IDbTransaction</span> transaction)
 </code></pre>
 </div>
 <h4 id="withtimeoutint-seconds-1">WithTimeout(int seconds)</h4>
@@ -548,9 +582,9 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> CommandOptions WithTimeout(int seconds)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">CommandOptions</span> <span class="tok-fn">WithTimeout</span>(<span class="tok-kw">int</span> seconds)
 </code></pre>
 </div>
 <h4 id="withidbtransaction-transaction-int-timeoutseconds">With(IDbTransaction transaction, int timeoutSeconds)</h4>
@@ -559,9 +593,9 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> CommandOptions With(IDbTransaction transaction, int timeoutSeconds)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">CommandOptions</span> <span class="tok-fn">With</span>(<span class="tok-type">IDbTransaction</span> transaction, <span class="tok-kw">int</span> timeoutSeconds)
 </code></pre>
 </div>
 <h2 id="configuration-priority">Configuration Priority</h2>
@@ -575,94 +609,94 @@ requirement.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// If you have this configuration:</span>
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   <span class="tok-com">// a helper you write; Jaunty ships none</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;   <span class="tok-com">// a helper you write; Jaunty ships none</span>
 
 <span class="tok-com">// And this entity:</span>
-<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> <span class="tok-type">Product</span>
 {
-    [Column(&quot;product_identifier&quot;)]  <span class="tok-com">// This takes highest priority</span>
-    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-attr">[Column(&quot;product_identifier&quot;)]</span>  <span class="tok-com">// This takes highest priority</span>
+    <span class="tok-kw">public</span> <span class="tok-kw">int</span> <span class="tok-type">ProductId</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
     
-    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }  <span class="tok-com">// This will use snake_case: &quot;product_name&quot;</span>
+    <span class="tok-kw">public</span> <span class="tok-kw">string</span> <span class="tok-type">ProductName</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }  <span class="tok-com">// This will use snake_case: &quot;product_name&quot;</span>
 }
 </code></pre>
 </div>
 <h2 id="best-practices">Best Practices</h2>
-<h3 id="set-configuration-at-startup">1. Set Configuration at Startup</h3>
+<h3 id="1-set-configuration-at-startup">1. Set Configuration at Startup</h3>
 <p>Configuration should be set once at application startup before any queries are executed:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">void</span> ConfigureServices(IServiceCollection services)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">void</span> <span class="tok-fn">ConfigureServices</span>(<span class="tok-type">IServiceCollection</span> services)
 {
     <span class="tok-com">// Set Jaunty configuration at startup</span>
-    JauntyConfig.ColumnNameResolver = ToSnakeCase;   <span class="tok-com">// a helper you write; Jaunty ships none</span>
-    JauntyConfig.TableNameResolver = type =&gt; ToSnakeCase(type.Name) + &quot;s&quot;;
+    <span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;   <span class="tok-com">// a helper you write; Jaunty ships none</span>
+    <span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;
     
     <span class="tok-com">// Register your database connection</span>
-    services.AddScoped&lt;IDbConnection&gt;(provider =&gt; 
-        <span class="tok-kw">new</span> SqlConnection(connectionString));
+    services.<span class="tok-fn">AddScoped</span>&lt;<span class="tok-type">IDbConnection</span>&gt;(provider =&gt; 
+        <span class="tok-kw">new</span> <span class="tok-type">SqlConnection</span>(connectionString));
 }
 </code></pre>
 </div>
-<h3 id="use-attributes-for-specific-overrides">2. Use Attributes for Specific Overrides</h3>
+<h3 id="2-use-attributes-for-specific-overrides">2. Use Attributes for Specific Overrides</h3>
 <p>Use attributes for specific entity or property overrides:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;products&quot;, Schema = &quot;inventory&quot;)]
-<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-attr">[Table(&quot;products&quot;, &quot;inventory&quot;)]</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> <span class="tok-type">Product</span>
 {
-    [Column(&quot;prod_id&quot;)]
-    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-attr">[Column(&quot;prod_id&quot;)]</span>
+    <span class="tok-kw">public</span> <span class="tok-kw">int</span> <span class="tok-type">ProductId</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
     
-    [Ignore]
-    <span class="tok-kw">public</span> string? ComputedProperty { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-attr">[Ignore]</span>
+    <span class="tok-kw">public</span> <span class="tok-kw">string</span>? <span class="tok-type">ComputedProperty</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
     
-    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+    <span class="tok-kw">public</span> <span class="tok-kw">string</span> <span class="tok-type">ProductName</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">string</span>.<span class="tok-var">Empty</span>;
 }
 </code></pre>
 </div>
-<h3 id="consider-thread-safety">3. Consider Thread Safety</h3>
+<h3 id="3-consider-thread-safety">3. Consider Thread Safety</h3>
 <p>Since configuration is global and static, ensure thread safety when setting configuration:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Set configuration before any threads start using Jaunty</span>
-<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> InitializeJaunty()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">InitializeJaunty</span>()
 {
-    JauntyConfig.ColumnNameResolver = ToSnakeCase;   <span class="tok-com">// a helper you write; Jaunty ships none</span>
-    JauntyConfig.TableNameResolver = type =&gt; type.Name + &quot;s&quot;;
+    <span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;   <span class="tok-com">// a helper you write; Jaunty ships none</span>
+    <span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = type =&gt; type.<span class="tok-var">Name</span> + <span class="tok-str">&quot;s&quot;</span>;
 }
 </code></pre>
 </div>
-<h3 id="reset-configuration-for-tests">4. Reset Configuration for Tests</h3>
+<h3 id="4-reset-configuration-for-tests">4. Reset Configuration for Tests</h3>
 <p>For testing purposes, you might want to reset configuration between test runs:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">void</span> Cleanup()
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">void</span> <span class="tok-fn">Cleanup</span>()
 {
-    JauntyConfig.Reset(); <span class="tok-com">// Reset to defaults after each test</span>
+    <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Reset</span>(); <span class="tok-com">// Reset to defaults after each test</span>
 }
 </code></pre>
 </div>
 <h2 id="important-notes">Important Notes</h2>
 <div class="callout callout-warn"><ul>
 <li><strong>Global Configuration</strong>: Settings in <code>JauntyConfig</code> affect all queries globally</li>
-<li><strong>Static Caching</strong>: Metadata is cached per-type in static constructors and won't pick up configuration changes after first use</li>
-<li><strong>Startup Timing</strong>: Configuration must be set before any queries execute to be effective</li>
+<li><strong>Caching</strong>: Metadata is cached per type, and every <code>JauntyConfig</code> setter bumps a configuration generation that retires the cached metadata compiled under an older one, so a resolver registered mid-flight is picked up</li>
+<li><strong>Startup Timing</strong>: Startup is still the right place to configure, because changing configuration mid-flight discards compiled work</li>
 <li><strong>Thread Safety</strong>: The configuration properties are static and shared across all threads</li>
 <li><strong>Performance</strong>: Once configured, the resolvers are cached and have minimal performance impact</li>
 <li><strong>Fallback Behavior</strong>: When resolvers return null, Jaunty falls back to default behavior</li>
@@ -675,10 +709,10 @@ JauntyConfig.ColumnNameResolver = ToSnakeCase;   <span class="tok-com">// a help
         <div class="page-nav" id="page-nav">
           <div class="prev-next"><a class="pn-prev" href="01-api-reference-command-options.html">
   <span class="pn-label">&#8592; prev</span>
-  <span class="pn-title">Command options</span>
+  <span class="pn-title">CommandOptions</span>
 </a><a class="pn-next" href="01-api-reference-crud-operations.html">
   <span class="pn-label">next &#8594;</span>
-  <span class="pn-title">Crud operations</span>
+  <span class="pn-title">CRUD Operations</span>
 </a></div>
         </div>
       </div>
@@ -688,7 +722,40 @@ JauntyConfig.ColumnNameResolver = ToSnakeCase;   <span class="tok-com">// a help
   <!-- ===== status bar ===== -->
   <footer class="jt-statusbar">
     <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
   </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
 </div>
 <script src="nav.js"></script>
 </body>

@@ -161,7 +161,7 @@ if (dot >= 0 && !CliCanReach(connection, tableName.Substring(0, dot), dbPath))
 return ImportViaSqliteCli(dbPath, tableName, filePath, options);
 ```
 
-Tracked in `work/todo.md`; awaiting an owner decision between routing to the prepared-statement
+Tracked in the maintainer's tracker; awaiting an owner decision between routing to the prepared-statement
 path, refusing the import, and replicating the caller's `ATTACH` into the CLI script.
 
 ## Follow-ups recorded, not done

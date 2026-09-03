@@ -19,8 +19,8 @@
 #     predate this incident and are not this script's to remove. Pass
 #     -RemoveOlderTestTables if you want them gone too.
 #
-# A verified backup was taken before any of this:
-#   C:\home\syed\databases\mssql\backups\Northwind-pre-repair-2026-07-29.bak
+# A verified backup was taken before any of this: Northwind-pre-repair-2026-07-29.bak in
+# $env:JAUNTY_MSSQL_BACKUP_DIR, or in $HOME\backups\mssql when that variable is unset.
 #
 # Dry run (default):   .\scripts\cleanup\northwind-local-repair.ps1
 # Execute:             .\scripts\cleanup\northwind-local-repair.ps1 --execute --drop-objects
@@ -73,7 +73,8 @@ if (-not $svc -or $svc.Status -ne 'Running') { Write-Error "Local MSSQLSERVER in
 
 if ($Database -ne 'Northwind') { Write-Error "This script only repairs Northwind; got '$Database'."; exit 1 }
 
-$backup = 'C:\home\syed\databases\mssql\backups\Northwind-pre-repair-2026-07-29.bak'
+$backupDir = if ($env:JAUNTY_MSSQL_BACKUP_DIR) { $env:JAUNTY_MSSQL_BACKUP_DIR } else { Join-Path $HOME 'backups\mssql' }
+$backup = Join-Path $backupDir 'Northwind-pre-repair-2026-07-29.bak'
 if (-not (Test-Path $backup)) {
     Write-Host "Pre-repair backup not found at:" -ForegroundColor Red
     Write-Host "  $backup" -ForegroundColor Red

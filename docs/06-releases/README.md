@@ -44,8 +44,8 @@ Prioritized task lists for Jaunty development:
 
 ### Version Numbering
 
-Jaunty uses **semantic versioning**. The current version is `1.0.0-rc.1`, set in
-`src/Directory.Build.props` and tagged `v1.0.0-rc.1`.
+Jaunty uses **semantic versioning**. The current version is `1.0.0-rc.2`, set in
+`src/Directory.Build.props` and tagged `v1.0.0-rc.2`.
 
 An earlier date-based scheme (`YYYY.MM.PATCH`) was documented here and never shipped.
 

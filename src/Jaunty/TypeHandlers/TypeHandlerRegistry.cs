@@ -128,8 +128,8 @@ internal static class TypeHandlerRegistry
     /// looser than the value's (an <c>object</c>-typed call, for instance). The consequence worth
     /// stating plainly: the exception-wrapping and null-return contracts these two methods define,
     /// and the tests that pin them, are not the contracts the shipped paths execute. Kept rather than
-    /// removed - that is a deletion decision, not an audit one - and recorded in
-    /// <c>work/todo.md</c>. First filed in round 27 and never registered either way.
+    /// removed - that is a deletion decision, not an audit one - and recorded on the
+    /// maintainers' backlog. First filed in round 27 and never registered either way.
     /// </remarks>
     internal static bool TryConvertFromDb<T>(object? dbValue, out T result)
     {

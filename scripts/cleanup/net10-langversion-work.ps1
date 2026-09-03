@@ -55,7 +55,7 @@ $candidates = @(
     'docs/spec-010-net10',               # the .NET 10 migration spec
     'fix/csharp14-span-contains',        # MemoryExtensions.Contains translation
     'docs/spec-010-corrections',         # spec 010 factual corrections + Q1
-    'docs/todo-net10-followups',         # follow-ups recorded in work/todo.md
+    'docs/todo-net10-followups',         # follow-ups recorded on the maintainers' backlog
     'fix/cleanup-script-cwd'             # this script, anchored on its own location
 )
 

@@ -359,7 +359,7 @@ Jaunty leaves the parameter type to `Microsoft.Data.SqlClient`'s inference, whic
 type**. The limit comes from the parameter, not the column. Every `DateTime` Jaunty writes to
 SQL Server silently loses up to 3.33ms. This is the temporal analogue of the decimal problem
 `IDecimalBindingDialect` already exists to solve, so the fix has an established shape; it is
-recorded in `work/todo.md` rather than made here, per the scope rule. The two SqlServer theories
+recorded in the maintainer's tracker rather than made here, per the scope rule. The two SqlServer theories
 pin the current behaviour, so a fix has to update them deliberately.
 
 **RED-phase.** These theories discriminate by construction and were observed doing it: before
@@ -404,18 +404,18 @@ A first attempt at the injection put the sink field between the XML doc and the 
 build failed with CS1572 and the run silently used the stale binary and "passed" — a reminder
 that a mutation-check must confirm its own build succeeded before believing a green result.
 
-Byproduct recorded in `work/todo.md`: parameterless SQL costs 120 bytes/call because
+Byproduct recorded in the maintainer's tracker: parameterless SQL costs 120 bytes/call because
 `ExtractParameterNamesSpan` allocates `new List<string>(ParameterParsingCapacity)` before knowing
 whether the SQL holds a single sigil. Deferring the list to the first parameter found would take
 that case to zero.
 
 ### 6
 
-Stryker re-run: **DONE.** Cancelled twice on the dev machine, then run to completion on the M1 Max
-over SSH — 2 h 10 m 39 s wall at concurrency 8, exit 0, report at
+Stryker re-run: **DONE.** Cancelled twice on the dev machine, then run to completion on a second
+machine — 2 h 10 m 39 s wall at concurrency 8, exit 0, report at
 `tests/Jaunty.UnitTests/StrykerOutput/2026-08-27.20-27-37/`.
 
-| | Baseline (desktop) | After Phase 1 (M1) | Delta |
+| | Baseline (desktop) | After Phase 1 (Mac) | Delta |
 | --- | ---: | ---: | ---: |
 | Mutants created | 13,672 | 13,672 | — |
 | Mutants tested | 2,287 | **2,424** | **+137** |
@@ -481,25 +481,22 @@ and the nightly overrides upward via `CI_MUTATION_CONCURRENCY` (default 8).
 nightly/weekly tier and it belongs on another machine. If a local run is ever unavoidable, scope it
 with Stryker's `--since` diff mode so it mutates only changed files rather than all 13,672.
 
-#### Where it did run: the M1 Max, over SSH
+#### Where it did run: a second machine
 
 The third attempt succeeded by moving the workload off the dev box entirely. Transfer was a
-`git bundle` of `dev` (41 MB) scp'd over and cloned on the far side, which carries the unpushed
-commits without needing GitHub credentials on the Mac.
+`git bundle` of `dev` (41 MB) copied over and cloned on the far side, which carries the unpushed
+commits without needing GitHub credentials on the second machine.
 
-| | M1 Max | Dev desktop |
+| | Mac | Dev desktop |
 | --- | --- | --- |
-| Cores | 8 performance + 2 efficiency | 16 threads |
-| RAM | 64 GB | 64 GB |
-| Uptime / sleep | **40 days, `pmset sleep 0`** | WSL distro idle-stops |
 | `Jaunty.UnitTests`, 1,464 tests | **13 s** wall (twice) | ~10 s |
 | Stryker coverage capture | 3 m 35 s | 48 s |
 | **Full mutation tier** | **2 h 10 m 39 s**, concurrency 8 | >106 min, cancelled unfinished |
 
-The M1 is the slower machine on every row, and that is beside the point: it finishes, and it does
+The Mac is the slower machine on every row, and that is beside the point: it finishes, and it does
 so without occupying the machine the owner types on. On the axis that has actually been failing —
-`The runner has received a shutdown signal`, WSL reclaiming the distro mid-job — 40 days of uptime
-with system sleep disabled is the opposite of the current runner.
+`The runner has received a shutdown signal`, WSL reclaiming the distro mid-job — a machine that
+never sleeps is the opposite of the current runner.
 
 **It is eligible for the mutation tier only.** `Jaunty.UnitTests` needs no live database, which is
 the whole reason the mutation config points there. It cannot host `build-and-test` or `full-suite`:
@@ -611,8 +608,8 @@ Researched 2026-08-27 after the mutation run made the dev machine unusable. Reco
 the conclusion changes what this plan's nightly workflow costs and whether it can run at all.
 
 **The premise in Phase 2 above is wrong.** The plan says "this repo has a self-hosted Linux runner
-(`vars.CI_RUNNER`), so the fuzz job can actually run". That runner is `REDACTED-RUNNER` — **WSL2
-on the dev machine**. So every CI run and every nightly job lands on the developer's own CPU, which
+(`vars.CI_RUNNER`), so the fuzz job can actually run". That runner was self-hosted on the
+developer's own workstation. So every CI run and every nightly job lands on the developer's own CPU, which
 is the problem this plan's nightly would make worse, not better.
 
 Measured:
@@ -640,7 +637,7 @@ Three findings that matter:
    explicitly not a gate (`"break": 0`) — so **weekly, not nightly**, is the correct cadence and
    cuts its cost 7×.
 
-Open decisions are logged in `work/todo.md`; none of them block the test work in this plan.
+Open decisions are logged in the maintainer's tracker; none of them block the test work in this plan.
 
 ### The cadence split landed 2026-08-29
 

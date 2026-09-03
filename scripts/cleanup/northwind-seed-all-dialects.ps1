@@ -76,8 +76,8 @@ if ($DeleteVolumes) {
 
 # --- 5. Not removed ---------------------------------------------------------
 Step "5. Deliberately NOT removed"
-Write-Host "   aud-r64-ms / aud-r64-my / aud-r64-pg - pre-existing containers from an" -ForegroundColor DarkGray
-Write-Host "     earlier audit round; this work neither created nor used them." -ForegroundColor DarkGray
+Write-Host "   aud-r64-ms / aud-r64-my / aud-r64-pg - pre-existing containers that this" -ForegroundColor DarkGray
+Write-Host "     work neither created nor used." -ForegroundColor DarkGray
 Write-Host "   data/postgres/create-northwind.sql, data/mysql/create-northwind.sql," -ForegroundColor DarkGray
 Write-Host "     scripts/generate-northwind.py - committed deliverables, not scratch." -ForegroundColor DarkGray
 

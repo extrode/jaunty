@@ -2,10 +2,9 @@
 
 Why this exists, how it is wired, and what to do when it breaks.
 
-> **Retired, pending one command.** This repository is going public, and a self-hosted runner on a
-> public repository executes arbitrary code from any fork's pull request on the owner's machine.
-> The runner goes before the switch is flipped, not after:
-> `gh variable delete CI_RUNNER --repo extrode/jaunty`, then one green run on `ubuntu-latest`.
+> **Retired.** This repository is public, and a self-hosted runner on a public repository executes
+> arbitrary code from any fork's pull request on the owner's machine. The `CI_RUNNER` variable was
+> deleted before the switch was flipped, and every workflow now resolves to `ubuntu-latest`.
 > This was done before the repository was made public.
 >
 > **Everything below is kept as history, not as instructions.** Do not re-provision from it.
@@ -72,9 +71,7 @@ The runner itself:
 
 | Property | Value |
 |---|---|
-| Name | `REDACTED-RUNNER` |
-| Host | WSL2 Debian on the Windows dev box |
-| Path | `~/actions-runner` inside the Debian distro |
+| Host | WSL2 Debian on a Windows workstation |
 | Labels | `self-hosted`, `Linux`, `X64`, `jaunty-wsl` |
 
 ## Setup
@@ -152,7 +149,7 @@ hosted runners, so there is nothing to undo when billing is restored.
 
 **`The runner has received a shutdown signal` mid-job.** The most common failure on this runner,
 and it is not a code problem. WSL stopped the distro underneath a running job. Observed three times
-on 2026-08-27 (runs `33040062673`, `33040749878`, `33041932044`), each time at ~10% of the
+on 2026-08-27, each time at ~10% of the
 **2.67 GB** NuGet cache restore running at **2.2 MB/s** — roughly a 20-minute download that gives
 WSL a long idle-looking window to reclaim. The job is lost and the run reports `failure`.
 

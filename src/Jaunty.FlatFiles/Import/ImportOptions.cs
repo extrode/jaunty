@@ -12,7 +12,7 @@ public readonly struct ImportOptions
     // accessor that does not exist. Corrected to "Gets". The field-vs-property shape is left alone
     // deliberately: BatchSize is a property and the rest of the public API exposes options as
     // properties, so these are an outlier, but converting them is a binary-breaking change to a
-    // released package rather than a doc fix. Noted in work/todo.md.
+    // released package rather than a doc fix. Noted on the maintainers' backlog.
     // Backing field is nullable so that default(ImportOptions) — which bypasses the constructor
     // and zero-initializes all value-type fields — can still be distinguished from an explicit
     // batchSize: 0. BatchSize below falls back to 1000 only when this is null (unset).

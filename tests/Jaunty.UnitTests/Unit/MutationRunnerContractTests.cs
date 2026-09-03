@@ -19,6 +19,7 @@ public class MutationRunnerContractTests
     private const string ExpectedRunner = "blacksmith-16vcpu-ubuntu-2404";
     private const string ExpectedConcurrency = "16";
     private const int ExpectedTimeoutMinutes = 240;
+    private const string EnableVariable = "CI_MUTATION_ENABLED";
 
     [Fact]
     public void TheMutationJobRunsOnTheSizedBlacksmithRunner()
@@ -27,6 +28,25 @@ public class MutationRunnerContractTests
 
         Assert.Contains(ExpectedRunner, job, StringComparison.Ordinal);
         Assert.DoesNotContain("vars.CI_RUNNER", job, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>runs-on</c> is a fallback expression, and a label nothing carries does not fail the job -
+    /// it queues, indefinitely, with no error and no badge. Both Mutate jobs sat queued through a
+    /// whole nightly run that way. The opt-in variable is what makes the unconnected state a
+    /// visible skip instead.
+    /// </summary>
+    [Fact]
+    public void TheMutationJobIsHeldBackUntilTheRunnerIsConnected()
+    {
+        Match condition = Regex.Match(MutationJob(), @"(?m)^    if: (.+)$");
+
+        Assert.True(condition.Success, "The mutation job carries no 'if:', so nothing gates it.");
+
+        Assert.Contains(
+            "vars." + EnableVariable + " == 'true'",
+            condition.Groups[1].Value,
+            StringComparison.Ordinal);
     }
 
     /// <summary>

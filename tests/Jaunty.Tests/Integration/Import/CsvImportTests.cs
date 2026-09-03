@@ -551,11 +551,10 @@ public class CsvImportTests : IClassFixture<DialectFixture>
                 withTemp.Close();
                 withoutTemp.Close();
                 rows = connection.ImportCsv(TableName, csvPath);
+                connection.Open();
             }
 
             Assert.Equal(ExpectedRowCount, rows);
-
-            connection.Open();
 
             using var mainCount = connection.CreateCommand();
             mainCount.CommandText = $"SELECT COUNT(*) FROM main.{TableName}";
@@ -675,11 +674,10 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             {
                 setup.Dispose();
                 rows = connection.ImportCsv(TableName, csvPath);
+                connection.Open();
             }
 
             Assert.Equal(ExpectedRowCount, rows);
-
-            connection.Open();
 
             using var tempCount = connection.CreateCommand();
             tempCount.CommandText = $"SELECT COUNT(*) FROM temp.{TableName}";
@@ -1007,11 +1005,10 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             {
                 connection.Close();
                 rows = connection.ImportCsv(TableName, csvPath);
+                connection.Open();
             }
 
             Assert.Equal(ExpectedRowCount, rows);
-
-            connection.Open();
 
             using var tempCount = connection.CreateCommand();
             tempCount.CommandText = $"SELECT COUNT(*) FROM temp.{TableName}";

@@ -60,6 +60,74 @@ default lives in `src/Directory.Build.props`.
 - **The owner name retired on 2026-08-26 no longer appears anywhere in the tree.** `.mailmap` is
   gone too: every commit on `dev` and `main` already carries one author identity, so it mapped
   nothing. `PackageIdentityTests` scans every text file to keep the name out.
+- **CI: the nightly workflow runs on hosted runners again.** The fuzz job installed only the 8.0
+  SDK for a tree that targets net10.0, the benchmark job ran a multi-targeted project without
+  `--framework`, and the full suite could pass with SQL Server unreachable; all three fixed, and
+  `Jaunty.UnitTests` compiles on net472 again. The net472 test legs now run in their own
+  Windows job, because a Linux runner has no .NET Framework runtime for them.
+- **Docs: second public-readiness pass.** Personal paths removed from two archived scripts, one
+  cleanup script and one tasklist; CONTRIBUTING names the 10.0 SDK and no longer tells a newcomer
+  to sign a draft CLA; the release runbook's branch-protection item is unblocked; the
+  Redistribution Exception's note 4 no longer calls the removed EULA "retained".
+- **Docs: third public-readiness pass.** The CI docs describe the hosted runners that run today
+  instead of the retired self-hosted one; the testing-strategy plan and the runner notes drop
+  machine details; the commercial templates cite ISL-R 1.2 and no longer mention an EULA or an
+  Individual tier; two links and the release index's version fixed; `scripts/build-docs.sh`
+  fails with a message when the external docs tool is absent.
+- **Tests: two CSV import tests reopen the pooled SQLite connection inside the no-GC region.**
+  On .NET Framework a collection landed between the import and the reopen, the pool handed back
+  a fresh handle, and the temp table the test had built was gone.
+- **Docs: the API reference now matches the code it describes.** The async signatures in
+  `api-summary.md` return `ValueTask`, which is what every core async method has always
+  returned; `QueryScalar` takes the generic `CommandOptions<T>`; `Take` and `Skip` return
+  `IPagedClause<T>`; the CRUD pages document `this IDbConnection` and `where T : new()` rather
+  than `DbConnection` and a `class` constraint the code does not impose;
+  `DefaultCheckConstraints` defaults to `true`; the `CommandOptions` constructors show all five
+  and all three parameters; three examples that would not compile are fixed (the `With*`
+  factories are static and do not chain, `TableAttribute.Schema` is get-only so the schema is
+  positional, and `IDataReader.GetInt32` takes an ordinal); and the stale note claiming
+  configuration cannot change after first use is replaced by what the same page's opening and
+  `JauntyConfig` both say.
+- **Docs: fourth public-readiness pass.** Specs, plans and archived reports no longer point at
+  a private tracker, a private findings registry, local worktree directories or a self-hosted
+  runner by name, and three archived links that pointed at files under a different name or
+  path are corrected.
+- **Docs: the published HTML under `dist/docs-site` is regenerated.** It was two passes stale
+  and still carried text that had been removed from `docs/`.
+- **Docs: the release runbook disagreed with the conventions, the package IDs and the
+  package count.** It instructed `git merge --ff-only dev` for the release merge where
+  `conventions.md` specifies `--no-ff`, so a maintainer following it produced a history with no
+  commit meaning "this is what shipped". Its consume command was `dotnet add package Jaunty`,
+  the rc.1 ID, which does not resolve against the feed — the IDs are `Extrode.`-prefixed. It
+  said 7 shippable packages where there are 9, `Extensions.Logging` and `Extensions.Npgsql`
+  having been added for rc.2. The procedure is now version-neutral rather than pinned to rc.1.
+- **Docs: the four `NativeAOT-*` samples and `torture-test-sakila-queries` now have READMEs.**
+  Five of the eight samples shipped with no statement of what they demonstrate or how to run
+  them. Each now says what it proves, what it deliberately does not reference, and the command
+  to run it; the four AOT samples were each run to confirm the documented output.
+- **Docs: `TEST-SETUP.md` gave two different skip counts for the same unconfigured run**
+  (4,791 and 4,898, 107 apart). The unsourced one is replaced by a pointer to the measured
+  table that shows its arithmetic.
+- **Cleanup scripts: two of them named a path and a branch that do not exist.**
+  `merged-branch-sweep.ps1` set its working directory from a hardcoded absolute path that has
+  never been this repository's location, so on any other machine it either failed or swept
+  branches somewhere else entirely; it now resolves the root with `git rev-parse --show-toplevel`
+  like every other script in the directory. `zero-dependency-core.ps1` listed a branch whose name
+  had been mangled by an earlier text substitution, and three of its closing notes had been
+  substituted into unreadable English. Five references to files the repository does not contain
+  are reworded.
+- **Docs: internal-backlog pointers in the public API documentation are reworded.** Six XML
+  documentation comments in `src/` told the reader to consult a file kept in a private
+  repository. The decisions they describe are unchanged; only the pointer is.
+- **CI: the mutation tier is held back until a runner answers to its label.** `runs-on` is a
+  fallback expression, so a label no runner carries does not fail the job - it queues,
+  indefinitely, with no error and no badge. The job now also requires
+  `vars.CI_MUTATION_ENABLED == 'true'`, which makes the unconnected state a visible skip.
+- **Docs: the three torture-test documents are restored.** The brief the test was run from
+  (`jaunty-torture-test-handoff.md`), the log of what it found about Jaunty
+  (`jaunty-torture-test-gaps-log.md`) and the process notes
+  (`jaunty-torture-test-lessons-learned.md`) were referenced from four sample READMEs, the
+  seed README, the results page and two specs, but were absent from the tree.
 
 ### Added
 

@@ -2,11 +2,11 @@
 
 > Internal template for Enterprise Orders. Attach to the Order Form; it modifies the ISL-R source license **only** for the Licensee named in that Order, and only as stated here. Have counsel review before first real use.
 
-This Rider supplements Order No. [YYYY-NNN] between Licensor and Licensee. Capitalized terms have the meanings given in the ISL-EULA v1.0 and ISL-R v1.0.
+This Rider supplements Order No. [YYYY-NNN] between Licensor and Licensee. Capitalized terms have the meanings given in ISL-R 1.2 and the Jaunty Redistribution Exception 1.0.
 
 ## 1. Source deposit
 
-Licensor provides Licensee, per release, a complete source drop of the licensed Product(s) sufficient to build the shipped binaries (source code, build scripts, and build instructions). Source remains governed by ISL-R v1.0 except as expressly modified by Section 3 of this Rider.
+Licensor provides Licensee, per release, a complete source drop of the licensed Product(s) sufficient to build the shipped binaries (source code, build scripts, and build instructions). Source remains governed by ISL-R 1.2 except as expressly modified by Section 3 of this Rider.
 
 ## 2. Trigger events
 
@@ -27,7 +27,7 @@ Upon a Trigger Event, and for the remainder of the Term plus [24] months:
 
 ## 4. No other effect
 
-Except as stated in Section 3, nothing in this Rider modifies the ISL-EULA, ISL-R, or the Order. This Rider grants no rights before a Trigger Event occurs.
+Except as stated in Section 3, nothing in this Rider modifies ISL-R, the Redistribution Exception, or the Order. This Rider grants no rights before a Trigger Event occurs.
 
 ## Signatures
 
