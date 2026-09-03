@@ -43,5 +43,5 @@ This file tracks currently known product limitations that impact API completenes
 - Workaround: use `QueryPartial*` with projection-safe mapper for partial shapes.
 
 ## Tracking
-- Active roadmap: [../06-releases/tasklists/production-readiness-tasklist.md](../06-releases/tasklists/production-readiness-tasklist.md)
+- Active roadmap: the production-readiness tasklist, held in the private work repository
 - Issues: https://github.com/extrode/jaunty/issues

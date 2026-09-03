@@ -18,7 +18,7 @@ The micro-ORM that respects your SQL and your time.
 > you may use it and read it, but not modify or redistribute it as a library. Shipping the unmodified
 > packages inside your own application is covered by the
 > [Redistribution Exception](LICENSE-DISTRIBUTION-EXCEPTION.md), royalty-free and non-expiring.
-> What is sold is [support](docs/06-releases/pricing.md), never the right to use the software.
+> What is sold is support, never the right to use the software.
 
 If you have used Dapper, you already know how Jaunty feels. It is a set of extension methods on the
 `IDbConnection` you already have, so any ADO.NET provider works and there is no context object to
@@ -867,5 +867,5 @@ is sold is support. Two documents apply:
 > They bind a user who pays nothing as they bind one who pays, and they travel with the
 > redistributed binaries.
 
-This is not an open-source license. Support pricing:
-[docs/06-releases/pricing.md](docs/06-releases/pricing.md).
+This is not an open-source license. Jaunty is free to use, including in commercial
+production; what is sold is support, and its terms are available on request.

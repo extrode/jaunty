@@ -1,6 +1,6 @@
 # Sakila/Pagila Seed Data (Part 2 torture test)
 
-Schema+data for Part 2 (`docs/jaunty-torture-test-handoff.md`) come from two external,
+Schema+data for Part 2 (the private torture-test handoff) come from two external,
 gitignored clones under `torture-test/` (not vendored into this repo — multi-MB data files):
 
 - `torture-test/sakila/` — `jOOQ/sakila` (BSD-2-Clause), used for MySQL, MariaDB, SQL Server,
