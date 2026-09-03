@@ -15,138 +15,122 @@ Jaunty's parameter binding system extracts parameter names from SQL, validates c
 
 ### 1. SqlParameterParser
 
-**Purpose**: State machine that extracts `@param` names from SQL strings.
+**Purpose**: single-pass scanner that extracts `@name` and `$name` placeholders from SQL,
+skipping everything that only looks like one.
 
 **Location**: `src/Jaunty/Internals/Parameters/SqlParameterParser.cs`
 
-**State Machine States**:
+There is no state variable. The scanner is one loop over the characters, and every construct it
+recognizes is skipped by a helper that returns the index just past that construct, so a comment or a
+literal is jumped over rather than walked in a different mode. The order of the tests below is the
+order in the source, and it matters: dollar-quoting has to be tried before `$` is read as a sigil,
+or the body of `$$SELECT 1$$` is scanned as ordinary SQL and `SELECT` comes back as a parameter
+name.
 
-| State | Trigger | Action |
-|-------|---------|--------|
-| `Normal` | `@` | Start parameter name |
-| `Normal` | `--` | Enter `SingleLineComment` |
-| `Normal` | `/*` | Enter `BlockComment` |
-| `Normal` | `'` | Enter `StringLiteral` |
-| `Normal` | `"` | Enter `QuotedIdentifier` |
-| `Normal` | `[` | Enter `QuotedIdentifier` |
-| `SingleLineComment` | `\n` | Return to `Normal` |
-| `BlockComment` | `*/` | Return to `Normal` |
-| `StringLiteral` | `'` (unescaped) | Return to `Normal` |
-| `QuotedIdentifier` | `"` or `]` | Return to `Normal` |
+```mermaid
+flowchart TD
+    Next["Read sql[i]"] --> C1{"starts --"}
+    C1 -- yes --> A1["Skip to end of line"]
+    C1 -- no --> C2{"starts /*"}
+    C2 -- yes --> A2["Skip past the closing */"]
+    C2 -- no --> C3{"' or &quot; or [ or backtick"}
+    C3 -- yes --> A3["Skip to the matching close.<br/>A doubled close is an escape."]
+    C3 -- no --> C4{"starts @@"}
+    C4 -- yes --> A4["Skip the whole run:<br/>a system variable, not a parameter"]
+    C4 -- no --> C5{"$tag$ opens<br/>a dollar-quote"}
+    C5 -- yes --> A5["Skip to the matching $tag$"]
+    C5 -- no --> C6{"@ or $"}
+    C6 -- no --> A7["i++"]
+    C6 -- yes --> C7{"preceded by an<br/>identifier character?"}
+    C7 -- yes --> A7
+    C7 -- no --> A6["Collect the name run<br/>and add it"]
 
-**Implementation**:
+    A1 --> Next
+    A2 --> Next
+    A3 --> Next
+    A4 --> Next
+    A5 --> Next
+    A6 --> Next
+    A7 --> Next
+
+    style A6 fill:#1f6f4a,stroke:#2ea36a,color:#eaf6ef
+    style A4 fill:#1f4f7a,stroke:#3a86c8,color:#e8f2fb
+    style A5 fill:#1f4f7a,stroke:#3a86c8,color:#e8f2fb
+    style C7 fill:#7a4a1f,stroke:#c07c34,color:#fdf1e3
+```
+
+### What gets skipped, and what each one is protecting against
+
+| construct | closed by | without this rule |
+|---|---|---|
+| `-- comment` | newline or carriage return | `-- @NotAParam` becomes a parameter |
+| `/* comment */` | `*/`, or end of input | as above, across lines |
+| `'literal'` | `'`, doubled to escape | `'@NotAParam'` becomes a parameter |
+| `"identifier"` | `"`, doubled to escape | as above |
+| `[identifier]` | `]` | as above; no backslash rule, SQL Server has none here |
+| `` `identifier` `` | `` ` ``, doubled to escape | `` `it's` `` opens a phantom literal that swallows the rest of the statement, losing every later parameter |
+| `@@IDENTITY` | end of the name run | `@@ROWCOUNT` is reported as a parameter named `IDENTITY` |
+| `$tag$body$tag$` | the matching `$tag$` | identifier-shaped runs inside a PostgreSQL function body are read as parameters |
+
+An unterminated construct skips to the end of the input rather than falling back to normal scanning.
+That loses the parameters after it, which is the safe direction: the alternative is to report
+parameters that the database will not see, and the count check then passes on SQL that fails.
+
+**Backslash escaping is off by default and is a MySQL/MariaDB concession.** `ExtractParameterNames`
+takes `backslashEscapes`, and it applies inside string literals only. Every other engine treats a
+literal ending in a backslash as complete, so applying the rule there would swallow the closing
+quote and take the rest of the statement with it.
+
+### The sigil rule
+
+A `@` or `$` counts as a placeholder only when the character before it is not an identifier
+character. `IsParameterChar` is ASCII letters, digits and underscore, and nothing else, which is
+what makes `user@domain` and `a$b` stay whole instead of yielding parameters named `domain` and `b`.
+The rule has a `string` and a `ReadOnlySpan<char>` overload with the same body; they are asserted to
+agree.
+
+### Duplicates are returned, not deduplicated
 
 ```csharp
-internal static class SqlParameterParser
-{
-    public static string[] ExtractParameterNames(string sql)
-    {
-        var parameters = new HashSet<string>();
-        var state = ParserState.Normal;
-        var i = 0;
-        
-        while (i < sql.Length)
-        {
-            var c = sql[i];
-            
-            switch (state)
-            {
-                case ParserState.Normal:
-                    if (c == '@' && i + 1 < sql.Length && char.IsLetterOrDigit(sql[i + 1]))
-                    {
-                        // Extract parameter name
-                        var start = i + 1;
-                        while (i < sql.Length && (char.IsLetterOrDigit(sql[i]) || sql[i] == '_'))
-                            i++;
-                        
-                        var paramName = sql.Substring(start, i - start);
-                        parameters.Add(paramName);
-                        continue;
-                    }
-                    else if (c == '-' && i + 1 < sql.Length && sql[i + 1] == '-')
-                    {
-                        state = ParserState.SingleLineComment;
-                        i += 2;
-                        continue;
-                    }
-                    else if (c == '/' && i + 1 < sql.Length && sql[i + 1] == '*')
-                    {
-                        state = ParserState.BlockComment;
-                        i += 2;
-                        continue;
-                    }
-                    else if (c == '\'')
-                    {
-                        state = ParserState.StringLiteral;
-                        i++;
-                        continue;
-                    }
-                    else if (c == '"' || c == '[')
-                    {
-                        state = ParserState.QuotedIdentifier;
-                        i++;
-                        continue;
-                    }
-                    break;
-                    
-                case ParserState.SingleLineComment:
-                    if (c == '\n')
-                        state = ParserState.Normal;
-                    break;
-                    
-                case ParserState.BlockComment:
-                    if (c == '*' && i + 1 < sql.Length && sql[i + 1] == '/')
-                    {
-                        state = ParserState.Normal;
-                        i++;
-                    }
-                    break;
-                    
-                case ParserState.StringLiteral:
-                    if (c == '\'' && (i == 0 || sql[i - 1] != '\\'))
-                        state = ParserState.Normal;
-                    break;
-                    
-                case ParserState.QuotedIdentifier:
-                    if ((c == '"' || c == ']'))
-                        state = ParserState.Normal;
-                    break;
-            }
-            
-            i++;
-        }
-        
-        return parameters.ToArray();
-    }
-}
+ExtractParameterNames("SELECT * FROM products WHERE name = @Name OR supplier = @Name")
+// Returns: ["Name", "Name"]
 ```
+
+The result is the placeholder occurrences in the order the SQL mentions them, not the distinct set.
+Callers that need the set make it themselves.
+
+### Two copies, and one deferred allocation
+
+The walker ships twice: a span version for `net8.0` and above, and a hand-maintained `string` copy
+for the older targets. They are held to the same behaviour by property tests that run both.
+
+The result list is not allocated until the first placeholder is found. Opening with a sized `List`
+cost every parameterless statement a `List` plus its backing array for a result that is always
+empty; the allocation-budget tests measured that at 120 bytes per call.
 
 **Examples**:
 
 ```csharp
-// Simple parameter
 ExtractParameterNames("SELECT * FROM products WHERE id = @Id")
 // Returns: ["Id"]
 
-// Multiple parameters
 ExtractParameterNames("SELECT * FROM products WHERE category_id = @CategoryId AND price > @MinPrice")
 // Returns: ["CategoryId", "MinPrice"]
 
-// Duplicate parameters (deduplicated)
-ExtractParameterNames("SELECT * FROM products WHERE category_id = @Id OR supplier_id = @Id")
-// Returns: ["Id"]
-
-// Comments ignored
 ExtractParameterNames("SELECT * FROM products WHERE id = @Id -- @NotAParam")
 // Returns: ["Id"]
 
-// String literals ignored
 ExtractParameterNames("SELECT * FROM products WHERE name = '@NotAParam'")
 // Returns: []
 
-// Quoted identifiers ignored
 ExtractParameterNames("SELECT * FROM [products] WHERE [id] = @Id")
 // Returns: ["Id"]
+
+ExtractParameterNames("SELECT @@ROWCOUNT, * FROM products WHERE id = @Id")
+// Returns: ["Id"]
+
+ExtractParameterNames("SELECT * FROM users WHERE email = 'a@b.com' OR name = @Name")
+// Returns: ["Name"]
 ```
 
 ---
