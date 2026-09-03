@@ -94,6 +94,10 @@ default lives in `src/Directory.Build.props`.
   path are corrected.
 - **Docs: the published HTML under `dist/docs-site` is regenerated.** It was two passes stale
   and still carried text that had been removed from `docs/`.
+- **CI: the mutation tier is held back until a runner answers to its label.** `runs-on` is a
+  fallback expression, so a label no runner carries does not fail the job - it queues,
+  indefinitely, with no error and no badge. The job now also requires
+  `vars.CI_MUTATION_ENABLED == 'true'`, which makes the unconnected state a visible skip.
 - **Docs: the three torture-test documents are restored.** The brief the test was run from
   (`jaunty-torture-test-handoff.md`), the log of what it found about Jaunty
   (`jaunty-torture-test-gaps-log.md`) and the process notes
