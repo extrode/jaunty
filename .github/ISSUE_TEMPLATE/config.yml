@@ -1,0 +1,7 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/extrode/jaunty/security/advisories/new
+    about: >
+      Never file a security report as an ordinary issue. Report privately through a GitHub
+      Security Advisory; SECURITY.md has the disclosure timeline and what is in scope.
