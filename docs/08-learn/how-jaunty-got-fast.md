@@ -103,10 +103,13 @@ baseline does.
 
 The growth sequence above is reproducible with `tmp/claims/list-growth.cs`. Two details are
 easy to get wrong. The count depends on where the list starts: from the BCL default of zero it
-is fourteen arrays and thirteen growths, and only from Jaunty's 64 is it nine and eight. And
-the large-object heap is reached by the array of references, not by the rows themselves, so a
-query materialising a value type never gets there at 10,000 rows: the largest `int[]` in the
-sequence is 65,560 bytes.
+is thirteen arrays and twelve copies, 4 through 16,384, and only from Jaunty's 64 is it nine
+and eight. And whether the last array reaches the large object heap is decided by the element
+size, not by the rows the array points at. An array of 16,384 elements is 24 bytes of header
+plus 16,384 times the element width, so it crosses 85,000 bytes once an element is 6 bytes or
+wider: references, `long`, `double`, `decimal`, `Guid`, `DateTime` and any multi-map tuple
+list all cross it, while `int`, `short` and `bool` do not. The largest `int[]` in the sequence
+is 65,560 bytes.
 
 The 2026-09-02 run put a number on what the doubling costs. Every unhinted case on every
 provider shows Gen2 collections in the log, every hinted case shows none, and so do Dapper, RepoDb
