@@ -250,7 +250,13 @@ jobs:
   # NightlyWorkflowCadenceTests exists to catch.
   mutation:
     name: Mutate ${{ matrix.project }}
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 0'
+    # The second half of this condition is the runner switch, and it exists because the failure it
+    # prevents is silent. A job whose `runs-on` names a label no runner carries does not fail - it
+    # queues, indefinitely, with no error anywhere. Both Mutate jobs sat queued through an entire
+    # nightly run that way, because the Blacksmith label below is a fallback and Blacksmith was not
+    # installed on the org. Set CI_MUTATION_ENABLED to 'true' once a runner answers to the label;
+    # until then the tier shows as a skipped job rather than a pending one.
+    if: (github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 0') && vars.CI_MUTATION_ENABLED == 'true'
     # The one job that does not follow CI_RUNNER. 2,364 mutants took 2 h 10 m on an Apple Silicon Mac at
     # concurrency 8; a 2-core hosted runner does not finish inside GitHub's limit at all, which is
     # what public-release T18 exists to resolve. Blacksmith documents no maximum job duration.

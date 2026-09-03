@@ -168,6 +168,13 @@ Blacksmith documents no maximum job duration. Three numbers there only make sens
 | `timeout-minutes` | `240` | GitHub's **default is 360 and applies to every runner**, Blacksmith included, so "no maximum duration" upstream is not by itself a bound |
 | `--concurrency` | `16` | Blacksmith runners report the **host** CPU count, not the allocated vCPUs, so Stryker cannot size itself — the number must be passed and must move with the tier |
 
+**The tier is off until a runner answers to that label.** `runs-on` is a fallback expression, and a
+`runs-on` naming a label nothing carries does not fail the run — it queues, indefinitely, with no
+error and no badge. Both Mutate jobs sat queued through a whole nightly that way. So the job's
+`if:` additionally requires `vars.CI_MUTATION_ENABLED == 'true'`, which turns "pending forever" into
+a visible skip; set that variable once Blacksmith is installed on the org, or set
+`CI_MUTATION_RUNNER` alongside it to point the tier somewhere else.
+
 Blacksmith's 3,000 free minutes are **2vCPU-minutes consumed proportionally**: a 16 vCPU run bills
 at 8× wall clock, so one weekly jaunty run is roughly 2,400 a month — most of the org allowance,
 which is shared with jauntyq. Anything else moving to Blacksmith needs that arithmetic redone
