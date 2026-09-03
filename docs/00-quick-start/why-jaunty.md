@@ -31,8 +31,6 @@ flowchart TD
     E -- no --> F["5. Throw InvalidOperationException<br/>with the exact fix:<br/>add [Table], pass a mapper,<br/>or install the reflection package"]
 ```
 
-![Mapper resolution ladder](../_assets/mapper-ladder.svg)
-
 Three details worth knowing:
 
 - **Your mapper always wins.** Step 1 means you can take over row materialization for any single call without configuring anything globally.
