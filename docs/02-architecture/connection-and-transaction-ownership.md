@@ -1,18 +1,21 @@
 # Connection and Transaction Ownership
 
 Jaunty accepts your `IDbConnection` and gives it back in the state it found it. Two booleans carry
-that promise through every write path, and every acquire/release pair in the codebase is derived
-from them:
+that promise through the write paths, and every acquire/release pair is derived from them:
 
 ```csharp
 bool wasClosed = connection.State == ConnectionState.Closed;
 bool ownTransaction = transaction is null;
 ```
 
-`wasClosed` appears in eight write files, `ownTransaction` in six. They are the same two lines each
-time, and both are read only in a `finally`.
+Under `src/Jaunty/Write`, `wasClosed` appears in eight files and `ownTransaction` in six: the six
+`Bulk*` files have both, and `Upsert`/`UpsertAsync` have only `wasClosed` because they issue one
+statement and own no transaction. The acquire decisions read the booleans in the `try`; the release
+decisions read them in the `finally`.
 
 ## What that buys you
+
+For the six bulk-write paths:
 
 | you pass | Jaunty opens | Jaunty closes | Jaunty commits |
 |---|---|---|---|
@@ -24,16 +27,24 @@ An open connection is left open because you opened it, and closing it would brea
 statement in your own unit of work. A supplied transaction is never committed or rolled back by
 Jaunty, so a bulk write composes into a larger transaction without an argument.
 
+`Upsert` differs in the last column only: with no transaction supplied its single statement runs in
+autocommit, and with one supplied it joins yours. The connection columns are the same.
+
 ## The nesting order
+
+There are two nested `try` blocks. The outer one exists for the `finally` that disposes and closes;
+the inner one exists for the `catch` that puts session state back.
 
 ```mermaid
 flowchart TD
-    S["wasClosed = state is Closed<br/>ownTransaction = transaction is null"] --> V["Validate the supplied transaction<br/>is a DbTransaction"]
-    V --> O{"wasClosed?"}
+    S["wasClosed = state is Closed"] --> V["If the connection is a DbConnection,<br/>validate the supplied transaction<br/>is a DbTransaction"]
+    V --> OW["ownTransaction = transaction is null"]
+    OW --> T["outer try"]
+    T --> O{"wasClosed?"}
     O -- yes --> OP["Open"]
-    O -- no --> T
-    OP --> T["try"]
-    T --> D1{"constraints off,<br/>autocommit dialect?"}
+    O -- no --> T2
+    OP --> T2["inner try"]
+    T2 --> D1{"constraints off,<br/>autocommit dialect?"}
     D1 -- yes --> FK1["Disable FK enforcement<br/>outside any transaction"]
     D1 -- no --> B
     FK1 --> B{"ownTransaction?"}
@@ -43,18 +54,22 @@ flowchart TD
     D2 -- yes --> FK2["Disable FK enforcement<br/>inside the transaction"]
     D2 -- no --> W
     FK2 --> W["Write the rows"]
-    W --> RE["Re-enable FK enforcement"]
-    RE --> C{"ownTransaction?"}
-    C -- yes --> CM["Commit"]
-    C -- no --> F
-    CM --> F["finally"]
-    W --> X["catch"]
-    X --> XR["Re-enable FK enforcement,<br/>swallowing any failure"]
-    XR --> XB{"ownTransaction?"}
-    XB -- yes --> RB["Rollback, best effort"]
-    XB -- no --> RT["Rethrow"]
-    RB --> RT
+    W --> RE1["Re-enable, in-transaction case"]
+    RE1 --> CM{"ownTransaction?"}
+    CM -- yes --> COM["Commit"]
+    CM -- no --> RE2
+    COM --> RE2["Re-enable, autocommit case"]
+    RE2 --> F["finally"]
+
+    T2 --> X["catch"]
+    X --> XR1["Re-enable, in-transaction case"]
+    XR1 --> XB{"ownTransaction?"}
+    XB -- yes --> RB["Rollback"]
+    XB -- no --> XR2
+    RB --> XR2["Re-enable, autocommit case"]
+    XR2 --> RT["Rethrow"]
     RT --> F
+
     F --> FD{"ownTransaction?"}
     FD -- yes --> DI["Dispose the transaction"]
     FD -- no --> FC
@@ -63,17 +78,24 @@ flowchart TD
     FC -- no --> End["Return"]
     CL --> End
 
-    style CM fill:#1f6f4a,stroke:#2ea36a,color:#eaf6ef
+    style COM fill:#1f6f4a,stroke:#2ea36a,color:#eaf6ef
     style RB fill:#7a1f2e,stroke:#c2405a,color:#fdeaee
-    style XR fill:#7a4a1f,stroke:#c07c34,color:#fdf1e3
+    style XR1 fill:#7a4a1f,stroke:#c07c34,color:#fdf1e3
+    style XR2 fill:#7a4a1f,stroke:#c07c34,color:#fdf1e3
     style FK1 fill:#1f4f7a,stroke:#3a86c8,color:#e8f2fb
     style FK2 fill:#1f4f7a,stroke:#3a86c8,color:#e8f2fb
 ```
 
-The async paths are the same shape with `OpenAsync`, `CommitAsync`, `DisposeAsync` and `CloseAsync`
-substituted, plus one difference that matters: **the rollback passes
-`CancellationToken.None`**. An operation cancelled mid-write still has to roll back, and passing the
-cancelled token would abandon the transaction instead of undoing it.
+**The re-enable appears twice on each path because the disable does.** Which of the two placements
+is live depends on the dialect, and they bracket the commit from opposite sides: the in-transaction
+one is undone before the commit, the autocommit-dialect one after it.
+
+The async paths are the same shape with `OpenAsync`, `BeginTransactionAsync`, `CommitAsync`,
+`RollbackAsync`, `DisposeAsync` and `CloseAsync` substituted, all of them `NET8_0_OR_GREATER` with
+the synchronous call as the fallback on older targets. **Every restore in the `catch` passes
+`CancellationToken.None`** — the rollback and both foreign-key re-enables. An operation cancelled
+mid-write still has to put things back, and passing the cancelled token would abandon the
+transaction instead of undoing it.
 
 ## Three rules the shape encodes
 
@@ -88,9 +110,8 @@ is wrapped in its own empty `catch`. The failure you want to read is the one tha
 secondary failure while cleaning up would otherwise replace it.
 
 **The close is conditional twice.** `wasClosed && connection.State != ConnectionState.Closed`. The
-second check is there because the provider may already have closed it — after a fatal error, or
-because the transaction's disposal took the connection with it — and closing an already-closed
-connection is not universally harmless across providers.
+first check is ownership. The second is defensive: nothing in Jaunty closes the connection between
+those two points, so it guards against the provider having done so.
 
 ## Why the transaction is validated before use
 
@@ -98,16 +119,22 @@ A `DbConnection`'s `IDbCommand.Transaction` setter is `DbCommand`'s explicit int
 implementation, and it casts to `DbTransaction` internally. Assigning a non-`DbTransaction`
 `IDbTransaction` through it throws an `InvalidCastException` with no useful message. The write paths
 run the supplied transaction through `AsyncTransactionValidator.RequireDbTransaction` first, so an
-incompatible transaction produces an `ArgumentException` naming the problem instead.
+incompatible transaction produces an `ArgumentException` naming the problem instead. On the
+synchronous paths this happens only when the connection is a `DbConnection`; anything else takes the
+transaction as given, because the cast that would fail is not in play.
 
 ## The foreign-key toggle has two placements
 
-Which one applies is a dialect fact, not a preference. Some engines will not change foreign-key
-enforcement inside a transaction, so for those the toggle has to happen before `BeginTransaction`
-and be undone after the commit; the rest toggle within the transaction and are undone before it.
-`ForeignKeyToggleCoordinator.RequiresPreTransactionToggle` decides, and
-`ValidateTransactionCompatibility` rejects the combination that cannot work — constraint-skipping
-requested against a supplied transaction on a dialect that needs the pre-transaction placement.
+Which one applies is a dialect fact, not a preference.
+`ForeignKeyToggleCoordinator.RequiresPreTransactionToggle` is true when constraint-skipping was
+asked for and the dialect requires autocommit for the toggle; those engines toggle before
+`BeginTransaction` and are undone after the commit, and the rest toggle within the transaction and
+are undone before it.
+
+`ValidateTransactionCompatibility` rejects the one combination that cannot work, throwing
+`NotSupportedException` when all three hold: constraint-skipping requested, a dialect that requires
+autocommit for the toggle, and a transaction supplied by the caller. There is nowhere to put the
+toggle in that case, because the transaction is already open before Jaunty is involved.
 
 ## See also
 
