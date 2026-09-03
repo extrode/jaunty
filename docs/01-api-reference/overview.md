@@ -80,7 +80,7 @@ Jaunty uses strict mapping by default, ensuring all entity properties have match
 - Minimal allocations during query execution
 
 ### Modern C# Support
-- C# 13 extension syntax
+- An extension-method API surface (`db.Query<T>(...)`), compiled at C# 13
 - Full async/await support
 - IAsyncEnumerable for streaming large result sets
 - Records and primary constructors support

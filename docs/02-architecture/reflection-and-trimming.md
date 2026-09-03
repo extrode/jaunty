@@ -124,9 +124,14 @@ pragma suppressed the only warning that said so; under trimming every row of a g
 came back fully defaulted, with no exception. The pragma is gone — the build staying clean without
 it is the evidence the annotation does the work.
 
-**One caveat remains, and it is not removable by annotation.** `System.Linq.Expressions`'
-`Expression.Bind` and `Expression.New` carry `RequiresUnreferencedCode`, so a grouped fluent
-projection emits **IL2026** in *your* build, not Jaunty's. The published binary runs correctly —
+**One caveat remains, and it is not removable by annotation.** One
+`System.Linq.Expressions` overload,
+`Expression.New(ConstructorInfo, IEnumerable<Expression>, params MemberInfo[])`, carries
+`RequiresUnreferencedCode`, so a grouped fluent projection that reaches it emits **IL2026** in
+*your* build, not Jaunty's. Two neighbouring members are often named alongside it and should not
+be: `Expression.Bind` carries no trimming annotation at all, and `Expression.New(Type)` emits
+**IL2067** rather than IL2026, and only when the `Type` argument is unannotated. Measured
+2026-09-03 by compiling each overload against `EnableTrimAnalyzer`. The published binary runs correctly —
 the AOT sample exercises both the property and constructor paths and asserts on the values — but
 the warning is the framework's, and the only way to silence it is to suppress it at your call site
 or use a non-expression overload.
