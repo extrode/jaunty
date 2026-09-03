@@ -7,7 +7,7 @@
 #
 # Both hold mutation-report.html/.json per run, and a single Jaunty.UnitTests report is ~176 MB of
 # each. They are build output, not results anyone reads twice: the numbers that mattered are
-# written into the plan document and into work/todo.md, which is the point of recording them there.
+# written into the plan document and onto the maintainers' backlog, which is why they are recorded.
 #
 # NOT listed here, deliberately:
 #

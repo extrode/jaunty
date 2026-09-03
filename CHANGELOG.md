@@ -94,6 +94,17 @@ default lives in `src/Directory.Build.props`.
   path are corrected.
 - **Docs: the published HTML under `dist/docs-site` is regenerated.** It was two passes stale
   and still carried text that had been removed from `docs/`.
+- **Cleanup scripts: two of them named a path and a branch that do not exist.**
+  `merged-branch-sweep.ps1` set its working directory from a hardcoded absolute path that has
+  never been this repository's location, so on any other machine it either failed or swept
+  branches somewhere else entirely; it now resolves the root with `git rev-parse --show-toplevel`
+  like every other script in the directory. `zero-dependency-core.ps1` listed a branch whose name
+  had been mangled by an earlier text substitution, and three of its closing notes had been
+  substituted into unreadable English. Five references to files the repository does not contain
+  are reworded.
+- **Docs: internal-backlog pointers in the public API documentation are reworded.** Six XML
+  documentation comments in `src/` told the reader to consult a file kept in a private
+  repository. The decisions they describe are unchanged; only the pointer is.
 - **CI: the mutation tier is held back until a runner answers to its label.** `runs-on` is a
   fallback expression, so a label no runner carries does not fail the job - it queues,
   indefinitely, with no error and no badge. The job now also requires

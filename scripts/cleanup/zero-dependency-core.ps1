@@ -55,7 +55,7 @@ $targets = @(
     'docs/aot-and-package-docs'
     'docs/cla-and-contributing'
     'feat/continuous-audit'
-    'fix/the audit host-sync-glob'
+    # One further branch from this set is omitted: its name carried the audit machine's hostname.
     'fix/audit-script-exec-bit'
     'fix/audit-pipefail'
     'fix/audit-api-surface-regex'
@@ -127,10 +127,10 @@ if (-not $bundles) {
 }
 
 Write-Host ''
-Write-Host '== 4. the audit host audit host (NOT removed) =='
-Write-Host 'note:  the audit checkout on the audit host holds the audit checkout, bundles and reports.'
-Write-Host '       It is the continuous audit loop and is meant to persist. To decommission it'
-Write-Host '       entirely:  ssh the audit host "rm -rf the audit checkout"  - run that by hand, deliberately.'
+Write-Host '== 4. the audit host (NOT removed) =='
+Write-Host 'note:  the audit machine holds its own checkout of this repository, the bundles and the'
+Write-Host '       reports. It is the continuous audit loop and is meant to persist. To decommission'
+Write-Host '       it entirely, remove that checkout on the audit machine by hand, deliberately.'
 
 Write-Host ''
 Write-Host '== 5. build output this task rebuilt (NOT removed) =='

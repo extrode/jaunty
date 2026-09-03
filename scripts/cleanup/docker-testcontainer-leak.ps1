@@ -163,5 +163,5 @@ if (-not $Execute) {
 }
 else {
     Write-Host 'The leak itself is unfixed: CI will refill this within a run or two.'
-    Write-Host 'See work/todo.md - the container lifecycle in the test suite is the actual defect.'
+    Write-Host 'The container lifecycle in the test suite is the defect; this only clears the residue.'
 }

@@ -28,8 +28,8 @@ namespace Jaunty.Fluent;
 /// <c>Jaunty.Fluent.IGrouping&lt;TKey, T&gt;</c>, or add a <c>using</c> alias) is not discoverable
 /// from the message. No in-repo site can see it: every one sits inside or under the
 /// <c>Jaunty.Fluent</c> namespace, where enclosing-namespace lookup beats the using directive.
-/// Recorded rather than renamed - renaming a public interface is the owner's call, and the entry in
-/// <c>work/todo.md</c> carries the options.
+/// Recorded rather than renamed - renaming a public interface is the owner's call, and the
+/// maintainers' backlog carries the options.
 /// </remarks>
 public interface IGrouping<TKey, T> where T : new()
 {

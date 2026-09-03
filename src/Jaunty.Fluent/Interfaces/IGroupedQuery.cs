@@ -25,8 +25,8 @@ namespace Jaunty.Fluent;
 /// that one matches the BCL's <c>IGrouping&lt;TKey, TElement&gt;</c>, and this one matches the rest
 /// of the fluent surface, where <c>T</c> is always the entity being queried. Both are defensible;
 /// the cost is that a caller naming either type explicitly has to remember which convention applies
-/// where. No behavioural effect, and reordering either is a breaking public-API change - the entry
-/// in <c>work/todo.md</c> carries it as the owner's call.
+/// where. No behavioural effect, and reordering either is a breaking public-API change - the
+/// maintainers' backlog carries it as the owner's call.
 /// </remarks>
 public interface IGroupedQuery<T, TKey> where T : new()
 {

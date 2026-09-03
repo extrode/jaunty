@@ -83,8 +83,8 @@ public sealed class WindowBuilder<TFrom, TResult>
 /// <c>FunctionType</c>/<c>NTileBuckets</c> state is never populated or consulted. The type is
 /// nevertheless public API a consumer can see and reasonably expect to mean something. Removing it
 /// and the two internal constructors is a public-surface deletion and therefore the owner's call;
-/// it is recorded in <c>work/todo.md</c> with both options. Do not add a member here expecting it
-/// to change generated SQL - change the visitor's method matching instead.
+/// it is recorded on the maintainers' backlog with both options. Do not add a member here
+/// expecting it to change generated SQL - change the visitor's method matching instead.
 /// </remarks>
 public enum WindowFunctionType
 {
