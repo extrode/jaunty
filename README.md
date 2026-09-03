@@ -178,7 +178,7 @@ afternoon.
 
 ## Jaunty or JauntyQ?
 
-Jaunty starts from C#. [JauntyQ](https://github.com/extrode/jauntyq) starts from SQL. They are two
+Jaunty starts from C#. JauntyQ (not yet made public) starts from SQL. They are two
 products, not two modes of one product, and the choice is about how you like to work.
 
 With Jaunty you solve the problem in the language you are already writing: attribute-mapped
@@ -193,7 +193,7 @@ by ordinal, with no reflection and no runtime SQL parsing.
 
 Neither product silently maps the wrong thing. JauntyQ catches it at build time against a snapshot,
 Jaunty at the call site against the live result set. If the second description sounds like you, the
-[JauntyQ README](https://github.com/extrode/jauntyq) covers that direction in the same depth.
+JauntyQ README covers that direction in the same depth.
 
 ---
 
@@ -285,6 +285,9 @@ keyword, already taken, or the same as a table in the query is declined, and an 
 ```bash
 dotnet add package Extrode.Jaunty
 ```
+
+Prerelease packages are published to GitHub Packages rather than to nuget.org, so that command
+resolves only once `https://nuget.pkg.github.com/extrode/index.json` is a configured source.
 
 Targets `netstandard2.0`, `net8.0` and `net10.0`, and works with any ADO.NET provider.
 
