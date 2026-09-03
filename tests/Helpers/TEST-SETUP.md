@@ -260,7 +260,8 @@ cp tests/Jaunty.Scaffolding.Tests/appsettings.example.json tests/Jaunty.Scaffold
 **Fill in the passwords, or empty the string entirely.** An empty connection string makes
 that dialect's tests **skip**; a non-empty one that cannot connect makes them **fail**.
 The template ships with passwords blank, so copying it without editing turns 1,584
-skips into failures. A checkout with no `appsettings.json` at all skips 4,791.
+skips into failures. A checkout with no `appsettings.json` at all skips every server-dialect
+test; the measured count is in [Test Coverage Summary](#test-coverage-summary) below.
 
 ---
 

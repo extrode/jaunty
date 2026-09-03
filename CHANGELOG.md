@@ -94,6 +94,20 @@ default lives in `src/Directory.Build.props`.
   path are corrected.
 - **Docs: the published HTML under `dist/docs-site` is regenerated.** It was two passes stale
   and still carried text that had been removed from `docs/`.
+- **Docs: the release runbook disagreed with the conventions, the package IDs and the
+  package count.** It instructed `git merge --ff-only dev` for the release merge where
+  `conventions.md` specifies `--no-ff`, so a maintainer following it produced a history with no
+  commit meaning "this is what shipped". Its consume command was `dotnet add package Jaunty`,
+  the rc.1 ID, which does not resolve against the feed — the IDs are `Extrode.`-prefixed. It
+  said 7 shippable packages where there are 9, `Extensions.Logging` and `Extensions.Npgsql`
+  having been added for rc.2. The procedure is now version-neutral rather than pinned to rc.1.
+- **Docs: the four `NativeAOT-*` samples and `torture-test-sakila-queries` now have READMEs.**
+  Five of the eight samples shipped with no statement of what they demonstrate or how to run
+  them. Each now says what it proves, what it deliberately does not reference, and the command
+  to run it; the four AOT samples were each run to confirm the documented output.
+- **Docs: `TEST-SETUP.md` gave two different skip counts for the same unconfigured run**
+  (4,791 and 4,898, 107 apart). The unsourced one is replaced by a pointer to the measured
+  table that shows its arithmetic.
 - **Cleanup scripts: two of them named a path and a branch that do not exist.**
   `merged-branch-sweep.ps1` set its working directory from a hardcoded absolute path that has
   never been this repository's location, so on any other machine it either failed or swept
