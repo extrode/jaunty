@@ -222,28 +222,69 @@ await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
 ---
 
-### 5. Manual for Loops Over foreach
+### 5. Iterate Through the Concrete Type, Not an Interface
 
-**Problem**: `foreach` allocates enumerator for some collections.
+**Problem**: a collection typed as `IEnumerable<T>` or `IList<T>` reaches `GetEnumerator()`
+through the interface, which returns a boxed enumerator on the heap. The cost is the
+interface, not the `foreach`.
 
-**Solution**: Use `for` loop for arrays and lists.
+**Solution**: keep the field, parameter or local typed as the array, `List<T>` or
+`Span<T>` it already is.
 
 ```csharp
-// BAD: Potential enumerator allocation
-foreach (var property in properties)
+// BAD: the interface type forces a boxed enumerator
+private readonly IReadOnlyList<PropertyMetadata> _properties;
+
+foreach (var property in _properties)
 {
     // ...
 }
 
-// GOOD: No allocation
-for (var i = 0; i < properties.Length; i++)
+// GOOD: an array needs no enumerator, and List<T> uses its struct enumerator
+private readonly PropertyMetadata[] _properties;
+
+foreach (var property in _properties)
 {
-    var property = properties[i];
     // ...
 }
 ```
 
-**Impact**: Eliminates enumerator allocations.
+**Impact**: measured on .NET 10.0.203, x64, iterating a ten-element `PropertyInfo[]`.
+Allocation is bytes per call over 1,000,000 direct calls; time is the BenchmarkDotNet
+mean.
+
+| iteration | allocated | mean |
+|---|---:|---:|
+| `for` over `T[]` | 0 B | 10.630 ns |
+| `foreach` over `T[]` | 0 B | 8.438 ns |
+| `foreach` over `Span<T>` | 0 B | 8.298 ns |
+| `for` over `List<T>` | 0 B | 12.608 ns |
+| `foreach` over `List<T>` | 0 B | 11.366 ns |
+| `foreach` over `IList<T>` | 40 B | 12.744 ns |
+| `foreach` over `IEnumerable<T>` | 40 B | 12.690 ns |
+
+Two things follow, and the second one is the reason this section was rewritten.
+
+**`foreach` over an array or a `List<T>` allocates nothing.** The compiler lowers
+`foreach` over `T[]` to an indexed loop with no enumerator at all, and `List<T>` exposes
+a struct enumerator that stays on the stack. The 40 bytes in the last two rows is a boxed
+`List<T>.Enumerator`, and it appears because the *static type* is an interface.
+
+**Replacing `foreach` with a hand-written `for` buys nothing and costs a little.**
+Over an array it was 2.2 ns slower per call — the compiler's own lowering elides the
+bounds check that the hand-written version reintroduces. This file previously advised the
+opposite, and the advice was never followed: `src/` uses `foreach` in 244 places against
+11 indexed `for` loops.
+
+One caveat on the 40-byte figure. BenchmarkDotNet's harness reports zero allocation for
+those same two rows, because in its generated loop the JIT devirtualizes `GetEnumerator`
+and proves the enumerator does not escape, so it stack-allocates instead. A standalone
+harness calling the same methods a million times does allocate. Treat interface-typed
+iteration as *may allocate, depending on what the JIT can prove*, and prefer the concrete
+type rather than relying on the optimisation.
+
+The harness is `tmp/claims/foreach-bench/`; `foreach-bench alloc-direct` reproduces the
+allocation column and a bare run reproduces the timings.
 
 ---
 
@@ -366,7 +407,7 @@ internal static class SqlParameterParserCache
 - [ ] Compiled delegates instead of reflection
 - [ ] `readonly struct` for small value types
 - [ ] No LINQ in hot paths
-- [ ] `for` loops instead of `foreach` for arrays
+- [ ] Collections iterated through their concrete type, not `IEnumerable<T>` or `IList<T>`
 - [ ] `ConfigureAwait(false)` on all async
 - [ ] `StringComparison.Ordinal` for string comparison
 - [ ] `[MethodImpl(MethodImplOptions.AggressiveInlining)]` for small methods
