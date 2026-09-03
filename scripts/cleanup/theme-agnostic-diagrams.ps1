@@ -13,8 +13,8 @@
     reach it and a light-theme reader saw a black panel. The mermaid block renders the same five
     rungs and themes itself, so the image is now unreferenced.
 
-    Nothing else this task produced is a candidate. The scratch under tmp/diagrams/ was removed
-    by the task that made it.
+    Nothing else this task produced is a candidate. The scratch under tmp/diagrams/ is the
+    patch scripts that made these edits; tmp/ is gitignored and is not listed here.
 
     Bare invocation is the dry run. -Execute is the only way to act.
 
