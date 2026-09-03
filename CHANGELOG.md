@@ -282,11 +282,11 @@ Every item here was reachable from caller-supplied input.
   fallback expression, so a label no runner carries does not fail the job - it queues,
   indefinitely, with no error and no badge. The job now also requires
   `vars.CI_MUTATION_ENABLED == 'true'`, which makes the unconnected state a visible skip.
-- **Docs: the three torture-test documents are restored.** The brief the test was run from
-  (`jaunty-torture-test-handoff.md`), the log of what it found about Jaunty
-  (`jaunty-torture-test-gaps-log.md`) and the process notes
-  (`jaunty-torture-test-lessons-learned.md`) were referenced from four sample READMEs, the
-  seed README, the results page and two specs, but were absent from the tree.
+- **Docs: the four torture-test documents are held privately.** The brief the test was run
+  from, the log of what it found about Jaunty, the process notes and the results were
+  referenced from four sample READMEs, the seed README and two specs. They were restored to
+  the tree earlier in this release and then moved to the private work repository before
+  publication; the references that pointed at them now name them in prose instead.
 
 - **A non-generic `CommandOptions` now binds to the entity overload (2026-08-02).** Passing a
   `CommandOptions` where an anonymous parameter object was expected bound to the parameters

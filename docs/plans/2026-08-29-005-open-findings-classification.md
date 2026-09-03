@@ -96,5 +96,5 @@ publishing. The classification is what T20 needed; the move is what T1 tracks.
 
 - `docs/03-development/continuous-audit.md` — the loop that produces new findings, and why raw
   reports are never committed
-- `docs/05-quality/audit-record.md` — the public summary of the audit rounds behind this
+- The audit record, held in the private work repository — the summary of the audit rounds behind this
   classification

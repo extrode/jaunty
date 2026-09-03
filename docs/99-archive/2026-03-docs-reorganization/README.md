@@ -30,7 +30,7 @@ General audit report for Jaunty codebase.
 ### jaunty-reorganize-tests.md
 Test reorganization plan and execution guide.
 
-**Location**: [`../../06-releases/tasklists/jaunty-reorganize-tests.md`](../../06-releases/tasklists/jaunty-reorganize-tests.md)
+**Location**: the test reorganization plan, since moved to the private work repository
 
 ---
 
@@ -79,7 +79,7 @@ All audit findings have been addressed:
 
 ## Related Documentation
 
-- [`../../06-releases/tasklists/`](../../06-releases/tasklists/) - Current task lists
+- The task lists, since moved to the private work repository
 - [`../../05-quality/reports/`](../../05-quality/reports/) - Quality reports
 - [`../../03-development/file-naming-convention.md`](../../03-development/file-naming-convention.md) - File naming standard
 
