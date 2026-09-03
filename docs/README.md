@@ -84,8 +84,6 @@ that would add one lives in a separate package, which is the whole reason the li
 Quality assurance and testing documentation:
 
 - **[05-quality/](05-quality/README.md)**
-  - [Audit Record](05-quality/audit-record.md) - 36 rounds, 725 findings, and where each of the
-    eight security families is closed in `src/`
   - [Code Coverage](05-quality/code-coverage.md)
   - [Production Readiness Report](05-quality/reports/PRODUCTION-READINESS-2026-07-02.md)
   - [Coverage Gap Inventory](05-quality/reports/COVERAGE-GAPS-2026-07-04.md)
@@ -97,14 +95,11 @@ Quality assurance and testing documentation:
 
 ### 6. Releases & Planning
 
-Release documentation and task lists:
+Release documentation:
 
 - **[06-releases/](06-releases/README.md)**
   - [Release Runbook](06-releases/RELEASE-RUNBOOK.md) - Step-by-step release process
-  - [Pricing](06-releases/pricing.md) - The commercial model
-  - [Production Readiness Tasklist](06-releases/tasklists/PRODUCTION-READINESS-TASKLIST.md)
-  - [Commercial Tasklist](06-releases/tasklists/COMMERCIAL-TASKLIST.md)
-  - [Test Reorganization Plan](06-releases/tasklists/jaunty-reorganize-tests.md)
+  - [Feature Gap Analysis](06-releases/feature-gap-analysis.md) - gaps against competing ORMs
 
 ### 7. Design
 

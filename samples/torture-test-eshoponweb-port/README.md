@@ -2,8 +2,8 @@
 
 Reference snapshot of the files written/edited to port `dotnet-architecture/eShopOnWeb`'s
 Catalog/Basket/Order data layer from EF Core onto Jaunty, per
-`docs/jaunty-torture-test-handoff.md` (Part 1). See
-`docs/jaunty-torture-test-gaps-log.md` for what this surfaced about Jaunty itself.
+the private torture-test handoff (Part 1). See
+the private torture-test gaps log for what this surfaced about Jaunty itself.
 
 This is **not a buildable sample** — it's a snapshot of files that live inside a full
 eShopOnWeb clone (gitignored from Jaunty's own history, since it's someone else's repo).
@@ -22,8 +22,8 @@ full-table scan). EF Core's own `EfRepository`/`CatalogContext`/
 clone — `IntegrationTests` (out of scope for the port) depends on them directly, so they
 weren't removed.
 
-See `docs/jaunty-torture-test-gaps-log.md` for the 2 real Jaunty bugs/gaps this surfaced
+See the private torture-test gaps log for the 2 real Jaunty bugs/gaps this surfaced
 (a `where T : new()` constraint that excludes DDD-style aggregates, and SQL Server's
 `OFFSET`/`FETCH` requiring a preceding `ORDER BY` that `SqlServerDialect.GetPagingSql`
-doesn't enforce or supply) and `docs/jaunty-torture-test-lessons-learned.md` for process
+doesn't enforce or supply) and the private torture-test lessons-learned notes for process
 lessons (dos and don'ts for running a test like this).

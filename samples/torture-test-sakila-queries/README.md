@@ -3,12 +3,12 @@
 Fifteen non-trivial read queries (`Q01`..`Q15` in `Queries.cs`) run against the same logical
 Sakila/Pagila schema on **five** targets, so the output of one dialect can be diffed against
 another. This is the query half of Part 2 of
-[`docs/jaunty-torture-test-handoff.md`](../../docs/jaunty-torture-test-handoff.md); the
+the private torture-test handoff; the
 scaffolding half is [`torture-test-sakila-codegen`](../torture-test-sakila-codegen).
 
 Results and what the diffs showed are recorded in
-[`docs/jaunty-torture-test-results.md`](../../docs/jaunty-torture-test-results.md); gaps found
-are in [`docs/jaunty-torture-test-gaps-log.md`](../../docs/jaunty-torture-test-gaps-log.md).
+the private torture-test results; gaps found
+are in the private torture-test gaps log.
 
 ## What it exercises
 

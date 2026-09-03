@@ -56,6 +56,6 @@ with a pointer back to this section:
 ## Prior findings
 
 Eight families of security-relevant findings were raised by the internal audit and all eight are
-closed in `src/`. [`docs/05-quality/audit-record.md`](docs/05-quality/audit-record.md) lists them
-and says where each is closed, along with why the audit's open carry-forward list is not
-published.
+closed in `src/`. The audit record lists them and says where each is closed, along with why
+the audit's open carry-forward list is not published. It is held in the private work
+repository and is not part of this repository.
