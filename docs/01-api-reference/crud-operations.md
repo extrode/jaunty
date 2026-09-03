@@ -12,7 +12,7 @@ Inserts an entity into the database and returns the generated identity value for
 
 **Signature:**
 ```csharp
-public static long Insert<T>(this IDbConnection connection, T entity) where T : class, new()
+public static long Insert<T>(this IDbConnection connection, T entity) where T : new()
 ```
 
 **Type Parameters:**
@@ -38,7 +38,7 @@ Inserts an entity into the database with command options and returns the generat
 
 **Signature:**
 ```csharp
-public static long Insert<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+public static long Insert<T>(this IDbConnection connection, T entity, CommandOptions options) where T : new()
 ```
 
 **Parameters:**
@@ -73,7 +73,7 @@ Asynchronously inserts an entity into the database and returns the generated ide
 
 **Signature:**
 ```csharp
-public static ValueTask<long> InsertAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<long> InsertAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -96,7 +96,7 @@ Asynchronously inserts an entity into the database with command options and retu
 
 **Signature:**
 ```csharp
-public static ValueTask<long> InsertAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<long> InsertAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -116,7 +116,7 @@ Updates an entity in the database using the primary key(s) to identify the row t
 
 **Signature:**
 ```csharp
-public static int Update<T>(this IDbConnection connection, T entity) where T : class, new()
+public static int Update<T>(this IDbConnection connection, T entity) where T : new()
 ```
 
 **Parameters:**
@@ -139,7 +139,7 @@ Updates an entity in the database with command options using the primary key(s) 
 
 **Signature:**
 ```csharp
-public static int Update<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+public static int Update<T>(this IDbConnection connection, T entity, CommandOptions options) where T : new()
 ```
 
 **Parameters:**
@@ -158,7 +158,7 @@ Asynchronously updates an entity in the database using the primary key(s) to ide
 
 **Signature:**
 ```csharp
-public static ValueTask<int> UpdateAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> UpdateAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -181,7 +181,7 @@ Asynchronously updates an entity in the database with command options using the 
 
 **Signature:**
 ```csharp
-public static ValueTask<int> UpdateAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> UpdateAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -201,7 +201,7 @@ Deletes an entity from the database using the primary key(s) to identify the row
 
 **Signature:**
 ```csharp
-public static int Delete<T>(this IDbConnection connection, T entity) where T : class, new()
+public static int Delete<T>(this IDbConnection connection, T entity) where T : new()
 ```
 
 **Parameters:**
@@ -224,7 +224,7 @@ Deletes an entity from the database with command options using the primary key(s
 
 **Signature:**
 ```csharp
-public static int Delete<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+public static int Delete<T>(this IDbConnection connection, T entity, CommandOptions options) where T : new()
 ```
 
 **Parameters:**
@@ -241,7 +241,7 @@ Deletes an entity by its primary key value. Only works for entities with a singl
 
 **Signature:**
 ```csharp
-public static int Delete<T>(this IDbConnection connection, object id) where T : class, new()
+public static int Delete<T>(this IDbConnection connection, object id) where T : new()
 ```
 
 **Parameters:**
@@ -263,7 +263,7 @@ Deletes an entity by its primary key value with command options. Only works for 
 
 **Signature:**
 ```csharp
-public static int Delete<T>(this IDbConnection connection, object id, CommandOptions options) where T : class, new()
+public static int Delete<T>(this IDbConnection connection, object id, CommandOptions options) where T : new()
 ```
 
 **Parameters:**
@@ -282,7 +282,7 @@ Asynchronously deletes an entity from the database using the primary key(s) to i
 
 **Signature:**
 ```csharp
-public static ValueTask<int> DeleteAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -304,7 +304,7 @@ Asynchronously deletes an entity from the database with command options using th
 
 **Signature:**
 ```csharp
-public static ValueTask<int> DeleteAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -322,7 +322,7 @@ Asynchronously deletes an entity by its primary key value. Only works for entiti
 
 **Signature:**
 ```csharp
-public static ValueTask<int> DeleteAsync<T>(this DbConnection connection, object id, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, object id, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -339,7 +339,7 @@ Asynchronously deletes an entity by its primary key value with command options. 
 
 **Signature:**
 ```csharp
-public static ValueTask<int> DeleteAsync<T>(this DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -397,7 +397,7 @@ Properties are mapped to columns using:
 
 ## Important Notes
 
-- **Entity Requirements**: All entity types must have a parameterless constructor (`where T : class, new()`)
+- **Entity Requirements**: All entity types must have a parameterless constructor (`where T : new()`)
 - **Primary Keys**: Update and Delete operations require primary key information to identify the correct row
 - **Return Values**: 
   - Insert returns the generated identity value (or 1 for non-identity columns)

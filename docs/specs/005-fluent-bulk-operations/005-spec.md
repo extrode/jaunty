@@ -2,7 +2,7 @@
 
 **Created**: 2026-03-09  
 **Status**: Proposed  
-**Related**: `work/archive/2026-03-10-fluent-improvement-tasklist.md` #1
+**Related**: the fluent improvement tasklist, item #1 (maintainer's tracker)
 
 ---
 

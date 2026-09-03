@@ -222,7 +222,7 @@ precisely, missed the half that matters.
 revision told `/tasks` to add them "so the sentence in Approach becomes true" — editing working
 build config to make prose accurate, and contradicting this plan's own "the 10 `netstandard2.0`
 pins are untouched", since three of the four are netstandard pins. The Approach sentence is
-corrected instead. One-line note in `work/todo.md` if anyone wants them made uniform later.
+corrected instead. One-line note in the maintainer's tracker if anyone wants them made uniform later.
 
 **Loader assertion (the real safety net).** After the net10 test legs run, assert each test
 assembly loaded the net10 build of `Jaunty.dll`.
@@ -294,7 +294,7 @@ recording is what satisfies AC8. The three `*_AllocatesNothing` tests stay — t
   criterion is itself unverifiable.
 - **Security/data exposure:** none. No auth, input handling, data exposure or external calls
   change. The only external surface touched is CI pulling the same SDK it already pulls.
-- **`.worktrees/` and `.worktrees/` double-count every `grep -r`.** This produced a wrong
+- **Local worktree directories double-count every `grep -r`.** This produced a wrong
   pin count once already (39 vs the true 21). *Mitigation:* every sweep in `/tasks` excludes both.
 
 ## Coverage check

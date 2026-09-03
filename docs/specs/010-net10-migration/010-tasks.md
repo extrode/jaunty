@@ -4,15 +4,15 @@ Spec: ./010-spec.md
 Plan: ./010-plan.md
 
 Three PRs, in order. PR1's fixes are verifiable **only against a net10 target**, which `dev` does
-not yet have — verify them in `.worktrees/net10-measure` (spec 010's evidence record, already
-multi-targeting `netstandard2.0;net10.0`) and land them on `dev` where they are net8-neutral.
+not yet have — verify them in a local measurement worktree
+already multi-targeting `netstandard2.0;net10.0` and land them on `dev` where they are net8-neutral.
 
 **Every build claim must name the command that produced it, and that command must include
 `--no-incremental`.** ILLink analysis is skipped on an up-to-date compile: an incremental build
 reported 0 diagnostics on net10 where a clean build of the same tree reported 4. An incremental
 result is not evidence (`010-plan.md:279-282`).
 
-**Every repo sweep must exclude `.worktrees/` and `.worktrees/`.** `git ls-files` does this
+**Every repo sweep must exclude local worktree directories.** `git ls-files` does this
 inherently and is the preferred form; a bare `grep -r` double-counts and already produced one wrong
 pin count (39 against a true 21).
 
@@ -45,7 +45,7 @@ files** are untouched.
   the false `:194` justification, replace the stale `:202` `AOT-SAFE` marker — files:
   `src/Jaunty/Interceptors/LoggingInterceptor.cs` — covers: §3.3, AC2, AC8-adjacent — done when:
   clean net10 build drops the `IL2111` with no suppression added.
-  **DONE 2026-07-30, merged `237b1493`.** Measured 3 → 2 in `.worktrees/net10-measure` via
+  **DONE 2026-07-30, merged `237b1493`.** Measured 3 → 2 in the measurement worktree via
   `dotnet build src/Jaunty/Jaunty.csproj -f net10.0 --no-incremental`. net8 clean build 0/0. Unit
   suite 2913 passed / 0 failed. Perturbation-checked: gutting the method fails exactly 2 tests.
 - [x] **T2** 009 scope amendment — files: `docs/specs/009-aot-annotation-pass/009-spec.md` —
@@ -105,7 +105,7 @@ files** are untouched.
   worktree reports **0 errors**, and the same clean build on `dev` for net8/net472/netstandard2.0 is
   unchanged. Expected residue after T4+T5: zero.
   **DONE 2026-07-30 for `src/Jaunty`.** `dotnet build src/Jaunty/Jaunty.csproj --no-incremental -c
-  Release -f net10.0` in `.worktrees/net10-measure` (rebased onto the merge at `76eb2948`): **0
+  Release -f net10.0` in the measurement worktree (rebased onto the merge at `76eb2948`): **0
   warnings, 0 errors** — the residue is zero and no suppression was added for it, which is a better
   outcome than AC2 asked for. The same command for net8 on the main tree: 0/0.
   Proved non-vacuous rather than assumed: commenting out `ParameterCache`'s `IL2070` suppression and
@@ -181,7 +181,7 @@ files** are untouched.
   `samples/NativeAOT-Basic` at net10.0 saw `[]` and resolved `net8.0` — it would have silently
   AOT-published the net8 build. The 10 `netstandard2.0` pins stay as they are; the 4 missing
   `SkipGetTargetFrameworkProperties` attributes are **out of scope** (3 of the 4 are netstandard
-  pins) — one line in `work/todo.md` instead.
+  pins) — one line in the maintainer's tracker instead.
 - [x] **T12** 2026-07-30. Decisions below executed: `NativeAOT-FluentQuery` retargeted
   `net8.0;net10.0`, built locally 0 warnings / 0 errors on both TFMs (`--no-incremental`) **before**
   the `Jaunty.slnx` entry landed, then added to `/samples/`; `Fluent.SourceGen.Tests` retargeted
@@ -233,7 +233,7 @@ files** are untouched.
   preference rather than a requirement. Verify it fails when a pin is deliberately reverted.
 - [x] **T14** 2026-07-30. `dotnet build Jaunty.slnx -c Release --no-incremental`: **0 errors**,
   111 warnings (6× NU1510 pruning advice on the benchmarks RegularExpressions pin — noted in
-  `work/todo.md`; rest pre-existing test-project warnings). The first clean build surfaced 3 more
+  the maintainer's tracker; rest pre-existing test-project warnings). The first clean build surfaced 3 more
   latent analyzer errors hidden by incremental builds until T17: 2× IL2070 in FlatFiles.DuckDB
   net8 leg (reflection-by-design, on no AOT publish path — NoWarn'd like Extensions.Reflection)
   and 1× IL2075 in `FlatFiles/Internals/TableNameResolver.cs:36` net10 leg (duck-typed
@@ -245,7 +245,7 @@ files** are untouched.
   Fluent.SourceGen.Tests (outside the slnx) 9/17×2. One order-dependent flake seen once on the
   net8 leg only: `SqlDialectFactoryTests` ×2, `BulkCopyDialectFactory.Enable()` pollution from
   parallel collections — pre-existing, TFM-agnostic, mechanism already in
-  `audit/findings-registry.md:2516`; recorded in `work/todo.md`, green on rerun.
+  the private findings registry; recorded in the maintainer's tracker, green on rerun.
   Original task text follows.
   Full clean solution build and both suites on every target — covers: AC1, AC3, AC4 —
   done when: `dotnet build Jaunty.slnx --no-incremental` is 0 errors and the suites pass on net8.0,
@@ -273,7 +273,7 @@ files** are untouched.
   IL2057 gone, 36 MB native exe runs (`--version` → 1.0.0-rc.1, exit 0); Scaffolding suites
   555×2 + 34×2 green. Related out-of-scope find: `MySQLSchemaReader.cs:99` suppresses the same
   IL2057 with a pre-existing `#pragma` ("trusted source" — the wrong rationale; availability, not
-  trust, is the issue) — noted in `work/todo.md`. Original task text follows.
+  trust, is the issue) — noted in the maintainer's tracker. Original task text follows.
   `SQLiteSchemaReader.cs:65` `IL2057` — **confirm or clear on a clean publish** — files:
   `src/Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs` — covers: §3.3, AC2 — done when:
   a clean publish either reproduces it (then fix it properly) or shows it gone (then record that).
@@ -337,7 +337,7 @@ files** are untouched.
 - **T0 — the 3 torture-port csproj.** `Conduit`, `Infrastructure` and `FunctionalTests` declare
   **no TFM anywhere**, are absent from the only solution file, and inherit nothing (neither
   `Directory.Build.props` sets `TargetFramework`). They cannot build as they stand, so there is
-  nothing to retarget. Note in `work/todo.md`; do not touch here.
+  nothing to retarget. Note in the maintainer's tracker; do not touch here.
 - **§3.8 — adopting net10 features behind `#if NET10_0_OR_GREATER`.** Deferred with a trigger:
   spec §4 found no `System.Data`/ADO.NET changes, and every runtime gain arrives with no code
   change from targeting net10. If T20's delta exposes a hot path a conditional could improve, it

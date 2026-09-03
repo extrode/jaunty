@@ -45,7 +45,7 @@ Key outcomes from this period:
 | Archive Document | Current Equivalent |
 |-----------------|-------------------|
 | `INCONSISTENCIES.md` | Resolved - see current codebase |
-| `IMPROVEMENT-OPPORTUNITIES.md` | [`../../06-releases/tasklists/`](../../06-releases/tasklists/) |
+| `IMPROVEMENT-OPPORTUNITIES.md` | [`improvement-opportunities.md`](improvement-opportunities.md) |
 | `doc-coverage/*` | [`../../05-quality/code-coverage/`](../../05-quality/code-coverage/) |
 
 ---

@@ -2,7 +2,7 @@
 
 **Created**: 2026-03-09
 **Status**: Proposed
-**Related**: `work/archive/2026-03-10-fluent-test-plan.md`
+**Related**: the fluent test plan (maintainer's tracker)
 
 ---
 

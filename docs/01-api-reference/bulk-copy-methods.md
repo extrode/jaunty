@@ -60,7 +60,7 @@ BulkCopyConfiguration.Reset();
 | `DefaultBatchSize` | 10,000 | Rows per batch for native bulk copy |
 | `DefaultTimeout` | 30 | Timeout in seconds (0 = no timeout) |
 | `DefaultIdentityMode` | `Default` | How to handle identity columns |
-| `DefaultCheckConstraints` | `false` | Whether to check constraints |
+| `DefaultCheckConstraints` | `true` | Whether to check constraints |
 | `MinimumRowsForNativeBulkCopy` | 100 | Minimum rows to trigger native bulk copy |
 | `EnableNativeBulkCopy` | `true` | Enable/disable native bulk copy |
 
@@ -403,9 +403,7 @@ catch
 ### Bulk Insert with Custom Options
 
 ```csharp
-var options = new CommandOptions<Product>()
-    .WithTimeout(60)
-    .WithTransaction(transaction);
+var options = new CommandOptions<Product>(transaction: transaction, commandTimeout: 60);
 
 int inserted = connection.BulkInsert(products, options);
 ```
@@ -472,7 +470,7 @@ BulkCopyConfiguration.DefaultIdentityMode = BulkCopyIdentityMode.KeepIdentity;
 BulkCopyConfiguration.DefaultTimeout = 120; // 2 minutes
 
 // Or per-operation
-var options = new CommandOptions<T>().WithTimeout(120);
+var options = CommandOptions<T>.WithTimeout(120);
 ```
 
 ## See Also

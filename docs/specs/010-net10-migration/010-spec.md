@@ -218,10 +218,9 @@ Cost, measured rather than asserted: a third build/test leg on the self-hosted r
 variants of the **21** `SetTargetFramework="TargetFramework=net8.0"` pins across **11** csproj
 files. **10** more pin `netstandard2.0` and are untouched by this work.
 
-Counting note: an earlier revision said 39 and 18. Those totals swept
-`.worktrees/`, a stale agent worktree holding a second copy of the
-tree. Any `grep -r` over this repo must exclude `.worktrees/` and `.worktrees/` or it
-double-counts.
+Counting note: an earlier revision said 39 and 18. Those totals swept a
+stale local worktree holding a second copy of the tree. Any `grep -r` over this
+repo must exclude local worktree directories or it double-counts.
 
 ## 6a. Resolved by measurement, 2026-07-29
 
@@ -339,10 +338,10 @@ Command per claim, run 2026-07-30 on the dev tree unless noted. Full per-task de
 |---|---|---|
 | AC1 | met | `dotnet msbuild <proj> -getProperty:TargetFrameworks` per project (T10, 19 projects); `-getItem:ProjectReference -p:TargetFramework=net10.0` per pinned file (T11, 11 files, 0 net8 leaks); loader assertion `dotnet test tests/Jaunty.Tests -f net10.0 --filter FullyQualifiedName~LoadedAssemblyTarget` (T13, perturbation-verified) |
 | AC2 | met, amended above | `dotnet build Jaunty.slnx -c Release --no-incremental` → 0 errors (T14); the four first-party diagnostics fixed, not suppressed |
-| AC3 | met | `dotnet test Jaunty.slnx -c Release --no-build` → all suites 0 failures on net8.0 AND net10.0, skips 2437 both legs (T14); one order-dependent pre-existing flake recorded in `work/todo.md` |
+| AC3 | met | `dotnet test Jaunty.slnx -c Release --no-build` → all suites 0 failures on net8.0 AND net10.0, skips 2437 both legs (T14); one order-dependent pre-existing flake recorded in the maintainer's tracker |
 | AC4 | met | same T14 run: net472 leg 2944/5381 green (loads ns2.0 build, loader-asserted); ns2.0 compiled in the same slnx build |
 | AC5 | met | `dotnet publish samples/<S> -c Release -f <tfm> -r win-x64` ×8 → all exit 0; binaries run exit 0 ×8; `diff` of stdout per sample → byte-identical all four; ilc warnings 0/0 on three samples, WithReflection same-set rolled/unrolled (T19) |
-| AC6 | met | CI run 30533068286 at `0fa0608f` (2026-07-30, self-hosted `REDACTED-RUNNER`): all three jobs green — Build & Test all 10 legs (5 net8 + 5 net10, `--no-incremental`, T13 loader assertion live), Verify NativeAOT (18/18 sites justified), NativeAOT Publish net8 control 41.47 MB + net10 31.95 MB (−23%); required three runner-infrastructure fixes recorded in `work/todo.md` (native dockerd, clang/zlib + scoped sudoers, bc/gettext-base), zero workflow or code changes |
+| AC6 | met | CI run 30533068286 at `0fa0608f` (2026-07-30, self-hosted runner): all three jobs green — Build & Test all 10 legs (5 net8 + 5 net10, `--no-incremental`, T13 loader assertion live), Verify NativeAOT (18/18 sites justified), NativeAOT Publish net8 control 41.47 MB + net10 31.95 MB (−23%); required three runner-infrastructure fixes recorded in the maintainer's tracker (native dockerd, clang/zlib + scoped sudoers, bc/gettext-base), zero workflow or code changes |
 | AC7 | met | `dotnet run -c Release -f net10.0 --no-build -- --filter "*" --join` (T20, 2026-07-30, 48:58): 672/692 completed, same 20 comparison-lib failures as baseline, none Jaunty; median delta all cases −2.1%, Jaunty methods −3.4% — no regression; delta and PostgreSql-tail attribution (identical in hand-coded ADO.NET, environmental) recorded in `benchmarks/BENCHMARK-RESULTS.md` |
 | AC8 | met | `dotnet test tests/Jaunty.Tests -f net8.0 --filter FullyQualifiedName~TypedKeyGuard` — control rewritten to an escaping-box sink (net10's escape analysis elides the old form; measured 0 vs 239,952 boxes) with reason recorded in the class doc (T6) |
 
