@@ -163,21 +163,23 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#how-the-pipeline-works">How the pipeline works</a><a class="toc-l2" href="#shipping-v100-rc1">Shipping v1.0.0-rc.1</a><a class="toc-l2" href="#consuming-you-a-trial-customer-or-a-paying-customer">Consuming (you, a trial customer, or a paying customer)</a><a class="toc-l2" href="#if-something-goes-wrong">If something goes wrong</a><a class="toc-l2" href="#promoting-rc-to-stable">Promoting rc to stable</a><a class="toc-l2" href="#pre-release-todo-tracked">Pre-release TODO (tracked)</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#how-the-pipeline-works">How the pipeline works</a><a class="toc-l2" href="#shipping-a-release">Shipping a release</a><a class="toc-l2" href="#consuming-you-a-trial-customer-or-a-paying-customer">Consuming (you, a trial customer, or a paying customer)</a><a class="toc-l2" href="#if-something-goes-wrong">If something goes wrong</a><a class="toc-l2" href="#promoting-rc-to-stable">Promoting rc to stable</a><a class="toc-l2" href="#pre-release-todo-tracked">Pre-release TODO (tracked)</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Releases &#8250; Release Runbook</nav>
         <article>
 <h1 id="release-runbook">Release Runbook</h1>
-<p>How to ship a Jaunty release, starting with <code>v1.0.0-rc.1</code>. The pipeline is
-fully wired: pushing a version tag is the release action. Everything else
-here is verification around that one step.</p>
+<p>How to ship a Jaunty release. The pipeline is fully wired: pushing a version
+tag is the release action, and everything else here is verification around
+that one step. The commands below take the version from <code>$VERSION</code>, so they
+are the same commands for every release; the worked example is <code>1.0.0-rc.2</code>,
+the release current as of 2026-09-02.</p>
 <h2 id="how-the-pipeline-works">How the pipeline works</h2>
 <p><code>.github/workflows/release.yml</code> triggers on any tag matching <code>v*</code>:</p>
 <ol>
-<li>Derives the package version from the tag (<code>v1.0.0-rc.1</code> -&gt; <code>1.0.0-rc.1</code>)
+<li>Derives the package version from the tag (<code>v1.0.0-rc.2</code> -&gt; <code>1.0.0-rc.2</code>)
 and injects it via <code>-p:Version=...</code> — the <code>&lt;Version&gt;</code> in
 <code>src/Directory.Build.props</code> is the dev-time baseline only; the tag wins.</li>
-<li>Builds <code>Jaunty.slnx</code> in Release, runs the full test suite, packs the 7
+<li>Builds <code>Jaunty.slnx</code> in Release, runs the full test suite, packs the 9
 shippable packages (benchmarks/samples/SourceGenerator are IsPackable=false).</li>
 <li>Pushes <code>.nupkg</code>s to <strong>GitHub Packages</strong>
 (<code>https://nuget.pkg.github.com/extrode/index.json</code>) using the workflow's
@@ -187,35 +189,40 @@ own <code>GITHUB_TOKEN</code> — no secrets to manage.</li>
 </ol>
 <p>Package validation (<code>EnablePackageValidation</code>) runs during pack, so a
 ns2.0/net8.0 public-API divergence fails the release instead of shipping.</p>
-<h2 id="shipping-v100-rc1">Shipping v1.0.0-rc.1</h2>
+<h2 id="shipping-a-release">Shipping a release</h2>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">bash</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-com"># 0. Everything releasable is merged to dev and pushed; tree clean</span>
+  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">VERSION</span>=<span class="tok-num">1</span>.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">2</span>                <span class="tok-com"># the version being shipped</span>
+
+<span class="tok-com"># 0. Everything releasable is merged to dev and pushed; tree clean</span>
 <span class="tok-fn">git</span> checkout dev &amp;&amp; <span class="tok-fn">git</span> pull
 
 <span class="tok-com"># 1. Full gate on the exact commit you will ship</span>
 <span class="tok-fn">dotnet</span> build <span class="tok-attr">-c</span> Release <span class="tok-attr">-warnaserror</span>
 <span class="tok-fn">dotnet</span> test                       <span class="tok-com"># both Jaunty.Tests TFMs run sequentially now</span>
 
-<span class="tok-com"># 2. Fast-forward main to the release commit (main = what customers see)</span>
+<span class="tok-com"># 2. Merge dev into main (main = what customers see)</span>
 <span class="tok-fn">git</span> checkout main
-<span class="tok-fn">git</span> merge <span class="tok-attr">--ff-only</span> dev
+<span class="tok-fn">git</span> merge <span class="tok-attr">--no-ff</span> dev
 <span class="tok-fn">git</span> push origin main
 
 <span class="tok-com"># 3. Tag main and push the tag — THIS is the release trigger</span>
-<span class="tok-fn">git</span> tag v1.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">1</span>
-<span class="tok-fn">git</span> push origin v1.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">1</span>
+<span class="tok-fn">git</span> tag <span class="tok-str">&quot;v$VERSION&quot;</span>
+<span class="tok-fn">git</span> push origin <span class="tok-str">&quot;v$VERSION&quot;</span>
 </code></pre>
 </div>
+<p><code>--no-ff</code> is the release merge per <a href="conventions.html"><code>conventions.md</code></a>: the merge
+commit is the release point, and the tag goes on it. A fast-forward would leave no
+commit that means &quot;this is what shipped&quot;.</p>
 <p>Then watch the run: <code>gh run watch</code> (or Actions tab). On success verify:</p>
 <ul>
-<li><code>gh release view v1.0.0-rc.1</code> shows the Release with nupkg + snupkg assets.</li>
-<li>Packages appear at github.com/extrode?tab=packages (7 packages, version
-1.0.0-rc.1, marked pre-release by NuGet clients automatically because of
-the <code>-rc.1</code> suffix).</li>
+<li><code>gh release view &quot;v$VERSION&quot;</code> shows the Release with nupkg + snupkg assets.</li>
+<li>Packages appear at github.com/extrode?tab=packages (9 packages at that version;
+a <code>-rc.N</code> or other pre-release suffix marks them pre-release to NuGet clients
+automatically).</li>
 <li>Smoke-consume from a scratch project (see next section).</li>
 </ul>
 <h2 id="consuming-you-a-trial-customer-or-a-paying-customer">Consuming (you, a trial customer, or a paying customer)</h2>
@@ -245,23 +252,25 @@ record only and carries a staleness banner saying so.</p>
 <span class="tok-punc">&lt;/</span><span class="tok-tag">configuration</span><span class="tok-punc">&gt;</span>
 </code></pre>
 </div>
+<p>The package IDs are <code>Extrode.</code>-prefixed — the unprefixed <code>Jaunty</code> IDs were the
+rc.1 names and are not the ones on the feed:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">bash</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">dotnet</span> add package Jaunty <span class="tok-attr">--version</span> <span class="tok-num">1</span>.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">1</span>
+  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">dotnet</span> add package Extrode.Jaunty <span class="tok-attr">--version</span> <span class="tok-num">1</span>.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">2</span>
 </code></pre>
 </div>
 <h2 id="if-something-goes-wrong">If something goes wrong</h2>
 <ul>
 <li><strong>Workflow failed before publish</strong>: fix on dev, delete the local+remote
-tag (<code>git tag -d v1.0.0-rc.1 &amp;&amp; git push origin :refs/tags/v1.0.0-rc.1</code>),
+tag (<code>git tag -d &quot;v$VERSION&quot; &amp;&amp; git push origin &quot;:refs/tags/v$VERSION&quot;</code>),
 re-merge main, re-tag. Nothing shipped, so reusing the version is fine.</li>
 <li><strong>Bad package already published</strong>: do NOT reuse the version. GitHub
 Packages allows deleting versions (repo Packages page or
-<code>gh api -X DELETE</code>), but any consumer may have cached it — ship
-<code>v1.0.0-rc.2</code> instead and delete/deprecate the bad one.</li>
+<code>gh api -X DELETE</code>), but any consumer may have cached it — ship the next
+version instead and delete/deprecate the bad one.</li>
 <li>A GitHub Release can be deleted independently of the tag; the tag
 independently of the package. Clean up all three when retracting.</li>
 </ul>
@@ -275,7 +284,6 @@ CHANGELOG.md: breaking = major, additive = minor, fixes = patch.</p>
 <li class="task-list-item"><input disabled="disabled" type="checkbox" /> <strong>Branch protection for <code>main</code></strong> — was blocked on GitHub Free for private
 repos (deferred 2026-07-04); unblocked when the repository went public on
 2026-09-03. Enable it.</li>
-<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Delete leftover local container <code>jaunty-mssql3</code> when no longer needed.</li>
 </ul>
 
         </article>

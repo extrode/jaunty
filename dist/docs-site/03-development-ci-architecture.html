@@ -306,6 +306,12 @@ Blacksmith documents no maximum job duration. Three numbers there only make sens
 </tr>
 </tbody>
 </table>
+<p><strong>The tier is off until a runner answers to that label.</strong> <code>runs-on</code> is a fallback expression, and a
+<code>runs-on</code> naming a label nothing carries does not fail the run — it queues, indefinitely, with no
+error and no badge. Both Mutate jobs sat queued through a whole nightly that way. So the job's
+<code>if:</code> additionally requires <code>vars.CI_MUTATION_ENABLED == 'true'</code>, which turns &quot;pending forever&quot; into
+a visible skip; set that variable once Blacksmith is installed on the org, or set
+<code>CI_MUTATION_RUNNER</code> alongside it to point the tier somewhere else.</p>
 <p>Blacksmith's 3,000 free minutes are <strong>2vCPU-minutes consumed proportionally</strong>: a 16 vCPU run bills
 at 8× wall clock, so one weekly jaunty run is roughly 2,400 a month — most of the org allowance,
 which is shared with jauntyq. Anything else moving to Blacksmith needs that arithmetic redone
