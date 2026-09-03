@@ -249,39 +249,57 @@ foreach (var property in _properties)
 }
 ```
 
-**Impact**: measured on .NET 10.0.203, x64, iterating a ten-element `PropertyInfo[]`.
-Allocation is bytes per call over 1,000,000 direct calls; time is the BenchmarkDotNet
-mean.
+**Impact**: x64, iterating a ten-element `PropertyInfo[]`. Times are BenchmarkDotNet
+means on runtime 10.0.7; allocation is bytes per call from
+`GC.GetAllocatedBytesForCurrentThread` over 1,000,000 direct calls on runtime 10.0.11.
+The two columns come from different harnesses, which matters for the last two rows and is
+covered below.
 
 | iteration | allocated | mean |
 |---|---:|---:|
-| `for` over `T[]` | 0 B | 10.630 ns |
-| `foreach` over `T[]` | 0 B | 8.438 ns |
-| `foreach` over `Span<T>` | 0 B | 8.298 ns |
-| `for` over `List<T>` | 0 B | 12.608 ns |
-| `foreach` over `List<T>` | 0 B | 11.366 ns |
-| `foreach` over `IList<T>` | 40 B | 12.744 ns |
-| `foreach` over `IEnumerable<T>` | 40 B | 12.690 ns |
+| `foreach` over `T[]` | 0 B | 7.750 ns |
+| `for` over a local copy of `T[]` | 0 B | 8.553 ns |
+| `foreach` over `Span<T>` | 0 B | 8.579 ns |
+| `for` over the `T[]` field | 0 B | 11.092 ns |
+| `foreach` over `List<T>` | 0 B | 11.426 ns |
+| `for` over `List<T>` | 0 B | 12.533 ns |
+| `foreach` over `IEnumerable<T>` | 40 B | 12.496 ns |
+| `foreach` over `IList<T>` | 40 B | 13.007 ns |
 
-Two things follow, and the second one is the reason this section was rewritten.
+Three things follow.
 
 **`foreach` over an array or a `List<T>` allocates nothing.** The compiler lowers
 `foreach` over `T[]` to an indexed loop with no enumerator at all, and `List<T>` exposes
 a struct enumerator that stays on the stack. The 40 bytes in the last two rows is a boxed
-`List<T>.Enumerator`, and it appears because the *static type* is an interface.
+`List<T>.Enumerator`: 16 bytes of object header, plus a list reference, two `int` fields
+and one `T`. It appears because the *static type* is an interface, and `IReadOnlyList<T>`
+behaves the same way.
 
-**Replacing `foreach` with a hand-written `for` buys nothing and costs a little.**
-Over an array it was 2.2 ns slower per call — the compiler's own lowering elides the
-bounds check that the hand-written version reintroduces. This file previously advised the
-opposite, and the advice was never followed: `src/` uses `foreach` in 244 places against
-11 indexed `for` loops.
+**Replacing `foreach` with a hand-written `for` buys nothing.** This file previously
+advised the opposite, and the advice was never followed: `src/` uses `foreach` in 244
+places against 11 indexed `for` loops. Most of the gap between the first and fourth rows
+is not the loop construct at all: the `for` version indexes the field on every iteration,
+while `foreach` lowering copies the array into a local first. Giving the `for` loop the
+same local copy closes 2.5 ns of the 3.3 ns difference.
 
-One caveat on the 40-byte figure. BenchmarkDotNet's harness reports zero allocation for
-those same two rows, because in its generated loop the JIT devirtualizes `GetEnumerator`
-and proves the enumerator does not escape, so it stack-allocates instead. A standalone
-harness calling the same methods a million times does allocate. Treat interface-typed
+One caveat on the 40-byte figure, stated as a limit rather than a finding. The same two
+rows measure 40 bytes per call in a standalone harness and zero in BenchmarkDotNet, whose
+raw counters report 400 bytes across 67,108,864 operations with no gen-0 collection. Both
+readings are real and the cause is not established. Three hypotheses were tested and none
+of them explains it: 100,000 warmup iterations give the same 40 bytes; calling the methods
+directly rather than through a delegate gives the same 40 bytes; and running with
+`DOTNET_TieredCompilation=0`, `DOTNET_TieredPGO=0` or `DOTNET_TC_CallCountingDelayMs=0`
+gives the same 40 bytes, which rules out tiering and dynamic PGO. Treat interface-typed
 iteration as *may allocate, depending on what the JIT can prove*, and prefer the concrete
-type rather than relying on the optimisation.
+type rather than relying on an optimization nobody here can predict.
+
+None of this sits on the row path. Jaunty walks a `PropertyInfo[]` once per entity type
+when it builds metadata; the generated mappers read columns by ordinal and iterate no
+collection. This section governs cold code, and its value is a rule that is not wrong
+rather than nanoseconds saved.
+
+The harness is `tmp/claims/foreach-bench/`: a bare run reproduces the times, and
+`foreach-bench alloc-direct` reproduces the allocation column.
 
 The harness is `tmp/claims/foreach-bench/`; `foreach-bench alloc-direct` reproduces the
 allocation column and a bare run reproduces the timings.
