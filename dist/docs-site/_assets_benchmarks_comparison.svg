@@ -47,22 +47,22 @@
 <text x="306.0" y="175.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
 <rect x="361" y="155" width="160" height="30" fill="#fde2e1" stroke="#d0d7de" rx="0"/>
 <text x="441.0" y="175.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#b42318">✘</text>
-<rect x="521" y="155" width="120" height="30" fill="#dcf5e3" stroke="#d0d7de" rx="0"/>
-<text x="581.0" y="175.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
+<rect x="521" y="155" width="120" height="30" fill="#fff3cd" stroke="#d0d7de" rx="0"/>
+<text x="581.0" y="175.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#8a6d00">partial</text>
 <rect x="1" y="185" width="250" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="205.0" font-size="13" text-anchor="start" font-weight="normal" fill="#24292f">Upsert support</text>
 <rect x="251" y="185" width="110" height="30" fill="#dcf5e3" stroke="#d0d7de" rx="0"/>
 <text x="306.0" y="205.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
 <rect x="361" y="185" width="160" height="30" fill="#fde2e1" stroke="#d0d7de" rx="0"/>
 <text x="441.0" y="205.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#b42318">✘</text>
-<rect x="521" y="185" width="120" height="30" fill="#dcf5e3" stroke="#d0d7de" rx="0"/>
-<text x="581.0" y="205.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
+<rect x="521" y="185" width="120" height="30" fill="#fde2e1" stroke="#d0d7de" rx="0"/>
+<text x="581.0" y="205.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#b42318">✘</text>
 <rect x="1" y="215" width="250" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="235.0" font-size="13" text-anchor="start" font-weight="normal" fill="#24292f">Streaming (IAsyncEnumerable)</text>
 <rect x="251" y="215" width="110" height="30" fill="#dcf5e3" stroke="#d0d7de" rx="0"/>
 <text x="306.0" y="235.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
-<rect x="361" y="215" width="160" height="30" fill="#fde2e1" stroke="#d0d7de" rx="0"/>
-<text x="441.0" y="235.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#b42318">✘</text>
+<rect x="361" y="215" width="160" height="30" fill="#dcf5e3" stroke="#d0d7de" rx="0"/>
+<text x="441.0" y="235.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
 <rect x="521" y="215" width="120" height="30" fill="#dcf5e3" stroke="#d0d7de" rx="0"/>
 <text x="581.0" y="235.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
 <rect x="1" y="245" width="250" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
@@ -71,8 +71,8 @@
 <text x="306.0" y="265.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
 <rect x="361" y="245" width="160" height="30" fill="#dcf5e3" stroke="#d0d7de" rx="0"/>
 <text x="441.0" y="265.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#1a7f37">✔</text>
-<rect x="521" y="245" width="120" height="30" fill="#fff3cd" stroke="#d0d7de" rx="0"/>
-<text x="581.0" y="265.0" font-size="12" text-anchor="middle" font-weight="normal" fill="#8a6d00">limited</text>
+<rect x="521" y="245" width="120" height="30" fill="#fde2e1" stroke="#d0d7de" rx="0"/>
+<text x="581.0" y="265.0" font-size="15" text-anchor="middle" font-weight="bold" fill="#b42318">✘</text>
 <rect x="1" y="275" width="250" height="30" fill="#ffffff" stroke="#d0d7de" rx="0"/>
 <text x="13" y="295.0" font-size="13" text-anchor="start" font-weight="normal" fill="#24292f">Stored procedures</text>
 <rect x="251" y="275" width="110" height="30" fill="#dcf5e3" stroke="#d0d7de" rx="0"/>
