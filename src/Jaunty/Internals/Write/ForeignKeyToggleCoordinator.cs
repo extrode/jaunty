@@ -47,7 +47,7 @@ internal static class ForeignKeyToggleCoordinator
     /// more for the toggle pair would change that contract for every interceptor that counts
     /// commands. The log line is what an audit reader needs to see that enforcement was suspended;
     /// carrying the fact into the interceptor payload instead is a `BulkOperationParameters` change
-    /// and a product decision, recorded in `work/todo.md`.
+    /// and a product decision, recorded on the maintainers' backlog.
     /// </remarks>
     internal static void DisableSync(IDbConnection connection, ISqlDialect dialect, IDbTransaction? transaction, int? commandTimeout)
     {
