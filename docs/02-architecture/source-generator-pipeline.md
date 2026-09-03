@@ -22,17 +22,17 @@ flowchart TD
     end
 
     subgraph L3["Hand-written mappers"]
-        H["CreateSyntaxProvider:<br/>class with a base list"]
+        H["CreateSyntaxProvider: class with a<br/>base list, or declaring a<br/>convention binder by name"]
         H --> HM["FindHandWrittenMapper<br/>small struct or null"]
         HM --> G2["JAUNTYGEN002"]
     end
 
     subgraph L4["Parameter rooting"]
-        P["CreateSyntaxProvider:<br/>Query / Execute call sites"]
+        P["CreateSyntaxProvider: call sites of<br/>Values, Set, Query*, Execute*,<br/>WhereRaw, AndRaw, OrRaw"]
         P --> PM["FindParameterSite"]
         PM --> PR["Rootable: collect"]
         PM --> PU["Unrootable: warn"]
-        PR --> CE{"ModuleInitializerAttribute<br/>present and C# 9+?"}
+        PR --> CE{"Any roots, and<br/>ModuleInitializerAttribute<br/>present, and C# 9+?"}
         CE -- yes --> G3["JauntyAotParameterRoots.g.cs"]
         CE -- no --> Skip["Emit nothing"]
         PU --> G4["JAUNTYGEN003"]
@@ -72,7 +72,10 @@ is the general form of that fix.
 
 `LocationInfo` exists for the same reason. It is a plain record of a file path and a span that is
 turned back into a Roslyn `Location` only at the moment a diagnostic is created, so cached models
-carry a location without rooting a `SyntaxTree` for the length of the IDE session.
+carry a location without rooting a `SyntaxTree` for the length of the IDE session. `EntityModel` and
+the hand-written-mapper model both use it. The parameter-rooting lane is the exception: its
+`ParameterSite` holds a Roslyn `Location` directly, and only the rooting expressions it produces —
+which hold no location — are collected and cached.
 
 ## Which `[Table]` wins
 
@@ -125,8 +128,13 @@ so at the call site rather than letting it fail after publish.
 | `JAUNTYGEN004` | warning | the entity is nested in a type no mapper can be generated into; reflection maps it instead |
 | `JAUNTYGEN005` | warning | the generated mapper drops a property the reflection mapper maps, so referencing the generator package silently changes behaviour |
 
-All five are warnings rather than errors, and for one reason: the code is correct under the JIT, and
-only a trimmed or NativeAOT publish is affected.
+All five are warnings rather than errors, for two different reasons. `JAUNTYGEN002`, `JAUNTYGEN003`
+and `JAUNTYGEN004` are trimming warnings: the code is correct under the JIT, and only a trimmed or
+NativeAOT publish is affected. The other two are not about trimming at all — `JAUNTYGEN001` reports
+a command that will fail at execution on any runtime, and `JAUNTYGEN005` reports a column the
+generated mapper drops that the reflection mapper keeps, so referencing the generator package
+changes behaviour under the JIT too. Both are warnings because the fix is a decision only the author
+can make.
 
 **Generation failure is never fatal.** When an entity cannot be generated, the generator reports and
 emits nothing, and the reflection mapper maps it in full. Emitting a partial that cannot compile

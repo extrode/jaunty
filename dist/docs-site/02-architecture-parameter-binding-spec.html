@@ -218,8 +218,8 @@ name.</p>
 </tr>
 <tr>
 <td><code>[identifier]</code></td>
-<td><code>]</code></td>
-<td>as above; no backslash rule, SQL Server has none here</td>
+<td><code>]</code>, doubled to escape</td>
+<td>as above; no backslash rule here</td>
 </tr>
 <tr>
 <td><code>`identifier`</code></td>
@@ -242,9 +242,10 @@ name.</p>
 That loses the parameters after it, which is the safe direction: the alternative is to report
 parameters that the database will not see, and the count check then passes on SQL that fails.</p>
 <p><strong>Backslash escaping is off by default and is a MySQL/MariaDB concession.</strong> <code>ExtractParameterNames</code>
-takes <code>backslashEscapes</code>, and it applies inside string literals only. Every other engine treats a
-literal ending in a backslash as complete, so applying the rule there would swallow the closing
-quote and take the rest of the statement with it.</p>
+takes <code>backslashEscapes</code>, and the walker passes it through for single-quoted and double-quoted
+constructs; bracket and backtick quoting are pinned to <code>false</code> regardless. Every other engine
+treats a literal ending in a backslash as complete, so applying the rule there would swallow the
+closing quote and take the rest of the statement with it.</p>
 <h3 id="the-sigil-rule">The sigil rule</h3>
 <p>A <code>@</code> or <code>$</code> counts as a placeholder only when the character before it is not an identifier
 character. <code>IsParameterChar</code> is ASCII letters, digits and underscore, and nothing else, which is
@@ -268,7 +269,8 @@ Callers that need the set make it themselves.</p>
 for the older targets. They are held to the same behaviour by property tests that run both.</p>
 <p>The result list is not allocated until the first placeholder is found. Opening with a sized <code>List</code>
 cost every parameterless statement a <code>List</code> plus its backing array for a result that is always
-empty; the allocation-budget tests measured that at 120 bytes per call.</p>
+empty, which the source records as a measured 120 bytes per call. What the allocation-budget
+tests assert today is the outcome of that fix: a budget of zero for the no-parameter cases.</p>
 <p><strong>Examples</strong>:</p>
 <div class="code-block">
   <div class="code-header">

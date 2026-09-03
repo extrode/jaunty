@@ -67,7 +67,7 @@ flowchart TD
 | `/* comment */` | `*/`, or end of input | as above, across lines |
 | `'literal'` | `'`, doubled to escape | `'@NotAParam'` becomes a parameter |
 | `"identifier"` | `"`, doubled to escape | as above |
-| `[identifier]` | `]` | as above; no backslash rule, SQL Server has none here |
+| `[identifier]` | `]`, doubled to escape | as above; no backslash rule here |
 | `` `identifier` `` | `` ` ``, doubled to escape | `` `it's` `` opens a phantom literal that swallows the rest of the statement, losing every later parameter |
 | `@@IDENTITY` | end of the name run | `@@ROWCOUNT` is reported as a parameter named `IDENTITY` |
 | `$tag$body$tag$` | the matching `$tag$` | identifier-shaped runs inside a PostgreSQL function body are read as parameters |
@@ -77,9 +77,10 @@ That loses the parameters after it, which is the safe direction: the alternative
 parameters that the database will not see, and the count check then passes on SQL that fails.
 
 **Backslash escaping is off by default and is a MySQL/MariaDB concession.** `ExtractParameterNames`
-takes `backslashEscapes`, and it applies inside string literals only. Every other engine treats a
-literal ending in a backslash as complete, so applying the rule there would swallow the closing
-quote and take the rest of the statement with it.
+takes `backslashEscapes`, and the walker passes it through for single-quoted and double-quoted
+constructs; bracket and backtick quoting are pinned to `false` regardless. Every other engine
+treats a literal ending in a backslash as complete, so applying the rule there would swallow the
+closing quote and take the rest of the statement with it.
 
 ### The sigil rule
 
@@ -106,7 +107,8 @@ for the older targets. They are held to the same behaviour by property tests tha
 
 The result list is not allocated until the first placeholder is found. Opening with a sized `List`
 cost every parameterless statement a `List` plus its backing array for a result that is always
-empty; the allocation-budget tests measured that at 120 bytes per call.
+empty, which the source records as a measured 120 bytes per call. What the allocation-budget
+tests assert today is the outcome of that fix: a budget of zero for the no-parameter cases.
 
 **Examples**:
 

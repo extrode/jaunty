@@ -150,7 +150,8 @@ same key regardless of what the query selected. Two different `Author`/`Book` qu
 different columns, in a different order, would silently reuse the first one's split points and map
 the second one's rows into the wrong properties.
 
-Three parts make up the key, joined by a unit separator so no column name can forge a boundary:
+Three parts make up the key. The generation and the field count are joined with `|` into one
+leading segment, and a unit separator joins that segment to the column names:
 
 | part | why it is in the key |
 |---|---|
@@ -158,16 +159,22 @@ Three parts make up the key, joined by a unit separator so no column name can fo
 | field count | a cheap discriminator ahead of the names |
 | every column name, in order | the layout the split points were computed against |
 
-The cache is bounded at 256 entries rather than the 4,096 the parameter caches use, because this key
-is caller-controlled: the column names come from arbitrary SQL, so an application generating varied
-projections could otherwise grow it without limit.
+The cache is bounded because the key is caller-controlled: the column names come from arbitrary SQL,
+so an application generating varied projections could otherwise grow it without limit. The cap is
+256 rather than the 4,096 the parameter caches use for a second reason. Those two are process-wide
+singletons, where 4,096 entries is 4,096 entries; this cache is a static field on a generic type, so
+there is one of them per ordered tuple of entity types and the cap multiplies by the application's
+type surface. AUD-R26-053 measured 2,047 bytes per arity-2 mapper entry, which at 4,096 would have
+permitted roughly 8.4 MB per tuple. 256 distinct column layouts for one tuple is already well past
+any hand-written query set.
 
 ### Entities must be reference types
 
 `MultiEntityMapperNGuard.RequireReferenceTypes` rejects a value-type entity before a mapper is built.
-A struct is passed by value to the combined mapper, so its setters write to a copy and the caller
-gets an all-default entity back — a wrong answer with no error, which is the reason this is a guard
-rather than a documented caveat.
+At arity 2 a struct is passed by value to the combined mapper; at arities 3 to 7 it is boxed and the
+setters run against the box. Either way the writes land on a copy and the caller gets an all-default
+entity back — a wrong answer with no error, which is the reason this is a guard rather than a
+documented caveat.
 
 ## Resolving Ambiguous Column Names
 
