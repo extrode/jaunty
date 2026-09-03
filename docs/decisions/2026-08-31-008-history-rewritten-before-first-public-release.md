@@ -18,7 +18,7 @@ Three things changed:
 - **The internal working directories were removed from every commit.** They held the
   project's audit rounds and its day-to-day working notes: never part of the library, never
   shipped in a package, and not material anyone outside the project has a use for. The public
-  summary of the audit work is `docs/05-quality/audit-record.md`, and it is the record that
+  summary of the audit work was written up separately, and it is the record that
   matters.
 - **Development-workflow files and machine-specific notes were removed.** Per-directory
   contributor guides, editor and tool state directories, and the sections of

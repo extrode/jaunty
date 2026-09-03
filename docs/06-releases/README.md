@@ -1,7 +1,7 @@
 # Releases & Planning
 
-Release documentation and planning documents for Jaunty. The task lists and the commercial
-papers are held in the private work repository and are not published here.
+Release documentation and planning documents for Jaunty. The task lists, the pricing page and
+the market-analysis papers are held in the private work repository and are not published here.
 
 ---
 

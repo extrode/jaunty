@@ -57,4 +57,4 @@ Jaunty is close to production-ready for controlled workloads and experienced tea
 - CI-quality proof points for cross-provider behavior.
 
 ## Next Document
-- Execution plan: [../06-releases/tasklists/PRODUCTION-READINESS-TASKLIST.md](../06-releases/tasklists/PRODUCTION-READINESS-TASKLIST.md)
+- Execution plan: the production-readiness tasklist, since moved to the private work repository

@@ -59,7 +59,7 @@ jaunty/
 | `docs/` | Documentation source | Organized by topic (00-quick-start through 08-learn), plus `decisions/`, `plans/`, `specs/`, `lessons/`, `architecture/` |
 | `docs/specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
 | `work/` | The work underway. **Untracked** — held in a private repository, so a clone will not contain it | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
-| `audit/` | The 36-round audit record, and the summary of it. **Untracked**, same private repository | `roundNN/`, `findings-registry.md`, `coverage-ledger.md` |
+| `audit/` | The 36-round audit record. **Untracked**, same private repository, which also holds the summary written from it | `roundNN/`, `findings-registry.md`, `coverage-ledger.md` |
 
 ### Development Folders
 
