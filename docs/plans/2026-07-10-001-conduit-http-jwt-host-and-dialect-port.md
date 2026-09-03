@@ -158,7 +158,7 @@ New `Contracts/` folder (sibling to `Domain/`/`Repositories/`): `UserDtos.cs`,
 11. Full-suite stabilization: run 3x consecutively, fix any shared in-memory DB fixture-isolation
     flakiness between HTTP test classes.
 12. Docs: append Phase A findings to `docs/torture-test-log.md`, process lessons (if any new)
-    to `docs/torture-test-lessons-learned.md`.
+    to `docs/jaunty-torture-test-lessons-learned.md`.
 
 Merge to `dev` with `--no-ff` after explicit confirmation, same as every prior part.
 

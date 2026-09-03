@@ -94,6 +94,11 @@ default lives in `src/Directory.Build.props`.
   path are corrected.
 - **Docs: the published HTML under `dist/docs-site` is regenerated.** It was two passes stale
   and still carried text that had been removed from `docs/`.
+- **Docs: the three torture-test documents are restored.** The brief the test was run from
+  (`jaunty-torture-test-handoff.md`), the log of what it found about Jaunty
+  (`jaunty-torture-test-gaps-log.md`) and the process notes
+  (`jaunty-torture-test-lessons-learned.md`) were referenced from four sample READMEs, the
+  seed README, the results page and two specs, but were absent from the tree.
 
 ### Added
 
