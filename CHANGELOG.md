@@ -7,7 +7,166 @@ and versioning follows [SemVer 2.0](https://semver.org). Package versions are
 set at release time from the git tag (`vMAJOR.MINOR.PATCH`); the local/dev
 default lives in `src/Directory.Build.props`.
 
-## [Unreleased]
+## [1.0.0-rc.2] - 2026-09-03
+
+### Breaking changes since 1.0.0-rc.1
+
+Anyone on `1.0.0-rc.1` should read this section before upgrading. Each item is a change a
+recompile alone will not surface.
+
+- **Every package ID carries the `Extrode.Jaunty.` prefix (2026-08-26).** The assembly names,
+  namespaces and public API are unchanged; only the NuGet package IDs moved, along with the
+  repository, to `github.com/extrode/jaunty`. A consumer still referencing the rc.1 package IDs
+  from the private feed will never be offered an update, because nothing will ever be published
+  under those IDs again.
+
+  | Package | Since |
+  |---|---|
+  | `Extrode.Jaunty` | rc.1 |
+  | `Extrode.Jaunty.Fluent` | rc.1 |
+  | `Extrode.Jaunty.FlatFiles` | rc.1 |
+  | `Extrode.Jaunty.FlatFiles.DuckDB` | rc.1 |
+  | `Extrode.Jaunty.Extensions.Reflection` | rc.1 |
+  | `Extrode.Jaunty.Scaffolding` | rc.1 |
+  | `Extrode.Jaunty.Scaffolding.Cli` | rc.1 |
+  | `Extrode.Jaunty.Extensions.Logging` | new |
+  | `Extrode.Jaunty.Extensions.Npgsql` | new |
+
+  The two new packages are not new functionality so much as relocated functionality:
+  `Extensions.Logging` holds the `ILogger` interceptor and the DI registration extensions that
+  used to force `Microsoft.Extensions.*` references onto core.
+
+- **Licensing changed, in the consumer's favour. Jaunty is free to use, including in commercial
+  production (2026-08-29).** rc.1 shipped a dual model - ISL-EULA for binaries, ISL-R for source -
+  under which use was conditioned on a paid Order. That is retired. Two documents now apply:
+  [`LICENSE.md`](LICENSE.md) (ISL-R) and
+  [`LICENSE-DISTRIBUTION-EXCEPTION.md`](LICENSE-DISTRIBUTION-EXCEPTION.md), a royalty-free rider
+  that permits shipping the unmodified packages inside your own application.
+
+  The rider is not a formality. ISL-R §2(b) forbids Distribution, and deploying an application
+  that references a .NET library distributes that library, so without it the free grant would not
+  have covered ordinary use. `LICENSE-EULA.md` is retained for the historical record and does not
+  govern use under the free model.
+
+  **The ethical restrictions in ISL-R sections 4 and 5 are conditions of the grant, not of
+  payment**, and are unchanged. What is sold now is support; the terms are in
+  [`docs/06-releases/pricing.md`](docs/06-releases/pricing.md).
+
+- **`BulkInsert` now validates constraints on SQL Server above the native-copy threshold
+  (AUD-R26).** `BulkCopyConfiguration.DefaultCheckConstraints` defaulted to `false` in rc.1, which
+  routed large batches through `SqlBulkCopy` without its `CheckConstraints` option. Measured, the
+  same call with a CHECK-violating row threw at 50 rows and succeeded at 200 - so a plain
+  `BulkInsert` silently skipped validation, but only on one provider and only above 100 rows.
+
+  It now validates on every route. **This will surface violations that previously landed in the
+  table unreported, and it is slower.** To keep the old behaviour: per call use
+  `BulkInsertIgnoreConstraints`, whose name says what it does; globally set
+  `BulkCopyConfiguration.DefaultCheckConstraints = false`.
+
+- **Misconfigured timeouts and batch sizes now throw at the point they are set.** In rc.1
+  `CommandOptions.CommandTimeout` and the `BulkCopyConfiguration` properties were unvalidated
+  fields, so `WithTimeout(-1)` was accepted where it was written and surfaced much later as a
+  provider-specific exception naming nothing (AUD-R35-144, AUD-R35-149).
+
+  | Setting | Rejects | Zero means |
+  |---|---|---|
+  | `CommandOptions.CommandTimeout` | negative | no timeout |
+  | `BulkCopyConfiguration.DefaultTimeout` | negative | no timeout |
+  | `BulkCopyConfiguration.DefaultBatchSize` | zero and negative | - |
+  | `BulkCopyConfiguration.MinimumRowsForNativeBulkCopy` | negative | always take the native path |
+  | `BulkCopyConfiguration.DefaultIdentityMode` | undefined enum values | - |
+
+  `ExpectedRowCount` deliberately does **not** throw: it is a pre-sizing hint, so a bad value is
+  normalised (non-positive reads as no hint, anything above 1,048,576 is capped) rather than
+  failing the query it was meant to speed up.
+
+The two `Removed` entries below - the 13 obsolete multi-entity overloads and
+`MultiEntityCommandOptions.Mapper1..MapperN` - are also breaking and are recorded in their own
+section.
+
+### .NET 10 migration (spec 010, 2026-07-30)
+
+Every project now targets `net8.0` + `net10.0` (ns2.0/net472 support unchanged), with 21
+project-reference pins duplicated per TFM and a loader assertion that fails any leg that
+silently loads the wrong build. The first clean net10 builds exposed six latent defects green
+CI had hidden — a dropped package group (CS0234), a non-generic `Expression.Lambda` (IL3050),
+trim-analyzer strictness (IL2060/75), and IL2070/IL2075/IL2057 in FlatFiles and Scaffolding —
+four fixed properly, two recorded as reflection-by-design scope exclusions. CI gained net10
+test legs and a dual net8/net10 NativeAOT publish; all four AOT samples publish and run with
+byte-identical stdout on both TFMs. Benchmarks: net10 is a median 2–3% faster with no
+regression; the flagship 1-row query narrowed from 1.51x to 1.19x of Dapper.
+
+Twenty-six audit rounds since `v1.0.0-rc.1`, plus the Dapper-parity and torture-test
+work. The suite runs 12,207 tests green across `net8.0` and `net472` with all four
+server dialects configured.
+
+### Security
+
+Every item here was reachable from caller-supplied input.
+
+- **Identifier-escaping bypass in generated DML/DDL.** Table and column names reached
+  the generated statement unescaped on several paths.
+- **`LIKE` wildcard escaping** in `Contains`/`StartsWith`/`EndsWith` — `%` and `_` in a
+  caller's value were treated as wildcards.
+- **Embedded quotes** unescaped in `ExpressionTranslator` and `ImportExecutor`
+  identifiers, and in `CsvFileSource`'s `Delimiter`/`QuoteChar` SQL.
+- **Alias injection and parameter-name collisions** in joined queries; interpolated
+  parameter placeholder names are now sanitised.
+- **Caller-supplied column names** are validated and escaped in `SelectPartial*` and
+  `ToSql`.
+- **Import paths hardened:** `CsvImport` identifier escaping; the sqlite3 CLI import
+  path validates `dbPath` and dialect-escapes `tableName`; `ImportExecutor` quotes its
+  target per dialect.
+- **Connection strings leaked through interceptors** — the masking prefix gap exposed
+  passwords to interceptor output.
+- **Format-string injection** on a logging path.
+
+### Added
+
+- `docs/08-learn/how-jaunty-got-fast.md`: the read path from 1.80x slower than hand-coded
+  ADO.NET to 1.42x faster, each step with the code before and after and the measurement that
+  drove it. Decision 010 records why the generated mapper names a NULL column by catching
+  rather than pre-checking, and the audit record lists it under fixes that were later reworked.
+- `QueryBenchmarks`: two custom-mapper cases that read the SQLite `REAL` price through
+  `GetDouble`, with and without `WithExpectedRowCount`, beside the two `GetDecimal` cases.
+- `docs/05-quality/reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
+  harness. The hand-coded baseline reads each column as its reported type (it paid a text
+  round-trip on SQLite `REAL` before, which is why two libraries measured faster than ADO.NET
+  in July), RepoDb's SQLite bool workaround is registered for SQLite only, and the warm job
+  runs 15 iterations. The README tables and charts are regenerated from it.
+
+- **Fluent API fanout (2026-08-02)** — three long-standing asymmetries between sibling
+  interfaces closed together, all additive:
+  `IUpdateWhereClause<T>` gains the `And`/`Or` × `Between`/`Exists`/`InSubquery` families
+  (and their `Not` forms) that `IWhereClause<T>` already had;
+  the 3-way and 4-way `IJoinClause` gain the predicate-expression `On(...)` overload the
+  2-way interface had, with join values renumbered against the query-wide parameter
+  sequence so a third or fourth join cannot re-mint a name the query already bound;
+  `IGroupedJoinedQuery{,3,4}` gain the `Select`/`SelectAsync` `CommandOptions` overloads,
+  so a grouped joined query can finally take a caller's transaction or a timeout.
+- **`GROUP BY` on joined queries** — 2-way, 3-way and 4-way, via the new
+  `JoinedGroupByExpressionVisitor`. Aggregate and grouping columns are qualified with
+  the table alias, and compound `HAVING` works across joins.
+- **Async multi-entity query parity for arities 3–7**, matching the sync surface.
+- **`CommandOptions` and transaction overloads** across the terminal read methods, bulk
+  `Delete`/`Update`, the join-builder family and `QueryPartialList`. Adds
+  `MultiEntityCommandOptions<T1,T2>` and the missing `QueryStreamAsync<T1,T2>`.
+- **`On<TValue>` parameterised raw-condition overload** on 3- and 4-way joins, and raw
+  join conditions can now name their parameter.
+- **Source-gen-first metadata tier.** `CrudSqlCache` and the fluent resolver consult
+  generated metadata before falling back to reflection. The generator emits
+  `TableName`, `SchemaName` and `PrimaryKeyColumnNames` statics, and the new
+  `IEntityMetadataSource` contract replaces reflection over that generated metadata.
+  Internally `ColumnMetadata` gained `PropertyName`/`PropertyType`/`Getter`/`Setter` so
+  a column no longer requires a `PropertyInfo` (`Property` is now nullable) — it is
+  `internal`, so this changes no public surface.
+- ~~**Dual licensing:** ISL-EULA for binaries, ISL-R for source.~~ Superseded before release by
+  the free-to-use model; see the breaking-changes section above.
+- **Span-based `array.Contains()`** is recognised for `IN`-clause detection, and `Sql`
+  function comparisons to null translate to `IS NULL`/`IS NOT NULL`.
+- **Reference ports** preserved as samples: Conduit/RealWorld and eShopOnWeb migrated
+  from EF Core, 15 canonical Sakila queries via the fluent API, a NativeAOT sample, and
+  4-dialect docker-compose infrastructure with seed scripts.
 
 ### Changed
 
@@ -129,178 +288,6 @@ default lives in `src/Directory.Build.props`.
   (`jaunty-torture-test-lessons-learned.md`) were referenced from four sample READMEs, the
   seed README, the results page and two specs, but were absent from the tree.
 
-### Added
-
-- `docs/08-learn/how-jaunty-got-fast.md`: the read path from 1.80x slower than hand-coded
-  ADO.NET to 1.42x faster, each step with the code before and after and the measurement that
-  drove it. Decision 010 records why the generated mapper names a NULL column by catching
-  rather than pre-checking, and the audit record lists it under fixes that were later reworked.
-- `QueryBenchmarks`: two custom-mapper cases that read the SQLite `REAL` price through
-  `GetDouble`, with and without `WithExpectedRowCount`, beside the two `GetDecimal` cases.
-- `docs/05-quality/reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
-  harness. The hand-coded baseline reads each column as its reported type (it paid a text
-  round-trip on SQLite `REAL` before, which is why two libraries measured faster than ADO.NET
-  in July), RepoDb's SQLite bool workaround is registered for SQLite only, and the warm job
-  runs 15 iterations. The README tables and charts are regenerated from it.
-
-### Removed
-
-- `LICENSE-EULA.md`. The Order-conditioned EULA stopped governing Jaunty at the 2026-08-30 model
-  decision and had been kept at the root for the record; a EULA at the root reads as a condition
-  on use, so it is gone from the tree and stays in history. `LICENSE-DISTRIBUTION-EXCEPTION.md`
-  says where it went; `LicenseFileTests` now checks `LICENSE.md` for unfilled placeholders.
-
-## [1.0.0-rc.2] - 2026-09-02
-
-### Breaking changes since 1.0.0-rc.1
-
-Anyone on `1.0.0-rc.1` should read this section before upgrading. Each item is a change a
-recompile alone will not surface.
-
-- **Every package ID carries the `Extrode.Jaunty.` prefix (2026-08-26).** The assembly names,
-  namespaces and public API are unchanged; only the NuGet package IDs moved, along with the
-  repository, to `github.com/extrode/jaunty`. A consumer still referencing the rc.1 package IDs
-  from the private feed will never be offered an update, because nothing will ever be published
-  under those IDs again.
-
-  | Package | Since |
-  |---|---|
-  | `Extrode.Jaunty` | rc.1 |
-  | `Extrode.Jaunty.Fluent` | rc.1 |
-  | `Extrode.Jaunty.FlatFiles` | rc.1 |
-  | `Extrode.Jaunty.FlatFiles.DuckDB` | rc.1 |
-  | `Extrode.Jaunty.Extensions.Reflection` | rc.1 |
-  | `Extrode.Jaunty.Scaffolding` | rc.1 |
-  | `Extrode.Jaunty.Scaffolding.Cli` | rc.1 |
-  | `Extrode.Jaunty.Extensions.Logging` | new |
-  | `Extrode.Jaunty.Extensions.Npgsql` | new |
-
-  The two new packages are not new functionality so much as relocated functionality:
-  `Extensions.Logging` holds the `ILogger` interceptor and the DI registration extensions that
-  used to force `Microsoft.Extensions.*` references onto core.
-
-- **Licensing changed, in the consumer's favour. Jaunty is free to use, including in commercial
-  production (2026-08-29).** rc.1 shipped a dual model - ISL-EULA for binaries, ISL-R for source -
-  under which use was conditioned on a paid Order. That is retired. Two documents now apply:
-  [`LICENSE.md`](LICENSE.md) (ISL-R) and
-  [`LICENSE-DISTRIBUTION-EXCEPTION.md`](LICENSE-DISTRIBUTION-EXCEPTION.md), a royalty-free rider
-  that permits shipping the unmodified packages inside your own application.
-
-  The rider is not a formality. ISL-R §2(b) forbids Distribution, and deploying an application
-  that references a .NET library distributes that library, so without it the free grant would not
-  have covered ordinary use. `LICENSE-EULA.md` is retained for the historical record and does not
-  govern use under the free model.
-
-  **The ethical restrictions in ISL-R sections 4 and 5 are conditions of the grant, not of
-  payment**, and are unchanged. What is sold now is support; the terms are in
-  [`docs/06-releases/pricing.md`](docs/06-releases/pricing.md).
-
-- **`BulkInsert` now validates constraints on SQL Server above the native-copy threshold
-  (AUD-R26).** `BulkCopyConfiguration.DefaultCheckConstraints` defaulted to `false` in rc.1, which
-  routed large batches through `SqlBulkCopy` without its `CheckConstraints` option. Measured, the
-  same call with a CHECK-violating row threw at 50 rows and succeeded at 200 - so a plain
-  `BulkInsert` silently skipped validation, but only on one provider and only above 100 rows.
-
-  It now validates on every route. **This will surface violations that previously landed in the
-  table unreported, and it is slower.** To keep the old behaviour: per call use
-  `BulkInsertIgnoreConstraints`, whose name says what it does; globally set
-  `BulkCopyConfiguration.DefaultCheckConstraints = false`.
-
-- **Misconfigured timeouts and batch sizes now throw at the point they are set.** In rc.1
-  `CommandOptions.CommandTimeout` and the `BulkCopyConfiguration` properties were unvalidated
-  fields, so `WithTimeout(-1)` was accepted where it was written and surfaced much later as a
-  provider-specific exception naming nothing (AUD-R35-144, AUD-R35-149).
-
-  | Setting | Rejects | Zero means |
-  |---|---|---|
-  | `CommandOptions.CommandTimeout` | negative | no timeout |
-  | `BulkCopyConfiguration.DefaultTimeout` | negative | no timeout |
-  | `BulkCopyConfiguration.DefaultBatchSize` | zero and negative | - |
-  | `BulkCopyConfiguration.MinimumRowsForNativeBulkCopy` | negative | always take the native path |
-  | `BulkCopyConfiguration.DefaultIdentityMode` | undefined enum values | - |
-
-  `ExpectedRowCount` deliberately does **not** throw: it is a pre-sizing hint, so a bad value is
-  normalised (non-positive reads as no hint, anything above 1,048,576 is capped) rather than
-  failing the query it was meant to speed up.
-
-The two `Removed` entries below - the 13 obsolete multi-entity overloads and
-`MultiEntityCommandOptions.Mapper1..MapperN` - are also breaking and are recorded in their own
-section.
-
-### .NET 10 migration (spec 010, 2026-07-30)
-
-Every project now targets `net8.0` + `net10.0` (ns2.0/net472 support unchanged), with 21
-project-reference pins duplicated per TFM and a loader assertion that fails any leg that
-silently loads the wrong build. The first clean net10 builds exposed six latent defects green
-CI had hidden — a dropped package group (CS0234), a non-generic `Expression.Lambda` (IL3050),
-trim-analyzer strictness (IL2060/75), and IL2070/IL2075/IL2057 in FlatFiles and Scaffolding —
-four fixed properly, two recorded as reflection-by-design scope exclusions. CI gained net10
-test legs and a dual net8/net10 NativeAOT publish; all four AOT samples publish and run with
-byte-identical stdout on both TFMs. Benchmarks: net10 is a median 2–3% faster with no
-regression; the flagship 1-row query narrowed from 1.51x to 1.19x of Dapper.
-
-Twenty-six audit rounds since `v1.0.0-rc.1`, plus the Dapper-parity and torture-test
-work. The suite runs 12,207 tests green across `net8.0` and `net472` with all four
-server dialects configured.
-
-### Security
-
-Every item here was reachable from caller-supplied input.
-
-- **Identifier-escaping bypass in generated DML/DDL.** Table and column names reached
-  the generated statement unescaped on several paths.
-- **`LIKE` wildcard escaping** in `Contains`/`StartsWith`/`EndsWith` — `%` and `_` in a
-  caller's value were treated as wildcards.
-- **Embedded quotes** unescaped in `ExpressionTranslator` and `ImportExecutor`
-  identifiers, and in `CsvFileSource`'s `Delimiter`/`QuoteChar` SQL.
-- **Alias injection and parameter-name collisions** in joined queries; interpolated
-  parameter placeholder names are now sanitised.
-- **Caller-supplied column names** are validated and escaped in `SelectPartial*` and
-  `ToSql`.
-- **Import paths hardened:** `CsvImport` identifier escaping; the sqlite3 CLI import
-  path validates `dbPath` and dialect-escapes `tableName`; `ImportExecutor` quotes its
-  target per dialect.
-- **Connection strings leaked through interceptors** — the masking prefix gap exposed
-  passwords to interceptor output.
-- **Format-string injection** on a logging path.
-
-### Added
-
-- **Fluent API fanout (2026-08-02)** — three long-standing asymmetries between sibling
-  interfaces closed together, all additive:
-  `IUpdateWhereClause<T>` gains the `And`/`Or` × `Between`/`Exists`/`InSubquery` families
-  (and their `Not` forms) that `IWhereClause<T>` already had;
-  the 3-way and 4-way `IJoinClause` gain the predicate-expression `On(...)` overload the
-  2-way interface had, with join values renumbered against the query-wide parameter
-  sequence so a third or fourth join cannot re-mint a name the query already bound;
-  `IGroupedJoinedQuery{,3,4}` gain the `Select`/`SelectAsync` `CommandOptions` overloads,
-  so a grouped joined query can finally take a caller's transaction or a timeout.
-- **`GROUP BY` on joined queries** — 2-way, 3-way and 4-way, via the new
-  `JoinedGroupByExpressionVisitor`. Aggregate and grouping columns are qualified with
-  the table alias, and compound `HAVING` works across joins.
-- **Async multi-entity query parity for arities 3–7**, matching the sync surface.
-- **`CommandOptions` and transaction overloads** across the terminal read methods, bulk
-  `Delete`/`Update`, the join-builder family and `QueryPartialList`. Adds
-  `MultiEntityCommandOptions<T1,T2>` and the missing `QueryStreamAsync<T1,T2>`.
-- **`On<TValue>` parameterised raw-condition overload** on 3- and 4-way joins, and raw
-  join conditions can now name their parameter.
-- **Source-gen-first metadata tier.** `CrudSqlCache` and the fluent resolver consult
-  generated metadata before falling back to reflection. The generator emits
-  `TableName`, `SchemaName` and `PrimaryKeyColumnNames` statics, and the new
-  `IEntityMetadataSource` contract replaces reflection over that generated metadata.
-  Internally `ColumnMetadata` gained `PropertyName`/`PropertyType`/`Getter`/`Setter` so
-  a column no longer requires a `PropertyInfo` (`Property` is now nullable) — it is
-  `internal`, so this changes no public surface.
-- ~~**Dual licensing:** ISL-EULA for binaries, ISL-R for source.~~ Superseded before release by
-  the free-to-use model; see the breaking-changes section above.
-- **Span-based `array.Contains()`** is recognised for `IN`-clause detection, and `Sql`
-  function comparisons to null translate to `IS NULL`/`IS NOT NULL`.
-- **Reference ports** preserved as samples: Conduit/RealWorld and eShopOnWeb migrated
-  from EF Core, 15 canonical Sakila queries via the fluent API, a NativeAOT sample, and
-  4-dialect docker-compose infrastructure with seed scripts.
-
-### Changed
-
 - **A non-generic `CommandOptions` now binds to the entity overload (2026-08-02).** Passing a
   `CommandOptions` where an anonymous parameter object was expected bound to the parameters
   overload and was serialised as a WHERE clause; the entity overload now wins. Source-compatible,
@@ -317,6 +304,11 @@ Every item here was reachable from caller-supplied input.
   installed server: PostgreSQL `5432` → **`5433`**, MySQL `3306` → **`3308`**.
 
 ### Removed
+
+- `LICENSE-EULA.md`. The Order-conditioned EULA stopped governing Jaunty at the 2026-08-30 model
+  decision and had been kept at the root for the record; a EULA at the root reads as a condition
+  on use, so it is gone from the tree and stays in history. `LICENSE-DISTRIBUTION-EXCEPTION.md`
+  says where it went; `LicenseFileTests` now checks `LICENSE.md` for unfilled placeholders.
 
 - **Breaking: the 13 obsolete multi-entity overloads (2026-08-02).** The `[Obsolete]`
   `QueryMultiEntity`/`QueryMultiEntityAsync` entry points that reimplemented reader mapping
