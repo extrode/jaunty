@@ -119,6 +119,15 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
           -o packout
 
+      # Runs between pack and the first push, because both feeds are one-way doors: a version
+      # pushed to nuget.org can be unlisted but never replaced. rc.2 was packed at 83,487,302
+      # bytes, ~70 MB of it iOS, Android and wasm native SQLite that `dotnet tool install` can
+      # never load; TrimToolRuntimeAssets in Jaunty.Scaffolding.Cli.csproj cut it to 27,599,882.
+      # That trim keys on an SDK item name rather than documented contract, so this asserts the
+      # packed identifiers still match the csproj instead of trusting that it kept working.
+      - name: Guard the tool package contents
+        run: python3 scripts/check-tool-package.py "packout/Extrode.Jaunty.Scaffolding.Cli.*.nupkg"
+
       # GitHub Packages, authenticated with the built-in GITHUB_TOKEN (no external
       # secret). Kept after the NuGet.org decision of 2026-08-30 so existing
       # consumers of the feed are not broken by the move.

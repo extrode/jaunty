@@ -35,6 +35,30 @@
     <WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>
   </PropertyGroup>
 
+  <!-- A .NET tool is installed with `dotnet tool install`, which runs on a developer desktop or
+       a CI agent and nowhere else. SQLitePCLRaw.bundle_e_sqlite3 ships e_sqlite3 built for all 34
+       RIDs it knows about, and PackAsTool cannot infer the install target, so rc.2 packed every
+       one of them: 83,487,302 bytes compressed, 171.53 MB unpacked, of which ~70 MB was iOS,
+       Android, wasm and Mac Catalyst native code that `dotnet tool` can never load.
+
+       Two of the kept identifiers are not native and removing either breaks SQL Server
+       scaffolding at run time rather than at build time: `runtimes/win/lib/net8.0/` and
+       `runtimes/unix/lib/net8.0/` hold the RID-specific *managed* Microsoft.Data.SqlClient,
+       System.Diagnostics.EventLog and System.Runtime.Caching assemblies.
+
+       Verified by JauntyToolPackageRuntimeTests, which packs the real project and asserts both
+       halves: every kept RID present, every dropped one absent. -->
+  <PropertyGroup>
+    <JauntyToolRuntimeIdentifiers>;win;unix;win-x64;win-x86;win-arm64;linux-x64;linux-arm64;linux-musl-x64;linux-musl-arm64;osx-x64;osx-arm64;</JauntyToolRuntimeIdentifiers>
+  </PropertyGroup>
+
+  <Target Name="TrimToolRuntimeAssets" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)"
+                                    Condition="!$(JauntyToolRuntimeIdentifiers.Contains(';%(RuntimeTargetsCopyLocalItems.RuntimeIdentifier);'))" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="2.0.10" />
 
