@@ -4,7 +4,7 @@ How to ship a Jaunty release. The pipeline is fully wired: pushing a version
 tag is the release action, and everything else here is verification around
 that one step. The commands below take the version from `$VERSION`, so they
 are the same commands for every release; the worked example is `1.0.0-rc.2`,
-the release current as of 2026-09-02.
+the version cut as of 2026-09-03.
 
 ## How the pipeline works
 
