@@ -7,8 +7,70 @@ Jaunty's bulk copy functionality provides high-performance data loading for larg
 **Key Benefits**:
 - **10-100x faster** than standard INSERT for large datasets (10K+ rows)
 - **Automatic activation** when beneficial (configurable threshold: 100 rows default)
-- **Zero configuration required** - works out of the box
+- **One package to install**, then no code changes: the same `BulkInsert` call routes itself
 - **Consistent API** across all supported databases
+
+> **The native path needs `Jaunty.Extensions.Reflection`.** All four built-in dialects report
+> `SupportsNativeBulkCopy => false`. That package supplies the dialect wrappers that report
+> `true` and carry the providers, and `SqlDialectFactory` picks them up by probing for the
+> assembly at resolution time. Without it every call below still works and still returns the
+> right row count; it takes the multi-row or per-row route instead of the native one.
+
+## Which route a BulkInsert takes
+
+```mermaid
+flowchart TD
+    Call["BulkInsert(entities)"] --> C1{"EnableNativeBulkCopy?<br/>(default true)"}
+    C1 -- no --> Fall["Fall through"]
+    C1 -- yes --> C2{"dialect.SupportsNativeBulkCopy?<br/>(needs Extensions.Reflection)"}
+    C2 -- no --> Fall
+    C2 -- yes --> C3{"rows &gt;= MinimumRows<br/>ForNativeBulkCopy?<br/>(default 100)"}
+    C3 -- no --> Fall
+    C3 -- yes --> C4{"Provider created<br/>and IsSupported?"}
+    C4 -- no --> Fall
+    C4 -- yes --> Native["Native provider"]
+
+    Fall --> M{"SupportsMultiRowInsert<br/>and rows &gt; 1<br/>and not SQLite?"}
+    M -- yes --> Multi["One INSERT with<br/>many VALUES tuples"]
+    M -- no --> Loop["One INSERT per row,<br/>inside one transaction"]
+
+    class Native ok
+    class Multi info
+    class Loop warn
+
+    classDef ok fill:#1f6f4a,stroke:#2ea36a,color:#eaf6ef
+    classDef info fill:#1f4f7a,stroke:#3a86c8,color:#e8f2fb
+    classDef warn fill:#7a4a1f,stroke:#c07c34,color:#fdf1e3
+```
+
+Four independent conditions gate the native route, and failing any one of them is a silent
+downgrade to a slower route that produces the same rows. That is the intended behavior, and it
+is also why a bulk insert that seems slow is usually a missing package rather than a missing
+index.
+
+SQLite is excluded from the multi-row route on purpose. It runs in-process, so there are no
+round-trips to save, and the parameter objects a multi-row statement needs cost more than the
+savings.
+
+## What each engine does natively
+
+| engine | `SupportsNativeBulkCopy` in core | with `Extensions.Reflection` | native mechanism |
+|---|:--:|:--:|---|
+| SQL Server | false | **true** | `SqlBulkCopy` |
+| PostgreSQL | false | **true** | binary `COPY` through `NpgsqlBinaryImporter` |
+| MySQL | false | **true** | chunked multi-row INSERT |
+| SQLite | false | false | none, by design |
+
+MySQL's native route is chunked INSERT rather than `LOAD DATA LOCAL INFILE`. `LOAD DATA` fails on
+any MySQL 8+ or MariaDB server with the default `local_infile=0` and additionally needs
+`AllowLoadLocalInfile=true` in the connection string, while chunked INSERT needs no server or
+connection-string configuration, works with both MySqlConnector and MySql.Data, and performs in
+the same class over the 100 to 10,000 row range this path targets.
+
+**Identity columns never reach any provider.** `EntityDataReader` streams
+`EntityMetadata.InsertColumns`, which excludes them, so the exclusion is one upstream decision
+rather than four per-provider ones. `BulkCopyOptions.IdentityMode` is inert on every provider for
+this reason.
 
 ## Quick Start
 
