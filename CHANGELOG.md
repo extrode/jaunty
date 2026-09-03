@@ -321,6 +321,32 @@ Every item here was reachable from caller-supplied input.
 
 ### Fixed
 
+**The scaffolding tool package was 83.5 MB, two thirds of it unusable (2026-09-03)**
+
+- `Extrode.Jaunty.Scaffolding.Cli` packed at **83,487,302 bytes compressed, 171.53 MB across
+  216 files**, against 1.18 MB for the core package. `SQLitePCLRaw.bundle_e_sqlite3` carries
+  `e_sqlite3` built for all 34 runtime identifiers it knows, and `PackAsTool` cannot infer where
+  a tool will be installed, so every one of them was packed and then doubled across the `net8.0`
+  and `net10.0` tool folders. Roughly 70 MB was iOS, Android, wasm and Mac Catalyst native code;
+  `dotnet tool install` runs on none of those platforms, so that code could never be loaded.
+- `TrimToolRuntimeAssets` in `Jaunty.Scaffolding.Cli.csproj` now keeps eleven identifiers -
+  `win-x64`, `win-x86`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`,
+  `linux-musl-arm64`, `osx-x64`, `osx-arm64`, and the two that are not native at all, `win` and
+  `unix`, which hold the RID-specific *managed* `Microsoft.Data.SqlClient`,
+  `System.Diagnostics.EventLog` and `System.Runtime.Caching` assemblies. Losing either of those
+  two breaks SQL Server scaffolding at connection time rather than at build time.
+- **27,600,719 bytes, 68.27 MB unpacked, 170 files** - a 67% cut, with the other eight packages
+  byte-identical apart from zip timestamps. Verified end to end on Windows: `dotnet tool install`
+  from the trimmed package, then `list-tables` and `scaffold` against a SQLite database, plus a
+  NativeAOT `win-x64` publish whose binary reads the same database.
+- `scripts/check-tool-package.py` runs in `release.yml` between pack and the first push, and
+  fails the release if the packed identifiers stop matching the ones the csproj declares, or if
+  the package passes a 35 MB ceiling. The trim keys on `RuntimeTargetsCopyLocalItems`, an SDK
+  item name rather than documented contract; if a future SDK stops populating it the csproj
+  still reads as though the trim were in force and the only symptom is a package three times
+  the size. Checked against the untrimmed rc.2 package, which it rejects with all 23 extra
+  identifiers named.
+
 **Test suites that never ran (2026-08-01)**
 
 - `tests/Jaunty.Fluent.SourceGen.Tests` was absent from `Jaunty.slnx` from the day spec 003
