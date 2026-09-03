@@ -336,17 +336,22 @@ build that had removed the field would produce. It degrades; it does not misbeha
 pragma suppressed the only warning that said so; under trimming every row of a grouped projection
 came back fully defaulted, with no exception. The pragma is gone — the build staying clean without
 it is the evidence the annotation does the work.</p>
-<p><strong>One caveat remains, and it is not removable by annotation.</strong> One
-<code>System.Linq.Expressions</code> overload,
-<code>Expression.New(ConstructorInfo, IEnumerable&lt;Expression&gt;, params MemberInfo[])</code>, carries
-<code>RequiresUnreferencedCode</code>, so a grouped fluent projection that reaches it emits <strong>IL2026</strong> in
-<em>your</em> build, not Jaunty's. Two neighbouring members are often named alongside it and should not
-be: <code>Expression.Bind</code> carries no trimming annotation at all, and <code>Expression.New(Type)</code> emits
-<strong>IL2067</strong> rather than IL2026, and only when the <code>Type</code> argument is unannotated. Measured
-2026-09-03 by compiling each overload against <code>EnableTrimAnalyzer</code>. The published binary runs correctly —
-the AOT sample exercises both the property and constructor paths and asserts on the values — but
-the warning is the framework's, and the only way to silence it is to suppress it at your call site
-or use a non-expression overload.</p>
+<p><strong>One caveat remains, and it is not removable by annotation.</strong> Two
+<code>System.Linq.Expressions</code> overloads carry <code>RequiresUnreferencedCode</code> and emit <strong>IL2026</strong> in
+<em>your</em> build, not Jaunty's: the ones taking a member list,
+<code>Expression.New(ConstructorInfo, IEnumerable&lt;Expression&gt;, params MemberInfo[])</code> and
+<code>Expression.New(ConstructorInfo, IEnumerable&lt;Expression&gt;, IEnumerable&lt;MemberInfo&gt;)</code>. Calling
+either from your own code is what a grouped fluent projection has to avoid.</p>
+<p>Three neighbouring members are often named alongside them and should not be. <code>Expression.Bind</code>,
+<code>Expression.MemberInit</code> and <code>Expression.New(ConstructorInfo)</code> carry no trimming annotation at
+all, and <code>Expression.New(Type)</code> emits <strong>IL2067</strong> rather than IL2026, and only when the <code>Type</code>
+argument is unannotated. One more result is worth having before you go looking for a warning
+that may not be there: a <code>Expression&lt;Func&lt;T&gt;&gt;</code> the C# compiler builds for you, over an anonymous
+type or a named one, produced no trimming diagnostic in the same build. Measured 2026-09-03 by
+compiling each overload and both projection shapes against <code>EnableTrimAnalyzer</code>.</p>
+<p>The published binary runs. The AOT sample exercises both the property and constructor paths and
+asserts on the values. Where the warning does appear it is the framework's, and the only way to
+silence it is to suppress it at your call site or use a non-expression overload.</p>
 <h2 id="7-duckdb-flat-files">7. DuckDB flat files</h2>
 <p><code>Jaunty.FlatFiles.DuckDB</code> maps result columns onto your DTO by enumerating its public properties.
 This package has no source-generated path, so unlike the core sites there is no non-reflective
