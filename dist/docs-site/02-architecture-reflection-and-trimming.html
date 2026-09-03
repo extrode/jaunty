@@ -336,9 +336,14 @@ build that had removed the field would produce. It degrades; it does not misbeha
 pragma suppressed the only warning that said so; under trimming every row of a grouped projection
 came back fully defaulted, with no exception. The pragma is gone — the build staying clean without
 it is the evidence the annotation does the work.</p>
-<p><strong>One caveat remains, and it is not removable by annotation.</strong> <code>System.Linq.Expressions</code>'
-<code>Expression.Bind</code> and <code>Expression.New</code> carry <code>RequiresUnreferencedCode</code>, so a grouped fluent
-projection emits <strong>IL2026</strong> in <em>your</em> build, not Jaunty's. The published binary runs correctly —
+<p><strong>One caveat remains, and it is not removable by annotation.</strong> One
+<code>System.Linq.Expressions</code> overload,
+<code>Expression.New(ConstructorInfo, IEnumerable&lt;Expression&gt;, params MemberInfo[])</code>, carries
+<code>RequiresUnreferencedCode</code>, so a grouped fluent projection that reaches it emits <strong>IL2026</strong> in
+<em>your</em> build, not Jaunty's. Two neighbouring members are often named alongside it and should not
+be: <code>Expression.Bind</code> carries no trimming annotation at all, and <code>Expression.New(Type)</code> emits
+<strong>IL2067</strong> rather than IL2026, and only when the <code>Type</code> argument is unannotated. Measured
+2026-09-03 by compiling each overload against <code>EnableTrimAnalyzer</code>. The published binary runs correctly —
 the AOT sample exercises both the property and constructor paths and asserts on the values — but
 the warning is the framework's, and the only way to silence it is to suppress it at your call site
 or use a non-expression overload.</p>

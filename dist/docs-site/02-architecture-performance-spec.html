@@ -163,7 +163,7 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#memory-optimization">Memory Optimization</a><a class="toc-l3" href="#1-pre-size-collections">1. Pre-Size Collections</a><a class="toc-l3" href="#2-span-for-zero-allocation-slicing">2. Span for Zero-Allocation Slicing</a><a class="toc-l3" href="#3-frozendictionary-for-lookups">3. FrozenDictionary for Lookups</a><a class="toc-l3" href="#4-compiled-delegates-instead-of-reflection">4. Compiled Delegates Instead of Reflection</a><a class="toc-l3" href="#5-readonly-struct-for-small-value-types">5. readonly struct for Small Value Types</a><a class="toc-l2" href="#execution-optimization">Execution Optimization</a><a class="toc-l3" href="#1-no-linq-in-hot-paths">1. No LINQ in Hot Paths</a><a class="toc-l3" href="#2-aggressive-inlining">2. Aggressive Inlining</a><a class="toc-l3" href="#3-valuetask-for-async">3. ValueTask for Async</a><a class="toc-l3" href="#4-configureawaitfalse">4. ConfigureAwait(false)</a><a class="toc-l3" href="#5-manual-for-loops-over-foreach">5. Manual for Loops Over foreach</a><a class="toc-l2" href="#string-optimization">String Optimization</a><a class="toc-l3" href="#1-stringcreate-for-construction">1. string.Create for Construction</a><a class="toc-l3" href="#2-ordinal-string-comparison">2. Ordinal String Comparison</a><a class="toc-l3" href="#3-searchvalues-for-character-search">3. SearchValues for Character Search</a><a class="toc-l2" href="#caching-strategy">Caching Strategy</a><a class="toc-l3" href="#cache-hierarchy">Cache Hierarchy</a><a class="toc-l3" href="#cache-implementation">Cache Implementation</a><a class="toc-l2" href="#performance-checklist">Performance Checklist</a><a class="toc-l3" href="#code-review-checklist">Code Review Checklist</a><a class="toc-l3" href="#profiling-targets">Profiling Targets</a><a class="toc-l2" href="#benchmarking">Benchmarking</a><a class="toc-l3" href="#benchmarkdotnet-setup">BenchmarkDotNet Setup</a><a class="toc-l3" href="#running-benchmarks">Running Benchmarks</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#memory-optimization">Memory Optimization</a><a class="toc-l3" href="#1-pre-size-collections">1. Pre-Size Collections</a><a class="toc-l3" href="#2-span-for-zero-allocation-slicing">2. Span for Zero-Allocation Slicing</a><a class="toc-l3" href="#3-frozendictionary-for-lookups">3. FrozenDictionary for Lookups</a><a class="toc-l3" href="#4-compiled-delegates-instead-of-reflection">4. Compiled Delegates Instead of Reflection</a><a class="toc-l3" href="#5-readonly-struct-for-small-value-types">5. readonly struct for Small Value Types</a><a class="toc-l2" href="#execution-optimization">Execution Optimization</a><a class="toc-l3" href="#1-no-linq-in-hot-paths">1. No LINQ in Hot Paths</a><a class="toc-l3" href="#2-aggressive-inlining">2. Aggressive Inlining</a><a class="toc-l3" href="#3-valuetask-for-async">3. ValueTask for Async</a><a class="toc-l3" href="#4-configureawaitfalse">4. ConfigureAwait(false)</a><a class="toc-l3" href="#5-iterate-through-the-concrete-type-not-an-interface">5. Iterate Through the Concrete Type, Not an Interface</a><a class="toc-l2" href="#string-optimization">String Optimization</a><a class="toc-l3" href="#1-stringcreate-for-construction">1. string.Create for Construction</a><a class="toc-l3" href="#2-ordinal-string-comparison">2. Ordinal String Comparison</a><a class="toc-l3" href="#3-searchvalues-for-character-search">3. SearchValues for Character Search</a><a class="toc-l2" href="#caching-strategy">Caching Strategy</a><a class="toc-l3" href="#cache-hierarchy">Cache Hierarchy</a><a class="toc-l3" href="#cache-implementation">Cache Implementation</a><a class="toc-l2" href="#performance-checklist">Performance Checklist</a><a class="toc-l3" href="#code-review-checklist">Code Review Checklist</a><a class="toc-l3" href="#profiling-targets">Profiling Targets</a><a class="toc-l2" href="#benchmarking">Benchmarking</a><a class="toc-l3" href="#benchmarkdotnet-setup">BenchmarkDotNet Setup</a><a class="toc-l3" href="#running-benchmarks">Running Benchmarks</a><a class="toc-l2" href="#see-also">See Also</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Architecture &#8250; Performance Optimization Guide</nav>
         <article>
@@ -373,29 +373,101 @@ property.<span class="tok-fn">SetValue</span>(entity, reader.<span class="tok-fn
 </div>
 <p><strong>Impact</strong>: Reduced overhead, deadlock prevention.</p>
 <hr />
-<h3 id="5-manual-for-loops-over-foreach">5. Manual for Loops Over foreach</h3>
-<p><strong>Problem</strong>: <code>foreach</code> allocates enumerator for some collections.</p>
-<p><strong>Solution</strong>: Use <code>for</code> loop for arrays and lists.</p>
+<h3 id="5-iterate-through-the-concrete-type-not-an-interface">5. Iterate Through the Concrete Type, Not an Interface</h3>
+<p><strong>Problem</strong>: a collection typed as <code>IEnumerable&lt;T&gt;</code> or <code>IList&lt;T&gt;</code> reaches <code>GetEnumerator()</code>
+through the interface, which returns a boxed enumerator on the heap. The cost is the
+interface, not the <code>foreach</code>.</p>
+<p><strong>Solution</strong>: keep the field, parameter or local typed as the array, <code>List&lt;T&gt;</code> or
+<code>Span&lt;T&gt;</code> it already is.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: Potential enumerator allocation</span>
-<span class="tok-ctl">foreach</span> (<span class="tok-kw">var</span> property <span class="tok-kw">in</span> properties)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: the interface type forces a boxed enumerator</span>
+<span class="tok-kw">private</span> <span class="tok-kw">readonly</span> <span class="tok-type">IReadOnlyList</span>&lt;<span class="tok-type">PropertyMetadata</span>&gt; _properties;
+
+<span class="tok-ctl">foreach</span> (<span class="tok-kw">var</span> property <span class="tok-kw">in</span> _properties)
 {
     <span class="tok-com">// ...</span>
 }
 
-<span class="tok-com">// GOOD: No allocation</span>
-<span class="tok-ctl">for</span> (<span class="tok-kw">var</span> i = <span class="tok-num">0</span>; i &lt; properties.<span class="tok-var">Length</span>; i++)
+<span class="tok-com">// GOOD: an array needs no enumerator, and List&lt;T&gt; uses its struct enumerator</span>
+<span class="tok-kw">private</span> <span class="tok-kw">readonly</span> <span class="tok-type">PropertyMetadata</span>[] _properties;
+
+<span class="tok-ctl">foreach</span> (<span class="tok-kw">var</span> property <span class="tok-kw">in</span> _properties)
 {
-    <span class="tok-kw">var</span> property = properties[i];
     <span class="tok-com">// ...</span>
 }
 </code></pre>
 </div>
-<p><strong>Impact</strong>: Eliminates enumerator allocations.</p>
+<p><strong>Impact</strong>: measured on .NET 10.0.203, x64, iterating a ten-element <code>PropertyInfo[]</code>.
+Allocation is bytes per call over 1,000,000 direct calls; time is the BenchmarkDotNet
+mean.</p>
+<table>
+<thead>
+<tr>
+<th>iteration</th>
+<th style="text-align: right;">allocated</th>
+<th style="text-align: right;">mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>for</code> over <code>T[]</code></td>
+<td style="text-align: right;">0 B</td>
+<td style="text-align: right;">10.630 ns</td>
+</tr>
+<tr>
+<td><code>foreach</code> over <code>T[]</code></td>
+<td style="text-align: right;">0 B</td>
+<td style="text-align: right;">8.438 ns</td>
+</tr>
+<tr>
+<td><code>foreach</code> over <code>Span&lt;T&gt;</code></td>
+<td style="text-align: right;">0 B</td>
+<td style="text-align: right;">8.298 ns</td>
+</tr>
+<tr>
+<td><code>for</code> over <code>List&lt;T&gt;</code></td>
+<td style="text-align: right;">0 B</td>
+<td style="text-align: right;">12.608 ns</td>
+</tr>
+<tr>
+<td><code>foreach</code> over <code>List&lt;T&gt;</code></td>
+<td style="text-align: right;">0 B</td>
+<td style="text-align: right;">11.366 ns</td>
+</tr>
+<tr>
+<td><code>foreach</code> over <code>IList&lt;T&gt;</code></td>
+<td style="text-align: right;">40 B</td>
+<td style="text-align: right;">12.744 ns</td>
+</tr>
+<tr>
+<td><code>foreach</code> over <code>IEnumerable&lt;T&gt;</code></td>
+<td style="text-align: right;">40 B</td>
+<td style="text-align: right;">12.690 ns</td>
+</tr>
+</tbody>
+</table>
+<p>Two things follow, and the second one is the reason this section was rewritten.</p>
+<p><strong><code>foreach</code> over an array or a <code>List&lt;T&gt;</code> allocates nothing.</strong> The compiler lowers
+<code>foreach</code> over <code>T[]</code> to an indexed loop with no enumerator at all, and <code>List&lt;T&gt;</code> exposes
+a struct enumerator that stays on the stack. The 40 bytes in the last two rows is a boxed
+<code>List&lt;T&gt;.Enumerator</code>, and it appears because the <em>static type</em> is an interface.</p>
+<p><strong>Replacing <code>foreach</code> with a hand-written <code>for</code> buys nothing and costs a little.</strong>
+Over an array it was 2.2 ns slower per call — the compiler's own lowering elides the
+bounds check that the hand-written version reintroduces. This file previously advised the
+opposite, and the advice was never followed: <code>src/</code> uses <code>foreach</code> in 244 places against
+11 indexed <code>for</code> loops.</p>
+<p>One caveat on the 40-byte figure. BenchmarkDotNet's harness reports zero allocation for
+those same two rows, because in its generated loop the JIT devirtualizes <code>GetEnumerator</code>
+and proves the enumerator does not escape, so it stack-allocates instead. A standalone
+harness calling the same methods a million times does allocate. Treat interface-typed
+iteration as <em>may allocate, depending on what the JIT can prove</em>, and prefer the concrete
+type rather than relying on the optimisation.</p>
+<p>The harness is <code>tmp/claims/foreach-bench/</code>; <code>foreach-bench alloc-direct</code> reproduces the
+allocation column and a bare run reproduces the timings.</p>
 <hr />
 <h2 id="string-optimization">String Optimization</h2>
 <h3 id="1-stringcreate-for-construction">1. string.Create for Construction</h3>
@@ -545,7 +617,7 @@ property.<span class="tok-fn">SetValue</span>(entity, reader.<span class="tok-fn
 <li class="task-list-item"><input disabled="disabled" type="checkbox" /> Compiled delegates instead of reflection</li>
 <li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>readonly struct</code> for small value types</li>
 <li class="task-list-item"><input disabled="disabled" type="checkbox" /> No LINQ in hot paths</li>
-<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>for</code> loops instead of <code>foreach</code> for arrays</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Collections iterated through their concrete type, not <code>IEnumerable&lt;T&gt;</code> or <code>IList&lt;T&gt;</code></li>
 <li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>ConfigureAwait(false)</code> on all async</li>
 <li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>StringComparison.Ordinal</code> for string comparison</li>
 <li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>[MethodImpl(MethodImplOptions.AggressiveInlining)]</code> for small methods</li>
