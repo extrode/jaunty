@@ -11,12 +11,40 @@
    the page flash the wrong theme on every navigation. */
 (function () {
   var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
   try {
-    var t = localStorage.getItem('dg-theme');
-    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
-    var s = parseFloat(localStorage.getItem('dg-fs'));
-    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
-  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
 })();
 </script>
 </head>
@@ -28,10 +56,13 @@
     <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
     <div class="header-brand">
       <span class="brand-name">jaunty</span>
-      <span class="brand-crumb">Project Structure</span>
+      <span class="brand-crumb">Quick start &#8250; Project Structure</span>
     </div>
     <div class="header-spacer"></div>
     <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
       <div class="fs-group" role="group" aria-label="Text size">
         <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
         <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
@@ -58,135 +89,204 @@
         <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">Overview</span>
+    <span class="nav-group-label">General</span>
   </div>
-  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  <a href="jaunty-torture-test-results.html">Jaunty Torture Test — Results Matrix</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quick-start</span>
+    <span class="nav-group-label">Quick start</span>
   </div>
-  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html" class="active" aria-current="page">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html" class="active" aria-current="page">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">api-reference</span>
+    <span class="nav-group-label">Api reference</span>
   </div>
-  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">architecture</span>
+    <span class="nav-group-label">Architecture</span>
   </div>
-  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">Architecture Documentation</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">Architecture Decision Records (ADRs)</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">development</span>
+    <span class="nav-group-label">Development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">extensions</span>
+    <span class="nav-group-label">Extensions</span>
   </div>
-  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quality</span>
+    <span class="nav-group-label">Quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">Quality &amp; Testing</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive Project Audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / Benchmark Results — 2026-07-04 (PRD-002 partial)</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / Coverage Gap Inventory — 2026-07-04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / Jaunty Production Readiness Report (2026-07-02)</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmark Results — 2026-07-29 (pre-GA regression check)</a>  <a href="05-quality-reports-benchmarks-2026-09-02.html">Reports / Benchmark Results — 2026-09-02 (corrected baseline, read-path changes)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">releases</span>
+    <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">Releases &amp; Planning</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">Selling and Distributing Jaunty — The Complete Flow</a>  <a href="06-releases-RELEASE-RUNBOOK.html">Release Runbook</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-order-form-template.html">Order Form (Template)</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / Commercial Tasklist (Archived)</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / Enterprise Readiness Pass — 2026-07-04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / Production Readiness Tasklist</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Test Reorganization Plan — Dialect Attribute Architecture</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">design</span>
+    <span class="nav-group-label">Design</span>
   </div>
-  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">07-design — Visual Design Source</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">learn</span>
+    <span class="nav-group-label">Learn</span>
   </div>
-  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-README.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
 </div>
 
       </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
     </nav>
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#repository-layout">Repository Layout</a><a class="toc-l2" href="#main-library-srcjaunty">Main Library: src/Jaunty/</a><a class="toc-l3" href="#public-api-directories">Public API Directories</a><a class="toc-l3" href="#internal-implementation-internals">Internal Implementation: Internals/</a><a class="toc-l2" href="#test-projects">Test Projects</a><a class="toc-l3" href="#jaunty.tests">Jaunty.Tests</a><a class="toc-l3" href="#test-file-count">Test File Count</a><a class="toc-l2" href="#target-frameworks">Target Frameworks</a><a class="toc-l2" href="#key-dependencies">Key Dependencies</a><a class="toc-l3" href="#runtime">Runtime</a><a class="toc-l3" href="#test">Test</a><a class="toc-l2" href="#file-naming-conventions">File Naming Conventions</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#repository-layout">Repository Layout</a><a class="toc-l2" href="#main-library-srcjaunty">Main Library: src/Jaunty/</a><a class="toc-l3" href="#public-api-directories">Public API Directories</a><a class="toc-l3" href="#internal-implementation-internals">Internal Implementation: Internals/</a><a class="toc-l2" href="#test-projects">Test Projects</a><a class="toc-l3" href="#jauntytests">Jaunty.Tests</a><a class="toc-l3" href="#test-file-count">Test File Count</a><a class="toc-l2" href="#target-frameworks">Target Frameworks</a><a class="toc-l2" href="#key-dependencies">Key Dependencies</a><a class="toc-l3" href="#runtime-srcjaunty">Runtime (src/Jaunty)</a><a class="toc-l3" href="#test-testsjauntytests">Test (tests/Jaunty.Tests)</a><a class="toc-l2" href="#file-naming-conventions">File Naming Conventions</a><a class="toc-l2" href="#see-also">See Also</a></nav>
       <div class="content-inner">
-        <nav class="breadcrumb" aria-label="Breadcrumb">Project Structure</nav>
+        <nav class="breadcrumb" aria-label="Breadcrumb">Quick start &#8250; Project Structure</nav>
         <article>
 <h1 id="project-structure">Project Structure</h1>
-<p>This document explains the Jaunty codebase organization.</p>
+<p>This document explains how the core library and its test suite are organized. For the whole
+repository tree see <a href="00-quick-start-project-layout.html"><code>project-layout.md</code></a>.</p>
 <h2 id="repository-layout">Repository Layout</h2>
-<pre><code>Jaunty/
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">text</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="text"><code class="language-text">jaunty/
 ├── .editorconfig                  # Code style rules
 ├── .gitignore                     # Git ignore patterns
+├── Directory.Build.props          # Settings shared by every project
 ├── README.md                      # Project overview
-├── Jaunty.slnx                    # Visual Studio solution
+├── Jaunty.slnx                    # Solution file
 │
-├── docs/                          # Documentation
-│   ├── README.md                  # Documentation index
-│   ├── 00-quick-start/            # Getting started
-│   ├── 01-api-reference/          # API docs
-│   ├── 02-architecture/           # Architecture
-│   ├── 03-development/            # Development guides
-│   ├── code-coverage/             # Test coverage
-│   └── archive/                   # Historical docs
+├── docs/                          # Documentation (00-quick-start through 08-learn, 99-archive)
+├── src/                           # The 9 packages plus the source generator
+│   ├── Jaunty/                    # Core micro-ORM (package Extrode.Jaunty)
+│   ├── Jaunty.SourceGenerator/    # Roslyn generator, packed inside Extrode.Jaunty
+│   ├── Jaunty.Fluent/             # Fluent query API
+│   ├── Jaunty.FlatFiles/          # Flat-file abstractions
+│   ├── Jaunty.FlatFiles.DuckDB/   # DuckDB implementation
+│   ├── Jaunty.Extensions.Reflection/  # Reflection mapper and native bulk copy
+│   ├── Jaunty.Extensions.Logging/     # ILogger and DI integration
+│   ├── Jaunty.Extensions.Npgsql/      # PostgreSQL parameter binding without boxing
+│   ├── Jaunty.Scaffolding/        # Database scaffolding
+│   └── Jaunty.Scaffolding.Cli/    # Scaffolding dotnet tool
 │
-├── src/                           # Source code
-│   ├── Jaunty/                    # Main library
-│   │   ├── Attributes/            # Mapping attributes
-│   │   ├── Configuration/         # JauntyConfig
-│   │   ├── Core/                  # Core types
-│   │   ├── Interfaces/            # IMapped&lt;T&gt;, IEntity&lt;T&gt;
-│   │   ├── Read/                  # Query methods
-│   │   ├── Streaming/             # Streaming methods
-│   │   ├── Write/                 # CRUD operations
-│   │   ├── Multiple/              # Multiple result sets
-│   │   ├── StoredProcedure/       # Stored procedures
-│   │   └── Internals/             # Implementation
-│   │
-│   ├── Jaunty.Fluent/             # Fluent API (optional)
-│   ├── Jaunty.Scaffolding/        # Code scaffolding
-│   └── Jaunty.Scaffolding.Cli/    # Scaffolding CLI
-│
-└── tests/                         # Test projects
-    ├── Jaunty.Tests/              # Main test suite
-    ├── Jaunty.Fluent.Tests/      # Fluent API tests
-    └── Jaunty.Scaffolding.Tests/  # Scaffolding tests
+└── tests/                         # The 10 test projects, shared helpers, server seed scripts
 </code></pre>
+</div>
 <h2 id="main-library-srcjaunty">Main Library: src/Jaunty/</h2>
 <h3 id="public-api-directories">Public API Directories</h3>
-<p>|-----------|---------|----------|
-| <code>Attributes/</code> | <code>[Table]</code>, <code>[Column]</code>, <code>[Ignore]</code>, <code>[Key]</code>, <code>[DatabaseGenerated]</code> | yes |
-| <code>Configuration/</code> | <code>JauntyConfig</code> resolver delegates, type handlers, enum storage | yes |
-| <code>Core/</code> | <code>CommandOptions&lt;T&gt;</code>, <code>GridReader</code> | yes |
-| <code>Interfaces/</code> | <code>IMapped&lt;T&gt;</code>, <code>IEntity&lt;T&gt;</code> | — |
-| <code>Read/</code> | Query* methods | yes |
-| <code>Streaming/</code> | QueryStream*, QueryPartialStream* | yes |
-| <code>Write/</code> | Insert, Update, Delete, Bulk*, Upsert | yes |
-| <code>Multiple/</code> | QueryMultiple, GridReader | yes |
-| <code>StoredProcedure/</code> | ExecuteStoredProcedure* | — |</p>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Contents</th>
+<th>Public</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Attributes/</code></td>
+<td><code>[Table]</code>, <code>[Column]</code>, <code>[Key]</code>, <code>[Ignore]</code>, <code>[DatabaseGenerated]</code>, <code>[EnumStorage]</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Configuration/</code></td>
+<td><code>JauntyConfig</code> (resolver delegates, type handlers, interceptors), <code>BulkCopyConfiguration</code>, <code>IBulkCopyProvider</code>, <code>MappingMode</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Core/</code></td>
+<td><code>CommandOptions&lt;T&gt;</code>, <code>MultiEntityCommandOptions</code>, <code>GridReader</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Diagnostics/</code></td>
+<td><code>AuditInterceptor</code>, the <code>DiagnosticSource</code> listener</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Dialects/</code></td>
+<td><code>ISqlDialect</code>, the SQLite, SQL Server, PostgreSQL and MySQL dialects, <code>SqlDialectFactory</code>, <code>SqlIdentifierValidator</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Execute/</code></td>
+<td><code>Execute*</code> non-query methods</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Import/</code></td>
+<td>CSV import</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Interceptors/</code></td>
+<td><code>ICommandInterceptor</code>, <code>CommandContext</code>, the interceptor pipeline</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Interfaces/</code></td>
+<td><code>IMapped&lt;T&gt;</code>, <code>IEntity&lt;T&gt;</code>, <code>IGeneratedAccessors</code>, <code>IEntityMetadataSource</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Multiple/</code></td>
+<td><code>QueryMultiple*</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Read/</code></td>
+<td><code>Query*</code>, <code>Get*</code>, <code>QueryScalar*</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>StoredProcedure/</code></td>
+<td><code>ExecuteStoredProcedure*</code>, <code>SpParameters</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Streaming/</code></td>
+<td><code>QueryStream*</code>, <code>QueryPartialStream*</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>TypeHandlers/</code></td>
+<td>Custom type handlers</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Write/</code></td>
+<td><code>Insert</code>, <code>Update</code>, <code>Delete</code>, <code>Upsert</code>, <code>Bulk*</code></td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
 <h3 id="internal-implementation-internals">Internal Implementation: Internals/</h3>
 <table>
 <thead>
@@ -197,120 +297,110 @@
 </thead>
 <tbody>
 <tr>
-<td><code>Dialects/</code></td>
-<td>ISqlDialect, SQLite/SqlServer/MySql/PostgreSql dialects</td>
+<td><code>BulkCopy/</code></td>
+<td><code>BulkCopyOptions</code>, <code>EntityDataReader</code></td>
 </tr>
 <tr>
 <td><code>Entity/</code></td>
-<td>EntityMetadata, MetadataCache<T>, MetadataBuilder</td>
-</tr>
-<tr>
-<td><code>Enums/</code></td>
-<td>MappingMode enum (Strict, Partial)</td>
+<td><code>EntityMetadata</code>, <code>ColumnMetadata</code>, the source-generated metadata resolver</td>
 </tr>
 <tr>
 <td><code>Parameters/</code></td>
-<td>SqlParameterParser, ParameterBinder, ParameterCache</td>
+<td><code>SqlParameterParser</code> and its cache, <code>ParameterBinder</code>, <code>ParameterCache</code>, <code>ParameterCeiling</code></td>
+</tr>
+<tr>
+<td><code>Read/</code></td>
+<td><code>QueryCore</code>, <code>ExecuteReader</code>, <code>ExecuteQueryMultiple</code> (sync and async), <code>DrDispatcher</code>, <code>MappedCache</code>, <code>MultiEntityMapper</code>, scalar conversion</td>
 </tr>
 <tr>
 <td><code>Write/</code></td>
-<td>Internal write operation helpers</td>
+<td><code>InsertCore</code>, <code>UpdateCore</code>, <code>DeleteCore</code>, <code>CrudSqlCache</code> / <code>CachedCrudSql</code>, <code>MultiRowInsertCache</code>, bulk validators</td>
 </tr>
 </tbody>
 </table>
-<table>
-<thead>
-<tr>
-<th>File</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>QueryCore.cs</code> / <code>QueryCoreAsync.cs</code></td>
-<td>Core query execution</td>
-</tr>
-<tr>
-<td><code>ExecuteReader.cs</code> / <code>ExecuteReaderAsync.cs</code></td>
-<td>DataReader execution</td>
-</tr>
-<tr>
-<td><code>ExecuteQueryMultiple.cs</code> / <code>ExecuteQueryMultipleAsync.cs</code></td>
-<td>Multiple result sets</td>
-</tr>
-<tr>
-<td><code>DrDispatcher.cs</code></td>
-<td>Mapper resolution dispatcher</td>
-</tr>
-<tr>
-<td><code>MappedCache.cs</code></td>
-<td>Custom mapper cache</td>
-</tr>
-<tr>
-<td><code>CrudSqlCache.cs</code> / <code>CachedCrudSql.cs</code></td>
-<td>CRUD SQL generation cache</td>
-</tr>
-<tr>
-<td><code>MultiEntityMapper.cs</code></td>
-<td>Tuple mapping for Query&lt;T1, T2&gt;</td>
-</tr>
-</tbody>
-</table>
+<p>Loose files at the <code>Internals/</code> root cover the pieces shared by both paths: <code>BoundedCache</code>,
+<code>CapacityHint</code>, <code>CommandTimeoutHint</code>, <code>CommandObservation</code>, <code>KeyGuard</code>,
+<code>AsyncTransactionValidator</code>.</p>
 <h2 id="test-projects">Test Projects</h2>
-<h3 id="jaunty.tests">Jaunty.Tests</h3>
-<pre><code>tests/Jaunty.Tests/
+<h3 id="jauntytests">Jaunty.Tests</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">text</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="text"><code class="language-text">tests/Jaunty.Tests/
 ├── Entities/                      # Test models
-│   ├── Product.cs
-│   ├── Category.cs
-│   ├── ProductSummary.cs
-│   └── ...
-│
-├── Helpers/                       # Test infrastructure
-│   ├── Database.cs                # SQLite connection helper
-│   ├── SQLiteTestBase.cs          # Base class for integration tests
-│   └── SkipSQLiteAsyncAttribute.cs
-│
-├── Integration/Sqlite/            # Database integration tests
-│   ├── Configuration/             # JauntyConfig tests
-│   ├── Infrastructure/            # Connection, dialect tests
-│   ├── Multiple/                  # QueryMultiple, GridReader
-│   ├── Read/                      # ~29 test files for Query*
-│   ├── Streaming/                 # QueryStream* tests
-│   └── Write/                     # Bulk*, Upsert tests
-│
-└── Unit/Read/                     # Unit tests
-    ├── CommandOptionsTests.cs
-    ├── SqlParameterParserTests.cs
-    └── ParameterBinderTests.cs
+├── Helpers/                       # NorthwindDatabase, TestConfiguration, recording and
+│   │                              #   throwing connections, MockDbCommand
+│   └── Dialects/                  # Per-engine data attributes; skip when the engine is unreachable
+├── Integration/                   # Against a real database, SQLite by default
+│   ├── Core/  Dialects/  Execute/  Get/  Import/  Infrastructure/  Multiple/  Read/
+│   ├── StoredProcedure/  Streaming/  TransactionSafety/  TypeHandlers/  Write/
+│   └── IDbConnectionFallback/
+├── Performance/
+└── Unit/                          # Needs the core's internals but no database
+    ├── BulkCopy/  Configuration/  Core/  Dialects/  Extensions/  Import/  Interceptors/
+    └── Internals/  Read/  StoredProcedures/  TypeHandlers/  Write/
 </code></pre>
+</div>
+<p><code>Jaunty.UnitTests/Unit/</code> holds the database-free suite, including the repository guard tests
+(<code>DocumentedApiTests</code>, <code>LicenseFileTests</code>, <code>PackageIdentityTests</code>, <code>SolutionLayoutTests</code>,
+<code>NightlyWorkflowCadenceTests</code>) and <code>AllocationBudgetTests</code>, the one suite with an xUnit trait.</p>
 <h3 id="test-file-count">Test File Count</h3>
+<p>Files named <code>*Tests.cs</code>, counted 2026-09-02:</p>
 <table>
 <thead>
 <tr>
 <th>Project</th>
 <th>Files</th>
-<th>Tests</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>Jaunty.Tests</code></td>
-<td>~66</td>
-<td>~600+</td>
+<td>201</td>
+</tr>
+<tr>
+<td><code>Jaunty.UnitTests</code></td>
+<td>118</td>
 </tr>
 <tr>
 <td><code>Jaunty.Fluent.Tests</code></td>
-<td>~18</td>
-<td>~100+</td>
+<td>108</td>
+</tr>
+<tr>
+<td><code>Jaunty.FlatFiles.DuckDB.Tests</code></td>
+<td>93</td>
+</tr>
+<tr>
+<td><code>Jaunty.SourceGenerator.Tests</code></td>
+<td>36</td>
 </tr>
 <tr>
 <td><code>Jaunty.Scaffolding.Tests</code></td>
-<td>~8</td>
-<td>~50+</td>
+<td>32</td>
+</tr>
+<tr>
+<td><code>Jaunty.FlatFiles.Tests</code></td>
+<td>12</td>
+</tr>
+<tr>
+<td><code>Jaunty.Fluent.SourceGen.Tests</code></td>
+<td>5</td>
+</tr>
+<tr>
+<td><code>Jaunty.Fluent.ConfigTests</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td><code>Jaunty.Scaffolding.Cli.Tests</code></td>
+<td>3</td>
 </tr>
 </tbody>
 </table>
+<p>The whole solution, all frameworks, on the same day: 10,429 passed, 37 skipped.</p>
 <h2 id="target-frameworks">Target Frameworks</h2>
+<p><code>src/Jaunty</code> targets:</p>
 <table>
 <thead>
 <tr>
@@ -321,29 +411,35 @@
 <tbody>
 <tr>
 <td><code>netstandard2.0</code></td>
-<td>Broad compatibility (.NET Framework, .NET Core 2.0+)</td>
+<td>.NET Framework and anything else that cannot take <code>net8.0</code></td>
 </tr>
 <tr>
 <td><code>net8.0</code></td>
-<td>Modern .NET optimizations (FrozenDictionary, etc.)</td>
+<td>Modern .NET: <code>FrozenDictionary</code>, span-based APIs</td>
+</tr>
+<tr>
+<td><code>net10.0</code></td>
+<td>Current .NET</td>
 </tr>
 </tbody>
 </table>
-<p>Conditional compilation:</p>
+<p><code>Jaunty.Tests</code> runs on <code>net8.0</code>, <code>net10.0</code> and <code>net472</code>; the <code>net472</code> leg consumes the
+<code>netstandard2.0</code> build.</p>
+<p>Conditional compilation is almost entirely <code>NET8_0_OR_GREATER</code>:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp">#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-pre">#if NET8_0_OR_GREATER</span>
     <span class="tok-com">// FrozenDictionary, modern APIs</span>
-#<span class="tok-kw">else</span>
+<span class="tok-pre">#else</span>
     <span class="tok-com">// Dictionary fallback</span>
-#endif
+<span class="tok-pre">#endif</span>
 </code></pre>
 </div>
 <h2 id="key-dependencies">Key Dependencies</h2>
-<h3 id="runtime">Runtime</h3>
+<h3 id="runtime-srcjaunty">Runtime (<code>src/Jaunty</code>)</h3>
 <table>
 <thead>
 <tr>
@@ -355,12 +451,18 @@
 <tbody>
 <tr>
 <td><code>Microsoft.Bcl.AsyncInterfaces</code></td>
-<td>netstandard2.0</td>
-<td>Async interfaces</td>
+<td><code>netstandard2.0</code> only</td>
+<td><code>IAsyncEnumerable&lt;T&gt;</code>, <code>IAsyncDisposable</code></td>
+</tr>
+<tr>
+<td><code>System.Diagnostics.DiagnosticSource</code></td>
+<td><code>netstandard2.0</code> only</td>
+<td><code>DiagnosticListener</code> for the diagnostics events</td>
 </tr>
 </tbody>
 </table>
-<h3 id="test">Test</h3>
+<p>On <code>net8.0</code> and <code>net10.0</code> the core has no package dependencies.</p>
+<h3 id="test-testsjauntytests">Test (<code>tests/Jaunty.Tests</code>)</h3>
 <table>
 <thead>
 <tr>
@@ -370,20 +472,28 @@
 </thead>
 <tbody>
 <tr>
-<td><code>xunit</code></td>
-<td>Test framework</td>
+<td><code>xunit.v3</code>, <code>xunit.runner.visualstudio</code>, <code>Microsoft.NET.Test.Sdk</code></td>
+<td>Test framework and runner</td>
 </tr>
 <tr>
-<td><code>FluentAssertions</code></td>
-<td>Assertions</td>
+<td><code>coverlet.collector</code></td>
+<td>Coverage collector</td>
 </tr>
 <tr>
-<td><code>System.Data.SQLite.Core</code></td>
-<td>SQLite provider</td>
+<td><code>CsCheck</code></td>
+<td>Property-based tests</td>
 </tr>
 <tr>
-<td><code>Microsoft.NET.Test.Sdk</code></td>
-<td>Test platform</td>
+<td><code>System.Data.SQLite.Core</code>, <code>Microsoft.Data.Sqlite</code></td>
+<td>The two SQLite providers</td>
+</tr>
+<tr>
+<td><code>Microsoft.Data.SqlClient</code>, <code>Npgsql</code>, <code>MySql.Data</code></td>
+<td>Server providers; version-pinned per framework</td>
+</tr>
+<tr>
+<td><code>Microsoft.Extensions.DependencyInjection</code>, <code>Microsoft.Extensions.Logging</code></td>
+<td>Logging extension tests</td>
 </tr>
 </tbody>
 </table>
@@ -415,13 +525,14 @@
 <tr>
 <td>Internals</td>
 <td><code>ComponentName.cs</code></td>
-<td><code>MetadataCache.cs</code>, <code>SqlParameterParser.cs</code></td>
+<td><code>SqlParameterParser.cs</code>, <code>CrudSqlCache.cs</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="00-quick-start-README.html"><code>README.md</code></a> - Quick start</li>
+<li><a href="00-quick-start-project-layout.html"><code>project-layout.md</code></a> - The whole repository</li>
 <li><a href="01-api-reference-README.html"><code>../01-api-reference/README.md</code></a> - API reference</li>
 <li><a href="02-architecture-README.html"><code>../02-architecture/README.md</code></a> - Architecture</li>
 </ul>
@@ -430,10 +541,10 @@
         <div class="page-nav" id="page-nav">
           <div class="prev-next"><a class="pn-prev" href="00-quick-start-project-layout.html">
   <span class="pn-label">&#8592; prev</span>
-  <span class="pn-title">Project layout</span>
+  <span class="pn-title">Project Layout</span>
 </a><a class="pn-next" href="00-quick-start-why-jaunty.html">
   <span class="pn-label">next &#8594;</span>
-  <span class="pn-title">Why jaunty</span>
+  <span class="pn-title">Why Jaunty (and Why Not)</span>
 </a></div>
         </div>
       </div>
@@ -443,7 +554,40 @@
   <!-- ===== status bar ===== -->
   <footer class="jt-statusbar">
     <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
   </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
 </div>
 <script src="nav.js"></script>
 </body>

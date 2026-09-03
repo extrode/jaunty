@@ -77,6 +77,23 @@ default lives in `src/Directory.Build.props`.
 - **Tests: two CSV import tests reopen the pooled SQLite connection inside the no-GC region.**
   On .NET Framework a collection landed between the import and the reopen, the pool handed back
   a fresh handle, and the temp table the test had built was gone.
+- **Docs: the API reference now matches the code it describes.** The async signatures in
+  `api-summary.md` return `ValueTask`, which is what every core async method has always
+  returned; `QueryScalar` takes the generic `CommandOptions<T>`; `Take` and `Skip` return
+  `IPagedClause<T>`; the CRUD pages document `this IDbConnection` and `where T : new()` rather
+  than `DbConnection` and a `class` constraint the code does not impose;
+  `DefaultCheckConstraints` defaults to `true`; the `CommandOptions` constructors show all five
+  and all three parameters; three examples that would not compile are fixed (the `With*`
+  factories are static and do not chain, `TableAttribute.Schema` is get-only so the schema is
+  positional, and `IDataReader.GetInt32` takes an ordinal); and the stale note claiming
+  configuration cannot change after first use is replaced by what the same page's opening and
+  `JauntyConfig` both say.
+- **Docs: fourth public-readiness pass.** Specs, plans and archived reports no longer point at
+  a private tracker, a private findings registry, local worktree directories or a self-hosted
+  runner by name, and three archived links that pointed at files under a different name or
+  path are corrected.
+- **Docs: the published HTML under `dist/docs-site` is regenerated.** It was two passes stale
+  and still carried text that had been removed from `docs/`.
 
 ### Added
 

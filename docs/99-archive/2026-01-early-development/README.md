@@ -88,7 +88,7 @@ Many ideas from this period were implemented in refined forms:
 | `CodingConventions.md` | [`../03-development/file-naming-convention.md`](../03-development/file-naming-convention.md) |
 | `OrganizationRecommendations.md` | [`../../README.md`](../../README.md) (docs structure) |
 | `api-documentation-2026-01-15.md` | [`../../01-api-reference/`](../../01-api-reference/) |
-| `PriorityRoadmap.md` | [`../../06-releases/tasklists/`](../../06-releases/tasklists/) |
+| `PriorityRoadmap.md` | not retained |
 
 ---
 

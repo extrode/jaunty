@@ -359,7 +359,7 @@ Jaunty leaves the parameter type to `Microsoft.Data.SqlClient`'s inference, whic
 type**. The limit comes from the parameter, not the column. Every `DateTime` Jaunty writes to
 SQL Server silently loses up to 3.33ms. This is the temporal analogue of the decimal problem
 `IDecimalBindingDialect` already exists to solve, so the fix has an established shape; it is
-recorded in `work/todo.md` rather than made here, per the scope rule. The two SqlServer theories
+recorded in the maintainer's tracker rather than made here, per the scope rule. The two SqlServer theories
 pin the current behaviour, so a fix has to update them deliberately.
 
 **RED-phase.** These theories discriminate by construction and were observed doing it: before
@@ -404,7 +404,7 @@ A first attempt at the injection put the sink field between the XML doc and the 
 build failed with CS1572 and the run silently used the stale binary and "passed" — a reminder
 that a mutation-check must confirm its own build succeeded before believing a green result.
 
-Byproduct recorded in `work/todo.md`: parameterless SQL costs 120 bytes/call because
+Byproduct recorded in the maintainer's tracker: parameterless SQL costs 120 bytes/call because
 `ExtractParameterNamesSpan` allocates `new List<string>(ParameterParsingCapacity)` before knowing
 whether the SQL holds a single sigil. Deferring the list to the first parameter found would take
 that case to zero.
@@ -608,8 +608,8 @@ Researched 2026-08-27 after the mutation run made the dev machine unusable. Reco
 the conclusion changes what this plan's nightly workflow costs and whether it can run at all.
 
 **The premise in Phase 2 above is wrong.** The plan says "this repo has a self-hosted Linux runner
-(`vars.CI_RUNNER`), so the fuzz job can actually run". That runner is `REDACTED-RUNNER` — **WSL2
-on the dev machine**. So every CI run and every nightly job lands on the developer's own CPU, which
+(`vars.CI_RUNNER`), so the fuzz job can actually run". That runner was self-hosted on the
+developer's own workstation. So every CI run and every nightly job lands on the developer's own CPU, which
 is the problem this plan's nightly would make worse, not better.
 
 Measured:
@@ -637,7 +637,7 @@ Three findings that matter:
    explicitly not a gate (`"break": 0`) — so **weekly, not nightly**, is the correct cadence and
    cuts its cost 7×.
 
-Open decisions are logged in `work/todo.md`; none of them block the test work in this plan.
+Open decisions are logged in the maintainer's tracker; none of them block the test work in this plan.
 
 ### The cadence split landed 2026-08-29
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Build and Test Guide — jaunty docs</title>
+<title>Jaunty Optimization Roadmap — jaunty docs</title>
 <link rel="stylesheet" href="site.css">
 <script>
 /* Inline, in the head, and before anything paints. A saved preference applied
@@ -56,7 +56,7 @@
     <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
     <div class="header-brand">
       <span class="brand-name">jaunty</span>
-      <span class="brand-crumb">Quick start &#8250; Build and Test Guide</span>
+      <span class="brand-crumb">Development &#8250; Jaunty Optimization Roadmap</span>
     </div>
     <div class="header-spacer"></div>
     <div class="header-tools">
@@ -93,12 +93,12 @@
   </div>
   <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  <a href="jaunty-torture-test-results.html">Jaunty Torture Test — Results Matrix</a>  </div>
 </div>
-<div class="nav-group" data-group data-open="true">
+<div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Quick start</span>
   </div>
-  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html" class="active" aria-current="page">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -114,12 +114,12 @@
   </div>
   <div class="nav-group-items">  <a href="02-architecture-README.html">Architecture Documentation</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">Architecture Decision Records (ADRs)</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  </div>
 </div>
-<div class="nav-group" data-group>
+<div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html" class="active" aria-current="page">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -163,234 +163,82 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#build-commands">Build Commands</a><a class="toc-l2" href="#test-commands">Test Commands</a><a class="toc-l3" href="#run-all-tests">Run All Tests</a><a class="toc-l3" href="#filter-tests">Filter Tests</a><a class="toc-l3" href="#test-projects">Test Projects</a><a class="toc-l2" href="#code-coverage">Code Coverage</a><a class="toc-l2" href="#test-infrastructure">Test Infrastructure</a><a class="toc-l3" href="#database-setup">Database Setup</a><a class="toc-l2" href="#cicd">CI/CD</a><a class="toc-l3" href="#github-actions">GitHub Actions</a><a class="toc-l3" href="#local-pre-commit">Local Pre-commit</a><a class="toc-l2" href="#troubleshooting">Troubleshooting</a><a class="toc-l3" href="#tests-fail-with-could-not-locate-datasqlitenorthwinddb">Tests fail with &quot;Could not locate data/sqlite/Northwind.db&quot;</a><a class="toc-l3" href="#server-suites-all-skip">Server suites all skip</a><a class="toc-l3" href="#build-fails-with-reference-not-found">Build Fails with &quot;Reference not found&quot;</a><a class="toc-l2" href="#performance-testing">Performance Testing</a><a class="toc-l3" href="#benchmarkdotnet">BenchmarkDotNet</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#phase-1-critical-hot-path-optimizations-high-impact">Phase 1: Critical Hot-Path Optimizations (High Impact)</a><a class="toc-l3" href="#task-1-eliminate-reflection-in-write-operations">Task 1: Eliminate Reflection in Write Operations</a><a class="toc-l3" href="#task-2-optimize-entity-id-population">Task 2: Optimize Entity ID Population</a><a class="toc-l3" href="#task-3-refactor-collection-parameter-expansion">Task 3: Refactor Collection Parameter Expansion</a><a class="toc-l2" href="#phase-2-execution-engine-refinement-medium-high-impact">Phase 2: Execution Engine Refinement (Medium-High Impact)</a><a class="toc-l3" href="#task-4-high-performance-expression-tree-setters">Task 4: High-Performance Expression Tree Setters</a><a class="toc-l3" href="#task-5-implement-multi-entity-mapper-caching">Task 5: Implement Multi-Entity Mapper Caching</a><a class="toc-l2" href="#phase-3-memory-efficiency--modernization-medium-impact">Phase 3: Memory Efficiency &amp; Modernization (Medium Impact)</a><a class="toc-l3" href="#task-6-zero-allocation-sql-parameter-parsing-net-8">Task 6: Zero-Allocation SQL Parameter Parsing (.NET 8+)</a><a class="toc-l3" href="#task-7-cache-column-to-property-mapping-signatures">Task 7: Cache Column-to-Property Mapping Signatures</a><a class="toc-l2" href="#validation-strategy">Validation Strategy</a></nav>
       <div class="content-inner">
-        <nav class="breadcrumb" aria-label="Breadcrumb">Quick start &#8250; Build and Test Guide</nav>
+        <nav class="breadcrumb" aria-label="Breadcrumb">Development &#8250; Jaunty Optimization Roadmap</nav>
         <article>
-<h1 id="build-and-test-guide">Build and Test Guide</h1>
-<h2 id="build-commands">Build Commands</h2>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">bash</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-com"># Debug build (all targets)</span>
-<span class="tok-fn">dotnet</span> build
-
-<span class="tok-com"># Release build</span>
-<span class="tok-fn">dotnet</span> build <span class="tok-attr">-c</span> Release
-
-<span class="tok-com"># Specific framework</span>
-<span class="tok-fn">dotnet</span> build <span class="tok-attr">-f</span> net8.<span class="tok-num">0</span>
-<span class="tok-fn">dotnet</span> build <span class="tok-attr">-f</span> netstandard2.<span class="tok-num">0</span>
-
-<span class="tok-com"># No restore (faster)</span>
-<span class="tok-fn">dotnet</span> build <span class="tok-attr">--no-restore</span>
-
-<span class="tok-com"># With warnings as errors</span>
-<span class="tok-fn">dotnet</span> build <span class="tok-attr">-warnaserror</span>
-</code></pre>
-</div>
-<p>The solution targets <code>net10.0</code>, so the .NET 10 SDK is required; CI installs 8.0, 9.0 and 10.0.</p>
-<h2 id="test-commands">Test Commands</h2>
-<h3 id="run-all-tests">Run All Tests</h3>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">bash</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-com"># Every project, every framework</span>
-<span class="tok-fn">dotnet</span> test Jaunty.slnx
-
-<span class="tok-com"># With output</span>
-<span class="tok-fn">dotnet</span> test Jaunty.slnx <span class="tok-attr">-v</span> n
-
-<span class="tok-com"># No build (use existing binaries)</span>
-<span class="tok-fn">dotnet</span> test Jaunty.slnx <span class="tok-attr">--no-build</span>
-</code></pre>
-</div>
-<p>Run the framework legs of <code>Jaunty.Tests</code> separately rather than in one <code>dotnet test</code> of the
-solution when SQL Server is reachable: the scaffolding reader tests drop and recreate fixed-name
-tables in the one shared database, and two legs running at once fail one or two of them at random.</p>
-<h3 id="filter-tests">Filter Tests</h3>
-<p>The suites carry one xUnit trait, <code>Category=AllocationBudget</code>; everything else is selected by name
-or by project.</p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">bash</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-com"># By test class name</span>
-<span class="tok-fn">dotnet</span> test tests/Jaunty.Tests <span class="tok-attr">-f</span> net10.<span class="tok-num">0</span> <span class="tok-attr">--filter</span> <span class="tok-str">&quot;FullyQualifiedName~QueryTests&quot;</span>
-
-<span class="tok-com"># By project</span>
-<span class="tok-fn">dotnet</span> test tests/Jaunty.Fluent.Tests
-
-<span class="tok-com"># The allocation budgets alone (they live in Jaunty.UnitTests)</span>
-<span class="tok-fn">dotnet</span> test tests/Jaunty.UnitTests <span class="tok-attr">-f</span> net10.<span class="tok-num">0</span> <span class="tok-attr">--filter</span> <span class="tok-str">&quot;Category=AllocationBudget&quot;</span>
-</code></pre>
-</div>
-<h3 id="test-projects">Test Projects</h3>
-<table>
-<thead>
-<tr>
-<th>Project</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>Jaunty.Tests</code></td>
-<td>Core integration suite against SQLite, SQL Server, PostgreSQL, MySQL and MariaDB; the server engines skip when unreachable</td>
-</tr>
-<tr>
-<td><code>Jaunty.UnitTests</code></td>
-<td>Core unit tests, no database</td>
-</tr>
-<tr>
-<td><code>Jaunty.SourceGenerator.Tests</code></td>
-<td>The bundled source generator: emitted source and generated-mapper behaviour</td>
-</tr>
-<tr>
-<td><code>Jaunty.Fluent.Tests</code></td>
-<td>Fluent query builder</td>
-</tr>
-<tr>
-<td><code>Jaunty.Fluent.ConfigTests</code></td>
-<td>Fluent builder configuration</td>
-</tr>
-<tr>
-<td><code>Jaunty.Fluent.SourceGen.Tests</code></td>
-<td>Fluent builder's generator</td>
-</tr>
-<tr>
-<td><code>Jaunty.FlatFiles.Tests</code></td>
-<td>Flat-file abstractions</td>
-</tr>
-<tr>
-<td><code>Jaunty.FlatFiles.DuckDB.Tests</code></td>
-<td>DuckDB-backed flat-file querying</td>
-</tr>
-<tr>
-<td><code>Jaunty.Scaffolding.Tests</code></td>
-<td>Schema readers and code generation</td>
-</tr>
-<tr>
-<td><code>Jaunty.Scaffolding.Cli.Tests</code></td>
-<td>The scaffolding command-line tool</td>
-</tr>
-</tbody>
-</table>
-<p>The whole solution on 2026-09-02, all frameworks: 10,429 passed, 37 skipped.</p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">bash</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-com"># Specific test project</span>
-<span class="tok-fn">dotnet</span> test tests/Jaunty.Tests
-<span class="tok-fn">dotnet</span> test tests/Jaunty.Fluent.Tests
-</code></pre>
-</div>
-<h2 id="code-coverage">Code Coverage</h2>
-<p>The repository has a configured coverage run that applies <code>coverage.runsettings</code> and lands
-cobertura reports in <code>tmp/coverage/</code>:</p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">PowerShell</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="powershell"><code class="language-powershell">pwsh <span class="tok-attr">-NoProfile</span> <span class="tok-attr">-File</span> scripts/coverage.ps1
-</code></pre>
-</div>
-<p>The ad-hoc equivalent, without the settings file, is <code>dotnet test --collect:&quot;XPlat Code Coverage&quot;</code>,
-which writes <code>TestResults/*/coverage.cobertura.xml</code>. Prefer the script; the settings file exists
-for a reason. See <a href="05-quality-code-coverage.html"><code>../05-quality/code-coverage.md</code></a> for that
-reason and for what the current baseline measures.</p>
-<h2 id="test-infrastructure">Test Infrastructure</h2>
-<h3 id="database-setup">Database Setup</h3>
-<p>The SQLite suites use the Northwind sample database at <code>data/sqlite/Northwind.db</code>. The file is
-tracked in git; <code>tests/Jaunty.Tests/Helpers/NorthwindDatabase.cs</code> locates it by walking up from the
-test output directory and fails the run with &quot;Could not locate data/sqlite/Northwind.db&quot; rather than
-creating one. It is also the source that <code>scripts/generate-northwind.py</code> renders into the
-PostgreSQL and MySQL <code>create-northwind.sql</code> scripts under <code>data/</code>.</p>
-<p>The server engines are seeded from <code>tests/*-setup.sql</code> and <code>data/&lt;engine&gt;/</code>; <code>docker-compose.yml</code>
-starts SQL Server, PostgreSQL, MySQL and MariaDB. Connection strings come from
-<code>tests/Jaunty.Tests/appsettings.json</code>, which is gitignored; copy <code>appsettings.example.json</code> to start.
-After a run against the servers, <code>scripts/reset-test-databases.ps1 -e</code> (or <code>.sh</code>) drops and
-recreates them so the next run starts from the seeded baseline.</p>
-<h2 id="cicd">CI/CD</h2>
-<h3 id="github-actions">GitHub Actions</h3>
+<h1 id="jaunty-optimization-roadmap">Jaunty Optimization Roadmap</h1>
+<p>This document outlines the prioritized tasks for improving the performance, memory utilization, and code quality of the Jaunty micro-ORM.</p>
+<h2 id="phase-1-critical-hot-path-optimizations-high-impact">Phase 1: Critical Hot-Path Optimizations (High Impact)</h2>
+<h3 id="task-1-eliminate-reflection-in-write-operations">Task 1: Eliminate Reflection in Write Operations</h3>
 <ul>
-<li><code>ci.yml</code> runs on every push and pull request to <code>dev</code> and <code>main</code>.</li>
-<li><code>nightly.yml</code> runs on a schedule, 05:00 UTC on weekdays and Saturday, with the mutation tier on
-the Sunday run only.</li>
-<li><code>release.yml</code> runs on a version tag.</li>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Write/InsertCore.cs</code>, <code>UpdateCore.cs</code></li>
+<li><strong>Context</strong>: <code>BindInsertParameters</code> and <code>BindUpdateParameters</code> currently call <code>PropertyInfo.GetValue(entity)</code> in a loop for every row.</li>
+<li><strong>Implementation</strong>: Create an internal <code>WriteParameterCache&lt;T&gt;</code> that compiles and caches a single <code>Action&lt;IDbCommand, T&gt;</code> delegate for each entity type. This delegate should perform direct property access and add parameters to the command.</li>
+<li><strong>Goal</strong>: Zero reflection and zero boxing during INSERT/UPDATE parameter binding.</li>
 </ul>
-<h3 id="local-pre-commit">Local Pre-commit</h3>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">bash</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-com"># Build and test before commit</span>
-<span class="tok-fn">dotnet</span> build &amp;&amp; <span class="tok-fn">dotnet</span> test Jaunty.slnx
-</code></pre>
-</div>
-<h2 id="troubleshooting">Troubleshooting</h2>
-<h3 id="tests-fail-with-could-not-locate-datasqlitenorthwinddb">Tests fail with &quot;Could not locate data/sqlite/Northwind.db&quot;</h3>
-<p>The file is tracked; restore it:</p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">bash</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">git</span> checkout -- data/sqlite/Northwind.db
-</code></pre>
-</div>
-<h3 id="server-suites-all-skip">Server suites all skip</h3>
-<p>No server was reachable at the connection string in <code>tests/Jaunty.Tests/appsettings.json</code>. Start
-the containers with <code>docker compose up -d</code> and check the file exists; the skip reason names the
-engine.</p>
-<h3 id="build-fails-with-reference-not-found">Build Fails with &quot;Reference not found&quot;</h3>
-<p>Restore packages:</p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">bash</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">dotnet</span> restore
-<span class="tok-fn">dotnet</span> build <span class="tok-attr">--no-incremental</span>
-</code></pre>
-</div>
-<h2 id="performance-testing">Performance Testing</h2>
-<h3 id="benchmarkdotnet">BenchmarkDotNet</h3>
-<p>Benchmarks are in a separate project. Run with:</p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">bash</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">dotnet</span> run <span class="tok-attr">-c</span> Release <span class="tok-attr">--project</span> benchmarks/Jaunty.Benchmarks
-</code></pre>
-</div>
-<p>The published reports are under <a href="05-quality-README.html"><code>../05-quality/reports/</code></a>.</p>
-<h2 id="see-also">See Also</h2>
+<h3 id="task-2-optimize-entity-id-population">Task 2: Optimize Entity ID Population</h3>
 <ul>
-<li><a href="00-quick-start-README.html"><code>README.md</code></a> - Quick start guide</li>
-<li><a href="03-development-api-design-guidelines.html"><code>../03-development/api-design-guidelines.md</code></a> - Coding and API standards</li>
-<li><a href="03-development-xml-documentation-style.html"><code>../03-development/xml-documentation-style.md</code></a> - Doc comment house style</li>
-<li><a href="05-quality-code-coverage.html"><code>../05-quality/code-coverage.md</code></a> - Coverage documentation</li>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Write/InsertCore.cs</code> (<code>PopulateEntityId</code> method)</li>
+<li><strong>Context</strong>: Currently uses <code>GetProperty(&quot;Id&quot;)</code> and <code>SetValue</code> on every successful insert.</li>
+<li><strong>Implementation</strong>: Move the ID-property resolution logic to <code>MetadataBuilder</code>. Store a compiled <code>Action&lt;T, long&gt;?</code> setter in <code>EntityMetadata</code>.</li>
+<li><strong>Goal</strong>: Replace runtime reflection with a cached, compiled delegate call.</li>
 </ul>
+<h3 id="task-3-refactor-collection-parameter-expansion">Task 3: Refactor Collection Parameter Expansion</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code> (<code>IsCollection</code> and <code>ExpandCollectionParameters</code>)</li>
+<li><strong>Context</strong>: <code>IsCollection</code> currently allocates a <code>new List&lt;object?&gt;</code> and iterates the source <code>IEnumerable</code>, causing boxing for value types (e.g., <code>int</code> IDs).</li>
+<li><strong>Implementation</strong>: Implement specialized checks for common types (e.g., <code>int[]</code>, <code>List&lt;int&gt;</code>, <code>string[]</code>). Use a non-allocating iteration pattern or <code>ArrayPool&lt;object&gt;</code> for heterogeneous collections.</li>
+<li><strong>Goal</strong>: Reduce heap allocations and boxing during <code>WHERE IN @Ids</code> query preparation.</li>
+</ul>
+<hr />
+<h2 id="phase-2-execution-engine-refinement-medium-high-impact">Phase 2: Execution Engine Refinement (Medium-High Impact)</h2>
+<h3 id="task-4-high-performance-expression-tree-setters">Task 4: High-Performance Expression Tree Setters</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Entity/MetadataCache.cs</code> (<code>CreateSetter</code> method)</li>
+<li><strong>Context</strong>: Currently uses <code>Convert.ChangeType</code> for all assignments.</li>
+<li><strong>Implementation</strong>: Update the expression generator to check for primitive types. Emit direct casts or calls to <code>IDataRecord.GetInt32</code>, <code>GetString</code>, etc., for common types. Fall back to <code>Convert.ChangeType</code> only for complex conversions.</li>
+<li><strong>Goal</strong>: Reduce the CPU overhead of mapping database values to entity properties.</li>
+</ul>
+<h3 id="task-5-implement-multi-entity-mapper-caching">Task 5: Implement Multi-Entity Mapper Caching</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/MultiEntityMapper.cs</code>, <code>src/Jaunty/Internals/QueryCore.cs</code></li>
+<li><strong>Context</strong>: <code>MultiEntityMapper&lt;T1, T2&gt;.Build(reader)</code> compiles expression trees every time a multi-entity query (tuples) is executed.</li>
+<li><strong>Implementation</strong>: Introduce a <code>ConcurrentDictionary</code> in <code>MultiEntityMapper</code> to cache the mapping strategy. The key should be a combination of the column names and their ordinals from the <code>IDataReader</code>.</li>
+<li><strong>Goal</strong>: Avoid expensive expression compilation on every multi-entity query.</li>
+</ul>
+<hr />
+<h2 id="phase-3-memory-efficiency--modernization-medium-impact">Phase 3: Memory Efficiency &amp; Modernization (Medium Impact)</h2>
+<h3 id="task-6-zero-allocation-sql-parameter-parsing-net-8">Task 6: Zero-Allocation SQL Parameter Parsing (.NET 8+)</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Parameters/SqlParameterParser.cs</code></li>
+<li><strong>Context</strong>: Uses <code>string.Substring</code> when extracting parameter names.</li>
+<li><strong>Implementation</strong>: Use <code>#if NET8_0_OR_GREATER</code> to utilize <code>ReadOnlySpan&lt;char&gt;</code> for parsing. Use <code>string.Intern</code> or a small internal pool for frequently seen parameter names if applicable.</li>
+<li><strong>Goal</strong>: Eliminate temporary string allocations during the SQL parsing phase.</li>
+</ul>
+<h3 id="task-7-cache-column-to-property-mapping-signatures">Task 7: Cache Column-to-Property Mapping Signatures</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Entity/MetadataCache.cs</code> (<code>GetSetters</code> method)</li>
+<li><strong>Context</strong>: Returns a <code>new PropertySetter&lt;T&gt;[]</code> array on every execution.</li>
+<li><strong>Implementation</strong>: For common queries (like <code>SELECT *</code>), cache the <code>PropertySetter&lt;T&gt;[]</code> array based on the <code>reader.FieldCount</code> and a hash of column names.</li>
+<li><strong>Goal</strong>: Reduce per-query array allocations.</li>
+</ul>
+<hr />
+<h2 id="validation-strategy">Validation Strategy</h2>
+<ol>
+<li><strong>Benchmarks</strong>: Use <code>BenchmarkDotNet</code> to verify performance gains.</li>
+<li><strong>Regression</strong>: Run existing integration tests (<code>dotnet test</code>) to ensure mapping logic remains &quot;Strict&quot; and correct.</li>
+<li><strong>Memory</strong>: Use a profiler or <code>GC.GetTotalAllocatedBytes</code> checks in tests to confirm reduced allocations.</li>
+</ol>
 
         </article>
         <div class="page-nav" id="page-nav">
-          <div class="prev-next"><a class="pn-prev" href="00-quick-start-README.html">
+          <div class="prev-next"><a class="pn-prev" href="03-development-README.html">
   <span class="pn-label">&#8592; prev</span>
-  <span class="pn-title">Quick Start Guide</span>
-</a><a class="pn-next" href="00-quick-start-project-layout.html">
+  <span class="pn-title">Development Guides</span>
+</a><a class="pn-next" href="03-development-adding-new-methods.html">
   <span class="pn-label">next &#8594;</span>
-  <span class="pn-title">Project Layout</span>
+  <span class="pn-title">Adding a New Method</span>
 </a></div>
         </div>
       </div>

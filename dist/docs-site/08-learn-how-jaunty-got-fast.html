@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Jaunty got fast — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
+  try {
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Learn &#8250; How Jaunty got fast</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">General</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  <a href="jaunty-torture-test-results.html">Jaunty Torture Test — Results Matrix</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quick start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Api reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">Architecture Documentation</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">Architecture Decision Records (ADRs)</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">Quality &amp; Testing</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive Project Audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / Benchmark Results — 2026-07-04 (PRD-002 partial)</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / Coverage Gap Inventory — 2026-07-04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / Jaunty Production Readiness Report (2026-07-02)</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmark Results — 2026-07-29 (pre-GA regression check)</a>  <a href="05-quality-reports-benchmarks-2026-09-02.html">Reports / Benchmark Results — 2026-09-02 (corrected baseline, read-path changes)</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">Releases &amp; Planning</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">Selling and Distributing Jaunty — The Complete Flow</a>  <a href="06-releases-RELEASE-RUNBOOK.html">Release Runbook</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-order-form-template.html">Order Form (Template)</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / Commercial Tasklist (Archived)</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / Enterprise Readiness Pass — 2026-07-04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / Production Readiness Tasklist</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Test Reorganization Plan — Dialect Attribute Architecture</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">07-design — Visual Design Source</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html" class="active" aria-current="page">How Jaunty got fast</a>  <a href="08-learn-migrating-README.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
+</div>
+
+      </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#where-it-started-180x-slower">Where it started: 1.80x slower</a><a class="toc-l2" href="#step-1-validate-the-shape-once-per-result-set">Step 1: validate the shape once per result set</a><a class="toc-l2" href="#step-2-typed-getters-instead-of-getfieldvaluet">Step 2: typed getters instead of GetFieldValue&lt;T&gt;</a><a class="toc-l2" href="#step-3-tell-the-list-how-big-it-will-be">Step 3: tell the list how big it will be</a><a class="toc-l2" href="#the-number-that-did-not-fit">The number that did not fit</a><a class="toc-l2" href="#step-4-read-a-double-as-a-double-and-stop-pre-checking-for-null">Step 4: read a double as a double, and stop pre-checking for NULL</a><a class="toc-l2" href="#step-5-hand-a-custom-mapper-back-as-it-was-given">Step 5: hand a custom mapper back as it was given</a><a class="toc-l2" href="#where-it-is-now">Where it is now</a><a class="toc-l3" href="#the-custom-mapper-side-by-side">The custom mapper, side by side</a><a class="toc-l3" href="#with-the-baseline-corrected">With the baseline corrected</a><a class="toc-l2" href="#step-5-no-per-row-fieldcount-guard">Step 5: no per-row FieldCount guard</a><a class="toc-l2" href="#what-the-story-says-about-measuring">What the story says about measuring</a><a class="toc-l2" href="#repeating-the-numbers">Repeating the numbers</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Learn &#8250; How Jaunty got fast</nav>
+        <article>
+<h1 id="how-jaunty-got-fast">How Jaunty got fast</h1>
+<p>The read path went from 1.80x slower than a hand-coded ADO.NET loop to 1.42x faster than it,
+in five steps over two months, and then the loop itself turned out to be wrong and was fixed,
+which put the finish line back where it belongs: a careful hand-written loop is still the
+floor, and Jaunty is the closest of the five libraries to it. This is the record of each step:
+what was slow, how it was found, what the code looked like before and after, and what it
+measured. Every number here came from a run you can repeat; the commands are at the end.</p>
+<p>Two things run through the whole story. <strong>Correctness came first every time</strong>, and twice a
+correctness fix was the thing that made Jaunty slow. And <strong>nothing was fixed from reasoning
+alone</strong>: each step started with a benchmark that disagreed with expectations and a probe that
+isolated one call.</p>
+<h2 id="where-it-started-180x-slower">Where it started: 1.80x slower</h2>
+<p><code>Query&lt;T&gt;</code> hands each row to a mapper the source generator wrote for the entity. On 2026-07-03
+the generator gained shape-safety validation: before reading a row it checked that every
+column the entity expects is present, by name, case-insensitively. That closed a real bug,
+a NULL that had been mapped as 0, and it made the first benchmark run look like this on SQLite:</p>
+<table>
+<thead>
+<tr>
+<th>Rows</th>
+<th>Jaunty vs hand-coded ADO.NET</th>
+<th>Dapper</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>1.47x slower</td>
+<td>1.07x</td>
+</tr>
+<tr>
+<td>1,000</td>
+<td>1.99x slower</td>
+<td>1.03x</td>
+</tr>
+<tr>
+<td>10,000</td>
+<td>1.80x slower</td>
+<td>1.12x</td>
+</tr>
+</tbody>
+</table>
+<p>The validation was correct. It also ran on every row.</p>
+<h2 id="step-1-validate-the-shape-once-per-result-set">Step 1: validate the shape once per result set</h2>
+<p><code>ReadEntity(reader)</code> was the only mapper, and it validated then read. The fix added a second
+entry point, <code>CreateRowMapper(reader)</code>, a factory that validates once and returns a closure
+that only reads:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// before: every row</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Product</span> <span class="tok-fn">ReadEntity</span>(<span class="tok-type">IDataReader</span> reader)
+{
+    <span class="tok-kw">var</span> ord = <span class="tok-type">OrdinalMap</span>.<span class="tok-fn">Resolve</span>(reader);        <span class="tok-com">// GetName + compare, per column, per row</span>
+    ...
+}
+
+<span class="tok-com">// after: once per result set</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-type">IDataReader</span>, <span class="tok-type">Product</span>&gt; <span class="tok-fn">CreateRowMapper</span>(<span class="tok-type">IDataReader</span> reader)
+{
+    <span class="tok-kw">var</span> ord = <span class="tok-type">OrdinalMap</span>.<span class="tok-fn">Resolve</span>(reader);        <span class="tok-com">// validated here, once</span>
+    <span class="tok-ctl">return</span> r =&gt; { <span class="tok-com">/* reads only, using ord */</span> };
+}
+</code></pre>
+</div>
+<p>The dispatcher prefers the factory. As first written the closure also compared <code>FieldCount</code> on
+every row and fell back to the validating <code>ReadEntity</code> if a stale delegate ever met a changed
+shape; step 5 below removes that. 10,000 rows on SQLite went from 1.80x to 1.46x, and at
+1,000 rows the absolute time dropped 35%.</p>
+<h2 id="step-2-typed-getters-instead-of-getfieldvaluet">Step 2: typed getters instead of <code>GetFieldValue&lt;T&gt;</code></h2>
+<p>The generated read used <code>reader.GetFieldValue&lt;int&gt;(ord[0])</code> for every column. Inside a
+provider that is a generic dispatch: a type check, sometimes a box, then the typed getter.
+The generator now emits the typed getter directly for the eleven types every provider
+implements, keeping <code>GetFieldValue&lt;T&gt;</code> only for the fallback types:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// before</span>
+entity.<span class="tok-var">ProductId</span> = rr.<span class="tok-fn">GetFieldValue</span>&lt;<span class="tok-kw">int</span>&gt;(ord[<span class="tok-num">0</span>]);
+entity.<span class="tok-var">ProductName</span> = rr.<span class="tok-fn">GetFieldValue</span>&lt;<span class="tok-kw">string</span>&gt;(ord[<span class="tok-num">1</span>]);
+
+<span class="tok-com">// after</span>
+entity.<span class="tok-var">ProductId</span> = rr.<span class="tok-fn">GetInt32</span>(ord[<span class="tok-num">0</span>]);
+entity.<span class="tok-var">ProductName</span> = rr.<span class="tok-fn">GetString</span>(ord[<span class="tok-num">1</span>]);
+</code></pre>
+</div>
+<p>Same day, same machine:</p>
+<table>
+<thead>
+<tr>
+<th>Rows</th>
+<th>Start</th>
+<th>After step 1</th>
+<th>After step 2</th>
+<th>Dapper</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>1.47x</td>
+<td>1.31x</td>
+<td>1.17x</td>
+<td>1.11x</td>
+</tr>
+<tr>
+<td>1,000</td>
+<td>1.99x</td>
+<td>1.33x</td>
+<td>1.37x</td>
+<td>1.37x</td>
+</tr>
+<tr>
+<td>10,000</td>
+<td>1.80x</td>
+<td>1.46x</td>
+<td><strong>1.03x</strong></td>
+<td>1.00x</td>
+</tr>
+</tbody>
+</table>
+<p>At 10,000 rows Jaunty was at parity with the hand-coded loop and with Dapper on SQLite, and
+ahead of Dapper on MariaDB (4,479 us against 6,797 us).</p>
+<h2 id="step-3-tell-the-list-how-big-it-will-be">Step 3: tell the list how big it will be</h2>
+<p>The pre-July change that mattered most was the smallest. <code>Query&lt;T&gt;</code> collects rows into a
+<code>List&lt;T&gt;</code>, and a list that starts at the default capacity doubles nine times on the way to
+10,000 rows. The last three arrays are over 85 KB and land on the large object heap.
+<code>CommandOptions&lt;T&gt;.WithExpectedRowCount(n)</code> sizes the list once:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">int</span> capacity = options.<span class="tok-var">ExpectedRowCount</span> ?? <span class="tok-type">JauntyConfig</span>.<span class="tok-var">QueryResultCapacity</span>;   <span class="tok-com">// 64 unless hinted</span>
+<span class="tok-kw">var</span> results = <span class="tok-kw">new</span> <span class="tok-type">List</span>&lt;<span class="tok-type">T</span>&gt;(capacity);
+</code></pre>
+</div>
+<p>On 2026-07-29, at 10,000 rows, the hint was the difference between 1.77x and 1.05x on
+PostgreSQL, and it made Jaunty the fastest micro-ORM measured on SQL Server, PostgreSQL and
+MariaDB. A hand-coded loop that knows its row count would do the same thing, and the benchmark
+baseline does.</p>
+<p>The 2026-09-02 run put a number on what the doubling costs. Every unhinted case on every
+provider shows Gen2 collections in the log, every hinted case shows none, and so do Dapper, RepoDb
+and linq2db, because none of them pre-size. On PostgreSQL the unhinted read was 8.2 ms against
+4.5 ms hinted. Setting the default capacity to 10,000 in the harness and re-running that one
+case gave 4.2 ms with no Gen2, so the growth is the whole gap. The default stays 64 all the same:
+a default sized for a 10,000-row read is the wrong default for a library whose most common query
+returns one row, and the hint costs one argument
+(decision 012).</p>
+<h2 id="the-number-that-did-not-fit">The number that did not fit</h2>
+<p>The 2026-07-29 regression check showed no regression and one oddity. On SQLite at 10,000 rows
+RepoDb was 1.37x <strong>faster than the hand-coded ADO.NET loop</strong>, and Dapper was 1.02x faster. A
+library that adds work cannot beat a loop that does none, unless the loop is doing something
+the library is not. The report said so and moved on. On 2026-09-02 it was looked at.</p>
+<p>Three reviewers were given the benchmark source and asked why. Two said the baseline's
+<code>GetDecimal</code> was the cost. One said <code>GetDecimal</code> on Microsoft.Data.Sqlite is <code>GetDouble</code> plus
+a cast and the baseline was fair. A probe settled it in a minute. The <code>unit_price</code> column is
+SQLite <code>REAL</code>, a double, and Microsoft.Data.Sqlite implements <code>GetDecimal</code> on it as
+<code>sqlite3_column_text</code> followed by <code>decimal.Parse</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Reader pattern, 10,000 rows, 5 columns, warm</th>
+<th>us per run</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The loop with no getters at all</td>
+<td>1,210</td>
+</tr>
+<tr>
+<td><code>GetDouble</code> on the price column alone</td>
+<td>1,762</td>
+</tr>
+<tr>
+<td><code>GetDecimal</code> on the price column alone</td>
+<td>4,763</td>
+</tr>
+<tr>
+<td>Boxed <code>GetValue</code> then <code>Convert.ToDecimal</code>, Dapper's path</td>
+<td>7,232</td>
+</tr>
+<tr>
+<td>The benchmark baseline as written</td>
+<td>11,805</td>
+</tr>
+<tr>
+<td>The same loop with <code>(decimal)GetDouble</code></td>
+<td>4,564</td>
+</tr>
+</tbody>
+</table>
+<p>So RepoDb was not faster than ADO.NET. It was faster than a loop that formatted every price to
+text and parsed it back. Jaunty's generated mapper made the same call, because a <code>decimal</code>
+property gets <code>GetDecimal</code>, and it paid the same 3 ms.</p>
+<p>The same probe, with <code>IsDBNull</code> before each getter and without:</p>
+<table>
+<thead>
+<tr>
+<th>5 typed getters, 10,000 rows</th>
+<th>us per run</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>With <code>IsDBNull</code> before each non-nullable column</td>
+<td>6,215</td>
+</tr>
+<tr>
+<td>Without</td>
+<td>4,448</td>
+</tr>
+</tbody>
+</table>
+<p>Every reader call on Microsoft.Data.Sqlite is a native call. The generated mapper made nine per
+row on a five-column entity: five reads and four null checks.</p>
+<h2 id="step-4-read-a-double-as-a-double-and-stop-pre-checking-for-null">Step 4: read a double as a double, and stop pre-checking for NULL</h2>
+<p>The generator decides once per result set, when it resolves the ordinals, whether a decimal
+property's column reports <code>double</code> from <code>GetFieldType</code>. SQLite <code>REAL</code> does; a <code>decimal</code> column
+on SQL Server, PostgreSQL or MariaDB does not, and keeps <code>GetDecimal</code>. The flag is a <code>bool[]</code>
+next to the ordinals, and the read becomes a ternary on it.</p>
+<p>The NULL check moved from before each read to after a failure. Since 2026-08-03 the mapper has
+thrown <code>Cannot assign NULL to non-nullable property 'X'.</code> for a NULL in a non-nullable value
+type, matching the reflection mapper. It did that with an <code>IsDBNull</code> ahead of every such
+column. Every supported provider's typed getter already throws on NULL, so the reads now sit
+in one <code>try</code> per row, and the <code>catch</code> walks the non-nullable ordinals to name the column. A
+<code>try</code> region costs nothing until something throws. The guarantee is unchanged, the message is
+unchanged, and the provider's exception rides along as <code>InnerException</code>. Decision 010 in
+<code>docs/decisions/</code> records why this must not be reverted.</p>
+<p>The emitted mapper for the benchmark entity, before and after:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// before</span>
+<span class="tok-kw">var</span> ord = <span class="tok-type">OrdinalMap</span>.<span class="tok-fn">Resolve</span>(reader);
+<span class="tok-ctl">return</span> r =&gt;
+{
+    <span class="tok-kw">var</span> rr = (<span class="tok-type">DbDataReader</span>)r;
+    <span class="tok-kw">var</span> entity = <span class="tok-kw">new</span> <span class="tok-type">JauntyProduct</span>();
+    <span class="tok-ctl">if</span> (rr.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">0</span>])) <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(<span class="tok-str">&quot;Cannot assign NULL to non-nullable property 'ProductId'.&quot;</span>);
+    entity.<span class="tok-var">ProductId</span> = rr.<span class="tok-fn">GetInt32</span>(ord[<span class="tok-num">0</span>]);
+    <span class="tok-ctl">if</span> (!rr.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">1</span>])) entity.<span class="tok-var">ProductName</span> = rr.<span class="tok-fn">GetString</span>(ord[<span class="tok-num">1</span>]);
+    <span class="tok-ctl">if</span> (rr.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">2</span>])) <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(<span class="tok-str">&quot;Cannot assign NULL to non-nullable property 'UnitPrice'.&quot;</span>);
+    entity.<span class="tok-var">UnitPrice</span> = rr.<span class="tok-fn">GetDecimal</span>(ord[<span class="tok-num">2</span>]);
+    <span class="tok-ctl">if</span> (rr.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">3</span>])) <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(<span class="tok-str">&quot;Cannot assign NULL to non-nullable property 'UnitsInStock'.&quot;</span>);
+    entity.<span class="tok-var">UnitsInStock</span> = rr.<span class="tok-fn">GetInt32</span>(ord[<span class="tok-num">3</span>]);
+    <span class="tok-ctl">if</span> (rr.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">4</span>])) <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(<span class="tok-str">&quot;Cannot assign NULL to non-nullable property 'Discontinued'.&quot;</span>);
+    entity.<span class="tok-var">Discontinued</span> = rr.<span class="tok-fn">GetBoolean</span>(ord[<span class="tok-num">4</span>]);
+    <span class="tok-ctl">return</span> entity;
+};
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// after</span>
+<span class="tok-kw">var</span> entry = <span class="tok-type">OrdinalMap</span>.<span class="tok-fn">Resolve</span>(reader);
+<span class="tok-kw">var</span> ord = entry.<span class="tok-var">Ordinals</span>;
+<span class="tok-kw">var</span> __real = entry.<span class="tok-var">DecimalAsDouble</span>;          <span class="tok-com">// reader.GetFieldType(ord[i]) == typeof(double), once</span>
+<span class="tok-ctl">return</span> r =&gt;
+{
+    <span class="tok-kw">var</span> rr = (<span class="tok-type">DbDataReader</span>)r;
+    <span class="tok-kw">var</span> entity = <span class="tok-kw">new</span> <span class="tok-type">JauntyProduct</span>();
+    <span class="tok-ctl">try</span>
+    {
+        entity.<span class="tok-var">ProductId</span> = rr.<span class="tok-fn">GetInt32</span>(ord[<span class="tok-num">0</span>]);
+        <span class="tok-ctl">if</span> (!rr.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">1</span>])) entity.<span class="tok-var">ProductName</span> = rr.<span class="tok-fn">GetString</span>(ord[<span class="tok-num">1</span>]);
+        entity.<span class="tok-var">UnitPrice</span> = __real[<span class="tok-num">2</span>] ? (<span class="tok-kw">decimal</span>)rr.<span class="tok-fn">GetDouble</span>(ord[<span class="tok-num">2</span>]) : <span class="tok-type">rr</span>.<span class="tok-fn">GetDecimal</span>(ord[<span class="tok-num">2</span>]);
+        entity.<span class="tok-var">UnitsInStock</span> = rr.<span class="tok-fn">GetInt32</span>(ord[<span class="tok-num">3</span>]);
+        entity.<span class="tok-var">Discontinued</span> = rr.<span class="tok-fn">GetBoolean</span>(ord[<span class="tok-num">4</span>]);
+    }
+    <span class="tok-ctl">catch</span> (<span class="tok-type">Exception</span> ex)
+    {
+        <span class="tok-fn">ThrowIfNonNullableColumnIsNull</span>(rr, ord, ex);
+        <span class="tok-ctl">throw</span>;
+    }
+    <span class="tok-ctl">return</span> entity;
+};
+
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">ThrowIfNonNullableColumnIsNull</span>(<span class="tok-type">IDataReader</span> reader, <span class="tok-kw">int</span>[] ord, <span class="tok-type">Exception</span> inner)
+{
+    <span class="tok-ctl">if</span> (reader.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">0</span>])) <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(<span class="tok-str">&quot;Cannot assign NULL to non-nullable property 'ProductId'.&quot;</span>, inner);
+    <span class="tok-ctl">if</span> (reader.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">2</span>])) <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(<span class="tok-str">&quot;Cannot assign NULL to non-nullable property 'UnitPrice'.&quot;</span>, inner);
+    <span class="tok-ctl">if</span> (reader.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">3</span>])) <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(<span class="tok-str">&quot;Cannot assign NULL to non-nullable property 'UnitsInStock'.&quot;</span>, inner);
+    <span class="tok-ctl">if</span> (reader.<span class="tok-fn">IsDBNull</span>(ord[<span class="tok-num">4</span>])) <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(<span class="tok-str">&quot;Cannot assign NULL to non-nullable property 'Discontinued'.&quot;</span>, inner);
+}
+</code></pre>
+</div>
+<p>Nine reader calls per row became five. Is the cast exact? SQLite formats a <code>REAL</code> with 15
+significant digits, and that is the rounding the <code>decimal(double)</code> constructor applies, so the
+two paths agree on every value tried, including 0.1, 1/3, 2.675, 1e22 and 12345.678901234567.
+Only the scale can differ: <code>0.0000001</code> where the text path gave <code>0.00000010</code>. A test compares
+both paths against a live SQLite reader for each of those values.</p>
+<h2 id="step-5-hand-a-custom-mapper-back-as-it-was-given">Step 5: hand a custom mapper back as it was given</h2>
+<p><code>CommandOptions&lt;T&gt;.WithMapper(Func&lt;IDataReader, T&gt;)</code> lets you write the row mapping yourself.
+<code>Func&lt;in T, out TResult&gt;</code> is contravariant in its argument, so that delegate already is a
+<code>Func&lt;DbDataReader, T&gt;</code>. The dispatcher wrapped it in a lambda anyway:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// before: a closure per query, two delegate calls per row</span>
+<span class="tok-ctl">if</span> (options.<span class="tok-var">Mapper</span> <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">null</span>)
+    <span class="tok-ctl">return</span> dbReader =&gt; options.<span class="tok-fn">Mapper</span>(dbReader);
+
+<span class="tok-com">// after</span>
+<span class="tok-ctl">if</span> (options.<span class="tok-var">Mapper</span> <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">null</span>)
+    <span class="tok-ctl">return</span> options.<span class="tok-var">Mapper</span>;
+</code></pre>
+</div>
+<p>Nanoseconds per row, not milliseconds. A test asserts the delegate that comes back is the same
+instance that went in.</p>
+<h2 id="where-it-is-now">Where it is now</h2>
+<p>SQLite, 10,000 rows, warm, quiet machine, 2026-09-02. In these two runs the baseline still
+calls <code>GetDecimal</code>, so that the before and after of step 4 are against the same loop; the
+corrected baseline follows below. Two runs are quoted because a single BenchmarkDotNet run on
+a laptop is not a measurement.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Run 1</th>
+<th>Run 2</th>
+<th>vs baseline (run 2)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADO.NET (hand-coded, <code>GetDecimal</code>)</td>
+<td>6.536 ms</td>
+<td>6.929 ms</td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><strong>Jaunty <code>Query&lt;T&gt;</code></strong></td>
+<td>4.924 ms</td>
+<td>4.887 ms</td>
+<td><strong>1.42x faster</strong></td>
+</tr>
+<tr>
+<td>Jaunty (<code>WithExpectedRowCount</code>)</td>
+<td>4.211 ms</td>
+<td>4.759 ms</td>
+<td>1.46x faster</td>
+</tr>
+<tr>
+<td>RepoDb</td>
+<td>4.951 ms</td>
+<td>5.105 ms</td>
+<td>1.36x faster</td>
+</tr>
+<tr>
+<td>Dapper</td>
+<td>6.712 ms</td>
+<td>6.879 ms</td>
+<td>1.01x faster</td>
+</tr>
+<tr>
+<td>linq2db</td>
+<td>7.311 ms</td>
+<td></td>
+<td>1.06x slower</td>
+</tr>
+<tr>
+<td>EF Core</td>
+<td>9.589 ms</td>
+<td></td>
+<td>1.38x slower</td>
+</tr>
+</tbody>
+</table>
+<p>Jaunty and RepoDb are within each other's error bars. Jaunty led in both runs, by margins that
+a third run could reverse, so the claim is parity. Before this week the same case read
+9.205 ms against RepoDb's 4.627 ms.</p>
+<h3 id="the-custom-mapper-side-by-side">The custom mapper, side by side</h3>
+<p>A custom mapper is your code, so the generated mapper's tricks do not reach into it. The
+benchmark carries four variants to show what each one is worth. All read the same five columns
+with the same typed getters; they differ only in the price getter and the list hint.</p>
+<p>Same machine, same day, a third run with all four in it. That run put the baseline at
+6.835 ms, Jaunty <code>Query&lt;T&gt;</code> at 4.910 ms and RepoDb at 5.095 ms.</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Price read</th>
+<th>List hint</th>
+<th>Time</th>
+<th>vs baseline</th>
+<th>Allocated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>custom mapper</td>
+<td><code>GetDecimal(2)</code></td>
+<td>none, grows from 64</td>
+<td>8.789 ms</td>
+<td>1.29x slower</td>
+<td>1.55 MB</td>
+</tr>
+<tr>
+<td>custom mapper, <code>WithExpectedRowCount</code></td>
+<td><code>GetDecimal(2)</code></td>
+<td>10,000</td>
+<td>6.539 ms</td>
+<td>1.05x faster</td>
+<td>1.37 MB</td>
+</tr>
+<tr>
+<td>custom mapper, <code>GetDouble</code></td>
+<td><code>(decimal)GetDouble(2)</code></td>
+<td>none</td>
+<td>4.972 ms</td>
+<td>1.38x faster</td>
+<td>1.24 MB</td>
+</tr>
+<tr>
+<td>custom mapper, <code>GetDouble</code>, <code>WithExpectedRowCount</code></td>
+<td><code>(decimal)GetDouble(2)</code></td>
+<td>10,000</td>
+<td>4.766 ms</td>
+<td>1.44x faster</td>
+<td>1.07 MB</td>
+</tr>
+</tbody>
+</table>
+<p>The first row had the widest error bar of the run (0.82 ms standard deviation against 0.04 to
+0.43 for the others), so treat it as roughly 7 to 9 ms. Read down the rest: the getter is
+worth about 2 ms, the hint about 0.2 ms and 300 KB, and with both a custom mapper lands where
+the generated one does. The generated mapper gets the getter for free, because it picks it from
+the column's reported type; the hint is yours to pass either way.</p>
+<h3 id="with-the-baseline-corrected">With the baseline corrected</h3>
+<p>The runs above compare against the July baseline so that the before and after are the same
+loop. The baseline was then fixed to read the price as the type the column reports, RepoDb's
+SQLite-only bool workaround was confined to SQLite, and the warm job went from 5 to 15
+iterations. The full four-provider run on that harness is
+<a href="05-quality-reports-benchmarks-2026-09-02.html">benchmarks-2026-09-02.md</a>, and it is what the
+README quotes. On that harness, SQLite at 10,000 rows measured alone: the hand-coded loop 4.08 ms, Jaunty
+<code>Query&lt;T&gt;</code> 5.42 ms, RepoDb 5.77 ms, Dapper 7.45 ms. So the honest sentence is this: Jaunty is
+the fastest of the five libraries measured on SQLite and SQL Server, level with RepoDb on the
+others, and a hand-written loop that reads each column as its reported type is still 1.3x
+faster than any of them on SQLite.</p>
+<h2 id="step-5-no-per-row-fieldcount-guard">Step 5: no per-row <code>FieldCount</code> guard</h2>
+<p>The last known native call per row was the guard from step 1. Every library caller resolves
+the closure per result set, so the reuse it protected against never happens inside Jaunty, and
+a caller that keeps a delegate across <code>NextResult()</code> is misusing a per-result-set factory.
+Removing it took <code>Query&lt;T&gt;</code> at 10,000 rows on SQLite from 5.42 ms to 4.95 ms, 1.17x the hand
+loop, measured alone the same evening
+(decision 011).
+What remains is the <code>IsDBNull</code> on the nullable <code>product_name</code> column, which the hand loop skips
+and the mapper cannot: NULL is a legitimate value there.</p>
+<h2 id="what-the-story-says-about-measuring">What the story says about measuring</h2>
+<ul>
+<li><strong>A library faster than the baseline is a defect in the baseline.</strong> The July report noticed
+and deferred. It was cheap to check and should have been checked then.</li>
+<li><strong>Reason from the probe, not from the source.</strong> Three reviewers reading the same provider
+source split 2-1 on what <code>GetDecimal</code> does. Ten lines of C# and 10,000 rows answered it.</li>
+<li><strong>Count the native calls.</strong> On an in-process provider the reader call is the unit of cost.
+Nine per row to five per row was the whole of step 4.</li>
+<li><strong>Correctness fixes carry a cost, and the cost is not the fix.</strong> Shape validation and the
+NULL guard were both right. Both were paid per row when once per result set, or only on
+failure, bought the same guarantee.</li>
+</ul>
+<h2 id="repeating-the-numbers">Repeating the numbers</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">cd</span> benchmarks/Jaunty.Benchmarks
+<span class="tok-fn">dotnet</span> run <span class="tok-attr">-c</span> Release <span class="tok-attr">-f</span> net10.<span class="tok-num">0</span> -- <span class="tok-attr">--filter</span> <span class="tok-str">&quot;*.Benchmarks.QueryBenchmarks.*&quot;</span>
+</code></pre>
+</div>
+<p>The full parameter set runs 1, 100 and 10,000 rows on SQLite, SQL Server, PostgreSQL and
+MariaDB; the server providers need the <code>docker-compose.yml</code> containers and a local SQL Server.
+Edit the two <code>[Params]</code> attributes in <code>QueryBenchmarks.cs</code> to narrow a run.</p>
+<p>The earlier reports are <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">BENCHMARKS-2026-07-04.md</a>
+and <a href="05-quality-reports-benchmarks-2026-07-29.html">benchmarks-2026-07-29.md</a>. The
+performance rules the code is written to are in
+<a href="02-architecture-performance-spec.html">performance-spec.md</a>.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="08-learn-exercises.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Exercises</span>
+</a><a class="pn-next" href="08-learn-migrating-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Migrating / Migrating to Jaunty</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
+  </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

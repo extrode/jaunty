@@ -11,12 +11,40 @@
    the page flash the wrong theme on every navigation. */
 (function () {
   var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
   try {
-    var t = localStorage.getItem('dg-theme');
-    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
-    var s = parseFloat(localStorage.getItem('dg-fs'));
-    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
-  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
 })();
 </script>
 </head>
@@ -28,10 +56,13 @@
     <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
     <div class="header-brand">
       <span class="brand-name">jaunty</span>
-      <span class="brand-crumb">Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</span>
+      <span class="brand-crumb">Extensions &#8250; Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</span>
     </div>
     <div class="header-spacer"></div>
     <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
       <div class="fs-group" role="group" aria-label="Text size">
         <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
         <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
@@ -58,84 +89,85 @@
         <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">Overview</span>
+    <span class="nav-group-label">General</span>
   </div>
-  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  <a href="jaunty-torture-test-results.html">Jaunty Torture Test — Results Matrix</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quick-start</span>
+    <span class="nav-group-label">Quick start</span>
   </div>
-  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">api-reference</span>
+    <span class="nav-group-label">Api reference</span>
   </div>
-  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">architecture</span>
+    <span class="nav-group-label">Architecture</span>
   </div>
-  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">Architecture Documentation</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">Architecture Decision Records (ADRs)</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">development</span>
+    <span class="nav-group-label">Development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">extensions</span>
+    <span class="nav-group-label">Extensions</span>
   </div>
-  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html" class="active" aria-current="page">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html" class="active" aria-current="page">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quality</span>
+    <span class="nav-group-label">Quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">Quality &amp; Testing</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive Project Audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / Benchmark Results — 2026-07-04 (PRD-002 partial)</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / Coverage Gap Inventory — 2026-07-04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / Jaunty Production Readiness Report (2026-07-02)</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmark Results — 2026-07-29 (pre-GA regression check)</a>  <a href="05-quality-reports-benchmarks-2026-09-02.html">Reports / Benchmark Results — 2026-09-02 (corrected baseline, read-path changes)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">releases</span>
+    <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">Releases &amp; Planning</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">Selling and Distributing Jaunty — The Complete Flow</a>  <a href="06-releases-RELEASE-RUNBOOK.html">Release Runbook</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-order-form-template.html">Order Form (Template)</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / Commercial Tasklist (Archived)</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / Enterprise Readiness Pass — 2026-07-04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / Production Readiness Tasklist</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Test Reorganization Plan — Dialect Attribute Architecture</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">design</span>
+    <span class="nav-group-label">Design</span>
   </div>
-  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">07-design — Visual Design Source</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">learn</span>
+    <span class="nav-group-label">Learn</span>
   </div>
-  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-README.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
 </div>
 
       </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
     </nav>
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#executive-summary">Executive Summary</a><a class="toc-l2" href="#api-design-inconsistencies">1. API Design Inconsistencies</a><a class="toc-l3" href="#high-missing-query-method-in-iflatfiledatabase">HIGH: Missing Query() Method in IFlatFileDatabase</a><a class="toc-l3" href="#medium-inconsistent-dispose-pattern">MEDIUM: Inconsistent Dispose Pattern</a><a class="toc-l3" href="#medium-missing-queryasync-raw-sql-method">MEDIUM: Missing QueryAsync Raw SQL Method</a><a class="toc-l3" href="#low-inconsistent-method-overloading-style">LOW: Inconsistent Method Overloading Style</a><a class="toc-l2" href="#performance-issues">2. Performance Issues</a><a class="toc-l3" href="#high-reflection-in-hot-paths-constitution-article-iii-violation">HIGH: Reflection in Hot Paths (Constitution Article III Violation)</a><a class="toc-l3" href="#high-expression-compilation-in-hot-path">HIGH: Expression Compilation in Hot Path</a><a class="toc-l3" href="#medium-unnecessary-linq-allocations-in-import-pipeline">MEDIUM: Unnecessary LINQ Allocations in Import Pipeline</a><a class="toc-l3" href="#medium-entities.tolist-in-batch-insert">MEDIUM: entities.ToList() in Batch Insert</a><a class="toc-l3" href="#low-stringbuilder-not-pre-sized">LOW: StringBuilder Not Pre-sized</a><a class="toc-l3" href="#low-duckdbparameter-object-allocations">LOW: DuckDBParameter Object Allocations</a><a class="toc-l2" href="#error-handling-issues">3. Error Handling Issues</a><a class="toc-l3" href="#medium-silent-exception-swallow-in-validatetargetschema">MEDIUM: Silent Exception Swallow in ValidateTargetSchema</a><a class="toc-l3" href="#low-inconsistent-error-message-formatting">LOW: Inconsistent Error Message Formatting</a><a class="toc-l2" href="#threading-concurrency">4. Threading &amp; Concurrency</a><a class="toc-l3" href="#medium-race-condition-in_modified-tracking">MEDIUM: Race Condition in _modified Tracking</a><a class="toc-l3" href="#low-cancellationtoken-not-propagated-to-file-io">LOW: CancellationToken Not Propagated to File I/O</a><a class="toc-l2" href="#documentation-xml-comments">5. Documentation &amp; XML Comments</a><a class="toc-l3" href="#low-missing-xml-comments-on-internal-helpers">LOW: Missing XML Comments on Internal Helpers</a><a class="toc-l3" href="#low-inconsistent-parameter-documentation">LOW: Inconsistent Parameter Documentation</a><a class="toc-l2" href="#test-coverage-gaps">6. Test Coverage Gaps</a><a class="toc-l3" href="#medium-no-tests-for-edge-cases">MEDIUM: No Tests for Edge Cases</a><a class="toc-l2" href="#nativeaot-compatibility">7. NativeAOT Compatibility</a><a class="toc-l3" href="#medium-reflection-usage-may-break-trimming">MEDIUM: Reflection Usage May Break Trimming</a><a class="toc-l2" href="#priority-matrix">Priority Matrix</a><a class="toc-l2" href="#recommended-action-plan">Recommended Action Plan</a><a class="toc-l3" href="#phase-1-critical-p0">Phase 1 (Critical - P0)</a><a class="toc-l3" href="#phase-2-important-p1">Phase 2 (Important - P1)</a><a class="toc-l3" href="#phase-3-nice-to-have-p2">Phase 3 (Nice-to-have - P2)</a><a class="toc-l2" href="#conclusion">Conclusion</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#executive-summary">Executive Summary</a><a class="toc-l2" href="#1-api-design-inconsistencies">1. API Design Inconsistencies</a><a class="toc-l3" href="#high-missing-query-method-in-iflatfiledatabase">HIGH: Missing Query() Method in IFlatFileDatabase</a><a class="toc-l3" href="#medium-inconsistent-dispose-pattern">MEDIUM: Inconsistent Dispose Pattern</a><a class="toc-l3" href="#medium-missing-queryasync-raw-sql-method">MEDIUM: Missing QueryAsync Raw SQL Method</a><a class="toc-l3" href="#low-inconsistent-method-overloading-style">LOW: Inconsistent Method Overloading Style</a><a class="toc-l2" href="#2-performance-issues">2. Performance Issues</a><a class="toc-l3" href="#high-reflection-in-hot-paths-constitution-article-iii-violation">HIGH: Reflection in Hot Paths (Constitution Article III Violation)</a><a class="toc-l3" href="#high-expression-compilation-in-hot-path">HIGH: Expression Compilation in Hot Path</a><a class="toc-l3" href="#medium-unnecessary-linq-allocations-in-import-pipeline">MEDIUM: Unnecessary LINQ Allocations in Import Pipeline</a><a class="toc-l3" href="#medium-entitiestolist-in-batch-insert">MEDIUM: entities.ToList() in Batch Insert</a><a class="toc-l3" href="#low-stringbuilder-not-pre-sized">LOW: StringBuilder Not Pre-sized</a><a class="toc-l3" href="#low-duckdbparameter-object-allocations">LOW: DuckDBParameter Object Allocations</a><a class="toc-l2" href="#3-error-handling-issues">3. Error Handling Issues</a><a class="toc-l3" href="#medium-silent-exception-swallow-in-validatetargetschema">MEDIUM: Silent Exception Swallow in ValidateTargetSchema</a><a class="toc-l3" href="#low-inconsistent-error-message-formatting">LOW: Inconsistent Error Message Formatting</a><a class="toc-l2" href="#4-threading--concurrency">4. Threading &amp; Concurrency</a><a class="toc-l3" href="#medium-race-condition-in-_modified-tracking">MEDIUM: Race Condition in _modified Tracking</a><a class="toc-l3" href="#low-cancellationtoken-not-propagated-to-file-io">LOW: CancellationToken Not Propagated to File I/O</a><a class="toc-l2" href="#5-documentation--xml-comments">5. Documentation &amp; XML Comments</a><a class="toc-l3" href="#low-missing-xml-comments-on-internal-helpers">LOW: Missing XML Comments on Internal Helpers</a><a class="toc-l3" href="#low-inconsistent-parameter-documentation">LOW: Inconsistent Parameter Documentation</a><a class="toc-l2" href="#6-test-coverage-gaps">6. Test Coverage Gaps</a><a class="toc-l3" href="#medium-no-tests-for-edge-cases">MEDIUM: No Tests for Edge Cases</a><a class="toc-l2" href="#7-nativeaot-compatibility">7. NativeAOT Compatibility</a><a class="toc-l3" href="#medium-reflection-usage-may-break-trimming">MEDIUM: Reflection Usage May Break Trimming</a><a class="toc-l2" href="#priority-matrix">Priority Matrix</a><a class="toc-l2" href="#recommended-action-plan">Recommended Action Plan</a><a class="toc-l3" href="#phase-1-critical---p0">Phase 1 (Critical - P0)</a><a class="toc-l3" href="#phase-2-important---p1">Phase 2 (Important - P1)</a><a class="toc-l3" href="#phase-3-nice-to-have---p2">Phase 3 (Nice-to-have - P2)</a><a class="toc-l2" href="#conclusion">Conclusion</a></nav>
       <div class="content-inner">
-        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</nav>
+        <nav class="breadcrumb" aria-label="Breadcrumb">Extensions &#8250; Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</nav>
         <article>
-<h1 id="jaunty.flatfiles-code-analysis-inconsistencies-performance-issues">Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</h1>
+<h1 id="jauntyflatfiles--code-analysis-inconsistencies--performance-issues">Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</h1>
 <blockquote>
 <p>Analysis date: March 2026
 Scope: All Jaunty.FlatFiles and Jaunty.FlatFiles.DuckDB source files</p>
@@ -148,16 +180,16 @@ Scope: All Jaunty.FlatFiles and Jaunty.FlatFiles.DuckDB source files</p>
 <strong>Low Priority Issues:</strong> 4</p>
 <p>The Jaunty.FlatFiles implementation is <strong>functionally correct</strong> but has several inconsistencies with Jaunty core patterns and performance optimization opportunities.</p>
 <hr />
-<h2 id="api-design-inconsistencies">1. API Design Inconsistencies</h2>
+<h2 id="1-api-design-inconsistencies">1. API Design Inconsistencies</h2>
 <h3 id="high-missing-query-method-in-iflatfiledatabase">HIGH: Missing Query<T>() Method in IFlatFileDatabase</h3>
 <p><strong>Issue:</strong> The interface defines CRUD, write-back, and import operations but <strong>lacks the core <code>Query&lt;T&gt;()</code> method</strong> that users need to actually read data from flat files.</p>
 <p><strong>Current State:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">interface</span> IFlatFileDatabase
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">interface</span> <span class="tok-type">IFlatFileDatabase</span>
 {
     <span class="tok-com">// CRUD, Write-Back, Import methods exist...</span>
     <span class="tok-com">// But NO Query&lt;T&gt;() method!</span>
@@ -169,11 +201,11 @@ Scope: All Jaunty.FlatFiles and Jaunty.FlatFiles.DuckDB source files</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> results = <span class="tok-kw">await</span> db.Query&lt;SalesRecord&gt;()
-    .Where(x =&gt; x.Revenue &gt; <span class="tok-num">10000</span>)
-    .ToListAsync();
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> results = <span class="tok-ctl">await</span> db.<span class="tok-fn">Query</span>&lt;<span class="tok-type">SalesRecord</span>&gt;()
+    .<span class="tok-fn">Where</span>(x =&gt; x.<span class="tok-var">Revenue</span> &gt; <span class="tok-num">10000</span>)
+    .<span class="tok-fn">ToListAsync</span>();
 </code></pre>
 </div>
 <p><strong>Fix Required:</strong> Add <code>IQueryable&lt;T&gt; Query&lt;T&gt;()</code> to <code>IFlatFileDatabase</code> and implement in <code>DuckDbFlatFileDatabase</code>.</p>
@@ -183,24 +215,24 @@ Scope: All Jaunty.FlatFiles and Jaunty.FlatFiles.DuckDB source files</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">interface</span> IFlatFileDatabase : IDisposable
-#<span class="tok-kw">if</span> !NETSTANDARD2_0
-    , IAsyncDisposable
-#endif
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">interface</span> <span class="tok-type">IFlatFileDatabase</span> : <span class="tok-type">IDisposable</span>
+<span class="tok-pre">#if !NETSTANDARD2_0</span>
+    , <span class="tok-type">IAsyncDisposable</span>
+<span class="tok-pre">#endif</span>
 </code></pre>
 </div>
 <p><strong>But</strong> <code>DuckDbFlatFileDatabase</code> unconditionally implements both:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> DuckDbFlatFileDatabase : IFlatFileDatabase
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> <span class="tok-type">DuckDbFlatFileDatabase</span> : <span class="tok-type">IFlatFileDatabase</span>
 {
-    <span class="tok-kw">public</span> <span class="tok-kw">void</span> Dispose() { ... }
-    <span class="tok-kw">public</span> <span class="tok-kw">async</span> ValueTask DisposeAsync() { ... }
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> <span class="tok-fn">Dispose</span>() { ... }
+    <span class="tok-kw">public</span> <span class="tok-kw">async</span> <span class="tok-type">ValueTask</span> <span class="tok-fn">DisposeAsync</span>() { ... }
 }
 </code></pre>
 </div>
@@ -220,9 +252,9 @@ Scope: All Jaunty.FlatFiles and Jaunty.FlatFiles.DuckDB source files</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp">Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(string rawSql, <span class="tok-kw">params</span> object[] parameters);
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-fn">Task</span>&lt;<span class="tok-fn">List</span>&lt;<span class="tok-type">T</span>&gt;&gt; <span class="tok-fn">QueryAsync</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-kw">string</span> rawSql, <span class="tok-kw">params</span> <span class="tok-kw">object</span>[] parameters);
 </code></pre>
 </div>
 <p>This is <strong>not implemented</strong> in <code>IFlatFileDatabase</code>.</p>
@@ -234,47 +266,47 @@ Scope: All Jaunty.FlatFiles and Jaunty.FlatFiles.DuckDB source files</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good - overloads</span>
-ValueTask SaveAsync&lt;T&gt;(string outputPath, CancellationToken);
-ValueTask SaveAsync&lt;T&gt;(WriteBackMode mode, CancellationToken);
+<span class="tok-type">ValueTask</span> <span class="tok-fn">SaveAsync</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-kw">string</span> outputPath, <span class="tok-type">CancellationToken</span>);
+<span class="tok-type">ValueTask</span> <span class="tok-fn">SaveAsync</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">WriteBackMode</span> mode, <span class="tok-type">CancellationToken</span>);
 
 <span class="tok-com">// Inconsistent - optional parameter</span>
-ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(
-    DbConnection targetConnection,
-    Action&lt;ImportOptions&gt;? configure = <span class="tok-kw">null</span>,  <span class="tok-com">// ← Optional parameter</span>
-    CancellationToken cancellationToken = <span class="tok-kw">default</span>);
+<span class="tok-fn">ValueTask</span>&lt;<span class="tok-kw">long</span>&gt; <span class="tok-fn">ImportIntoAsync</span>&lt;<span class="tok-type">T</span>&gt;(
+    <span class="tok-type">DbConnection</span> targetConnection,
+    <span class="tok-type">Action</span>&lt;<span class="tok-type">ImportOptions</span>&gt;? configure = <span class="tok-kw">null</span>,  <span class="tok-com">// ← Optional parameter</span>
+    <span class="tok-type">CancellationToken</span> cancellationToken = <span class="tok-kw">default</span>);
 </code></pre>
 </div>
 <p><strong>Fix:</strong> Add overloads:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp">ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, CancellationToken);
-ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Action&lt;ImportOptions&gt; configure, CancellationToken);
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-fn">ValueTask</span>&lt;<span class="tok-kw">long</span>&gt; <span class="tok-fn">ImportIntoAsync</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">DbConnection</span> targetConnection, <span class="tok-type">CancellationToken</span>);
+<span class="tok-fn">ValueTask</span>&lt;<span class="tok-kw">long</span>&gt; <span class="tok-fn">ImportIntoAsync</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">DbConnection</span> targetConnection, <span class="tok-type">Action</span>&lt;<span class="tok-type">ImportOptions</span>&gt; configure, <span class="tok-type">CancellationToken</span>);
 </code></pre>
 </div>
 <hr />
-<h2 id="performance-issues">2. Performance Issues</h2>
+<h2 id="2-performance-issues">2. Performance Issues</h2>
 <h3 id="high-reflection-in-hot-paths-constitution-article-iii-violation">HIGH: Reflection in Hot Paths (Constitution Article III Violation)</h3>
 <p><strong>Issue:</strong> <code>FlatFileExpressionHelper.GetColumnMappings()</code> and <code>GetDateTimeColumnNames()</code> use <strong>uncached reflection</strong>:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(string ColumnName, PropertyInfo Property)&gt; GetColumnMappings(Type entityType)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">List</span>&lt;(<span class="tok-kw">string</span> <span class="tok-type">ColumnName</span>, <span class="tok-type">PropertyInfo</span> <span class="tok-type">Property</span>)&gt; <span class="tok-fn">GetColumnMappings</span>(<span class="tok-type">Type</span> entityType)
 {
-    <span class="tok-kw">var</span> result = <span class="tok-kw">new</span> List&lt;(string, PropertyInfo)&gt;();
-    <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> prop <span class="tok-kw">in</span> entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))  <span class="tok-com">// ← Reflection!</span>
+    <span class="tok-kw">var</span> result = <span class="tok-kw">new</span> <span class="tok-type">List</span>&lt;(<span class="tok-kw">string</span>, <span class="tok-type">PropertyInfo</span>)&gt;();
+    <span class="tok-ctl">foreach</span> (<span class="tok-kw">var</span> prop <span class="tok-kw">in</span> entityType.<span class="tok-fn">GetProperties</span>(<span class="tok-type">BindingFlags</span>.<span class="tok-var">Public</span> | <span class="tok-type">BindingFlags</span>.<span class="tok-var">Instance</span>))  <span class="tok-com">// ← Reflection!</span>
     {
-        <span class="tok-kw">if</span> (!prop.CanRead || !prop.CanWrite) <span class="tok-kw">continue</span>;
-        result.Add((GetColumnName(prop), prop));  <span class="tok-com">// ← GetColumnName calls GetCustomAttribute</span>
+        <span class="tok-ctl">if</span> (!prop.<span class="tok-var">CanRead</span> || !prop.<span class="tok-var">CanWrite</span>) <span class="tok-ctl">continue</span>;
+        result.<span class="tok-fn">Add</span>((<span class="tok-fn">GetColumnName</span>(prop), prop));  <span class="tok-com">// ← GetColumnName calls GetCustomAttribute</span>
     }
-    <span class="tok-kw">return</span> result;
+    <span class="tok-ctl">return</span> result;
 }
 </code></pre>
 </div>
@@ -292,21 +324,21 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> ConcurrentDictionary&lt;Type, List&lt;(string, PropertyInfo)&gt;&gt; _columnCache = <span class="tok-kw">new</span>();
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> <span class="tok-type">ConcurrentDictionary</span>&lt;<span class="tok-type">Type</span>, <span class="tok-type">List</span>&lt;(<span class="tok-kw">string</span>, <span class="tok-type">PropertyInfo</span>)&gt;&gt; _columnCache = <span class="tok-kw">new</span>();
 
-<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(string ColumnName, PropertyInfo Property)&gt; GetColumnMappings(Type entityType)
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">List</span>&lt;(<span class="tok-kw">string</span> <span class="tok-type">ColumnName</span>, <span class="tok-type">PropertyInfo</span> <span class="tok-type">Property</span>)&gt; <span class="tok-fn">GetColumnMappings</span>(<span class="tok-type">Type</span> entityType)
 {
-    <span class="tok-kw">return</span> _columnCache.GetOrAdd(entityType, type =&gt;
+    <span class="tok-ctl">return</span> _columnCache.<span class="tok-fn">GetOrAdd</span>(entityType, type =&gt;
     {
-        <span class="tok-kw">var</span> result = <span class="tok-kw">new</span> List&lt;(string, PropertyInfo)&gt;();
-        <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> prop <span class="tok-kw">in</span> type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        <span class="tok-kw">var</span> result = <span class="tok-kw">new</span> <span class="tok-type">List</span>&lt;(<span class="tok-kw">string</span>, <span class="tok-type">PropertyInfo</span>)&gt;();
+        <span class="tok-ctl">foreach</span> (<span class="tok-kw">var</span> prop <span class="tok-kw">in</span> type.<span class="tok-fn">GetProperties</span>(<span class="tok-type">BindingFlags</span>.<span class="tok-var">Public</span> | <span class="tok-type">BindingFlags</span>.<span class="tok-var">Instance</span>))
         {
-            <span class="tok-kw">if</span> (!prop.CanRead || !prop.CanWrite) <span class="tok-kw">continue</span>;
-            result.Add((GetColumnName(prop), prop));
+            <span class="tok-ctl">if</span> (!prop.<span class="tok-var">CanRead</span> || !prop.<span class="tok-var">CanWrite</span>) <span class="tok-ctl">continue</span>;
+            result.<span class="tok-fn">Add</span>((<span class="tok-fn">GetColumnName</span>(prop), prop));
         }
-        <span class="tok-kw">return</span> result;
+        <span class="tok-ctl">return</span> result;
     });
 }
 </code></pre>
@@ -317,15 +349,15 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> object? EvaluateExpression(Expression expression)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">object</span>? <span class="tok-fn">EvaluateExpression</span>(<span class="tok-type">Expression</span> expression)
 {
     <span class="tok-com">// ...</span>
     <span class="tok-com">// Compile and invoke for complex expressions (closures, field access, etc.)</span>
-    <span class="tok-kw">var</span> lambda = Expression.Lambda(expression);
-    <span class="tok-kw">var</span> compiled = lambda.Compile();  <span class="tok-com">// ← Expensive!</span>
-    <span class="tok-kw">return</span> compiled.DynamicInvoke();
+    <span class="tok-kw">var</span> lambda = <span class="tok-type">Expression</span>.<span class="tok-fn">Lambda</span>(expression);
+    <span class="tok-kw">var</span> compiled = lambda.<span class="tok-fn">Compile</span>();  <span class="tok-com">// ← Expensive!</span>
+    <span class="tok-ctl">return</span> compiled.<span class="tok-fn">DynamicInvoke</span>();
 }
 </code></pre>
 </div>
@@ -339,22 +371,22 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> ConcurrentDictionary&lt;Expression, Func&lt;object?&gt;&gt; _expressionCache = <span class="tok-kw">new</span>();
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> <span class="tok-type">ConcurrentDictionary</span>&lt;<span class="tok-type">Expression</span>, <span class="tok-type">Func</span>&lt;<span class="tok-kw">object</span>?&gt;&gt; _expressionCache = <span class="tok-kw">new</span>();
 
-<span class="tok-kw">private</span> <span class="tok-kw">static</span> object? EvaluateExpression(Expression expression)
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">object</span>? <span class="tok-fn">EvaluateExpression</span>(<span class="tok-type">Expression</span> expression)
 {
-    <span class="tok-kw">if</span> (expression <span class="tok-kw">is</span> ConstantExpression constant)
-        <span class="tok-kw">return</span> constant.Value;
+    <span class="tok-ctl">if</span> (expression <span class="tok-kw">is</span> <span class="tok-type">ConstantExpression</span> constant)
+        <span class="tok-ctl">return</span> constant.<span class="tok-var">Value</span>;
     
-    <span class="tok-kw">if</span> (expression <span class="tok-kw">is</span> UnaryExpression { NodeType: ExpressionType.Convert } unary)
-        <span class="tok-kw">return</span> EvaluateExpression(unary.Operand);
+    <span class="tok-ctl">if</span> (expression <span class="tok-kw">is</span> <span class="tok-type">UnaryExpression</span> { <span class="tok-type">NodeType</span>: <span class="tok-type">ExpressionType</span>.<span class="tok-var">Convert</span> } unary)
+        <span class="tok-ctl">return</span> <span class="tok-fn">EvaluateExpression</span>(unary.<span class="tok-var">Operand</span>);
     
-    <span class="tok-kw">return</span> _expressionCache.GetOrAdd(expression, expr =&gt;
+    <span class="tok-ctl">return</span> _expressionCache.<span class="tok-fn">GetOrAdd</span>(expression, expr =&gt;
     {
-        <span class="tok-kw">var</span> lambda = Expression.Lambda&lt;Func&lt;object?&gt;&gt;(expr);
-        <span class="tok-kw">return</span> lambda.Compile();
+        <span class="tok-kw">var</span> lambda = <span class="tok-type">Expression</span>.<span class="tok-fn">Lambda</span>&lt;<span class="tok-fn">Func</span>&lt;<span class="tok-kw">object</span>?&gt;&gt;(expr);
+        <span class="tok-ctl">return</span> lambda.<span class="tok-fn">Compile</span>();
     })();
 }
 </code></pre>
@@ -365,10 +397,10 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columnNames = mappings.Select(m =&gt; m.ColumnName).ToList();  <span class="tok-com">// ← Allocation</span>
-<span class="tok-kw">var</span> parameterNames = Enumerable.Range(<span class="tok-num">0</span>, mappings.Count).Select(i =&gt; $&quot;@p{i}&quot;).ToList();  <span class="tok-com">// ← Allocation</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columnNames = mappings.<span class="tok-fn">Select</span>(m =&gt; m.<span class="tok-var">ColumnName</span>).<span class="tok-fn">ToList</span>();  <span class="tok-com">// ← Allocation</span>
+<span class="tok-kw">var</span> parameterNames = <span class="tok-type">Enumerable</span>.<span class="tok-fn">Range</span>(<span class="tok-num">0</span>, mappings.<span class="tok-var">Count</span>).<span class="tok-fn">Select</span>(i =&gt; <span class="tok-str">$&quot;@p<span class="tok-punc">{</span>i<span class="tok-punc">}</span>&quot;</span>).<span class="tok-fn">ToList</span>();  <span class="tok-com">// ← Allocation</span>
 </code></pre>
 </div>
 <p><strong>Called:</strong> Every import operation.</p>
@@ -381,26 +413,26 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columnNames = <span class="tok-kw">new</span> List&lt;string&gt;(mappings.Count);
-<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> mapping <span class="tok-kw">in</span> mappings)
-    columnNames.Add(mapping.ColumnName);
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columnNames = <span class="tok-kw">new</span> <span class="tok-type">List</span>&lt;<span class="tok-kw">string</span>&gt;(mappings.<span class="tok-var">Count</span>);
+<span class="tok-ctl">foreach</span> (<span class="tok-kw">var</span> mapping <span class="tok-kw">in</span> mappings)
+    columnNames.<span class="tok-fn">Add</span>(mapping.<span class="tok-var">ColumnName</span>);
 
-<span class="tok-kw">var</span> parameterNames = <span class="tok-kw">new</span> List&lt;string&gt;(mappings.Count);
-<span class="tok-kw">for</span> (int i = <span class="tok-num">0</span>; i &lt; mappings.Count; i++)
-    parameterNames.Add($&quot;@p{i}&quot;);
+<span class="tok-kw">var</span> parameterNames = <span class="tok-kw">new</span> <span class="tok-type">List</span>&lt;<span class="tok-kw">string</span>&gt;(mappings.<span class="tok-var">Count</span>);
+<span class="tok-ctl">for</span> (<span class="tok-kw">int</span> i = <span class="tok-num">0</span>; i &lt; mappings.<span class="tok-var">Count</span>; i++)
+    parameterNames.<span class="tok-fn">Add</span>(<span class="tok-str">$&quot;@p<span class="tok-punc">{</span>i<span class="tok-punc">}</span>&quot;</span>);
 </code></pre>
 </div>
 <hr />
-<h3 id="medium-entities.tolist-in-batch-insert">MEDIUM: entities.ToList() in Batch Insert</h3>
+<h3 id="medium-entitiestolist-in-batch-insert">MEDIUM: entities.ToList() in Batch Insert</h3>
 <p><strong>Issue:</strong> <code>InsertAsync(IEnumerable&lt;T&gt;)</code> eagerly materializes the entire sequence:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entityList = entities <span class="tok-kw">as</span> IList&lt;T&gt; ?? entities.ToList();  <span class="tok-com">// ← Full enumeration</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entityList = entities <span class="tok-kw">as</span> <span class="tok-type">IList</span>&lt;<span class="tok-type">T</span>&gt; ?? entities.<span class="tok-fn">ToList</span>();  <span class="tok-com">// ← Full enumeration</span>
 </code></pre>
 </div>
 <p><strong>Impact:</strong></p>
@@ -413,13 +445,13 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entityList = entities <span class="tok-kw">switch</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entityList = entities <span class="tok-ctl">switch</span>
 {
-    IList&lt;T&gt; list =&gt; list,
-    ICollection&lt;T&gt; collection =&gt; collection.ToList(), <span class="tok-com">// At least we know the count</span>
-    _ =&gt; entities.ToList()
+    <span class="tok-type">IList</span>&lt;<span class="tok-type">T</span>&gt; list =&gt; list,
+    <span class="tok-type">ICollection</span>&lt;<span class="tok-type">T</span>&gt; collection =&gt; collection.<span class="tok-fn">ToList</span>(), <span class="tok-com">// At least we know the count</span>
+    _ =&gt; entities.<span class="tok-fn">ToList</span>()
 };
 </code></pre>
 </div>
@@ -430,10 +462,10 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columns = <span class="tok-kw">new</span> StringBuilder();  <span class="tok-com">// Default: 16 chars</span>
-<span class="tok-kw">var</span> values = <span class="tok-kw">new</span> StringBuilder();
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columns = <span class="tok-kw">new</span> <span class="tok-type">StringBuilder</span>();  <span class="tok-com">// Default: 16 chars</span>
+<span class="tok-kw">var</span> values = <span class="tok-kw">new</span> <span class="tok-type">StringBuilder</span>();
 </code></pre>
 </div>
 <p><strong>Impact:</strong> Multiple buffer reallocations for entities with many columns.</p>
@@ -441,10 +473,10 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columns = <span class="tok-kw">new</span> StringBuilder(mappings.Count * <span class="tok-num">20</span>);  <span class="tok-com">// ~20 chars per column name</span>
-<span class="tok-kw">var</span> values = <span class="tok-kw">new</span> StringBuilder(mappings.Count * <span class="tok-num">10</span>);   <span class="tok-com">// ~10 chars per parameter</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> columns = <span class="tok-kw">new</span> <span class="tok-type">StringBuilder</span>(mappings.<span class="tok-var">Count</span> * <span class="tok-num">20</span>);  <span class="tok-com">// ~20 chars per column name</span>
+<span class="tok-kw">var</span> values = <span class="tok-kw">new</span> <span class="tok-type">StringBuilder</span>(mappings.<span class="tok-var">Count</span> * <span class="tok-num">10</span>);   <span class="tok-com">// ~10 chars per parameter</span>
 </code></pre>
 </div>
 <hr />
@@ -453,9 +485,9 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp">parameters.Add(<span class="tok-kw">new</span> DuckDBParameter { Value = prop.GetValue(entity) ?? DBNull.Value });
+  <pre data-lang="csharp"><code class="language-csharp">parameters.<span class="tok-fn">Add</span>(<span class="tok-kw">new</span> <span class="tok-type">DuckDBParameter</span> { <span class="tok-type">Value</span> = prop.<span class="tok-fn">GetValue</span>(entity) ?? <span class="tok-type">DBNull</span>.<span class="tok-var">Value</span> });
 </code></pre>
 </div>
 <p><strong>Impact:</strong></p>
@@ -465,15 +497,15 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 </ul>
 <p><strong>Fix:</strong> Reuse parameters where possible (requires DuckDB.NET API support for parameter reset).</p>
 <hr />
-<h2 id="error-handling-issues">3. Error Handling Issues</h2>
+<h2 id="3-error-handling-issues">3. Error Handling Issues</h2>
 <h3 id="medium-silent-exception-swallow-in-validatetargetschema">MEDIUM: Silent Exception Swallow in ValidateTargetSchema</h3>
 <p><strong>Issue:</strong> <code>ImportExecutor.ValidateTargetSchema()</code> catches all exceptions and silently continues:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">catch</span> (Exception ex) <span class="tok-kw">when</span> (ex <span class="tok-kw">is</span> <span class="tok-kw">not</span> InvalidOperationException)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-ctl">catch</span> (<span class="tok-type">Exception</span> ex) <span class="tok-ctl">when</span> (ex <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-type">InvalidOperationException</span>)
 {
     <span class="tok-com">// Table doesn't exist — if CreateTableIfMissing was true, it should have been created already.</span>
     <span class="tok-com">// If not, the INSERT will fail with a clear error anyway.</span>
@@ -489,14 +521,14 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">catch</span> (Exception ex) <span class="tok-kw">when</span> (ex <span class="tok-kw">is</span> <span class="tok-kw">not</span> InvalidOperationException)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-ctl">catch</span> (<span class="tok-type">Exception</span> ex) <span class="tok-ctl">when</span> (ex <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-type">InvalidOperationException</span>)
 {
     <span class="tok-com">// Only swallow if we expect the table to be created later</span>
-    <span class="tok-kw">if</span> (!createTableIfMissing)
-        <span class="tok-kw">throw</span> <span class="tok-kw">new</span> InvalidOperationException(
-            $&quot;Target table <span class="tok-str">'{tableName}'</span> does <span class="tok-kw">not</span> exist <span class="tok-kw">and</span> CreateTableIfMissing <span class="tok-kw">is</span> <span class="tok-kw">false</span>.&quot;, ex);
+    <span class="tok-ctl">if</span> (!createTableIfMissing)
+        <span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(
+            <span class="tok-str">$&quot;Target table '<span class="tok-punc">{</span>tableName<span class="tok-punc">}</span>' does not exist and CreateTableIfMissing is false.&quot;</span>, ex);
 }
 </code></pre>
 </div>
@@ -506,30 +538,30 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Format 1</span>
-<span class="tok-kw">throw</span> <span class="tok-kw">new</span> InvalidOperationException(
-    $&quot;No file source registered <span class="tok-kw">for</span> entity type <span class="tok-str">'{typeof(T).Name}'</span>. &quot; +
-    $&quot;Register it via AddCsv&lt;{<span class="tok-kw">typeof</span>(T).Name}&gt;(), AddParquet&lt;{<span class="tok-kw">typeof</span>(T).Name}&gt;(), etc.&quot;);
+<span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">InvalidOperationException</span>(
+    <span class="tok-str">$&quot;No file source registered for entity type '<span class="tok-punc">{</span><span class="tok-kw">typeof</span>(<span class="tok-type">T</span>).<span class="tok-var">Name</span><span class="tok-punc">}</span>'. &quot;</span> +
+    <span class="tok-str">$&quot;Register it via AddCsv&lt;<span class="tok-punc">{</span><span class="tok-kw">typeof</span>(<span class="tok-type">T</span>).<span class="tok-var">Name</span><span class="tok-punc">}</span>&gt;(), AddParquet&lt;<span class="tok-punc">{</span><span class="tok-kw">typeof</span>(<span class="tok-type">T</span>).<span class="tok-var">Name</span><span class="tok-punc">}</span>&gt;(), etc.&quot;</span>);
 
 <span class="tok-com">// Format 2</span>
-<span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(
-    $&quot;Cannot infer output format from extension <span class="tok-str">'{ext}'</span>. Supported: .csv, .tsv, .parquet, .json, .ndjson&quot;,
-    nameof(path));
+<span class="tok-ctl">throw</span> <span class="tok-kw">new</span> <span class="tok-type">ArgumentException</span>(
+    <span class="tok-str">$&quot;Cannot infer output format from extension '<span class="tok-punc">{</span>ext<span class="tok-punc">}</span>'. Supported: .csv, .tsv, .parquet, .json, .ndjson&quot;</span>,
+    <span class="tok-kw">nameof</span>(path));
 </code></pre>
 </div>
 <p><strong>Fix:</strong> Standardize on one format (preferably Format 2 with <code>nameof</code>).</p>
 <hr />
-<h2 id="threading-concurrency">4. Threading &amp; Concurrency</h2>
-<h3 id="medium-race-condition-in_modified-tracking">MEDIUM: Race Condition in _modified Tracking</h3>
+<h2 id="4-threading--concurrency">4. Threading &amp; Concurrency</h2>
+<h3 id="medium-race-condition-in-_modified-tracking">MEDIUM: Race Condition in _modified Tracking</h3>
 <p><strong>Issue:</strong> <code>_modified</code> dictionary is concurrent, but the check-then-set pattern is not atomic:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">if</span> (result &gt; <span class="tok-num">0</span>) _modified[<span class="tok-kw">typeof</span>(T)] = <span class="tok-kw">true</span>;  <span class="tok-com">// ← Race condition if concurrent calls</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-ctl">if</span> (result &gt; <span class="tok-num">0</span>) _modified[<span class="tok-kw">typeof</span>(<span class="tok-type">T</span>)] = <span class="tok-kw">true</span>;  <span class="tok-com">// ← Race condition if concurrent calls</span>
 </code></pre>
 </div>
 <p><strong>Impact:</strong> Lost updates if multiple threads call CRUD operations simultaneously (unlikely but possible).</p>
@@ -537,9 +569,9 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">if</span> (result &gt; <span class="tok-num">0</span>) _modified.TryAdd(<span class="tok-kw">typeof</span>(T), <span class="tok-kw">true</span>);  <span class="tok-com">// Or use Interlocked</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-ctl">if</span> (result &gt; <span class="tok-num">0</span>) _modified.<span class="tok-fn">TryAdd</span>(<span class="tok-kw">typeof</span>(<span class="tok-type">T</span>), <span class="tok-kw">true</span>);  <span class="tok-com">// Or use Interlocked</span>
 </code></pre>
 </div>
 <hr />
@@ -548,15 +580,15 @@ ValueTask&lt;long&gt; ImportIntoAsync&lt;T&gt;(DbConnection targetConnection, Ac
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp">File.Delete(originalPath);  <span class="tok-com">// ← No cancellation</span>
-File.Move(tempPath, originalPath);
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">File</span>.<span class="tok-fn">Delete</span>(originalPath);  <span class="tok-com">// ← No cancellation</span>
+<span class="tok-type">File</span>.<span class="tok-fn">Move</span>(tempPath, originalPath);
 </code></pre>
 </div>
 <p><strong>Fix:</strong> Use async file I/O with cancellation (requires .NET 8+ or custom wrapper).</p>
 <hr />
-<h2 id="documentation-xml-comments">5. Documentation &amp; XML Comments</h2>
+<h2 id="5-documentation--xml-comments">5. Documentation &amp; XML Comments</h2>
 <h3 id="low-missing-xml-comments-on-internal-helpers">LOW: Missing XML Comments on Internal Helpers</h3>
 <p><strong>Issue:</strong> Several internal methods lack XML documentation:</p>
 <ul>
@@ -571,7 +603,7 @@ File.Move(tempPath, originalPath);
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;cancellationToken&quot;&gt;A token to monitor for cancellation.&lt;/param&gt;  // ← Present</span>
 <span class="tok-com">// ...or missing entirely</span>
@@ -579,7 +611,7 @@ File.Move(tempPath, originalPath);
 </div>
 <p><strong>Fix:</strong> Add to all async methods.</p>
 <hr />
-<h2 id="test-coverage-gaps">6. Test Coverage Gaps</h2>
+<h2 id="6-test-coverage-gaps">6. Test Coverage Gaps</h2>
 <h3 id="medium-no-tests-for-edge-cases">MEDIUM: No Tests for Edge Cases</h3>
 <p><strong>Missing test scenarios:</strong></p>
 <ol>
@@ -590,7 +622,7 @@ File.Move(tempPath, originalPath);
 <li>Schema validation with nullable types</li>
 </ol>
 <hr />
-<h2 id="nativeaot-compatibility">7. NativeAOT Compatibility</h2>
+<h2 id="7-nativeaot-compatibility">7. NativeAOT Compatibility</h2>
 <h3 id="medium-reflection-usage-may-break-trimming">MEDIUM: Reflection Usage May Break Trimming</h3>
 <p><strong>Issue:</strong> While the abstractions package is marked <code>IsAotCompatible</code>, the reflection usage in:</p>
 <ul>
@@ -603,11 +635,11 @@ File.Move(tempPath, originalPath);
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(string ColumnName, PropertyInfo Property)&gt; GetColumnMappings(
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
-    Type entityType)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">List</span>&lt;(<span class="tok-kw">string</span> <span class="tok-type">ColumnName</span>, <span class="tok-type">PropertyInfo</span> <span class="tok-type">Property</span>)&gt; <span class="tok-fn">GetColumnMappings</span>(
+    <span class="tok-attr">[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]</span> 
+    <span class="tok-type">Type</span> entityType)
 </code></pre>
 </div>
 <hr />
@@ -704,13 +736,13 @@ File.Move(tempPath, originalPath);
 </table>
 <hr />
 <h2 id="recommended-action-plan">Recommended Action Plan</h2>
-<h3 id="phase-1-critical-p0">Phase 1 (Critical - P0)</h3>
+<h3 id="phase-1-critical---p0">Phase 1 (Critical - P0)</h3>
 <ol>
 <li>Add <code>Query&lt;T&gt;()</code> method to interface and implementation</li>
 <li>Cache column mappings to eliminate reflection</li>
 <li>Cache compiled expressions</li>
 </ol>
-<h3 id="phase-2-important-p1">Phase 2 (Important - P1)</h3>
+<h3 id="phase-2-important---p1">Phase 2 (Important - P1)</h3>
 <ol start="4">
 <li>Fix Dispose pattern consistency</li>
 <li>Add <code>QueryAsync(string rawSql)</code> method</li>
@@ -718,7 +750,7 @@ File.Move(tempPath, originalPath);
 <li>Add NativeAOT annotations</li>
 <li>Fix race condition in _modified tracking</li>
 </ol>
-<h3 id="phase-3-nice-to-have-p2">Phase 3 (Nice-to-have - P2)</h3>
+<h3 id="phase-3-nice-to-have---p2">Phase 3 (Nice-to-have - P2)</h3>
 <ol start="9">
 <li>Convert optional parameters to overloads</li>
 <li>Pre-size StringBuilders</li>
@@ -739,10 +771,10 @@ File.Move(tempPath, originalPath);
         <div class="page-nav" id="page-nav">
           <div class="prev-next"><a class="pn-prev" href="04-extensions-flatfiles-architecture.html">
   <span class="pn-label">&#8592; prev</span>
-  <span class="pn-title">Flatfiles / Architecture</span>
+  <span class="pn-title">Flatfiles / Jaunty.FlatFiles Architecture</span>
 </a><a class="pn-next" href="04-extensions-flatfiles-flatfile-spec.html">
   <span class="pn-label">next &#8594;</span>
-  <span class="pn-title">Flatfiles / Flatfile spec</span>
+  <span class="pn-title">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</span>
 </a></div>
         </div>
       </div>
@@ -752,7 +784,40 @@ File.Move(tempPath, originalPath);
   <!-- ===== status bar ===== -->
   <footer class="jt-statusbar">
     <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
   </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
 </div>
 <script src="nav.js"></script>
 </body>

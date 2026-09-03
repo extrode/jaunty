@@ -11,12 +11,40 @@
    the page flash the wrong theme on every navigation. */
 (function () {
   var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
   try {
-    var t = localStorage.getItem('dg-theme');
-    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
-    var s = parseFloat(localStorage.getItem('dg-fs'));
-    if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
-  } catch (e) { /* private mode, file:// with storage denied -- defaults are fine */ }
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
 })();
 </script>
 </head>
@@ -28,10 +56,13 @@
     <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
     <div class="header-brand">
       <span class="brand-name">jaunty</span>
-      <span class="brand-crumb">Jaunty XML Documentation Style Guide</span>
+      <span class="brand-crumb">Development &#8250; Jaunty XML Documentation Style Guide</span>
     </div>
     <div class="header-spacer"></div>
     <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
       <div class="fs-group" role="group" aria-label="Text size">
         <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
         <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
@@ -58,82 +89,83 @@
         <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">Overview</span>
+    <span class="nav-group-label">General</span>
   </div>
-  <div class="nav-group-items">  <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>  <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  <a href="jaunty-torture-test-results.html">Jaunty Torture Test — Results Matrix</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quick-start</span>
+    <span class="nav-group-label">Quick start</span>
   </div>
-  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">api-reference</span>
+    <span class="nav-group-label">Api reference</span>
   </div>
-  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-command-options.html">Command options</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-query-partial-methods.html">Query partial methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-special-types.html">Special types</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  <a href="01-api-reference-write-methods.html">Write methods</a>  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">architecture</span>
+    <span class="nav-group-label">Architecture</span>
   </div>
-  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a>  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">Architecture Documentation</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">Architecture Decision Records (ADRs)</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">development</span>
+    <span class="nav-group-label">Development</span>
   </div>
-  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-OPTIMIZATIONS.html">OPTIMIZATIONS</a>  <a href="03-development-adding-new-methods.html">Adding new methods</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-ci-architecture.html">Ci architecture</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-multi-targeting.html">Multi targeting</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self hosted ci runner</a>  <a href="03-development-xml-documentation-style.html" class="active" aria-current="page">Xml documentation style</a>  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html" class="active" aria-current="page">Jaunty XML Documentation Style Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">extensions</span>
+    <span class="nav-group-label">Extensions</span>
   </div>
-  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / README</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Code analysis</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / Flatfile spec</a>  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">quality</span>
+    <span class="nav-group-label">Quality</span>
   </div>
-  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / BENCHMARKS 2026 07 04</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / COVERAGE GAPS 2026 07 04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / PRODUCTION READINESS 2026 07 02</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmarks 2026 07 29</a>  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">Quality &amp; Testing</a>  <a href="05-quality-audit-record.html">Audit record</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  <a href="05-quality-comprehensive-audit.html">Comprehensive Project Audit</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / Benchmark Results — 2026-07-04 (PRD-002 partial)</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / Coverage Gap Inventory — 2026-07-04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / Jaunty Production Readiness Report (2026-07-02)</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmark Results — 2026-07-29 (pre-GA regression check)</a>  <a href="05-quality-reports-benchmarks-2026-09-02.html">Reports / Benchmark Results — 2026-09-02 (corrected baseline, read-path changes)</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">releases</span>
+    <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / COMMERCIAL TASKLIST</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / ENTERPRISE READINESS 2026 07 04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / PRODUCTION READINESS TASKLIST</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Jaunty reorganize tests</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">Releases &amp; Planning</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">Selling and Distributing Jaunty — The Complete Flow</a>  <a href="06-releases-RELEASE-RUNBOOK.html">Release Runbook</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-order-form-template.html">Order Form (Template)</a>  <a href="06-releases-pricing.html">Pricing</a>  <a href="06-releases-tasklists-COMMERCIAL-TASKLIST.html">Tasklists / Commercial Tasklist (Archived)</a>  <a href="06-releases-tasklists-ENTERPRISE-READINESS-2026-07-04.html">Tasklists / Enterprise Readiness Pass — 2026-07-04</a>  <a href="06-releases-tasklists-PRODUCTION-READINESS-TASKLIST.html">Tasklists / Production Readiness Tasklist</a>  <a href="06-releases-tasklists-jaunty-reorganize-tests.html">Tasklists / Test Reorganization Plan — Dialect Attribute Architecture</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">design</span>
+    <span class="nav-group-label">Design</span>
   </div>
-  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">07-design — Visual Design Source</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
     <span class="nav-chev">›</span>
-    <span class="nav-group-label">learn</span>
+    <span class="nav-group-label">Learn</span>
   </div>
-  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-error-messages.html">Error messages</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-migrating-README.html">Migrating / README</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / From dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / From ef core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping</a>  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-README.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
 </div>
 
       </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
     </nav>
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><a class="toc-l2" href="#table-of-contents">Table of Contents</a><a class="toc-l2" href="#overview">Overview</a><a class="toc-l3" href="#purpose">Purpose</a><a class="toc-l3" href="#documentation-standards">Documentation Standards</a><a class="toc-l2" href="#required-documentation-elements">Required Documentation Elements</a><a class="toc-l3" href="#for-public-methods">For Public Methods</a><a class="toc-l3" href="#for-classestypes">For Classes/Types</a><a class="toc-l3" href="#for-properties">For Properties</a><a class="toc-l2" href="#xml-tag-reference">XML Tag Reference</a><a class="toc-l3" href="#core-tags">Core Tags</a><a class="toc-l3" href="#tag-usage-examples">Tag Usage Examples</a><a class="toc-l2" href="#documentation-structure">Documentation Structure</a><a class="toc-l3" href="#standard-order">Standard Order</a><a class="toc-l3" href="#example-structure">Example Structure</a><a class="toc-l2" href="#writing-style-guidelines">Writing Style Guidelines</a><a class="toc-l3" href="#tone-and-voice">Tone and Voice</a><a class="toc-l3" href="#sentence-structure">Sentence Structure</a><a class="toc-l3" href="#parameter-descriptions">Parameter Descriptions</a><a class="toc-l3" href="#type-references">Type References</a><a class="toc-l3" href="#emphasis-and-formatting">Emphasis and Formatting</a><a class="toc-l2" href="#code-examples">Code Examples</a><a class="toc-l3" href="#example-structure-1">Example Structure</a><a class="toc-l3" href="#basic-example-pattern">Basic Example Pattern</a><a class="toc-l3" href="#complete-example-pattern">Complete Example Pattern</a><a class="toc-l3" href="#multiple-example-pattern">Multiple Example Pattern</a><a class="toc-l3" href="#escaping-in-examples">Escaping in Examples</a><a class="toc-l2" href="#method-specific-patterns">Method-Specific Patterns</a><a class="toc-l3" href="#query-methods-read-operations">Query Methods (Read Operations)</a><a class="toc-l3" href="#write-methods-insertupdatedelete">Write Methods (Insert/Update/Delete)</a><a class="toc-l3" href="#async-methods">Async Methods</a><a class="toc-l3" href="#methods-with-options">Methods with Options</a><a class="toc-l2" href="#special-characters-and-escaping">Special Characters and Escaping</a><a class="toc-l3" href="#required-escaping">Required Escaping</a><a class="toc-l3" href="#common-patterns">Common Patterns</a><a class="toc-l2" href="#cross-references">Cross-References</a><a class="toc-l3" href="#method-references">Method References</a><a class="toc-l3" href="#type-references-1">Type References</a><a class="toc-l3" href="#in-text-references">In-Text References</a><a class="toc-l3" href="#type-parameter-references">Type Parameter References</a><a class="toc-l2" href="#exception-documentation">Exception Documentation</a><a class="toc-l3" href="#when-to-document">When to Document</a><a class="toc-l3" href="#exception-format">Exception Format</a><a class="toc-l3" href="#common-exception-patterns">Common Exception Patterns</a><a class="toc-l2" href="#templates">Templates</a><a class="toc-l3" href="#method-template">Method Template</a><a class="toc-l3" href="#class-template">Class Template</a><a class="toc-l3" href="#property-template">Property Template</a><a class="toc-l3" href="#interface-template">Interface Template</a><a class="toc-l2" href="#common-mistakes-to-avoid">Common Mistakes to Avoid</a><a class="toc-l3" href="#missing-angle-bracket-escaping">1. Missing Angle Bracket Escaping</a><a class="toc-l3" href="#vague-parameter-descriptions">2. Vague Parameter Descriptions</a><a class="toc-l3" href="#missing-exception-documentation">3. Missing Exception Documentation</a><a class="toc-l3" href="#incomplete-examples">4. Incomplete Examples</a><a class="toc-l3" href="#wrong-tag-order">5. Wrong Tag Order</a><a class="toc-l3" href="#missing-type-references">6. Missing Type References</a><a class="toc-l2" href="#quick-reference-card">Quick Reference Card</a><a class="toc-l3" href="#must-have-checklist">Must-Have Checklist</a><a class="toc-l3" href="#escaping-checklist">Escaping Checklist</a><a class="toc-l3" href="#style-checklist">Style Checklist</a><a class="toc-l2" href="#resources">Resources</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#table-of-contents">Table of Contents</a><a class="toc-l2" href="#overview">Overview</a><a class="toc-l3" href="#purpose">Purpose</a><a class="toc-l3" href="#documentation-standards">Documentation Standards</a><a class="toc-l2" href="#required-documentation-elements">Required Documentation Elements</a><a class="toc-l3" href="#for-public-methods">For Public Methods</a><a class="toc-l3" href="#for-classestypes">For Classes/Types</a><a class="toc-l3" href="#for-properties">For Properties</a><a class="toc-l2" href="#xml-tag-reference">XML Tag Reference</a><a class="toc-l3" href="#core-tags">Core Tags</a><a class="toc-l3" href="#tag-usage-examples">Tag Usage Examples</a><a class="toc-l2" href="#documentation-structure">Documentation Structure</a><a class="toc-l3" href="#standard-order">Standard Order</a><a class="toc-l3" href="#example-structure">Example Structure</a><a class="toc-l2" href="#writing-style-guidelines">Writing Style Guidelines</a><a class="toc-l3" href="#tone-and-voice">Tone and Voice</a><a class="toc-l3" href="#sentence-structure">Sentence Structure</a><a class="toc-l3" href="#parameter-descriptions">Parameter Descriptions</a><a class="toc-l3" href="#type-references">Type References</a><a class="toc-l3" href="#emphasis-and-formatting">Emphasis and Formatting</a><a class="toc-l2" href="#code-examples">Code Examples</a><a class="toc-l3" href="#example-structure-1">Example Structure</a><a class="toc-l3" href="#basic-example-pattern">Basic Example Pattern</a><a class="toc-l3" href="#complete-example-pattern">Complete Example Pattern</a><a class="toc-l3" href="#multiple-example-pattern">Multiple Example Pattern</a><a class="toc-l3" href="#escaping-in-examples">Escaping in Examples</a><a class="toc-l2" href="#method-specific-patterns">Method-Specific Patterns</a><a class="toc-l3" href="#query-methods-read-operations">Query Methods (Read Operations)</a><a class="toc-l3" href="#write-methods-insertupdatedelete">Write Methods (Insert/Update/Delete)</a><a class="toc-l3" href="#async-methods">Async Methods</a><a class="toc-l3" href="#methods-with-options">Methods with Options</a><a class="toc-l2" href="#special-characters-and-escaping">Special Characters and Escaping</a><a class="toc-l3" href="#required-escaping">Required Escaping</a><a class="toc-l3" href="#common-patterns">Common Patterns</a><a class="toc-l2" href="#cross-references">Cross-References</a><a class="toc-l3" href="#method-references">Method References</a><a class="toc-l3" href="#type-references-1">Type References</a><a class="toc-l3" href="#in-text-references">In-Text References</a><a class="toc-l3" href="#type-parameter-references">Type Parameter References</a><a class="toc-l2" href="#exception-documentation">Exception Documentation</a><a class="toc-l3" href="#when-to-document">When to Document</a><a class="toc-l3" href="#exception-format">Exception Format</a><a class="toc-l3" href="#common-exception-patterns">Common Exception Patterns</a><a class="toc-l2" href="#templates">Templates</a><a class="toc-l3" href="#method-template">Method Template</a><a class="toc-l3" href="#class-template">Class Template</a><a class="toc-l3" href="#property-template">Property Template</a><a class="toc-l3" href="#interface-template">Interface Template</a><a class="toc-l2" href="#common-mistakes-to-avoid">Common Mistakes to Avoid</a><a class="toc-l3" href="#1-missing-angle-bracket-escaping">1. Missing Angle Bracket Escaping</a><a class="toc-l3" href="#2-vague-parameter-descriptions">2. Vague Parameter Descriptions</a><a class="toc-l3" href="#3-missing-exception-documentation">3. Missing Exception Documentation</a><a class="toc-l3" href="#4-incomplete-examples">4. Incomplete Examples</a><a class="toc-l3" href="#5-wrong-tag-order">5. Wrong Tag Order</a><a class="toc-l3" href="#6-missing-type-references">6. Missing Type References</a><a class="toc-l2" href="#quick-reference-card">Quick Reference Card</a><a class="toc-l3" href="#must-have-checklist">Must-Have Checklist</a><a class="toc-l3" href="#escaping-checklist">Escaping Checklist</a><a class="toc-l3" href="#style-checklist">Style Checklist</a><a class="toc-l2" href="#resources">Resources</a></nav>
       <div class="content-inner">
-        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty XML Documentation Style Guide</nav>
+        <nav class="breadcrumb" aria-label="Breadcrumb">Development &#8250; Jaunty XML Documentation Style Guide</nav>
         <article>
 <h1 id="jaunty-xml-documentation-style-guide">Jaunty XML Documentation Style Guide</h1>
 <p>This guide captures the XML documentation standards, patterns, and best practices established during the comprehensive documentation of the Jaunty micro-ORM codebase. Use this guide to maintain consistent, high-quality documentation across all Jaunty projects.</p>
@@ -179,7 +211,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// [One-sentence description of what the method does]</span>
@@ -201,7 +233,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// [One-sentence description of what the type represents]</span>
@@ -220,7 +252,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// [Description of what the property represents or returns]</span>
@@ -292,7 +324,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// Executes a SQL query asynchronously and returns the single result mapped to an entity.</span>
@@ -309,7 +341,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;typeparam name=&quot;T&quot;&gt;The entity type to map results to. Must have a parameterless constructor.&lt;/typeparam&gt;</span>
 <span class="tok-com">/// &lt;typeparam name=&quot;TResult&quot;&gt;The type of the result returned by the callback function.&lt;/typeparam&gt;</span>
@@ -324,7 +356,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;The database connection to execute the query against. Must be a &lt;see cref=&quot;DbConnection&quot;/&gt;.&lt;/param&gt;</span>
 <span class="tok-com">/// &lt;param name=&quot;sql&quot;&gt;The SQL query to execute.&lt;/param&gt;</span>
@@ -342,7 +374,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;returns&gt;A task containing the single entity mapped from the query results.&lt;/returns&gt;</span>
 <span class="tok-com">/// &lt;returns&gt;The number of rows affected by the update. Typically &lt;c&gt;1&lt;/c&gt; if the entity was found and updated.&lt;/returns&gt;</span>
@@ -357,7 +389,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;remarks&gt;</span>
 <span class="tok-com">/// &lt;para&gt;</span>
@@ -385,7 +417,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -415,7 +447,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;exception cref=&quot;InvalidOperationException&quot;&gt;</span>
 <span class="tok-com">/// Thrown when the connection is not a &lt;see cref=&quot;DbConnection&quot;/&gt;, when the query returns no results or more than one result.</span>
@@ -435,7 +467,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;seealso cref=&quot;QuerySingleOrDefaultAsync{T}(IDbConnection, string, CancellationToken)&quot;/&gt;</span>
 <span class="tok-com">/// &lt;seealso cref=&quot;QuerySingle{T}(IDbConnection, string)&quot;/&gt;</span>
@@ -466,7 +498,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// Executes a SQL query with parameters asynchronously and returns the first result.</span>
@@ -516,7 +548,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// Executes a SQL query and returns the first result mapped to an entity.</span>
@@ -527,7 +559,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// This method is used for executing a SQL query and it will return the first result </span>
@@ -540,7 +572,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;The database connection to execute the query against.&lt;/param&gt;</span>
 <span class="tok-com">/// &lt;param name=&quot;sql&quot;&gt;The SQL query to execute.&lt;/param&gt;</span>
@@ -550,7 +582,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;This is the connection parameter that you pass in.&lt;/param&gt;</span>
 <span class="tok-com">/// &lt;param name=&quot;sql&quot;&gt;This is the SQL string.&lt;/param&gt;</span>
@@ -562,7 +594,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;Must be a &lt;see cref=&quot;DbConnection&quot;/&gt;.&lt;/param&gt;</span>
 <span class="tok-com">/// &lt;returns&gt;A task of type &lt;typeparamref name=&quot;T&quot;/&gt;.&lt;/returns&gt;</span>
@@ -572,7 +604,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;Must be a DbConnection.&lt;/param&gt;</span>
 <span class="tok-com">/// &lt;returns&gt;A task of type T.&lt;/returns&gt;</span>
@@ -583,7 +615,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;remarks&gt;</span>
 <span class="tok-com">/// &lt;para&gt;</span>
@@ -599,7 +631,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;remarks&gt;</span>
 <span class="tok-com">/// Returns &lt;c&gt;1&lt;/c&gt; for insert operations, &lt;c&gt;0&lt;/c&gt; if no rows matched.</span>
@@ -610,7 +642,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;returns&gt;The entity, or &lt;see langword=&quot;null&quot;/&gt; if no results are found.&lt;/returns&gt;</span>
 </code></pre>
@@ -629,7 +661,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -643,7 +675,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -669,7 +701,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -714,7 +746,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -727,7 +759,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -742,7 +774,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// Executes a SQL query and returns the results as a list of entities of type &lt;typeparamref name=&quot;T&quot;/&gt;.</span>
@@ -768,7 +800,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// Inserts an entity into the database and returns the generated identity value.</span>
@@ -795,7 +827,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// Asynchronously executes a SQL query and returns the results as a list of entities.</span>
@@ -823,7 +855,7 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// Executes a query with command options and returns the results.</span>
@@ -896,19 +928,19 @@
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Generic type in code example</span>
-QueryAsync&amp;lt;Product&amp;gt;
+<span class="tok-type">QueryAsync</span>&amp;lt;<span class="tok-type">Product</span>&amp;gt;
 
 <span class="tok-com">// Lambda expression</span>
-.Where(x =&gt; x.Id == id)  <span class="tok-com">// No escaping needed outside &lt;code&gt;</span>
+.<span class="tok-fn">Where</span>(x =&gt; x.<span class="tok-var">Id</span> == id)  <span class="tok-com">// No escaping needed outside &lt;code&gt;</span>
 
 <span class="tok-com">// Comparison operators in code</span>
-<span class="tok-kw">if</span> (value &amp;gt; <span class="tok-num">0</span>) { }
+<span class="tok-ctl">if</span> (value &amp;gt; <span class="tok-num">0</span>) { }
 
 <span class="tok-com">// SQL with special characters</span>
-&quot;SELECT * FROM products WHERE price &amp;gt; @MinPrice&quot;
+<span class="tok-str">&quot;SELECT * FROM products WHERE price &amp;gt; @MinPrice&quot;</span>
 </code></pre>
 </div>
 <hr />
@@ -918,7 +950,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;seealso cref=&quot;QueryAsync{T}(IDbConnection, string, CancellationToken)&quot;/&gt;</span>
 <span class="tok-com">/// &lt;seealso cref=&quot;QueryFirstAsync{T}(IDbConnection, string, object, CancellationToken)&quot;/&gt;</span>
@@ -929,7 +961,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;seealso cref=&quot;CommandOptions{T}&quot;/&gt;</span>
 <span class="tok-com">/// &lt;seealso cref=&quot;DbConnection&quot;/&gt;</span>
@@ -940,7 +972,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;Must be a &lt;see cref=&quot;DbConnection&quot;/&gt;.&lt;/param&gt;</span>
 <span class="tok-com">/// &lt;returns&gt;The value, or &lt;see langword=&quot;null&quot;/&gt; if not found.&lt;/returns&gt;</span>
@@ -951,7 +983,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;returns&gt;A list of entities of type &lt;typeparamref name=&quot;T&quot;/&gt;.&lt;/returns&gt;</span>
 <span class="tok-com">/// &lt;para&gt;Properties on &lt;typeparamref name=&quot;T&quot;/&gt; must have matching columns.&lt;/para&gt;</span>
@@ -970,7 +1002,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;exception cref=&quot;InvalidOperationException&quot;&gt;</span>
 <span class="tok-com">/// Thrown when the connection is not a &lt;see cref=&quot;DbConnection&quot;/&gt; or when the query returns no results.</span>
@@ -985,7 +1017,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;exception cref=&quot;InvalidOperationException&quot;&gt;</span>
 <span class="tok-com">/// Thrown when the connection is not a &lt;see cref=&quot;DbConnection&quot;/&gt;.</span>
@@ -996,7 +1028,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;exception cref=&quot;ArgumentException&quot;&gt;</span>
 <span class="tok-com">/// Thrown when parameter count doesn't match the SQL.</span>
@@ -1007,7 +1039,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;exception cref=&quot;ArgumentNullException&quot;&gt;</span>
 <span class="tok-com">/// Thrown when &lt;paramref name=&quot;connection&quot;/&gt; is &lt;see langword=&quot;null&quot;/&gt;.</span>
@@ -1020,7 +1052,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// [One-sentence description starting with a strong verb]</span>
@@ -1049,7 +1081,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// [One-sentence description of what the class represents]</span>
@@ -1075,7 +1107,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// [Description of what the property represents or returns]</span>
@@ -1096,7 +1128,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
 <span class="tok-com">/// [Description of what the interface represents]</span>
@@ -1120,12 +1152,12 @@ QueryAsync&amp;lt;Product&amp;gt;
 </div>
 <hr />
 <h2 id="common-mistakes-to-avoid">Common Mistakes to Avoid</h2>
-<h3 id="missing-angle-bracket-escaping">1. Missing Angle Bracket Escaping</h3>
+<h3 id="1-missing-angle-bracket-escaping">1. Missing Angle Bracket Escaping</h3>
 <p><strong>Wrong:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -1138,7 +1170,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -1147,12 +1179,12 @@ QueryAsync&amp;lt;Product&amp;gt;
 <span class="tok-com">/// &lt;/example&gt;</span>
 </code></pre>
 </div>
-<h3 id="vague-parameter-descriptions">2. Vague Parameter Descriptions</h3>
+<h3 id="2-vague-parameter-descriptions">2. Vague Parameter Descriptions</h3>
 <p><strong>Wrong:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;sql&quot;&gt;The SQL string.&lt;/param&gt;</span>
 </code></pre>
@@ -1161,17 +1193,17 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;sql&quot;&gt;The SQL query to execute. Use parameter placeholders like @Id for parameters.&lt;/param&gt;</span>
 </code></pre>
 </div>
-<h3 id="missing-exception-documentation">3. Missing Exception Documentation</h3>
+<h3 id="3-missing-exception-documentation">3. Missing Exception Documentation</h3>
 <p><strong>Wrong:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// No exception documentation</span>
 </code></pre>
@@ -1180,19 +1212,19 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;exception cref=&quot;InvalidOperationException&quot;&gt;</span>
 <span class="tok-com">/// Thrown when the connection is not open.</span>
 <span class="tok-com">/// &lt;/exception&gt;</span>
 </code></pre>
 </div>
-<h3 id="incomplete-examples">4. Incomplete Examples</h3>
+<h3 id="4-incomplete-examples">4. Incomplete Examples</h3>
 <p><strong>Wrong:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -1205,7 +1237,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
 <span class="tok-com">/// &lt;code&gt;</span>
@@ -1216,12 +1248,12 @@ QueryAsync&amp;lt;Product&amp;gt;
 <span class="tok-com">/// &lt;/example&gt;</span>
 </code></pre>
 </div>
-<h3 id="wrong-tag-order">5. Wrong Tag Order</h3>
+<h3 id="5-wrong-tag-order">5. Wrong Tag Order</h3>
 <p><strong>Wrong:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;x&quot;&gt;Description&lt;/param&gt;</span>
 <span class="tok-com">/// &lt;summary&gt;Description&lt;/summary&gt;  // Should be first!</span>
@@ -1232,19 +1264,19 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;Description&lt;/summary&gt;</span>
 <span class="tok-com">/// &lt;param name=&quot;x&quot;&gt;Description&lt;/param&gt;</span>
 <span class="tok-com">/// &lt;returns&gt;Description&lt;/returns&gt;</span>
 </code></pre>
 </div>
-<h3 id="missing-type-references">6. Missing Type References</h3>
+<h3 id="6-missing-type-references">6. Missing Type References</h3>
 <p><strong>Wrong:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;Must be DbConnection.&lt;/param&gt;</span>
 </code></pre>
@@ -1253,7 +1285,7 @@ QueryAsync&amp;lt;Product&amp;gt;
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
-    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;Must be a &lt;see cref=&quot;DbConnection&quot;/&gt;.&lt;/param&gt;</span>
 </code></pre>
@@ -1303,10 +1335,10 @@ QueryAsync&amp;lt;Product&amp;gt;
         <div class="page-nav" id="page-nav">
           <div class="prev-next"><a class="pn-prev" href="03-development-self-hosted-ci-runner.html">
   <span class="pn-label">&#8592; prev</span>
-  <span class="pn-title">Self hosted ci runner</span>
+  <span class="pn-title">Self-hosted CI runner</span>
 </a><a class="pn-next" href="04-extensions-README.html">
   <span class="pn-label">next &#8594;</span>
-  <span class="pn-title">README</span>
+  <span class="pn-title">Jaunty Extensions</span>
 </a></div>
         </div>
       </div>
@@ -1316,7 +1348,40 @@ QueryAsync&amp;lt;Product&amp;gt;
   <!-- ===== status bar ===== -->
   <footer class="jt-statusbar">
     <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
   </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
 </div>
 <script src="nav.js"></script>
 </body>

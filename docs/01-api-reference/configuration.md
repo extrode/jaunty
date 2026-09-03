@@ -221,7 +221,8 @@ The `CommandOptions` class provides per-operation configuration options:
 ### Constructor
 
 ```csharp
-public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, IDbTransaction? transaction = null, int? commandTimeout = null)
+public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, IDbTransaction? transaction = null,
+    int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
 ```
 
 **Parameters:**
@@ -244,8 +245,8 @@ public static CommandOptions<T> WithMapper(Func<IDataReader, T> mapper)
 ```csharp
 var options = CommandOptions<Product>.WithMapper(reader => new Product
 {
-    ProductId = reader.GetInt32("product_id"),
-    ProductName = reader.GetString("product_name")
+    ProductId = reader.GetInt32(0),
+    ProductName = reader.GetString(1)
 });
 ```
 
@@ -291,7 +292,7 @@ public static CommandOptions<T> With(Func<IDataReader, T> mapper, IDbTransaction
 ```csharp
 using var transaction = connection.BeginTransaction();
 var options = CommandOptions<Product>.With(
-    mapper: reader => new Product { ProductId = reader.GetInt32("product_id") },
+    mapper: reader => new Product { ProductId = reader.GetInt32(0) },
     transaction: transaction,
     timeoutSeconds: 30
 );
@@ -304,7 +305,8 @@ For scalar operations that don't require a specific entity type:
 ### Constructor
 
 ```csharp
-public readonly struct CommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null)
+public readonly struct CommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null,
+    CommandType commandType = CommandType.Text)
 ```
 
 ### Static Factory Methods
@@ -383,7 +385,7 @@ public void ConfigureServices(IServiceCollection services)
 Use attributes for specific entity or property overrides:
 
 ```csharp
-[Table("products", Schema = "inventory")]
+[Table("products", "inventory")]
 public class Product
 {
     [Column("prod_id")]
@@ -423,8 +425,8 @@ public void Cleanup()
 ## Important Notes
 
 - **Global Configuration**: Settings in `JauntyConfig` affect all queries globally
-- **Static Caching**: Metadata is cached per-type in static constructors and won't pick up configuration changes after first use
-- **Startup Timing**: Configuration must be set before any queries execute to be effective
+- **Caching**: Metadata is cached per type, and every `JauntyConfig` setter bumps a configuration generation that retires the cached metadata compiled under an older one, so a resolver registered mid-flight is picked up
+- **Startup Timing**: Startup is still the right place to configure, because changing configuration mid-flight discards compiled work
 - **Thread Safety**: The configuration properties are static and shared across all threads
 - **Performance**: Once configured, the resolvers are cached and have minimal performance impact
 - **Fallback Behavior**: When resolvers return null, Jaunty falls back to default behavior
