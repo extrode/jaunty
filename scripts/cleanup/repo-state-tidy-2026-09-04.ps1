@@ -105,6 +105,7 @@ Write-Host ''
 
 Remove-MergedBranch -Repo $PreRewrite -Branch 'chore/repo-state-tidy'
 Remove-MergedBranch -Repo $Public12   -Branch 'fix/parser-comment-and-rollback-guard'
+Remove-MergedBranch -Repo $Public12   -Branch 'chore/repo-state-tidy-cleanup-script'
 Remove-MergedBranch -Repo $Audit      -Branch 'chore/todo-npgsql-and-stale-work-copy'
 
 Write-Host ''
