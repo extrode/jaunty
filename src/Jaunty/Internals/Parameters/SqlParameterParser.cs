@@ -61,13 +61,20 @@ internal static class SqlParameterParser
                 continue;
             }
 
-            // Skip identifier (double quote or brackets)
+            // Skip double-quoted run. What this delimits is dialect-dependent: an identifier
+            // under ANSI_QUOTES and everywhere else, but a string literal in MySQL's default
+            // mode, which is the only mode that sets backslashEscapes. So the flag flows
+            // through here exactly as it does for the single quote above, matching
+            // ParameterBinder's own literal scanners, which both test `c is '\'' or '"'`.
+            // Bracket and backtick runs below are identifiers in every dialect and never take
+            // an escape.
             if (c == '"')
             {
                 i = SkipQuoted(sql, i + 1, '"', backslashEscapes);
                 continue;
             }
 
+            // Skip bracket-quoted identifier (SQL Server)
             if (c == '[')
             {
                 i = SkipQuoted(sql, i + 1, ']', backslashEscapes: false);
@@ -177,8 +184,10 @@ internal static class SqlParameterParser
         int len = sql.Length;
         while (i < len)
         {
-            // AUD-R34-014: MySQL/MariaDB only, and inside string literals only - see the
-            // backslashEscapes parameter on ExtractParameterNames.
+            // AUD-R34-014: MySQL/MariaDB only, and inside string literals only - which means
+            // the caller decides, by passing the flag on for ' and " and hard-coding it false
+            // for the bracket and backtick identifier runs. See the backslashEscapes parameter
+            // on ExtractParameterNames.
             if (backslashEscapes && sql[i] == '\\' && i + 1 < len)
             {
                 i += 2;
