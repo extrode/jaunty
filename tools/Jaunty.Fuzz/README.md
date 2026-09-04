@@ -46,6 +46,13 @@ The last line must go through the native `libfuzzer-dotnet` driver. Launched as 
 `dotnet Jaunty.Fuzz.dll`, SharpFuzz finds none of the IPC environment variables and replays
 `args[1]` as a single input file instead of fuzzing — it exits 0 and looks like a clean run.
 
+**The harness targets `net8.0`, so the machine running it needs an 8.0 runtime.** A box carrying
+only a newer one dies before fuzzing anything, with
+`Framework: 'Microsoft.NETCore.App', version '8.0.0'` and nothing about the parser. Either
+install the 8.0 runtime or export `DOTNET_ROLL_FORWARD=Major` for the run. CI is unaffected:
+the fuzz job in `nightly.yml` installs 8.0.x through `actions/setup-dotnet`, so this bites
+local reproduction rather than the scheduled run.
+
 ## Corpus
 
 `corpus/` holds 20 hand-written seeds, one construct each: the three sigils, decoys inside
