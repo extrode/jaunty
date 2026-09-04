@@ -167,4 +167,59 @@ public class BulkIgnoreConstraintsFailureRestoresForeignKeysTests
 
         AssertRestored(connection, "BulkUpdateIgnoreConstraintsAsync");
     }
+
+    /// <summary>
+    /// Counts <see cref="NullReferenceException"/>s raised inside the named method while
+    /// <paramref name="action"/> runs. A first-chance handler is the only instrument that sees
+    /// these: the rollback block in each async bulk path sits inside <c>catch { }</c>, so an NRE
+    /// there is swallowed and changes nothing an ordinary assertion can reach. The stack is read
+    /// from <see cref="Environment.StackTrace"/> rather than from the exception, which has no
+    /// stack yet at first-chance time, and the method-name filter keeps exceptions raised by
+    /// tests running in parallel out of the count.
+    /// </summary>
+    private static async Task<int> CountNullReferencesInAsync(string methodName, Func<Task> action)
+    {
+        int count = 0;
+        void Handler(object? sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs e)
+        {
+            if (e.Exception is NullReferenceException && Environment.StackTrace.Contains(methodName, StringComparison.Ordinal))
+                Interlocked.Increment(ref count);
+        }
+
+        AppDomain.CurrentDomain.FirstChanceException += Handler;
+        try
+        {
+            await Assert.ThrowsAnyAsync<Exception>(action);
+        }
+        finally
+        {
+            AppDomain.CurrentDomain.FirstChanceException -= Handler;
+        }
+
+        return count;
+    }
+
+    [Fact]
+    public async Task BulkInsertIgnoreConstraintsAsync_WhenBeginTransactionThrows_DoesNotRollBackANullTransaction()
+    {
+        using SqliteConnection sqlite = CreateSqlite();
+        using var connection = new TransactionRefusingConnection(sqlite);
+
+        int nullReferences = await CountNullReferencesInAsync("BulkInsertAsync", async () =>
+            await connection.BulkInsertIgnoreConstraintsAsync(new List<FkChild> { new() { Id = 1, ParentId = 99 } }));
+
+        Assert.Equal(0, nullReferences);
+    }
+
+    [Fact]
+    public async Task BulkUpdateIgnoreConstraintsAsync_WhenBeginTransactionThrows_DoesNotRollBackANullTransaction()
+    {
+        using SqliteConnection sqlite = CreateSqlite();
+        using var connection = new TransactionRefusingConnection(sqlite);
+
+        int nullReferences = await CountNullReferencesInAsync("BulkUpdateAsync", async () =>
+            await connection.BulkUpdateIgnoreConstraintsAsync(new List<FkChild> { new() { Id = 1, ParentId = 99 } }));
+
+        Assert.Equal(0, nullReferences);
+    }
 }

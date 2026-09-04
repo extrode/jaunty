@@ -385,7 +385,12 @@ public static partial class Jaunty
                         try
                         {
     #if NET8_0_OR_GREATER
-                            await transaction!.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+                            // Null when the throw came from before BeginTransactionAsync assigned it -
+                            // the constraint disable above is the documented case. The netstandard arm
+                            // below has always guarded; this one relied on the enclosing catch to
+                            // swallow the NullReferenceException instead.
+                            if (transaction is not null)
+                                await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
     #else
                             transaction?.Rollback();
     #endif
