@@ -1,4 +1,4 @@
-# repo-state-tidy-2026-09-04.ps1
+﻿# repo-state-tidy-2026-09-04.ps1
 #
 # Written 2026-09-04 by the session that cleared the small unblocked backlog: the docs-site
 # line-ending flag, the SqlParameterParser comment, the async rollback null guard and the fuzz
@@ -14,8 +14,8 @@
 # -DeleteScratch is the second flag: it removes untracked files under tmp/, which git cannot
 # give back.
 #
-# NOT covered, on purpose: jaunty/work/, the stale untracked duplicate of the status heartbeat.
-# Whether it is deleted or re-linked is an owner decision, recorded in jaunty-audit's
+# NOT covered, on purpose: jaunty-pre-rewrite/work/, the stale untracked duplicate of the
+# status heartbeat. Whether it is deleted or re-linked is an owner decision, in jaunty-audit's
 # work/todo.md, and the on-disk swap in work/status/current.md item 5 may remove it anyway.
 
 [CmdletBinding()]
@@ -29,8 +29,8 @@ $PSNativeCommandUseErrorActionPreference = $false
 
 $script:failed = $false
 
-$PreRewrite = 'C:\home\code\extrode.com\jaunty'
-$Public12   = 'C:\home\code\extrode.com\jaunty\tmp\jaunty-public12'
+$PreRewrite = 'C:\home\code\extrode.com\jaunty-pre-rewrite'
+$Live       = 'C:\home\code\extrode.com\jaunty'
 $Audit      = 'C:\home\code\extrode.com\jaunty-audit'
 
 function Step {
@@ -104,9 +104,11 @@ Write-Host '=== 1. Merged branches ==='
 Write-Host ''
 
 Remove-MergedBranch -Repo $PreRewrite -Branch 'chore/repo-state-tidy'
-Remove-MergedBranch -Repo $Public12   -Branch 'fix/parser-comment-and-rollback-guard'
-Remove-MergedBranch -Repo $Public12   -Branch 'chore/repo-state-tidy-cleanup-script'
+Remove-MergedBranch -Repo $Live       -Branch 'fix/parser-comment-and-rollback-guard'
+Remove-MergedBranch -Repo $Live       -Branch 'chore/repo-state-tidy-cleanup-script'
 Remove-MergedBranch -Repo $Audit      -Branch 'chore/todo-npgsql-and-stale-work-copy'
+Remove-MergedBranch -Repo $Live       -Branch 'chore/repath-cleanup-script-for-repo-swap'
+Remove-MergedBranch -Repo $Audit      -Branch 'chore/repath-cleanup-scripts-for-repo-swap'
 
 Write-Host ''
 Write-Host '=== 2. Scratch (needs -DeleteScratch) ==='
@@ -115,12 +117,13 @@ Write-Host ''
 Remove-Scratch -Repo $PreRewrite -Relative 'tmp\port-patches'
 Remove-Scratch -Repo $PreRewrite -Relative 'tmp\fix-rollback-null.py'
 Remove-Scratch -Repo $Audit      -Relative 'tmp\close-todo-items.py'
+Remove-Scratch -Repo $Audit      -Relative 'tmp\repath-cleanup-scripts.py'
 
 Write-Host ''
 Write-Host '=== 3. Remaining state ==='
 Write-Host ''
 
-foreach ($pair in @(@($PreRewrite, 'pre-rewrite'), @($Public12, 'public12'), @($Audit, 'audit'))) {
+foreach ($pair in @(@($PreRewrite, 'pre-rewrite'), @($Live, 'live'), @($Audit, 'audit'))) {
     $repo, $label = $pair
     if (-not (Test-Path -LiteralPath $repo)) {
         Write-Host "$label : missing"
