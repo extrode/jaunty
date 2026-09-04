@@ -125,4 +125,22 @@ public class ParameterBinderBackslashEscapeTests
 
         Assert.Equal(new[] { "Id" }, names);
     }
+
+    // A double-quoted run is a string literal in MySQL's default mode, the only mode that sets
+    // backslashEscapes, so the escape applies there as it does to a single-quoted one.
+    [Fact]
+    public void ExtractParameterNames_BackslashEscapesOn_AppliesInsideDoubleQuotedLiterals()
+    {
+        string[] names = SqlParameterParser.ExtractParameterNames(@"SELECT * FROM t WHERE n = ""it\""s"" AND id = @Id", backslashEscapes: true);
+
+        Assert.Equal(new[] { "Id" }, names);
+    }
+
+    [Fact]
+    public void ExtractParameterNames_BackslashEscapesOff_EndsTheDoubleQuotedRunAtTheEscapedQuote()
+    {
+        string[] names = SqlParameterParser.ExtractParameterNames(@"SELECT * FROM t WHERE n = ""it\""s"" AND id = @Id");
+
+        Assert.Empty(names);
+    }
 }
