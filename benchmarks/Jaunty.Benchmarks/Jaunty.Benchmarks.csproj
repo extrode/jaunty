@@ -12,31 +12,31 @@
 
   <!-- BenchmarkDotNet -->
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.14.*" />
+    <PackageReference Include="BenchmarkDotNet" />
   </ItemGroup>
 
   <!-- Competing ORMs -->
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.*" />
-    <PackageReference Include="Dapper.Contrib" Version="2.0.*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.*" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.*" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.*" />
-    <PackageReference Include="RepoDb.Sqlite.Microsoft" Version="1.13.*" />
-    <PackageReference Include="RepoDb.SqlServer" Version="1.13.*" />
-    <PackageReference Include="RepoDb.PostgreSql" Version="1.13.*" />
-    <PackageReference Include="RepoDb.MySqlConnector" Version="1.13.*" />
-    <PackageReference Include="linq2db" Version="6.*" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Dapper.Contrib" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
+    <PackageReference Include="RepoDb.Sqlite.Microsoft" />
+    <PackageReference Include="RepoDb.SqlServer" />
+    <PackageReference Include="RepoDb.PostgreSql" />
+    <PackageReference Include="RepoDb.MySqlConnector" />
+    <PackageReference Include="linq2db" />
   </ItemGroup>
 
   <!-- Database providers -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.*" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.*" />
-    <PackageReference Include="Npgsql" Version="9.0.*" />
-    <PackageReference Include="MySqlConnector" Version="2.4.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="MySqlConnector" />
   </ItemGroup>
 
   <!-- Jaunty -->

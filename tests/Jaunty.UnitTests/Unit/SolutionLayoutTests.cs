@@ -62,12 +62,20 @@ public class SolutionLayoutTests
         string workflowPath = Path.Combine(repoRoot.FullName, ".github", "workflows", "ci.yml");
         string workflow = File.ReadAllText(workflowPath);
 
-        // Filters match on a substring of the fully qualified name, so "~Jaunty.FlatFiles" covers
-        // both FlatFiles suites - and, exactly as this bug went, "~Jaunty.Fluent.Tests" covers
-        // Jaunty.Fluent.Tests and nothing else.
+        // Two filter syntaxes have covered a project name here across CI's history:
+        //   - VSTest: "FullyQualifiedName~Jaunty.FlatFiles" (substring on the fully qualified name)
+        //   - xunit v3 / Microsoft.Testing.Platform: --filter-namespace "Jaunty.FlatFiles*"
+        // Both match on a namespace-prefix token, so "Jaunty.FlatFiles" covers both FlatFiles
+        // suites - and, exactly as this bug went, "Jaunty.Fluent.Tests" covers Jaunty.Fluent.Tests
+        // and nothing else. A trailing "*" is the xunit-v3 wildcard, not part of the token.
         List<string> filterTokens = new();
         foreach (Match match in Regex.Matches(workflow, @"FullyQualifiedName~([A-Za-z0-9_.]+)"))
             filterTokens.Add(match.Groups[1].Value);
+        foreach (Match match in Regex.Matches(workflow, @"--filter-namespace\s+((?:""[^""]*""\s*)+)"))
+        {
+            foreach (Match token in Regex.Matches(match.Groups[1].Value, @"""([A-Za-z0-9_.]+)\*?"""))
+                filterTokens.Add(token.Groups[1].Value);
+        }
 
         List<string> uninvoked = new();
 

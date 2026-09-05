@@ -1,0 +1,12 @@
+<Project>
+  <!--
+    Opts this tree out of the root Directory.Packages.props. This sample is outside Jaunty.slnx,
+    deliberately not part of the version-consolidation pass (same convention as
+    ../torture-test-eshoponweb-port, which opts out by defining its own full CPM set instead).
+    Without this file, MSBuild would walk up to the repo root's Directory.Packages.props and every
+    <PackageReference Version="..."> below would fail to build with NU1008.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>
