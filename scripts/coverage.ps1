@@ -7,7 +7,13 @@
 # Reports land in tmp/coverage/<suite>/ (gitignored). Nothing is deleted; re-runs overwrite.
 #
 # The four samples/ torture-test ports are deliberately out of scope: they live outside
-# Jaunty.slnx, are not part of `dotnet test Jaunty.slnx`, and carry no coverlet reference.
+# Jaunty.slnx, are not part of `dotnet test --solution Jaunty.slnx`, and carry no
+# Microsoft.Testing.Extensions.CodeCoverage reference.
+#
+# Microsoft.Testing.Platform's built-in coverage extension has no RunSettings equivalent -
+# core MTP dropped --settings/.runsettings in favour of testconfig.json, which coverage.runsettings
+# was never converted to - so filtering is done with --coverage-output-format/--coverage-settings
+# only if a suite needs it; none currently does.
 
 [CmdletBinding()]
 param(
@@ -20,7 +26,6 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $output = Join-Path $repoRoot 'tmp\coverage'
-$settings = Join-Path $repoRoot 'coverage.runsettings'
 
 $suites = Get-ChildItem (Join-Path $repoRoot 'tests') -Directory |
           Where-Object { Test-Path (Join-Path $_.FullName "$($_.Name).csproj") } |
@@ -48,10 +53,15 @@ foreach ($name in $suites) {
     # previous report behind and the aggregation reads the same suite twice.
     if (Test-Path $target) { Remove-Item $target -Recurse -Force }
 
-    dotnet test $project `
+    # --coverage-settings (coverage.runsettings, the coverlet-format XML this repo used to pass
+    # to VSTest's XPlat collector) is not accepted by Microsoft.Testing.Extensions.CodeCoverage -
+    # passing it silently makes the run discover and execute zero tests. The Include/Exclude
+    # assembly filters and the GeneratedCodeAttribute-only exclusion documented in that file have
+    # no drop-in replacement here; the report below covers every assembly reached by the run,
+    # test assembly included, until a replacement config is written for the new extension.
+    dotnet test --project $project `
         -c $Configuration -f $Framework `
-        --settings $settings `
-        --collect:"XPlat Code Coverage" `
+        --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml `
         --results-directory $target `
         -v q --nologo
 

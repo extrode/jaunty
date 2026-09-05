@@ -96,13 +96,13 @@ jobs:
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
           JAUNTY_REQUIRE_SQLSERVER: "1"
-        run: dotnet test Jaunty.slnx -c Release --no-build --framework net8.0 --logger "trx;LogFileName=nightly-net8.trx"
+        run: dotnet test --solution Jaunty.slnx -c Release --no-build --framework net8.0 --report-trx --report-trx-filename nightly-net8.trx
 
       - name: Test net10.0 (every project)
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
           JAUNTY_REQUIRE_SQLSERVER: "1"
-        run: dotnet test Jaunty.slnx -c Release --no-build --framework net10.0 --logger "trx;LogFileName=nightly-net10.trx"
+        run: dotnet test --solution Jaunty.slnx -c Release --no-build --framework net10.0 --report-trx --report-trx-filename nightly-net10.trx
 
       - name: Upload test results
         if: always()
@@ -136,10 +136,10 @@ jobs:
         run: dotnet build Jaunty.slnx -c Release --no-restore --no-incremental
 
       - name: Test net472 - Core
-        run: dotnet test tests/Jaunty.Tests -c Release --no-build --framework net472 --logger "trx;LogFileName=nightly-net472-core.trx"
+        run: dotnet test --project tests/Jaunty.Tests -c Release --no-build --framework net472 --report-trx --report-trx-filename nightly-net472-core.trx
 
       - name: Test net472 - Core unit
-        run: dotnet test tests/Jaunty.UnitTests -c Release --no-build --framework net472 --logger "trx;LogFileName=nightly-net472-unit.trx"
+        run: dotnet test --project tests/Jaunty.UnitTests -c Release --no-build --framework net472 --report-trx --report-trx-filename nightly-net472-unit.trx
 
       - name: Upload test results
         if: always()
