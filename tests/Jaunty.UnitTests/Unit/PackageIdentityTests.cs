@@ -195,12 +195,12 @@ public class PackageIdentityTests
 
     /// <summary>
     /// The licensing documents name the same entity as the packages. They drift because nothing
-    /// compiles them: the order form is copied per customer and the ISL-R ships in the repo, so a
-    /// stale licensor there contradicts the copyright in every shipped assembly.
+    /// compiles them, so a stale licensor there contradicts the copyright in every shipped
+    /// assembly. Support terms (and any order form) are sold on request and deliberately not
+    /// published in this repository, so LICENSE.md is the only in-tree document this covers.
     /// </summary>
     [Theory]
     [InlineData("LICENSE.md")]
-    [InlineData("docs/06-releases/order-form-template.md")]
     public void EveryLicensingDocumentNamesTheCompanyAsLicensor(string relativePath)
     {
         string path = Path.Combine(LocateRepositoryRoot().FullName, relativePath);
