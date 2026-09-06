@@ -182,7 +182,7 @@ public class BulkIgnoreConstraintsFailureRestoresForeignKeysTests
         int count = 0;
         void Handler(object? sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs e)
         {
-            if (e.Exception is NullReferenceException && Environment.StackTrace.Contains(methodName, StringComparison.Ordinal))
+            if (e.Exception is NullReferenceException && Environment.StackTrace.IndexOf(methodName, StringComparison.Ordinal) >= 0)
                 Interlocked.Increment(ref count);
         }
 
