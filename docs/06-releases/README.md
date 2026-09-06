@@ -1,6 +1,7 @@
 # Releases & Planning
 
-Release documentation, task lists, and planning documents for Jaunty.
+Release documentation and planning documents for Jaunty. The task lists, the pricing page and
+the market-analysis papers are held in the private work repository and are not published here.
 
 ---
 
@@ -8,23 +9,14 @@ Release documentation, task lists, and planning documents for Jaunty.
 
 - [`RELEASE-RUNBOOK.md`](RELEASE-RUNBOOK.md) - Step-by-step process for cutting and shipping a release
 
-## Task Lists
-
-Prioritized task lists for Jaunty development:
-
-- [`tasklists/PRODUCTION-READINESS-TASKLIST.md`](tasklists/PRODUCTION-READINESS-TASKLIST.md) - Production readiness checklist
-- [`tasklists/COMMERCIAL-TASKLIST.md`](tasklists/COMMERCIAL-TASKLIST.md) - Commercial analysis action items
-- [`tasklists/ENTERPRISE-READINESS-2026-07-04.md`](tasklists/ENTERPRISE-READINESS-2026-07-04.md) - Enterprise readiness assessment
-- [`tasklists/jaunty-reorganize-tests.md`](tasklists/jaunty-reorganize-tests.md) - Test reorganization plan
-
 ## Commercial
 
-- [`pricing.md`](pricing.md) - The commercial model. **Jaunty is free; support is sold.** Decided 2026-08-29
-- [`order-form-template.md`](order-form-template.md) - Order form template
+**Jaunty is free to use, including in commercial production. What is sold is support**, and
+its terms are available on request rather than published here. To ask, open a
+[support enquiry](https://github.com/extrode/jaunty/issues/new?template=support-enquiry.yml).
+
 - [`continuity-rider-template.md`](continuity-rider-template.md) - Escrow and continuity rider
 - [`feature-gap-analysis.md`](feature-gap-analysis.md) - Feature gaps against competing ORMs
-- [`COMMERCIAL-ANALYSIS-REPORT.md`](COMMERCIAL-ANALYSIS-REPORT.md) - Market analysis. Pricing sections superseded by the owner's decision of 2026-08-29; see [`pricing.md`](pricing.md)
-- [`COMMERCIAL-DISTRIBUTION-FLOW.md`](COMMERCIAL-DISTRIBUTION-FLOW.md) - **Stale.** Its premise is a private release feed and a paid Jaunty; both are retired. Awaiting the owner's call on rewrite or removal
 
 ## Reports
 
@@ -55,18 +47,13 @@ An earlier date-based scheme (`YYYY.MM.PATCH`) was documented here and never shi
 
 ### Planning Documents
 
-Task lists in `tasklists/` contain prioritized work items. When contributing:
-
-1. Review open task lists
-2. Choose a task matching your skills
-3. Create a branch for the task
-4. Submit a PR referencing the task
+The prioritized work items live in the private work repository. When contributing, open an
+issue describing the change first, then branch and submit a PR referencing it.
 
 ### Release Notes
 
 Release notes are generated from:
 - Git commit messages
-- Task list completion status
 - Performance benchmark comparisons
 
 ---

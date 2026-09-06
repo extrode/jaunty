@@ -2,8 +2,8 @@
 
 Reference snapshot of the files written/edited to port
 `gothinkster/aspnetcore-realworld-example-app`'s (Conduit) entire data layer from EF Core onto
-Jaunty, per `docs/jaunty-torture-test-handoff.md` (Part 3). See
-`docs/jaunty-torture-test-gaps-log.md` for what this surfaced about Jaunty itself.
+Jaunty, per the private torture-test handoff (Part 3). See
+the private torture-test gaps log for what this surfaced about Jaunty itself.
 
 This is **not a buildable sample** — it's a snapshot of files that live inside a full Conduit
 clone (gitignored from Jaunty's own history, since it's someone else's repo). Paths mirror their

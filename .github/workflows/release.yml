@@ -91,25 +91,75 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
 
       # The filter names suites explicitly, so a substring has to match the suite's real
-      # namespace: "~Jaunty.Fluent.Tests" does NOT match Jaunty.Fluent.SourceGen.Tests and
-      # "~Jaunty.Scaffolding.Tests" does NOT match Jaunty.Scaffolding.Cli.Tests. Both were
+      # namespace: "Jaunty.Fluent.Tests*" does NOT match Jaunty.Fluent.SourceGen.Tests and
+      # "Jaunty.Scaffolding.Tests*" does NOT match Jaunty.Scaffolding.Cli.Tests. Both were
       # missing here and shipped untested until 2026-08-01. A new suite needs adding by hand.
-      - name: Test (SQLite core + all local suites)
+      #
+      # xunit v3 under Microsoft.Testing.Platform has no single filter that reproduces VSTest's
+      # "FullyQualifiedName~Sqlite" (a substring match against namespace+class+method combined):
+      # --filter-namespace/--filter-class/--filter-method each OR multiple values WITHIN
+      # themselves, but combining two different filter types together is AND, not OR (measured:
+      # --filter-class "*Sqlite*" --filter-method "*nomatch*" returns zero, not the class-only
+      # count). "Sqlite" appears in some test CLASS names (BulkIgnoreConstraintsSqliteTests) and
+      # some bare METHOD names in other classes, so both a class-name step and a method-name step
+      # are needed to cover the same tests the old filter covered. --ignore-exit-code 8 is needed
+      # on the namespace step because MTP treats an assembly matching zero tests as a failure
+      # (exit 8) - by design here, since Jaunty.Tests/Jaunty.UnitTests are deliberately excluded
+      # from that step and picked up by the two Sqlite steps instead.
+      - name: Test (all local suites)
         run: >-
-          dotnet test Jaunty.slnx
+          dotnet test --solution Jaunty.slnx
           -c Release
           --no-build
           --framework net8.0
-          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Fluent.SourceGen.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.Scaffolding.Cli.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
+          --filter-namespace "Jaunty.Fluent.Tests*" "Jaunty.Fluent.SourceGen.Tests*" "Jaunty.Scaffolding.Tests*" "Jaunty.Scaffolding.Cli.Tests*" "Jaunty.FlatFiles*" "Jaunty.SourceGenerator.Tests*"
+          --ignore-exit-code 8
+
+      - name: Test (SQLite core, by class name)
+        run: >-
+          dotnet test --solution Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net8.0
+          --filter-class "*Sqlite*"
+          --ignore-exit-code 8
+
+      - name: Test (SQLite core, by method name)
+        run: >-
+          dotnet test --solution Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net8.0
+          --filter-method "*Sqlite*"
+          --ignore-exit-code 8
 
       # net10 leg (spec 010 T18): same suites on the second shipped target.
-      - name: Test net10 (SQLite core + all local suites)
+      - name: Test net10 (all local suites)
         run: >-
-          dotnet test Jaunty.slnx
+          dotnet test --solution Jaunty.slnx
           -c Release
           --no-build
           --framework net10.0
-          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Fluent.SourceGen.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.Scaffolding.Cli.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
+          --filter-namespace "Jaunty.Fluent.Tests*" "Jaunty.Fluent.SourceGen.Tests*" "Jaunty.Scaffolding.Tests*" "Jaunty.Scaffolding.Cli.Tests*" "Jaunty.FlatFiles*" "Jaunty.SourceGenerator.Tests*"
+          --ignore-exit-code 8
+
+      - name: Test net10 (SQLite core, by class name)
+        run: >-
+          dotnet test --solution Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net10.0
+          --filter-class "*Sqlite*"
+          --ignore-exit-code 8
+
+      - name: Test net10 (SQLite core, by method name)
+        run: >-
+          dotnet test --solution Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net10.0
+          --filter-method "*Sqlite*"
+          --ignore-exit-code 8
 
       - name: Pack
         run: >-

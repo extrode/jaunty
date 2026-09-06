@@ -85,8 +85,10 @@ ahead of Dapper on MariaDB (4,479 us against 6,797 us).
 ## Step 3: tell the list how big it will be
 
 The pre-July change that mattered most was the smallest. `Query<T>` collects rows into a
-`List<T>`, and a list that starts at the default capacity doubles nine times on the way to
-10,000 rows. The last three arrays are over 85 KB and land on the large object heap.
+`List<T>` that starts at `JauntyConfig.QueryResultCapacity`, and on the way to 10,000 rows it
+grows eight times: 64, 128, 256, and so on to 16,384. Nine backing arrays are allocated and
+eight of them are copied out of and thrown away. With reference-type rows on x64 the last one
+is 131,096 bytes, over the 85,000-byte threshold, so it comes from the large object heap.
 `CommandOptions<T>.WithExpectedRowCount(n)` sizes the list once:
 
 ```csharp
@@ -98,6 +100,16 @@ On 2026-07-29, at 10,000 rows, the hint was the difference between 1.77x and 1.0
 PostgreSQL, and it made Jaunty the fastest micro-ORM measured on SQL Server, PostgreSQL and
 MariaDB. A hand-coded loop that knows its row count would do the same thing, and the benchmark
 baseline does.
+
+The growth sequence above is reproducible with `tmp/claims/list-growth.cs`. Two details are
+easy to get wrong. The count depends on where the list starts: from the BCL default of zero it
+is thirteen arrays and twelve copies, 4 through 16,384, and only from Jaunty's 64 is it nine
+and eight. And whether the last array reaches the large object heap is decided by the element
+size, not by the rows the array points at. An array of 16,384 elements is 24 bytes of header
+plus 16,384 times the element width, so it crosses 85,000 bytes once an element is 6 bytes or
+wider: references, `long`, `double`, `decimal`, `Guid`, `DateTime` and any multi-map tuple
+list all cross it, while `int`, `short` and `bool` do not. The largest `int[]` in the sequence
+is 65,560 bytes.
 
 The 2026-09-02 run put a number on what the doubling costs. Every unhinted case on every
 provider shows Gen2 collections in the log, every hinted case shows none, and so do Dapper, RepoDb

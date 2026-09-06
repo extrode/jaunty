@@ -64,8 +64,8 @@ GitHub Packages NuGet feeds are never anonymous — every consumer needs a PAT
 with `read:packages` (fine-grained: "Packages: read"). This is the access
 lever the *old* commercial flow relied on. That flow is retired: Jaunty is free to use in
 commercial production and what is sold is support, so the feed token gates nothing commercial.
-[`COMMERCIAL-DISTRIBUTION-FLOW.md`](COMMERCIAL-DISTRIBUTION-FLOW.md) is kept for the historical
-record only and carries a staleness banner saying so.
+The write-up of that old flow is kept for the historical record in the private work
+repository, not here.
 
 `nuget.config` next to the consumer's solution:
 

@@ -123,6 +123,59 @@ var results = connection.Query<Author, Book>(sql);
 // Book's "id" and "name" columns are claimed next since Author already took the first pair.
 ```
 
+## How the mapper cache is keyed
+
+A multi-entity mapper is built once and reused, and the thing it is keyed on is **the result set's
+column layout, not the type parameters**.
+
+```mermaid
+flowchart TD
+    Q["Query&lt;T1, T2&gt;(sql)"] --> B["Build the key from the open reader"]
+    B --> K["configuration generation<br/>+ field count<br/>+ every column name, in order"]
+    K --> L{"Key in the cache?<br/>(bounded at 256)"}
+    L -- hit --> Use["Reuse the mapper"]
+    L -- miss --> Guard["Reject value-type entities"]
+    Guard --> Res["Ask the reflection resolver<br/>for the combined mapper"]
+    Res --> Add["Add under this key"]
+    Add --> Use
+
+    style Use fill:#1f6f4a,stroke:#2ea36a,color:#eaf6ef
+    style K fill:#1f4f7a,stroke:#3a86c8,color:#e8f2fb
+    style Guard fill:#7a4a1f,stroke:#c07c34,color:#fdf1e3
+```
+
+**Keying on `(typeof(T1), typeof(T2))` alone would be a single-entry cache.** Those types are fixed
+for the whole generic instantiation, so every call through `Query<Author, Book>` would produce the
+same key regardless of what the query selected. Two different `Author`/`Book` queries that project
+different columns, in a different order, would silently reuse the first one's split points and map
+the second one's rows into the wrong properties.
+
+Three parts make up the key. The generation and the field count are joined with `|` into one
+leading segment, and a unit separator joins that segment to the column names:
+
+| part | why it is in the key |
+|---|---|
+| configuration generation | a `JauntyConfig.ColumnNameResolver` change, or `JauntyConfig.Reset()`, retires mappers built under the old configuration instead of serving them for the life of the process |
+| field count | a cheap discriminator ahead of the names |
+| every column name, in order | the layout the split points were computed against |
+
+The cache is bounded because the key is caller-controlled: the column names come from arbitrary SQL,
+so an application generating varied projections could otherwise grow it without limit. The cap is
+256 rather than the 4,096 the parameter caches use for a second reason. Those two are process-wide
+singletons, where 4,096 entries is 4,096 entries; this cache is a static field on a generic type, so
+there is one of them per ordered tuple of entity types and the cap multiplies by the application's
+type surface. AUD-R26-053 measured 2,047 bytes per arity-2 mapper entry, which at 4,096 would have
+permitted roughly 8.4 MB per tuple. 256 distinct column layouts for one tuple is already well past
+any hand-written query set.
+
+### Entities must be reference types
+
+`MultiEntityMapperNGuard.RequireReferenceTypes` rejects a value-type entity before a mapper is built.
+At arity 2 a struct is passed by value to the combined mapper; at arities 3 to 7 it is boxed and the
+setters run against the box. Either way the writes land on a copy and the caller gets an all-default
+entity back — a wrong answer with no error, which is the reason this is a guard rather than a
+documented caveat.
+
 ## Resolving Ambiguous Column Names
 
 When two types share a property name (e.g. both `Author` and `Book` have `Name`) and the query aliases columns so they are distinguishable, use the existing `[Column("name")]` attribute (see [Attributes](attributes.md)) to pin each property to its exact column, removing any ambiguity from claiming order:

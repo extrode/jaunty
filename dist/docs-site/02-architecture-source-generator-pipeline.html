@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Source Generator Pipeline — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
+  try {
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Architecture &#8250; Source Generator Pipeline</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">General</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quick start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Api reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">Architecture Documentation</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">Architecture Decision Records (ADRs)</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-connection-and-transaction-ownership.html">Connection and Transaction Ownership</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-dialect-resolution.html">Dialect Resolution</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  <a href="02-architecture-source-generator-pipeline.html" class="active" aria-current="page">Source Generator Pipeline</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">Development Guides</a>  <a href="03-development-OPTIMIZATIONS.html">Jaunty Optimization Roadmap</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-README.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">Quality &amp; Testing</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  <a href="05-quality-reports-BENCHMARKS-2026-07-04.html">Reports / Benchmark Results — 2026-07-04 (PRD-002 partial)</a>  <a href="05-quality-reports-COVERAGE-GAPS-2026-07-04.html">Reports / Coverage Gap Inventory — 2026-07-04</a>  <a href="05-quality-reports-PRODUCTION-READINESS-2026-07-02.html">Reports / Jaunty Production Readiness Report (2026-07-02)</a>  <a href="05-quality-reports-benchmarks-2026-07-29.html">Reports / Benchmark Results — 2026-07-29 (pre-GA regression check)</a>  <a href="05-quality-reports-benchmarks-2026-09-02.html">Reports / Benchmark Results — 2026-09-02 (corrected baseline, read-path changes)</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">Releases &amp; Planning</a>  <a href="06-releases-RELEASE-RUNBOOK.html">Release Runbook</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">07-design — Visual Design Source</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-README.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
+</div>
+
+      </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#the-four-lanes">The four lanes</a><a class="toc-l2" href="#what-the-shape-is-defending-against">What the shape is defending against</a><a class="toc-l2" href="#which-table-wins">Which [Table] wins</a><a class="toc-l2" href="#why-the-parameter-lane-reads-call-sites">Why the parameter lane reads call sites</a><a class="toc-l2" href="#diagnostics">Diagnostics</a><a class="toc-l2" href="#see-also">See also</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Architecture &#8250; Source Generator Pipeline</nav>
+        <article>
+<h1 id="source-generator-pipeline">Source Generator Pipeline</h1>
+<p>The generator runs inside the IDE's typing loop. Every keystroke in the consumer's solution hands
+the incremental driver a new compilation and asks it what changed, so the shape of the pipeline
+decides whether a keystroke costs nothing or costs a full re-analysis of every entity in the
+project. Jaunty's pipeline is four independent lanes, each written so that an edit which does not
+change its answer produces an equal value and stops there.</p>
+<h2 id="the-four-lanes">The four lanes</h2>
+<figure class="diagram" style="--dw:4049px"><svg id="dg0" width="100%" xmlns="http://www.w3.org/2000/svg" class="flowchart" style="max-width:4049px;" viewBox="0 0 4049.28125 452.171875" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#dg0{font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:14px;fill:var(--dg-text, #e6edf3);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#dg0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#dg0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#dg0 .error-icon{fill:var(--dg-cluster-bg, #141922);}#dg0 .error-text{fill:var(--dg-edge-label, #ebe6dd);stroke:var(--dg-edge-label, #ebe6dd);}#dg0 .edge-thickness-normal{stroke-width:1px;}#dg0 .edge-thickness-thick{stroke-width:3.5px;}#dg0 .edge-pattern-solid{stroke-dasharray:0;}#dg0 .edge-thickness-invisible{stroke-width:0;fill:none;}#dg0 .edge-pattern-dashed{stroke-dasharray:3;}#dg0 .edge-pattern-dotted{stroke-dasharray:2;}#dg0 .marker{fill:var(--dg-line, #8b97a8);stroke:var(--dg-line, #8b97a8);}#dg0 .marker.cross{stroke:var(--dg-line, #8b97a8);}#dg0 svg{font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:14px;}#dg0 p{margin:0;}#dg0 .label{font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;color:var(--dg-text, #e6edf3);}#dg0 .cluster-label text{fill:var(--dg-title, #f0ece6);}#dg0 .cluster-label span{color:var(--dg-title, #f0ece6);}#dg0 .cluster-label span p{background-color:transparent;}#dg0 .label text,#dg0 span{fill:var(--dg-text, #e6edf3);color:var(--dg-text, #e6edf3);}#dg0 .node rect,#dg0 .node circle,#dg0 .node ellipse,#dg0 .node polygon,#dg0 .node path{fill:var(--dg-node-bg, #161b24);stroke:var(--dg-border, #2b323d);stroke-width:1px;}#dg0 .rough-node .label text,#dg0 .node .label text,#dg0 .image-shape .label,#dg0 .icon-shape .label{text-anchor:middle;}#dg0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dg0 .rough-node .label,#dg0 .node .label,#dg0 .image-shape .label,#dg0 .icon-shape .label{text-align:center;}#dg0 .node.clickable{cursor:pointer;}#dg0 .root .anchor path{fill:var(--dg-line, #8b97a8)!important;stroke-width:0;stroke:var(--dg-line, #8b97a8);}#dg0 .arrowheadPath{fill:var(--dg-title, #f0ece6);}#dg0 .edgePaths .path{stroke:var(--dg-line, #8b97a8);stroke-width:1px;}#dg0 .flowchart-link{stroke:var(--dg-line, #8b97a8);fill:none;}#dg0 .edgeLabel{background-color:var(--dg-node-bg-2, #1b2230);text-align:center;}#dg0 .edgeLabel p{background-color:var(--dg-node-bg-2, #1b2230);}#dg0 .edgeLabel rect{opacity:0.5;background-color:var(--dg-node-bg-2, #1b2230);fill:var(--dg-node-bg-2, #1b2230);}#dg0 .labelBkg{background-color:var(--dg-label-bg, rgba(27, 34, 48, 0.5));}#dg0 .cluster rect{fill:var(--dg-cluster-bg, #141922);stroke:hsl(218.5714285714, 0%, 0.5882352941%);stroke-width:1px;}#dg0 .cluster text{fill:var(--dg-title, #f0ece6);}#dg0 .cluster span{color:var(--dg-title, #f0ece6);}#dg0 .node .collapsed-indicator{fill:hsl(218.5714285714, 0%, 0.5882352941%);stroke:none;opacity:0.6;}#dg0 .node .collapsed-separator{stroke:hsl(218.5714285714, 0%, 0.5882352941%);stroke-width:0.75px;}#dg0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:12px;background:var(--dg-cluster-bg, #141922);border:1px solid hsl(218.5714285714, 0%, 0.5882352941%);border-radius:2px;pointer-events:none;z-index:100;}#dg0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:var(--dg-text, #e6edf3);}#dg0 rect.text{fill:none;stroke-width:0;}#dg0 .icon-shape,#dg0 .image-shape{background-color:var(--dg-node-bg-2, #1b2230);text-align:center;}#dg0 .icon-shape p,#dg0 .image-shape p{background-color:var(--dg-node-bg-2, #1b2230);padding:2px;}#dg0 .icon-shape .label rect,#dg0 .image-shape .label rect{opacity:0.5;background-color:var(--dg-node-bg-2, #1b2230);fill:var(--dg-node-bg-2, #1b2230);}#dg0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#dg0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#dg0 .node .neo-node{stroke:var(--dg-border, #2b323d);}#dg0 [data-look="neo"].node rect,#dg0 [data-look="neo"].cluster rect,#dg0 [data-look="neo"].node polygon{stroke:url(#dg0-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 [data-look="neo"].swimlane.cluster rect{filter:none;}#dg0 [data-look="neo"].node path{stroke:url(#dg0-gradient);stroke-width:1px;}#dg0 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 [data-look="neo"].node .neo-line path{stroke:var(--dg-border, #2b323d);filter:none;}#dg0 [data-look="neo"].node circle{stroke:url(#dg0-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 [data-look="neo"].node circle .state-start{fill:#000000;}#dg0 [data-look="neo"].icon-shape .icon{fill:url(#dg0-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#dg0-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#dg0 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}#dg0 [stop-color="#2b323d"]{stop-color:var(--dg-border, #2b323d);}#dg0 #dg0-flowchart-G3-29 .label,#dg0 #dg0-flowchart-G3-29 span,#dg0 #dg0-flowchart-G3-29 .cluster-label span,#dg0 #dg0-flowchart-G3-29 p{color:#e6edf3;}#dg0 #dg0-flowchart-G3-29 .label text,#dg0 #dg0-flowchart-G3-29 text{fill:#e6edf3;}#dg0 #dg0-flowchart-Skip-31 .label,#dg0 #dg0-flowchart-Skip-31 span,#dg0 #dg0-flowchart-Skip-31 .cluster-label span,#dg0 #dg0-flowchart-Skip-31 p{color:#e6edf3;}#dg0 #dg0-flowchart-Skip-31 .label text,#dg0 #dg0-flowchart-Skip-31 text{fill:#e6edf3;}#dg0 #dg0-flowchart-G4-33 .label,#dg0 #dg0-flowchart-G4-33 span,#dg0 #dg0-flowchart-G4-33 .cluster-label span,#dg0 #dg0-flowchart-G4-33 p{color:#e6edf3;}#dg0 #dg0-flowchart-G4-33 .label text,#dg0 #dg0-flowchart-G4-33 text{fill:#e6edf3;}#dg0 #dg0-flowchart-G2-18 .label,#dg0 #dg0-flowchart-G2-18 span,#dg0 #dg0-flowchart-G2-18 .cluster-label span,#dg0 #dg0-flowchart-G2-18 p{color:#e6edf3;}#dg0 #dg0-flowchart-G2-18 .label text,#dg0 #dg0-flowchart-G2-18 text{fill:#e6edf3;}#dg0 #dg0-flowchart-PE-11 .label,#dg0 #dg0-flowchart-PE-11 span,#dg0 #dg0-flowchart-PE-11 .cluster-label span,#dg0 #dg0-flowchart-PE-11 p{color:#e6edf3;}#dg0 #dg0-flowchart-PE-11 .label text,#dg0 #dg0-flowchart-PE-11 text{fill:#e6edf3;}#dg0 #dg0-flowchart-G1-13 .label,#dg0 #dg0-flowchart-G1-13 span,#dg0 #dg0-flowchart-G1-13 .cluster-label span,#dg0 #dg0-flowchart-G1-13 p{color:#e6edf3;}#dg0 #dg0-flowchart-G1-13 .label text,#dg0 #dg0-flowchart-G1-13 text{fill:#e6edf3;}</style><g><marker id="dg0_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="dg0_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dg0_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dg0_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="dg0_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="dg0_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dg0_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="dg0_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"></g><g class="edgeLabels"></g><g class="nodes"><g class="root" transform="translate(0, 0)"><g class="clusters"><g class="cluster" id="dg0-L4" data-look="classic"><rect style="" x="8" y="8" width="1526.78125" height="436.171875"></rect><g class="cluster-label" transform="translate(714.5, 8)"><foreignObject width="113.78125" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>Parameter rooting</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M319.906,271.754L326.156,271.754C332.406,271.754,344.906,271.754,356.74,271.754C368.573,271.754,379.74,271.754,385.323,271.754L390.906,271.754" id="dg0-L_P_PM_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_P_PM_0" data-points="W3sieCI6MzE5LjkwNjI1LCJ5IjoyNzEuNzUzOTA2MjV9LHsieCI6MzU3LjQwNjI1LCJ5IjoyNzEuNzUzOTA2MjV9LHsieCI6Mzk0LjkwNjI1LCJ5IjoyNzEuNzUzOTA2MjV9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M515.498,246.254L531.258,233.601C547.019,220.948,578.541,195.642,600.132,182.989C621.724,170.336,633.385,170.336,639.216,170.336L645.047,170.336" id="dg0-L_PM_PR_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_PM_PR_0" data-points="W3sieCI6NTE1LjQ5NzY1MzUxMTcyODIsInkiOjI0Ni4yNTM5MDYyNX0seyJ4Ijo2MTAuMDYyNSwieSI6MTcwLjMzNTkzNzV9LHsieCI6NjQ5LjA0Njg3NSwieSI6MTcwLjMzNTkzNzV9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M515.498,297.254L531.258,309.907C547.019,322.56,578.541,347.866,599.885,360.519C621.229,373.172,632.396,373.172,637.979,373.172L643.563,373.172" id="dg0-L_PM_PU_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_PM_PU_0" data-points="W3sieCI6NTE1LjQ5NzY1MzUxMTcyODIsInkiOjI5Ny4yNTM5MDYyNX0seyJ4Ijo2MTAuMDYyNSwieSI6MzczLjE3MTg3NX0seyJ4Ijo2NDcuNTYyNSwieSI6MzczLjE3MTg3NX1d" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M814.859,170.336L821.357,170.336C827.854,170.336,840.849,170.336,852.93,170.336C865.01,170.336,876.177,170.336,881.76,170.336L887.344,170.336" id="dg0-L_PR_CE_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_PR_CE_0" data-points="W3sieCI6ODE0Ljg1OTM3NSwieSI6MTcwLjMzNTkzNzV9LHsieCI6ODUzLjg0Mzc1LCJ5IjoxNzAuMzM1OTM3NX0seyJ4Ijo4OTEuMzQzNzUsInkiOjE3MC4zMzU5Mzc1fV0=" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M1117.386,141.706L1130.192,137.991C1142.999,134.277,1168.613,126.847,1188.788,123.133C1208.964,119.418,1223.701,119.418,1231.069,119.418L1238.438,119.418" id="dg0-L_CE_G3_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_CE_G3_0" data-points="W3sieCI6MTExNy4zODU2MzAyNTU0OTgsInkiOjE0MS43MDU5NDI3NTU0OTgwNn0seyJ4IjoxMTk0LjIyNjU2MjUsInkiOjExOS40MTc5Njg3NX0seyJ4IjoxMjQyLjQzNzUsInkiOjExOS40MTc5Njg3NX1d" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M1099.388,216.963L1115.195,226.095C1131.001,235.227,1162.614,253.49,1195.392,262.622C1228.169,271.754,1262.112,271.754,1279.083,271.754L1296.055,271.754" id="dg0-L_CE_Skip_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_CE_Skip_0" data-points="W3sieCI6MTA5OS4zODgyMTkzMTQ1OTE5LCJ5IjoyMTYuOTYzMzQzMTg1NDA4MjN9LHsieCI6MTE5NC4yMjY1NjI1LCJ5IjoyNzEuNzUzOTA2MjV9LHsieCI6MTMwMC4wNTQ2ODc1LCJ5IjoyNzEuNzUzOTA2MjV9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M816.344,373.172L822.594,373.172C828.844,373.172,841.344,373.172,860.716,373.172C880.089,373.172,906.333,373.172,919.456,373.172L932.578,373.172" id="dg0-L_PU_G4_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_PU_G4_0" data-points="W3sieCI6ODE2LjM0Mzc1LCJ5IjozNzMuMTcxODc1fSx7IngiOjg1My44NDM3NSwieSI6MzczLjE3MTg3NX0seyJ4Ijo5MzYuNTc4MTI1LCJ5IjozNzMuMTcxODc1fV0=" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_P_PM_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_PM_PR_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_PM_PU_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_PR_CE_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1194.2265625, 119.41796875)"><g class="label" data-id="L_CE_G3_0" transform="translate(-10.7109375, -10.5)"><foreignObject width="21.421875" height="21"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>yes</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1194.2265625, 271.75390625)"><g class="label" data-id="L_CE_Skip_0" transform="translate(-7.8984375, -10.5)"><foreignObject width="15.796875" height="21"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>no</p></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_PU_G4_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="dg0-flowchart-P-19" data-look="classic" transform="translate(182.703125, 271.75390625)"><rect class="basic label-container" style="" x="-137.203125" y="-46.5" width="274.40625" height="93"></rect><g class="label" style="" transform="translate(-107.203125, -31.5)"><rect></rect><foreignObject width="214.40625" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>CreateSyntaxProvider: call sites of<br>Values, Set, Query*, Execute*,<br>WhereRaw, AndRaw, OrRaw</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-PM-21" data-look="classic" transform="translate(483.734375, 271.75390625)"><rect class="basic label-container" style="" x="-88.828125" y="-25.5" width="177.65625" height="51"></rect><g class="label" style="" transform="translate(-58.828125, -10.5)"><rect></rect><foreignObject width="117.65625" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>FindParameterSite</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-PR-23" data-look="classic" transform="translate(731.953125, 170.3359375)"><rect class="basic label-container" style="" x="-82.90625" y="-25.5" width="165.8125" height="51"></rect><g class="label" style="" transform="translate(-52.90625, -10.5)"><rect></rect><foreignObject width="105.8125" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>Rootable: collect</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-PU-25" data-look="classic" transform="translate(731.953125, 373.171875)"><rect class="basic label-container" style="" x="-84.390625" y="-25.5" width="168.78125" height="51"></rect><g class="label" style="" transform="translate(-54.390625, -10.5)"><rect></rect><foreignObject width="108.78125" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>Unrootable: warn</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-CE-27" data-look="classic" transform="translate(1018.6796875, 170.3359375)"><polygon points="127.3359375,0 254.671875,-127.3359375 127.3359375,-254.671875 0,-127.3359375" class="label-container" transform="translate(-126.8359375, 127.3359375)"></polygon><g class="label" style="" transform="translate(-80.8359375, -31.5)"><rect></rect><foreignObject width="161.671875" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>Any roots, and<br>ModuleInitializerAttribute<br>present, and C# 9+?</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-G3-29" data-look="classic" transform="translate(1369.859375, 119.41796875)"><rect class="basic label-container" style="fill:#1f4f7a !important;stroke:#3a86c8 !important" x="-127.421875" y="-25.5" width="254.84375" height="51"></rect><g class="label" style="color:#e8f2fb !important" transform="translate(-97.421875, -10.5)"><rect></rect><foreignObject width="194.84375" height="21"><div style="color: rgb(232, 242, 251) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#e8f2fb !important" class="nodeLabel"><p>JauntyAotParameterRoots.g.cs</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-Skip-31" data-look="classic" transform="translate(1369.859375, 271.75390625)"><rect class="basic label-container" style="fill:#7a1f2e !important;stroke:#c2405a !important" x="-69.8046875" y="-25.5" width="139.609375" height="51"></rect><g class="label" style="color:#fdeaee !important" transform="translate(-39.8046875, -10.5)"><rect></rect><foreignObject width="79.609375" height="21"><div style="color: rgb(253, 234, 238) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#fdeaee !important" class="nodeLabel"><p>Emit nothing</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-G4-33" data-look="classic" transform="translate(1018.6796875, 373.171875)"><rect class="basic label-container" style="fill:#7a4a1f !important;stroke:#c07c34 !important" x="-82.1015625" y="-25.5" width="164.203125" height="51"></rect><g class="label" style="color:#fdf1e3 !important" transform="translate(-52.1015625, -10.5)"><rect></rect><foreignObject width="104.203125" height="21"><div style="color: rgb(253, 241, 227) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#fdf1e3 !important" class="nodeLabel"><p>JAUNTYGEN003</p></span></div></foreignObject></g></g></g></g><g class="root" transform="translate(1576.78125, 136.5859375)"><g class="clusters"><g class="cluster" id="dg0-L3" data-look="classic"><rect style="" x="8" y="8" width="881.0625" height="163"></rect><g class="cluster-label" transform="translate(377.2578125, 8)"><foreignObject width="142.546875" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>Hand-written mappers</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M322.344,89.5L328.594,89.5C334.844,89.5,347.344,89.5,359.177,89.5C371.01,89.5,382.177,89.5,387.76,89.5L393.344,89.5" id="dg0-L_H_HM_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_H_HM_0" data-points="W3sieCI6MzIyLjM0Mzc1LCJ5Ijo4OS41fSx7IngiOjM1OS44NDM3NSwieSI6ODkuNX0seyJ4IjozOTcuMzQzNzUsInkiOjg5LjV9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M612.359,89.5L618.609,89.5C624.859,89.5,637.359,89.5,649.193,89.5C661.026,89.5,672.193,89.5,677.776,89.5L683.359,89.5" id="dg0-L_HM_G2_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_HM_G2_0" data-points="W3sieCI6NjEyLjM1OTM3NSwieSI6ODkuNX0seyJ4Ijo2NDkuODU5Mzc1LCJ5Ijo4OS41fSx7IngiOjY4Ny4zNTkzNzUsInkiOjg5LjV9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_H_HM_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_HM_G2_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="dg0-flowchart-H-14" data-look="classic" transform="translate(183.921875, 89.5)"><rect class="basic label-container" style="" x="-138.421875" y="-46.5" width="276.84375" height="93"></rect><g class="label" style="" transform="translate(-108.421875, -31.5)"><rect></rect><foreignObject width="216.84375" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>CreateSyntaxProvider: class with a<br>base list, or declaring a<br>convention binder by name</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-HM-16" data-look="classic" transform="translate(504.8515625, 89.5)"><rect class="basic label-container" style="" x="-107.5078125" y="-36" width="215.015625" height="72"></rect><g class="label" style="" transform="translate(-77.5078125, -21)"><rect></rect><foreignObject width="155.015625" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>FindHandWrittenMapper<br>small struct or null</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-G2-18" data-look="classic" transform="translate(769.4609375, 89.5)"><rect class="basic label-container" style="fill:#7a4a1f !important;stroke:#c07c34 !important" x="-82.1015625" y="-25.5" width="164.203125" height="51"></rect><g class="label" style="color:#fdf1e3 !important" transform="translate(-52.1015625, -10.5)"><rect></rect><foreignObject width="104.203125" height="21"><div style="color: rgb(253, 241, 227) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#fdf1e3 !important" class="nodeLabel"><p>JAUNTYGEN002</p></span></div></foreignObject></g></g></g></g><g class="root" transform="translate(2507.84375, 86.0859375)"><g class="clusters"><g class="cluster" id="dg0-L12" data-look="classic"><rect style="" x="8" y="8" width="1525.4375" height="264"></rect><g class="cluster-label" transform="translate(723.0625, 8)"><foreignObject width="95.3125" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>Entity mappers</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M306.828,79L313.078,79C319.328,79,331.828,79,343.661,79C355.495,79,366.661,79,372.245,79L377.828,79" id="dg0-L_J_JM_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_J_JM_0" data-points="W3sieCI6MzA2LjgyODEyNSwieSI6Nzl9LHsieCI6MzQ0LjMyODEyNSwieSI6Nzl9LHsieCI6MzgxLjgyODEyNSwieSI6Nzl9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M306.828,201L313.078,201C319.328,201,331.828,201,343.661,201C355.495,201,366.661,201,372.245,201L377.828,201" id="dg0-L_A_AM_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A_AM_0" data-points="W3sieCI6MzA2LjgyODEyNSwieSI6MjAxfSx7IngiOjM0NC4zMjgxMjUsInkiOjIwMX0seyJ4IjozODEuODI4MTI1LCJ5IjoyMDF9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M622.906,79L629.156,79C635.406,79,647.906,79,663.624,82.912C679.341,86.824,698.276,94.648,707.744,98.56L717.211,102.472" id="dg0-L_JM_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_JM_D_0" data-points="W3sieCI6NjIyLjkwNjI1LCJ5Ijo3OX0seyJ4Ijo2NjAuNDA2MjUsInkiOjc5fSx7IngiOjcyMC45MDgyOTkxODAzMjc4LCJ5IjoxMDR9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M622.906,201L629.156,201C635.406,201,647.906,201,663.624,197.088C679.341,193.176,698.276,185.352,707.744,181.44L717.211,177.528" id="dg0-L_AM_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_AM_D_0" data-points="W3sieCI6NjIyLjkwNjI1LCJ5IjoyMDF9LHsieCI6NjYwLjQwNjI1LCJ5IjoyMDF9LHsieCI6NzIwLjkwODI5OTE4MDMyNzgsInkiOjE3Nn1d" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M918.156,140L924.406,140C930.656,140,943.156,140,954.99,140C966.823,140,977.99,140,983.573,140L989.156,140" id="dg0-L_D_PE_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_D_PE_0" data-points="W3sieCI6OTE4LjE1NjI1LCJ5IjoxNDB9LHsieCI6OTU1LjY1NjI1LCJ5IjoxNDB9LHsieCI6OTkzLjE1NjI1LCJ5IjoxNDB9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path><path d="M1209.109,140L1215.359,140C1221.609,140,1234.109,140,1245.943,140C1257.776,140,1268.943,140,1274.526,140L1280.109,140" id="dg0-L_PE_G1_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_PE_G1_0" data-points="W3sieCI6MTIwOS4xMDkzNzUsInkiOjE0MH0seyJ4IjoxMjQ2LjYwOTM3NSwieSI6MTQwfSx7IngiOjEyODQuMTA5Mzc1LCJ5IjoxNDB9XQ==" data-look="classic" marker-end="url(#dg0_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_J_JM_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_A_AM_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_JM_D_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_AM_D_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_D_PE_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_PE_G1_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="dg0-flowchart-J-0" data-look="classic" transform="translate(176.1640625, 79)"><rect class="basic label-container" style="" x="-130.6640625" y="-36" width="261.328125" height="72"></rect><g class="label" style="" transform="translate(-100.6640625, -21)"><rect></rect><foreignObject width="201.328125" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>ForAttributeWithMetadataName<br>Jaunty.Attributes.TableAttribute</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-JM-3" data-look="classic" transform="translate(502.3671875, 79)"><rect class="basic label-container" style="" x="-120.5390625" y="-36" width="241.078125" height="72"></rect><g class="label" style="" transform="translate(-90.5390625, -21)"><rect></rect><foreignObject width="181.078125" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>BuildEntityModel<br>value-equatable, no symbols</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-A-1" data-look="classic" transform="translate(176.1640625, 201)"><rect class="basic label-container" style="" x="-130.6640625" y="-36" width="261.328125" height="72"></rect><g class="label" style="" transform="translate(-100.6640625, -21)"><rect></rect><foreignObject width="201.328125" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>ForAttributeWithMetadataName<br>DataAnnotations TableAttribute</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-AM-5" data-look="classic" transform="translate(502.3671875, 201)"><rect class="basic label-container" style="" x="-120.5390625" y="-36" width="241.078125" height="72"></rect><g class="label" style="" transform="translate(-90.5390625, -21)"><rect></rect><foreignObject width="181.078125" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>BuildEntityModel<br>value-equatable, no symbols</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-D-7" data-look="classic" transform="translate(808.03125, 140)"><rect class="basic label-container" style="" x="-110.125" y="-36" width="220.25" height="72"></rect><g class="label" style="" transform="translate(-80.125, -21)"><rect></rect><foreignObject width="160.25" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;"><span class="nodeLabel"><p>Collect + Combine<br>Deduplicate by hint name</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-PE-11" data-look="classic" transform="translate(1101.1328125, 140)"><rect class="basic label-container" style="fill:#1f6f4a !important;stroke:#2ea36a !important" x="-107.9765625" y="-25.5" width="215.953125" height="51"></rect><g class="label" style="color:#eaf6ef !important" transform="translate(-77.9765625, -10.5)"><rect></rect><foreignObject width="155.953125" height="21"><div style="color: rgb(234, 246, 239) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#eaf6ef !important" class="nodeLabel"><p>Source output, per entity</p></span></div></foreignObject></g></g><g class="node default" id="dg0-flowchart-G1-13" data-look="classic" transform="translate(1390.0234375, 140)"><rect class="basic label-container" style="fill:#1f4f7a !important;stroke:#3a86c8 !important" x="-105.9140625" y="-25.5" width="211.828125" height="51"></rect><g class="label" style="color:#e8f2fb !important" transform="translate(-75.9140625, -10.5)"><rect></rect><foreignObject width="151.828125" height="21"><div style="color: rgb(232, 242, 251) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 300px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#e8f2fb !important" class="nodeLabel"><p>Type.JauntyMapper.g.cs</p></span></div></foreignObject></g></g></g></g></g></g></g><defs><filter id="dg0-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="dg0-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><linearGradient id="dg0-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#2b323d" stop-opacity="1"></stop><stop offset="100%" stop-color="hsl(220, 0%, 4.7058823529%)" stop-opacity="1"></stop></linearGradient></svg></figure>
+<h2 id="what-the-shape-is-defending-against">What the shape is defending against</h2>
+<p>The pipeline used to be a single <code>CreateSyntaxProvider</code> yielding <code>ClassDeclarationSyntax</code>, collected
+and combined with <code>CompilationProvider</code>, feeding one source output that emitted every entity in the
+project. Both halves of that input defeat the driver's caching. Syntax nodes compare by reference,
+and the compilation is a new object after any keystroke anywhere, so a character typed in a file
+containing no entity at all still re-ran semantic analysis for, and re-emitted, every <code>[Table]</code> class
+in the project. The generator's whole cost, on every keystroke.</p>
+<p>Three properties keep that from happening, and each one is a rule to preserve when adding a lane:</p>
+<table>
+<thead>
+<tr>
+<th>rule</th>
+<th>what breaks without it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Key on the attribute, not on syntax</td>
+<td>the driver has to run a semantic check over every attributed class instead of reading the compiler's attribute index</td>
+</tr>
+<tr>
+<td>Yield a value-equatable model holding no symbols</td>
+<td>a <code>Location</code>, an <code>ISymbol</code> or a <code>SyntaxNode</code> in the model roots the syntax tree it came from, and compares by reference so nothing downstream is ever skipped</td>
+</tr>
+<tr>
+<td>Register the output per item, not over the collected array</td>
+<td>editing one entity re-emits its neighbours</td>
+</tr>
+</tbody>
+</table>
+<p>The parameter-rooting lane needs the compilation, because it has to know whether
+<code>ModuleInitializerAttribute</code> exists and whether the language version is C# 9 or later. It selects a
+<code>bool</code> out of <code>CompilationProvider</code> rather than combining the compilation itself: a new compilation
+arrives on every keystroke, but a <code>bool</code> that has not changed compares equal and downstream work is
+skipped anyway. <strong>Select the smallest equatable answer out of a provider that changes constantly</strong>
+is the general form of that fix.</p>
+<p><code>LocationInfo</code> exists for the same reason. It is a plain record of a file path and a span that is
+turned back into a Roslyn <code>Location</code> only at the moment a diagnostic is created, so cached models
+carry a location without rooting a <code>SyntaxTree</code> for the length of the IDE session. <code>EntityModel</code> and
+the hand-written-mapper model both use it. The parameter-rooting lane is the exception: its
+<code>ParameterSite</code> holds a Roslyn <code>Location</code> directly, and only the rooting expressions it produces —
+which hold no location — are collected and cached.</p>
+<h2 id="which-table-wins">Which <code>[Table]</code> wins</h2>
+<p>Both attribute lanes build the same <code>EntityModel</code>, and <code>Deduplicate</code> merges them keyed on hint name
+with Jaunty's own <code>[Table]</code> taking precedence. A class carrying both attributes is generated once,
+from the Jaunty one.</p>
+<p>Recognition is by fully-qualified metadata name, which is a deliberate narrowing. It used to be by
+simple name, so any attribute called <code>TableAttribute</code> — including one a consumer declared themselves
+— marked a class as an entity. Only the two documented attributes are recognized now, which is what
+the attribute reference always claimed. Aliased usage is unaffected, because the match is on the
+resolved symbol rather than the spelling at the use site.</p>
+<h2 id="why-the-parameter-lane-reads-call-sites">Why the parameter lane reads call sites</h2>
+<p>Every other lane reads type declarations. This one reads invocations, because a parameters object is
+frequently anonymous, is often a type Jaunty has never been told about, and is never declared as an
+entity — the call site is the only place its type is knowable.</p>
+<p>Jaunty binds a parameters object by reflecting over its public properties, and nothing in that path
+tells the trimmer those getters are needed. A NativeAOT publish removes them and binding fails at
+runtime with <code>No property found on type 'X' matching SQL parameter '@Id'. Available properties:</code> and
+an empty list. The generator emits one <code>JauntyAot.PreserveParameters&lt;T&gt;()</code> per distinct type from a
+<code>[ModuleInitializer]</code>, which preserves them with no change to consumer source.</p>
+<p>Three measured facts shape it (<code>samples/NativeAOT-Basic</code>, osx-arm64, 2026-07-30):</p>
+<ul>
+<li>A <code>[DynamicallyAccessedMembers(PublicProperties)]</code> annotation on a generic type parameter
+preserves its type argument program-wide, and does <strong>not</strong> have to be at the call site. That is
+what makes the approach possible at all.</li>
+<li>The rooting call must be in <strong>reachable</strong> code. The first version emitted the same calls into an
+ordinary method nobody invoked; the trimmer removed the method and the parameter types failed as
+before. Hence <code>[ModuleInitializer]</code>.</li>
+<li>Anonymous type identity is <strong>structural and per-assembly</strong>, so <code>new { Id = default(int) }</code> emitted
+by the generator is the same type as <code>new { Id = 1 }</code> in the consumer's file. That is the only way
+to root a type that cannot be named, since both <code>PreserveParameters&lt;T&gt;()</code> and <code>[DynamicDependency]</code>
+need a name and an anonymous type has none.</li>
+</ul>
+<p>The limit is unavoidable: this sees static types at call sites. A parameters object held in an
+<code>object</code>-typed variable, or built by reflection, cannot be rooted from here, and <code>JAUNTYGEN003</code> says
+so at the call site rather than letting it fail after publish.</p>
+<h2 id="diagnostics">Diagnostics</h2>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>severity</th>
+<th>says</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>JAUNTYGEN001</code></td>
+<td>warning</td>
+<td>two properties map to the same column; the generated binder binds one parameter name twice and the command fails at execution</td>
+</tr>
+<tr>
+<td><code>JAUNTYGEN002</code></td>
+<td>warning</td>
+<td>a hand-written mapper or binder is located by reflection, so trimming can remove its members</td>
+</tr>
+<tr>
+<td><code>JAUNTYGEN003</code></td>
+<td>warning</td>
+<td>a parameters object at this call site cannot be rooted for trimming</td>
+</tr>
+<tr>
+<td><code>JAUNTYGEN004</code></td>
+<td>warning</td>
+<td>the entity is nested in a type no mapper can be generated into; reflection maps it instead</td>
+</tr>
+<tr>
+<td><code>JAUNTYGEN005</code></td>
+<td>warning</td>
+<td>the generated mapper drops a property the reflection mapper maps, so referencing the generator package silently changes behaviour</td>
+</tr>
+</tbody>
+</table>
+<p>All five are warnings rather than errors, for two different reasons. <code>JAUNTYGEN002</code>, <code>JAUNTYGEN003</code>
+and <code>JAUNTYGEN004</code> are trimming warnings: the code is correct under the JIT, and only a trimmed or
+NativeAOT publish is affected. The other two are not about trimming at all — <code>JAUNTYGEN001</code> reports
+a command that will fail at execution on any runtime, and <code>JAUNTYGEN005</code> reports a column the
+generated mapper drops that the reflection mapper keeps, so referencing the generator package
+changes behaviour under the JIT too. Both are warnings because the fix is a decision only the author
+can make.</p>
+<p><strong>Generation failure is never fatal.</strong> When an entity cannot be generated, the generator reports and
+emits nothing, and the reflection mapper maps it in full. Emitting a partial that cannot compile
+would be strictly worse: it fails the consumer's build in a file they cannot open.</p>
+<h2 id="see-also">See also</h2>
+<ul>
+<li><a href="02-architecture-reflection-and-trimming.html">Reflection and trimming</a> for what the reflection fallback costs</li>
+<li><a href="02-architecture-metadata-system-spec.html">Metadata system specification</a> for what an <code>EntityModel</code> becomes</li>
+<li><a href="02-architecture-parameter-binding-spec.html">Parameter binding specification</a> for what happens to the rooted
+properties at run time</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-reflection-and-trimming.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Reflection, trimming and NativeAOT</span>
+</a><a class="pn-next" href="03-development-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Development Guides</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
+  </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

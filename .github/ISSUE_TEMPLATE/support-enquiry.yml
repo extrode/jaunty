@@ -1,0 +1,46 @@
+name: Support enquiry
+description: Ask about a paid support agreement for Jaunty
+title: "Support enquiry: "
+labels: ["support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Jaunty itself is free to use, including in commercial production, and you do not need an
+        agreement to use it. This form is for the support that is sold alongside it.
+
+        **Do not put anything confidential in this form.** The issue is public. Say what you need
+        and the reply will move to a private channel before any terms or figures are exchanged.
+
+        For a bug, a question about how to use the library, or a security report, use one of the
+        other options instead — a security report must never be filed here.
+  - type: dropdown
+    id: interest
+    attributes:
+      label: What are you asking about?
+      options:
+        - Terms and pricing for a support agreement
+        - Whether the licence permits something I want to do
+        - An escrow or continuity rider
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: >
+        Roughly how Jaunty is used or would be used, and what you need from support. No
+        confidential detail, no names you would not publish.
+      placeholder: >
+        We run Jaunty against SQL Server in a hosted product and need a response-time commitment
+        before we can take it to production.
+    validations:
+      required: true
+  - type: input
+    id: timeframe
+    attributes:
+      label: Timeframe
+      description: When you need an answer by, if there is a date driving this.
+    validations:
+      required: false

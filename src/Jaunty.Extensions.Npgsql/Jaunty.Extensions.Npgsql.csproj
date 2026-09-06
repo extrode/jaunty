@@ -16,11 +16,11 @@
        real and the calls direct. Same TFM-conditioned split as Jaunty.Tests: 10.x from net8.0 up,
        8.x for netstandard2.0, which 10.x no longer targets. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Npgsql" Version="8.0.7" />
+    <PackageReference Include="Npgsql" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
-    <PackageReference Include="Npgsql" Version="10.0.1" />
+    <PackageReference Include="Npgsql" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">

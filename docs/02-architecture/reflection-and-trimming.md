@@ -124,12 +124,24 @@ pragma suppressed the only warning that said so; under trimming every row of a g
 came back fully defaulted, with no exception. The pragma is gone — the build staying clean without
 it is the evidence the annotation does the work.
 
-**One caveat remains, and it is not removable by annotation.** `System.Linq.Expressions`'
-`Expression.Bind` and `Expression.New` carry `RequiresUnreferencedCode`, so a grouped fluent
-projection emits **IL2026** in *your* build, not Jaunty's. The published binary runs correctly —
-the AOT sample exercises both the property and constructor paths and asserts on the values — but
-the warning is the framework's, and the only way to silence it is to suppress it at your call site
-or use a non-expression overload.
+**One caveat remains, and it is not removable by annotation.** Two
+`System.Linq.Expressions` overloads carry `RequiresUnreferencedCode` and emit **IL2026** in
+*your* build, not Jaunty's: the ones taking a member list,
+`Expression.New(ConstructorInfo, IEnumerable<Expression>, params MemberInfo[])` and
+`Expression.New(ConstructorInfo, IEnumerable<Expression>, IEnumerable<MemberInfo>)`. Calling
+either from your own code is what a grouped fluent projection has to avoid.
+
+Three neighbouring members are often named alongside them and should not be. `Expression.Bind`,
+`Expression.MemberInit` and `Expression.New(ConstructorInfo)` carry no trimming annotation at
+all, and `Expression.New(Type)` emits **IL2067** rather than IL2026, and only when the `Type`
+argument is unannotated. One more result is worth having before you go looking for a warning
+that may not be there: a `Expression<Func<T>>` the C# compiler builds for you, over an anonymous
+type or a named one, produced no trimming diagnostic in the same build. Measured 2026-09-03 by
+compiling each overload and both projection shapes against `EnableTrimAnalyzer`.
+
+The published binary runs. The AOT sample exercises both the property and constructor paths and
+asserts on the values. Where the warning does appear it is the framework's, and the only way to
+silence it is to suppress it at your call site or use a non-expression overload.
 
 ## 7. DuckDB flat files
 

@@ -9,20 +9,21 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
-		<PackageReference Include="coverlet.collector" Version="10.0.1" PrivateAssets="all" />
-		<PackageReference Include="xunit.v3" Version="3.2.2" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+		<PackageReference Include="xunit.v3" />
+		<PackageReference Include="xunit.runner.visualstudio">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" />
-		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
+		<PackageReference Include="Microsoft.Data.Sqlite" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
 		<!-- AUD-R25 (B8-7): GeneratorCachingTests drives JauntyGenerator through a
 		     CSharpGeneratorDriver by hand, so it needs the Roslyn API itself. Every other test here
 		     observes the generator's output indirectly, by compiling against the mappers it emits
 		     for the entities in Entities/. -->
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">

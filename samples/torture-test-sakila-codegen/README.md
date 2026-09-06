@@ -1,7 +1,7 @@
 # Sakila/Pagila codegen diff (Part 2 torture test)
 
 Output of `dotnet-jaunty scaffold` (`src/Jaunty.Scaffolding.Cli`) run against the same
-logical Sakila/Pagila schema on all 5 targets, per `docs/jaunty-torture-test-handoff.md`
+logical Sakila/Pagila schema on all 5 targets, per the private torture-test handoff
 Part 2 step 2 ("diff generated models across DBs for the same logical schema").
 
 Generated with:
@@ -45,12 +45,12 @@ differently per dialect:
 - Composite primary keys (`film_actor.actor_id` + `film_actor.film_id`) are correctly
   marked `[Key]` on **both** columns on **all 5 targets, including SQL Server** — this
   exercised the exact non-adjacent-composite-key code path that crashed before the fix in
-  `docs/jaunty-torture-test-gaps-log.md` (SQL Server `PK` marking bug, fixed on
+  the private torture-test gaps log (SQL Server `PK` marking bug, fixed on
   `fix/scaffolding-sqlserver-pk-mutation`, merged to `dev` before this run).
 
 ## Findings: genuine (minor) type-mapper gaps
 
-Two real gaps surfaced, both logged in `docs/jaunty-torture-test-gaps-log.md` rather than
+Two real gaps surfaced, both logged in the private torture-test gaps log rather than
 fixed in this pass (narrow/edge-case, not blocking, unlike the SQL Server PK-marking crash
 which was fixed directly):
 

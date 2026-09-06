@@ -104,7 +104,8 @@ CI runs 97 SQLite tests + FlatFiles/DuckDB. Not run in CI: 3,492 core tests (SQL
 
 ## Recommended Path to Production
 
-Ordered execution plan with acceptance criteria: [PRODUCTION-READINESS-TASKLIST.md](../../06-releases/tasklists/PRODUCTION-READINESS-TASKLIST.md) (updated 2026-07-02).
+Ordered execution plan with acceptance criteria: the production-readiness tasklist, held in
+the private work repository (updated 2026-07-02).
 
 Summary of the critical path:
 

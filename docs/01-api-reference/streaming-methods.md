@@ -4,6 +4,61 @@
 
 Streaming methods provide memory-efficient processing of large result sets by returning `IEnumerable<T>` or `IAsyncEnumerable<T>` instead of loading all results into memory at once. These methods are ideal for processing large datasets without consuming excessive memory.
 
+### How a streamed query differs from a buffered one
+
+```mermaid
+flowchart TD
+    subgraph B["Query&lt;T&gt; / GetAll&lt;T&gt;: buffered"]
+        B1["Open the connection<br/>if it was closed"] --> B2["Interceptor pipeline<br/>wraps the execution"]
+        B2 --> B3["Read every row into<br/>a List&lt;T&gt;"]
+        B3 --> B4["Close the connection<br/>if Jaunty opened it"]
+        B4 --> B5["Return the list.<br/>Every row is in memory."]
+    end
+
+    subgraph S["QueryStream&lt;T&gt; / QueryStreamAsync&lt;T&gt;: streamed"]
+        S1["Nothing happens until<br/>you start enumerating"] --> S2["Open the connection<br/>if it was closed"]
+        S2 --> S3["No interceptor pipeline"]
+        S3 --> S4["Yield one row,<br/>then wait for you"]
+        S4 --> S4
+        S4 --> S5["Close the connection<br/>when you stop enumerating"]
+    end
+
+    class B3 warn
+    class B5 info
+    class S3 bad
+    class S4 ok
+
+    classDef ok fill:#1f6f4a,stroke:#2ea36a,color:#eaf6ef
+    classDef bad fill:#7a1f2e,stroke:#c2405a,color:#fdeaee
+    classDef info fill:#1f4f7a,stroke:#3a86c8,color:#e8f2fb
+    classDef warn fill:#7a4a1f,stroke:#c07c34,color:#fdf1e3
+```
+
+Three consequences follow from the shape, and each of them is a thing to plan around rather than
+a defect:
+
+| | buffered | streamed |
+|---|---|---|
+| when the query runs | at the call | at the first `MoveNext` |
+| peak memory | the whole result set | one row |
+| interceptors | run | **do not run** |
+| connection held | for the length of the call | until you stop enumerating |
+
+**Interceptors do not run on a streamed query.** This is intended. An interceptor wraps an
+execution and reports on its result, and a lazy `IAsyncEnumerable` has no result to report until
+every row has been read, so wrapping one would force the full materialization that streaming
+exists to avoid. If you need logging or metrics on a streamed read, put them in the loop body.
+
+**The connection stays open for as long as you enumerate.** A streamed query that you abandon
+part way through releases its connection when the enumerator is disposed, which `foreach` and
+`await foreach` do for you at the end of the block. Storing the enumerator and forgetting it holds
+a connection open until the garbage collector reaches it.
+
+**Do not stream into another query on the same connection.** Issuing a second command while a
+reader is open on the same connection either throws or opens a second connection behind your
+back, depending on the provider. Buffer the first result with `Query<T>` when the loop body needs
+the connection.
+
 ## Synchronous Streaming Methods
 
 ### QueryStream&lt;T&gt;(string sql)

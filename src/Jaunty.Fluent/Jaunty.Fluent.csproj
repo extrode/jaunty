@@ -14,8 +14,8 @@
 	<Choose>
 		<When Condition="$(DefineConstants.Contains('AsyncInterfaces'))">
 			<ItemGroup>
-				<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.10" />
-				<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+				<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+				<PackageReference Include="Microsoft.CSharp" />
 			</ItemGroup>
 		</When>
 	</Choose>

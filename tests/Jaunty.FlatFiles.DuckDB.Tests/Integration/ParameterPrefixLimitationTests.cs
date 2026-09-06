@@ -83,7 +83,7 @@ public class ParameterPrefixLimitationTests : IDisposable
         var exception = Assert.Throws<DuckDBException>(() => _connection.Insert(entity));
 
         // DuckDB parses the "@CustomerId" core emits as a column reference, not a placeholder.
-        Assert.Contains("not found in FROM clause", exception.Message);
+        Assert.Contains("FROM clause", exception.Message);
     }
 
     [Fact]

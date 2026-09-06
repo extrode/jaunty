@@ -1,0 +1,95 @@
+<Project>
+  <!--
+    Central Package Management. One version per package, set once here; every csproj below
+    keeps <PackageReference Include="X" /> with no Version attribute. Before this file existed,
+    the same package drifted to a different version in nearly every project that referenced it
+    (e.g. Npgsql at 8.0.7, 8.0.5, 9.0.5, 10.0.1 simultaneously) with no mechanism stopping it.
+
+    Two packages that ship inside a public Jaunty NuGet package are deliberately NOT bumped to
+    their latest major here, because doing so would raise the minimum Roslyn/runtime a consumer
+    needs just to use Jaunty, not just to build it:
+      - Microsoft.CodeAnalysis.CSharp / .Analyzers (Jaunty.SourceGenerator): held on the 4.x line.
+        5.x is out, but the generator runs inside the CONSUMER's compiler, so referencing 5.x APIs
+        would require every consumer's SDK/VS to carry a Roslyn 5.x host to use the generator at
+        all. 4.14.0 is the latest patch on the line the generator already targets.
+      - Npgsql (Jaunty.Extensions.Npgsql): the netstandard2.0 target - the one old-.NET-Framework
+        consumers pull - stays on the last 8.x release (Npgsql 9+ dropped netstandard2.0). See the
+        TFM-conditioned overrides below and the comment in that project file.
+
+    Everything else here (test/benchmark/CLI-only dependencies, and same-major patch bumps on
+    shipped libraries) is bumped to the latest stable release as of 2026-09-05, verified against
+    nuget.org rather than assumed.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- NU1507 fires because this machine's NuGet.Config (outside this repo) lists two sources
+         (nuget.org, jauntyq-github) with no package source mapping - unrelated to CPM itself, but
+         the SDK escalates it to an error only once CPM is on. Adding package source mapping is a
+         machine-level nuget.config change, not something this repo should assume or set for every
+         contributor's environment, so the warning is suppressed instead. -->
+    <NoWarn>$(NoWarn);NU1507</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Shipped in src/ - same-major bumps only -->
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.11" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.5" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.11" />
+    <!-- Npgsql: net8.0/net10.0 default is the current major; netstandard2.0/net472 override below
+         pins the last release that still targets netstandard2.0. -->
+    <PackageVersion Include="Npgsql" Version="10.0.3" Condition="'$(TargetFramework)' != 'netstandard2.0' AND '$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Npgsql" Version="8.0.9" Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net472'" />
+    <!-- Database drivers used by tests/benchmarks/the scaffolding CLI tool - not a dependency
+         propagated into a consumer's own project, so bumped to latest without the same-major
+         constraint. net472 keeps the latest patch within the major that still supports it. -->
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.3" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.11" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.30" Condition="'$(TargetFramework)' == 'net472'" />
+    <!-- NOT bumped to 3.0.5 (latest): its bundled native SQLite formats REAL->text with full
+         round-trip precision instead of 15 significant digits. JauntyGenerator.cs's RealColumnsLocal
+         optimization documents and relies on "SQLite formats REAL to text with 15 significant
+         digits, the same rounding the decimal(double) constructor applies" to read a REAL-backed
+         decimal column via the cheaper (decimal)GetDouble() instead of GetDecimal() and still match
+         it - confirmed broken empirically: 3.0.5 makes GeneratedDecimalReadTests.
+         ASqliteRealColumn_MapsTheSameValueGetDecimalWouldHave(1234567890.123456, ...) fail, because
+         GetDecimal() now returns 16-sig-fig precision while (decimal)GetDouble() still rounds to 15.
+         Bumping this needs a fix to the generator's invariant first, not just a test update. -->
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+    <PackageVersion Include="MySqlConnector" Version="2.6.2" />
+    <!-- MySql.Data 9.7.0 still ships .NETFramework4.6.2/4.8 targets alongside net8/9/10, so one
+         version now covers every TFM in the solution, unlike Npgsql/SqlClient/Sqlite above. -->
+    <PackageVersion Include="MySql.Data" Version="9.7.0" />
+    <PackageVersion Include="System.Data.SQLite.Core" Version="1.0.119" />
+    <!-- Test framework / MTP -->
+    <PackageVersion Include="xunit.v3" Version="4.0.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="CsCheck" Version="4.8.0" />
+    <PackageVersion Include="SharpFuzz" Version="2.3.0" />
+    <!-- Test-only DI/logging (test host wiring, not shipped) -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+    <!-- Benchmarks: comparison ORMs and EF Core providers. Pomelo has no EF Core 10 release yet,
+         so the whole EF Core family here stays on its latest 9.x rather than mixing majors. -->
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageVersion Include="Dapper" Version="2.1.79" />
+    <PackageVersion Include="Dapper.Contrib" Version="2.0.78" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.19" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <PackageVersion Include="RepoDb.Sqlite.Microsoft" Version="1.15.0" />
+    <PackageVersion Include="RepoDb.SqlServer" Version="1.15.1" />
+    <PackageVersion Include="RepoDb.PostgreSql" Version="1.15.0" />
+    <PackageVersion Include="RepoDb.MySqlConnector" Version="1.15.0" />
+    <PackageVersion Include="linq2db" Version="6.4.0" />
+  </ItemGroup>
+</Project>

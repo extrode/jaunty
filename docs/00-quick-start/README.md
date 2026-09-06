@@ -41,13 +41,13 @@ dotnet build -f net8.0
 
 ```bash
 # Every project, every framework
-dotnet test Jaunty.slnx
+dotnet test --solution Jaunty.slnx
 
 # One project, one framework
-dotnet test tests/Jaunty.Tests -f net10.0
+dotnet test --project tests/Jaunty.Tests -f net10.0
 
 # One test class
-dotnet test tests/Jaunty.Tests -f net10.0 --filter "FullyQualifiedName~QueryTests"
+dotnet test --project tests/Jaunty.Tests -f net10.0 --filter-class "*QueryTests*"
 ```
 
 ## Basic Usage

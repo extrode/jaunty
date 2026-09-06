@@ -31,8 +31,6 @@ flowchart TD
     E -- no --> F["5. Throw InvalidOperationException<br/>with the exact fix:<br/>add [Table], pass a mapper,<br/>or install the reflection package"]
 ```
 
-![Mapper resolution ladder](../_assets/mapper-ladder.svg)
-
 Three details worth knowing:
 
 - **Your mapper always wins.** Step 1 means you can take over row materialization for any single call without configuring anything globally.
@@ -47,7 +45,7 @@ If you need these, Jaunty is the wrong tool, and that is by design:
 - **No change tracking, unit-of-work, or identity map.** Objects are plain data. You decide what to save and when.
 - **No lazy loading.** Every query is explicit. N+1 problems are visible in your code, not hidden in a proxy.
 - **No migrations engine.** Your schema lifecycle is your own (though the sibling product JauntyQ understands migration scripts at build time - see below).
-- **Not open source.** Jaunty is free to use, including in commercial production, under [ISL-R 1.2](../../LICENSE.md) plus the [Redistribution Exception](../../LICENSE-DISTRIBUTION-EXCEPTION.md) that lets you ship the unmodified packages inside your application; what is sold is [support](../06-releases/pricing.md). ISL-R is not OSI-approved: no modification, no redistribution as a library, and the ethical restrictions in its Sections 4 and 5 are conditions of the grant. If OSS licensing is a hard requirement, use Dapper - it is a fine library and this page will not pretend otherwise.
+- **Not open source.** Jaunty is free to use, including in commercial production, under [ISL-R 1.2](../../LICENSE.md) plus the [Redistribution Exception](../../LICENSE-DISTRIBUTION-EXCEPTION.md) that lets you ship the unmodified packages inside your application; what is sold is support. ISL-R is not OSI-approved: no modification, no redistribution as a library, and the ethical restrictions in its Sections 4 and 5 are conditions of the grant. If OSS licensing is a hard requirement, use Dapper - it is a fine library and this page will not pretend otherwise.
 
 There is a feature-by-feature comparison with Dapper and EF Core in the repository README.
 

@@ -61,3 +61,14 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Generated documentation site
+#
+# DocsGen writes LF on every platform. With core.autocrlf=true the default
+# `* text=auto` above makes git expect CRLF in the worktree, so all 96 pages
+# read as modified with an empty diff and stay that way through every
+# regeneration. Pinning eol=lf makes the worktree form match what the
+# generator emits. Binary assets are unaffected: text=auto still detects them.
+###############################################################################
+dist/docs-site/** text=auto eol=lf
