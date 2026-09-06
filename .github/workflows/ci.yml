@@ -200,14 +200,13 @@ jobs:
           --report-trx --report-trx-filename test-results-scaffolding-cli.trx
 
       - name: Test - FlatFiles (DuckDB)
-        run: >-
-          dotnet test --solution Jaunty.slnx
-          -c Release
-          --no-build
-          --framework net8.0
-          --filter-namespace "Jaunty.FlatFiles*"
-          --coverage --coverage-output-format cobertura
-          --report-trx --report-trx-filename test-results-flatfiles.trx
+        # Two --project runs, not --solution + --filter-namespace: the MTP-based runner
+        # exits 8 ("zero tests ran") for every project in the solution the namespace
+        # filter excludes, and dotnet test counts that as an error per project even
+        # though the FlatFiles projects themselves pass.
+        run: |
+          dotnet test --project tests/Jaunty.FlatFiles.Tests -c Release --no-build --framework net8.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles.trx
+          dotnet test --project tests/Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net8.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb.trx
 
       # net10 legs (spec 010 T18): duplicated steps, deliberately NOT a job matrix -
       # the runner is self-hosted and a matrix re-spins the SQL Server service
@@ -292,14 +291,10 @@ jobs:
           --report-trx --report-trx-filename test-results-scaffolding-cli-net10.trx
 
       - name: Test - FlatFiles net10 (DuckDB)
-        run: >-
-          dotnet test --solution Jaunty.slnx
-          -c Release
-          --no-build
-          --framework net10.0
-          --filter-namespace "Jaunty.FlatFiles*"
-          --coverage --coverage-output-format cobertura
-          --report-trx --report-trx-filename test-results-flatfiles-net10.trx
+        # See the net8 FlatFiles step above: --project, not --solution + --filter-namespace.
+        run: |
+          dotnet test --project tests/Jaunty.FlatFiles.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-net10.trx
+          dotnet test --project tests/Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb-net10.trx
 
       - name: Upload test results
         if: always()
