@@ -49,7 +49,7 @@
          constraint. net472 keeps the latest patch within the major that still supports it. -->
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.3" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.11" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.30" Condition="'$(TargetFramework)' == 'net472'" />
     <!-- NOT bumped to 3.0.5 (latest): its bundled native SQLite formats REAL->text with full
          round-trip precision instead of 15 significant digits. JauntyGenerator.cs's RealColumnsLocal
@@ -60,11 +60,11 @@
          ASqliteRealColumn_MapsTheSameValueGetDecimalWouldHave(1234567890.123456, ...) fail, because
          GetDecimal() now returns 16-sig-fig precision while (decimal)GetDouble() still rounds to 15.
          Bumping this needs a fix to the generator's invariant first, not just a test update. -->
-    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
     <PackageVersion Include="MySqlConnector" Version="2.6.2" />
     <!-- MySql.Data 9.7.0 still ships .NETFramework4.6.2/4.8 targets alongside net8/9/10, so one
          version now covers every TFM in the solution, unlike Npgsql/SqlClient/Sqlite above. -->
-    <PackageVersion Include="MySql.Data" Version="9.7.0" />
+    <PackageVersion Include="MySql.Data" Version="26.7.0" />
     <PackageVersion Include="System.Data.SQLite.Core" Version="1.0.119" />
     <!-- Test framework / MTP -->
     <PackageVersion Include="xunit.v3" Version="4.0.0" />
