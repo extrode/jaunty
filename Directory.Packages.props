@@ -67,11 +67,11 @@
     <PackageVersion Include="MySql.Data" Version="9.7.0" />
     <PackageVersion Include="System.Data.SQLite.Core" Version="1.0.119" />
     <!-- Test framework / MTP -->
-    <PackageVersion Include="xunit.v3" Version="4.0.0" />
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageVersion Include="CsCheck" Version="4.8.0" />
     <PackageVersion Include="SharpFuzz" Version="2.3.0" />
     <!-- Test-only DI/logging (test host wiring, not shipped) -->
