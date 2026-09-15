@@ -80,7 +80,7 @@
     <!-- Benchmarks: comparison ORMs and EF Core providers. Pomelo has no EF Core 10 release yet,
          so the whole EF Core family here stays on its latest 9.x rather than mixing majors. -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
-    <PackageVersion Include="Dapper" Version="2.1.79" />
+    <PackageVersion Include="Dapper" Version="2.1.86" />
     <PackageVersion Include="Dapper.Contrib" Version="2.0.78" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.19" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.19" />
