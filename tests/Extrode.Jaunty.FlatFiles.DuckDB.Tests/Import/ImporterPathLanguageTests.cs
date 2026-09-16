@@ -121,7 +121,7 @@ public class ImporterPathLanguageTests : IDisposable
         // No network call is made here: an https source reaches DuckDB, which fails to fetch it.
         // What matters is that it is no longer rejected up front as a missing local file - the
         // defect was that this threw FileNotFoundException naming a bogus absolute path.
-        Exception ex = await Record.ExceptionAsync(async () =>
+        Exception? ex = await Record.ExceptionAsync(async () =>
             await FlatFileImporter.ImportAsync<InventoryItem>(
                 "https://example.invalid/inventory.csv",
                 target,
