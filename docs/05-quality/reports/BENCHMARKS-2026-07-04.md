@@ -3,7 +3,7 @@
 Measured with BenchmarkDotNet v0.14.0 on Windows 11, AMD Ryzen 7 7840HS
 (8C/16T laptop), .NET 8.0.26, `QueryBenchmarks` full config (Cold + Warm jobs).
 Command: `dotnet run -c Release -f net8.0 -- --filter "*QueryBenchmarks*"`
-from `benchmarks/Jaunty.Benchmarks`.
+from `benchmarks/Extrode.Jaunty.Benchmarks`.
 
 **Scope and caveats**
 

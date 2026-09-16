@@ -112,7 +112,7 @@ jobs:
           path: '**/TestResults/*.trx'
           if-no-files-found: ignore
 
-  # The two projects that target net472 (Jaunty.Tests and Jaunty.UnitTests), on the .NET
+  # The two projects that target net472 (Extrode.Jaunty.Tests and Extrode.Jaunty.UnitTests), on the .NET
   # Framework runtime itself. Windows runners cannot host service containers, so this leg runs
   # against SQLite only; SQL Server coverage for the same tests is the job above.
   full-suite-net472:
@@ -136,10 +136,10 @@ jobs:
         run: dotnet build Jaunty.slnx -c Release --no-restore --no-incremental
 
       - name: Test net472 - Core
-        run: dotnet test --project tests/Jaunty.Tests -c Release --no-build --framework net472 --report-trx --report-trx-filename nightly-net472-core.trx
+        run: dotnet test --project tests/Extrode.Jaunty.Tests -c Release --no-build --framework net472 --report-trx --report-trx-filename nightly-net472-core.trx
 
       - name: Test net472 - Core unit
-        run: dotnet test --project tests/Jaunty.UnitTests -c Release --no-build --framework net472 --report-trx --report-trx-filename nightly-net472-unit.trx
+        run: dotnet test --project tests/Extrode.Jaunty.UnitTests -c Release --no-build --framework net472 --report-trx --report-trx-filename nightly-net472-unit.trx
 
       - name: Upload test results
         if: always()
@@ -173,14 +173,14 @@ jobs:
             10.0.x
 
       - name: Publish the harness
-        run: dotnet publish tools/Jaunty.Fuzz -c Release -o out/fuzz
+        run: dotnet publish tools/Extrode.Jaunty.Fuzz -c Release -o out/fuzz
 
       - name: Install SharpFuzz
         run: dotnet tool install --global SharpFuzz.CommandLine
 
       # Instrument the library under test, not the harness that calls it.
-      - name: Instrument Jaunty
-        run: sharpfuzz out/fuzz/Jaunty.dll
+      - name: Instrument Extrode.Jaunty
+        run: sharpfuzz out/fuzz/Extrode.Jaunty.dll
 
       - name: Fetch the libFuzzer driver
         # Pinned by tag AND digest: a release asset can be re-uploaded under an unchanged tag,
@@ -212,8 +212,8 @@ jobs:
             -max_total_time=600 -timeout=25 -rss_limit_mb=2048 \
             -artifact_prefix=out/fuzz-findings/ \
             --target_path="$(command -v dotnet)" \
-            --target_arg=out/fuzz/Jaunty.Fuzz.dll \
-            out/corpus tools/Jaunty.Fuzz/corpus
+            --target_arg=out/fuzz/Extrode.Jaunty.Fuzz.dll \
+            out/corpus tools/Extrode.Jaunty.Fuzz/corpus
 
       - name: Minimise the corpus before caching it
         if: always()
@@ -222,8 +222,8 @@ jobs:
           mkdir -p out/corpus-min
           ./libfuzzer-dotnet -merge=1 \
             --target_path="$(command -v dotnet)" \
-            --target_arg=out/fuzz/Jaunty.Fuzz.dll \
-            out/corpus-min out/corpus tools/Jaunty.Fuzz/corpus
+            --target_arg=out/fuzz/Extrode.Jaunty.Fuzz.dll \
+            out/corpus-min out/corpus tools/Extrode.Jaunty.Fuzz/corpus
           rm -rf out/corpus
           mv out/corpus-min out/corpus
           echo "corpus entries after merge: $(find out/corpus -type f | wc -l)"
@@ -274,8 +274,8 @@ jobs:
       fail-fast: false
       matrix:
         project:
-          - Jaunty.UnitTests
-          - Jaunty.Fluent.Tests
+          - Extrode.Jaunty.UnitTests
+          - Extrode.Jaunty.Fluent.Tests
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -337,7 +337,7 @@ jobs:
       # regression gate. The artifact exists so a suspected regression has something to compare
       # against, and so the benchmarks are proven to still build and run.
       - name: Run benchmarks
-        run: dotnet run --project benchmarks/Jaunty.Benchmarks -c Release --framework net10.0 -- --filter '*' --job short
+        run: dotnet run --project benchmarks/Extrode.Jaunty.Benchmarks -c Release --framework net10.0 -- --filter '*' --job short
 
       - name: Upload benchmark results
         if: always()

@@ -115,5 +115,5 @@ finding is the entire argument for the feature.
 
 Each has an `...Async` counterpart with the same semantics.
 
-`MappingMode.Strict` and `MappingMode.Projection` in `Jaunty.Configuration` are the same distinction
+`MappingMode.Strict` and `MappingMode.Projection` in `Extrode.Jaunty.Configuration` are the same distinction
 where the mode is passed rather than chosen by method name.

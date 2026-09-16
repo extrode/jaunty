@@ -6,8 +6,8 @@ This directory contains the authoritative visual design for the Jaunty documenta
 
 | File | Description |
 |------|-------------|
-| `Jaunty Docs App.dc.html` | **Primary design** — full docs app layout: header bar, collapsible sidebar, content pane, code blocks, prev/next nav, status bar. This is the authoritative target. |
-| `Jaunty Docs.dc.html` | Secondary / alternate page design for additional reference. |
+| `Extrode.Jaunty Docs App.dc.html` | **Primary design** — full docs app layout: header bar, collapsible sidebar, content pane, code blocks, prev/next nav, status bar. This is the authoritative target. |
+| `Extrode.Jaunty Docs.dc.html` | Secondary / alternate page design for additional reference. |
 | `support.js` | Design-tool runtime (custom `<x-dc>` / `<sc-*>` component renderer). Required by the browser to display the `.dc.html` files. Not used by the generated site. |
 
 ## Viewing the designs
@@ -16,7 +16,7 @@ Open either `.dc.html` file in a browser from this directory (both files and `su
 
 ## Design tokens (dark theme)
 
-Extracted from `Jaunty Docs App.dc.html` and implemented in `tools/Jaunty.DocsGenerator`:
+Extracted from `Extrode.Jaunty Docs App.dc.html` and implemented in `tools/Extrode.Jaunty.DocsGenerator`:
 
 | Token | Value | Role |
 |-------|-------|------|
@@ -43,12 +43,12 @@ Extracted from `Jaunty Docs App.dc.html` and implemented in `tools/Jaunty.DocsGe
 
 ## Implementation
 
-`tools/Jaunty.DocsGenerator` is the console app that implements this design as a static site generator. Run it with:
+`tools/Extrode.Jaunty.DocsGenerator` is the console app that implements this design as a static site generator. Run it with:
 
 ```bash
-dotnet run --project tools/Jaunty.DocsGenerator -- <input-dir> <output-dir>
+dotnet run --project tools/Extrode.Jaunty.DocsGenerator -- <input-dir> <output-dir>
 # Example:
-dotnet run --project tools/Jaunty.DocsGenerator -- docs/ dist/docs-site/
+dotnet run --project tools/Extrode.Jaunty.DocsGenerator -- docs/ dist/docs-site/
 ```
 
-See `tools/Jaunty.DocsGenerator/Program.cs` for the CSS and JS implementation of these tokens.
+See `tools/Extrode.Jaunty.DocsGenerator/Program.cs` for the CSS and JS implementation of these tokens.

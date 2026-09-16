@@ -1,31 +1,31 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Jaunty.Extensions.Logging/Jaunty.Extensions.Logging.csproj" />
-    <Project Path="src/Jaunty.Extensions.Npgsql/Jaunty.Extensions.Npgsql.csproj" />
-    <Project Path="src/Jaunty.Extensions.Reflection/Jaunty.Extensions.Reflection.csproj" />
-    <Project Path="src/Jaunty.Fluent/Jaunty.Fluent.csproj" />
-    <Project Path="src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj" />
-    <Project Path="src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj" />
-    <Project Path="src/Jaunty.SourceGenerator/Jaunty.SourceGenerator.csproj" />
-    <Project Path="src/Jaunty/Jaunty.csproj" />
-    <Project Path="src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj" />
-    <Project Path="src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj" />
+    <Project Path="src/Extrode.Jaunty.Extensions.Logging/Extrode.Jaunty.Extensions.Logging.csproj" />
+    <Project Path="src/Extrode.Jaunty.Extensions.Npgsql/Extrode.Jaunty.Extensions.Npgsql.csproj" />
+    <Project Path="src/Extrode.Jaunty.Extensions.Reflection/Extrode.Jaunty.Extensions.Reflection.csproj" />
+    <Project Path="src/Extrode.Jaunty.Fluent/Extrode.Jaunty.Fluent.csproj" />
+    <Project Path="src/Extrode.Jaunty.Scaffolding.Cli/Extrode.Jaunty.Scaffolding.Cli.csproj" />
+    <Project Path="src/Extrode.Jaunty.Scaffolding/Extrode.Jaunty.Scaffolding.csproj" />
+    <Project Path="src/Extrode.Jaunty.SourceGenerator/Extrode.Jaunty.SourceGenerator.csproj" />
+    <Project Path="src/Extrode.Jaunty/Extrode.Jaunty.csproj" />
+    <Project Path="src/Extrode.Jaunty.FlatFiles/Extrode.Jaunty.FlatFiles.csproj" />
+    <Project Path="src/Extrode.Jaunty.FlatFiles.DuckDB/Extrode.Jaunty.FlatFiles.DuckDB.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Jaunty.Fluent.SourceGen.Tests/Jaunty.Fluent.SourceGen.Tests.csproj" />
-    <Project Path="tests/Jaunty.UnitTests/Jaunty.UnitTests.csproj" />
-    <Project Path="tests/Jaunty.Fluent.ConfigTests/Jaunty.Fluent.ConfigTests.csproj" />
-    <Project Path="tests/Jaunty.Fluent.Tests/Jaunty.Fluent.Tests.csproj" />
-    <Project Path="tests/Jaunty.Scaffolding.Cli.Tests/Jaunty.Scaffolding.Cli.Tests.csproj" />
-    <Project Path="tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj" />
-    <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
-    <Project Path="tests/Jaunty.FlatFiles.Tests/Jaunty.FlatFiles.Tests.csproj" />
-    <Project Path="tests/Jaunty.FlatFiles.DuckDB.Tests/Jaunty.FlatFiles.DuckDB.Tests.csproj" />
-    <Project Path="tests/Jaunty.SourceGenerator.Tests/Jaunty.SourceGenerator.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.Fluent.SourceGen.Tests/Extrode.Jaunty.Fluent.SourceGen.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.UnitTests/Extrode.Jaunty.UnitTests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.Fluent.ConfigTests/Extrode.Jaunty.Fluent.ConfigTests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.Fluent.Tests/Extrode.Jaunty.Fluent.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.Scaffolding.Cli.Tests/Extrode.Jaunty.Scaffolding.Cli.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.Scaffolding.Tests/Extrode.Jaunty.Scaffolding.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.Tests/Extrode.Jaunty.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.FlatFiles.Tests/Extrode.Jaunty.FlatFiles.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.SourceGenerator.Tests/Extrode.Jaunty.SourceGenerator.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
-    <Project Path="benchmarks/Jaunty.Benchmarks/Jaunty.Benchmarks.csproj" />
-    <Project Path="benchmarks/Jaunty.FlatFiles.Benchmarks/Jaunty.FlatFiles.Benchmarks.csproj" />
+    <Project Path="benchmarks/Extrode.Jaunty.Benchmarks/Extrode.Jaunty.Benchmarks.csproj" />
+    <Project Path="benchmarks/Extrode.Jaunty.FlatFiles.Benchmarks/Extrode.Jaunty.FlatFiles.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/NativeAOT-Basic/NativeAOT-Basic.csproj" />
@@ -34,6 +34,6 @@
     <Project Path="samples/NativeAOT-FluentQuery/NativeAOT-FluentQuery.csproj" />
   </Folder>
   <Folder Name="/tools/">
-    <Project Path="tools/Jaunty.Fuzz/Jaunty.Fuzz.csproj" />
+    <Project Path="tools/Extrode.Jaunty.Fuzz/Extrode.Jaunty.Fuzz.csproj" />
   </Folder>
 </Solution>

@@ -84,17 +84,17 @@ for this type. Three causes, in the order they occur:
 
 1. **The class is not `partial`.** The generator adds to your class, so it needs the keyword.
    `public partial class Product`.
-2. **The generator is not referenced.** In a project that references `Jaunty` through a project
+2. **The generator is not referenced.** In a project that references `Extrode.Jaunty` through a project
    reference rather than the NuGet package, the analyzer has to be wired up explicitly:
    ```xml
-   <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+   <ProjectReference Include="..\..\src\Extrode.Jaunty.SourceGenerator\Extrode.Jaunty.SourceGenerator.csproj"
                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
    ```
    The NuGet package does this for you.
 3. **The type has no `[Table]` attribute** and no convention picked it up.
 
 If you want runtime reflection instead — for a prototype, or a type you cannot make `partial` —
-`UseReflectionMapping()` from `Jaunty.Extensions.Reflection` supplies it, at the cost of the
+`UseReflectionMapping()` from `Extrode.Jaunty.Extensions.Reflection` supplies it, at the cost of the
 NativeAOT guarantee.
 
 ## `InvalidOperationException` naming a property with no column

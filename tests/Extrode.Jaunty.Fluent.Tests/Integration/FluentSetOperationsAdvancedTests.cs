@@ -1,0 +1,447 @@
+using Extrode.Jaunty.Fluent.Tests.Entities;
+using Extrode.Jaunty.Fluent.Tests.Helpers;
+
+namespace Extrode.Jaunty.Fluent.Tests.Integration;
+
+/// <summary>
+/// Additional tests for SetOperationBuilder covering uncovered methods:
+/// SelectSingle, SelectSingleOrDefault (sync + async), string-based OrderBy,
+/// ThenBy with string columns, SelectFirst/SelectFirstOrDefault async.
+/// </summary>
+public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixture>
+{
+    private readonly FluentDatabaseFixture _fixture;
+
+    public FluentSetOperationsAdvancedTests(FluentDatabaseFixture fixture) => _fixture = fixture;
+
+    // ==========================================
+    // SelectSingle / SelectSingleOrDefault (sync)
+    // ==========================================
+
+    [Fact]
+    public void Union_SelectSingle_ExactlyOneResult_ReturnsProduct()
+    {
+        // Query that returns exactly one product (product_id = 1)
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -999))
+            .SelectSingle();
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
+    }
+
+    [Fact]
+    public void Union_SelectSingleOrDefault_ExactlyOneResult_ReturnsProduct()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -999))
+            .SelectSingleOrDefault();
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result!.ProductId);
+    }
+
+    [Fact]
+    public void Union_SelectSingleOrDefault_NoResults_ReturnsNull()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -998))
+            .SelectSingleOrDefault();
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Union_SelectFirst_ReturnsFirst()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .SelectFirst();
+
+        Assert.NotNull(result);
+        Assert.True(result.CategoryId == 1 || result.CategoryId == 2);
+    }
+
+    [Fact]
+    public void Union_SelectFirstOrDefault_NoResults_ReturnsNull()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -998))
+            .SelectFirstOrDefault();
+
+        Assert.Null(result);
+    }
+
+    // ==========================================
+    // SelectSingle / SelectSingleOrDefault (async)
+    // ==========================================
+
+    [Fact]
+    public async Task Union_SelectSingleAsync_ExactlyOneResult_ReturnsProduct()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -999))
+            .SelectSingleAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
+    }
+
+    [Fact]
+    public async Task Union_SelectSingleOrDefaultAsync_ExactlyOneResult_ReturnsProduct()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -999))
+            .SelectSingleOrDefaultAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result!.ProductId);
+    }
+
+    [Fact]
+    public async Task Union_SelectSingleOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -998))
+            .SelectSingleOrDefaultAsync(TestContext.Current.CancellationToken);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task Union_SelectFirstAsync_ReturnsFirst()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .SelectFirstAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.True(result.CategoryId == 1 || result.CategoryId == 2);
+    }
+
+    [Fact]
+    public async Task Union_SelectFirstOrDefaultAsync_ReturnsFirstOrNull()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .SelectFirstOrDefaultAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task Union_SelectFirstOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -998))
+            .SelectFirstOrDefaultAsync(TestContext.Current.CancellationToken);
+
+        Assert.Null(result);
+    }
+
+    // ==========================================
+    // String-based OrderBy / OrderByDescending
+    // ==========================================
+
+    [Fact]
+    public void Union_OrderByString_OrdersByColumnName()
+    {
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy("product_name")
+            .ToSql();
+
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("product_name", sql);
+    }
+
+    [Fact]
+    public void Union_OrderByDescendingString_OrdersByColumnNameDesc()
+    {
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderByDescending("unit_price")
+            .ToSql();
+
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("unit_price", sql);
+        Assert.Contains("DESC", sql);
+    }
+
+    [Fact]
+    public void Union_OrderByString_ExecutesCorrectly()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy("product_name")
+            .Select();
+
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(string.Compare(results[i - 1].ProductName, results[i].ProductName) <= 0);
+        }
+    }
+
+    // ==========================================
+    // ThenBy / ThenByDescending with string
+    // ==========================================
+
+    [Fact]
+    public void Union_OrderBy_ThenByString_OrdersByMultipleColumns()
+    {
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.CategoryId)
+            .ThenBy("product_name")
+            .ToSql();
+
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("product_name", sql);
+    }
+
+    [Fact]
+    public void Union_OrderBy_ThenByDescendingString_OrdersByMultipleColumns()
+    {
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.CategoryId)
+            .ThenByDescending("unit_price")
+            .ToSql();
+
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("unit_price", sql);
+        Assert.Contains("DESC", sql);
+    }
+
+    // ==========================================
+    // Skip on ISetOperationOrderByClause
+    // ==========================================
+
+    [Fact]
+    public void Union_OrderBy_Skip_PaginatesResults()
+    {
+        var allResults = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.ProductId)
+            .Select();
+
+        var skippedResults = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.ProductId)
+            .Skip(2)
+            .Select();
+
+        Assert.Equal(allResults.Count - 2, skippedResults.Count);
+    }
+
+    [Fact]
+    public void Union_OrderBy_Take_LimitsResults()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.ProductId)
+            .Take(3)
+            .Select();
+
+        Assert.Equal(3, results.Count);
+    }
+
+    // ==========================================
+    // Except / Intersect async variants
+    // ==========================================
+
+    [Fact]
+    public async Task Except_SelectFirstAsync_ReturnsFirst()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Except(_fixture.Connection.From<Product>().Where(p => p.Discontinued == true))
+            .SelectFirstAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal((short)1, result.CategoryId);
+        Assert.False(result.Discontinued);
+    }
+
+    [Fact]
+    public async Task Intersect_SelectSingleOrDefaultAsync_ReturnsResult()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 1))
+            .SelectSingleOrDefaultAsync();
+
+        // Product 1 is in category 1 (Beverages), so intersection should always return it
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
+    }
+
+    // ==========================================
+    // SetOperationBuilder Internal Methods Coverage
+    // ==========================================
+
+    [Fact]
+    public void Union_WithParameters_PassesParametersCorrectly()
+    {
+        // Test that parameters are correctly passed through Union operations
+        var results = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.SupplierId == 1))
+            .OrderBy(p => p.ProductId)
+            .Select();
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public void Except_WithParameters_PassesParametersCorrectly()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Except(_fixture.Connection.From<Product>().Where(p => p.Discontinued == true))
+            .OrderBy(p => p.ProductId)
+            .Select();
+
+        Assert.NotEmpty(results);
+        Assert.All(results, p =>
+        {
+            Assert.Equal((short)1, p.CategoryId);
+            Assert.False(p.Discontinued);
+        });
+    }
+
+    [Fact]
+    public void Intersect_WithParameters_PassesParametersCorrectly()
+    {
+        // Intersect products in category 1 AND products with SupplierId = 1.
+        // Every category-1 product in the seed data already has SupplierId = 1
+        // (products 1, 2, 8, 11), so the intersection should return exactly that set,
+        // proving both the CategoryId and SupplierId parameters were actually applied.
+        var results = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.SupplierId == 1))
+            .OrderBy(p => p.ProductId)
+            .Select();
+
+        Assert.Equal(new[] { 1, 2, 8, 11 }, results.Select(p => p.ProductId));
+        Assert.All(results, p =>
+        {
+            Assert.Equal((short)1, p.CategoryId);
+            Assert.Equal(1, p.SupplierId);
+        });
+    }
+
+    [Fact]
+    public void UnionAll_WithOrderByString_OrdersCorrectly()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .UnionAll(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy("product_name")
+            .Select();
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public void Union_WithSkipAndTake_PaginatesCorrectly()
+    {
+        var allResults = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.ProductId)
+            .Select();
+
+        var paginatedResults = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.ProductId)
+            .Skip(2)
+            .Take(3)
+            .Select();
+
+        Assert.True(paginatedResults.Count <= 3);
+    }
+
+    [Fact]
+    public void Except_SelectSingle_ExactlyOneResult_ReturnsProduct()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .Except(_fixture.Connection.From<Product>().Where(p => p.ProductId == 2))
+            .SelectSingle();
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
+    }
+
+    [Fact]
+    public void Intersect_SelectSingleOrDefault_ExactlyOneResult_ReturnsProduct()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 1))
+            .SelectSingleOrDefault();
+
+        // Product 1 is in category 1 (Beverages), so intersection should always return it
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
+    }
+
+    // ==========================================
+    // Chained Set Operations with different terminals
+    // ==========================================
+
+    [Fact]
+    public void UnionAll_SelectFirst_ReturnsFirst()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .UnionAll(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .SelectFirst();
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task UnionAll_SelectFirstAsync_ReturnsFirst()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .UnionAll(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .SelectFirstAsync();
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task UnionAll_SelectFirstOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .UnionAll(_fixture.Connection.From<Product>().Where(p => p.ProductId == -998))
+            .SelectFirstOrDefaultAsync();
+
+        Assert.Null(result);
+    }
+}

@@ -49,12 +49,12 @@ each row was confirmed by reading the current file, not the registry entry.
 | # | Family | Where it stood | State in `src/` today |
 |---|---|---|---|
 | 1 | CsvImport SQL injection and `sqlite3` CLI command execution | CRITICAL ×2 | `ValidateIdentifier` plus per-dialect `EscapeTableName`/`EscapeColumnName`, 7 call sites in `Import/CsvImport.cs` |
-| 2 | Dialect identifier escaping — raw interpolation of `[Table]`/`[Column]` and resolver output | HIGH | All **5** files in `src/Jaunty/Dialects/` route through `SqlIdentifierValidator`, which enforces `^[Letter_][LetterOrDigit_]*$` and throws otherwise |
+| 2 | Dialect identifier escaping — raw interpolation of `[Table]`/`[Column]` and resolver output | HIGH | All **5** files in `src/Extrode.Jaunty/Dialects/` route through `SqlIdentifierValidator`, which enforces `^[Letter_][LetterOrDigit_]*$` and throws otherwise |
 | 3 | BulkCopy identifier injection | HIGH | All **3** providers escape or validate |
 | 4 | FlatFiles / DuckDB identifier and literal injection | HIGH | `SanitizeTableName` on every filename-derived table name; `EscapeStringLiteral` doubles `'` |
 | 5 | `CteBuilder` — CTE name written to SQL unvalidated | HIGH | `SqlIdentifierValidator.Validate(cteName, ...)` at `CteBuilder.cs:34`, before the name reaches any SQL |
 | 6 | `JoinExpressionVisitor` — values inlined instead of parameterized | HIGH | Parameterized |
-| 7 | `LoggingInterceptor` — parameter values logged unmasked | HIGH | `_config.IsSensitiveParameter(paramName)` gates the value; the class moved to `Jaunty.Extensions.Logging` in the zero-dependency work |
+| 7 | `LoggingInterceptor` — parameter values logged unmasked | HIGH | `_config.IsSensitiveParameter(paramName)` gates the value; the class moved to `Extrode.Jaunty.Extensions.Logging` in the zero-dependency work |
 | 8 | `CommandContext` — raw connection string, credentials included | MEDIUM (consistency) | `SanitizeConnectionString` via `DbConnectionStringBuilder`, closed as AUD-R35-167 |
 
 Family 4 has one **open** item, and it is worth stating precisely because it reads as security at a
@@ -76,7 +76,7 @@ present and correct (`value.Replace("'", "''")`). The finding is a coverage gap,
 ## Two caveats that survive this classification
 
 **1. Coverage claims from rounds 10–33 are not trustworthy.** SQL Server was dark for the whole
-audit loop until round 34 — 2,447 tests in `Jaunty.Tests` ran for the first time mid-round-34. "There
+audit loop until round 34 — 2,447 tests in `Extrode.Jaunty.Tests` ran for the first time mid-round-34. "There
 is a test for it" from an earlier round may mean "there is a test that never ran", and with the
 service down the suite silently skips and still reports green. Check the skip count, not the failure
 count. This does not change the verdict above, which was checked against code, but it does mean the

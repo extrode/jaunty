@@ -1,0 +1,376 @@
+using System.Data;
+using System.Data.Common;
+
+using Extrode.Jaunty.Scaffolding.Abstractions;
+using Extrode.Jaunty.Scaffolding.Internals;
+using Extrode.Jaunty.Scaffolding.Schema;
+
+namespace Extrode.Jaunty.Scaffolding.Providers.SqlServer;
+
+/// <summary>
+/// Reads schema information from SQL Server databases.
+/// </summary>
+public sealed class SqlServerSchemaReader : ISchemaReader
+{
+    private const string TablesSql = @"
+        SELECT
+            s.name AS SchemaName,
+            t.name AS TableName
+        FROM sys.tables t
+        INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+        WHERE t.is_ms_shipped = 0
+        ORDER BY s.name, t.name";
+
+    /// <remarks>
+    /// AUD-R33-008: <c>DataType</c> used to be <c>TYPE_NAME(ty.system_type_id)</c>, even though the
+    /// join is already on <c>c.user_type_id = ty.user_type_id</c> - so the row holding the column's
+    /// actual type was in hand and a second, lossy lookup was done instead. <c>TYPE_NAME</c> takes a
+    /// <i>user</i> type id, so passing it a system type id is only correct for types where the two
+    /// coincide. They do not for the CLR-backed system types: <c>geography</c>, <c>geometry</c> and
+    /// <c>hierarchyid</c> all carry <c>system_type_id</c> 240, which is not a user type id at all, so
+    /// <c>TYPE_NAME</c> returned NULL and <see cref="ReadColumnsAsync"/>'s <c>GetString</c> threw
+    /// <c>SqlNullValueException</c>. Scaffolding any table holding one of those columns failed
+    /// outright rather than producing a wrong type name.
+    /// <para>
+    /// Selecting <c>ty.name</c> outright would have swapped one bug for another: for an alias type
+    /// (<c>CREATE TYPE OrderCode FROM nvarchar(20)</c>) <c>ty.name</c> is <c>OrderCode</c>, which
+    /// <c>SqlServerTypeMapper</c> has never heard of, whereas the old expression correctly resolved
+    /// it to the underlying <c>nvarchar</c>. The <c>CASE</c> keeps that behaviour for alias types -
+    /// the only kind of row where <c>is_user_defined</c> is 1 and a base type is what the mapper
+    /// wants - and reports every system type under its own name. Note the CLR types above are
+    /// <i>system</i> types (<c>is_user_defined</c> = 0), so they take the <c>ty.name</c> arm.
+    /// </para>
+    /// <para>
+    /// AUD-R35-042: <c>sysname</c> needs its own arm. It is the one alias type SQL Server ships, and
+    /// it is flagged as a <i>system</i> type - verified against a live instance: <c>sys.types</c>
+    /// reports <c>name = sysname</c>, <c>system_type_id</c> 231, <c>user_type_id</c> 256,
+    /// <c>is_user_defined</c> 0, <c>max_length</c> 256 - so the <c>is_user_defined = 1</c> arm above,
+    /// written for exactly this shape, does not reach it and it fell to <c>ELSE ty.name</c>. The
+    /// pre-AUD-R33-008 <c>TYPE_NAME(231)</c> resolved it to <c>nvarchar</c>, which was right.
+    /// Reporting the literal <c>"sysname"</c> cost two things at once:
+    /// <c>SqlServerTypeMapper.MapToCSharpType</c> has no arm for it, so the column scaffolded as
+    /// <c>object</c> instead of <c>string</c>; and <see cref="NormalizeMaxLength"/> halves only for
+    /// <c>nchar</c>/<c>nvarchar</c>, so the byte length 256 was reported as a 256-character column
+    /// instead of 128. Resolving it here rather than widening the condition to
+    /// <c>system_type_id &lt;&gt; user_type_id</c>, because the CLR types differ that way too and
+    /// must keep their own names.
+    /// </para>
+    /// </remarks>
+    private const string ColumnsSql = @"
+        SELECT
+            c.name AS ColumnName,
+            CASE
+                WHEN ty.is_user_defined = 1 THEN TYPE_NAME(ty.system_type_id)
+                WHEN ty.name = 'sysname' THEN 'nvarchar'
+                ELSE ty.name
+            END AS DataType,
+            c.is_nullable AS IsNullable,
+            c.is_identity AS IsIdentity,
+            c.is_computed AS IsComputed,
+            c.max_length AS MaxLength,
+            c.precision AS [Precision],
+            c.scale AS Scale,
+            dc.definition AS DefaultValue,
+            c.column_id AS OrdinalPosition
+        FROM sys.columns c
+        INNER JOIN sys.tables t ON c.object_id = t.object_id
+        INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+        INNER JOIN sys.types ty ON c.user_type_id = ty.user_type_id
+        LEFT JOIN sys.default_constraints dc ON c.default_object_id = dc.object_id
+        WHERE s.name = @SchemaName AND t.name = @TableName
+        ORDER BY c.column_id";
+
+    private const string PrimaryKeysSql = @"
+        SELECT
+            kc.name AS ConstraintName,
+            c.name AS ColumnName,
+            ic.key_ordinal AS KeyOrdinal
+        FROM sys.key_constraints kc
+        INNER JOIN sys.index_columns ic ON kc.parent_object_id = ic.object_id AND kc.unique_index_id = ic.index_id
+        INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+        INNER JOIN sys.tables t ON kc.parent_object_id = t.object_id
+        INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+        WHERE kc.type = 'PK' AND s.name = @SchemaName AND t.name = @TableName
+        ORDER BY ic.key_ordinal";
+
+    /// <summary>
+    /// AUD-R35-046: <c>internal</c> so the ordering below can be asserted without a live server,
+    /// matching <c>PostgreSqlSchemaReader.ForeignKeysSql</c>.
+    /// </summary>
+    internal const string ForeignKeysSql = @"
+        SELECT
+            fk.name AS ConstraintName,
+            COL_NAME(fkc.parent_object_id, fkc.parent_column_id) AS ForeignKeyColumn,
+            OBJECT_SCHEMA_NAME(fkc.referenced_object_id) AS ReferencedSchema,
+            OBJECT_NAME(fkc.referenced_object_id) AS ReferencedTable,
+            COL_NAME(fkc.referenced_object_id, fkc.referenced_column_id) AS ReferencedColumn
+        FROM sys.foreign_keys fk
+        INNER JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+        INNER JOIN sys.tables t ON fk.parent_object_id = t.object_id
+        INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+        WHERE s.name = @SchemaName AND t.name = @TableName
+        -- AUD-R35-046: a composite foreign key's columns pair positionally with the referenced
+        -- ones, so an unordered read pairs them by whatever order the engine happened to pick.
+        ORDER BY fk.name, fkc.constraint_column_id";
+
+    /// <inheritdoc />
+    public async Task<DatabaseSchema> ReadSchemaAsync(
+        string connectionString,
+        SchemaReaderOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = CreateConnection(connectionString);
+        await OpenConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
+
+        var tables = new List<TableSchema>();
+        List<(string SchemaName, string TableName)> tableInfos = await GetTableInfosAsync(connection, options, cancellationToken).ConfigureAwait(false);
+
+        foreach ((string? schemaName, string? tableName) in tableInfos)
+        {
+            TableSchema tableSchema = await ReadTableSchemaAsync(connection, schemaName, tableName, options, cancellationToken).ConfigureAwait(false);
+            tables.Add(tableSchema);
+        }
+
+        return new DatabaseSchema
+        {
+            DatabaseName = connection.Database,
+            Tables = tables
+        };
+    }
+
+    private static DbConnection CreateConnection(string connectionString)
+    {
+        // Try Microsoft.Data.SqlClient first, then System.Data.SqlClient.
+        // Literal type names, not a loop over an array: the trim analyzer only recognizes
+        // Type.GetType on a string it can see (IL2057, fatal at ilc on the NativeAOT publish -
+        // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
+        // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
+        // returns null and falls through.
+        var type = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
+                ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
+
+        if (type != null)
+        {
+            return ReflectedConnectionFactory.Create(type, connectionString);
+        }
+
+        throw new InvalidOperationException(
+            "Could not find SQL Server provider. Please install Microsoft.Data.SqlClient or System.Data.SqlClient.");
+    }
+
+    private static async Task OpenConnectionAsync(DbConnection connection, CancellationToken cancellationToken)
+    {
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<List<(string SchemaName, string TableName)>> GetTableInfosAsync(
+        DbConnection connection,
+        SchemaReaderOptions options,
+        CancellationToken cancellationToken)
+    {
+        var tables = new List<(string, string)>();
+
+        using DbCommand cmd = connection.CreateCommand();
+        cmd.CommandText = TablesSql;
+
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            var schemaName = reader.GetString(0);
+            var tableName = reader.GetString(1);
+
+            // Apply schema filter
+            if (options.IncludeSchemas?.Count > 0 &&
+                !options.IncludeSchemas.Contains(schemaName, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            // Apply table filters
+            if (options.IncludeTables?.Count > 0 &&
+                !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            if (options.ExcludeTables?.Count > 0 &&
+                options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            tables.Add((schemaName, tableName));
+        }
+
+        return tables;
+    }
+
+    private static async Task<TableSchema> ReadTableSchemaAsync(
+        DbConnection connection,
+        string schemaName,
+        string tableName,
+        SchemaReaderOptions options,
+        CancellationToken cancellationToken)
+    {
+        List<ColumnSchema> columns = await ReadColumnsAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false);
+        PrimaryKeyInfo? primaryKey = await ReadPrimaryKeyAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false);
+        List<ForeignKeyInfo> foreignKeys = options.IncludeForeignKeys
+            ? await ReadForeignKeysAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false)
+            : [];
+
+        MarkPrimaryKeyColumns(columns, primaryKey);
+
+        return new TableSchema
+        {
+            SchemaName = schemaName,
+            TableName = tableName,
+            Columns = columns,
+            PrimaryKey = primaryKey,
+            ForeignKeys = foreignKeys
+        };
+    }
+
+    /// <summary>
+    /// AUD-R35-043: delegates to the shared helper. Kept as an internal member because tests
+    /// address it by this name; the clone itself now lives in exactly one place.
+    /// </summary>
+    internal static void MarkPrimaryKeyColumns(List<ColumnSchema> columns, PrimaryKeyInfo? primaryKey) =>
+        SchemaReaderHelpers.MarkPrimaryKeyColumns(columns, primaryKey);
+
+    private static async Task<List<ColumnSchema>> ReadColumnsAsync(
+        DbConnection connection,
+        string schemaName,
+        string tableName,
+        CancellationToken cancellationToken)
+    {
+        var columns = new List<ColumnSchema>();
+
+        using DbCommand cmd = connection.CreateCommand();
+        cmd.CommandText = ColumnsSql;
+
+        DbParameter schemaParam = cmd.CreateParameter();
+        schemaParam.ParameterName = "@SchemaName";
+        schemaParam.Value = schemaName;
+        cmd.Parameters.Add(schemaParam);
+
+        DbParameter tableParam = cmd.CreateParameter();
+        tableParam.ParameterName = "@TableName";
+        tableParam.Value = tableName;
+        cmd.Parameters.Add(tableParam);
+
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            string dataType = reader.GetString(1);
+
+            columns.Add(new ColumnSchema
+            {
+                ColumnName = reader.GetString(0),
+                DataType = dataType,
+                IsNullable = reader.GetBoolean(2),
+                IsIdentity = reader.GetBoolean(3),
+                IsComputed = reader.GetBoolean(4),
+                MaxLength = NormalizeMaxLength(dataType, reader.IsDBNull(5) ? null : reader.GetInt16(5)),
+                Precision = reader.IsDBNull(6) ? null : reader.GetByte(6),
+                Scale = reader.IsDBNull(7) ? null : reader.GetByte(7),
+                DefaultValue = reader.IsDBNull(8) ? null : reader.GetString(8),
+                OrdinalPosition = reader.GetInt32(9)
+            });
+        }
+
+        return columns;
+    }
+
+    /// <summary>
+    /// <c>sys.columns.max_length</c> is reported in bytes. For unicode character types
+    /// (<c>nchar</c>/<c>nvarchar</c>) SQL Server stores 2 bytes per character, so the raw value
+    /// must be halved to get the actual character length; <c>-1</c> (the MAX sentinel) is left
+    /// untouched. The legacy LOB types <c>text</c>/<c>ntext</c>/<c>image</c> always report a fixed
+    /// sentinel <c>max_length</c> of 16 (the size of the internal data pointer) regardless of the
+    /// column's actual, effectively unbounded, capacity - AUD-R22: treat them as unbounded (null)
+    /// like the MAX sentinel instead of halving/passing through the meaningless sentinel value.
+    /// </summary>
+    internal static short? NormalizeMaxLength(string dataType, short? maxLength)
+    {
+        if (maxLength is null or -1)
+            return maxLength;
+
+        if (dataType is "text" or "ntext" or "image")
+            return null;
+
+        return dataType is "nchar" or "nvarchar"
+            ? (short)(maxLength.Value / 2)
+            : maxLength;
+    }
+
+    private static async Task<PrimaryKeyInfo?> ReadPrimaryKeyAsync(
+        DbConnection connection,
+        string schemaName,
+        string tableName,
+        CancellationToken cancellationToken)
+    {
+        using DbCommand cmd = connection.CreateCommand();
+        cmd.CommandText = PrimaryKeysSql;
+
+        DbParameter schemaParam = cmd.CreateParameter();
+        schemaParam.ParameterName = "@SchemaName";
+        schemaParam.Value = schemaName;
+        cmd.Parameters.Add(schemaParam);
+
+        DbParameter tableParam = cmd.CreateParameter();
+        tableParam.ParameterName = "@TableName";
+        tableParam.Value = tableName;
+        cmd.Parameters.Add(tableParam);
+
+        string? constraintName = null;
+        var columns = new List<string>();
+
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            constraintName ??= reader.GetString(0);
+            columns.Add(reader.GetString(1));
+        }
+
+        if (columns.Count == 0)
+            return null;
+
+        return new PrimaryKeyInfo
+        {
+            ConstraintName = constraintName!,
+            Columns = columns
+        };
+    }
+
+    private static async Task<List<ForeignKeyInfo>> ReadForeignKeysAsync(
+        DbConnection connection,
+        string schemaName,
+        string tableName,
+        CancellationToken cancellationToken)
+    {
+        var foreignKeys = new List<ForeignKeyInfo>();
+
+        using DbCommand cmd = connection.CreateCommand();
+        cmd.CommandText = ForeignKeysSql;
+
+        DbParameter schemaParam = cmd.CreateParameter();
+        schemaParam.ParameterName = "@SchemaName";
+        schemaParam.Value = schemaName;
+        cmd.Parameters.Add(schemaParam);
+
+        DbParameter tableParam = cmd.CreateParameter();
+        tableParam.ParameterName = "@TableName";
+        tableParam.Value = tableName;
+        cmd.Parameters.Add(tableParam);
+
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            foreignKeys.Add(new ForeignKeyInfo
+            {
+                ConstraintName = reader.GetString(0),
+                ForeignKeyColumn = reader.GetString(1),
+                ReferencedSchema = reader.IsDBNull(2) ? null : reader.GetString(2),
+                ReferencedTable = reader.GetString(3),
+                ReferencedColumn = reader.GetString(4)
+            });
+        }
+
+        return foreignKeys;
+    }
+}

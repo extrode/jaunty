@@ -38,8 +38,8 @@ Recorded before any work, so the "we skipped it" calls are visible rather than i
 | §6 incremental generator caching | **Already satisfied** — `GeneratorCachingTests` (308 lines) uses `TrackIncrementalGeneratorSteps` and asserts on `IncrementalStepRunReason` |
 | §6 trim analyzer | Verify only; `IsTrimmable`/`IsAotCompatible` are already set in `src/Directory.Build.props:11-12` |
 | §3 Microsoft.Z3 | **Rejected.** The dialect boundary surface is hand-enumerable in one sitting, and the handover itself says Z3 output lands as ordinary checked-in unit tests — which the boundary theories produce directly, without a model to maintain |
-| §3 FsCheck Command model | Gate-check candidate for `Jaunty.Fluent`; decided from the mutation baseline, not by default |
-| §3 Verify.SourceGenerators | Skipped — `Jaunty.SourceGenerator.Tests` already asserts emitted source directly |
+| §3 FsCheck Command model | Gate-check candidate for `Extrode.Jaunty.Fluent`; decided from the mutation baseline, not by default |
+| §3 Verify.SourceGenerators | Skipped — `Extrode.Jaunty.SourceGenerator.Tests` already asserts emitted source directly |
 | §3 cargo-fuzz / FFI marshaling | Not applicable — no Rust, no C ABI, no `unsafe` block in `src/` |
 | §7 fit notes for Loom, Warden, Strata, iqr4, coding-agent, hearth… | Out of scope — cross-portfolio triage for other repos |
 
@@ -54,7 +54,7 @@ are not part of `dotnet test Jaunty.slnx`, and carry no collector.
 
 **jauntyq's `CompilerGeneratedAttribute` finding does not reproduce here, and the measurement
 says so.** There, excluding that attribute hid every async and iterator body. Measured on
-`Jaunty.FlatFiles.Tests` with coverlet.collector 10.0.1, the same run reports:
+`Extrode.Jaunty.FlatFiles.Tests` with coverlet.collector 10.0.1, the same run reports:
 
 | ExcludeByAttribute | Classes | State machines | Lines |
 |---|---:|---:|---:|
@@ -121,7 +121,7 @@ consumers load. Splitting the coverage by line range:
 | `…Span` (L28–210), live on net8.0/net10.0 | 81 | 81 | **100 %** |
 | `…Classic` (L213–411), live on netstandard2.0 | 80 | 3 | **3.8 %** |
 
-`Jaunty.Tests` does target net472 and 50 parser tests pass there locally, exercising the classic
+`Extrode.Jaunty.Tests` does target net472 and 50 parser tests pass there locally, exercising the classic
 body. **`ci.yml` has no net472 leg** — it is `ubuntu-latest` throughout — so no CI run has ever
 executed the code path that .NET Framework users get. Two hand-maintained parsers that must agree,
 one of them tested only when someone happens to run the net472 leg on a Windows box, is a silent
@@ -136,10 +136,10 @@ cross-reference actually indicted:
 
 | Config | Mutates | Rationale |
 |---|---|---|
-| `tests/Jaunty.Tests` | `**/Internals/Parameters/**`, `**/Dialects/**` | rank 1 and the Phase-1 boundary target |
-| `tests/Jaunty.Fluent.Tests` | `**/Expressions/**` | ranks 2, 4, 5, 7, 8 are all expression visitors |
+| `tests/Extrode.Jaunty.Tests` | `**/Internals/Parameters/**`, `**/Dialects/**` | rank 1 and the Phase-1 boundary target |
+| `tests/Extrode.Jaunty.Fluent.Tests` | `**/Expressions/**` | ranks 2, 4, 5, 7, 8 are all expression visitors |
 
-`Jaunty.FlatFiles` is deliberately **not** configured: at 99.2 % line coverage and 1 unit of
+`Extrode.Jaunty.FlatFiles` is deliberately **not** configured: at 99.2 % line coverage and 1 unit of
 uncovered complexity it fails gate item 4 before a run is worth its CI minutes.
 
 Thresholds are `break: 0` — mutation score is an artifact to read, not a gate that fails a build,
@@ -147,12 +147,12 @@ because a score drop is a prompt to look rather than a defect on its own.
 
 #### Why the first three attempts produced nothing, and what actually fixed it
 
-Three runs were abandoned before any report existed: `Jaunty.Tests` after **4h20m** (2,886
+Three runs were abandoned before any report existed: `Extrode.Jaunty.Tests` after **4h20m** (2,886
 CPU-seconds, 960 MB, output directory holding nothing but its own `.gitignore`), then two on
-`Jaunty.Fluent.Tests`. All were progressing, not deadlocked — just far too slow.
+`Extrode.Jaunty.Fluent.Tests`. All were progressing, not deadlocked — just far too slow.
 
-The first diagnosis was that the live-database integration suites in `Jaunty.Tests` made mutation
-testing inherently a nightly-tier job. **That was wrong as the primary cause.** `Jaunty.Fluent.Tests`
+The first diagnosis was that the live-database integration suites in `Extrode.Jaunty.Tests` made mutation
+testing inherently a nightly-tier job. **That was wrong as the primary cause.** `Extrode.Jaunty.Fluent.Tests`
 has no Npgsql or SqlClient reference at all and hit the same wall. Running with
 `--verbosity debug` to a file rather than through `| tail` — which had swallowed every line until
 exit — showed the real one:
@@ -184,24 +184,24 @@ are discarded as `CompileError` — Stryker retried compilation ten times with r
 `ExtractGroupByColumns` and `TranslateMemberInit` (`CS0165`, unassigned local `assignment`). Those
 two methods get no mutation coverage regardless of runner.
 
-#### Mutation runs target `Jaunty.UnitTests`, not `Jaunty.Tests`
+#### Mutation runs target `Extrode.Jaunty.UnitTests`, not `Extrode.Jaunty.Tests`
 
-Measured while a `Jaunty.Tests` mutation run was in flight: a concurrent ordinary test run failed
+Measured while a `Extrode.Jaunty.Tests` mutation run was in flight: a concurrent ordinary test run failed
 **45 tests**, all on `dialect: SqlServer` — `There is already an object named 'bulk_test'`, plus
 row-count assertions off by one. Re-run with nothing else executing, the same suite was **0
 failed**. Stryker's 12 parallel test hosts were racing each other on the one shared SQL Server.
 
-That makes a mutation run against `Jaunty.Tests` not merely slow but **invalid**: mutants get
+That makes a mutation run against `Extrode.Jaunty.Tests` not merely slow but **invalid**: mutants get
 recorded as killed by database collisions rather than by an assertion, so the score measures
-contention. `stryker-config.json` therefore lives in `tests/Jaunty.UnitTests`, which reaches no
+contention. `stryker-config.json` therefore lives in `tests/Extrode.Jaunty.UnitTests`, which reaches no
 live engine and where concurrency 12 is safe.
 
 <!-- BASELINE TABLE: filled from the first completed run -->
 
 | Module | Host | Scope | Tested | Killed | Survived | No coverage | Timeout | Score |
 |---|---|---|---:|---:|---:|---:|---:|---:|
-| `Jaunty` | `Jaunty.UnitTests` | `Internals/Parameters/**` + `Dialects/**` | 2,287 | 2,273 | **0** | 233 | 14 | **90.75 %** |
-| `Jaunty.Fluent` | `Jaunty.Fluent.Tests` | `Expressions/ExistsExpressionVisitor.cs` | 98 | 59 | 1 | — | 38 | 66.90 % |
+| `Extrode.Jaunty` | `Extrode.Jaunty.UnitTests` | `Internals/Parameters/**` + `Dialects/**` | 2,287 | 2,273 | **0** | 233 | 14 | **90.75 %** |
+| `Extrode.Jaunty.Fluent` | `Extrode.Jaunty.Fluent.Tests` | `Expressions/ExistsExpressionVisitor.cs` | 98 | 59 | 1 | — | 38 | 66.90 % |
 
 The core run took 75 minutes (07:56 → 09:11) at concurrency 12; 212 further mutants were discarded
 as `CompileError`.
@@ -237,7 +237,7 @@ than genuine hangs, and its single survivor has not been triaged.
 
 ### 1. `SqlParameterParser` property + differential tests — **done**
 
-`tests/Jaunty.Tests/Unit/Read/SqlParameterParserPropertyTests.cs`, 7 facts, CsCheck 4.8.0,
+`tests/Extrode.Jaunty.Tests/Unit/Read/SqlParameterParserPropertyTests.cs`, 7 facts, CsCheck 4.8.0,
 20,000 iterations each. The 43 curated cases in `SqlParameterParserTests` are untouched.
 
 The generator composes statements from a 50-fragment vocabulary chosen for the branches the
@@ -271,7 +271,7 @@ the file is `#if CSCHECK`-guarded because CsCheck ships no .NET Framework target
 
 ### 3. Streaming lifecycle — **done**
 
-`tests/Jaunty.Tests/Integration/Streaming/StreamingLifecycleTests.cs`, 8 theories over the
+`tests/Extrode.Jaunty.Tests/Integration/Streaming/StreamingLifecycleTests.cs`, 8 theories over the
 five dialects (two SQLite-only), joining the `Get Operations` collection because it reuses
 that fixture's `get_test` table.
 
@@ -331,7 +331,7 @@ As predicted from `src/Directory.Build.props:11-12`, measured via
 | Jaunty.SourceGenerator | *unset* | true |
 
 `EnableSingleFileAnalyzer`, `IsTrimmable` and `IsAotCompatible` are likewise true on
-`src/Jaunty`. `Jaunty.SourceGenerator` is a netstandard2.0 Roslyn analyzer that is never
+`src/Extrode.Jaunty`. `Extrode.Jaunty.SourceGenerator` is a netstandard2.0 Roslyn analyzer that is never
 trimmed, so unset is correct there. The plan said verify and add nothing; nothing added.
 
 ### 2. Dialect boundary theories — **done, and it found a defect**
@@ -341,7 +341,7 @@ The decimal half was already closed by `Unit/Dialects/DecimalBindingBoundaryTest
 temporal, and there was no cross-dialect temporal round-trip coverage anywhere — only unit-level
 string-to-temporal conversion tests.
 
-`tests/Jaunty.Tests/Integration/Dialects/TemporalBoundaryTests.cs`, 13 theories, all passing.
+`tests/Extrode.Jaunty.Tests/Integration/Dialects/TemporalBoundaryTests.cs`, 13 theories, all passing.
 Writes go through `connection.Execute(sql, new { v = value })` — Jaunty's own binder — not raw
 ADO, so each assertion describes what Jaunty does rather than what a provider does. The first
 draft used raw `CreateParameter` and had to be redone for exactly that reason.
@@ -370,7 +370,7 @@ the `639234351121234567` vs `639234351121233333` tick mismatch as the failure me
 **Coverage limit, stated rather than hidden.** Only SqlServer and the two SQLite providers carry
 attributes. Postgres and MariaDB are deliberately *absent* rather than attached-and-skipped: an
 assertion that has never executed is not evidence. Their connection strings are empty in the
-local `tests/Jaunty.Tests/appsettings.json` (only `SqlServer` is populated), which is also why
+local `tests/Extrode.Jaunty.Tests/appsettings.json` (only `SqlServer` is populated), which is also why
 1,616 tests skip in a full run — starting Docker does not change this, because availability is
 config-gated by `TestConfiguration`, not by container discovery. Extending these theories to
 Postgres and MariaDB needs those strings filled in against the ports in
@@ -378,7 +378,7 @@ Postgres and MariaDB needs those strings filled in against the ports in
 
 ### 4. Allocation budgets — **done**
 
-`tests/Jaunty.UnitTests/Unit/AllocationBudgetTests.cs`, 6 budgets under
+`tests/Extrode.Jaunty.UnitTests/Unit/AllocationBudgetTests.cs`, 6 budgets under
 `[Trait("Category", "AllocationBudget")]`, green on net8.0 and net10.0. The harness follows
 `TypedKeyGuardTests.Measure` including its lesson — warm up first, and sink the result into a
 static field so .NET 10's escape analysis cannot elide the allocation being measured.
@@ -413,7 +413,7 @@ that case to zero.
 
 Stryker re-run: **DONE.** Cancelled twice on the dev machine, then run to completion on a second
 machine — 2 h 10 m 39 s wall at concurrency 8, exit 0, report at
-`tests/Jaunty.UnitTests/StrykerOutput/2026-08-27.20-27-37/`.
+`tests/Extrode.Jaunty.UnitTests/StrykerOutput/2026-08-27.20-27-37/`.
 
 | | Baseline (desktop) | After Phase 1 (Mac) | Delta |
 | --- | ---: | ---: | ---: |
@@ -445,12 +445,12 @@ re-running it — the mutants name their own file and line, which is enough to w
 | Cluster | Status |
 | --- | --- |
 | `ReplaceParametersLiteralAware` (`ParameterBinder.cs:706-815`) | **Closed.** `ParameterBinderExpansionRewriteSkipsLiteralsTests`, 18 cases. The walker's main loop was covered; every *skip* branch was not, because the existing expansion tests all use plain SQL. RED-phase checked — perturbing the five skip branches fails 10 of the 18. |
-| `RegisterDialect` cache invalidation (`SqlDialectFactory.cs:114-118`) | **Not closed, and not closable here.** It is already covered — by `tests/Jaunty.Tests/Unit/Dialects/DialectRegistrationInvalidatesDerivedCachesTests.cs`, in the *serial* assembly, because it mutates process-wide state. Stryker's config names no `test-projects`, so it runs `Jaunty.UnitTests` alone and cannot see that test. |
+| `RegisterDialect` cache invalidation (`SqlDialectFactory.cs:114-118`) | **Not closed, and not closable here.** It is already covered — by `tests/Extrode.Jaunty.Tests/Unit/Dialects/DialectRegistrationInvalidatesDerivedCachesTests.cs`, in the *serial* assembly, because it mutates process-wide state. Stryker's config names no `test-projects`, so it runs `Extrode.Jaunty.UnitTests` alone and cannot see that test. |
 
 The second row generalises, and it qualifies the NoCoverage number: **NoCoverage here means "no
-`Jaunty.UnitTests` test reaches it", not "no test reaches it".** The mutate globs
+`Extrode.Jaunty.UnitTests` test reaches it", not "no test reaches it".** The mutate globs
 (`**/Internals/Parameters/**`, `**/Dialects/**`) cover code whose process-state tests live in
-`Jaunty.Tests` by design. Pointing Stryker at both assemblies would fix the accounting but would
+`Extrode.Jaunty.Tests` by design. Pointing Stryker at both assemblies would fix the accounting but would
 make the mutation run require live databases — a trade to decide with the runner question, not
 before it.
 
@@ -474,7 +474,7 @@ and the nightly overrides upward via `CI_MUTATION_CONCURRENCY` (default 8).
    cancel/continue call impossible to make on evidence. Any future local run needs
    `--reporter json` or a TTY, not a plain redirect.
 2. **A local Stryker run blocks all other work in the repo.** A `dotnet test` launched while it ran
-   died with `MSB3027: Could not copy Jaunty.SourceGenerator.dll ... locked by ".NET Host"`, after
+   died with `MSB3027: Could not copy Extrode.Jaunty.SourceGenerator.dll ... locked by ".NET Host"`, after
    10 retries. The mutation tier is not merely expensive here, it is *exclusive*.
 
 **Policy, from this point: do not run the full mutation tier on the dev machine at all.** It is a
@@ -489,7 +489,7 @@ commits without needing GitHub credentials on the second machine.
 
 | | Mac | Dev desktop |
 | --- | --- | --- |
-| `Jaunty.UnitTests`, 1,464 tests | **13 s** wall (twice) | ~10 s |
+| `Extrode.Jaunty.UnitTests`, 1,464 tests | **13 s** wall (twice) | ~10 s |
 | Stryker coverage capture | 3 m 35 s | 48 s |
 | **Full mutation tier** | **2 h 10 m 39 s**, concurrency 8 | >106 min, cancelled unfinished |
 
@@ -498,7 +498,7 @@ so without occupying the machine the owner types on. On the axis that has actual
 `The runner has received a shutdown signal`, WSL reclaiming the distro mid-job — a machine that
 never sleeps is the opposite of the current runner.
 
-**It is eligible for the mutation tier only.** `Jaunty.UnitTests` needs no live database, which is
+**It is eligible for the mutation tier only.** `Extrode.Jaunty.UnitTests` needs no live database, which is
 the whole reason the mutation config points there. It cannot host `build-and-test` or `full-suite`:
 `mcr.microsoft.com/mssql/server` is amd64-only, and no container runtime is installed.
 
@@ -514,11 +514,11 @@ current score and it supersedes the 90.75 % baseline.
 
 ### 1 and 2 — fuzz harness and nightly workflow: DONE (`1511f297`)
 
-`tools/Jaunty.Fuzz` (csproj, `Program.cs`, 20-seed `corpus/`, `README.md`),
-`.github/workflows/nightly.yml`, the `Jaunty.Fuzz` `InternalsVisibleTo` entry in
-`src/Jaunty/Jaunty.csproj`, and the fuzz project registered in `Jaunty.slnx`.
+`tools/Extrode.Jaunty.Fuzz` (csproj, `Program.cs`, 20-seed `corpus/`, `README.md`),
+`.github/workflows/nightly.yml`, the `Extrode.Jaunty.Fuzz` `InternalsVisibleTo` entry in
+`src/Extrode.Jaunty/Extrode.Jaunty.csproj`, and the fuzz project registered in `Jaunty.slnx`.
 
-Verified: `dotnet build tools/Jaunty.Fuzz -c Release` succeeds under `TreatWarningsAsErrors`;
+Verified: `dotnet build tools/Extrode.Jaunty.Fuzz -c Release` succeeds under `TreatWarningsAsErrors`;
 `nightly.yml` parses to jobs `full-suite`, `fuzz`, `mutation`, `benchmarks` on triggers `schedule`
 and `workflow_dispatch`; `SolutionLayoutTests` still 2/2 with the fuzz project in the solution
 (both its rules scope to `tests/` only).
@@ -538,9 +538,9 @@ run*, not a clean build. It has now had one, as the local WSL smoke the protocol
 Launched through the native driver at `~/libfuzzer-dotnet`, not `dotnet` directly, so the
 fell-back-to-replaying-args[1] failure the README warns about did not apply: 8,371 exec/s and a
 growing corpus are what a real fuzzing loop looks like, and a replay would have exited at once.
-`sharpfuzz` instrumented the published `Jaunty.dll`; `src/` was untouched.
+`sharpfuzz` instrumented the published `Extrode.Jaunty.dll`; `src/` was untouched.
 
-**One environment gap found, and it is local rather than a workflow defect.** `Jaunty.Fuzz`
+**One environment gap found, and it is local rather than a workflow defect.** `Extrode.Jaunty.Fuzz`
 targets `net8.0` and the WSL box carries only 10.0.9, so the first attempt died with
 `You must install or update .NET to run this application. Framework: 'Microsoft.NETCore.App',
 version '8.0.0'`. The smoke was re-run with `DOTNET_ROLL_FORWARD=Major`. `nightly.yml` is not
@@ -564,7 +564,7 @@ translation, which is now the highest-value mutation work left in this repo.
 #### That reach deficit is now closed — 2026-08-30
 
 Measured rather than assumed, because Stryker cannot be re-run on this machine. Line coverage of
-`ExistsExpressionVisitor` from `scripts/coverage.ps1 -Suite Jaunty.Fluent.Tests`:
+`ExistsExpressionVisitor` from `scripts/coverage.ps1 -Suite Extrode.Jaunty.Fluent.Tests`:
 
 | | Uncovered lines | Coverage |
 | --- | ---: | ---: |
@@ -595,7 +595,7 @@ column test with `if (false)` trips `CS0162 Unreachable code detected` under
 `TreatWarningsAsErrors`. That is the failure mode the allocation-budget note above warns about,
 caught by the compiler this time rather than by a stale binary quietly passing.
 
-**Caveat that must travel with this verdict:** `tests/Jaunty.Fluent.Tests/stryker-config.json`
+**Caveat that must travel with this verdict:** `tests/Extrode.Jaunty.Fluent.Tests/stryker-config.json`
 scopes mutation to `**/Expressions/**`. The fluent *builder* — where ordering and state logic
 actually lives — was never in the mutated set, so this baseline could not have answered the gate
 affirmatively even if ordering bugs existed. The honest statement is "no evidence for it, and the
@@ -631,7 +631,7 @@ Three findings that matter:
    `CI_RUNNER=self-hosted`.
 2. **`mcr.microsoft.com/mssql/server` is amd64-only.** No ARM64 image exists. Any ARM runner —
    cheapest managed tier, Apple Silicon, Ampere — cannot run `build-and-test` or `full-suite`.
-   The `mutation` job is exempt: `Jaunty.UnitTests` touches no live database.
+   The `mutation` job is exempt: `Extrode.Jaunty.UnitTests` touches no live database.
 3. **The `mutation` job cannot run on a standard hosted runner.** 2,364 mutants at concurrency 2
    exceeds the 6-hour job limit. It is the only job in `nightly.yml` with no free home, and it is
    explicitly not a gate (`"break": 0`) — so **weekly, not nightly**, is the correct cadence and
@@ -655,7 +655,7 @@ dispatch still runs everything.
 The gate couples a job condition to a cron string with nothing between them, and it fails silently:
 edit the cron, leave the condition, and the job simply never runs again — no error, and no skipped
 badge on the weekday runs it was already absent from. `NightlyWorkflowCadenceTests`
-(`tests/Jaunty.UnitTests/Unit/`) is the check, four facts, each RED-phase proven against a separate
+(`tests/Extrode.Jaunty.UnitTests/Unit/`) is the check, four facts, each RED-phase proven against a separate
 perturbation: moving either cron back to 03:00 fails two, deleting the `if:` fails two, and
 adding a schedule condition to `fuzz` fails the fourth. Its own first version was vacuous — the
 workflow is CRLF and `$` in .NET multiline mode matches before `\n` and not before `\r`, so every

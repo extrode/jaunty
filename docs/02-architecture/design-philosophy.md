@@ -174,7 +174,7 @@ We choose return types that accurately reflect the underlying database operation
 
 ```csharp
 // At application startup
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
 
 // First query triggers caching
 var product = connection.Query<Product>(sql);

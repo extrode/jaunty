@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+		<!-- Suppress trim-analyzer warnings like Extrode.Jaunty.Extensions.Reflection: this project maps by
+		     reflection by design and is on no AOT publish path (no NativeAOT sample or the
+		     Scaffolding CLI references it - verified for 010's scanner rewrite). Latent until
+		     T17's - -no-incremental: incremental builds skipped the analyzer, so the IL2070s at
+		     MappedPropertyFilter/DuckDbMultiple never surfaced in a green CI. -->
+		<NoWarn>$(NoWarn);IL2070;IL2075</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<ProjectReference Include="..\Extrode.Jaunty\Extrode.Jaunty.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\Extrode.Jaunty.FlatFiles\Extrode.Jaunty.FlatFiles.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\Extrode.Jaunty.Fluent\Extrode.Jaunty.Fluent.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<ProjectReference Include="..\Extrode.Jaunty\Extrode.Jaunty.csproj"
+		                  SetTargetFramework="TargetFramework=net10.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\Extrode.Jaunty.FlatFiles\Extrode.Jaunty.FlatFiles.csproj"
+		                  SetTargetFramework="TargetFramework=net10.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\Extrode.Jaunty.Fluent\Extrode.Jaunty.Fluent.csproj"
+		                  SetTargetFramework="TargetFramework=net10.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="DuckDB.NET.Data.Full" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Extrode.Jaunty.FlatFiles.DuckDB.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+	<PropertyGroup>
+		<PackageId>Extrode.Jaunty.FlatFiles.DuckDB</PackageId>
+		<Authors>Extrode LLC</Authors>
+		<Description>DuckDB provider for Extrode.Jaunty.FlatFiles. Enables SQL queries on CSV, TSV, Parquet, JSON, Excel, Delta Lake, and Iceberg sources, including remote files via S3, Azure, and HTTP.</Description>
+		<RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
+		<Nullable>enable</Nullable>
+		<ErrorReport>none</ErrorReport>
+		<PackageTags>$(PackageTags);flat-files;csv;parquet;json;duckdb</PackageTags>
+	</PropertyGroup>
+
+</Project>
