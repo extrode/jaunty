@@ -63,7 +63,7 @@ docs/specs/004-fluent-groupby-joins/
 ### Source Code
 
 ```
-src/Jaunty.Fluent/
+src/Extrode.Jaunty.Fluent/
 ├── Interfaces/
 │   ├── IJoinedQuery.cs              # add GroupBy overloads to IJoinedQuery / 3 / 4
 │   ├── IGroupedJoinedQuery.cs       # new: 2-way grouped-joined query surface
@@ -86,7 +86,7 @@ src/Jaunty.Fluent/
     └── GroupByExpressionVisitor.cs   # generalize to accept multiple EntityMetadata (one per
                                         # joined entity) for multi-parameter key/aggregate selectors
 
-tests/Jaunty.Fluent.Tests/Integration/
+tests/Extrode.Jaunty.Fluent.Tests/Integration/
 ├── FluentGroupByJoinTests.cs         # new: 2-way join + GroupBy + aggregate + Having + Select
 ├── FluentGroupByJoin3Tests.cs        # new: 3-way
 └── FluentGroupByJoin4Tests.cs        # new: 4-way
@@ -115,7 +115,7 @@ samples/torture-test-sakila-queries/
    `_conditions`/parameters to a same-assembly `GroupedJoinedQueryBuilder<TFrom,TJoin,TKey>`
    constructor — exact same pattern `GroupedQueryBuilder<T,TKey>` already uses today, just
    sourced from the joined builder instead of `QueryBuilder<T>`. No public API surface change
-   needed for this seam; both builders live in `Jaunty.Fluent`.
+   needed for this seam; both builders live in `Extrode.Jaunty.Fluent`.
 
 3. **`GroupByExpressionVisitor` generalization.** Add an overload/variant taking an ordered
    array of `EntityMetadata` (one per joined entity, matching parameter order in the

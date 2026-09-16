@@ -10,7 +10,7 @@ Status: draft · Created: 2026-07-29
 ## 1. Where This Came From
 
 Audit round 25, finding B4-3, registered as `AUD-R25-030`. The finding observed that
-`ISqlDialect.ParameterPrefix` is honoured by `Jaunty.Fluent` and ignored by core, and
+`ISqlDialect.ParameterPrefix` is honoured by `Extrode.Jaunty.Fluent` and ignored by core, and
 *suspected* the write path was broken. Round 25 confirmed the suspicion, documented it on
 `ISqlDialect` rather than fixing it, and pinned the behaviour with
 `ParameterPrefixLimitationTests` — four tests that deliberately assert failures. It is the one
@@ -40,7 +40,7 @@ Reading:
 - DuckDB requires the **bare** name on the parameter object — this is axis B, which Jaunty
   does not model anywhere.
 - The two are independent: getting axis A right and axis B wrong produces the *second* error,
-  which is precisely what `Jaunty.Fluent` does today (`ParameterCollection.BindTo` sets
+  which is precisely what `Extrode.Jaunty.Fluent` does today (`ParameterCollection.BindTo` sets
   `param.ParameterName = name` with the sigil still attached).
 - Binding is by name, not position — order of `Parameters.Add` is irrelevant.
 - Positional `?` is not reachable through `IDbCommand.Parameters` at all with this provider,
@@ -83,13 +83,13 @@ Exhaustive as of `dev` @ `5e149d0`.
 
 | File | Lines | What |
 |---|---|---|
-| `src/Jaunty/Internals/Write/CrudSqlCache.cs` | 121 | `BuildInsertSql` — VALUES list |
+| `src/Extrode.Jaunty/Internals/Write/CrudSqlCache.cs` | 121 | `BuildInsertSql` — VALUES list |
 | | 150 | `BuildUpdateSql` — SET clause |
 | | 186 | `BuildDeleteByIdSql` — WHERE |
 | | 209, 217, 225 | `BuildUpsertSql` — insert/update/key param arrays |
 | | 246 | `AppendWhereClause` — shared by UPDATE and DELETE |
 | | 272 | `BuildSelectByIdSql` — WHERE |
-| `src/Jaunty/Internals/Write/MultiRowInsertCache.cs` | 129 | multi-row VALUES tuples |
+| `src/Extrode.Jaunty/Internals/Write/MultiRowInsertCache.cs` | 129 | multi-row VALUES tuples |
 
 Both types already receive an `ISqlDialect` — `CrudSqlCache.GetSql<T>` resolves it from the
 connection and is keyed `(entityType, connectionType)`. **Axis A is mechanical.** For the four
@@ -99,17 +99,17 @@ core dialects, all of which return `"@"`, the output is unchanged by constructio
 
 | File | Lines |
 |---|---|
-| `src/Jaunty/Internals/Write/WriteParameterHelper.cs` | 18, 33, 41, 54 |
-| `src/Jaunty/Internals/Read/GetCore.cs` | 177, 333 |
-| `src/Jaunty/Internals/Write/DeleteCore.cs` | 399, 408 |
-| `src/Jaunty/Write/Upsert.cs` | 200, 214 |
-| `src/Jaunty.Extensions.Reflection/JauntyReflectionExtensions.cs` | 316 (`BuildColumnConverters`) |
+| `src/Extrode.Jaunty/Internals/Write/WriteParameterHelper.cs` | 18, 33, 41, 54 |
+| `src/Extrode.Jaunty/Internals/Read/GetCore.cs` | 177, 333 |
+| `src/Extrode.Jaunty/Internals/Write/DeleteCore.cs` | 399, 408 |
+| `src/Extrode.Jaunty/Write/Upsert.cs` | 200, 214 |
+| `src/Extrode.Jaunty.Extensions.Reflection/JauntyReflectionExtensions.cs` | 316 (`BuildColumnConverters`) |
 
-Plus four emission statements in `src/Jaunty.SourceGenerator/JauntyGenerator.cs` — lines 627
+Plus four emission statements in `src/Extrode.Jaunty.SourceGenerator/JauntyGenerator.cs` — lines 627
 (`BindInsert`), 637 and 641 (`BindUpdate`: non-key columns, then keys), and 651
 (`BindDelete`) — each emitting `AddParam(command, p, "@<column>", ...)`.
 
-And `src/Jaunty.Fluent/Internals/ParameterCollection.cs:52`, which sets `ParameterName` to a
+And `src/Extrode.Jaunty.Fluent/Internals/ParameterCollection.cs:52`, which sets `ParameterName` to a
 name that already carries whatever sigil the builder attached — the source of the DuckDB
 Fluent failure.
 
@@ -117,11 +117,11 @@ Fluent failure.
 
 | File | Line | Why |
 |---|---|---|
-| `src/Jaunty/StoredProcedure/ExecuteStoredProcedure.cs` | 545 | stored procedures — out of scope, see spec §6 |
-| `src/Jaunty/Internals/Parameters/ParameterBinder.cs` | 458 | *detects* a prefix in user-supplied SQL; already sigil-aware |
-| `src/Jaunty/Internals/Parameters/SqlParameterParser.cs` | 67, 90, 230, 248 | same — parsing, not emission |
-| `src/Jaunty/Interceptors/LoggingInterceptor.cs` | 216 | already handles `@ : ? $` |
-| `src/Jaunty/Dialects/*.cs` | — | the dialects' own `ParameterPrefix` returns |
+| `src/Extrode.Jaunty/StoredProcedure/ExecuteStoredProcedure.cs` | 545 | stored procedures — out of scope, see spec §6 |
+| `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs` | 458 | *detects* a prefix in user-supplied SQL; already sigil-aware |
+| `src/Extrode.Jaunty/Internals/Parameters/SqlParameterParser.cs` | 67, 90, 230, 248 | same — parsing, not emission |
+| `src/Extrode.Jaunty/Interceptors/LoggingInterceptor.cs` | 216 | already handles `@ : ? $` |
+| `src/Extrode.Jaunty/Dialects/*.cs` | — | the dialects' own `ParameterPrefix` returns |
 
 ## 4. The Three Contracts
 
@@ -136,7 +136,7 @@ public static void BindInsert(IDbCommand command, Customer entity)
 ```
 
 `WriteParameterCache<T>` finds it by reflection on exactly that name and signature
-(`src/Jaunty/Internals/Write/WriteParameterCache.cs:154-158`), falling back to the reflection
+(`src/Extrode.Jaunty/Internals/Write/WriteParameterCache.cs:154-158`), falling back to the reflection
 resolver when absent. The signature is public API of the *consumer's* assembly, and a
 downstream assembly may carry binders emitted by an older Jaunty — so changing it is breaking
 in a way an internal refactor is not.
@@ -148,7 +148,7 @@ public static Func<Type, Action<IDbCommand, object>>? ReflectionInsertBinderReso
 ```
 
 Three of these on `JauntyConfig` (lines 127–148). Public settable properties; changing the
-delegate type is source- and binary-breaking. In-repo, only `Jaunty.Extensions.Reflection`
+delegate type is source- and binary-breaking. In-repo, only `Extrode.Jaunty.Extensions.Reflection`
 sets them.
 
 ### 4.3 `WriteParameterCache<T>`

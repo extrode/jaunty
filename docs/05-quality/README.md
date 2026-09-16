@@ -45,7 +45,7 @@ dotnet test
 dotnet test /p:CollectCoverage=true
 
 # Run specific test project
-dotnet test tests/Jaunty.Tests
+dotnet test tests/Extrode.Jaunty.Tests
 ```
 
 ---

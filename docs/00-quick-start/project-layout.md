@@ -54,8 +54,8 @@ jaunty/
 
 | Folder | Purpose | Key Contents |
 |--------|---------|--------------|
-| `src/` | Source code for the 9 packages plus the source generator that ships inside the core package | `Jaunty/`, `Jaunty.Fluent/`, `Jaunty.FlatFiles/`, `Jaunty.SourceGenerator/` |
-| `tests/` | The 10 test projects, shared helpers, and the server seed scripts | `Jaunty.Tests/`, `Jaunty.UnitTests/`, `Helpers/`, `*-setup.sql` |
+| `src/` | Source code for the 9 packages plus the source generator that ships inside the core package | `Extrode.Jaunty/`, `Extrode.Jaunty.Fluent/`, `Extrode.Jaunty.FlatFiles/`, `Extrode.Jaunty.SourceGenerator/` |
+| `tests/` | The 10 test projects, shared helpers, and the server seed scripts | `Extrode.Jaunty.Tests/`, `Extrode.Jaunty.UnitTests/`, `Helpers/`, `*-setup.sql` |
 | `docs/` | Documentation source | Organized by topic (00-quick-start through 08-learn), plus `decisions/`, `plans/`, `specs/`, `lessons/`, `architecture/` |
 | `docs/specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
 | `work/` | The work underway. **Untracked** — held in a private repository, so a clone will not contain it | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
@@ -65,7 +65,7 @@ jaunty/
 
 | Folder | Purpose | Key Contents |
 |--------|---------|--------------|
-| `benchmarks/` | BenchmarkDotNet projects and their reports | `Jaunty.Benchmarks/`, `Jaunty.FlatFiles.Benchmarks/`, `BENCHMARK-RESULTS.md` |
+| `benchmarks/` | BenchmarkDotNet projects and their reports | `Extrode.Jaunty.Benchmarks/`, `Extrode.Jaunty.FlatFiles.Benchmarks/`, `BENCHMARK-RESULTS.md` |
 | `samples/` | Sample projects | Four `NativeAOT-*` samples; four `torture-test-*` ports (Conduit, eShopOnWeb, Sakila) |
 | `scripts/` | Build and utility scripts | `build.ps1`, `build-aot.ps1`, `Verify-NativeAOT.ps1`, `coverage.ps1`, `reset-test-databases.ps1` |
 | `data/` | Test databases and seed scripts | `sqlite/Northwind.db` (tracked; the source of the others), `postgres/`, `mysql/`, `sqlserver/` create scripts, `basic.csv` |
@@ -82,7 +82,7 @@ jaunty/
 
 ```
 src/
-├── Jaunty/                        # Core micro-ORM (package Extrode.Jaunty)
+├── Extrode.Jaunty/                        # Core micro-ORM (package Extrode.Jaunty)
 │   ├── Attributes/                # [Table], [Column], [Key], [Ignore], [DatabaseGenerated], [EnumStorage]
 │   ├── Configuration/             # JauntyConfig, BulkCopyConfiguration
 │   ├── Core/                      # CommandOptions<T>, GridReader
@@ -100,18 +100,18 @@ src/
 │   ├── Write/                     # Insert, Update, Delete, Upsert, Bulk*
 │   └── Internals/                 # Entity metadata, parameter parsing and binding, read and write cores
 │
-├── Jaunty.SourceGenerator/        # Roslyn generator, packed inside Extrode.Jaunty (not a package of its own)
-├── Jaunty.Fluent/                 # Fluent query API
-├── Jaunty.FlatFiles/              # Flat file support (interfaces)
-├── Jaunty.FlatFiles.DuckDB/       # DuckDB implementation
-├── Jaunty.Extensions.Reflection/  # Reflection-based mapping and native bulk copy providers
-├── Jaunty.Extensions.Logging/     # ILogger + DI integration (keeps core dependency-free)
-├── Jaunty.Extensions.Npgsql/      # PostgreSQL-specific parameter binding without boxing
-├── Jaunty.Scaffolding/            # Database scaffolding
-└── Jaunty.Scaffolding.Cli/        # dotnet tool; the NativeAOT publish target
+├── Extrode.Jaunty.SourceGenerator/        # Roslyn generator, packed inside Extrode.Jaunty (not a package of its own)
+├── Extrode.Jaunty.Fluent/                 # Fluent query API
+├── Extrode.Jaunty.FlatFiles/              # Flat file support (interfaces)
+├── Extrode.Jaunty.FlatFiles.DuckDB/       # DuckDB implementation
+├── Extrode.Jaunty.Extensions.Reflection/  # Reflection-based mapping and native bulk copy providers
+├── Extrode.Jaunty.Extensions.Logging/     # ILogger + DI integration (keeps core dependency-free)
+├── Extrode.Jaunty.Extensions.Npgsql/      # PostgreSQL-specific parameter binding without boxing
+├── Extrode.Jaunty.Scaffolding/            # Database scaffolding
+└── Extrode.Jaunty.Scaffolding.Cli/        # dotnet tool; the NativeAOT publish target
 ```
 
-`Jaunty.Extensions.Logging` exists so that `src/Jaunty` can declare **no package dependencies** on
+`Extrode.Jaunty.Extensions.Logging` exists so that `src/Extrode.Jaunty` can declare **no package dependencies** on
 `net8.0` and `net10.0`; it carries the `Microsoft.Extensions.*` references on core's behalf. See
 [`../02-architecture/dependencies.md`](../02-architecture/dependencies.md).
 
@@ -127,22 +127,22 @@ tests/
 ├── mysql-setup.sql
 ├── mariadb-setup.sql
 │
-├── Jaunty.Tests/                  # Core integration suite, per engine
+├── Extrode.Jaunty.Tests/                  # Core integration suite, per engine
 │   ├── Integration/               # Read/, Write/, Multiple/, Streaming/, StoredProcedure/, Dialects/ ...
 │   ├── Unit/                      # Unit tests that need the core's internals
 │   ├── Performance/
 │   ├── Entities/                  # Test models
 │   └── Helpers/                   # NorthwindDatabase, recording and throwing connections
 │
-├── Jaunty.UnitTests/              # Core unit tests, no database
-├── Jaunty.SourceGenerator.Tests/  # Generator output and generated-mapper behaviour
-├── Jaunty.Fluent.Tests/           # Fluent API tests
-├── Jaunty.Fluent.ConfigTests/
-├── Jaunty.Fluent.SourceGen.Tests/
-├── Jaunty.FlatFiles.Tests/        # FlatFiles interface tests
-├── Jaunty.FlatFiles.DuckDB.Tests/ # DuckDB implementation tests
-├── Jaunty.Scaffolding.Tests/      # Scaffolding tests
-└── Jaunty.Scaffolding.Cli.Tests/
+├── Extrode.Jaunty.UnitTests/              # Core unit tests, no database
+├── Extrode.Jaunty.SourceGenerator.Tests/  # Generator output and generated-mapper behaviour
+├── Extrode.Jaunty.Fluent.Tests/           # Fluent API tests
+├── Extrode.Jaunty.Fluent.ConfigTests/
+├── Extrode.Jaunty.Fluent.SourceGen.Tests/
+├── Extrode.Jaunty.FlatFiles.Tests/        # FlatFiles interface tests
+├── Extrode.Jaunty.FlatFiles.DuckDB.Tests/ # DuckDB implementation tests
+├── Extrode.Jaunty.Scaffolding.Tests/      # Scaffolding tests
+└── Extrode.Jaunty.Scaffolding.Cli.Tests/
 ```
 
 **Test Organization Convention**: Test folders mirror `src/` structure
@@ -195,24 +195,24 @@ See [`03-development/file-naming-convention.md`](../03-development/file-naming-c
 
 | You Want | Go To |
 |----------|-------|
-| Query methods | `src/Jaunty/Read/Query.cs` |
-| CRUD operations | `src/Jaunty/Write/` |
-| Parameter parsing and binding | `src/Jaunty/Internals/Parameters/` |
-| Dialects | `src/Jaunty/Dialects/` |
-| Flat file support | `src/Jaunty.FlatFiles.DuckDB/` |
-| Fluent API | `src/Jaunty.Fluent/` |
-| `ILogger` / DI integration | `src/Jaunty.Extensions.Logging/` |
-| The source generator | `src/Jaunty.SourceGenerator/` |
+| Query methods | `src/Extrode.Jaunty/Read/Query.cs` |
+| CRUD operations | `src/Extrode.Jaunty/Write/` |
+| Parameter parsing and binding | `src/Extrode.Jaunty/Internals/Parameters/` |
+| Dialects | `src/Extrode.Jaunty/Dialects/` |
+| Flat file support | `src/Extrode.Jaunty.FlatFiles.DuckDB/` |
+| Fluent API | `src/Extrode.Jaunty.Fluent/` |
+| `ILogger` / DI integration | `src/Extrode.Jaunty.Extensions.Logging/` |
+| The source generator | `src/Extrode.Jaunty.SourceGenerator/` |
 
 ### Finding Tests
 
 | You Want | Go To |
 |----------|-------|
-| Integration tests | `tests/Jaunty.Tests/Integration/` |
-| Unit tests without a database | `tests/Jaunty.UnitTests/` |
-| Generator tests | `tests/Jaunty.SourceGenerator.Tests/` |
-| FlatFiles tests | `tests/Jaunty.FlatFiles.DuckDB.Tests/` |
-| Performance tests | `tests/Jaunty.Tests/Performance/`, `tests/Jaunty.FlatFiles.DuckDB.Tests/Performance/` |
+| Integration tests | `tests/Extrode.Jaunty.Tests/Integration/` |
+| Unit tests without a database | `tests/Extrode.Jaunty.UnitTests/` |
+| Generator tests | `tests/Extrode.Jaunty.SourceGenerator.Tests/` |
+| FlatFiles tests | `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/` |
+| Performance tests | `tests/Extrode.Jaunty.Tests/Performance/`, `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Performance/` |
 
 ### Finding Documentation
 
@@ -246,7 +246,7 @@ See [`03-development/file-naming-convention.md`](../03-development/file-naming-c
 dotnet test Jaunty.slnx
 
 # Specific test project
-dotnet test tests/Jaunty.Tests
+dotnet test tests/Extrode.Jaunty.Tests
 
 # With coverage
 pwsh -NoProfile -File scripts/coverage.ps1

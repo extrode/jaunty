@@ -15,16 +15,16 @@ jaunty/
 │
 ├── docs/                          # Documentation (00-quick-start through 08-learn, 99-archive)
 ├── src/                           # The 9 packages plus the source generator
-│   ├── Jaunty/                    # Core micro-ORM (package Extrode.Jaunty)
-│   ├── Jaunty.SourceGenerator/    # Roslyn generator, packed inside Extrode.Jaunty
-│   ├── Jaunty.Fluent/             # Fluent query API
-│   ├── Jaunty.FlatFiles/          # Flat-file abstractions
-│   ├── Jaunty.FlatFiles.DuckDB/   # DuckDB implementation
-│   ├── Jaunty.Extensions.Reflection/  # Reflection mapper and native bulk copy
-│   ├── Jaunty.Extensions.Logging/     # ILogger and DI integration
-│   ├── Jaunty.Extensions.Npgsql/      # PostgreSQL parameter binding without boxing
-│   ├── Jaunty.Scaffolding/        # Database scaffolding
-│   └── Jaunty.Scaffolding.Cli/    # Scaffolding dotnet tool
+│   ├── Extrode.Jaunty/                    # Core micro-ORM (package Extrode.Jaunty)
+│   ├── Extrode.Jaunty.SourceGenerator/    # Roslyn generator, packed inside Extrode.Jaunty
+│   ├── Extrode.Jaunty.Fluent/             # Fluent query API
+│   ├── Extrode.Jaunty.FlatFiles/          # Flat-file abstractions
+│   ├── Extrode.Jaunty.FlatFiles.DuckDB/   # DuckDB implementation
+│   ├── Extrode.Jaunty.Extensions.Reflection/  # Reflection mapper and native bulk copy
+│   ├── Extrode.Jaunty.Extensions.Logging/     # ILogger and DI integration
+│   ├── Extrode.Jaunty.Extensions.Npgsql/      # PostgreSQL parameter binding without boxing
+│   ├── Extrode.Jaunty.Scaffolding/        # Database scaffolding
+│   └── Extrode.Jaunty.Scaffolding.Cli/    # Scaffolding dotnet tool
 │
 └── tests/                         # The 10 test projects, shared helpers, server seed scripts
 ```
@@ -70,7 +70,7 @@ Loose files at the `Internals/` root cover the pieces shared by both paths: `Bou
 ### Jaunty.Tests
 
 ```
-tests/Jaunty.Tests/
+tests/Extrode.Jaunty.Tests/
 ├── Entities/                      # Test models
 ├── Helpers/                       # NorthwindDatabase, TestConfiguration, recording and
 │   │                              #   throwing connections, MockDbCommand
@@ -85,7 +85,7 @@ tests/Jaunty.Tests/
     └── Internals/  Read/  StoredProcedures/  TypeHandlers/  Write/
 ```
 
-`Jaunty.UnitTests/Unit/` holds the database-free suite, including the repository guard tests
+`Extrode.Jaunty.UnitTests/Unit/` holds the database-free suite, including the repository guard tests
 (`DocumentedApiTests`, `LicenseFileTests`, `PackageIdentityTests`, `SolutionLayoutTests`,
 `NightlyWorkflowCadenceTests`) and `AllocationBudgetTests`, the one suite with an xUnit trait.
 
@@ -95,22 +95,22 @@ Files named `*Tests.cs`, counted 2026-09-02:
 
 | Project | Files |
 |---------|-------|
-| `Jaunty.Tests` | 201 |
-| `Jaunty.UnitTests` | 118 |
-| `Jaunty.Fluent.Tests` | 108 |
-| `Jaunty.FlatFiles.DuckDB.Tests` | 93 |
-| `Jaunty.SourceGenerator.Tests` | 36 |
-| `Jaunty.Scaffolding.Tests` | 32 |
-| `Jaunty.FlatFiles.Tests` | 12 |
-| `Jaunty.Fluent.SourceGen.Tests` | 5 |
-| `Jaunty.Fluent.ConfigTests` | 3 |
-| `Jaunty.Scaffolding.Cli.Tests` | 3 |
+| `Extrode.Jaunty.Tests` | 201 |
+| `Extrode.Jaunty.UnitTests` | 118 |
+| `Extrode.Jaunty.Fluent.Tests` | 108 |
+| `Extrode.Jaunty.FlatFiles.DuckDB.Tests` | 93 |
+| `Extrode.Jaunty.SourceGenerator.Tests` | 36 |
+| `Extrode.Jaunty.Scaffolding.Tests` | 32 |
+| `Extrode.Jaunty.FlatFiles.Tests` | 12 |
+| `Extrode.Jaunty.Fluent.SourceGen.Tests` | 5 |
+| `Extrode.Jaunty.Fluent.ConfigTests` | 3 |
+| `Extrode.Jaunty.Scaffolding.Cli.Tests` | 3 |
 
 The whole solution, all frameworks, on the same day: 10,429 passed, 37 skipped.
 
 ## Target Frameworks
 
-`src/Jaunty` targets:
+`src/Extrode.Jaunty` targets:
 
 | Framework | Purpose |
 |-----------|---------|
@@ -118,7 +118,7 @@ The whole solution, all frameworks, on the same day: 10,429 passed, 37 skipped.
 | `net8.0` | Modern .NET: `FrozenDictionary`, span-based APIs |
 | `net10.0` | Current .NET |
 
-`Jaunty.Tests` runs on `net8.0`, `net10.0` and `net472`; the `net472` leg consumes the
+`Extrode.Jaunty.Tests` runs on `net8.0`, `net10.0` and `net472`; the `net472` leg consumes the
 `netstandard2.0` build.
 
 Conditional compilation is almost entirely `NET8_0_OR_GREATER`:
@@ -132,7 +132,7 @@ Conditional compilation is almost entirely `NET8_0_OR_GREATER`:
 
 ## Key Dependencies
 
-### Runtime (`src/Jaunty`)
+### Runtime (`src/Extrode.Jaunty`)
 
 | Package | Framework | Purpose |
 |---------|-----------|---------|
@@ -141,7 +141,7 @@ Conditional compilation is almost entirely `NET8_0_OR_GREATER`:
 
 On `net8.0` and `net10.0` the core has no package dependencies.
 
-### Test (`tests/Jaunty.Tests`)
+### Test (`tests/Extrode.Jaunty.Tests`)
 
 | Package | Purpose |
 |---------|---------|

@@ -34,7 +34,7 @@ git checkout dev && git pull
 
 # 1. Full gate on the exact commit you will ship
 dotnet build -c Release -warnaserror
-dotnet test                       # both Jaunty.Tests TFMs run sequentially now
+dotnet test                       # both Extrode.Jaunty.Tests TFMs run sequentially now
 
 # 2. Merge dev into main (main = what customers see)
 git checkout main
@@ -84,7 +84,7 @@ repository, not here.
 </configuration>
 ```
 
-The package IDs are `Extrode.`-prefixed — the unprefixed `Jaunty` IDs were the
+The package IDs are `Extrode.`-prefixed — the unprefixed `Extrode.Jaunty` IDs were the
 rc.1 names and are not the ones on the feed:
 
 ```bash

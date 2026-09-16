@@ -30,7 +30,7 @@ With the defect fixed and a focused release-engineering pass (est. 2-3 weeks), t
 | Jaunty.Scaffolding.Tests | 177 | 0 | 0 | 177 | |
 | **Total** | **4,216** | **658** | **1** | **4,875** | All failures are missing-infrastructure, not defects. |
 
-PostgreSQL / MySQL / MariaDB connection strings exist in `tests/Jaunty.Tests/appsettings.json` but those providers are exercised neither locally nor in CI.
+PostgreSQL / MySQL / MariaDB connection strings exist in `tests/Extrode.Jaunty.Tests/appsettings.json` but those providers are exercised neither locally nor in CI.
 
 ## Defects (verified)
 
@@ -39,15 +39,15 @@ PostgreSQL / MySQL / MariaDB connection strings exist in `tests/Jaunty.Tests/app
 `dotnet build Jaunty.slnx -c Release` fails with 3 errors:
 
 ```
-benchmarks/Jaunty.Benchmarks/Entities/JauntyProduct.cs(10,38): error CS0535: 'JauntyProduct' does not implement interface member 'IMapped<JauntyProduct>.ReadEntity(IDataReader)'
-benchmarks/Jaunty.Benchmarks/Entities/TpcLineItem.cs(9,36): error CS0535 (same)
-benchmarks/Jaunty.Benchmarks/Entities/TpcOrder.cs(9,33): error CS0535 (same)
+benchmarks/Extrode.Jaunty.Benchmarks/Entities/JauntyProduct.cs(10,38): error CS0535: 'JauntyProduct' does not implement interface member 'IMapped<JauntyProduct>.ReadEntity(IDataReader)'
+benchmarks/Extrode.Jaunty.Benchmarks/Entities/TpcLineItem.cs(9,36): error CS0535 (same)
+benchmarks/Extrode.Jaunty.Benchmarks/Entities/TpcOrder.cs(9,33): error CS0535 (same)
 ```
 
-Root cause: the benchmark entities are `partial class X : IMapped<X>` and rely on `Jaunty.SourceGenerator` to emit `ReadEntity`. `Jaunty.slnx` excludes the generator from Release solution builds:
+Root cause: the benchmark entities are `partial class X : IMapped<X>` and rely on `Extrode.Jaunty.SourceGenerator` to emit `ReadEntity`. `Jaunty.slnx` excludes the generator from Release solution builds:
 
 ```xml
-<Project Path="src/Jaunty.SourceGenerator/Jaunty.SourceGenerator.csproj">
+<Project Path="src/Extrode.Jaunty.SourceGenerator/Extrode.Jaunty.SourceGenerator.csproj">
   <Build Solution="Release|*" Project="false" />
 </Project>
 ```
@@ -56,7 +56,7 @@ So in a Release solution build the analyzer assembly is never produced, generati
 
 ### D2 — Nullable-reference warnings in shipping code
 
-Observed during the Release build (before it aborted): `CS8603` in `src/Jaunty.Fluent/Builders/Join/JoinedQueryBuilderSelect.cs:164` and `CS8604` in `src/Jaunty/Internals/Write/DeleteCore.cs:84`, among others. `TreatWarningsAsErrors` is not set anywhere, so these can accumulate silently.
+Observed during the Release build (before it aborted): `CS8603` in `src/Extrode.Jaunty.Fluent/Builders/Join/JoinedQueryBuilderSelect.cs:164` and `CS8604` in `src/Extrode.Jaunty/Internals/Write/DeleteCore.cs:84`, among others. `TreatWarningsAsErrors` is not set anywhere, so these can accumulate silently.
 
 ### D3 — PRD-001 (schema-safe ordinal cache) still open
 

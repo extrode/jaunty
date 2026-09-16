@@ -115,7 +115,7 @@ would skip silently and report a green leg that tested nothing, so each `Test - 
 | `JAUNTY_REQUIRE_MYSQL` | MySQL **and** MariaDB — one name, because `TestConfiguration` already aliases the two connection strings onto each other |
 
 `0`, `false` and `no` read as off, so a job can disable one engine without deleting the line;
-anything else non-blank counts as on. The same variables work in `Jaunty.Scaffolding.Tests`, whose
+anything else non-blank counts as on. The same variables work in `Extrode.Jaunty.Scaffolding.Tests`, whose
 `OpenOrSkip` has always probed — the names are the contract between the two projects, which share
 no assembly and so carry a copy of the rule each.
 
@@ -199,9 +199,9 @@ flowchart LR
 `permissions: contents: write, packages: write` — the only workflow that needs either.
 
 **The known sharp edge:** the test filter names suites explicitly by substring, and substring
-matching is not the same as suite membership. `~Jaunty.Fluent.Tests` does **not** match
-`Jaunty.Fluent.SourceGen.Tests`, and `~Jaunty.Scaffolding.Tests` does not match
-`Jaunty.Scaffolding.Cli.Tests`. Both were missing and shipped untested until 2026-08-01. **A new
+matching is not the same as suite membership. `~Extrode.Jaunty.Fluent.Tests` does **not** match
+`Extrode.Jaunty.Fluent.SourceGen.Tests`, and `~Extrode.Jaunty.Scaffolding.Tests` does not match
+`Extrode.Jaunty.Scaffolding.Cli.Tests`. Both were missing and shipped untested until 2026-08-01. **A new
 suite must be added to that filter by hand.**
 
 ---
@@ -221,6 +221,6 @@ suite must be added to that filter by hand.**
   jauntyq's runs on `ubuntu-latest` disprove it. Kept for the reasoning, not as current guidance.
 - [`../decisions/2026-08-31-008-history-rewritten-before-first-public-release.md`](../decisions/2026-08-31-008-history-rewritten-before-first-public-release.md)
   — what changed in the repository at the first public release
-- `tests/Jaunty.UnitTests/Unit/NightlyWorkflowCadenceTests.cs`,
-  `tests/Jaunty.UnitTests/Unit/MutationRunnerContractTests.cs` — the tests that keep this document
+- `tests/Extrode.Jaunty.UnitTests/Unit/NightlyWorkflowCadenceTests.cs`,
+  `tests/Extrode.Jaunty.UnitTests/Unit/MutationRunnerContractTests.cs` — the tests that keep this document
   honest

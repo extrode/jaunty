@@ -10,7 +10,7 @@ Jaunty is a micro-ORM for .NET: you write SQL, it gives you objects back, and it
 
 **Allocation overhead.** Measured against Dapper, EF Core, RepoDb, and linq2db in the in-repo benchmark suite, Jaunty is the lowest-allocating of the compared ORMs and competitive with Dapper on throughput (see the [quality section](../05-quality/README.md) for the published benchmark reports - the claims here are measured, not aspirational; the full numbers are in [benchmarks-2026-09-02.md](../05-quality/reports/benchmarks-2026-09-02.md)).
 
-**Slow bulk writes.** `Jaunty.Extensions.Reflection` routes 100+ row operations to native bulk APIs per provider: `SqlBulkCopy` on SQL Server, binary `COPY` on PostgreSQL, chunked multi-row `INSERT` on MySQL/MariaDB, and a prepared-statement loop on SQLite (where "clever" bulk paths measured slower than the simple one, so Jaunty does the simple one).
+**Slow bulk writes.** `Extrode.Jaunty.Extensions.Reflection` routes 100+ row operations to native bulk APIs per provider: `SqlBulkCopy` on SQL Server, binary `COPY` on PostgreSQL, chunked multi-row `INSERT` on MySQL/MariaDB, and a prepared-statement loop on SQLite (where "clever" bulk paths measured slower than the simple one, so Jaunty does the simple one).
 
 **Observability as an afterthought.** Interceptors (`AuditInterceptor`, `LoggingInterceptor` from the optional `Extrode.Jaunty.Extensions.Logging` package, or your own), slow-query thresholds, and `DiagnosticSource` integration are built in - you can see every SQL statement, timing, and parameter without wrapping the library.
 
@@ -26,7 +26,7 @@ flowchart TD
     C -- "yes (strict mode)" --> C1["Per-result-set factory:<br/>shape validated once,<br/>then typed getters by ordinal.<br/>Zero reflection."]
     C -- no / projection --> D{"3. Special type?<br/>(Dictionary, dynamic)"}
     D -- yes --> D1["Extension hook mapper"]
-    D -- no --> E{"4. Jaunty.Extensions.Reflection<br/>installed?"}
+    D -- no --> E{"4. Extrode.Jaunty.Extensions.Reflection<br/>installed?"}
     E -- yes --> E1["Runtime reflection mapper<br/>(cached metadata)"]
     E -- no --> F["5. Throw InvalidOperationException<br/>with the exact fix:<br/>add [Table], pass a mapper,<br/>or install the reflection package"]
 ```
@@ -57,7 +57,7 @@ Jaunty has a sibling: JauntyQ (not yet made public) moves the entire ORM to comp
 flowchart TD
     S["You write SQL and map to POCOs"] --> Q1{"SQL known at compile time,<br/>schema snapshot acceptable?"}
     Q1 -- yes --> JQ["JauntyQ<br/>build-time validation,<br/>zero-reflection generated code"]
-    Q1 -- "dynamic SQL, runtime shapes,<br/>gradual adoption" --> J["Jaunty"]
+    Q1 -- "dynamic SQL, runtime shapes,<br/>gradual adoption" --> J["Extrode.Jaunty"]
     S2["You want the framework<br/>to write SQL, track changes,<br/>run migrations"] --> EF["EF Core"]
 ```
 
