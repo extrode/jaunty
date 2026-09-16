@@ -2,7 +2,7 @@
 # cross-reference in docs/plans/2026-08-27-003-testing-strategy-implementation.md.
 #
 #   pwsh -NoProfile -File scripts/coverage.ps1              # all suites
-#   pwsh -NoProfile -File scripts/coverage.ps1 -Suite Jaunty.Tests
+#   pwsh -NoProfile -File scripts/coverage.ps1 -Suite Extrode.Jaunty.Tests
 #
 # Reports land in tmp/coverage/<suite>/ (gitignored). Nothing is deleted; re-runs overwrite.
 #

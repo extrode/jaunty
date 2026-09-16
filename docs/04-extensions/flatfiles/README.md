@@ -39,13 +39,13 @@ Key API areas:
 ## Quick Start
 
 ```csharp
-using Jaunty.FlatFiles;
-using Jaunty.FlatFiles.DuckDB;
+using Extrode.Jaunty.FlatFiles;
+using Extrode.Jaunty.FlatFiles.DuckDB;
 
 // Open a CSV file
 using var db = FlatFile.Open("data/sales.csv");
 
-// Query using Jaunty's fluent API
+// Query using Extrode.Jaunty's fluent API
 var results = db.Connection
     .From<SalesRecord>()
     .Where(x => x.Revenue > 10000)
@@ -86,7 +86,7 @@ var records = await db.QueryAsync<SalesRecord>(
 ### Data Flow
 
 ```
-Flat File → DuckDB View → SQL Query → DbDataReader → Jaunty Materialization → C# Objects
+Flat File → DuckDB View → SQL Query → DbDataReader → Extrode.Jaunty Materialization → C# Objects
 ```
 
 See [`architecture.md`](architecture.md) for detailed architecture documentation.
@@ -112,14 +112,14 @@ See [`code-analysis.md`](code-analysis.md) for performance analysis.
 
 1. Implement `IFileSource` interface
 2. Add to `FlatFile.CreateSourceFromExtension()`
-3. Add tests in `tests/Jaunty.FlatFiles.DuckDB.Tests/`
+3. Add tests in `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/`
 4. Update this documentation
 
 ### Testing
 
 ```bash
 # Run FlatFiles tests
-dotnet test tests/Jaunty.FlatFiles.DuckDB.Tests
+dotnet test tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests
 
 # Run with coverage
 dotnet test /p:CollectCoverage=true

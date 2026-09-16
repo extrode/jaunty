@@ -6,8 +6,8 @@ using Conduit.Features.Comments;
 using Conduit.Infrastructure.Errors;
 using Conduit.IntegrationTests.Features.Users;
 
-using Jaunty;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Fluent;
 
 namespace Conduit.IntegrationTests.Features.Comments;
 

@@ -11,7 +11,7 @@ flowchart TD
     subgraph B["Query&lt;T&gt; / GetAll&lt;T&gt;: buffered"]
         B1["Open the connection<br/>if it was closed"] --> B2["Interceptor pipeline<br/>wraps the execution"]
         B2 --> B3["Read every row into<br/>a List&lt;T&gt;"]
-        B3 --> B4["Close the connection<br/>if Jaunty opened it"]
+        B3 --> B4["Close the connection<br/>if Extrode.Jaunty opened it"]
         B4 --> B5["Return the list.<br/>Every row is in memory."]
     end
 

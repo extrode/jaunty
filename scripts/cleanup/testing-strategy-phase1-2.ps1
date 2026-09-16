@@ -2,10 +2,10 @@
 #
 # Produced by docs/plans/2026-08-27-003-testing-strategy-implementation.md.
 #
-#   tests/Jaunty.UnitTests/StrykerOutput      337 MB  mutation reports, gitignored (.gitignore:385)
-#   tests/Jaunty.Fluent.Tests/StrykerOutput    31 MB  same
+#   tests/Extrode.Jaunty.UnitTests/StrykerOutput      337 MB  mutation reports, gitignored (.gitignore:385)
+#   tests/Extrode.Jaunty.Fluent.Tests/StrykerOutput    31 MB  same
 #
-# Both hold mutation-report.html/.json per run, and a single Jaunty.UnitTests report is ~176 MB of
+# Both hold mutation-report.html/.json per run, and a single Extrode.Jaunty.UnitTests report is ~176 MB of
 # each. They are build output, not results anyone reads twice: the numbers that mattered are
 # written into the plan document and onto the maintainers' backlog, which is why they are recorded.
 #
@@ -15,7 +15,7 @@
 #   chore/todo-exists-followup) - once merged they are ordinary members of the backlog, and
 #   scripts/cleanup/merged-branch-sweep.ps1 is the recurring script that drains it.
 #
-#   tools/Jaunty.Fuzz/corpus/ - 20 committed seed files, an input to the nightly fuzz job, not
+#   tools/Extrode.Jaunty.Fuzz/corpus/ - 20 committed seed files, an input to the nightly fuzz job, not
 #   scratch. out/corpus/ is where a run accumulates and that is CI-side, never on this machine.
 #
 #   tmp/ - scratch this work created itself. Mine to remove, and not the user's concern.
@@ -63,8 +63,8 @@ if ($running) {
 
 $failed = $false
 $targets = @(
-    'tests/Jaunty.UnitTests/StrykerOutput',
-    'tests/Jaunty.Fluent.Tests/StrykerOutput'
+    'tests/Extrode.Jaunty.UnitTests/StrykerOutput',
+    'tests/Extrode.Jaunty.Fluent.Tests/StrykerOutput'
 )
 
 Write-Host ''

@@ -1,15 +1,15 @@
 using System.Data;
 
-using Jaunty;
-using Jaunty.Core;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Core;
 
 namespace Conduit.Infrastructure;
 
 /// <summary>
-/// Jaunty-backed replacement for the former EF Core <c>ConduitContext</c>. Wraps a single
+/// Extrode.Jaunty-backed replacement for the former EF Core <c>ConduitContext</c>. Wraps a single
 /// ADO.NET connection plus the ambient transaction every MediatR request runs inside
 /// (see <see cref="ConduitDbTransactionPipelineBehavior{TRequest,TResponse}"/>), so handlers
-/// can issue Jaunty fluent queries/writes against <see cref="Connection"/> without each one
+/// can issue Extrode.Jaunty fluent queries/writes against <see cref="Connection"/> without each one
 /// having to thread a transaction through manually.
 /// </summary>
 public class ConduitDb
@@ -29,7 +29,7 @@ public class ConduitDb
     }
 
     /// <summary>
-    /// The <see cref="CommandOptions"/> to pass to every Jaunty write call, carrying the
+    /// The <see cref="CommandOptions"/> to pass to every Extrode.Jaunty write call, carrying the
     /// ambient transaction (if one is active) so writes within a single request are atomic.
     /// </summary>
     public CommandOptions Options =>

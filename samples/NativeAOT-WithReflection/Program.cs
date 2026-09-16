@@ -1,11 +1,11 @@
-using Jaunty;
-using Jaunty.Extensions.Reflection;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Extensions.Reflection;
 
 using Microsoft.Data.Sqlite;
 
 using NativeAOT.WithReflection;
 
-// NativeAOT-WithReflection: Demonstrates Jaunty with the optional reflection extension.
+// NativeAOT-WithReflection: Demonstrates Extrode.Jaunty with the optional reflection extension.
 // This enables special type mapping (Dictionary, KeyValuePair, etc.) at the cost of requiring
 // TrimmerRootAssembly configuration to preserve reflection metadata.
 
@@ -30,7 +30,7 @@ cmd.CommandText = """
     """;
 cmd.ExecuteNonQuery();
 
-Console.WriteLine("=== Jaunty NativeAOT With Reflection Sample ===");
+Console.WriteLine("=== Extrode.Jaunty NativeAOT With Reflection Sample ===");
 Console.WriteLine();
 
 // Standard typed query (works without reflection too)

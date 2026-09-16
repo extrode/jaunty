@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ExcludeFromCoverage>true</ExcludeFromCoverage>
+  </PropertyGroup>
+
+  <!--<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <DefineConstants>AsyncInterfaces</DefineConstants>
+  </PropertyGroup>-->
+
+  <!--<Choose>
+    <When Condition="$(DefineConstants.Contains('AsyncInterfaces'))">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+      </ItemGroup>
+    </When>
+  </Choose>-->
+
+  <PropertyGroup>
+    <PackageId>Extrode.Jaunty.Scaffolding</PackageId>
+    <Authors>Extrode LLC</Authors>
+    <Description>Database-first entity class scaffolding for Extrode.Jaunty.</Description>
+    <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Extrode.Jaunty\Extrode.Jaunty.csproj" />
+    <ProjectReference Include="..\Extrode.Jaunty.SourceGenerator\Extrode.Jaunty.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Extrode.Jaunty.Scaffolding.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

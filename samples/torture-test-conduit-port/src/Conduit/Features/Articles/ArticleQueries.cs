@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 using Conduit.Domain;
 using Conduit.Infrastructure;
 
-using Jaunty.Fluent;
+using Extrode.Jaunty.Fluent;
 
 namespace Conduit.Features.Articles;
 
 /// <summary>
-/// Jaunty-based replacement for the former <c>ArticleExtensions.GetAllData()</c> EF Include
+/// Extrode.Jaunty-based replacement for the former <c>ArticleExtensions.GetAllData()</c> EF Include
 /// chain. Loads the root Article row(s) via a real SQL query, then hydrates Author/ArticleTags/
 /// ArticleFavorites with one targeted <c>WHERE ... IN (...)</c> query per relation (never a full
 /// child-table scan or a join-induced cross product), matching the pattern established by

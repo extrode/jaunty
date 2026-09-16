@@ -5,14 +5,14 @@
     the same package drifted to a different version in nearly every project that referenced it
     (e.g. Npgsql at 8.0.7, 8.0.5, 9.0.5, 10.0.1 simultaneously) with no mechanism stopping it.
 
-    Two packages that ship inside a public Jaunty NuGet package are deliberately NOT bumped to
+    Two packages that ship inside a public Extrode.Jaunty NuGet package are deliberately NOT bumped to
     their latest major here, because doing so would raise the minimum Roslyn/runtime a consumer
-    needs just to use Jaunty, not just to build it:
-      - Microsoft.CodeAnalysis.CSharp / .Analyzers (Jaunty.SourceGenerator): held on the 4.x line.
+    needs just to use Extrode.Jaunty, not just to build it:
+      - Microsoft.CodeAnalysis.CSharp / .Analyzers (Extrode.Jaunty.SourceGenerator): held on the 4.x line.
         5.x is out, but the generator runs inside the CONSUMER's compiler, so referencing 5.x APIs
         would require every consumer's SDK/VS to carry a Roslyn 5.x host to use the generator at
         all. 4.14.0 is the latest patch on the line the generator already targets.
-      - Npgsql (Jaunty.Extensions.Npgsql): the netstandard2.0 target - the one old-.NET-Framework
+      - Npgsql (Extrode.Jaunty.Extensions.Npgsql): the netstandard2.0 target - the one old-.NET-Framework
         consumers pull - stays on the last 8.x release (Npgsql 9+ dropped netstandard2.0). See the
         TFM-conditioned overrides below and the comment in that project file.
 

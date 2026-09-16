@@ -349,7 +349,7 @@ Jaunty uses the following priority order for determining table/column names:
 **Example:**
 ```csharp
 // If you have this configuration:
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
 
 // And this entity:
 public class Product
@@ -370,8 +370,8 @@ Configuration should be set once at application startup before any queries are e
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
-    // Set Jaunty configuration at startup
-    JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+    // Set Extrode.Jaunty configuration at startup
+    JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
     JauntyConfig.TableNameResolver = type => ToSnakeCase(type.Name) + "s";
     
     // Register your database connection
@@ -403,10 +403,10 @@ public class Product
 Since configuration is global and static, ensure thread safety when setting configuration:
 
 ```csharp
-// Set configuration before any threads start using Jaunty
+// Set configuration before any threads start using Extrode.Jaunty
 public static void InitializeJaunty()
 {
-    JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+    JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
     JauntyConfig.TableNameResolver = type => type.Name + "s";
 }
 ```

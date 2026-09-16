@@ -37,7 +37,7 @@ dotnet test Jaunty.slnx -v n
 dotnet test Jaunty.slnx --no-build
 ```
 
-Run the framework legs of `Jaunty.Tests` separately rather than in one `dotnet test` of the
+Run the framework legs of `Extrode.Jaunty.Tests` separately rather than in one `dotnet test` of the
 solution when SQL Server is reachable: the scaffolding reader tests drop and recreate fixed-name
 tables in the one shared database, and two legs running at once fail one or two of them at random.
 
@@ -48,36 +48,36 @@ or by project.
 
 ```bash
 # By test class name
-dotnet test tests/Jaunty.Tests -f net10.0 --filter "FullyQualifiedName~QueryTests"
+dotnet test tests/Extrode.Jaunty.Tests -f net10.0 --filter "FullyQualifiedName~QueryTests"
 
 # By project
-dotnet test tests/Jaunty.Fluent.Tests
+dotnet test tests/Extrode.Jaunty.Fluent.Tests
 
-# The allocation budgets alone (they live in Jaunty.UnitTests)
-dotnet test tests/Jaunty.UnitTests -f net10.0 --filter "Category=AllocationBudget"
+# The allocation budgets alone (they live in Extrode.Jaunty.UnitTests)
+dotnet test tests/Extrode.Jaunty.UnitTests -f net10.0 --filter "Category=AllocationBudget"
 ```
 
 ### Test Projects
 
 | Project | Purpose |
 |---------|---------|
-| `Jaunty.Tests` | Core integration suite against SQLite, SQL Server, PostgreSQL, MySQL and MariaDB; the server engines skip when unreachable |
-| `Jaunty.UnitTests` | Core unit tests, no database |
-| `Jaunty.SourceGenerator.Tests` | The bundled source generator: emitted source and generated-mapper behaviour |
-| `Jaunty.Fluent.Tests` | Fluent query builder |
-| `Jaunty.Fluent.ConfigTests` | Fluent builder configuration |
-| `Jaunty.Fluent.SourceGen.Tests` | Fluent builder's generator |
-| `Jaunty.FlatFiles.Tests` | Flat-file abstractions |
-| `Jaunty.FlatFiles.DuckDB.Tests` | DuckDB-backed flat-file querying |
-| `Jaunty.Scaffolding.Tests` | Schema readers and code generation |
-| `Jaunty.Scaffolding.Cli.Tests` | The scaffolding command-line tool |
+| `Extrode.Jaunty.Tests` | Core integration suite against SQLite, SQL Server, PostgreSQL, MySQL and MariaDB; the server engines skip when unreachable |
+| `Extrode.Jaunty.UnitTests` | Core unit tests, no database |
+| `Extrode.Jaunty.SourceGenerator.Tests` | The bundled source generator: emitted source and generated-mapper behaviour |
+| `Extrode.Jaunty.Fluent.Tests` | Fluent query builder |
+| `Extrode.Jaunty.Fluent.ConfigTests` | Fluent builder configuration |
+| `Extrode.Jaunty.Fluent.SourceGen.Tests` | Fluent builder's generator |
+| `Extrode.Jaunty.FlatFiles.Tests` | Flat-file abstractions |
+| `Extrode.Jaunty.FlatFiles.DuckDB.Tests` | DuckDB-backed flat-file querying |
+| `Extrode.Jaunty.Scaffolding.Tests` | Schema readers and code generation |
+| `Extrode.Jaunty.Scaffolding.Cli.Tests` | The scaffolding command-line tool |
 
 The whole solution on 2026-09-02, all frameworks: 10,429 passed, 37 skipped.
 
 ```bash
 # Specific test project
-dotnet test tests/Jaunty.Tests
-dotnet test tests/Jaunty.Fluent.Tests
+dotnet test tests/Extrode.Jaunty.Tests
+dotnet test tests/Extrode.Jaunty.Fluent.Tests
 ```
 
 ## Code Coverage
@@ -99,14 +99,14 @@ reason and for what the current baseline measures.
 ### Database Setup
 
 The SQLite suites use the Northwind sample database at `data/sqlite/Northwind.db`. The file is
-tracked in git; `tests/Jaunty.Tests/Helpers/NorthwindDatabase.cs` locates it by walking up from the
+tracked in git; `tests/Extrode.Jaunty.Tests/Helpers/NorthwindDatabase.cs` locates it by walking up from the
 test output directory and fails the run with "Could not locate data/sqlite/Northwind.db" rather than
 creating one. It is also the source that `scripts/generate-northwind.py` renders into the
 PostgreSQL and MySQL `create-northwind.sql` scripts under `data/`.
 
 The server engines are seeded from `tests/*-setup.sql` and `data/<engine>/`; `docker-compose.yml`
 starts SQL Server, PostgreSQL, MySQL and MariaDB. Connection strings come from
-`tests/Jaunty.Tests/appsettings.json`, which is gitignored; copy `appsettings.example.json` to start.
+`tests/Extrode.Jaunty.Tests/appsettings.json`, which is gitignored; copy `appsettings.example.json` to start.
 After a run against the servers, `scripts/reset-test-databases.ps1 -e` (or `.sh`) drops and
 recreates them so the next run starts from the seeded baseline.
 
@@ -137,7 +137,7 @@ git checkout -- data/sqlite/Northwind.db
 
 ### Server suites all skip
 
-No server was reachable at the connection string in `tests/Jaunty.Tests/appsettings.json`. Start
+No server was reachable at the connection string in `tests/Extrode.Jaunty.Tests/appsettings.json`. Start
 the containers with `docker compose up -d` and check the file exists; the skip reason names the
 engine.
 
@@ -156,7 +156,7 @@ dotnet build --no-incremental
 Benchmarks are in a separate project. Run with:
 
 ```bash
-dotnet run -c Release --project benchmarks/Jaunty.Benchmarks
+dotnet run -c Release --project benchmarks/Extrode.Jaunty.Benchmarks
 ```
 
 The published reports are under [`../05-quality/reports/`](../05-quality/README.md).

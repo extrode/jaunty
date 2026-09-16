@@ -44,7 +44,7 @@ $repoRoot = (git rev-parse --show-toplevel)
 if (-not $repoRoot) { Write-Host 'abort: not inside a git repository'; exit 1 }
 Set-Location $repoRoot
 
-$relative = 'src/Jaunty.Fluent/Builders/Join/JoinedQueryBuilder.cs'
+$relative = 'src/Extrode.Jaunty.Fluent/Builders/Join/JoinedQueryBuilder.cs'
 $target = Join-Path $repoRoot $relative
 
 # Ranges are 1-based and inclusive, and each one starts on the blank line before its member so no

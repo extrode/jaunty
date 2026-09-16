@@ -44,10 +44,10 @@ dotnet build -f net8.0
 dotnet test --solution Jaunty.slnx
 
 # One project, one framework
-dotnet test --project tests/Jaunty.Tests -f net10.0
+dotnet test --project tests/Extrode.Jaunty.Tests -f net10.0
 
 # One test class
-dotnet test --project tests/Jaunty.Tests -f net10.0 --filter-class "*QueryTests*"
+dotnet test --project tests/Extrode.Jaunty.Tests -f net10.0 --filter-class "*QueryTests*"
 ```
 
 ## Basic Usage
@@ -72,7 +72,7 @@ public class Product
 ### 3. Query the Database
 
 ```csharp
-using Jaunty;
+using Extrode.Jaunty;
 
 // Strict mapping - all properties must have columns
 var products = connection.Query<Product>(
@@ -104,10 +104,10 @@ Jaunty respects your connection state:
 - If open: Executes, leaves open
 
 ```csharp
-// Connection closed - Jaunty opens and closes
+// Connection closed - Extrode.Jaunty opens and closes
 var products = connection.Query<Product>(sql);
 
-// Connection open - Jaunty leaves it open
+// Connection open - Extrode.Jaunty leaves it open
 connection.Open();
 var products = connection.Query<Product>(sql);
 // Connection still open

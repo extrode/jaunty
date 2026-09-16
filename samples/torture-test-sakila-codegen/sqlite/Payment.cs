@@ -1,4 +1,4 @@
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 namespace Sakila.Entities;
 

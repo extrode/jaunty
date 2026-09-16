@@ -11,131 +11,131 @@
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| `Query<T>()` - Strict mapping | `src/Jaunty/Read/Query.cs` | Complete | All properties must have matching columns |
-| `QueryPartial<T>()` - Partial mapping | `src/Jaunty/Read/QueryPartial.cs` | Complete | Maps only existing columns |
-| `QueryFirst<T>()` / `QueryFirstOrDefault<T>()` | `src/Jaunty/Read/QueryFirst.cs` | Complete | Returns single or default |
-| `QuerySingle<T>()` / `QuerySingleOrDefault<T>()` | `src/Jaunty/Read/QuerySingle.cs` | Complete | Validates exactly one result |
-| `QueryScalar<T>()` | `src/Jaunty/Read/QueryScalar.cs` | Complete | First column of first row |
-| `QueryStream<T>()` | `src/Jaunty/Streaming/QueryStream.cs` | Complete | Unbuffered streaming |
-| `QueryAsync<T>()` | `src/Jaunty/Read/QueryAsync.cs` | Complete | Async all operations |
-| `QueryMultiple<T>()` | `src/Jaunty/Multiple/QueryMultiple.cs` | Complete | Multiple result sets via GridReader |
+| `Query<T>()` - Strict mapping | `src/Extrode.Jaunty/Read/Query.cs` | Complete | All properties must have matching columns |
+| `QueryPartial<T>()` - Partial mapping | `src/Extrode.Jaunty/Read/QueryPartial.cs` | Complete | Maps only existing columns |
+| `QueryFirst<T>()` / `QueryFirstOrDefault<T>()` | `src/Extrode.Jaunty/Read/QueryFirst.cs` | Complete | Returns single or default |
+| `QuerySingle<T>()` / `QuerySingleOrDefault<T>()` | `src/Extrode.Jaunty/Read/QuerySingle.cs` | Complete | Validates exactly one result |
+| `QueryScalar<T>()` | `src/Extrode.Jaunty/Read/QueryScalar.cs` | Complete | First column of first row |
+| `QueryStream<T>()` | `src/Extrode.Jaunty/Streaming/QueryStream.cs` | Complete | Unbuffered streaming |
+| `QueryAsync<T>()` | `src/Extrode.Jaunty/Read/QueryAsync.cs` | Complete | Async all operations |
+| `QueryMultiple<T>()` | `src/Extrode.Jaunty/Multiple/QueryMultiple.cs` | Complete | Multiple result sets via GridReader |
 
 ### 1.2 Write Operations (CRUD)
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| `Insert<T>()` | `src/Jaunty/Write/Insert.cs` | Complete | Returns identity value (long) |
-| `Update<T>()` | `src/Jaunty/Write/Update.cs` | Complete | Updates by primary key |
-| `Delete<T>()` | `src/Jaunty/Write/Delete.cs` | Complete | Deletes by primary key or ID |
-| `Upsert<T>()` | `src/Jaunty/Write/Upsert.cs` | Complete | Dialect-specific upsert |
-| `BulkInsert<T>()` | `src/Jaunty/Write/BulkInsert.cs` | Complete | Multi-row or native bulk copy |
-| `BulkUpdate<T>()` | `src/Jaunty/Write/BulkUpdate.cs` | Complete | Batched updates |
-| `BulkDelete<T>()` | `src/Jaunty/Write/BulkDelete.cs` | Complete | Batched deletes |
+| `Insert<T>()` | `src/Extrode.Jaunty/Write/Insert.cs` | Complete | Returns identity value (long) |
+| `Update<T>()` | `src/Extrode.Jaunty/Write/Update.cs` | Complete | Updates by primary key |
+| `Delete<T>()` | `src/Extrode.Jaunty/Write/Delete.cs` | Complete | Deletes by primary key or ID |
+| `Upsert<T>()` | `src/Extrode.Jaunty/Write/Upsert.cs` | Complete | Dialect-specific upsert |
+| `BulkInsert<T>()` | `src/Extrode.Jaunty/Write/BulkInsert.cs` | Complete | Multi-row or native bulk copy |
+| `BulkUpdate<T>()` | `src/Extrode.Jaunty/Write/BulkUpdate.cs` | Complete | Batched updates |
+| `BulkDelete<T>()` | `src/Extrode.Jaunty/Write/BulkDelete.cs` | Complete | Batched deletes |
 
 ### 1.3 Parameter Handling
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| Named parameters | `src/Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | Anonymous types, dictionaries |
-| Positional parameters | `src/Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | Scalar value binding |
-| Collection/IN expansion | `src/Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | `WHERE id IN @Ids` → `(@p0,@p1,@p2)` |
-| Empty collection handling | `src/Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | Converts to `WHERE 1=0` |
-| Parameter validation | `src/Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | Count mismatch detection |
-| SQL parsing (comments/strings) | `src/Jaunty/Internals/Parameters/SqlParameterParser.cs` | Complete | Skips literals and comments |
-| Stored procedure parameters | `src/Jaunty/StoredProcedure/SpParameters.cs` | Complete | Input, output, return value |
+| Named parameters | `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | Anonymous types, dictionaries |
+| Positional parameters | `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | Scalar value binding |
+| Collection/IN expansion | `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | `WHERE id IN @Ids` → `(@p0,@p1,@p2)` |
+| Empty collection handling | `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | Converts to `WHERE 1=0` |
+| Parameter validation | `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | Count mismatch detection |
+| SQL parsing (comments/strings) | `src/Extrode.Jaunty/Internals/Parameters/SqlParameterParser.cs` | Complete | Skips literals and comments |
+| Stored procedure parameters | `src/Extrode.Jaunty/StoredProcedure/SpParameters.cs` | Complete | Input, output, return value |
 
 ### 1.4 Caching (Internal)
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| SQL template caching | `src/Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | `CommandTemplate` per (SQL, Type) |
-| Parameter metadata caching | `src/Jaunty/Internals/Parameters/ParameterCache.cs` | Complete | Compiled property getters |
-| Entity metadata caching | `src/Jaunty/Internals/Read/MappedCache.cs` | Complete | Column mappings per type |
-| CRUD SQL caching | `src/Jaunty/Internals/Write/CrudSqlCache.cs` | Complete | Generated INSERT/UPDATE/DELETE |
-| Parameter parser caching | `src/Jaunty/Internals/Parameters/SqlParameterParserCache.cs` | Complete | Parsed parameter names |
+| SQL template caching | `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs` | Complete | `CommandTemplate` per (SQL, Type) |
+| Parameter metadata caching | `src/Extrode.Jaunty/Internals/Parameters/ParameterCache.cs` | Complete | Compiled property getters |
+| Entity metadata caching | `src/Extrode.Jaunty/Internals/Read/MappedCache.cs` | Complete | Column mappings per type |
+| CRUD SQL caching | `src/Extrode.Jaunty/Internals/Write/CrudSqlCache.cs` | Complete | Generated INSERT/UPDATE/DELETE |
+| Parameter parser caching | `src/Extrode.Jaunty/Internals/Parameters/SqlParameterParserCache.cs` | Complete | Parsed parameter names |
 
 ### 1.5 Database Dialect Support
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| SQL Server dialect | `src/Jaunty/Dialects/SqlServerDialect.cs` | Complete | MERGE, OFFSET/FETCH, SCOPE_IDENTITY |
-| PostgreSQL dialect | `src/Jaunty/Dialects/PostgreSqlDialect.cs` | Complete | RETURNING, COPY |
-| MySQL/MariaDB dialect | `src/Jaunty/Dialects/MySqlDialect.cs` | Complete | ON DUPLICATE KEY, LAST_INSERT_ID |
-| SQLite dialect | `src/Jaunty/Dialects/SQLiteDialect.cs` | Complete | INSERT OR REPLACE, last_insert_rowid |
-| Identifier escaping | `src/Jaunty/Dialects/*.cs` | Complete | Keyword-based escaping |
-| Case-sensitive LIKE | `src/Jaunty/Dialects/*.cs` | Complete | COLLATE-based for SQL Server/Postgres |
-| Paging SQL generation | `src/Jaunty/Dialects/*.cs` | Complete | OFFSET/FETCH or LIMIT |
-| Upsert SQL generation | `src/Jaunty/Dialects/*.cs` | Complete | Dialect-specific syntax |
+| SQL Server dialect | `src/Extrode.Jaunty/Dialects/SqlServerDialect.cs` | Complete | MERGE, OFFSET/FETCH, SCOPE_IDENTITY |
+| PostgreSQL dialect | `src/Extrode.Jaunty/Dialects/PostgreSqlDialect.cs` | Complete | RETURNING, COPY |
+| MySQL/MariaDB dialect | `src/Extrode.Jaunty/Dialects/MySqlDialect.cs` | Complete | ON DUPLICATE KEY, LAST_INSERT_ID |
+| SQLite dialect | `src/Extrode.Jaunty/Dialects/SQLiteDialect.cs` | Complete | INSERT OR REPLACE, last_insert_rowid |
+| Identifier escaping | `src/Extrode.Jaunty/Dialects/*.cs` | Complete | Keyword-based escaping |
+| Case-sensitive LIKE | `src/Extrode.Jaunty/Dialects/*.cs` | Complete | COLLATE-based for SQL Server/Postgres |
+| Paging SQL generation | `src/Extrode.Jaunty/Dialects/*.cs` | Complete | OFFSET/FETCH or LIMIT |
+| Upsert SQL generation | `src/Extrode.Jaunty/Dialects/*.cs` | Complete | Dialect-specific syntax |
 
 ### 1.6 Attributes & Mapping
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| `[Table]` attribute | `src/Jaunty/Attributes/TableAttribute.cs` | Complete | Table name and schema |
-| `[Column]` attribute | `src/Jaunty/Attributes/ColumnAttribute.cs` | Complete | Column name override |
-| `[Key]` attribute | `src/Jaunty/Attributes/KeyAttribute.cs` | Complete | Primary key designation |
-| `[DatabaseGenerated]` | `src/Jaunty/Attributes/DatabaseGeneratedAttribute.cs` | Complete | Identity, Computed options |
-| `[Ignore]` attribute | `src/Jaunty/Attributes/IgnoreAttribute.cs` | Complete | Exclude from mapping |
-| Source generator | `src/Jaunty.SourceGenerator/` | Complete | Compile-time metadata |
+| `[Table]` attribute | `src/Extrode.Jaunty/Attributes/TableAttribute.cs` | Complete | Table name and schema |
+| `[Column]` attribute | `src/Extrode.Jaunty/Attributes/ColumnAttribute.cs` | Complete | Column name override |
+| `[Key]` attribute | `src/Extrode.Jaunty/Attributes/KeyAttribute.cs` | Complete | Primary key designation |
+| `[DatabaseGenerated]` | `src/Extrode.Jaunty/Attributes/DatabaseGeneratedAttribute.cs` | Complete | Identity, Computed options |
+| `[Ignore]` attribute | `src/Extrode.Jaunty/Attributes/IgnoreAttribute.cs` | Complete | Exclude from mapping |
+| Source generator | `src/Extrode.Jaunty.SourceGenerator/` | Complete | Compile-time metadata |
 
 ### 1.7 Configuration
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| Global config | `src/Jaunty/Configuration/JauntyConfig.cs` | Complete | Static configuration class |
-| Naming resolvers | `src/Jaunty/Configuration/JauntyConfig.cs` | Complete | Table/column name resolvers |
-| Logger hook | `src/Jaunty/Configuration/JauntyConfig.cs` | Complete | `Action<string, object>` |
-| Capacity settings | `src/Jaunty/Configuration/JauntyConfig.cs` | Complete | Buffer sizing options |
-| Bulk copy config | `src/Jaunty/Configuration/BulkCopyConfiguration.cs` | Complete | Batch size, timeout |
+| Global config | `src/Extrode.Jaunty/Configuration/JauntyConfig.cs` | Complete | Static configuration class |
+| Naming resolvers | `src/Extrode.Jaunty/Configuration/JauntyConfig.cs` | Complete | Table/column name resolvers |
+| Logger hook | `src/Extrode.Jaunty/Configuration/JauntyConfig.cs` | Complete | `Action<string, object>` |
+| Capacity settings | `src/Extrode.Jaunty/Configuration/JauntyConfig.cs` | Complete | Buffer sizing options |
+| Bulk copy config | `src/Extrode.Jaunty/Configuration/BulkCopyConfiguration.cs` | Complete | Batch size, timeout |
 
 ### 1.8 Command Options
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| Transaction support | `src/Jaunty/Core/CommandOptions.cs` | Complete | `CommandOptions.WithTransaction()` |
-| Timeout support | `src/Jaunty/Core/CommandOptions.cs` | Complete | `CommandOptions.WithTimeout()` |
-| Custom mapper | `src/Jaunty/Core/CommandOptions.cs` | Complete | `CommandOptions.WithMapper()` |
-| Command type | `src/Jaunty/Core/CommandOptions.cs` | Complete | Text, StoredProcedure |
-| Expected row count | `src/Jaunty/Core/CommandOptions.cs` | Complete | List pre-sizing hint |
+| Transaction support | `src/Extrode.Jaunty/Core/CommandOptions.cs` | Complete | `CommandOptions.WithTransaction()` |
+| Timeout support | `src/Extrode.Jaunty/Core/CommandOptions.cs` | Complete | `CommandOptions.WithTimeout()` |
+| Custom mapper | `src/Extrode.Jaunty/Core/CommandOptions.cs` | Complete | `CommandOptions.WithMapper()` |
+| Command type | `src/Extrode.Jaunty/Core/CommandOptions.cs` | Complete | Text, StoredProcedure |
+| Expected row count | `src/Extrode.Jaunty/Core/CommandOptions.cs` | Complete | List pre-sizing hint |
 
 ### 1.9 Multi-Entity Mapping
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| `QueryMultiEntity<T1,T2>()` | `src/Jaunty/Read/QueryMultiEntity.cs` | Complete | JOIN result mapping to tuple |
-| `QueryMultiEntityAsync<T1,T2>()` | `src/Jaunty/Read/QueryMultiEntityAsync.cs` | Complete | Async tuple mapping |
-| `MultiEntityMapper<T1,T2>` | `src/Jaunty/Internals/Read/MultiEntityMapper.cs` | Complete | Column range mapping |
+| `QueryMultiEntity<T1,T2>()` | `src/Extrode.Jaunty/Read/QueryMultiEntity.cs` | Complete | JOIN result mapping to tuple |
+| `QueryMultiEntityAsync<T1,T2>()` | `src/Extrode.Jaunty/Read/QueryMultiEntityAsync.cs` | Complete | Async tuple mapping |
+| `MultiEntityMapper<T1,T2>` | `src/Extrode.Jaunty/Internals/Read/MultiEntityMapper.cs` | Complete | Column range mapping |
 
 ### 1.10 CSV Import
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| CSV reading | `src/Jaunty/Import/CsvImport.cs` | Complete | RFC 4180 compliant |
-| CSV options | `src/Jaunty/Import/CsvImportOptions.cs` | Complete | Delimiter, headers, encoding |
-| NULL value mapping | `src/Jaunty/Import/CsvImportOptions.cs` | Complete | Custom NULL string |
+| CSV reading | `src/Extrode.Jaunty/Import/CsvImport.cs` | Complete | RFC 4180 compliant |
+| CSV options | `src/Extrode.Jaunty/Import/CsvImportOptions.cs` | Complete | Delimiter, headers, encoding |
+| NULL value mapping | `src/Extrode.Jaunty/Import/CsvImportOptions.cs` | Complete | Custom NULL string |
 
 ### 1.11 Logging and Diagnostics
 
 | Feature | Location | Status | Notes |
 |---------|----------|--------|-------|
-| `LoggingInterceptor` | `src/Jaunty/Interceptors/LoggingInterceptor.cs` | Complete | ILogger integration with slow query detection |
-| `AuditInterceptor` | `src/Jaunty/Diagnostics/AuditInterceptor.cs` | Complete | In-memory audit trail |
-| `ICommandInterceptor` | `src/Jaunty/Interceptors/ICommandInterceptor.cs` | Complete | Interceptor interface |
-| `InterceptorPipeline` | `src/Jaunty/Interceptors/InterceptorPipeline.cs` | Complete | Multi-interceptor orchestration |
-| `DiagnosticSource` events | `src/Jaunty/Diagnostics/JauntyDiagnosticListener.cs` | Complete | OpenTelemetry/App Insights integration |
-| `LoggingConfiguration` | `src/Jaunty/Configuration/LoggingConfiguration.cs` | Complete | Log levels, sensitivity, thresholds |
-| DI registration | `src/Jaunty/JauntyLoggingExtensions.cs` | Complete | `IServiceCollection` extensions |
+| `LoggingInterceptor` | `src/Extrode.Jaunty/Interceptors/LoggingInterceptor.cs` | Complete | ILogger integration with slow query detection |
+| `AuditInterceptor` | `src/Extrode.Jaunty/Diagnostics/AuditInterceptor.cs` | Complete | In-memory audit trail |
+| `ICommandInterceptor` | `src/Extrode.Jaunty/Interceptors/ICommandInterceptor.cs` | Complete | Interceptor interface |
+| `InterceptorPipeline` | `src/Extrode.Jaunty/Interceptors/InterceptorPipeline.cs` | Complete | Multi-interceptor orchestration |
+| `DiagnosticSource` events | `src/Extrode.Jaunty/Diagnostics/JauntyDiagnosticListener.cs` | Complete | OpenTelemetry/App Insights integration |
+| `LoggingConfiguration` | `src/Extrode.Jaunty/Configuration/LoggingConfiguration.cs` | Complete | Log levels, sensitivity, thresholds |
+| DI registration | `src/Extrode.Jaunty/JauntyLoggingExtensions.cs` | Complete | `IServiceCollection` extensions |
 
 ### 1.12 Extensions (Separate Packages)
 
 | Extension | Package | Status | Notes |
 |-----------|---------|--------|-------|
-| Fluent Query API | `Jaunty.Fluent` | Complete | WHERE, JOIN, ORDER BY, CTEs, window functions |
-| Reflection Mapping | `Jaunty.Extensions.Reflection` | Complete | Runtime mapping fallback |
-| Native Bulk Copy | `Jaunty.Extensions.Reflection` | Complete | SqlBulkCopy, NpgsqlBinaryImporter |
-| Scaffolding | `Jaunty.Scaffolding` | Complete | Reverse engineer entities |
-| Flat Files | `Jaunty.FlatFiles` | Complete | CSV/TSV file operations |
-| DuckDB Integration | `Jaunty.FlatFiles.DuckDB` | Complete | DuckDB dialect with bulk copy |
+| Fluent Query API | `Extrode.Jaunty.Fluent` | Complete | WHERE, JOIN, ORDER BY, CTEs, window functions |
+| Reflection Mapping | `Extrode.Jaunty.Extensions.Reflection` | Complete | Runtime mapping fallback |
+| Native Bulk Copy | `Extrode.Jaunty.Extensions.Reflection` | Complete | SqlBulkCopy, NpgsqlBinaryImporter |
+| Scaffolding | `Extrode.Jaunty.Scaffolding` | Complete | Reverse engineer entities |
+| Flat Files | `Extrode.Jaunty.FlatFiles` | Complete | CSV/TSV file operations |
+| DuckDB Integration | `Extrode.Jaunty.FlatFiles.DuckDB` | Complete | DuckDB dialect with bulk copy |
 
 ---
 

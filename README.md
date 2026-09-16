@@ -25,7 +25,7 @@ If you have used Dapper, you already know how Jaunty feels. It is a set of exten
 create, configure or dispose. You write the SQL, Jaunty runs it and hands back objects.
 
 ```csharp
-using Jaunty;
+using Extrode.Jaunty;
 
 var products = connection.Query<Product>(
     "SELECT * FROM products WHERE category_id = @CategoryId",
@@ -64,7 +64,7 @@ typed expressions, and the core never depends on it.
 ## Quick start
 
 ```csharp
-using Jaunty;
+using Extrode.Jaunty;
 
 // Strict mapping: every property needs a column
 var products = connection.Query<Product>(
@@ -247,7 +247,7 @@ MySQL.
 For anything past CRUD, the optional `Extrode.Jaunty.Fluent` package takes typed expressions:
 
 ```csharp
-using Jaunty.Fluent;
+using Extrode.Jaunty.Fluent;
 
 var rows = connection.From<Product>()
     .InnerJoin<Category>()
@@ -315,12 +315,12 @@ first answer:
 ```mermaid
 flowchart TD
     A["Query&lt;T&gt; needs a row mapper"] --> B{"Did you pass one in<br/>CommandOptions&lt;T&gt;.WithMapper?"}
-    B -- yes --> M1["Your mapper runs.<br/>Jaunty touches nothing."]
+    B -- yes --> M1["Your mapper runs.<br/>Extrode.Jaunty touches nothing."]
     B -- no --> C{"Strict mode, and T has a<br/>source-generated mapper?"}
     C -- yes --> M2["Generated mapper.<br/>No reflection, AOT-safe."]
     C -- no --> D{"Dictionary or dynamic?"}
     D -- yes --> M3["Special-type mapper"]
-    D -- no --> E{"Jaunty.Extensions.Reflection<br/>referenced and enabled?"}
+    D -- no --> E{"Extrode.Jaunty.Extensions.Reflection<br/>referenced and enabled?"}
     E -- yes --> M4["Reflection mapper, compiled<br/>once per type and cached"]
     E -- no --> X["InvalidOperationException:<br/>No mapper found for type 'T'"]
 ```
@@ -346,7 +346,7 @@ emits a mapper at build time: ordinals resolved once per result set, no reflecti
 warnings. This is the path to be on for NativeAOT.
 
 ```csharp
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 [Table("products")]
 public partial class Product
@@ -520,13 +520,13 @@ transaction.Commit();
 
 ## Naming: attributes and conventions
 
-Attributes override names per entity. Jaunty ships its own set in `Jaunty.Attributes`, and it also
+Attributes override names per entity. Jaunty ships its own set in `Extrode.Jaunty.Attributes`, and it also
 honors the ones from `System.ComponentModel.DataAnnotations` (`[Table]`, `[Column]`, `[Key]`,
 `[NotMapped]`, `[DatabaseGenerated]`), so an entity you already annotated for EF Core works as it
 is. Both the source generator and the reflection mapper recognize both sets.
 
 ```csharp
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 [Table("order_items")]
 public class OrderItem
@@ -552,7 +552,7 @@ you supply the conversion, which is a line or two and keeps the core free of an 
 agrees with.
 
 ```csharp
-using Jaunty.Configuration;
+using Extrode.Jaunty.Configuration;
 
 JauntyConfig.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
 JauntyConfig.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
@@ -577,8 +577,8 @@ the same way.
 stays out of the core:
 
 ```csharp
-using Jaunty.Interceptors;
-using Jaunty.Configuration;
+using Extrode.Jaunty.Interceptors;
+using Extrode.Jaunty.Configuration;
 
 var loggingInterceptor = new LoggingInterceptor(
     loggerFactory.CreateLogger<LoggingInterceptor>(),
@@ -598,7 +598,7 @@ JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { loggingInterc
 failure, with no parameter values captured:
 
 ```csharp
-using Jaunty.Diagnostics;
+using Extrode.Jaunty.Diagnostics;
 
 var audit = new AuditInterceptor(maxRecords: 1000);
 JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { audit });
@@ -607,7 +607,7 @@ foreach (var record in audit.GetRecentRecords(50))
     Console.WriteLine($"{record.Timestamp}: {record.Phase} - {record.CommandText}");
 ```
 
-**DiagnosticSource** events (`Jaunty.Database.Command.Executing`, `.Executed`, `.Failed`) are
+**DiagnosticSource** events (`Extrode.Jaunty.Database.Command.Executing`, `.Executed`, `.Failed`) are
 emitted for OpenTelemetry, Application Insights and friends. Subscribe through
 `JauntyDiagnosticListener.Instance`.
 
@@ -707,8 +707,8 @@ ADO.NET drivers and BCL serialization assemblies that the core does not referenc
 Every reflection site in the shipped assemblies carries a reviewed `AOT-SAFE` justification, checked
 by `scripts/Verify-NativeAOT.ps1` and listed in
 [reflection-and-trimming.md](docs/02-architecture/reflection-and-trimming.md). Two projects are
-excluded because AOT does not apply to them: `Jaunty.Extensions.Reflection`, whose purpose is
-reflection and which you reference to opt out of the guarantee, and `Jaunty.SourceGenerator`, which
+excluded because AOT does not apply to them: `Extrode.Jaunty.Extensions.Reflection`, whose purpose is
+reflection and which you reference to opt out of the guarantee, and `Extrode.Jaunty.SourceGenerator`, which
 runs inside the compiler.
 
 For AOT, use the generated mappers and register interceptors through `JauntyConfig.AddInterceptor`
@@ -716,7 +716,7 @@ rather than a DI container.
 
 ### Bulk copy
 
-With `Jaunty.Extensions.Reflection` loaded and `UseNativeBulkCopy()` called, batches of 100 rows or
+With `Extrode.Jaunty.Extensions.Reflection` loaded and `UseNativeBulkCopy()` called, batches of 100 rows or
 more use the provider's native path:
 
 | Database | Native API | Measured against a transactional loop (2026-07-04) |
@@ -770,7 +770,7 @@ public API surface of EF Core 10.0.11, and the Dapper cells against Dapper 2.1.
    `System.Diagnostics.DiagnosticSource` and `Microsoft.Bcl.AsyncInterfaces`.
 2. Jaunty's `BulkInsert`, `BulkUpdate` and `BulkDelete` ship in the core package as multi-row and
    transactional SQL; the provider-native path (`SqlBulkCopy`, PostgreSQL `COPY`) needs
-   `Jaunty.Extensions.Reflection` and `UseNativeBulkCopy()`. EF Core ships no bulk insert or copy
+   `Extrode.Jaunty.Extensions.Reflection` and `UseNativeBulkCopy()`. EF Core ships no bulk insert or copy
    API, but `ExecuteUpdate` and `ExecuteDelete` are set-based and `SaveChanges` batches statements.
 3. Dapper exposes `QueryUnbufferedAsync` on `DbConnection`, returning `IAsyncEnumerable<T>`, on
    .NET 5 and later.

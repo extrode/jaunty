@@ -10,11 +10,11 @@ Status: draft · Created: 2026-07-29 · Origin: AUD-R25-030 (audit finding B4-3)
 ## 1. Problem Statement
 
 `ISqlDialect.ParameterPrefix` is a public extension point whose stated purpose is
-provider-specific placeholder syntax. `Jaunty.Fluent` honours it across ~20 call sites.
+provider-specific placeholder syntax. `Extrode.Jaunty.Fluent` honours it across ~20 call sites.
 **Jaunty core does not.** `CrudSqlCache`, `MultiRowInsertCache`, `Upsert`, `DeleteCore`,
 `GetCore` and `WriteParameterHelper` emit a literal `"@"`, and so do both entity binders —
 `JauntyGenerator`'s generated `BindInsert`/`BindUpdate`/`BindDelete` and
-`Jaunty.Extensions.Reflection`'s equivalents.
+`Extrode.Jaunty.Extensions.Reflection`'s equivalents.
 
 The consequence is not cosmetic. A dialect that returns anything other than `"@"` produces
 SQL its own provider will not accept:
@@ -96,7 +96,7 @@ without knowing which of Jaunty's internal caches happens to build the SQL.
 
 ## 4. Target Users
 
-- **Developers using `Jaunty.FlatFiles.DuckDB`** for anything other than reads — today they
+- **Developers using `Extrode.Jaunty.FlatFiles.DuckDB`** for anything other than reads — today they
   hit an error message that names a column and gives no hint that the cause is a placeholder
   sigil.
 - **Authors of third-party dialects** for engines Jaunty does not ship (Oracle `:name`,
@@ -131,7 +131,7 @@ without knowing which of Jaunty's internal caches happens to build the SQL.
 
 ### US-3: Both write paths work against DuckDB
 > As a developer, I want DuckDB writes to work through core CRUD *and* through
-> `Jaunty.Fluent`, since both are shipped as supported.
+> `Extrode.Jaunty.Fluent`, since both are shipped as supported.
 
 **Acceptance Criteria:**
 - `_connection.Insert(entity)` round-trips
@@ -147,7 +147,7 @@ without knowing which of Jaunty's internal caches happens to build the SQL.
 **Acceptance Criteria:**
 - A test-only dialect declaring a prefix no shipped dialect uses (e.g. `":"`) drives core
   CRUD end to end against a provider that accepts it
-- `ISqlDialect`'s XML documentation no longer carries the "Honored by `Jaunty.Fluent` only"
+- `ISqlDialect`'s XML documentation no longer carries the "Honored by `Extrode.Jaunty.Fluent` only"
   caveat, because it is no longer true
 
 ### US-6: A custom dialect inherits capabilities it cannot know about
@@ -198,20 +198,20 @@ remedy is an extension-point design decision this spec already owns.
 - The same entity against a non-`"@"` dialect raises a diagnostic naming the entity, the
   dialect and the required action — it does not emit SQL that will fail downstream with a
   message about a missing column
-- The `Jaunty.Extensions.Reflection` binder-resolver hooks on `JauntyConfig` change
+- The `Extrode.Jaunty.Extensions.Reflection` binder-resolver hooks on `JauntyConfig` change
   compatibly, or their replacement is documented with a migration note
 
 ## 6. Scope
 
 **In scope**
 
-- The 19 literal-`"@"` sites in `Jaunty` core listed in `008-research.md` §3 — 9 that build
+- The 19 literal-`"@"` sites in `Extrode.Jaunty` core listed in `008-research.md` §3 — 9 that build
   SQL text (axis A) and 10 that name parameter objects (axis B)
 - The generated binder contract emitted by `JauntyGenerator`
-- The reflection binder contract in `Jaunty.Extensions.Reflection` and its three
+- The reflection binder contract in `Extrode.Jaunty.Extensions.Reflection` and its three
   `JauntyConfig` resolver hooks
 - `WriteParameterCache<T>`, whose static-generic shape currently admits no dialect dimension
-- `Jaunty.Fluent`'s `ParameterCollection.BindTo`, for axis B — and for axis C, since it is one
+- `Extrode.Jaunty.Fluent`'s `ParameterCollection.BindTo`, for axis B — and for axis C, since it is one
   of the two sides of the split that axis describes
 - The `ISqlDialect` surface: whatever new member axis B requires, and the documentation
   rewrite on `ParameterPrefix`
@@ -308,7 +308,7 @@ These block `/plan`, not this spec.
    **Revised 2026-07-29, measured.** The premise was that this needs new test infrastructure.
    It does not — the infrastructure is already there and only wants a server.
 
-   `Jaunty.Tests` integration tests are dialect-parameterised theories that skip themselves
+   `Extrode.Jaunty.Tests` integration tests are dialect-parameterised theories that skip themselves
    when no connection string is configured, reading `JAUNTY_TEST_{SQLSERVER, POSTGRESQL,
    MYSQL, MARIADB}` or `ConnectionStrings:*`. A local run on 2026-07-29 skipped **815 tests
    for want of `JAUNTY_TEST_POSTGRESQL` and 811 for want of `JAUNTY_TEST_SQLSERVER`** — the
@@ -337,9 +337,9 @@ These block `/plan`, not this spec.
 - `audit/findings-registry.md` → `AUD-R25-030` (the finding), `AUD-R25-031` (the generator
   refactor that made the generated-output diff technique routine)
 - `ParameterPrefixLimitationTests` — the executable record of today's behaviour
-- `src/Jaunty/Dialects/ISqlDialect.cs` — the `ParameterPrefix` remarks, to be rewritten here
+- `src/Extrode.Jaunty/Dialects/ISqlDialect.cs` — the `ParameterPrefix` remarks, to be rewritten here
 - `audit/findings-registry.md` → `AUD-R26-050` (axis C: the measurements, the three-engine
   wrong-rows result, the terminal-dependent divergence past 2^53, and the `CAST` alternative)
-- `src/Jaunty/Dialects/IDecimalBindingDialect.cs` — axis C as it stands today
-- `src/Jaunty/Dialects/ISubstringToEndDialect.cs` — the optional-interface precedent, and the
+- `src/Extrode.Jaunty/Dialects/IDecimalBindingDialect.cs` — axis C as it stands today
+- `src/Extrode.Jaunty/Dialects/ISubstringToEndDialect.cs` — the optional-interface precedent, and the
   other capability US-6 has to cover

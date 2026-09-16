@@ -7,8 +7,8 @@ using Conduit.Domain;
 using Conduit.Infrastructure;
 using Conduit.Infrastructure.Errors;
 
-using Jaunty;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Fluent;
 
 using MediatR;
 

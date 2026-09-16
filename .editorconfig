@@ -280,6 +280,6 @@ dotnet_style_require_accessibility_modifiers = none:suggestion
 csharp_prefer_braces = true:suggestion
 csharp_style_namespace_declarations = wrapped_namespace:suggestion
 
-# Disable primary constructor suggestion for Jaunty project
-[{**/}src/Jaunty/**/*.cs]
+# Disable primary constructor suggestion for Extrode.Jaunty project
+[{**/}src/Extrode.Jaunty/**/*.cs]
 IDE0290 = false

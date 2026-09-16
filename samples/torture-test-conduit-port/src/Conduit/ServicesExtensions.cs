@@ -21,9 +21,9 @@ public static class ServicesExtensions
 {
     public static void AddConduit(this IServiceCollection services)
     {
-        // Domain entities aren't source-generated (no [Table]/partial + Jaunty source generator
-        // wiring set up for this port) - use Jaunty's reflection-based metadata resolution instead.
-        Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping();
+        // Domain entities aren't source-generated (no [Table]/partial + Extrode.Jaunty source generator
+        // wiring set up for this port) - use Extrode.Jaunty's reflection-based metadata resolution instead.
+        Extrode.Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping();
 
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly())

@@ -169,7 +169,7 @@ unqualified case too, because a bare name is where the two disagree most quietly
 connection.Execute("CREATE TEMP TABLE people (id INTEGER, name TEXT)");
 
 // "people" is temp.people to this connection, and would be a new main.people to the CLI.
-// Jaunty takes the prepared-statement path, and the rows land in temp.people.
+// Extrode.Jaunty takes the prepared-statement path, and the rows land in temp.people.
 connection.ImportCsv("people", "people.csv");
 ```
 

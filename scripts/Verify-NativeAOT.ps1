@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# NativeAOT Compatibility Verification Script for Jaunty
+# NativeAOT Compatibility Verification Script for Extrode.Jaunty
 #
 # Scans src/ for reflection patterns that break NativeAOT compilation. A site passes ONLY
 # if a reviewed `AOT-SAFE:` comment sits on the match line or in the contiguous comment
@@ -11,7 +11,7 @@
 # MappedCache.cs - the file whose trimmed-mapper defect spec 009 fixed - was structurally
 # incapable of failing it. It also counted prose in doc comments as reflection, matched
 # GetGetMethod( as GetMethod(, silently skipped any file with "Extensions" in its path, and
-# scanned only src/Jaunty. All of that is gone:
+# scanned only src/Extrode.Jaunty. All of that is gone:
 #   - one allow mechanism: the adjacent AOT-SAFE marker, nothing pattern- or path-based
 #   - all src/ projects scanned except the two where AOT does not apply (printed below)
 #   - // comment lines are not scanned, so prose cannot register as reflection
@@ -47,12 +47,12 @@ $ErrorPatterns = @(
 # Projects where AOT does not apply, excluded by exact directory name and printed on
 # every run so the exclusion is visible rather than implicit.
 $ExcludedProjects = @(
-    @{ Name = 'Jaunty.Extensions.Reflection'; Reason = 'reflection is its stated purpose; consumers opt out of AOT by referencing it' },
-    @{ Name = 'Jaunty.SourceGenerator';       Reason = 'netstandard2.0 Roslyn component; runs inside the compiler, never published AOT' }
+    @{ Name = 'Extrode.Jaunty.Extensions.Reflection'; Reason = 'reflection is its stated purpose; consumers opt out of AOT by referencing it' },
+    @{ Name = 'Extrode.Jaunty.SourceGenerator';       Reason = 'netstandard2.0 Roslyn component; runs inside the compiler, never published AOT' }
 )
 
 Write-Host ""
-Write-Host "NativeAOT Compatibility Verification for Jaunty" -ForegroundColor Cyan
+Write-Host "NativeAOT Compatibility Verification for Extrode.Jaunty" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -199,7 +199,7 @@ foreach ($group in ($issues | Group-Object -Property File)) {
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "Each site needs a comment on the line above it (or the comment block directly" -ForegroundColor White
 Write-Host "above) reading 'AOT-SAFE: <why this survives trimming>'. If it cannot be" -ForegroundColor White
-Write-Host "justified, the call belongs in Jaunty.Extensions.Reflection or behind source gen." -ForegroundColor White
+Write-Host "justified, the call belongs in Extrode.Jaunty.Extensions.Reflection or behind source gen." -ForegroundColor White
 Write-Host ""
 
 exit $issues.Count

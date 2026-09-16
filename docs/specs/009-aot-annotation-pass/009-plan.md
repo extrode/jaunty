@@ -18,7 +18,7 @@ annotation pass bounded at **645** `new()`-constrained public overloads that wou
 annotation only propagates *from a reflection site that still exists*. Removing the site removes the
 obligation.
 
-1. New public `IGeneratedAccessors<T>` (`src/Jaunty/Interfaces/IGeneratedAccessors.cs`) exposing the
+1. New public `IGeneratedAccessors<T>` (`src/Extrode.Jaunty/Interfaces/IGeneratedAccessors.cs`) exposing the
    generated mapper and the three binders as delegates.
 2. The generator implements it per entity, each body a **static method group reference** — an ordinary
    IL call the trimmer must honour. That reference is the entire preservation mechanism.
@@ -36,12 +36,12 @@ obligation.
 Two facts made the reflection site removable, and both were already in the repo:
 
 - `IMapped<T>` already declares `static abstract T ReadEntity(IDataReader)` on net8+
-  (`src/Jaunty/Interfaces/IMapped.cs`) — the member is a contract, not a convention.
+  (`src/Extrode.Jaunty/Interfaces/IMapped.cs`) — the member is a contract, not a convention.
 - The same generator already exposed entity **metadata** reflection-free through an instance interface
   reached by a cast: `SourceGeneratedMetadataResolver.TryBuild<T>()` does
   `typeof(IEntityMetadataSource).IsAssignableFrom(typeof(T))` then `(IEntityMetadataSource)new T()`,
   and has consequently never needed an annotation or a suppression
-  (`src/Jaunty/Internals/Entity/SourceGeneratedMetadataResolver.cs:22-25`).
+  (`src/Extrode.Jaunty/Internals/Entity/SourceGeneratedMetadataResolver.cs:22-25`).
 
 Metadata took the safe route; mappers and binders took the reflective one and collected the
 suppressions. This makes the second follow the first.
@@ -78,7 +78,7 @@ Published with `dotnet publish -c Release` from each sample's own directory; the
 | `NativeAOT-Basic` | **FAIL** `No mapper found for type 'Product'` | `MappedCache` `GetMethod` found nothing |
 | `NativeAOT-CustomMapper` | PASS | `CommandOptions<T>.WithMapper` is a delegate — `DrDispatcher` step 1 |
 | `NativeAOT-FluentQuery` | **FAIL** `binary operator GreaterThan is not defined for … 'System.Decimal'` | consumer's own expression tree; `decimal.op_GreaterThan` trimmed |
-| `NativeAOT-WithReflection` | **FAIL** `Column 'category_id' does not map to any property` | `Jaunty.Extensions.Reflection`; out of scope per §6 |
+| `NativeAOT-WithReflection` | **FAIL** `Column 'category_id' does not map to any property` | `Extrode.Jaunty.Extensions.Reflection`; out of scope per §6 |
 | probe: parameters | **FAIL** anonymous *and* named POCO | `ParameterCache`; getters trimmed |
 | probe: write path | **FAIL** `No parameter binder found for type 'Widget'`, 0 rows | `WriteParameterCache` `GetMethod` |
 
@@ -89,10 +89,10 @@ the members were generated and then trimmed — trimming, not generation.
 
 | Warning | Site |
 |---|---|
-| IL2111 | `src/Jaunty/Dialects/SqlDialectFactory.cs:281` |
-| IL2111 | `src/Jaunty/Internals/Parameters/ParameterCache.cs:40` |
-| IL2072 | `src/Jaunty/Internals/Parameters/ParameterBinder.cs:81` |
-| IL2072 | `src/Jaunty/Internals/Parameters/ParameterBinder.cs:918` |
+| IL2111 | `src/Extrode.Jaunty/Dialects/SqlDialectFactory.cs:281` |
+| IL2111 | `src/Extrode.Jaunty/Internals/Parameters/ParameterCache.cs:40` |
+| IL2072 | `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs:81` |
+| IL2072 | `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs:918` |
 
 The absence of IL2090 is the point of US-2's third criterion: the three suppressions kept the warning
 list clean while the runtime failed. **A green build was never evidence here.**
@@ -130,13 +130,13 @@ JIT and must not break those builds (US-3).
 
 | File | Change |
 |---|---|
-| `src/Jaunty/Interfaces/IGeneratedAccessors.cs` | **new** — the five accessors |
-| `src/Jaunty.SourceGenerator/JauntyGenerator.cs` | third interface on the generated class; accessor emission; `JAUNTYGEN002` |
-| `src/Jaunty.SourceGenerator/AnalyzerReleases.Unshipped.md` | `JAUNTYGEN002` registered |
-| `src/Jaunty/Internals/Read/MappedCache.cs` | `Accessors` field; interface-first in both resolvers; two justifications rewritten |
-| `src/Jaunty/Internals/Write/WriteParameterCache.cs` | `Accessors` field; interface-first in `Bindings.Build()`; one justification rewritten |
-| `tests/Jaunty.SourceGenerator.Tests/GeneratedAccessorsEmissionTests.cs` | **new**, 14 |
-| `tests/Jaunty.Tests/Unit/Internals/GeneratedAccessorsResolutionTests.cs` | **new**, 9 |
+| `src/Extrode.Jaunty/Interfaces/IGeneratedAccessors.cs` | **new** — the five accessors |
+| `src/Extrode.Jaunty.SourceGenerator/JauntyGenerator.cs` | third interface on the generated class; accessor emission; `JAUNTYGEN002` |
+| `src/Extrode.Jaunty.SourceGenerator/AnalyzerReleases.Unshipped.md` | `JAUNTYGEN002` registered |
+| `src/Extrode.Jaunty/Internals/Read/MappedCache.cs` | `Accessors` field; interface-first in both resolvers; two justifications rewritten |
+| `src/Extrode.Jaunty/Internals/Write/WriteParameterCache.cs` | `Accessors` field; interface-first in `Bindings.Build()`; one justification rewritten |
+| `tests/Extrode.Jaunty.SourceGenerator.Tests/GeneratedAccessorsEmissionTests.cs` | **new**, 14 |
+| `tests/Extrode.Jaunty.Tests/Unit/Internals/GeneratedAccessorsResolutionTests.cs` | **new**, 9 |
 
 Two details that are load-bearing:
 
@@ -177,7 +177,7 @@ first link collapses all three. Removing any one of them re-breaks AOT.
 `NativeAOT-WithReflection` passing is a side effect, not a design goal, and worth stating precisely:
 `Category` is *also* a `[Table]` entity, so rooting its generated `ReadEntity` roots the property
 accessors the reflection extension needs. An entity without `[Table]` would still fail, and
-`Jaunty.Extensions.Reflection` remains out of scope and not AOT-safe in general.
+`Extrode.Jaunty.Extensions.Reflection` remains out of scope and not AOT-safe in general.
 
 ### Test results
 
@@ -202,7 +202,7 @@ restoring it, and 46 tests elsewhere failed with `No mapper found for type 'Dict
 `ConfigurationGenerationTests`. Worth recording: the defect this spec exists to fix is a global-state
 hazard, and the test for it walked into the same hazard.
 
-`Jaunty.Fluent.SourceGen.Tests` is not listed in `Jaunty.slnx` and so is skipped by a solution-wide
+`Extrode.Jaunty.Fluent.SourceGen.Tests` is not listed in `Jaunty.slnx` and so is skipped by a solution-wide
 `dotnet test`; run explicitly above. Pre-existing, unrelated to 009.
 
 ---

@@ -4,8 +4,8 @@ using Conduit.Domain;
 using Conduit.Features.Users;
 using Conduit.Infrastructure.Security;
 
-using Jaunty;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Fluent;
 
 using Xunit;
 

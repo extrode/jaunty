@@ -335,7 +335,7 @@ and the mapper cannot: NULL is a legitimate value there.
 ## Repeating the numbers
 
 ```bash
-cd benchmarks/Jaunty.Benchmarks
+cd benchmarks/Extrode.Jaunty.Benchmarks
 dotnet run -c Release -f net10.0 -- --filter "*.Benchmarks.QueryBenchmarks.*"
 ```
 

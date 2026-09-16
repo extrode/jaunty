@@ -11,7 +11,7 @@ change its answer produces an equal value and stops there.
 ```mermaid
 flowchart TD
     subgraph L12["Entity mappers"]
-        J["ForAttributeWithMetadataName<br/>Jaunty.Attributes.TableAttribute"]
+        J["ForAttributeWithMetadataName<br/>Extrode.Jaunty.Attributes.TableAttribute"]
         A["ForAttributeWithMetadataName<br/>DataAnnotations TableAttribute"]
         J --> JM["BuildEntityModel<br/>value-equatable, no symbols"]
         A --> AM["BuildEntityModel<br/>value-equatable, no symbols"]

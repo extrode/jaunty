@@ -87,8 +87,8 @@ Do NOT proceed to the next milestone until:
 
 | Package | Targets | Dependencies | NativeAOT |
 |---|---|---|---|
-| `Jaunty.FlatFiles` | netstandard2.0, net10.0 | Jaunty core only | Required |
-| `Jaunty.FlatFiles.DuckDB` | net8.0, net10.0 | Jaunty.FlatFiles + DuckDB.NET.Data.Full | Best-effort |
+| `Extrode.Jaunty.FlatFiles` | netstandard2.0, net10.0 | Jaunty core only | Required |
+| `Extrode.Jaunty.FlatFiles.DuckDB` | net8.0, net10.0 | Jaunty.FlatFiles + DuckDB.NET.Data.Full | Best-effort |
 
 ### Key Architecture Decision: VIEW → TABLE Promotion
 
@@ -116,7 +116,7 @@ Do NOT proceed to the next milestone until:
 - Framework: xUnit
 - Assertions: FluentAssertions
 - Benchmarks: BenchmarkDotNet
-- Test data: committed fixtures in `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/`
+- Test data: committed fixtures in `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/`
 - DuckDB instances: in-memory (`:memory:`), created per test
 - NO MOCKS for DuckDB — use real instances
 

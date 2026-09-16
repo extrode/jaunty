@@ -1,7 +1,7 @@
 # Repair the local SQL Server "Northwind" database (2026-07-29).
 #
-# On 2026-07-29 06:46 a Jaunty seed script was pointed at the user's own Northwind
-# database instead of a Jaunty-owned copy. Nothing was destroyed - every change was
+# On 2026-07-29 06:46 a Extrode.Jaunty seed script was pointed at the user's own Northwind
+# database instead of a Extrode.Jaunty-owned copy. Nothing was destroyed - every change was
 # additive - but the database no longer matches what it was. This undoes exactly the
 # objects that run created, identified by create_date, not by guesswork:
 #

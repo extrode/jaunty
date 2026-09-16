@@ -175,7 +175,7 @@ form is not.
 
 ### Configuration
 
-`BulkCopyConfiguration` (static, in `Jaunty.Configuration`):
+`BulkCopyConfiguration` (static, in `Extrode.Jaunty.Configuration`):
 
 | Property | Default | Notes |
 |---|---|---|
