@@ -6,7 +6,7 @@
 #
 # Dry run (default):  bash mm1-csv-import-verification-branch.sh
 # Apply:               bash mm1-csv-import-verification-branch.sh --execute
-set -euo pipefail
+set -eu
 
 REPO="$HOME/Developer/code/extrode.com/jaunty"
 BRANCH="fix/csv-import-symlink-realpath-macos"
