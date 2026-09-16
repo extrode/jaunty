@@ -294,7 +294,7 @@ public static class CsvImportExtensions
     {
         try
         {
-            return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), SqlitePathComparison);
+            return string.Equals(ResolveRealPath(left), ResolveRealPath(right), SqlitePathComparison);
         }
         catch (ArgumentException)
         {
@@ -310,6 +310,48 @@ public static class CsvImportExtensions
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// <see cref="Path.GetFullPath(string)"/> only normalizes lexically - it does not resolve
+    /// symlinks. On macOS, <see cref="Path.GetTempPath"/> returns a path under
+    /// <c>/var/folders/...</c>, itself a symlink to <c>/private/var/folders/...</c>; the sqlite3
+    /// CLI and SQLite's own <c>PRAGMA database_list</c> report the resolved <c>/private/...</c>
+    /// form, so comparing lexical full paths never matches for a temp-directory database and
+    /// <see cref="SqliteCliCanReach"/> always reports false there. Resolving each path segment
+    /// that is itself a symlink (<c>FileSystemInfo.ResolveLinkTarget</c>, .NET 6+ only) fixes
+    /// that; netstandard2.0 targets .NET Framework, which has no such macOS temp-dir
+    /// indirection, so the lexical form is left as-is there.
+    /// </summary>
+    private static string ResolveRealPath(string path)
+    {
+#if NET6_0_OR_GREATER
+        string full = Path.GetFullPath(path);
+        string? root = Path.GetPathRoot(full);
+        if (string.IsNullOrEmpty(root))
+            return full;
+
+        string[] segments = full.Substring(root.Length)
+            .Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+
+        string current = root;
+        foreach (string segment in segments)
+        {
+            current = Path.Combine(current, segment);
+
+            FileSystemInfo? entry = Directory.Exists(current)
+                ? new DirectoryInfo(current)
+                : File.Exists(current) ? new FileInfo(current) : null;
+
+            FileSystemInfo? target = entry?.ResolveLinkTarget(returnFinalTarget: true);
+            if (target is not null)
+                current = target.FullName;
+        }
+
+        return current;
+#else
+        return Path.GetFullPath(path);
+#endif
     }
 
     /// <summary>
