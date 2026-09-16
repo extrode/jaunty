@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.Specification;
-using Jaunty;
-using Jaunty.Core;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Core;
+using Extrode.Jaunty.Fluent;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
 using Microsoft.eShopWeb.ApplicationCore.Entities.BasketAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
@@ -19,11 +19,11 @@ using Microsoft.eShopWeb.Infrastructure.Data.Persistence;
 namespace Microsoft.eShopWeb.Infrastructure.Data;
 
 /// <summary>
-/// Jaunty-backed replacement for the former EF Core <c>EfRepository&lt;T&gt;</c>.
+/// Extrode.Jaunty-backed replacement for the former EF Core <c>EfRepository&lt;T&gt;</c>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Reads: the Ardalis <see cref="ISpecification{T}"/> is translated into a real Jaunty fluent query
+/// Reads: the Ardalis <see cref="ISpecification{T}"/> is translated into a real Extrode.Jaunty fluent query
 /// over the flat "Row" POCO. The spec's <c>WhereExpressions</c> and <c>OrderExpressions</c> (authored
 /// against the domain aggregate) are retargeted to the Row type by <see cref="SpecRetargeter"/> and
 /// pushed to SQL via <c>connection.From&lt;TRow&gt;().Where(...).OrderBy(...).Skip(...).Take(...)</c>,
@@ -34,7 +34,7 @@ namespace Microsoft.eShopWeb.Infrastructure.Data;
 /// child/parent Row, so the second <c>ThenInclude</c> level needs no extra round trip.
 /// </para>
 /// <para>
-/// Writes: aggregates are translated to flat Rows and persisted with Jaunty's immediate
+/// Writes: aggregates are translated to flat Rows and persisted with Extrode.Jaunty's immediate
 /// <c>Insert</c>/<c>Update</c>/<c>Delete</c>. Parent + child rows are written inside a single
 /// transaction. There is no change tracker, so <see cref="SaveChangesAsync"/> is a no-op.
 /// </para>
@@ -330,7 +330,7 @@ public class JauntyRepository<T> : IReadRepository<T>, IRepository<T>
     }
 
     /// <summary>
-    /// No-op. Jaunty's Insert/Update/Delete are immediate (executed when
+    /// No-op. Extrode.Jaunty's Insert/Update/Delete are immediate (executed when
     /// Add/Update/Delete are called), not deferred like EF Core's change tracker,
     /// so there is nothing to flush here. Always returns 0.
     /// </summary>

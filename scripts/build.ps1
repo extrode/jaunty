@@ -1,4 +1,4 @@
-# Jaunty Standard Build Script
+# Extrode.Jaunty Standard Build Script
 $ErrorActionPreference = "Stop"
 
 Write-Host "--- Restoring Solution ---" -ForegroundColor Cyan

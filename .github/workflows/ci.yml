@@ -120,18 +120,18 @@ jobs:
           # would skip and the leg would report green having tested SQLite only.
           JAUNTY_REQUIRE_SQLSERVER: "1"
         run: >-
-          dotnet test --project tests/Jaunty.Tests
+          dotnet test --project tests/Extrode.Jaunty.Tests
           -c Release
           --no-build
           --framework net8.0
           --coverage --coverage-output-format cobertura
           --report-trx --report-trx-filename test-results-core.trx
 
-      # The parallel half of Jaunty.Tests. No live engine and no global-config mutation, so it
+      # The parallel half of Extrode.Jaunty.Tests. No live engine and no global-config mutation, so it
       # runs its collections concurrently and needs none of the service containers above.
       - name: Test - Core unit (parallel)
         run: >-
-          dotnet test --project tests/Jaunty.UnitTests
+          dotnet test --project tests/Extrode.Jaunty.UnitTests
           -c Release
           --no-build
           --framework net8.0
@@ -140,7 +140,7 @@ jobs:
 
       - name: Test - Source Generator (shape safety)
         run: >-
-          dotnet test --project tests/Jaunty.SourceGenerator.Tests
+          dotnet test --project tests/Extrode.Jaunty.SourceGenerator.Tests
           -c Release
           --no-build
           --framework net8.0
@@ -149,18 +149,18 @@ jobs:
 
       - name: Test - Fluent
         run: >-
-          dotnet test --project tests/Jaunty.Fluent.Tests
+          dotnet test --project tests/Extrode.Jaunty.Fluent.Tests
           -c Release
           --no-build
           --framework net8.0
           --coverage --coverage-output-format cobertura
           --report-trx --report-trx-filename test-results-fluent.trx
 
-      # Split out of Jaunty.Fluent.Tests so that suite can run its collections in parallel.
+      # Split out of Extrode.Jaunty.Fluent.Tests so that suite can run its collections in parallel.
       # These tests mutate the process-global JauntyConfig; keep them in their own serial run.
       - name: Test - Fluent config state
         run: >-
-          dotnet test --project tests/Jaunty.Fluent.ConfigTests
+          dotnet test --project tests/Extrode.Jaunty.Fluent.ConfigTests
           -c Release
           --no-build
           --framework net8.0
@@ -168,13 +168,13 @@ jobs:
           --report-trx --report-trx-filename test-results-fluent-config.trx
 
       # Named projects, not a solution-wide run: every test project needs its own step
-      # here or it never executes in CI. Jaunty.Fluent.SourceGen.Tests and
-      # Jaunty.Scaffolding.Cli.Tests had no step and ran nowhere until 2026-08-01.
-      # tests/Jaunty.UnitTests/Unit/SolutionLayoutTests.cs guards the solution file; this
+      # here or it never executes in CI. Extrode.Jaunty.Fluent.SourceGen.Tests and
+      # Extrode.Jaunty.Scaffolding.Cli.Tests had no step and ran nowhere until 2026-08-01.
+      # tests/Extrode.Jaunty.UnitTests/Unit/SolutionLayoutTests.cs guards the solution file; this
       # list is the second half of the same contract and has to be extended by hand.
       - name: Test - Fluent source-gen (no reflection package reference)
         run: >-
-          dotnet test --project tests/Jaunty.Fluent.SourceGen.Tests
+          dotnet test --project tests/Extrode.Jaunty.Fluent.SourceGen.Tests
           -c Release
           --no-build
           --framework net8.0
@@ -183,7 +183,7 @@ jobs:
 
       - name: Test - Scaffolding
         run: >-
-          dotnet test --project tests/Jaunty.Scaffolding.Tests
+          dotnet test --project tests/Extrode.Jaunty.Scaffolding.Tests
           -c Release
           --no-build
           --framework net8.0
@@ -192,7 +192,7 @@ jobs:
 
       - name: Test - Scaffolding CLI
         run: >-
-          dotnet test --project tests/Jaunty.Scaffolding.Cli.Tests
+          dotnet test --project tests/Extrode.Jaunty.Scaffolding.Cli.Tests
           -c Release
           --no-build
           --framework net8.0
@@ -205,13 +205,13 @@ jobs:
         # filter excludes, and dotnet test counts that as an error per project even
         # though the FlatFiles projects themselves pass.
         run: |
-          dotnet test --project tests/Jaunty.FlatFiles.Tests -c Release --no-build --framework net8.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles.trx
-          dotnet test --project tests/Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net8.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb.trx
+          dotnet test --project tests/Extrode.Jaunty.FlatFiles.Tests -c Release --no-build --framework net8.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles.trx
+          dotnet test --project tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net8.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb.trx
 
       # net10 legs (spec 010 T18): duplicated steps, deliberately NOT a job matrix -
       # the runner is self-hosted and a matrix re-spins the SQL Server service
       # container per leg. These also carry the T13 loader assertion, which fails
-      # if a net10 leg silently loads a net8-compiled Jaunty.dll.
+      # if a net10 leg silently loads a net8-compiled Extrode.Jaunty.dll.
       - name: Test - Core net10 (SQLite + SQL Server)
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
@@ -220,7 +220,7 @@ jobs:
           # would skip and the leg would report green having tested SQLite only.
           JAUNTY_REQUIRE_SQLSERVER: "1"
         run: >-
-          dotnet test --project tests/Jaunty.Tests
+          dotnet test --project tests/Extrode.Jaunty.Tests
           -c Release
           --no-build
           --framework net10.0
@@ -229,7 +229,7 @@ jobs:
 
       - name: Test - Core unit net10 (parallel)
         run: >-
-          dotnet test --project tests/Jaunty.UnitTests
+          dotnet test --project tests/Extrode.Jaunty.UnitTests
           -c Release
           --no-build
           --framework net10.0
@@ -238,7 +238,7 @@ jobs:
 
       - name: Test - Source Generator net10 (shape safety)
         run: >-
-          dotnet test --project tests/Jaunty.SourceGenerator.Tests
+          dotnet test --project tests/Extrode.Jaunty.SourceGenerator.Tests
           -c Release
           --no-build
           --framework net10.0
@@ -247,7 +247,7 @@ jobs:
 
       - name: Test - Fluent net10
         run: >-
-          dotnet test --project tests/Jaunty.Fluent.Tests
+          dotnet test --project tests/Extrode.Jaunty.Fluent.Tests
           -c Release
           --no-build
           --framework net10.0
@@ -256,7 +256,7 @@ jobs:
 
       - name: Test - Fluent config state net10
         run: >-
-          dotnet test --project tests/Jaunty.Fluent.ConfigTests
+          dotnet test --project tests/Extrode.Jaunty.Fluent.ConfigTests
           -c Release
           --no-build
           --framework net10.0
@@ -265,7 +265,7 @@ jobs:
 
       - name: Test - Fluent source-gen net10 (no reflection package reference)
         run: >-
-          dotnet test --project tests/Jaunty.Fluent.SourceGen.Tests
+          dotnet test --project tests/Extrode.Jaunty.Fluent.SourceGen.Tests
           -c Release
           --no-build
           --framework net10.0
@@ -274,7 +274,7 @@ jobs:
 
       - name: Test - Scaffolding net10
         run: >-
-          dotnet test --project tests/Jaunty.Scaffolding.Tests
+          dotnet test --project tests/Extrode.Jaunty.Scaffolding.Tests
           -c Release
           --no-build
           --framework net10.0
@@ -283,7 +283,7 @@ jobs:
 
       - name: Test - Scaffolding CLI net10
         run: >-
-          dotnet test --project tests/Jaunty.Scaffolding.Cli.Tests
+          dotnet test --project tests/Extrode.Jaunty.Scaffolding.Cli.Tests
           -c Release
           --no-build
           --framework net10.0
@@ -293,8 +293,8 @@ jobs:
       - name: Test - FlatFiles net10 (DuckDB)
         # See the net8 FlatFiles step above: --project, not --solution + --filter-namespace.
         run: |
-          dotnet test --project tests/Jaunty.FlatFiles.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-net10.trx
-          dotnet test --project tests/Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb-net10.trx
+          dotnet test --project tests/Extrode.Jaunty.FlatFiles.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-net10.trx
+          dotnet test --project tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb-net10.trx
 
       - name: Upload test results
         if: always()
@@ -374,7 +374,7 @@ jobs:
       - name: Publish NativeAOT (net8 control)
         run: >-
           dotnet publish
-          src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj
+          src/Extrode.Jaunty.Scaffolding.Cli/Extrode.Jaunty.Scaffolding.Cli.csproj
           -c Release
           -f net8.0
           -r linux-x64
@@ -384,7 +384,7 @@ jobs:
       - name: Publish NativeAOT (net10)
         run: >-
           dotnet publish
-          src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj
+          src/Extrode.Jaunty.Scaffolding.Cli/Extrode.Jaunty.Scaffolding.Cli.csproj
           -c Release
           -f net10.0
           -r linux-x64
@@ -395,7 +395,7 @@ jobs:
         run: |
           fail=0
           for leg in net8 net10; do
-            bin="./publish-aot-$leg/Jaunty.Scaffolding.Cli"
+            bin="./publish-aot-$leg/Extrode.Jaunty.Scaffolding.Cli"
             if [ -f "$bin" ]; then
               SIZE=$(stat --format="%s" "$bin")
               SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)

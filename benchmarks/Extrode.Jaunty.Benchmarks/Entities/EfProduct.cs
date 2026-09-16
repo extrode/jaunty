@@ -1,0 +1,72 @@
+using System.Data.Common;
+
+using Extrode.Jaunty.Benchmarks.Config;
+
+using Microsoft.EntityFrameworkCore;
+
+namespace Extrode.Jaunty.Benchmarks.Entities;
+
+public class EfProduct
+{
+    public int product_id { get; set; }
+    public string product_name { get; set; } = null!;
+    public decimal unit_price { get; set; }
+    public int units_in_stock { get; set; }
+    public bool discontinued { get; set; }
+}
+
+public class BenchmarkDbContext : DbContext
+{
+    private readonly DbConnection _connection;
+    private readonly string _provider;
+
+    public DbSet<EfProduct> BenchmarkProducts => Set<EfProduct>();
+
+    public BenchmarkDbContext(DbConnection connection, string provider)
+    {
+        _connection = connection;
+        _provider = provider;
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        switch (_provider)
+        {
+            case "sqlite":
+                optionsBuilder.UseSqlite(_connection);
+                break;
+            case "sqlserver":
+                optionsBuilder.UseSqlServer(_connection);
+                break;
+            case "postgresql":
+                optionsBuilder.UseNpgsql(_connection);
+                break;
+            case "mariadb":
+                // Pomelo cannot use an already-open DbConnection (it tries to set the connection string).
+                // Use the connection string directly; Pomelo manages its own connection lifecycle.
+                //
+                // Take it from DatabaseSetup, not from _connection.ConnectionString: MySqlConnector
+                // drops the password from the latter once the connection is open unless
+                // PersistSecurityInfo=true, so the EF Core MariaDB cases used to fail every
+                // iteration with "Access denied for user 'root' (using password: NO)" and report NA.
+                var connStr = DatabaseSetup.GetConnectionString(DatabaseProvider.MariaDb);
+                optionsBuilder.UseMySql(connStr, ServerVersion.AutoDetect(connStr));
+                break;
+        }
+
+        optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EfProduct>(entity =>
+        {
+            entity.ToTable("benchmark_products");
+            entity.HasKey(e => e.product_id);
+            // product_id is a database-generated identity/serial/autoincrement column.
+            // Without ValueGeneratedOnAdd, EF Core on SqlServer attempts to INSERT the
+            // key value explicitly, which fails when IDENTITY_INSERT is OFF.
+            entity.Property(e => e.product_id).ValueGeneratedOnAdd();
+        });
+    }
+}

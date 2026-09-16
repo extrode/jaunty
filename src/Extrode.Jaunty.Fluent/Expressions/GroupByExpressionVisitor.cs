@@ -1,0 +1,328 @@
+﻿using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
+
+using Extrode.Jaunty.Dialects;
+using Extrode.Jaunty.Fluent.Internals;
+
+namespace Extrode.Jaunty.Fluent.Expressions;
+
+/// <summary>
+/// Translates GROUP BY Select expressions into SQL SELECT and GROUP BY clauses.
+/// Handles g.Key, g.Count(), g.Sum(), g.Avg(), g.Min(), g.Max() patterns.
+/// </summary>
+internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor where T : new()
+{
+    private readonly ISqlDialect _dialect;
+    private readonly string[] _groupByColumns;
+    private readonly List<string> _selectColumns = new();
+    private readonly List<string> _columnAliases = new();
+
+    public GroupByExpressionVisitor(ISqlDialect dialect, string[] groupByColumns)
+    {
+        _dialect = dialect;
+        _groupByColumns = groupByColumns;
+    }
+
+    /// <summary>
+    /// Translates a Select projection expression to SQL column list.
+    /// </summary>
+    public (string[] SelectColumns, string[] Aliases) TranslateSelect<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    {
+        _selectColumns.Clear();
+        _columnAliases.Clear();
+
+        Expression body = selector.Body;
+
+        while (body is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+            body = unary.Operand;
+
+        if (body is NewExpression newExpr)
+        {
+            // Anonymous type: new { Key = g.Key, Count = g.Count() }
+            TranslateNewExpression(newExpr);
+        }
+        else if (body is MemberInitExpression memberInit)
+        {
+            // DTO initialization: new ProductStats { CategoryId = g.Key, Count = g.Count() }
+            TranslateMemberInit(memberInit);
+        }
+        else if (IsKeyAccess(body) && _groupByColumns.Length > 1)
+        {
+            // Bare `g => g.Key` over a composite grouping key (e.g. `new { p.CategoryId, p.SupplierId }`).
+            // Emit every GROUP BY column instead of silently dropping all but the first - only the
+            // `g.Key.Property` form used to handle composite keys.
+            string[] aliases = GetCompositeKeyAliases();
+
+            for (int i = 0; i < _groupByColumns.Length; i++)
+            {
+                _selectColumns.Add($"{_groupByColumns[i]} AS {_dialect.EscapeColumnName(aliases[i])}");
+                _columnAliases.Add(aliases[i]);
+            }
+        }
+        else
+        {
+            // Single expression: g.Key or g.Count()
+            // AUD-R34-005: the alias was reported to the caller but never emitted, so the column
+            // arrived named after its source (or unnamed, for COUNT(*)) while the mappers looked
+            // it up by "Value". For a value-typed TResult that lookup silently found nothing and
+            // every row mapped to 0. The composite-key branch above already aliases; so does this.
+            (string? sql, string? alias) = TranslateExpression(body, "Value");
+            _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(alias)}");
+            _columnAliases.Add(alias);
+        }
+
+        return (_selectColumns.ToArray(), _columnAliases.ToArray());
+    }
+
+    /// <summary>
+    /// Positional aliases for a composite grouping key's columns. TKey's real property names
+    /// aren't recoverable here without reflection (no expression tree describes a bare
+    /// <c>g.Key</c> access, unlike <c>g.Key.Property</c>), and this project doesn't use
+    /// reflection outside <c>Extrode.Jaunty.Extensions.Reflection</c> - matching the same convention
+    /// already used for the single-column bare-<c>g.Key</c> case, which aliases as the generic
+    /// placeholder <c>"Value"</c> rather than attempting to recover a real property name.
+    /// </summary>
+    private string[] GetCompositeKeyAliases()
+    {
+        var aliases = new string[_groupByColumns.Length];
+        for (int i = 0; i < aliases.Length; i++)
+            aliases[i] = $"Key{i}";
+        return aliases;
+    }
+
+    private void TranslateNewExpression(NewExpression newExpr)
+    {
+        ReadOnlyCollection<MemberInfo>? members = newExpr.Members;
+        ReadOnlyCollection<Expression> arguments = newExpr.Arguments;
+
+        for (int i = 0; i < arguments.Count; i++)
+        {
+            var memberName = members?[i]?.Name ?? $"Column{i}";
+            (string? sql, string _) = TranslateExpression(arguments[i], memberName);
+            _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(memberName)}");
+            _columnAliases.Add(memberName);
+        }
+    }
+
+    private void TranslateMemberInit(MemberInitExpression memberInit)
+    {
+
+        foreach (MemberBinding? binding in memberInit.Bindings)
+        {
+            // AUD-R35-195: a MemberMemberBinding or MemberListBinding - `new Dto { Nested = { X = g.Key } }`,
+            // `new Dto { Items = { ... } }` - used to be skipped in silence: no column, no alias, no
+            // error. A projection made only of those emitted an empty SELECT list and failed at the
+            // server naming nothing the caller wrote. Every other unsupported shape in this
+            // translator throws and names the node.
+            if (binding is not MemberAssignment assignment)
+            {
+                throw new NotSupportedException(
+                    $"Member binding '{binding.BindingType}' is not supported in GROUP BY Select. " +
+                    "Only member assignments (Member = expression) can be translated.");
+            }
+
+            var memberName = assignment.Member.Name;
+            (string? sql, string _) = TranslateExpression(assignment.Expression, memberName);
+            _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(memberName)}");
+            _columnAliases.Add(memberName);
+        }
+    }
+
+    private (string Sql, string Alias) TranslateExpression(Expression expr, string defaultAlias)
+    {
+        // Recursively unwrap Convert, Quote, and Lambda
+        while (true)
+        {
+            if (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+            {
+                expr = unary.Operand;
+                continue;
+            }
+            if (expr is LambdaExpression lambda)
+            {
+                expr = lambda.Body;
+                continue;
+            }
+            break;
+        }
+
+        // g.Key
+        if (IsKeyAccess(expr))
+        {
+            // AUD-R35-193: a composite key reaching here used to return _groupByColumns[0] and
+            // report one alias, so `.Select(g => new { g.Key, Count = g.Count() })` over a
+            // two-column key silently dropped the second column and bound the first one to a
+            // member typed as the whole key. TranslateSelect guards the bare `g => g.Key` body
+            // (it can emit every key column, because TResult is TKey itself), but a key nested
+            // inside a projection has no such remedy: GroupedJoinedResultMapper binds one alias
+            // to one member, so emitting both columns here would produce three aliases against a
+            // two-parameter constructor, fall to the property path, and fail inside
+            // Activator.CreateInstance on the anonymous type. Naming the shape is the honest
+            // outcome; g.Key.PropertyName is the form that works.
+            if (_groupByColumns.Length > 1)
+            {
+                throw new NotSupportedException(
+                    "A composite grouping key cannot be projected as a whole inside a projection. " +
+                    "Project its parts instead - g.Key.PropertyName - or select the bare key, g => g.Key.");
+            }
+
+            // For single column key, just use the first grouping column
+            return (_groupByColumns[0], defaultAlias);
+        }
+
+        // g.Key.Property (for composite keys like new { p.CategoryId, p.SupplierId })
+        if (expr is MemberExpression memberExpr && IsKeyAccess(memberExpr.Expression))
+        {
+            var propertyName = memberExpr.Member.Name;
+            var columnName = GetColumnName(propertyName);
+            return (_dialect.EscapeColumnName(columnName), defaultAlias);
+        }
+
+        // g.Count(), g.Sum(p => p.Col), etc.
+        if (expr is MethodCallExpression methodCall)
+        {
+            return TranslateMethodCall(methodCall, defaultAlias);
+        }
+
+        // Constant
+        if (expr is ConstantExpression constant)
+        {
+            return (FormatConstant(constant.Value), defaultAlias);
+        }
+
+        throw new NotSupportedException($"Expression type '{expr.NodeType}' is not supported in GROUP BY Select.");
+    }
+
+    private (string Sql, string Alias) TranslateMethodCall(MethodCallExpression methodCall, string defaultAlias)
+    {
+        var methodName = methodCall.Method.Name;
+
+        // Aggregate methods on IGrouping (extensions) usually have 'g' as first argument if static,
+        // or node.Object if instance.
+        bool isGroupingMethod = (methodCall.Object != null && IsGroupingParameter(methodCall.Object)) ||
+                                (methodCall.Arguments.Count > 0 && IsGroupingParameter(methodCall.Arguments[0]));
+
+        if (isGroupingMethod)
+        {
+            // Find the selector argument (if any)
+            // For Sum(g, p => p.Price), it's argument 1.
+            // For Count(g), it's none.
+            // For g.Sum(p => p.Price), it's argument 0.
+            Expression? selector = null;
+            if (methodCall.Object == null) // Extension method
+            {
+                if (methodCall.Arguments.Count > 1) selector = methodCall.Arguments[1];
+            }
+            else // Instance method
+            {
+                if (methodCall.Arguments.Count > 0) selector = methodCall.Arguments[0];
+            }
+
+            return methodName switch
+            {
+                "Count" => (BuildAggregateWithColumn("COUNT", selector), defaultAlias),
+                "Sum" => (BuildAggregateWithColumn("SUM", selector), defaultAlias),
+                "Avg" => (BuildAggregateWithColumn("AVG", selector), defaultAlias),
+                "Average" => (BuildAggregateWithColumn("AVG", selector), defaultAlias),
+                "Min" => (BuildAggregateWithColumn("MIN", selector), defaultAlias),
+                "Max" => (BuildAggregateWithColumn("MAX", selector), defaultAlias),
+                _ => throw new NotSupportedException($"Method '{methodName}' is not supported in GROUP BY Select.")
+            };
+        }
+
+        throw new NotSupportedException($"Method '{methodName}' on type '{methodCall.Method.DeclaringType?.Name}' is not supported in GROUP BY Select.");
+    }
+
+    /// <summary>
+    /// AUD-R35-066. AVG used to be emitted bare, like every other aggregate. On SQL Server AVG
+    /// takes its result type from its operand, so the average of an int column was truncated in the
+    /// engine and then widened to the double the fluent Avg is declared to return - 12.0 where the
+    /// true average is 12.6. The other three engines do not truncate, so they get the bare form
+    /// still; the decision lives in FractionalAverage rather than here, because this translator and
+    /// its joined twin held the same defect and would drift again.
+    /// </summary>
+    private string ApplyAggregate(string aggregate, string operand)
+        => aggregate == "AVG"
+            ? FractionalAverage.Generate(_dialect, operand)
+            : $"{aggregate}({operand})";
+
+    private string BuildAggregateWithColumn(string aggregate, Expression? expr)
+    {
+        if (expr == null) return $"{aggregate}(*)";
+
+        // AUD-R35-194: the unwrap loop used to strip LambdaExpression as well, then treat whatever
+        // was left as a column. IGrouping<TKey,T>.Sum takes an Expression<Func<T,TResult>>, so a
+        // caller may hand it a pre-built selector variable rather than an inline lambda -
+        // `g.Sum(selector)` - which survives the unwrap as a MemberExpression over the closure and
+        // was emitted as SUM([selector]), a column nobody wrote. Requiring the lambda and throwing
+        // otherwise is what JoinedGroupByExpressionVisitor.BuildAggregateWithColumn already did.
+        while (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+            expr = unary.Operand;
+
+        if (expr is LambdaExpression lambda)
+        {
+            Expression body = lambda.Body;
+
+            while (body is UnaryExpression unaryBody && (unaryBody.NodeType == ExpressionType.Convert || unaryBody.NodeType == ExpressionType.Quote))
+                body = unaryBody.Operand;
+
+            if (body is MemberExpression memberExpr)
+            {
+                var propertyName = memberExpr.Member.Name;
+                var columnName = GetColumnName(propertyName);
+                return ApplyAggregate(aggregate, _dialect.EscapeColumnName(columnName));
+            }
+
+            if (body is ConstantExpression constant)
+            {
+                return ApplyAggregate(aggregate, FormatConstant(constant.Value));
+            }
+        }
+
+        throw new NotSupportedException($"Cannot extract column from aggregate expression of type '{expr.NodeType}'.");
+    }
+
+    private bool IsKeyAccess(Expression? expr)
+    {
+        if (expr is MemberExpression memberExpr && memberExpr.Member.Name == "Key")
+        {
+            return IsGroupingParameter(memberExpr.Expression);
+        }
+        return false;
+    }
+
+    private bool IsGroupingParameter(Expression? expr)
+    {
+        while (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        {
+            expr = unary.Operand;
+        }
+
+        if (expr is ParameterExpression param)
+        {
+            return param.Type.IsGenericType &&
+                   param.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>);
+        }
+
+        // Also handle cases where it might be a MemberExpression to the parameter
+        if (expr?.Type.IsGenericType == true && expr.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+        // AUD-R26-058: the raw-name half of the same AUD-R25 conversion. This one never
+        // re-escaped, so it was only the linear scan - but CachedDialectMetadata already holds a
+        // property-name to raw-column-name dictionary for exactly this (RawColumns exists because a
+        // column reference feeds both the SQL text, which must be escaped, and the parameter name,
+        // which must not be), and the fallback to the property name is the same.
+    private string GetColumnName(string propertyName) =>
+        FluentMetadataCache.GetForDialect<T>(_dialect).GetRawColumnName(propertyName);
+
+    private string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value, _dialect);
+}

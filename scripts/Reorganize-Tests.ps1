@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$testsRoot = Join-Path $Root "tests\Jaunty.Tests"
+$testsRoot = Join-Path $Root "tests\Extrode.Jaunty.Tests"
 $integrationRoot = Join-Path $testsRoot "Integration"
 
 $targets = @{
@@ -30,7 +30,7 @@ foreach ($target in $targets.GetEnumerator()) {
         Move-Item -Path $_.FullName -Destination $destFile -Force
 
         $content = Get-Content -Path $destFile -Raw
-        $content = $content.Replace("namespace Jaunty.Tests.Integration.Sqlite.$($target.Value);", "namespace Jaunty.Tests.Integration.$($target.Value);")
+        $content = $content.Replace("namespace Extrode.Jaunty.Tests.Integration.Sqlite.$($target.Value);", "namespace Extrode.Jaunty.Tests.Integration.$($target.Value);")
         Set-Content -Path $destFile -Value $content
     }
 }

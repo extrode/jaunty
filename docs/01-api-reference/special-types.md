@@ -24,11 +24,11 @@ For untyped rows without any of this machinery, see
 
 ## Registration is required
 
-Special-type mapping lives in `Jaunty.Extensions.Reflection`, not in the core package. Nothing is
+Special-type mapping lives in `Extrode.Jaunty.Extensions.Reflection`, not in the core package. Nothing is
 wired up until you register it:
 
 ```csharp
-using Jaunty.Extensions.Reflection;
+using Extrode.Jaunty.Extensions.Reflection;
 
 JauntyReflectionExtensions.UseReflectionMapping();   // registers special types as well
 ```

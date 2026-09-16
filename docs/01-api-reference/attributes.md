@@ -180,11 +180,11 @@ column appears in the generated `INSERT`:
 
 | Mapping path | Single `int`/`long` key, no `[DatabaseGenerated]` |
 |---|---|
-| `Jaunty.SourceGenerator` | Treated as an identity column — **omitted** from the `INSERT` |
-| `Jaunty.Extensions.Reflection` | Not an identity column — **included** in the `INSERT` |
+| `Extrode.Jaunty.SourceGenerator` | Treated as an identity column — **omitted** from the `INSERT` |
+| `Extrode.Jaunty.Extensions.Reflection` | Not an identity column — **included** in the `INSERT` |
 
 The source-generated mapper is preferred whenever one exists, so *adding or removing the
-`Jaunty.SourceGenerator` package reference changes the SQL* for such an entity — dropping a
+`Extrode.Jaunty.SourceGenerator` package reference changes the SQL* for such an entity — dropping a
 client-assigned key on one side, or overriding a real sequence on the other.
 
 Adding `[DatabaseGenerated(...)]` removes the ambiguity: both paths then honour exactly what you
@@ -221,7 +221,7 @@ write an `init`-only setter, nor a setter declared on a base class that the enti
 reach (`private set` on a base, or an `internal set` across an assembly boundary). The reflection
 mapper writes both without difficulty — `PropertyInfo.SetValue` is not bound by either rule.
 
-| Setter | `Jaunty.SourceGenerator` | `Jaunty.Extensions.Reflection` |
+| Setter | `Extrode.Jaunty.SourceGenerator` | `Extrode.Jaunty.Extensions.Reflection` |
 |---|---|---|
 | `set` | Mapped | Mapped |
 | `init` | **Not mapped** | Mapped |
@@ -325,7 +325,7 @@ public partial class ProductCategoryMapping
 
 ```csharp
 // Global configuration
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
 
 // Entity with attribute override
 public partial class Product
@@ -360,7 +360,7 @@ Use attributes for exceptions and global configuration for general conventions:
 
 ```csharp
 // Global configuration for snake_case
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
 
 // Specific override for this property
 public partial class Product
