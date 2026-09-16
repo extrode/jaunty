@@ -12,7 +12,7 @@ AMD Ryzen 7 7840HS w/ Radeon 780M Graphics, 1 CPU, 16 logical and 8 physical cor
   Cold   : .NET 10.0.7 (10.0.726.21808), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
   Warm   : .NET 10.0.7 (10.0.726.21808), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
 Command: dotnet run -c Release -f net10.0 -- --filter "*.Benchmarks.QueryBenchmarks.*"
-         from benchmarks/Jaunty.Benchmarks
+         from benchmarks/Extrode.Jaunty.Benchmarks
 Global total time: 00:38:31, 264 benchmark cases
 ```
 

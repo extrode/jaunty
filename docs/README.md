@@ -106,8 +106,8 @@ Release documentation:
 Visual design source for the Jaunty docs site:
 
 - **[07-design/](07-design/README.md)**
-  - [`Jaunty Docs App.dc.html`](07-design/Jaunty%20Docs%20App.dc.html) - Primary design (authoritative layout target)
-  - [`Jaunty Docs.dc.html`](07-design/Jaunty%20Docs.dc.html) - Secondary design reference
+  - [`Extrode.Jaunty Docs App.dc.html`](07-design/Jaunty%20Docs%20App.dc.html) - Primary design (authoritative layout target)
+  - [`Extrode.Jaunty Docs.dc.html`](07-design/Jaunty%20Docs.dc.html) - Secondary design reference
   - [`support.js`](07-design/support.js) - Design-tool runtime (view `.dc.html` files in browser)
 
 ### 8. Learn

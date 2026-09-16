@@ -471,7 +471,7 @@ public class QueryBenchmarks
 ### Running Benchmarks
 
 ```bash
-dotnet run -c Release --project benchmarks/Jaunty.Benchmarks
+dotnet run -c Release --project benchmarks/Extrode.Jaunty.Benchmarks
 ```
 
 ---

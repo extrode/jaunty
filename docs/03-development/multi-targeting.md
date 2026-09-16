@@ -4,28 +4,28 @@
 
 | Project | Targets |
 |---|---|
-| `Jaunty` | `netstandard2.0` `net8.0` `net10.0` |
-| `Jaunty.Fluent` | `netstandard2.0` `net8.0` `net10.0` |
-| `Jaunty.FlatFiles` | `netstandard2.0` `net8.0` `net10.0` |
-| `Jaunty.Extensions.Reflection` | `netstandard2.0` `net8.0` `net10.0` |
-| `Jaunty.Extensions.Logging` | `netstandard2.0` `net8.0` `net10.0` |
-| `Jaunty.Extensions.Npgsql` | `netstandard2.0` `net8.0` `net10.0` |
-| `Jaunty.FlatFiles.DuckDB` | `net8.0` `net10.0` |
-| `Jaunty.Scaffolding`, `Jaunty.Scaffolding.Cli` | `net8.0` `net10.0` |
-| `Jaunty.SourceGenerator` | `netstandard2.0` only |
+| `Extrode.Jaunty` | `netstandard2.0` `net8.0` `net10.0` |
+| `Extrode.Jaunty.Fluent` | `netstandard2.0` `net8.0` `net10.0` |
+| `Extrode.Jaunty.FlatFiles` | `netstandard2.0` `net8.0` `net10.0` |
+| `Extrode.Jaunty.Extensions.Reflection` | `netstandard2.0` `net8.0` `net10.0` |
+| `Extrode.Jaunty.Extensions.Logging` | `netstandard2.0` `net8.0` `net10.0` |
+| `Extrode.Jaunty.Extensions.Npgsql` | `netstandard2.0` `net8.0` `net10.0` |
+| `Extrode.Jaunty.FlatFiles.DuckDB` | `net8.0` `net10.0` |
+| `Extrode.Jaunty.Scaffolding`, `Extrode.Jaunty.Scaffolding.Cli` | `net8.0` `net10.0` |
+| `Extrode.Jaunty.SourceGenerator` | `netstandard2.0` only |
 
-Test projects target `net8.0` and `net10.0`; `Jaunty.Tests` and `Jaunty.UnitTests` add `net472`,
+Test projects target `net8.0` and `net10.0`; `Extrode.Jaunty.Tests` and `Extrode.Jaunty.UnitTests` add `net472`,
 which is how the netstandard2.0 build is exercised against a real .NET Framework runtime rather
 than only compiled.
 
-`Jaunty.SourceGenerator` is netstandard2.0 and cannot be anything else: Roslyn analyzers load into
+`Extrode.Jaunty.SourceGenerator` is netstandard2.0 and cannot be anything else: Roslyn analyzers load into
 the compiler, which is what dictates the target. It is referenced with
 `SetTargetFramework="TargetFramework=netstandard2.0"` so the reference does not renegotiate per
 consuming TFM.
 
 `LangVersion` is pinned to `13.0` at the repository root, deliberately, so the language available
 does not drift with whatever SDK happens to be installed. Note what that pin does **not** cover:
-expression trees in `Jaunty.Fluent` are built by the *consumer's* compiler, so the pin protects
+expression trees in `Extrode.Jaunty.Fluent` are built by the *consumer's* compiler, so the pin protects
 this build and not the shipped product.
 
 ---
@@ -38,7 +38,7 @@ convenience, so a chunk of core is written twice.
 
 ### The dependency contract
 
-**On net8.0 and net10.0, `src/Jaunty` has no package references at all.** Nothing conditional,
+**On net8.0 and net10.0, `src/Extrode.Jaunty` has no package references at all.** Nothing conditional,
 nothing transitive. `PackageDependencyTests` asserts it, and that assertion is the reason to be
 careful here: it is easy to add a `PackageReference` without a TFM condition and break the
 contract for every modern consumer to satisfy one old one.
@@ -52,7 +52,7 @@ netstandard2.0 carries exactly two, both backports of types that are in-box on m
 
 Neither is a third-party library. Anything that is one belongs in an extension package. That is
 why `Microsoft.Extensions.Logging.Abstractions` and `.DependencyInjection.Abstractions` moved out
-to `Jaunty.Extensions.Logging` - an old comment claimed they were built in on net8.0, which is
+to `Extrode.Jaunty.Extensions.Logging` - an old comment claimed they were built in on net8.0, which is
 false; they ship in the ASP.NET Core shared framework, and a class library never gets it. See
 [`../02-architecture/dependencies.md`](../02-architecture/dependencies.md).
 
@@ -137,13 +137,13 @@ abstract interface members. Everything else deserves an attempt at an `#else` ar
 
 ```bash
 dotnet build Jaunty.slnx -c Release -f net10.0
-dotnet test  tests/Jaunty.UnitTests -c Release -f net472 --nologo -v q
+dotnet test  tests/Extrode.Jaunty.UnitTests -c Release -f net472 --nologo -v q
 ```
 
 CI runs net8.0 and net10.0 as separate legs and invokes each test project by name in both. Adding
 a project to one leg only is a bug `SolutionLayoutTests` exists to catch.
 
-One known interaction: running the net8.0 and net10.0 legs of `Jaunty.Tests` concurrently on one
+One known interaction: running the net8.0 and net10.0 legs of `Extrode.Jaunty.Tests` concurrently on one
 machine makes `SqlServerSchemaReaderTests` race itself, because it drops and recreates
 fixed-name `scaffold_test_*` tables in the shared database. Each leg alone passes; CI runs them
 as separate legs, so CI is unaffected. Run one framework at a time locally.

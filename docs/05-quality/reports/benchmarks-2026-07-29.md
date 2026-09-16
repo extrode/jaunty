@@ -8,7 +8,7 @@ BenchmarkDotNet v0.14.0, Windows 11 (10.0.26200.8457)
 AMD Ryzen 7 7840HS w/ Radeon 780M, 1 CPU, 16 logical / 8 physical cores
 .NET SDK 10.0.203, host .NET 8.0.26, X64 RyuJIT AVX-512
 Command: dotnet run -c Release -f net8.0 -- --filter "*QueryBenchmarks*"
-         from benchmarks/Jaunty.Benchmarks
+         from benchmarks/Extrode.Jaunty.Benchmarks
 Global total time: 16m41s, 186 benchmark cases
 ```
 

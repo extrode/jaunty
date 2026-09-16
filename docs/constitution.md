@@ -8,7 +8,7 @@ Status: active · Last reviewed: 2026-07-29
 Content grafted from `docs/constitution.md` (version 2026-03) when the repo moved
 
 ## Stack constraints
-- **Zero dependencies in core.** The `Jaunty` package has none. Extensions ship separately.
+- **Zero dependencies in core.** The `Extrode.Jaunty` package has none. Extensions ship separately.
   Nothing is added to core.
 - **NativeAOT-compatible.** No runtime reflection in core hot paths. `[DynamicallyAccessedMembers]`
   where needed. Multi-targets `netstandard2.0` + `net8.0`.
@@ -26,10 +26,10 @@ Content grafted from `docs/constitution.md` (version 2026-03) when the repo move
 
 ```
 src/
-  Jaunty/                    # Core (netstandard2.0, net8.0)
-  Jaunty.Fluent/             # Fluent API
-  Jaunty.FlatFiles/          # Flat file interfaces
-  Jaunty.FlatFiles.DuckDB/   # DuckDB implementation (net8.0+)
+  Extrode.Jaunty/                    # Core (netstandard2.0, net8.0)
+  Extrode.Jaunty.Fluent/             # Fluent API
+  Extrode.Jaunty.FlatFiles/          # Flat file interfaces
+  Extrode.Jaunty.FlatFiles.DuckDB/   # DuckDB implementation (net8.0+)
 docs/specs/                  # Specifications, NNN-slug/NNN-spec.md
 ```
 

@@ -7,6 +7,18 @@ and versioning follows [SemVer 2.0](https://semver.org). Package versions are
 set at release time from the git tag (`vMAJOR.MINOR.PATCH`); the local/dev
 default lives in `src/Directory.Build.props`.
 
+## [Unreleased]
+
+### Breaking changes
+
+- **C# namespaces, assembly names, and project/folder names now carry the `Extrode.Jaunty.` prefix,
+  matching the package IDs that have used it since rc.2.** Every `namespace Jaunty...` declaration,
+  `using Jaunty...` statement, and `.csproj`/folder name under `src/`, `tests/`, `benchmarks/`, and
+  `tools/` moved to `Extrode.Jaunty...`. A consumer on rc.2 or earlier who recompiles against a new
+  package will see `using Jaunty;` fail to resolve; change it to `using Extrode.Jaunty;` (and
+  likewise for `Jaunty.Fluent`, `Jaunty.FlatFiles`, etc.). The product name ("Jaunty"), the
+  `Jaunty.slnx` solution file, and the `github.com/extrode/jaunty` repository are unchanged.
+
 ## [1.0.0-rc.2] - 2026-09-03
 
 ### Breaking changes since 1.0.0-rc.1

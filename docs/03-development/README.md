@@ -19,16 +19,16 @@ Guides for developing and extending Jaunty.
 
 ### Adding a New Query Method
 
-1. Create file in `src/Jaunty/Read/` (e.g., `QueryFoo.cs`)
-2. Add extension method in `partial class Jaunty`
+1. Create file in `src/Extrode.Jaunty/Read/` (e.g., `QueryFoo.cs`)
+2. Add extension method in `partial class Extrode.Jaunty`
 3. Add `where T : new()` constraint if needed
 4. Delegate to `QueryCore` or `QueryCoreAsync`
 5. Create async variant in `QueryFooAsync.cs`
-6. Add tests in `tests/Jaunty.Tests/Integration/Sqlite/Read/`
+6. Add tests in `tests/Extrode.Jaunty.Tests/Integration/Sqlite/Read/`
 
 ### Adding a New Attribute
 
-1. Create in `src/Jaunty/Attributes/`
+1. Create in `src/Extrode.Jaunty/Attributes/`
 2. Use appropriate `AttributeTargets`
 3. Update `MetadataBuilder.cs` to read the attribute
 4. Add tests for attribute resolution
@@ -79,7 +79,7 @@ Guides for developing and extending Jaunty.
 
 | Element | Convention | Example |
 |---------|------------|---------|
-| Namespaces | Hierarchical | `Jaunty.Internals.Entity` |
+| Namespaces | Hierarchical | `Extrode.Jaunty.Internals.Entity` |
 | Public classes | PascalCase | `GridReader`, `CommandOptions` |
 | Internal classes | `internal sealed` | `internal sealed class MetadataCache<T>` |
 | Methods | PascalCase, verb-based | `Query<T>()`, `CreateSetter()` |

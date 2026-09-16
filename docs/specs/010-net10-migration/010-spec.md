@@ -23,7 +23,7 @@ STS is 18 months, not 36, so .NET 9 left support on 2026-05-12 — before this s
 Nothing in the repo targets .NET 9, so the error was cosmetic, but the "everything expires
 together" framing rested partly on it.
 
-Jaunty's shipping targets are `netstandard2.0` and `net8.0`, plus `net472` in `Jaunty.Tests`.
+Jaunty's shipping targets are `netstandard2.0` and `net8.0`, plus `net472` in `Extrode.Jaunty.Tests`.
 `netstandard2.0` and `net472` are unaffected. **`net8.0` is the exposure**, and it expires in
 roughly fifteen weeks. Nothing about the SDK-9-to-SDK-10 change already made in CI addresses
 this: that changed the compiler, not what Jaunty ships against.
@@ -40,7 +40,7 @@ follows is measured, not estimated.
 **Restore:** clean, no `NU` errors. **Build with warnings non-fatal:** whole solution, 0 errors.
 
 **Build with the repo's real settings** (`TreatWarningsAsErrors=true` in `src/`): fails. Four
-diagnostics, all in `src/Jaunty`, all raised by .NET 10's stricter ILLink analyzer and none of
+diagnostics, all in `src/Extrode.Jaunty`, all raised by .NET 10's stricter ILLink analyzer and none of
 them reported by net8.0:
 
 | Code | Site |
@@ -51,7 +51,7 @@ them reported by net8.0:
 | IL2072 | `Internals/Parameters/ParameterBinder.cs:920` |
 
 Every other `src/` project is clean on its own code; they fail only because they rebuild
-`src/Jaunty` as a dependency.
+`src/Extrode.Jaunty` as a dependency.
 
 **They are not four instances of one problem, and 009 does not currently own any of them.** An
 earlier revision of this spec called them "the identical problem already specified in
@@ -200,9 +200,9 @@ own risk, and the 13.0 pin has independent justification.
 
 **Q1 — add `net10.0`, or replace `net8.0`? → ADD.** Decided 2026-07-29. Targets become
 `netstandard2.0;net8.0;net10.0` for the four core packages, and `net8.0;net10.0` for
-`Jaunty.FlatFiles.DuckDB`, `Jaunty.Scaffolding` and `Jaunty.Scaffolding.Cli` (net8-only today —
-verified at `Jaunty.FlatFiles.DuckDB.csproj:4`, `Jaunty.Scaffolding.csproj:4`,
-`Jaunty.Scaffolding.Cli.csproj:5`).
+`Extrode.Jaunty.FlatFiles.DuckDB`, `Extrode.Jaunty.Scaffolding` and `Extrode.Jaunty.Scaffolding.Cli` (net8-only today —
+verified at `Extrode.Jaunty.FlatFiles.DuckDB.csproj:4`, `Extrode.Jaunty.Scaffolding.csproj:4`,
+`Extrode.Jaunty.Scaffolding.Cli.csproj:5`).
 
 What keeping `net8.0` buys, which is what decided it:
 
@@ -225,7 +225,7 @@ repo must exclude local worktree directories or it double-counts.
 ## 6a. Resolved by measurement, 2026-07-29
 
 **Q2 — does the NativeAOT publish still work? → Yes, but only once the new dependency diagnostics
-are handled.** Measured by publishing `src/Jaunty.Scaffolding.Cli` `-r win-x64 --self-contained`
+are handled.** Measured by publishing `src/Extrode.Jaunty.Scaffolding.Cli` `-r win-x64 --self-contained`
 on the same machine at both targets:
 
 | | net8.0 | net10.0 |
@@ -249,7 +249,7 @@ need opposite treatment:
 The `-6%` binary is the migration's first hard performance evidence.
 
 One loose end: a `Trim analysis error IL2057` at
-`src/Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs:65` (`Type.GetType(string)`)
+`src/Extrode.Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs:65` (`Type.GetType(string)`)
 appeared on the first publish and did not reproduce on later ones — incremental analysis again.
 Confirm it on a clean publish before deciding how to treat it; it is first-party, so it must not
 be swept into the `WarningsNotAsErrors` list.
@@ -290,8 +290,8 @@ one failure being a pre-existing timing flake.
    Amended 2026-07-30 (T21) — two `NoWarn` extensions were added during the migration and are
    recorded here as **scope exclusions, not suppressions of Jaunty AOT defects**, per the standing
    decision that AOT safety is required everywhere except where AOT does not apply:
-   `Jaunty.Extensions.Reflection` (reflection by design; pre-existing NoWarn list extended with
-   IL2060;IL2075 for net10's stricter analyzer) and `Jaunty.FlatFiles.DuckDB` (reflection-based
+   `Extrode.Jaunty.Extensions.Reflection` (reflection by design; pre-existing NoWarn list extended with
+   IL2060;IL2075 for net10's stricter analyzer) and `Extrode.Jaunty.FlatFiles.DuckDB` (reflection-based
    mapping by design, on no AOT publish path — no NativeAOT sample or the Scaffolding CLI
    references it; NoWarn IL2070;IL2075 added, latent until the `--no-incremental` build). Every
    first-party diagnostic in AOT-scoped code was **fixed**, not silenced: CS0234 package-group
@@ -336,14 +336,14 @@ Command per claim, run 2026-07-30 on the dev tree unless noted. Full per-task de
 
 | AC | Verdict | Evidence — the command that produced the claim |
 |---|---|---|
-| AC1 | met | `dotnet msbuild <proj> -getProperty:TargetFrameworks` per project (T10, 19 projects); `-getItem:ProjectReference -p:TargetFramework=net10.0` per pinned file (T11, 11 files, 0 net8 leaks); loader assertion `dotnet test tests/Jaunty.Tests -f net10.0 --filter FullyQualifiedName~LoadedAssemblyTarget` (T13, perturbation-verified) |
+| AC1 | met | `dotnet msbuild <proj> -getProperty:TargetFrameworks` per project (T10, 19 projects); `-getItem:ProjectReference -p:TargetFramework=net10.0` per pinned file (T11, 11 files, 0 net8 leaks); loader assertion `dotnet test tests/Extrode.Jaunty.Tests -f net10.0 --filter FullyQualifiedName~LoadedAssemblyTarget` (T13, perturbation-verified) |
 | AC2 | met, amended above | `dotnet build Jaunty.slnx -c Release --no-incremental` → 0 errors (T14); the four first-party diagnostics fixed, not suppressed |
 | AC3 | met | `dotnet test Jaunty.slnx -c Release --no-build` → all suites 0 failures on net8.0 AND net10.0, skips 2437 both legs (T14); one order-dependent pre-existing flake recorded in the maintainer's tracker |
 | AC4 | met | same T14 run: net472 leg 2944/5381 green (loads ns2.0 build, loader-asserted); ns2.0 compiled in the same slnx build |
 | AC5 | met | `dotnet publish samples/<S> -c Release -f <tfm> -r win-x64` ×8 → all exit 0; binaries run exit 0 ×8; `diff` of stdout per sample → byte-identical all four; ilc warnings 0/0 on three samples, WithReflection same-set rolled/unrolled (T19) |
 | AC6 | met | CI run 30533068286 at `0fa0608f` (2026-07-30, self-hosted runner): all three jobs green — Build & Test all 10 legs (5 net8 + 5 net10, `--no-incremental`, T13 loader assertion live), Verify NativeAOT (18/18 sites justified), NativeAOT Publish net8 control 41.47 MB + net10 31.95 MB (−23%); required three runner-infrastructure fixes recorded in the maintainer's tracker (native dockerd, clang/zlib + scoped sudoers, bc/gettext-base), zero workflow or code changes |
 | AC7 | met | `dotnet run -c Release -f net10.0 --no-build -- --filter "*" --join` (T20, 2026-07-30, 48:58): 672/692 completed, same 20 comparison-lib failures as baseline, none Jaunty; median delta all cases −2.1%, Jaunty methods −3.4% — no regression; delta and PostgreSql-tail attribution (identical in hand-coded ADO.NET, environmental) recorded in `benchmarks/BENCHMARK-RESULTS.md` |
-| AC8 | met | `dotnet test tests/Jaunty.Tests -f net8.0 --filter FullyQualifiedName~TypedKeyGuard` — control rewritten to an escaping-box sink (net10's escape analysis elides the old form; measured 0 vs 239,952 boxes) with reason recorded in the class doc (T6) |
+| AC8 | met | `dotnet test tests/Extrode.Jaunty.Tests -f net8.0 --filter FullyQualifiedName~TypedKeyGuard` — control rewritten to an escaping-box sink (net10's escape analysis elides the old form; measured 0 vs 239,952 boxes) with reason recorded in the class doc (T6) |
 
 ## 9. References
 
@@ -352,7 +352,7 @@ Command per claim, run 2026-07-30 on the dev tree unless noted. Full per-task de
 - [009-aot-annotation-pass](../009-aot-annotation-pass/009-spec.md) — owns one of the four ILLink
   findings today and needs widening to own two more; see the §2 table
 - `Directory.Build.props` — the `LangVersion 13.0` pin and the reasons behind it
-- `src/Jaunty.Fluent/Expressions/WhereExpressionVisitor.cs` — the C# 14 span-`Contains`
+- `src/Extrode.Jaunty.Fluent/Expressions/WhereExpressionVisitor.cs` — the C# 14 span-`Contains`
   translation, fixed 2026-07-29 on `fix/csharp14-span-contains`
 - [.NET 10 runtime changes](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10/runtime)
 - [.NET 10 library changes](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10/libraries)

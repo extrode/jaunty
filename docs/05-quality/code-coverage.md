@@ -4,7 +4,7 @@
 
 ```powershell
 pwsh -NoProfile -File scripts/coverage.ps1                       # every suite under tests/
-pwsh -NoProfile -File scripts/coverage.ps1 -Suite Jaunty.Tests   # one suite
+pwsh -NoProfile -File scripts/coverage.ps1 -Suite Extrode.Jaunty.Tests   # one suite
 ```
 
 Parameters: `-Suite`, `-Configuration` (default `Release`), `-Framework` (default `net10.0`).
@@ -32,7 +32,7 @@ Coverage settings live in `coverage.runsettings` at the repository root. They ar
 
 That one line is the reason the file exists. Coverlet's own default also excludes
 `CompilerGeneratedAttribute`, which hides lambda and closure bodies. Measured on
-`Jaunty.FlatFiles.Tests` with `coverlet.collector` 10.0.1, the same run reports:
+`Extrode.Jaunty.FlatFiles.Tests` with `coverlet.collector` 10.0.1, the same run reports:
 
 | `ExcludeByAttribute` | Classes | State machines | Lines |
 |---|---:|---:|---:|
@@ -87,7 +87,7 @@ load.
 | `…Span`, live on net8.0/net10.0 | 81 | 81 | 100 % |
 | `…Classic`, live on netstandard2.0 | 80 | 3 | 3.8 % |
 
-`Jaunty.Tests` does target net472 and 50 parser tests pass there locally. But `ci.yml` is
+`Extrode.Jaunty.Tests` does target net472 and 50 parser tests pass there locally. But `ci.yml` is
 `ubuntu-latest` throughout and **has no net472 leg**, so no CI run has ever executed the code path
 .NET Framework users get. Two hand-maintained parsers that have to agree, one of them tested only
 when someone happens to run the net472 leg on a Windows box, is a silent wrong-parameter-set

@@ -35,7 +35,7 @@ Jaunty is a lightweight, high-performance micro-ORM for .NET that:
 
 ```mermaid
 quadrantChart
-    title Jaunty Design Goal Priorities
+    title Extrode.Jaunty Design Goal Priorities
     x-axis "Low Priority" --> "High Priority"
     y-axis "Easy" --> "Critical"
     "Performance": [0.95, 0.95]
@@ -59,7 +59,7 @@ quadrantChart
 block-beta
     columns 3
     space:1
-    block:nonGoals[" Jaunty Does NOT Do"]
+    block:nonGoals[" Extrode.Jaunty Does NOT Do"]
         columns 1
         qb["Query Building"]
         linq["LINQ Translation"]
@@ -151,13 +151,13 @@ flowchart TD
 
 ### 1. Public API Layer
 
-**Location**: `src/Jaunty/Read/`, `src/Jaunty/Write/`, `src/Jaunty/Multiple/`, etc.
+**Location**: `src/Extrode.Jaunty/Read/`, `src/Extrode.Jaunty/Write/`, `src/Extrode.Jaunty/Multiple/`, etc.
 
 **Pattern**: Extension methods on `IDbConnection` using C# 13 extension syntax.
 
 ```mermaid
 classDiagram
-    class Jaunty {
+    class Extrode.Jaunty {
         <<static partial>>
         +Query<T>(sql, params, options) List<T>
         +QueryPartial<T>(sql, params, options) List<T>
@@ -180,7 +180,7 @@ classDiagram
         +BeginTransaction()
     }
     
-    Jaunty --|> IDbConnection : extends
+    Extrode.Jaunty --|> IDbConnection : extends
 ```
 
 **Key Characteristics**:
@@ -701,7 +701,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    subgraph Jaunty["Jaunty Exceptions"]
+    subgraph Extrode.Jaunty["Extrode.Jaunty Exceptions"]
         IO["InvalidOperationException<br/>Strict mapping, no results,<br/>multiple results"]
         AE["ArgumentException<br/>Parameter mismatch,<br/>invalid parameter"]
         ANE["ArgumentNullException<br/>Null required argument"]

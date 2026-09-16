@@ -30,7 +30,7 @@ dotnet add package Microsoft.Data.Sqlite
 Open `Program.cs` and start with an in-memory database, a schema, and some seed data:
 
 ```csharp
-using Jaunty;
+using Extrode.Jaunty;
 using Microsoft.Data.Sqlite;
 
 using var connection = new SqliteConnection("Data Source=:memory:");
@@ -260,7 +260,7 @@ reflection, just a function. Jaunty lets you hand it a mapper delegate through
 
 ```csharp
 using System.Data;
-using Jaunty.Core;
+using Extrode.Jaunty.Core;
 
 public class ProductRow
 {
@@ -301,7 +301,7 @@ Real schemas rarely match your C# naming exactly. Attributes let you keep idioma
 names while pointing at whatever the database actually calls things:
 
 ```csharp
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 [Table("products")]
 public partial class ProductEntity
@@ -327,7 +327,7 @@ for this class into a second file at build time, which is what keeps the library
 reflection. Leave `partial` off and the generator reports `JAUNTYGEN004` as a warning and emits
 nothing, and the first call using the entity throws `No parameter binder found for type
 'ProductEntity'`. If you cannot make a class partial, `UseReflectionMapping()` from
-`Jaunty.Extensions.Reflection` is the deliberate opt-out.
+`Extrode.Jaunty.Extensions.Reflection` is the deliberate opt-out.
 
 `[Table]` overrides the table name Jaunty infers from the class name. `[Column]` does the same
 for a property's column. `[Key]` marks the primary key, and
