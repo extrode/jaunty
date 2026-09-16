@@ -6,7 +6,7 @@
 #                                           d754bf31.
 #
 # The per-process database copies the fix creates under
-# tests/Jaunty.Tests/bin/*/northwind-work/ are NOT listed here. They live in build output, they
+# tests/Extrode.Jaunty.Tests/bin/*/northwind-work/ are NOT listed here. They live in build output, they
 # are gitignored, `dotnet clean` removes them, and NorthwindDatabase prunes the ones whose owning
 # process has exited on the next run. Nothing accumulates that needs a person.
 #

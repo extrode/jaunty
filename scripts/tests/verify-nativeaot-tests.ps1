@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $scanner = Join-Path (Split-Path -Parent $scriptDir) 'Verify-NativeAOT.ps1'
 $repoRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
-$probe = Join-Path $repoRoot 'src\Jaunty\ScannerTestProbeExtensions.cs'
+$probe = Join-Path $repoRoot 'src\Extrode.Jaunty\ScannerTestProbeExtensions.cs'
 
 $failures = 0
 function Assert-Exit([string]$name, [int]$expected, [scriptblock]$setup) {
@@ -32,7 +32,7 @@ Assert-Exit 'baseline tree passes' 0 { }
 Assert-Exit 'unmarked reflection fails, even in a *Extensions.cs file' 1 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     public static PropertyInfo[] P(object o) => o.GetType().GetProperties();
@@ -43,7 +43,7 @@ internal static class ScannerTestProbe
 Assert-Exit 'lowercase prose "NativeAOT-safe:" does not allow a site' 1 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     // This helper is NativeAOT-safe: it only reads.
@@ -55,7 +55,7 @@ internal static class ScannerTestProbe
 Assert-Exit 'marker separated by a blank line does not allow a site' 1 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     // AOT-SAFE: misplaced, a blank line breaks adjacency.
@@ -68,7 +68,7 @@ internal static class ScannerTestProbe
 Assert-Exit 'adjacent marker allows a site' 0 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     // AOT-SAFE: test probe; deleted by the test that wrote it.
@@ -80,7 +80,7 @@ internal static class ScannerTestProbe
 Assert-Exit 'GetGetMethod( is not counted as GetMethod(' 0 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     public static MethodInfo? P(PropertyInfo p) => p.GetGetMethod();
@@ -90,7 +90,7 @@ internal static class ScannerTestProbe
 
 Assert-Exit 'prose in a doc comment is not counted as reflection' 0 {
     Set-Content $probe @'
-namespace Jaunty;
+namespace Extrode.Jaunty;
 /// <summary>Historically used <c>typeof(T).GetMethod(name)</c>; no longer.</summary>
 internal static class ScannerTestProbe
 {

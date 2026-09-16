@@ -8,10 +8,10 @@ using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 
 namespace Microsoft.eShopWeb.Infrastructure.Data.Persistence;
 
-// Hand-written translators between the flat Jaunty "Row" POCOs and the eShopOnWeb DDD aggregates.
+// Hand-written translators between the flat Extrode.Jaunty "Row" POCOs and the eShopOnWeb DDD aggregates.
 // The aggregates expose private setters, private/absent parameterless constructors and private
 // backing-field collections, so reflection is used here to hydrate them. This is app-layer port
-// code (not Jaunty core), so reflection is acceptable.
+// code (not Extrode.Jaunty core), so reflection is acceptable.
 internal static class AggregateMappers
 {
     private const BindingFlags InstanceNonPublic =

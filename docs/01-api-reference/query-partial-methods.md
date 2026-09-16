@@ -28,7 +28,7 @@ for the single-result family, in [`single-result-methods.md`](single-result-meth
 
 ## What "strict" and "partial" mean
 
-`MappingMode` (`src/Jaunty/Configuration/MappingMode.cs`) has two members, `Strict` and `Projection`.
+`MappingMode` (`src/Extrode.Jaunty/Configuration/MappingMode.cs`) has two members, `Strict` and `Projection`.
 Partial methods request `Projection`; everything else requests `Strict`.
 
 Under the reflection mapper, strict mapping fails in **both** directions, which is more than the
@@ -40,7 +40,7 @@ name suggests:
 | Property has no matching column | `InvalidOperationException`: *Strict mapping failed: property 'X' has no matching column in result set for type 'T'* | property left at its default |
 | Duplicate column name | first match wins, the rest are skipped | same |
 
-Both checks live in `MetadataCache<T>.BuildSetters` (`src/Jaunty.Extensions.Reflection`). They run
+Both checks live in `MetadataCache<T>.BuildSetters` (`src/Extrode.Jaunty.Extensions.Reflection`). They run
 once per distinct result-set shape, not once per row. The source-generated mapper is a different
 implementation with different behaviour - see
 [Which mapper enforces which direction](#which-mapper-enforces-which-direction).
@@ -74,7 +74,7 @@ This is the constraint to plan around, and it is not visible from the signatures
 2. The source-generated `IMapped<T>` mapper - **only when the mode is `Strict`**.
 3. A special-type mapper, when `SpecialTypeMappers.Register()` has been called
    (see [`special-types.md`](special-types.md)).
-4. The reflection extension, when `Jaunty.Extensions.Reflection` is loaded.
+4. The reflection extension, when `Extrode.Jaunty.Extensions.Reflection` is loaded.
 5. Otherwise it throws *No mapper found for type 'T'*.
 
 Step 2 is skipped for projection mode by design: a generated mapper is built for the entity's full
@@ -84,7 +84,7 @@ projection mapper, so on a partial query the dispatcher always falls through.
 **The practical consequence:** in a source-generation-only build - the NativeAOT and
 zero-reflection configuration - `QueryPartial<T>` throws unless you either
 
-- reference `Jaunty.Extensions.Reflection` and call `UseReflectionMapping()`, or
+- reference `Extrode.Jaunty.Extensions.Reflection` and call `UseReflectionMapping()`, or
 - pass your own mapper: `CommandOptions<T>.WithMapper(...)`.
 
 If neither is acceptable, the alternative is to keep strict mapping and declare a DTO whose

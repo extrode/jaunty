@@ -1,14 +1,14 @@
 using System;
 using System.Data;
 using System.Threading.Tasks;
-using Jaunty;
+using Extrode.Jaunty;
 using Microsoft.eShopWeb.Infrastructure.Data.Persistence;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.eShopWeb.Infrastructure.Data;
 
 /// <summary>
-/// Jaunty-based replacement for the former EF Core <c>CatalogContextSeed</c>. Ensures the schema
+/// Extrode.Jaunty-based replacement for the former EF Core <c>CatalogContextSeed</c>. Ensures the schema
 /// exists (for SQLite-backed runs, since there is no EF migration path anymore) and seeds the
 /// preconfigured catalog brands, types and items. Idempotent: seeding is skipped for any table
 /// that already contains rows.

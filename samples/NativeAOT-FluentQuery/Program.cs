@@ -1,12 +1,12 @@
-using Jaunty;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Fluent;
 
 using Microsoft.Data.Sqlite;
 
 using NativeAOT.FluentQuery;
 
-// NativeAOT-FluentQuery: Demonstrates Jaunty.Fluent under NativeAOT (fully AOT-compatible)
-// No reflection used, no reference to Jaunty.Extensions.Reflection anywhere in this project.
+// NativeAOT-FluentQuery: Demonstrates Extrode.Jaunty.Fluent under NativeAOT (fully AOT-compatible)
+// No reflection used, no reference to Extrode.Jaunty.Extensions.Reflection anywhere in this project.
 // Spec 003 (fluent NativeAOT-safe metadata) closed the gap that made this impossible - fluent
 // queries now resolve source-generated entity metadata the same reflection-free way Query<T>
 // already did.
@@ -30,7 +30,7 @@ cmd.CommandText = """
     """;
 cmd.ExecuteNonQuery();
 
-Console.WriteLine("=== Jaunty NativeAOT Fluent Query Sample ===");
+Console.WriteLine("=== Extrode.Jaunty NativeAOT Fluent Query Sample ===");
 Console.WriteLine();
 
 // Fluent read: Where + Select

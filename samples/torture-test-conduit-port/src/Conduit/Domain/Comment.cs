@@ -1,7 +1,7 @@
 using System;
 using System.Text.Json.Serialization;
 
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 namespace Conduit.Domain;
 

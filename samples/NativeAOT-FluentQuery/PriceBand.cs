@@ -1,7 +1,7 @@
 namespace NativeAOT.FluentQuery;
 
 // A grouped-projection result type. Unlike Product this is not an entity: it has no [Table], the
-// source generator emits nothing for it, and Jaunty reaches its members by reflection in
+// source generator emits nothing for it, and Extrode.Jaunty reaches its members by reflection in
 // GroupedJoinedResultMapper.
 //
 // It stays AOT-safe because the Select<TResult> overloads annotate TResult with

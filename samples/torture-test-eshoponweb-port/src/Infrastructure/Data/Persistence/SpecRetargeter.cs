@@ -6,7 +6,7 @@ using System.Reflection;
 namespace Microsoft.eShopWeb.Infrastructure.Data.Persistence;
 
 // Rewrites Ardalis.Specification predicate / key-selector expressions that were authored against
-// a domain aggregate (e.g. Basket, CatalogItem, Order) so they instead reference the flat Jaunty
+// a domain aggregate (e.g. Basket, CatalogItem, Order) so they instead reference the flat Extrode.Jaunty
 // "Row" POCO (BasketRow, CatalogItemRow, OrderRow). The concrete eShopOnWeb specs only reference
 // top-level scalar properties in their Where/OrderBy clauses, and every referenced property name
 // matches 1:1 between the domain type and its Row type (Id, BuyerId, CatalogBrandId, CatalogTypeId,
@@ -35,7 +35,7 @@ internal static class SpecRetargeter
     }
 
     // Rewrites a domain key selector (Func<TDomain,TKey>) -> Expression<Func<TRow,object?>>, boxing
-    // value-type keys so the result matches Jaunty's OrderBy(Expression<Func<T,object?>>) signature.
+    // value-type keys so the result matches Extrode.Jaunty's OrderBy(Expression<Func<T,object?>>) signature.
     public static Expression<Func<TRow, object?>> RetargetKey<TDomain, TRow>(
         LambdaExpression keySelector)
     {

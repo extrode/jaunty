@@ -1,9 +1,9 @@
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 namespace NativeAOT.FluentQuery;
 
 // Entity with [Table] attribute - source generator creates mappers AND fluent metadata
-// at compile time (spec 003). No Jaunty.Extensions.Reflection reference anywhere in
+// at compile time (spec 003). No Extrode.Jaunty.Extensions.Reflection reference anywhere in
 // this project - see the .csproj.
 [Table("products")]
 public partial class Product

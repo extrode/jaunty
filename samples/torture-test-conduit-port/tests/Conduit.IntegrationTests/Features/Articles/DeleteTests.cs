@@ -6,8 +6,8 @@ using Conduit.Features.Articles;
 using Conduit.IntegrationTests.Features.Comments;
 using Conduit.IntegrationTests.Features.Users;
 
-using Jaunty;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Fluent;
 
 using Xunit;
 

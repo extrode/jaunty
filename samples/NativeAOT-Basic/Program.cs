@@ -1,10 +1,10 @@
-using Jaunty;
+using Extrode.Jaunty;
 
 using Microsoft.Data.Sqlite;
 
 using NativeAOT.Basic;
 
-// NativeAOT-Basic: Demonstrates Jaunty with source-generated mappers (fully AOT-compatible)
+// NativeAOT-Basic: Demonstrates Extrode.Jaunty with source-generated mappers (fully AOT-compatible)
 // No reflection used. The source generator creates ReadEntity at compile time for query mapping.
 
 using var connection = new SqliteConnection("Data Source=:memory:");
@@ -27,7 +27,7 @@ cmd.CommandText = """
     """;
 cmd.ExecuteNonQuery();
 
-Console.WriteLine("=== Jaunty NativeAOT Basic Sample ===");
+Console.WriteLine("=== Extrode.Jaunty NativeAOT Basic Sample ===");
 Console.WriteLine();
 
 // Query all products (source-generated mapper)

@@ -1,5 +1,5 @@
 using System.Data;
-using Jaunty;
+using Extrode.Jaunty;
 using MySql.Data.MySqlClient;
 using Npgsql;
 using Microsoft.Data.Sqlite;
@@ -17,10 +17,10 @@ public static class Dependencies
 {
     public static void ConfigureServices(IConfiguration configuration, IServiceCollection services)
     {
-        // Ensure Jaunty's reflection-based mapping is active for the flat Row POCOs (they carry no
-        // source-generated mappers in this project). Jaunty auto-discovers the extension assembly,
+        // Ensure Extrode.Jaunty's reflection-based mapping is active for the flat Row POCOs (they carry no
+        // source-generated mappers in this project). Extrode.Jaunty auto-discovers the extension assembly,
         // but calling it explicitly is safe and idempotent.
-        Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping();
+        Extrode.Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping();
 
         // Historically named "UseOnlyInMemoryDatabase"; now selects a SQLite catalog store
         // (used by the functional test fixtures). Identity continues to use EF Core.
@@ -47,7 +47,7 @@ public static class Dependencies
         }
         else
         {
-            // Real catalog store via Jaunty. The connection string is the same "CatalogConnection"
+            // Real catalog store via Extrode.Jaunty. The connection string is the same "CatalogConnection"
             // previously consumed by EF Core; "DatabaseProvider" selects which client to construct.
             var provider = CatalogSchema.Parse(configuration["DatabaseProvider"]);
 

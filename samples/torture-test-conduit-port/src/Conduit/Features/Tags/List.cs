@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Conduit.Domain;
 using Conduit.Infrastructure;
 
-using Jaunty.Fluent;
+using Extrode.Jaunty.Fluent;
 
 using MediatR;
 

@@ -91,8 +91,8 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
 
       # The filter names suites explicitly, so a substring has to match the suite's real
-      # namespace: "Jaunty.Fluent.Tests*" does NOT match Jaunty.Fluent.SourceGen.Tests and
-      # "Jaunty.Scaffolding.Tests*" does NOT match Jaunty.Scaffolding.Cli.Tests. Both were
+      # namespace: "Extrode.Jaunty.Fluent.Tests*" does NOT match Extrode.Jaunty.Fluent.SourceGen.Tests and
+      # "Extrode.Jaunty.Scaffolding.Tests*" does NOT match Extrode.Jaunty.Scaffolding.Cli.Tests. Both were
       # missing here and shipped untested until 2026-08-01. A new suite needs adding by hand.
       #
       # xunit v3 under Microsoft.Testing.Platform has no single filter that reproduces VSTest's
@@ -104,7 +104,7 @@ jobs:
       # some bare METHOD names in other classes, so both a class-name step and a method-name step
       # are needed to cover the same tests the old filter covered. --ignore-exit-code 8 is needed
       # on the namespace step because MTP treats an assembly matching zero tests as a failure
-      # (exit 8) - by design here, since Jaunty.Tests/Jaunty.UnitTests are deliberately excluded
+      # (exit 8) - by design here, since Extrode.Jaunty.Tests/Extrode.Jaunty.UnitTests are deliberately excluded
       # from that step and picked up by the two Sqlite steps instead.
       - name: Test (all local suites)
         run: >-
@@ -112,7 +112,7 @@ jobs:
           -c Release
           --no-build
           --framework net8.0
-          --filter-namespace "Jaunty.Fluent.Tests*" "Jaunty.Fluent.SourceGen.Tests*" "Jaunty.Scaffolding.Tests*" "Jaunty.Scaffolding.Cli.Tests*" "Jaunty.FlatFiles*" "Jaunty.SourceGenerator.Tests*"
+          --filter-namespace "Extrode.Jaunty.Fluent.Tests*" "Extrode.Jaunty.Fluent.SourceGen.Tests*" "Extrode.Jaunty.Scaffolding.Tests*" "Extrode.Jaunty.Scaffolding.Cli.Tests*" "Extrode.Jaunty.FlatFiles*" "Extrode.Jaunty.SourceGenerator.Tests*"
           --ignore-exit-code 8
 
       - name: Test (SQLite core, by class name)
@@ -140,7 +140,7 @@ jobs:
           -c Release
           --no-build
           --framework net10.0
-          --filter-namespace "Jaunty.Fluent.Tests*" "Jaunty.Fluent.SourceGen.Tests*" "Jaunty.Scaffolding.Tests*" "Jaunty.Scaffolding.Cli.Tests*" "Jaunty.FlatFiles*" "Jaunty.SourceGenerator.Tests*"
+          --filter-namespace "Extrode.Jaunty.Fluent.Tests*" "Extrode.Jaunty.Fluent.SourceGen.Tests*" "Extrode.Jaunty.Scaffolding.Tests*" "Extrode.Jaunty.Scaffolding.Cli.Tests*" "Extrode.Jaunty.FlatFiles*" "Extrode.Jaunty.SourceGenerator.Tests*"
           --ignore-exit-code 8
 
       - name: Test net10 (SQLite core, by class name)
@@ -172,7 +172,7 @@ jobs:
       # Runs between pack and the first push, because both feeds are one-way doors: a version
       # pushed to nuget.org can be unlisted but never replaced. rc.2 was packed at 83,487,302
       # bytes, ~70 MB of it iOS, Android and wasm native SQLite that `dotnet tool install` can
-      # never load; TrimToolRuntimeAssets in Jaunty.Scaffolding.Cli.csproj cut it to 27,599,882.
+      # never load; TrimToolRuntimeAssets in Extrode.Jaunty.Scaffolding.Cli.csproj cut it to 27,599,882.
       # That trim keys on an SDK item name rather than documented contract, so this asserts the
       # packed identifiers still match the csproj instead of trusting that it kept working.
       - name: Guard the tool package contents

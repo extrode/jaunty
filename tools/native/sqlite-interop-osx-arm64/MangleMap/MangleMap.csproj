@@ -8,7 +8,7 @@
     <IsPackable>false</IsPackable>
     <!-- Developer tooling, not shipped: it is not part of any solution build. -->
     <AssemblyName>manglemap</AssemblyName>
-    <RootNamespace>Jaunty.Tools.MangleMap</RootNamespace>
+    <RootNamespace>Extrode.Jaunty.Tools.MangleMap</RootNamespace>
   </PropertyGroup>
 
 </Project>
