@@ -32,9 +32,14 @@ public class DuckDbDecimalBindingTests
     [Fact]
     public void TheDuckDbDialect_DoesNotAskForTheDecimalConversion()
     {
+        // Statically always-false today, by design: this is the regression guard for DuckDbDialect
+        // ever starting to implement IDecimalBindingDialect. If it does, this becomes a real runtime
+        // check and Assert.False below starts failing - suppressing only the compile-time noise.
+#pragma warning disable CS0184
         Assert.False(
             DuckDbDialect.Instance is IDecimalBindingDialect,
             "DuckDB compares a bound decimal correctly; converting it would only lose precision.");
+#pragma warning restore CS0184
 
         object? bound = DecimalParameterBinding.Normalize(DuckDbDialect.Instance, decimal.MaxValue);
 
