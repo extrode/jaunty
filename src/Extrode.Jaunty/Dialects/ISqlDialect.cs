@@ -306,6 +306,17 @@ public interface ISqlDialect
     /// identity keys excluded from <paramref name="insertColumns"/>, since MERGE-based
     /// dialects still need to match on them).</param>
     /// <returns>Dialect-specific upsert SQL statement.</returns>
+    /// <remarks>
+    /// When <paramref name="updateColumns"/> is empty (no non-key updatable columns, nothing to
+    /// update on conflict), every other built-in dialect - PostgreSQL, SQLite, DuckDB (<c>DO
+    /// NOTHING</c>), and SQL Server's MERGE (UPDATE branch omitted entirely) - is a true no-op.
+    /// MySQL's <c>ON DUPLICATE KEY UPDATE</c> grammar requires at least one assignment, so
+    /// MySqlDialect self-assigns the first key column (<c>key = key</c>) to satisfy the grammar.
+    /// This still runs as an UPDATE on the conflicting row: any BEFORE/AFTER UPDATE trigger, and
+    /// any column a trigger maintains, fires on MySQL where it would not elsewhere. A
+    /// column-level <c>ON UPDATE CURRENT_TIMESTAMP</c> does not fire, since MySQL only advances it
+    /// when a value actually changes and <c>key = key</c> changes nothing.
+    /// </remarks>
     string GenerateUpsertSql(
         string tableName,
         string[] insertColumns,
