@@ -233,7 +233,9 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
             // MySQL's ON DUPLICATE KEY UPDATE clause requires at least one assignment; unlike
             // Postgres/SQLite's DO NOTHING, there is no no-op syntax here. A key-only entity (no
             // non-key updatable columns) has nothing meaningful to set, so self-assign the first
-            // key column as a harmless no-op that still satisfies the grammar.
+            // key column - grammar-satisfying, not a true no-op: it still runs as an UPDATE on the
+            // conflicting row, so triggers fire where they would not on the other dialects. See
+            // ISqlDialect.GenerateUpsertSql's remarks for the full cross-dialect comparison.
             sb.Append(keyColumns[0]);
             sb.Append(" = ");
             sb.Append(keyColumns[0]);
