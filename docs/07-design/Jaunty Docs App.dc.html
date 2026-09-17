@@ -392,7 +392,7 @@ class Component extends DCLogic {
           { n: "[Database(\"…\")]", t: ": class · SQL Server only", d: "Targets a table in another database on the same instance." },
         ] },
         { k: "code", title: "example", src: "[Table(\"tblOrders\")]\n[Database(\"Sales\")]\npublic class Order\n{\n    [Key]\n    public int Id { get; set; }\n\n    [Column(\"customer_ref\")]\n    public int CustomerId { get; set; }\n\n    [NotMapped]\n    public decimal RunningTotal { get; set; }\n}" },
-        { k: "callout", t: "PostgreSQL casing", s: "PostgreSQL lowercases unquoted identifiers. Jaunty quotes everything, so your C# casing survives — quote your names in migrations too, or map explicitly with `[Column]`." },
+        { k: "callout", t: "PostgreSQL casing", s: "PostgreSQL lowercases unquoted identifiers. Jaunty only quotes SQL keywords, not casing in general, so an unquoted mixed-case name like ProductName is sent as-is and folded to productname by PostgreSQL itself. If a migration created the column with quotes (\"ProductName\", case preserved), that fold won't match it. Map explicitly with `[Column(\"product_name\")]` (snake_case sidesteps the fold entirely) or keep your own migrations unquoted so both sides fold the same way." },
       ] },
 
       providers: { nav: "Providers", title: "Providers", badge: "guide", sub: "same methods, different SQL dialect", blocks: [
