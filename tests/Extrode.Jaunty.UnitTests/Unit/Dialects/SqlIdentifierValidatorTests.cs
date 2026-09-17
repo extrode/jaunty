@@ -80,6 +80,7 @@ public class SqlIdentifierValidatorTests
     [InlineData("has space")]
     [InlineData("has\tTab")]
     [InlineData("has\nnewline")]
+    [InlineData("trailing\n")]
     [InlineData("has\rcarriagereturn")]
     [InlineData("has-hyphen")]
     [InlineData("has.dot")]
