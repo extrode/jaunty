@@ -54,18 +54,19 @@ internal static class SqlIdentifierValidator
     private const string Letter = @"\p{L}\p{Mn}\p{Mc}";
     private const string LetterOrDigit = Letter + @"\p{Nd}";
 
+    // \z, not $: $ also matches before a single trailing \n, so "users\n" would pass otherwise.
     private static readonly Regex CommonPattern =
-        new($"^[{Letter}_][{LetterOrDigit}_]*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        new($@"^[{Letter}_][{LetterOrDigit}_]*\z", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly Regex SqlServerPattern =
-        new($"^[{Letter}_#][{LetterOrDigit}_#$]*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        new($@"^[{Letter}_#][{LetterOrDigit}_#$]*\z", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     // MySQL permits a leading digit, but not an all-digit identifier - that would be a number.
     private static readonly Regex MySqlPattern =
-        new($"^(?![\\p{{Nd}}]+$)[{LetterOrDigit}_$]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        new($@"^(?![\p{{Nd}}]+\z)[{LetterOrDigit}_$]+\z", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly Regex PostgreSqlPattern =
-        new($"^[{Letter}_][{LetterOrDigit}_$]*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        new($@"^[{Letter}_][{LetterOrDigit}_$]*\z", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public static void Validate(string identifier, string paramName)
         => Validate(identifier, paramName, SqlIdentifierFlavor.Common);
