@@ -6,10 +6,12 @@ using Microsoft.Data.Sqlite;
 using NativeAOT.FluentQuery;
 
 // NativeAOT-FluentQuery: Demonstrates Extrode.Jaunty.Fluent under NativeAOT (fully AOT-compatible)
-// No reflection used, no reference to Extrode.Jaunty.Extensions.Reflection anywhere in this project.
-// Spec 003 (fluent NativeAOT-safe metadata) closed the gap that made this impossible - fluent
-// queries now resolve source-generated entity metadata the same reflection-free way Query<T>
-// already did.
+// No reference to Extrode.Jaunty.Extensions.Reflection anywhere in this project. Spec 003 (fluent
+// NativeAOT-safe metadata) closed the gap that made this impossible - fluent queries now resolve
+// source-generated entity metadata the same reflection-free way Query<T> already did. That covers
+// entity metadata only: the grouped-projection path below still goes through
+// GroupedJoinedResultMapper, which does reflect - see the comment above the PriceBand block for
+// why that's AOT-safe anyway.
 
 using var connection = new SqliteConnection("Data Source=:memory:");
 connection.Open();
