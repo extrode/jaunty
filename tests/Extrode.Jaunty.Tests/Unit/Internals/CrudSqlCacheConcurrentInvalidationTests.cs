@@ -6,6 +6,7 @@ using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Extensions.Reflection;
 using Extrode.Jaunty.Internals;
 using Extrode.Jaunty.Internals.Write;
+using Extrode.Jaunty.Tests.Helpers;
 
 using Xunit;
 
@@ -17,7 +18,16 @@ namespace Extrode.Jaunty.Tests.Unit.Internals;
 /// never served, no matter how many concurrent readers and invalidators interleave. Neither
 /// <see cref="ConfigurationGeneration"/> nor <see cref="CrudSqlCache"/> had a concurrency test
 /// before this, despite both being process-wide static state exercised from arbitrary threads.
+///
+/// <para>
+/// Mutates <see cref="JauntyConfig"/> via <c>UseReflectionMapping</c>/<c>Reset</c> and calls
+/// <see cref="ConfigurationGeneration"/>.Invalidate() thousands of times per run, so this must run
+/// in the serialized "Type Handler Operations" collection, not in Extrode.Jaunty.UnitTests'
+/// parallel assembly - see ResetCallersReinitializeTests for what happens when a test like this one
+/// leaks into a collection that runs concurrently with it.
+/// </para>
 /// </summary>
+[Collection("Type Handler Operations")]
 public class CrudSqlCacheConcurrentInvalidationTests : IDisposable
 {
     public CrudSqlCacheConcurrentInvalidationTests() => JauntyReflectionExtensions.UseReflectionMapping();
@@ -26,6 +36,7 @@ public class CrudSqlCacheConcurrentInvalidationTests : IDisposable
     {
         GC.SuppressFinalize(this);
         JauntyConfig.Reset();
+        TestInitializer.Initialize();
     }
 
     [Table("crud_sql_cache_stress")]
@@ -92,18 +103,22 @@ public class CrudSqlCacheConcurrentInvalidationTests : IDisposable
 
         Assert.Empty(exceptions);
 
-        int finalGeneration = ConfigurationGeneration.Current;
-        var sql = CrudSqlCache.GetSql<Widget>(connection);
-        Assert.NotNull(sql);
-
-        // One more read after the race settles must observe the current generation - the whole
-        // point of the mechanism is that a stale entry is never permanently stuck.
-        int generationAfterRead = ConfigurationGeneration.Current;
-        Assert.Equal(finalGeneration, generationAfterRead);
+        // The race has settled at whatever generation the last invalidator left behind. One more
+        // invalidation, single-threaded, must force a genuinely new build rather than keep serving
+        // the instance obtained before it - that's the actual self-healing contract; two reads of
+        // ConfigurationGeneration.Current with nothing invalidating between them can't exercise it.
+        CachedCrudSql beforeFinalInvalidate = CrudSqlCache.GetSql<Widget>(connection);
+        ConfigurationGeneration.Invalidate();
+        CachedCrudSql afterFinalInvalidate = CrudSqlCache.GetSql<Widget>(connection);
+        Assert.NotSame(beforeFinalInvalidate, afterFinalInvalidate);
     }
 
+    // GetSql has no single-flight lock around its check-then-build-then-store path, so concurrent
+    // callers racing a cold cache can each build their own CachedCrudSql instance - this does not
+    // assert a single shared instance (that would be false and flaky), only that every build the
+    // race produces carries identical SQL, i.e. no build is corrupted or torn under contention.
     [Fact]
-    public async Task GetSql_ConcurrentCallsAtAFixedGeneration_AllReturnEquivalentSql()
+    public async Task GetSql_ConcurrentCallsAtAFixedGeneration_AllBuildIdenticalSql()
     {
         using var connection = new SQLiteConnection("Data Source=:memory:");
         connection.Open();

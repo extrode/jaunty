@@ -1095,8 +1095,10 @@ public static class CsvImportExtensions
     // intentionally strict: tableName and CSV header column names are interpolated directly into
     // raw SQL (COPY/LOAD DATA/BULK INSERT/INSERT) or into the sqlite3 CLI's dot-command script, and
     // none of those contexts support parameterizing identifiers.
+    // \z, not $: $ matches before a trailing \n as well as at the true end of the string, so
+    // "users\n" would otherwise pass this check and reach raw SQL/CLI interpolation below.
     private static readonly Regex ValidIdentifierPattern =
-        new(@"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$", RegexOptions.Compiled);
+        new(@"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?\z", RegexOptions.Compiled);
 
     private static readonly char[] SqliteCliUnsafeChars = { '"', '\r', '\n' };
 
