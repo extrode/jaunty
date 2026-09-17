@@ -10,8 +10,8 @@ using NativeAOT.FluentQuery;
 // NativeAOT-safe metadata) closed the gap that made this impossible - fluent queries now resolve
 // source-generated entity metadata the same reflection-free way Query<T> already did. That covers
 // entity metadata only: the grouped-projection path below still goes through
-// GroupedJoinedResultMapper, which does reflect - see the comment above the PriceBand block for
-// why that's AOT-safe anyway.
+// GroupedJoinedResultMapper, which does reflect - see PriceBand.cs for why that's AOT-safe
+// anyway, and the comment above the PriceBand block below for what breaks without it.
 
 using var connection = new SqliteConnection("Data Source=:memory:");
 connection.Open();
