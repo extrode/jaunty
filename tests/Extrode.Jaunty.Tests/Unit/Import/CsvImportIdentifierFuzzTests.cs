@@ -36,7 +36,7 @@ public class CsvImportIdentifierFuzzTests
         "table.", ".table", "..",
         "a\0b", "\0", "a\0",
         "café", "テーブル", "ácombining", "a​b",
-        "a\r\nb",
+        "a\r\nb", "a\n",
         "/* comment */table", "table -- comment",
     ];
 
