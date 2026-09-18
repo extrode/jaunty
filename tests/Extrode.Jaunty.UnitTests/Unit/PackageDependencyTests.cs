@@ -8,6 +8,7 @@ namespace Extrode.Jaunty.Tests.Unit;
 /// only symptom is a dependency group in the shipped nuspec that nobody looks at. These facts
 /// pin the contract at the csproj, which is where the mistake gets made.
 /// </summary>
+[Trait("Law", "L003")]
 public class PackageDependencyTests
 {
     private const string CoreProject = "src/Extrode.Jaunty/Extrode.Jaunty.csproj";
