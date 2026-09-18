@@ -126,8 +126,10 @@ public sealed class GeneratedIdentityInferenceTests
         public DbType DbType { get; set; }
         public ParameterDirection Direction { get; set; }
         public bool IsNullable => true;
+        #pragma warning disable CS8767 // IDataParameter.ParameterName is [AllowNull]; the attribute is not public on net472. / // IDataParameter.SourceColumn is [AllowNull]; the attribute is not public on net472.
         public string ParameterName { get; set; } = "";
         public string SourceColumn { get; set; } = "";
+        #pragma warning restore CS8767
         public DataRowVersion SourceVersion { get; set; }
         public object? Value { get; set; }
     }
@@ -136,7 +138,9 @@ public sealed class GeneratedIdentityInferenceTests
     {
         public List<StubParameter> Bound { get; } = [];
 
+        #pragma warning disable CS8767 // IDbCommand.CommandText is [AllowNull]; the attribute is not public on net472.
         public string CommandText { get; set; } = "";
+        #pragma warning restore CS8767
         public int CommandTimeout { get; set; }
         public CommandType CommandType { get; set; } = CommandType.Text;
         public IDbConnection? Connection { get; set; }
@@ -167,12 +171,12 @@ public sealed class GeneratedIdentityInferenceTests
             public int IndexOf(string parameterName) => -1;
             public void RemoveAt(string parameterName) { }
 
-            public new int Add(object value)
+            public new int Add(object? value)
             {
                 if (value is StubParameter parameter)
                     bound.Add(parameter);
 
-                base.Add(value);
+                base.Add(value!);
                 return Count - 1;
             }
         }

@@ -6,6 +6,12 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<IsPackable>false</IsPackable>
 		<OutputType>Exe</OutputType>
+		<!-- JAUNTYGEN001/JAUNTYGEN005 are deliberately triggered by Entities/GenDuplicateColumnEntity.cs
+		     and Entities/GenGetOnlyEntity.cs to prove the generator reports them; #pragma can't scope
+		     this per-file because these diagnostics carry a reconstructed Location (JauntyGenerator.cs's
+		     DroppedPropertyInfo.Location.ToLocation()) whose SourceTree is null, so Roslyn's pragma
+		     suppression - which looks up pragma state on the diagnostic's own SourceTree - can't see it. -->
+		<NoWarn>$(NoWarn);JAUNTYGEN001;JAUNTYGEN005</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

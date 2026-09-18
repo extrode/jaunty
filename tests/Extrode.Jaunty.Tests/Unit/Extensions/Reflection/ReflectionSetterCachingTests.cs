@@ -277,7 +277,7 @@ public class ReflectionSetterCachingTests : IDisposable
                 });
             }
 
-            await System.Threading.Tasks.Task.WhenAll(tasks).ConfigureAwait(false);
+            await System.Threading.Tasks.Task.WhenAll(tasks);
         }
 
         Assert.Empty(exceptions);
@@ -322,7 +322,7 @@ public class ReflectionSetterCachingTests : IDisposable
                 });
             }
 
-            await System.Threading.Tasks.Task.WhenAll(tasks).ConfigureAwait(false);
+            await System.Threading.Tasks.Task.WhenAll(tasks);
         }
 
         Assert.Empty(exceptions);
@@ -360,7 +360,7 @@ public class ReflectionSetterCachingTests : IDisposable
                 });
             }
 
-            await System.Threading.Tasks.Task.WhenAll(tasks).ConfigureAwait(false);
+            await System.Threading.Tasks.Task.WhenAll(tasks);
         }
 
         Assert.Empty(exceptions);

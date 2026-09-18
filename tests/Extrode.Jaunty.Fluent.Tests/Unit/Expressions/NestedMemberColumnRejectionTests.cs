@@ -122,7 +122,9 @@ public class NestedMemberColumnRejectionTests
 
     private sealed class NestedMemberConnection : IDbConnection
     {
+        #pragma warning disable CS8767 // IDbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
         public string ConnectionString { get; set; } = string.Empty;
+        #pragma warning restore CS8767
         public int ConnectionTimeout => 0;
         public string Database => string.Empty;
         public ConnectionState State => ConnectionState.Open;

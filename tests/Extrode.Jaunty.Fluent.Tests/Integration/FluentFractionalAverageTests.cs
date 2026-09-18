@@ -202,7 +202,9 @@ public class FluentFractionalAverageTests : IClassFixture<FluentDatabaseFixture>
     {
         public string? LastCommandText { get; private set; }
 
+        #pragma warning disable CS8767 // IDbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
         public string ConnectionString { get => ""; set { } }
+        #pragma warning restore CS8767
         public int ConnectionTimeout => 0;
         public string Database => "";
         public ConnectionState State { get; private set; } = ConnectionState.Closed;
@@ -218,7 +220,9 @@ public class FluentFractionalAverageTests : IClassFixture<FluentDatabaseFixture>
 
         private sealed class RecordingCommand(SqlServerStubConnection owner) : IDbCommand
         {
+            #pragma warning disable CS8766 // IDbCommand.CommandText getter is non-nullable but this stub's setter must accept null (get is [AllowNull] on the real type); the attribute is not public on net472.
             public string? CommandText { get; set; }
+            #pragma warning restore CS8766
             public int CommandTimeout { get; set; }
             public CommandType CommandType { get; set; }
             public IDbConnection? Connection { get; set; } = owner;
@@ -264,8 +268,10 @@ public class FluentFractionalAverageTests : IClassFixture<FluentDatabaseFixture>
             public DbType DbType { get; set; }
             public ParameterDirection Direction { get; set; }
             public bool IsNullable => true;
+            #pragma warning disable CS8767 // IDataParameter.ParameterName is [AllowNull]; the attribute is not public on net472. / // IDataParameter.SourceColumn is [AllowNull]; the attribute is not public on net472.
             public string ParameterName { get; set; } = "";
             public string SourceColumn { get; set; } = "";
+            #pragma warning restore CS8767
             public DataRowVersion SourceVersion { get; set; }
             public object? Value { get; set; }
         }

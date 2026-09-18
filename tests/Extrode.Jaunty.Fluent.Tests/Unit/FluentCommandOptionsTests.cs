@@ -1011,7 +1011,9 @@ public class FluentCommandOptionsTests
     {
         public CapturingCommand? LastCommand { get; private set; }
 
+        #pragma warning disable CS8767 // IDbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
         public string ConnectionString { get; set; } = "";
+        #pragma warning restore CS8767
         public int ConnectionTimeout => 0;
         public string Database => "";
         public ConnectionState State => ConnectionState.Open;
@@ -1030,7 +1032,9 @@ public class FluentCommandOptionsTests
     {
         private CommandType _commandType = CommandType.Text;
 
+        #pragma warning disable CS8767 // IDbCommand.CommandText is [AllowNull]; the attribute is not public on net472.
         public string CommandText { get; set; } = "";
+        #pragma warning restore CS8767
         public int CommandTimeout { get; set; }
 
         /// <summary>Whether anything assigned <see cref="CommandType"/> at all, as distinct from
@@ -1074,8 +1078,10 @@ public class FluentCommandOptionsTests
         public DbType DbType { get; set; }
         public ParameterDirection Direction { get; set; }
         public bool IsNullable => true;
+        #pragma warning disable CS8767 // IDataParameter.ParameterName is [AllowNull]; the attribute is not public on net472. / // IDataParameter.SourceColumn is [AllowNull]; the attribute is not public on net472.
         public string ParameterName { get; set; } = "";
         public string SourceColumn { get; set; } = "";
+        #pragma warning restore CS8767
         public DataRowVersion SourceVersion { get; set; }
         public object? Value { get; set; }
     }
@@ -1130,7 +1136,9 @@ public class FluentCommandOptionsTests
         {
             public CapturingDbCommand? LastCommand { get; private set; }
 
+            #pragma warning disable CS8765 // DbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
             public override string ConnectionString { get; set; } = "";
+            #pragma warning restore CS8765
             public override string Database => "";
             public override string DataSource => "";
             public override string ServerVersion => "";
@@ -1158,7 +1166,9 @@ public class FluentCommandOptionsTests
 
         internal sealed class CapturingDbCommand : DbCommand
         {
+            #pragma warning disable CS8765 // DbCommand.CommandText is [AllowNull]; the attribute is not public on net472.
             public override string CommandText { get; set; } = "";
+            #pragma warning restore CS8765
             public override int CommandTimeout { get; set; }
             public override CommandType CommandType { get; set; } = CommandType.Text;
             public override bool DesignTimeVisible { get; set; }
@@ -1209,9 +1219,13 @@ public class FluentCommandOptionsTests
             public override DbType DbType { get; set; }
             public override ParameterDirection Direction { get; set; }
             public override bool IsNullable { get; set; }
+            #pragma warning disable CS8765 // DbParameter.ParameterName is [AllowNull]; the attribute is not public on net472.
             public override string ParameterName { get; set; } = "";
+            #pragma warning restore CS8765
             public override int Size { get; set; }
+            #pragma warning disable CS8765 // DbParameter.SourceColumn is [AllowNull]; the attribute is not public on net472.
             public override string SourceColumn { get; set; } = "";
+            #pragma warning restore CS8765
             public override bool SourceColumnNullMapping { get; set; }
             public override object? Value { get; set; }
 
