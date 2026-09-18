@@ -62,7 +62,10 @@ Mutation: commented out the throw in DrDispatcher.cs:64; L001 failed with 3 coun
 - `scope` is the file or symbol the law is about, so `/prove` targets real code.
 - `proof` is the test file, relative to the repo root. It must contain the id literally.
 - `check` is the command that exits 0 when the law holds. Optional: when absent it is derived
-  from the runner (below). Set it when the derived form is wrong for this repo.
+  from the runner (below). Set it when the derived form is wrong for this repo. The gate runs
+  it verbatim through the shell and prints it first, so read a `check` line at review the way
+  you would read a script: it is agent-written and it executes on the reviewer's machine. A
+  check whose output says it ran zero tests (`0 passed`, `pass=0`, `No test matches`) fails.
 
 ## Tagging a proof
 
