@@ -30,7 +30,7 @@ Two things, both visible in this project:
    trimmer cannot see through the reflection to know what is used:
 
    ```xml
-   <TrimmerRootAssembly Include="Jaunty.Extensions.Reflection" />
+   <TrimmerRootAssembly Include="Extrode.Jaunty.Extensions.Reflection" />
    ```
 
    That is a size cost paid unconditionally, and it is why the reflection extension is a

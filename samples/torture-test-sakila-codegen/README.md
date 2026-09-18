@@ -1,6 +1,6 @@
 # Sakila/Pagila codegen diff (Part 2 torture test)
 
-Output of `dotnet-jaunty scaffold` (`src/Jaunty.Scaffolding.Cli`) run against the same
+Output of `dotnet-jaunty scaffold` (`src/Extrode.Jaunty.Scaffolding.Cli`) run against the same
 logical Sakila/Pagila schema on all 5 targets, per the private torture-test handoff
 Part 2 step 2 ("diff generated models across DBs for the same logical schema").
 
@@ -37,7 +37,7 @@ differently per dialect:
 - `[Table]` attribute presence: emitted (schema-qualified) for SQL Server/Postgres, omitted
   for MySQL/MariaDB/SQLite. This is `EntityCodeGenerator`'s existing "only emit `[Table]`
   when the table name differs from the class name or a schema is present" optimization
-  (`src/Jaunty.Scaffolding/CodeGeneration/EntityCodeGenerator.cs`) working as designed —
+  (`src/Extrode.Jaunty.Scaffolding/CodeGeneration/EntityCodeGenerator.cs`) working as designed —
   MySQL/SQLite have no schema concept, so the attribute is correctly skipped.
 - `actor_id` etc.: `int` on SQL Server/Postgres/MySQL/MariaDB, `long` on SQLite. SQLite has
   no fixed-width integer storage (`INTEGER` affinity is always 64-bit), so `long` is the
