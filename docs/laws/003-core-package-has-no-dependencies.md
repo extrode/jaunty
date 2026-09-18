@@ -24,3 +24,4 @@ Enacted on approval of the plan in ~/.claude/docs/plans/2026-09-18-014-laws-and-
 The plan's draft said "no PackageReference at all"; the csproj has two, both netstandard2.0-only
 backports that `PackageDependencyTests` already pins, so the statement was corrected to the
 contract that is true and that test became the proof.
+Mutation: an unconditional PackageReference to Microsoft.Extensions.Logging.Abstractions added to the core csproj; L003 failed both CoreReferencesNothingButTheNetStandardBackports and EveryCoreReferenceIsGatedToNetStandard20.
