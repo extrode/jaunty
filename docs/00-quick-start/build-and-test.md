@@ -108,7 +108,9 @@ The server engines are seeded from `tests/*-setup.sql` and `data/<engine>/`; `do
 starts SQL Server, PostgreSQL, MySQL and MariaDB. Connection strings come from
 `tests/Extrode.Jaunty.Tests/appsettings.json`, which is gitignored; copy `appsettings.example.json` to start.
 After a run against the servers, `scripts/reset-test-databases.ps1 -e` (or `.sh`) drops and
-recreates them so the next run starts from the seeded baseline.
+recreates them so the next run starts from the seeded baseline. Run it once before the first run of
+a session too - the previous run's reset is easy to skip by accident, and starting from a dirty
+database produces failures that look like product bugs.
 
 ## CI/CD
 
