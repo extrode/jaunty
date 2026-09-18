@@ -21,3 +21,4 @@ column is absent, so that property keeps its default.
 
 ## Proof notes
 Enacted on approval of the plan in ~/.claude/docs/plans/2026-09-18-014-laws-and-proofs-workflow.md.
+Mutation: MetadataCache.cs:361 strict-only missing-column check made unconditional, rebuilt; L002 failed on the first generated subset with a missing column (projection threw).

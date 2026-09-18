@@ -25,3 +25,4 @@ Enacted on approval of the plan in ~/.claude/docs/plans/2026-09-18-014-laws-and-
 The plan named `DrDispatcher.cs` as the scope; the strict-versus-projection decision is made in
 the Reflection extension's `MetadataCache.GetSetters`, so the scope was corrected to the code
 that throws.
+Mutation: MetadataCache.cs:367 strict missing-property throw disabled, rebuilt; L001 failed on the first generated subset with a missing column (expected InvalidOperationException, none thrown).
