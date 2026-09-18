@@ -184,6 +184,7 @@ jobs:
       - name: Test - Scaffolding
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
+          JAUNTY_REQUIRE_SQLSERVER: "1"
         run: >-
           dotnet test --project tests/Extrode.Jaunty.Scaffolding.Tests
           -c Release
@@ -277,6 +278,7 @@ jobs:
       - name: Test - Scaffolding net10
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
+          JAUNTY_REQUIRE_SQLSERVER: "1"
         run: >-
           dotnet test --project tests/Extrode.Jaunty.Scaffolding.Tests
           -c Release
