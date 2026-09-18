@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Data.SQLite.Core" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" />
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 
