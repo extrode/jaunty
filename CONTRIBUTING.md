@@ -198,7 +198,7 @@ public static List<T> DoQuery<T>(IDbConnection conn, string s) where T : new()
 
 ### Test Organization
 
-- Place tests in `tests/Jaunty.Tests/`
+- Place tests in `tests/Extrode.Jaunty.Tests/`
 - Mirror source directory structure
 - Use descriptive test method names: `MethodName_Scenario_ExpectedResult`
 
@@ -286,7 +286,7 @@ dotnet test --filter "FullyQualifiedName~QueryTests"
 4. Code follows project conventions
 5. XML documentation added for public APIs
 6. Update documentation if behavior changes
-7. **Core stays dependency-free.** Do not add a `PackageReference` to `src/Jaunty` — see
+7. **Core stays dependency-free.** Do not add a `PackageReference` to `src/Extrode.Jaunty` — see
    [`docs/02-architecture/dependencies.md`](docs/02-architecture/dependencies.md).
    `PackageDependencyTests` will fail if you do.
 
@@ -311,7 +311,7 @@ Brief description of changes
 - [ ] Code follows project conventions
 - [ ] Code is documented
 - [ ] No new warnings introduced
-- [ ] No new dependency added to src/Jaunty
+- [ ] No new dependency added to src/Extrode.Jaunty
 
 ## Contributor certification
 I have read and agree to the Islamic Software License Contributor License
