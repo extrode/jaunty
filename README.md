@@ -7,10 +7,11 @@
 The micro-ORM that respects your SQL and your time.
 
 [![CI](https://github.com/extrode/jaunty/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/extrode/jaunty/actions/workflows/ci.yml)
-[![License: ISL-R](https://img.shields.io/badge/license-ISL--R-blue)](LICENSE.md)
+[![License: ISL-R](https://img.shields.io/badge/license-ISL--R%201.2-blue)](LICENSE.md)
 [![Targets](https://img.shields.io/badge/targets-netstandard2.0%20%7C%20net8.0%20%7C%20net10.0-512BD4)](#installation)
 [![NativeAOT](https://img.shields.io/badge/NativeAOT-verified%20in%20CI-brightgreen)](#nativeaot)
 [![Dependencies](https://img.shields.io/badge/dependencies-none%20on%20net8.0%2Fnet10.0-informational)](#installation)
+[![Providers](https://img.shields.io/badge/providers-SQL%20Server%20%7C%20PostgreSQL%20%7C%20MySQL%20%2F%20MariaDB%20%7C%20SQLite-informational)](#installation)
 
 > [!IMPORTANT]
 > Jaunty is free to use, including in commercial production. No seat count, no order form, no expiry.
