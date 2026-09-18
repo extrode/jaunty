@@ -3,10 +3,10 @@
 The smallest complete Jaunty program that publishes NativeAOT: `Query<T>`, `QueryFirst<T>`
 and `QueryScalar<T>` against an in-memory SQLite database, with **no reflection anywhere**.
 
-Mapping is done by `Jaunty.SourceGenerator`, referenced as an analyzer:
+Mapping is done by `Extrode.Jaunty.SourceGenerator`, referenced as an analyzer:
 
 ```xml
-<ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+<ProjectReference Include="..\..\src\Extrode.Jaunty.SourceGenerator\Extrode.Jaunty.SourceGenerator.csproj"
                   OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 ```
 

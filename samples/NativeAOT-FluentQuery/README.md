@@ -1,6 +1,6 @@
 # NativeAOT-FluentQuery
 
-`Jaunty.Fluent` under NativeAOT, with **no reference to `Jaunty.Extensions.Reflection`**. That
+`Extrode.Jaunty.Fluent` under NativeAOT, with **no reference to `Extrode.Jaunty.Extensions.Reflection`**. That
 combination was impossible before spec 003 closed the gap: fluent queries now resolve
 source-generated entity metadata the same reflection-free way `Query<T>` already did.
 
@@ -11,7 +11,7 @@ two grouped-projection shapes.
 
 The `GroupBy(...).Select(g => new PriceBand { ... })` block at the end is the reason this
 sample exists in its current form. That path goes through `GroupedJoinedResultMapper`, which
-reflects over the projection type. Until the projection type carried
+reflects over the projection type. Until the `Select<TResult>` overloads annotated `TResult` with
 `[DynamicallyAccessedMembers]`, nothing rooted it — published AOT, the trimmer removed
 `PriceBand`'s setters, `GetProperties()` returned empty, and every row arrived fully defaulted.
 **No exception, no diagnostic, no output difference.** The sample used to stop before this
