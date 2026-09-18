@@ -36,7 +36,7 @@ Articles/Comments/Favorites/Followers/Profiles/Tags/Users), not just an infrastr
 - No DB-level cascade delete is relied on; `Articles/Delete.cs` explicitly deletes child
   Comments/ArticleTags/ArticleFavorites before deleting the Article row.
 - Entities aren't source-generated for this port (no `[Table]`/`partial` + Jaunty source
-  generator wiring) — `Jaunty.Extensions.Reflection`'s `UseReflectionMapping()` is called once
+  generator wiring) — `Extrode.Jaunty.Extensions.Reflection`'s `UseReflectionMapping()` is called once
   in `ServicesExtensions.AddConduit()` instead.
 - The EF-InMemory-backed `SliceFixture` test fixture is replaced with a real, disposable
   per-test SQLite file (`Pooling=False` in the connection string, connection explicitly closed

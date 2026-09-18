@@ -25,7 +25,10 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>
-    /// A task containing the number of affected rows. Typically <c>1</c> for either insert or update operations.
+    /// A task containing the number of affected rows. Typically <c>1</c> for either insert or update
+    /// operations, except MySQL/MariaDB, which reports <c>0</c> on a key-only entity's conflict path
+    /// (the generated <c>ON DUPLICATE KEY UPDATE key = key</c> is a no-op the driver does not count as
+    /// an affected row unless the client requests found-rows).
     /// </returns>
     /// <remarks>
     /// <para>
@@ -95,7 +98,10 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>
-    /// A task containing the number of affected rows. Typically <c>1</c> for either insert or update operations.
+    /// A task containing the number of affected rows. Typically <c>1</c> for either insert or update
+    /// operations, except MySQL/MariaDB, which reports <c>0</c> on a key-only entity's conflict path
+    /// (the generated <c>ON DUPLICATE KEY UPDATE key = key</c> is a no-op the driver does not count as
+    /// an affected row unless the client requests found-rows).
     /// </returns>
     /// <remarks>
     /// <para>

@@ -18,7 +18,7 @@ takes a `Dialect` argument for exactly that reason). Between them the queries co
 fluent read surface that the single-table samples do not reach.
 
 Like [`NativeAOT-FluentQuery`](../NativeAOT-FluentQuery), this project **deliberately does not
-reference `Jaunty.Extensions.Reflection`**. All 15 queries resolve source-generated entity
+reference `Extrode.Jaunty.Extensions.Reflection`**. All 15 queries resolve source-generated entity
 metadata reflection-free, with no `UseReflectionMapping()` call — that is spec 003 (gap #11)
 closed, and the absence of that project reference is the assertion.
 

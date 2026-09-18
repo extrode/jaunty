@@ -1,4 +1,4 @@
-# Jaunty.Fuzz
+# Extrode.Jaunty.Fuzz
 
 Coverage-guided fuzzing of `SqlParameterParser.ExtractParameterNames` via
 [SharpFuzz](https://github.com/Metalnem/sharpfuzz) 2.3.0 and libFuzzer.
@@ -34,16 +34,16 @@ Linux only — libFuzzer has no Windows driver. The self-hosted runner (`vars.CI
 Linux, so the nightly workflow executes this rather than only building it.
 
 ```sh
-dotnet publish tools/Jaunty.Fuzz -c Release -o out/fuzz
-sharpfuzz out/fuzz/Jaunty.dll                      # instrument the library, not the harness
+dotnet publish tools/Extrode.Jaunty.Fuzz -c Release -o out/fuzz
+sharpfuzz out/fuzz/Extrode.Jaunty.dll              # instrument the library, not the harness
 ./libfuzzer-dotnet -max_total_time=600 \
   --target_path="$(command -v dotnet)" \
-  --target_arg=out/fuzz/Jaunty.Fuzz.dll \
-  tools/Jaunty.Fuzz/corpus
+  --target_arg=out/fuzz/Extrode.Jaunty.Fuzz.dll \
+  tools/Extrode.Jaunty.Fuzz/corpus
 ```
 
 The last line must go through the native `libfuzzer-dotnet` driver. Launched as a plain
-`dotnet Jaunty.Fuzz.dll`, SharpFuzz finds none of the IPC environment variables and replays
+`dotnet Extrode.Jaunty.Fuzz.dll`, SharpFuzz finds none of the IPC environment variables and replays
 `args[1]` as a single input file instead of fuzzing — it exits 0 and looks like a clean run.
 
 **The harness targets `net8.0`, so the machine running it needs an 8.0 runtime.** A box carrying
