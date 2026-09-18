@@ -17,7 +17,7 @@
         TFM-conditioned overrides below and the comment in that project file.
 
     Everything else here (test/benchmark/CLI-only dependencies, and same-major patch bumps on
-    shipped libraries) is bumped to the latest stable release as of 2026-09-05, verified against
+    shipped libraries) is bumped to the latest stable release as of 2026-09-18, verified against
     nuget.org rather than assumed.
   -->
   <PropertyGroup>
@@ -31,10 +31,10 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Shipped in src/ - same-major bumps only -->
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.11" />
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.12" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.5" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
@@ -47,10 +47,10 @@
     <!-- Database drivers used by tests/benchmarks/the scaffolding CLI tool - not a dependency
          propagated into a consumer's own project, so bumped to latest without the same-major
          constraint. net472 keeps the latest patch within the major that still supports it. -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.3" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.3" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.11" Condition="'$(TargetFramework)' != 'net472'" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.30" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.31" Condition="'$(TargetFramework)' == 'net472'" />
     <!-- NOT bumped to 3.0.5 (latest): its bundled native SQLite formats REAL->text with full
          round-trip precision instead of 15 significant digits. JauntyGenerator.cs's RealColumnsLocal
          optimization documents and relies on "SQLite formats REAL to text with 15 significant
@@ -62,34 +62,36 @@
          Bumping this needs a fix to the generator's invariant first, not just a test update. -->
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="MySqlConnector" Version="2.6.2" />
-    <!-- MySql.Data 9.7.0 still ships .NETFramework4.6.2/4.8 targets alongside net8/9/10, so one
-         version now covers every TFM in the solution, unlike Npgsql/SqlClient/Sqlite above. -->
-    <PackageVersion Include="MySql.Data" Version="9.7.0" />
+    <!-- MySql.Data 26.7.0: Oracle changed its version numbering scheme between 9.7.0 and this
+         release (confirmed via nuget.org publisher metadata - still Oracle Corporation, no gap in
+         the release cadence), not a 17-major-version jump in the usual sense. Still ships
+         .NETFramework4.6.2/4.8 targets alongside net8/9/10, so one version covers every TFM. -->
+    <PackageVersion Include="MySql.Data" Version="26.7.0" />
     <PackageVersion Include="System.Data.SQLite.Core" Version="1.0.119" />
     <!-- Test framework / MTP -->
-    <PackageVersion Include="xunit.v3" Version="4.0.0" />
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
-    <PackageVersion Include="CsCheck" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="CsCheck" Version="4.9.1" />
     <PackageVersion Include="SharpFuzz" Version="2.3.0" />
     <!-- Test-only DI/logging (test host wiring, not shipped) -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
     <!-- Benchmarks: comparison ORMs and EF Core providers. Pomelo has no EF Core 10 release yet,
          so the whole EF Core family here stays on its latest 9.x rather than mixing majors. -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
-    <PackageVersion Include="Dapper" Version="2.1.79" />
+    <PackageVersion Include="Dapper" Version="2.1.86" />
     <PackageVersion Include="Dapper.Contrib" Version="2.0.78" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.19" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.20" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
-    <PackageVersion Include="RepoDb.Sqlite.Microsoft" Version="1.15.0" />
-    <PackageVersion Include="RepoDb.SqlServer" Version="1.15.1" />
-    <PackageVersion Include="RepoDb.PostgreSql" Version="1.15.0" />
-    <PackageVersion Include="RepoDb.MySqlConnector" Version="1.15.0" />
-    <PackageVersion Include="linq2db" Version="6.4.0" />
+    <PackageVersion Include="RepoDb.Sqlite.Microsoft" Version="1.16.0" />
+    <PackageVersion Include="RepoDb.SqlServer" Version="1.16.0" />
+    <PackageVersion Include="RepoDb.PostgreSql" Version="1.16.0" />
+    <PackageVersion Include="RepoDb.MySqlConnector" Version="1.16.0" />
+    <PackageVersion Include="linq2db" Version="6.5.0" />
   </ItemGroup>
 </Project>
