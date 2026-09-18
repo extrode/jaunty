@@ -7,12 +7,12 @@ upgrade to.
 
 On Apple silicon that means every test touching `System.Data.SQLite` fails with
 `DllNotFoundException`. Measured on 2026-07-29: **1,099 of 1,099** failures in
-`Jaunty.Tests` and all 887 in `Jaunty.Fluent.Tests` had this single cause.
+`Extrode.Jaunty.Tests` and all 887 in `Extrode.Jaunty.Fluent.Tests` had this single cause.
 
 ```sh
 export DOTNET_ROLL_FORWARD=LatestMajor   # only if no 8.0 runtime is installed — see below
 ./build.sh          # once per machine, ~1 min
-dotnet build tests/Jaunty.Tests tests/Jaunty.Fluent.Tests
+dotnet build tests/Extrode.Jaunty.Tests tests/Extrode.Jaunty.Fluent.Tests
 ```
 
 `MangleMap` targets `net8.0`, so on a machine with only the 10.0 runtime `build.sh` stops with
@@ -24,8 +24,8 @@ recovered from 203 mangled imports, the 3 unresolvable ones exactly the `sqlite3
 The first suite run after a fresh build is slow — 10 m 14 s against 17.7 s of summed test time,
 macOS verifying the new unsigned dylib. It is one-time; subsequent runs were 13 s.
 
-After that both suites pass locally: `Jaunty.Tests` 2,763 passed / 0 failed
-(2,447 skipped for want of a live SQL Server or PostgreSQL), `Jaunty.Fluent.Tests`
+After that both suites pass locally: `Extrode.Jaunty.Tests` 2,763 passed / 0 failed
+(2,447 skipped for want of a live SQL Server or PostgreSQL), `Extrode.Jaunty.Fluent.Tests`
 1,182 / 0.
 
 `SQLiteInteropOsxArm64.targets` copies the result into the two test projects that

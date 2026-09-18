@@ -43,8 +43,8 @@ Three things differ on an arm64 Mac. Measured 2026-07-29.
 
 `System.Data.SQLite.Core` ships no `osx-arm64` native, and its `osx-x64` one is plain
 x86_64 Mach-O, so it cannot load into an arm64 process. Until this is built, **every test
-touching `System.Data.SQLite` fails** — 1,099 of 1,099 failures in `Jaunty.Tests` and all
-887 in `Jaunty.Fluent.Tests` had that single cause.
+touching `System.Data.SQLite` fails** — 1,099 of 1,099 failures in `Extrode.Jaunty.Tests` and all
+887 in `Extrode.Jaunty.Fluent.Tests` had that single cause.
 
 ```bash
 tools/native/sqlite-interop-osx-arm64/build.sh    # once per machine, ~1 min
@@ -77,12 +77,12 @@ Use Rosetta for x86_64/amd64 emulation on Apple Silicon**, or pointing
 
 ### 3. `dotnet test` at solution level aborts
 
-`Jaunty.Tests` multi-targets `net8.0;net10.0;net472`, and .NET Framework cannot host on macOS. The
+`Extrode.Jaunty.Tests` multi-targets `net8.0;net10.0;net472`, and .NET Framework cannot host on macOS. The
 net472 run does not fail — it **aborts the whole invocation**, so projects queued behind it
 never execute and the summary looks short rather than broken.
 
 ```bash
-dotnet test tests/Jaunty.Tests/Jaunty.Tests.csproj -f net8.0    # not `dotnet test`
+dotnet test tests/Extrode.Jaunty.Tests/Extrode.Jaunty.Tests.csproj -f net8.0    # not `dotnet test`
 ```
 
 That also means the Mac cannot cover net472 at all. Windows is the only place that TFM
@@ -94,14 +94,14 @@ With the SQLite native built and no connection strings set, on net8.0:
 
 | | Passed | Failed | Skipped |
 |---|---|---|---|
-| `Jaunty.Tests` | 2,763 | 0 | 2,447 |
-| `Jaunty.Fluent.Tests` | 1,182 | 0 | 0 |
-| `Jaunty.Scaffolding.Tests` | 555 | 0 | 24 |
-| `Jaunty.FlatFiles.DuckDB.Tests` | 578 | 0 | 0 |
-| `Jaunty.FlatFiles.Tests` | 185 | 0 | 0 |
-| `Jaunty.SourceGenerator.Tests` | 72 | 0 | 0 |
-| `Jaunty.Fluent.SourceGen.Tests` | 9 | 0 | 8 |
-| `Jaunty.Scaffolding.Cli.Tests` | 33 | **1** | 0 |
+| `Extrode.Jaunty.Tests` | 2,763 | 0 | 2,447 |
+| `Extrode.Jaunty.Fluent.Tests` | 1,182 | 0 | 0 |
+| `Extrode.Jaunty.Scaffolding.Tests` | 555 | 0 | 24 |
+| `Extrode.Jaunty.FlatFiles.DuckDB.Tests` | 578 | 0 | 0 |
+| `Extrode.Jaunty.FlatFiles.Tests` | 185 | 0 | 0 |
+| `Extrode.Jaunty.SourceGenerator.Tests` | 72 | 0 | 0 |
+| `Extrode.Jaunty.Fluent.SourceGen.Tests` | 9 | 0 | 8 |
+| `Extrode.Jaunty.Scaffolding.Cli.Tests` | 33 | **1** | 0 |
 
 Of the 2,447 skips, 815 want `JAUNTY_TEST_POSTGRESQL` and 811 want `JAUNTY_TEST_SQLSERVER`.
 
@@ -117,8 +117,8 @@ docker compose -f docker-compose.yml -f docker-compose.bulkinsert.yml up -d
 
 | | Passed | Failed | Skipped |
 |---|---|---|---|
-| `Jaunty.Tests` (net8.0) | 5,218 | 0 | **0** |
-| `Jaunty.Scaffolding.Tests` | 579 | 0 | **0** |
+| `Extrode.Jaunty.Tests` (net8.0) | 5,218 | 0 | **0** |
+| `Extrode.Jaunty.Scaffolding.Tests` | 579 | 0 | **0** |
 
 **Do this before trusting a green run.** The first time this stack was brought up it found
 16 real failures — a regression from AUD-R26-030 that made every no-parameter
@@ -130,8 +130,8 @@ Two things were needed to reach zero, and both are now in the connection strings
 files above:
 
 - **`AllowPublicKeyRetrieval=true`** on the MySQL and MariaDB strings.
-  `Jaunty.Scaffolding.Tests` uses **MySqlConnector**, which refuses MySQL 8's default
-  `caching_sha2_password` over an unencrypted connection without it; `Jaunty.Tests` uses
+  `Extrode.Jaunty.Scaffolding.Tests` uses **MySqlConnector**, which refuses MySQL 8's default
+  `caching_sha2_password` over an unencrypted connection without it; `Extrode.Jaunty.Tests` uses
   **MySql.Data**, which does not need it. Omitting it skips 8 scaffolding schema-reader
   tests and nothing else, with the reason buried in a skip message.
 - **`docker-compose.bulkinsert.yml`**, which bind-mounts the repo into the SQL Server
@@ -244,7 +244,7 @@ Notes on the MySQL/MariaDB string:
 
 - `SslMode=Disabled` — MySqlConnector's enum has no `None`; that value throws
   `Requested value 'None' was not found`.
-- `AllowPublicKeyRetrieval=True` — required by `Jaunty.Scaffolding.Tests`; omitting it
+- `AllowPublicKeyRetrieval=True` — required by `Extrode.Jaunty.Scaffolding.Tests`; omitting it
   silently skips 8 tests rather than failing. See [Measured baseline, all four servers
   configured](#measured-baseline-all-four-servers-configured).
 - `AllowLoadLocalInfile=true` — required by the `LOAD DATA LOCAL INFILE` import tests.
@@ -253,8 +253,8 @@ Or use a settings file. `appsettings.json` is gitignored, so a fresh checkout ha
 copy the committed template:
 
 ```bash
-cp tests/Jaunty.Tests/appsettings.example.json tests/Jaunty.Tests/appsettings.json
-cp tests/Jaunty.Scaffolding.Tests/appsettings.example.json tests/Jaunty.Scaffolding.Tests/appsettings.json
+cp tests/Extrode.Jaunty.Tests/appsettings.example.json tests/Extrode.Jaunty.Tests/appsettings.json
+cp tests/Extrode.Jaunty.Scaffolding.Tests/appsettings.example.json tests/Extrode.Jaunty.Scaffolding.Tests/appsettings.json
 ```
 
 **Fill in the passwords, or empty the string entirely.** An empty connection string makes
@@ -321,18 +321,18 @@ at a **local** instance, the suite runs **12,426 passing / 0 failed / 0 skipped*
 
 | Assembly | net8.0 | net472 |
 |---|---|---|
-| Jaunty.Tests | 5,028 | 5,006 |
-| Jaunty.Fluent.Tests | 1,157 | — |
-| Jaunty.FlatFiles.DuckDB.Tests | 547 | — |
-| Jaunty.Scaffolding.Tests | 436 | — |
-| Jaunty.FlatFiles.Tests | 151 | — |
-| Jaunty.SourceGenerator.Tests | 67 | — |
-| Jaunty.Scaffolding.Cli.Tests | 34 | — |
+| Extrode.Jaunty.Tests | 5,028 | 5,006 |
+| Extrode.Jaunty.Fluent.Tests | 1,157 | — |
+| Extrode.Jaunty.FlatFiles.DuckDB.Tests | 547 | — |
+| Extrode.Jaunty.Scaffolding.Tests | 436 | — |
+| Extrode.Jaunty.FlatFiles.Tests | 151 | — |
+| Extrode.Jaunty.SourceGenerator.Tests | 67 | — |
+| Extrode.Jaunty.Scaffolding.Cli.Tests | 34 | — |
 
 Unconfigured — no environment variables, and `appsettings.json` either absent or blank — the
 same suite runs **7,528 passing / 0 failed / 4,898 skipped**. The two totals agree:
-7,528 + 4,898 = 12,426. The skips are 2,437 in each `Jaunty.Tests` TFM plus 24 in
-`Jaunty.Scaffolding.Tests`.
+7,528 + 4,898 = 12,426. The skips are 2,437 in each `Extrode.Jaunty.Tests` TFM plus 24 in
+`Extrode.Jaunty.Scaffolding.Tests`.
 
 ### Known environment limit
 
@@ -354,7 +354,7 @@ docker compose -f docker-compose.yml -f docker-compose.bulkinsert.yml up -d mssq
 
 The overlay bind-mounts the repo root at its own absolute path, read-only — `BULK INSERT`
 only reads. Verified 2026-07-29 on macOS arm64: all four `CsvImportTests.*_SqlServer_*`
-pass, and `Jaunty.Tests` reaches 5,218 passing with zero skips.
+pass, and `Extrode.Jaunty.Tests` reaches 5,218 passing with zero skips.
 
 It is a separate file rather than part of `docker-compose.yml` because `${PWD}` is not an
 environment variable under PowerShell or cmd, so putting it in the base file would break
@@ -365,7 +365,7 @@ Run them against a local instance by pointing `JAUNTY_TEST_SQLSERVER` at it:
 
 ```bash
 JAUNTY_TEST_SQLSERVER="Server=lpc:localhost;Database=NorthwindJaunty;Trusted_Connection=true;TrustServerCertificate=true;" \
-  dotnet test tests/Jaunty.Tests/Jaunty.Tests.csproj -f net8.0 --filter "FullyQualifiedName~CsvImportTests"
+  dotnet test tests/Extrode.Jaunty.Tests/Extrode.Jaunty.Tests.csproj -f net8.0 --filter "FullyQualifiedName~CsvImportTests"
 ```
 
 The fixtures are staged under the test output directory (inside the repo), not the OS
