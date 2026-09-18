@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
     <PackageReference Include="System.Data.SQLite.Core" />
     <PackageReference Include="xunit.v3" />
     <!-- AUD-R35-006: the Take/Skip write terminals are a *compile* error, which only a real
