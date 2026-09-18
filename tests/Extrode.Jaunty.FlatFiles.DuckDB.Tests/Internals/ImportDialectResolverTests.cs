@@ -201,7 +201,9 @@ public class ImportDialectResolverTests
 
     private sealed class ImportDialectResolverTestsAmbiguousSpecificConnection : DbConnection
     {
+        #pragma warning disable CS8765 // DbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
         public override string ConnectionString { get; set; } = "";
+        #pragma warning restore CS8765
         public override string Database => "";
         public override string DataSource => "";
         public override string ServerVersion => "";

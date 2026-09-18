@@ -116,9 +116,13 @@ public class StoredProcedureOptionsOverloadTests
         public override DbType DbType { get; set; }
         public override ParameterDirection Direction { get; set; }
         public override bool IsNullable { get; set; }
+#pragma warning disable CS8765 // DbParameter.ParameterName is [AllowNull]; the attribute is not public on net472.
         public override string ParameterName { get; set; } = "";
+#pragma warning restore CS8765
         public override int Size { get; set; }
+#pragma warning disable CS8765 // DbParameter.SourceColumn is [AllowNull]; the attribute is not public on net472.
         public override string SourceColumn { get; set; } = "";
+#pragma warning restore CS8765
         public override bool SourceColumnNullMapping { get; set; }
         public override object? Value { get; set; }
 

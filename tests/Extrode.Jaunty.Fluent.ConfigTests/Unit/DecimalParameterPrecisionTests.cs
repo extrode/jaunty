@@ -237,7 +237,9 @@ public class DecimalParameterPrecisionTests : IDisposable
     {
         public List<object?> BoundValues { get; } = new();
 
+        #pragma warning disable CS8767 // IDbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
         public string ConnectionString { get; set; } = "";
+        #pragma warning restore CS8767
         public int ConnectionTimeout => 0;
         public string Database => "";
         public ConnectionState State => ConnectionState.Open;
@@ -259,7 +261,9 @@ public class DecimalParameterPrecisionTests : IDisposable
                 Parameters = new CapturingParameters(bound);
             }
 
+            #pragma warning disable CS8767 // IDbCommand.CommandText is [AllowNull]; the attribute is not public on net472.
             public string CommandText { get; set; } = "";
+            #pragma warning restore CS8767
             public int CommandTimeout { get; set; }
             public CommandType CommandType { get; set; } = CommandType.Text;
             public IDbConnection? Connection { get; set; }
@@ -308,8 +312,10 @@ public class DecimalParameterPrecisionTests : IDisposable
             public DbType DbType { get; set; }
             public ParameterDirection Direction { get; set; }
             public bool IsNullable => true;
+            #pragma warning disable CS8767 // IDataParameter.ParameterName is [AllowNull]; the attribute is not public on net472. / // IDataParameter.SourceColumn is [AllowNull]; the attribute is not public on net472.
             public string ParameterName { get; set; } = "";
             public string SourceColumn { get; set; } = "";
+            #pragma warning restore CS8767
             public DataRowVersion SourceVersion { get; set; }
             public object? Value { get; set; }
         }

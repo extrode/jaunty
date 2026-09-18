@@ -118,13 +118,13 @@ public class InheritedPropertyTests
     {
         var compilation = CSharpCompilation.Create(
             "InheritProbe",
-            [CSharpSyntaxTree.ParseText(AuditEntitySource)],
+            [CSharpSyntaxTree.ParseText(AuditEntitySource, cancellationToken: TestContext.Current.CancellationToken)],
             ReferenceAssemblies(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         GeneratorDriver driver = CSharpGeneratorDriver
             .Create(new global::Extrode.Jaunty.SourceGenerator.JauntyGenerator().AsSourceGenerator())
-            .RunGenerators(compilation);
+            .RunGenerators(compilation, TestContext.Current.CancellationToken);
 
         Assert.Single(driver.GetRunResult().Results.SelectMany(r => r.GeneratedSources));
     }
