@@ -20,7 +20,9 @@ public class IDbConnectionWrapper : IDbConnection
     public string ConnectionString
     {
         get => _inner.ConnectionString;
+        #pragma warning disable CS8767 // IDbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
         set => _inner.ConnectionString = value;
+        #pragma warning restore CS8767
     }
 
     public int ConnectionTimeout => _inner.ConnectionTimeout;

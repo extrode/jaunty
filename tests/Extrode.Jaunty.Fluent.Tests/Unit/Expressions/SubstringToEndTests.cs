@@ -142,7 +142,7 @@ public class SubstringToEndTests
     /// </summary>
     [Fact]
     public void TheFallbackLength_IsIntMaxValue()
-        => Assert.Equal(int.MaxValue.ToString(System.Globalization.CultureInfo.InvariantCulture), SubstringToEnd.FallbackLength);
+        => Assert.Equal(SubstringToEnd.FallbackLength, int.MaxValue.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     /// <summary>
     /// An <see cref="ISqlDialect"/> implementation predating <see cref="ISubstringToEndDialect"/>,

@@ -254,7 +254,9 @@ public class GeneratedAccessorsResolutionTests : IDisposable
 
     private sealed class StubCommand : IDbCommand
     {
+        #pragma warning disable CS8766 // IDbCommand.CommandText getter is non-nullable but this stub's setter must accept null (get is [AllowNull] on the real type); the attribute is not public on net472.
         public string? CommandText { get; set; } = string.Empty;
+        #pragma warning restore CS8766
         public int CommandTimeout { get; set; }
         public CommandType CommandType { get; set; }
         public IDbConnection? Connection { get; set; }
