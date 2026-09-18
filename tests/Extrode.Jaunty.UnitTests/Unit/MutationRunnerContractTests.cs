@@ -81,7 +81,7 @@ public class MutationRunnerContractTests
             job,
             StringComparison.Ordinal);
 
-        Assert.Equal(vcpu.Groups[1].Value, ExpectedConcurrency);
+        Assert.Equal(ExpectedConcurrency, vcpu.Groups[1].Value);
     }
 
     private static string MutationJob()

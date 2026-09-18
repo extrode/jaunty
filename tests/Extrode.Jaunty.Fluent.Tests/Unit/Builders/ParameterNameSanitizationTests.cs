@@ -50,7 +50,9 @@ public class ParameterNameSanitizationTests
 
     private sealed class NoValidationConnection : IDbConnection
     {
+        #pragma warning disable CS8767 // IDbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
         public string ConnectionString { get => ""; set { } }
+        #pragma warning restore CS8767
         public int ConnectionTimeout => 0;
         public string Database => "";
         public ConnectionState State => ConnectionState.Closed;

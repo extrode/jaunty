@@ -271,7 +271,9 @@ public class PagingAndDistinctReachScalarTerminalsTests : IDisposable
     {
         public string LastCommandText { get; private set; } = string.Empty;
 
+        #pragma warning disable CS8767 // IDbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
         public string ConnectionString { get; set; } = "";
+        #pragma warning restore CS8767
         public int ConnectionTimeout => 0;
         public string Database => "";
         public System.Data.ConnectionState State => System.Data.ConnectionState.Open;
@@ -291,7 +293,9 @@ public class PagingAndDistinctReachScalarTerminalsTests : IDisposable
 
             public CapturingCommand(Action<string> record) => _record = record;
 
+            #pragma warning disable CS8767 // IDbCommand.CommandText is [AllowNull]; the attribute is not public on net472.
             public string CommandText { get; set; } = "";
+            #pragma warning restore CS8767
             public int CommandTimeout { get; set; }
             public System.Data.CommandType CommandType { get; set; } = System.Data.CommandType.Text;
             public System.Data.IDbConnection? Connection { get; set; }
@@ -328,8 +332,10 @@ public class PagingAndDistinctReachScalarTerminalsTests : IDisposable
             public System.Data.DbType DbType { get; set; }
             public System.Data.ParameterDirection Direction { get; set; }
             public bool IsNullable => true;
+            #pragma warning disable CS8767 // IDataParameter.ParameterName is [AllowNull]; the attribute is not public on net472. / // IDataParameter.SourceColumn is [AllowNull]; the attribute is not public on net472.
             public string ParameterName { get; set; } = "";
             public string SourceColumn { get; set; } = "";
+            #pragma warning restore CS8767
             public System.Data.DataRowVersion SourceVersion { get; set; }
             public object? Value { get; set; }
         }

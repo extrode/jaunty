@@ -82,7 +82,7 @@ public class SensitiveParameterSetTests
     /// Enumeration now walks a snapshot, so neither side sees the other mid-write.
     /// </summary>
     [Fact]
-    public void MutatingWhileLoggingDoesNotThrow()
+    public async Task MutatingWhileLoggingDoesNotThrow()
     {
         var configuration = new LoggingConfiguration();
         using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
@@ -111,7 +111,7 @@ public class SensitiveParameterSetTests
             }
         });
 
-        Task.WaitAll(writer, reader);
+        await Task.WhenAll(writer, reader);
 
         Assert.Equal(TaskStatus.RanToCompletion, writer.Status);
         Assert.Equal(TaskStatus.RanToCompletion, reader.Status);

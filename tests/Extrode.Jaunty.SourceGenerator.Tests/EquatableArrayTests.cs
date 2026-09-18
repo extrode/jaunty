@@ -15,7 +15,7 @@ public class EquatableArrayTests
     public void Count_ReportsTheElementCount()
     {
         Assert.Equal(3, Of(1, 2, 3).Count);
-        Assert.Equal(0, Of().Count);
+        Assert.Empty(Of());
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public class EquatableArrayTests
     {
         EquatableArray<int> value = default;
 
-        Assert.Equal(0, value.Count);
+        Assert.Empty(value);
     }
 
     [Fact]
