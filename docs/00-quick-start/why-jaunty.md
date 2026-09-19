@@ -67,4 +67,4 @@ Rule of thumb: JauntyQ when your queries are known at build time and you can com
 
 - [Quick start](README.md) - install and first query in five minutes.
 - [Learn by doing](../08-learn/README.md) - a guided tutorial and coding exercises.
-- Design decisions - why strict mapping, why `CommandOptions`, why the single-scalar parameter shorthand stops at one name: [Under the hood](../../README.md#under-the-hood) in the repository README and [ARCHITECTURE-DECISIONS.md](../02-architecture/ARCHITECTURE-DECISIONS.md).
+- Design decisions - why strict mapping, why `CommandOptions`, why the single-scalar parameter shorthand stops at one name: [Under the hood](../../README.md#under-the-hood) in the repository README and [architecture-decisions.md](../02-architecture/architecture-decisions.md).
