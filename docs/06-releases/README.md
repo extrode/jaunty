@@ -7,7 +7,7 @@ the market-analysis papers are held in the private work repository and are not p
 
 ## Release Runbook
 
-- [`RELEASE-RUNBOOK.md`](RELEASE-RUNBOOK.md) - Step-by-step process for cutting and shipping a release
+- [`release-runbook.md`](release-runbook.md) - Step-by-step process for cutting and shipping a release
 
 ## Commercial
 
@@ -20,7 +20,7 @@ its terms are available on request rather than published here. To ask, open a
 
 ## Reports
 
-- [`../05-quality/reports/PRODUCTION-READINESS-2026-07-02.md`](../05-quality/reports/PRODUCTION-READINESS-2026-07-02.md) - Production readiness assessment
+- [`../05-quality/reports/production-readiness-2026-07-02.md`](../05-quality/reports/production-readiness-2026-07-02.md) - Production readiness assessment
 
 ---
 

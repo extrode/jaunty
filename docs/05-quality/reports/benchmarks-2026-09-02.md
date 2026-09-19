@@ -206,4 +206,4 @@ warmup iterations and then 15 measured iterations. `MemoryDiagnoser` reports man
 allocation per operation.
 
 Earlier reports: [benchmarks-2026-07-29.md](benchmarks-2026-07-29.md),
-[BENCHMARKS-2026-07-04.md](BENCHMARKS-2026-07-04.md).
+[benchmarks-2026-07-04.md](benchmarks-2026-07-04.md).

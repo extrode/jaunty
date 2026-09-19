@@ -532,7 +532,7 @@ Every item here was reachable from caller-supplied input.
   built-in `GITHUB_TOKEN`; the `NUGET_API_KEY` secret is no longer required.
 - Source generator: per-result-set `CreateRowMapper` + direct typed getters;
   10k-row SQLite reads went from 1.80x to 1.03x vs hand-coded ADO.NET
-  (Dapper parity). See docs/05-quality/reports/BENCHMARKS-2026-07-04.md.
+  (Dapper parity). See docs/05-quality/reports/benchmarks-2026-07-04.md.
 
 ### Fixed
 
