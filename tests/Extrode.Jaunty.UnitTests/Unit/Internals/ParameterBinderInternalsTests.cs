@@ -222,8 +222,113 @@ public class ParameterBinderInternalsTests
     }
 
     // ------------------------------------------------------------------
+    // TryRebind: the early-false conditions before the cached-template lookup
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void TryRebind_StoredProcedureCommand_ReturnsFalse()
+    {
+        var command = new FakeCommand { CommandType = CommandType.StoredProcedure, CommandText = "GetRows" };
+
+        Assert.False(ParameterBinder.TryRebind(command, new { Id = 1 }));
+    }
+
+    [Fact]
+    public void TryRebind_Dictionary_ReturnsFalse()
+    {
+        var command = new FakeCommand { CommandText = "SELECT * FROM T WHERE Id = @Id" };
+
+        Assert.False(ParameterBinder.TryRebind(command, new Dictionary<string, object?> { ["Id"] = 1 }));
+    }
+
+    [Fact]
+    public void TryRebind_Scalar_ReturnsFalse()
+    {
+        var command = new FakeCommand { CommandText = "SELECT * FROM T WHERE Id = @Id" };
+
+        Assert.False(ParameterBinder.TryRebind(command, 1));
+    }
+
+    [Fact]
+    public void TryRebind_AfterExtraParameterAdded_ReturnsFalse()
+    {
+        const string Sql = "SELECT * FROM T WHERE A = @A";
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+        using var command = connection.CreateCommand();
+        command.CommandText = Sql;
+
+        ParameterBinder.Bind(command, new { A = 1 });
+
+        var extra = command.CreateParameter();
+        extra.ParameterName = "@B";
+        extra.Value = 2;
+        command.Parameters.Add(extra);
+
+        Assert.False(ParameterBinder.TryRebind(command, new { A = 1 }));
+    }
+
+    [Fact]
+    public void TryRebind_AfterParameterRenamed_ReturnsFalse()
+    {
+        const string Sql = "SELECT * FROM T WHERE A = @A";
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+        using var command = connection.CreateCommand();
+        command.CommandText = Sql;
+
+        ParameterBinder.Bind(command, new { A = 1 });
+
+        ((IDbDataParameter)command.Parameters[0]!).ParameterName = "@Renamed";
+
+        Assert.False(ParameterBinder.TryRebind(command, new { A = 1 }));
+    }
+
+    // ------------------------------------------------------------------
+    // AsNamedValues: the IReadOnlyDictionary-only branch
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void AsNamedValues_PureReadOnlyDictionary_IsCopied()
+    {
+        var command = new FakeCommand { CommandText = "SELECT * FROM T WHERE Id = @Id" };
+        var parameters = new ReadOnlyDictionaryOnly(new Dictionary<string, object?> { ["Id"] = 5 });
+
+        ParameterBinder.Bind(command, parameters);
+
+        Assert.Equal(1, command.Parameters.Count);
+        Assert.Equal(5, ((IDbDataParameter)command.Parameters[0]!).Value);
+    }
+
+    // ------------------------------------------------------------------
+    // BindFromDictionary: a placeholder repeated in the SQL text
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void BindFromDictionary_RepeatedPlaceholder_BindsOnce()
+    {
+        var command = new FakeCommand { CommandText = "SELECT * FROM T WHERE id = @Id OR parent = @Id" };
+        var parameters = new Dictionary<string, object?> { ["Id"] = 1 };
+
+        ParameterBinder.Bind(command, parameters);
+
+        Assert.Equal(1, command.Parameters.Count);
+        Assert.Equal("Id", ((IDbDataParameter)command.Parameters[0]!).ParameterName);
+    }
+
+    // ------------------------------------------------------------------
     // Fixtures
     // ------------------------------------------------------------------
+
+    private sealed class ReadOnlyDictionaryOnly(Dictionary<string, object?> inner) : IReadOnlyDictionary<string, object?>
+    {
+        public object? this[string key] => inner[key];
+        public IEnumerable<string> Keys => inner.Keys;
+        public IEnumerable<object?> Values => inner.Values;
+        public int Count => inner.Count;
+        public bool ContainsKey(string key) => inner.ContainsKey(key);
+        public bool TryGetValue(string key, out object? value) => inner.TryGetValue(key, out value);
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => inner.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
 
     private enum Sample
     {
