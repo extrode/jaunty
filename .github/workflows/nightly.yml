@@ -276,6 +276,14 @@ jobs:
         project:
           - Extrode.Jaunty.UnitTests
           - Extrode.Jaunty.Fluent.Tests
+        include:
+          # Extrode.Jaunty.Tests also exercises Internals/Parameters and Dialects code that
+          # Extrode.Jaunty.UnitTests's own stryker-config.json mutates - without it in scope,
+          # mutants only that second project covers report NoCoverage even though something
+          # does kill them. Confirmed via -tp/--test-project in `dotnet stryker --help`;
+          # Fluent.Tests has not been analyzed for the same gap, so it is left alone.
+          - project: Extrode.Jaunty.UnitTests
+            extra-test-project: --test-project ../Extrode.Jaunty.Tests/Extrode.Jaunty.Tests.csproj
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -306,7 +314,7 @@ jobs:
       # the two together.
       - name: Mutate
         working-directory: tests/${{ matrix.project }}
-        run: dotnet stryker --concurrency ${{ vars.CI_MUTATION_CONCURRENCY || '16' }}
+        run: dotnet stryker --concurrency ${{ vars.CI_MUTATION_CONCURRENCY || '16' }} ${{ matrix.extra-test-project }}
 
       - name: Upload report
         if: always()
