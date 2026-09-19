@@ -166,6 +166,12 @@ public class SqlDialectTests
         Assert.Equal(expected, _postgres.EscapeTableName(schema, table));
     }
 
+    [Fact]
+    public void Postgres_EscapeTableName_KeywordSchema_QuotesSchema()
+    {
+        Assert.Equal("\"order\".products", _postgres.EscapeTableName("order", "products"));
+    }
+
     [Theory]
     [InlineData("select", "\"select\"")]
     [InlineData("ORDER", "\"ORDER\"")]
@@ -1297,6 +1303,21 @@ public class SqlDialectTests
     }
 
     [Fact]
+    public void Postgres_GenerateUpsertSql_CompositeKey_CommaSeparatesConflictColumns()
+    {
+        var sql = _postgres.GenerateUpsertSql(
+            "table",
+            insertColumns: new[] { "a", "b", "col" },
+            insertParams: new[] { "@a", "@b", "@col" },
+            updateColumns: new[] { "col" },
+            updateParams: new[] { "@col" },
+            keyColumns: new[] { "a", "b" },
+            keyParams: new[] { "@a", "@b" });
+
+        Assert.Contains("ON CONFLICT (a, b)", sql);
+    }
+
+    [Fact]
     public void MySql_SupportsUpsert_ReturnsTrue()
     {
         Assert.True(_mySql.SupportsUpsert);
@@ -1560,6 +1581,16 @@ public class SqlDialectTests
     }
 
     [Fact]
+    public void Postgres_GenerateOverClause_MultiplePartitionsAndOrders_GeneratesCorrectSql()
+    {
+        var result = _postgres.GenerateOverClause(
+            new[] { "col1", "col2" },
+            new[] { ("col3", false), ("col4", true) });
+
+        Assert.Equal(" OVER (PARTITION BY col1, col2 ORDER BY col3, col4 DESC)", result);
+    }
+
+    [Fact]
     public void MySql_GenerateOverClause_PartitionAndOrder_GeneratesCorrectSql()
     {
         var result = _mySql.GenerateOverClause(
@@ -1570,6 +1601,16 @@ public class SqlDialectTests
     }
 
     [Fact]
+    public void MySql_GenerateOverClause_MultiplePartitionsAndOrders_GeneratesCorrectSql()
+    {
+        var result = _mySql.GenerateOverClause(
+            new[] { "col1", "col2" },
+            new[] { ("col3", false), ("col4", true) });
+
+        Assert.Equal(" OVER (PARTITION BY col1, col2 ORDER BY col3, col4 DESC)", result);
+    }
+
+    [Fact]
     public void Sqlite_GenerateOverClause_PartitionAndOrder_GeneratesCorrectSql()
     {
         var result = _sqlite.GenerateOverClause(
@@ -1577,6 +1618,16 @@ public class SqlDialectTests
             new[] { ("price", false) });
 
         Assert.Equal(" OVER (PARTITION BY category_id ORDER BY price)", result);
+    }
+
+    [Fact]
+    public void Sqlite_GenerateOverClause_MultiplePartitionsAndOrders_GeneratesCorrectSql()
+    {
+        var result = _sqlite.GenerateOverClause(
+            new[] { "col1", "col2" },
+            new[] { ("col3", false), ("col4", true) });
+
+        Assert.Equal(" OVER (PARTITION BY col1, col2 ORDER BY col3, col4 DESC)", result);
     }
 
     [Fact]
@@ -1667,6 +1718,33 @@ public class SqlDialectTests
     public void Sqlite_GenerateCoalesce_ThreeArgs_ReturnsCoalesce()
     {
         Assert.Equal("COALESCE(a, b, c)", _sqlite.GenerateCoalesce("a", "b", "c"));
+    }
+
+    #endregion
+
+    #region FormatBooleanLiteral (All Dialects)
+
+    [Theory]
+    [InlineData("sqlServer", true, "1")]
+    [InlineData("sqlServer", false, "0")]
+    [InlineData("mySql", true, "1")]
+    [InlineData("mySql", false, "0")]
+    [InlineData("sqlite", true, "1")]
+    [InlineData("sqlite", false, "0")]
+    [InlineData("postgres", true, "TRUE")]
+    [InlineData("postgres", false, "FALSE")]
+    public void FormatBooleanLiteral_AllDialects(string dialectName, bool value, string expected)
+    {
+        ISqlDialect dialect = dialectName switch
+        {
+            "sqlServer" => _sqlServer,
+            "mySql" => _mySql,
+            "sqlite" => _sqlite,
+            "postgres" => _postgres,
+            _ => throw new ArgumentOutOfRangeException(nameof(dialectName))
+        };
+
+        Assert.Equal(expected, dialect.FormatBooleanLiteral(value));
     }
 
     #endregion
