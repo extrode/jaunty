@@ -730,7 +730,7 @@ more use the provider's native path:
 Thresholds, batch size and timeout are on `BulkCopyConfiguration`. Native bulk UPDATE and DELETE
 do not exist in most providers, so those run as optimized SQL inside a transaction. Read-path
 comparisons against ADO.NET, Dapper, EF Core, RepoDb and linq2db are in
-[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md): Jaunty is the
+[benchmarks-2026-07-04.md](docs/05-quality/reports/benchmarks-2026-07-04.md): Jaunty is the
 lowest-allocating of the compared ORMs and competitive with Dapper on throughput.
 
 ---
@@ -835,7 +835,7 @@ The full run, the machine, the 100-row tables, the harness corrections and the c
 the July numbers are in
 [benchmarks-2026-09-02.md](docs/05-quality/reports/benchmarks-2026-09-02.md). The earlier reports
 are [benchmarks-2026-07-29.md](docs/05-quality/reports/benchmarks-2026-07-29.md) and
-[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md). How the read path
+[benchmarks-2026-07-04.md](docs/05-quality/reports/benchmarks-2026-07-04.md). How the read path
 got from 1.80x slower than ADO.NET to where it is, step by step with the code, is in
 [How Jaunty got fast](docs/08-learn/how-jaunty-got-fast.md).
 
@@ -846,7 +846,7 @@ got from 1.80x slower than ADO.NET to where it is, step by step with the code, i
 - [Migrating from Dapper or EF Core](docs/08-learn/migrating/README.md), and the strict-mapping rule to read first
 - [Error messages, explained](docs/08-learn/error-messages.md): the query that produces each one, and the fix
 - [Fluent API reference](docs/01-api-reference/fluent-api.md)
-- [Architecture decisions](docs/02-architecture/ARCHITECTURE-DECISIONS.md)
+- [Architecture decisions](docs/02-architecture/architecture-decisions.md)
 - [Contributing](CONTRIBUTING.md)
 
 ---

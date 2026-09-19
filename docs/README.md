@@ -85,11 +85,11 @@ Quality assurance and testing documentation:
 
 - **[05-quality/](05-quality/README.md)**
   - [Code Coverage](05-quality/code-coverage.md)
-  - [Production Readiness Report](05-quality/reports/PRODUCTION-READINESS-2026-07-02.md)
-  - [Coverage Gap Inventory](05-quality/reports/COVERAGE-GAPS-2026-07-04.md)
+  - [Production Readiness Report](05-quality/reports/production-readiness-2026-07-02.md)
+  - [Coverage Gap Inventory](05-quality/reports/coverage-gaps-2026-07-04.md)
   - [Benchmarks](05-quality/reports/benchmarks-2026-09-02.md) - four providers against a corrected
     hand-coded baseline; earlier reports [2026-07-29](05-quality/reports/benchmarks-2026-07-29.md)
-    and [2026-07-04](05-quality/reports/BENCHMARKS-2026-07-04.md)
+    and [2026-07-04](05-quality/reports/benchmarks-2026-07-04.md)
   - [How Jaunty got fast](08-learn/how-jaunty-got-fast.md) - the read-path story, code before
     and after each step, with the numbers
 
@@ -98,7 +98,7 @@ Quality assurance and testing documentation:
 Release documentation:
 
 - **[06-releases/](06-releases/README.md)**
-  - [Release Runbook](06-releases/RELEASE-RUNBOOK.md) - Step-by-step release process
+  - [Release Runbook](06-releases/release-runbook.md) - Step-by-step release process
   - [Feature Gap Analysis](06-releases/feature-gap-analysis.md) - gaps against competing ORMs
 
 ### 7. Design

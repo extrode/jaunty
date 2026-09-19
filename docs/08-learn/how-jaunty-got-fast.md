@@ -343,7 +343,7 @@ The full parameter set runs 1, 100 and 10,000 rows on SQLite, SQL Server, Postgr
 MariaDB; the server providers need the `docker-compose.yml` containers and a local SQL Server.
 Edit the two `[Params]` attributes in `QueryBenchmarks.cs` to narrow a run.
 
-The earlier reports are [BENCHMARKS-2026-07-04.md](../05-quality/reports/BENCHMARKS-2026-07-04.md)
+The earlier reports are [benchmarks-2026-07-04.md](../05-quality/reports/benchmarks-2026-07-04.md)
 and [benchmarks-2026-07-29.md](../05-quality/reports/benchmarks-2026-07-29.md). The
 performance rules the code is written to are in
 [performance-spec.md](../02-architecture/performance-spec.md).
