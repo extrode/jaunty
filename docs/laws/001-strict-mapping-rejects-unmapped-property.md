@@ -26,3 +26,15 @@ The plan named `DrDispatcher.cs` as the scope; the strict-versus-projection deci
 the Reflection extension's `MetadataCache.GetSetters`, so the scope was corrected to the code
 that throws.
 Mutation: MetadataCache.cs:367 strict missing-property throw disabled, rebuilt; L001 failed on the first generated subset with a missing column (expected InvalidOperationException, none thrown).
+
+Mutation 2 (2026-09-19, sample-to-enumeration follow-up): the proof used to sample 500 random
+(mask, extra) pairs via CsCheck; converted to enumerate all 32 combinations of the 4 columns x
+extra-column flag outright, since that domain is small enough that enumeration is a strictly
+stronger, cheaper substitute for sampling (32 runs instead of 500, and every combination is
+guaranteed covered rather than merely almost-certainly covered). This is exhaustive over this
+fixture's fixed 4-column entity, not a proof of the Statement's "for every entity type T" as
+literally written -- the fixture's shape stands in for T. Mutation: inverted
+`if (!matchedProperties[i])` to `if (matchedProperties[i])` at MetadataCache.cs:365, rebuilt;
+L001 failed on the first mask with a missing column (message named the wrong property). Reverted
+with `git checkout --`, rebuilt, both L001 and L002 pass in 0.2s (previously ~500 iterations
+each).
