@@ -1,7 +1,7 @@
 # Benchmark Results — 2026-07-29 (pre-GA regression check)
 
 Re-run of the read-path benchmarks against `dev@bf4abed`, to confirm nothing regressed in the
-~800 commits and 26 audit rounds since [`BENCHMARKS-2026-07-04.md`](BENCHMARKS-2026-07-04.md).
+~800 commits and 26 audit rounds since [`benchmarks-2026-07-04.md`](benchmarks-2026-07-04.md).
 
 ```
 BenchmarkDotNet v0.14.0, Windows 11 (10.0.26200.8457)
