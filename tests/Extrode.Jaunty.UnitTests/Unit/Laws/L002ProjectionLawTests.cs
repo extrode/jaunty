@@ -2,8 +2,6 @@
 
 using System.Data.SQLite;
 
-using CsCheck;
-
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Extensions.Reflection;
 
@@ -46,17 +44,26 @@ public class L002ProjectionLawTests : IDisposable
         public int Score { get; set; }
     }
 
-    private static readonly Gen<(bool[] Mask, bool Extra)> Shapes =
-        Gen.Select(Gen.Bool.Array[Columns.Length], Gen.Bool);
+    // 2^4 masks x 2 extra-column states = 32, small enough to enumerate outright rather than
+    // sample: exhaustive over this fixture's fixed 4-column entity, not a claim about every
+    // possible entity shape. See docs/laws/002-projection-never-throws-for-missing-column.md.
+    private static IEnumerable<(bool[] Mask, bool Extra)> AllShapes()
+    {
+        for (int m = 0; m < 1 << Columns.Length; m++)
+        {
+            bool[] mask = [.. Enumerable.Range(0, Columns.Length).Select(i => (m & (1 << i)) != 0)];
+            yield return (mask, false);
+            yield return (mask, true);
+        }
+    }
 
     [Fact]
     public void ProjectionMapsWhatIsPresentAndNeverThrows()
     {
-        Shapes.Sample(shape =>
+        foreach ((bool[] mask, bool extra) in AllShapes())
         {
-            (bool[] mask, bool extra) = shape;
             var selected = Columns.Where((_, i) => mask[i]).ToList();
-            if (selected.Count == 0 && !extra) return;
+            if (selected.Count == 0 && !extra) continue;
 
             var select = selected.Select(c => c).ToList();
             if (extra) select.Add("999 AS extra");
@@ -78,7 +85,7 @@ public class L002ProjectionLawTests : IDisposable
             Assert.Equal(mask[1] ? "Alpha" : string.Empty, item.Name);
             Assert.Equal(mask[2] ? 10 : 0, item.Value);
             Assert.Equal(mask[3] ? 100 : 0, item.Score);
-        }, iter: 500);
+        }
     }
 }
 
