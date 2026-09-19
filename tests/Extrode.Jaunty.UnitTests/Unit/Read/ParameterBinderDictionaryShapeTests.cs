@@ -72,6 +72,24 @@ public class ParameterBinderDictionaryShapeTests
     }
 
     /// <summary>
+    /// A type that implements only <c>IReadOnlyDictionary&lt;string, object?&gt;</c>, not
+    /// <c>IDictionary&lt;string, object?&gt;</c> as well - a plain <c>Dictionary&lt;string, object?&gt;</c>
+    /// assigned to the narrower interface satisfies the wider <c>IDictionary</c> check first, which
+    /// would exercise the wrong branch of <c>AsNamedValues</c>.
+    /// </summary>
+    private sealed class ReadOnlyDictionaryOnly(Dictionary<string, object?> inner) : IReadOnlyDictionary<string, object?>
+    {
+        public object? this[string key] => inner[key];
+        public IEnumerable<string> Keys => inner.Keys;
+        public IEnumerable<object?> Values => inner.Values;
+        public int Count => inner.Count;
+        public bool ContainsKey(string key) => inner.ContainsKey(key);
+        public bool TryGetValue(string key, out object? value) => inner.TryGetValue(key, out value);
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => inner.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    /// <summary>
     /// <c>IReadOnlyDictionary&lt;string, object?&gt;</c> is not an <c>IDictionary&lt;string, object?&gt;</c>
     /// either, and the generator claimed it too.
     /// </summary>
@@ -79,7 +97,7 @@ public class ParameterBinderDictionaryShapeTests
     public void AReadOnlyDictionary_BindsByKey()
     {
         using var connection = Open();
-        IReadOnlyDictionary<string, object?> parameters = new Dictionary<string, object?> { ["Id"] = 1 };
+        IReadOnlyDictionary<string, object?> parameters = new ReadOnlyDictionaryOnly(new Dictionary<string, object?> { ["Id"] = 1 });
 
         var rows = connection.Query<DictRow>("SELECT id AS Id, name AS Name FROM dict_rows WHERE id = @Id", parameters);
 

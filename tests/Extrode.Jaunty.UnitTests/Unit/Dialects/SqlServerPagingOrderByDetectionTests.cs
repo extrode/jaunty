@@ -75,7 +75,17 @@ public class SqlServerPagingOrderByDetectionTests
     [InlineData("SELECT [ORDER BY] FROM t")]
     [InlineData("SELECT 1 FROM t -- ORDER BY id")]
     [InlineData("SELECT 1 FROM t /* ORDER\nBY id */")]
+    [InlineData("SELECT 'it''s ORDER BY x' AS c FROM t")]
+    [InlineData("SELECT [a]]ORDER BY] FROM t")]
     public void AKeywordInsideAStringLiteralQuotedNameOrComment_IsNotAnOrdering(string baseSql)
+    {
+        Assert.Contains(Injected, Page(baseSql), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("SELECT 1 AS ORDER FROM t")]
+    [InlineData("SELECT * FROM t WHERE ORDER  x")]
+    public void AStandaloneOrderNotFollowedByBy_IsNotAnOrdering(string baseSql)
     {
         Assert.Contains(Injected, Page(baseSql), StringComparison.Ordinal);
     }
