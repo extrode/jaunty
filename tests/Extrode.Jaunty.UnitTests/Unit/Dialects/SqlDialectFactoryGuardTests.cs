@@ -12,9 +12,11 @@ namespace Extrode.Jaunty.Tests.Unit.Dialects;
 /// caller gets it wrong, which nothing exercised.
 ///
 /// <para>
-/// Neither case touches the registration dictionary: the throw happens before any write, so
-/// these belong in the parallel assembly. The cache-invalidation branch of
-/// <c>RegisterDialect</c> does mutate process-wide state and stays with the serial suite.
+/// The cache-invalidation branch of <c>RegisterDialect</c> mutates process-wide state, so its
+/// tests call <c>ResetRegistrations()</c> in a <c>finally</c> block rather than relying on a
+/// serial test collection — no such collection exists in this project (xUnit's default
+/// per-class parallelization applies), and nothing else in the codebase calls
+/// <see cref="SqlDialectFactory.GetDialect"/>, so there is no live cross-test race today.
 /// </para>
 /// </summary>
 public class SqlDialectFactoryGuardTests
