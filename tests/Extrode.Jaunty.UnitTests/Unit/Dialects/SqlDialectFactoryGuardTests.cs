@@ -1,6 +1,8 @@
 using System.Data;
 using Extrode.Jaunty.Dialects;
 
+using Microsoft.Data.Sqlite;
+
 namespace Extrode.Jaunty.Tests.Unit.Dialects;
 
 /// <summary>
@@ -74,5 +76,65 @@ public class SqlDialectFactoryGuardTests
         using var connection = new UnknownConnection();
 
         Assert.Throws<InvalidOperationException>(() => SqlDialectFactory.GetDialect(connection));
+    }
+
+    /// <summary>
+    /// Exposes a property named the same as one of the conventional decorator property names
+    /// (<c>InnerConnection</c>), but of the wrong type - the probe must skip it rather than crash
+    /// or mismatch, and fall through to the private field that actually holds the wrapped
+    /// connection.
+    /// </summary>
+    private sealed class WrongTypedPropertyWrapper : IDbConnection
+    {
+        public string InnerConnection { get; set; } = string.Empty;
+
+        private readonly IDbConnection _actual;
+
+        public WrongTypedPropertyWrapper(IDbConnection actual) => _actual = actual;
+
+        public string ConnectionString { get => _actual.ConnectionString; set => _actual.ConnectionString = value; }
+        public int ConnectionTimeout => _actual.ConnectionTimeout;
+        public string Database => _actual.Database;
+        public ConnectionState State => _actual.State;
+        public IDbTransaction BeginTransaction() => _actual.BeginTransaction();
+        public IDbTransaction BeginTransaction(IsolationLevel il) => _actual.BeginTransaction(il);
+        public void ChangeDatabase(string databaseName) => _actual.ChangeDatabase(databaseName);
+        public void Close() => _actual.Close();
+        public IDbCommand CreateCommand() => _actual.CreateCommand();
+        public void Open() => _actual.Open();
+        public void Dispose() => _actual.Dispose();
+    }
+
+    [Fact]
+    public void AProbedPropertyNameOfTheWrongTypeIsSkipped()
+    {
+        using var sqlite = new SqliteConnection("Data Source=:memory:");
+        using var wrapper = new WrongTypedPropertyWrapper(sqlite);
+
+        ISqlDialect dialect = SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(wrapper));
+
+        Assert.IsType<SQLiteDialect>(dialect);
+    }
+
+    [Fact]
+    public void RegisterDialect_CustomDialectForAlreadyCachedTypeName_TakesEffect()
+    {
+        using var sqlite = new SqliteConnection("Data Source=:memory:");
+
+        try
+        {
+            ISqlDialect before = SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(sqlite));
+            Assert.IsType<SQLiteDialect>(before);
+
+            var custom = new SqlServerDialect();
+            SqlDialectFactory.RegisterDialect(nameof(SqliteConnection), custom);
+
+            ISqlDialect after = SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(sqlite));
+            Assert.Same(custom, after);
+        }
+        finally
+        {
+            SqlDialectFactory.ResetRegistrations();
+        }
     }
 }
