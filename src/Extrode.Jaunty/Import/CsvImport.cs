@@ -870,7 +870,7 @@ public static class CsvImportExtensions
 
     /// <summary>
     /// Characters copied per read on the PostgreSQL STDIN path. Sized to match
-    /// <see cref="StreamReader"/>'s own default buffer so a read rarely spans two of them.
+    /// <see cref="FileStream"/>'s own default buffer so a read rarely spans two of them.
     /// </summary>
     private const int CopyBufferChars = 4096;
 
