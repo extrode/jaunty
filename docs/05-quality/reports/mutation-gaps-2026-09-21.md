@@ -148,22 +148,24 @@ port with the `Server=`/`Host=`-alias shape).
 The method (`src/Extrode.Jaunty.Scaffolding/Scaffolder.cs:281`) is a deliberately-ordered set of
 heuristics with real, commented-on rationale — e.g. Postgres is checked *before* SQL Server
 specifically because Npgsql accepts `Server=`/`User Id=` as aliases for its own `Host=`/`Username=`
-keys, so a valid Npgsql string could otherwise satisfy the SQL Server heuristic first. Before the
-three `[Fact]` additions above, every `&&` in that ordering could be flipped to `||` (and vice
-versa) without any test failing:
+keys, so a valid Npgsql string could otherwise satisfy the SQL Server heuristic first. Not every
+`&&`/`||` in that ordering survives mutation — several are already caught by existing tests via
+short-circuit behavior (e.g. flipping the leading `&&` on line 315 or 320 changes which provider
+an *already-tested* connection string resolves to, so those specific mutants are `Killed`). The
+live mutation report showed these specific survivors before the three `[Fact]` additions above:
 
 ```csharp
 if (hasDatabase && (keys.ContainsKey("username") || hasUserId) &&
-    (keys.ContainsKey("host") || isPostgresPort))                  // -> && / || survive
+    (keys.ContainsKey("host") || isPostgresPort))
     return DatabaseProvider.PostgreSql;
 
-if ((hasServer || hasDataSource) &&
-    (hasInitialCatalog || hasDatabase) &&
+if ((hasServer || hasDataSource) &&                                  // -> || survives
+    (hasInitialCatalog || hasDatabase) &&                             // -> && survives
     (keys.ContainsKey("trusted_connection") || hasUserId || keys.ContainsKey("integrated security")))
-    return DatabaseProvider.SqlServer;                              // -> && / || survive, 3 spots
+    return DatabaseProvider.SqlServer;                                // -> && / || survive here too
 
-if (hasServer && hasDatabase && (keys.ContainsKey("uid") || keys.ContainsKey("user")))
-    return DatabaseProvider.MySql;                                  // -> && / || survive
+if (hasServer && hasDatabase && (keys.ContainsKey("uid") || keys.ContainsKey("user")))  // -> && / || survive
+    return DatabaseProvider.MySql;
 ```
 
 Given the code comments explicitly describe *why* the Postgres-before-SqlServer ordering exists

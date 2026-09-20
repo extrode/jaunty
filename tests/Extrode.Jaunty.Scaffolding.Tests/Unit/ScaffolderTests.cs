@@ -132,17 +132,22 @@ public class ScaffolderTests
     }
 
     // mutation-gaps-2026-09-21: live mutation testing found survivors in DetectProvider despite
-    // the coverage above - every &&/|| in its four heuristics is exercised by some test, but none
-    // isolate a single conjunct by giving it its only signal. The four cases below cover branches
-    // this file otherwise never reaches at all (Integrated Security=, bare User=), plus the
-    // Postgres port heuristic's boundary in both directions.
+    // the coverage above - the three cases below cover branches this file otherwise never
+    // reaches at all (Integrated Security=, bare User=), plus the Postgres port heuristic's
+    // negative/boundary side.
 
     [Fact]
     public void DetectProvider_SqlServerIntegratedSecurity_DetectsSqlServer()
     {
         // Trusted_Connection= and User Id= are exercised elsewhere; Integrated Security= - the
-        // third alternative in that same conjunct - never appears in any other test.
-        var result = Scaffolder.DetectProvider("Server=.;Database=Foo;Integrated Security=True;");
+        // third alternative in that same conjunct - never appears in any other test. "User=" is
+        // added so the assertion actually depends on that conjunct: without Integrated
+        // Security=, this string has no Trusted_Connection=/User Id= signal for the SQL Server
+        // rule either, so it would fall through to the MySQL rule (Server= + Database= + User=)
+        // instead of the SqlServer default - a bare "Integrated Security=True;" alone would pass
+        // this assertion even if that alternative were mutated away, since the string would just
+        // fall to the SqlServer default at the bottom of the method either way.
+        var result = Scaffolder.DetectProvider("Server=.;Database=Foo;Integrated Security=True;User=root;Pwd=x;");
         Assert.Equal(DatabaseProvider.SqlServer, result);
     }
 
