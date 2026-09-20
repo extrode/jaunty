@@ -178,6 +178,12 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.UpsertSql;
 
+            // AUD-R35-129's remainder (see UpdateCoreDirect): default CommandType (0) is not
+            // CommandType.Text (1), so unconditionally assigning it when the caller never set
+            // CommandOptions carries CommandType 0, which providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
             // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
             // IDbTransaction through it throws an opaque InvalidCastException. Validate via
