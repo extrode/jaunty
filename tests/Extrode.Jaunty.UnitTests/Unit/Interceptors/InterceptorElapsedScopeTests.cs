@@ -115,7 +115,7 @@ public class InterceptorElapsedScopeTests
         (InterceptorPipeline pipeline, SlowExecutingInterceptor interceptor) = Build();
         bool ran = false;
 
-        pipeline.ExecuteWithInterception("SELECT 1", null, Connection, CommandType.Text, () => ran = true);
+        pipeline.ExecuteWithInterception("SELECT 1", null, Connection, CommandType.Text, () => { ran = true; });
 
         Assert.True(ran);
         Assert.NotNull(interceptor.Executed);
