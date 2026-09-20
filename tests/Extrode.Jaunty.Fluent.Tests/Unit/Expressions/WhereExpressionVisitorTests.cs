@@ -86,6 +86,35 @@ public class WhereExpressionVisitorTests
 
     #endregion
 
+    #region Reversed-Operand Comparisons (coverage-gaps-2026-09-20)
+
+    // MirrorOperator: every test above puts the column on the left; these put the value on the
+    // left, so the generated SQL still reads "column <op> @param" but <op> must be flipped.
+
+    [Fact]
+    public void Visit_ReversedLessThanComparison_MirrorsToGreaterThan()
+    {
+        Expression<Func<Product, bool>> expr = p => 10 < p.UnitPrice;
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("([unit_price] > @unit_price)", sql);
+        Assert.Single(parameters, p => p.Name == "@unit_price" && p.Value.Equals(10m));
+    }
+
+    [Fact]
+    public void Visit_ReversedGreaterThanOrEqualComparison_MirrorsToLessThanOrEqual()
+    {
+        Expression<Func<Product, bool>> expr = p => 10 >= p.UnitPrice;
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("([unit_price] <= @unit_price)", sql);
+        Assert.Single(parameters, p => p.Name == "@unit_price" && p.Value.Equals(10m));
+    }
+
+    #endregion
+
     #region Same-Entity Column-to-Column Comparisons
 
     // AUD-R12: a same-entity column-to-column comparison used to have an unbound
