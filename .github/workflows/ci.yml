@@ -36,14 +36,23 @@ permissions:
 # everything else keeps the self-hosted one. Repeated on all three jobs rather than factored into
 # an env, because `runs-on` is evaluated before `env` is available.
 #
-# The SQL Server service uses a throwaway credential for the ephemeral CI container only. It is
-# derived from github.run_id, which is unique per run and public - the point is that no fixed
-# credential sits in a public file for a scanner to find, not that this one is a secret. Override
-# with the CI_MSSQL_SA_PASSWORD repository variable if desired. Both forms must satisfy SQL
-# Server's password policy: 8+ characters from three of upper, lower, digit, symbol.
+# Every service credential below is the same throwaway-per-run pattern: derived from
+# github.run_id, which is unique per run and public - the point is that no fixed credential sits
+# in a public file for a scanner to find, not that this one is a secret. Override with the
+# matching CI_*_PASSWORD repository variable if desired. SQL Server's form must additionally
+# satisfy its password policy: 8+ characters from three of upper, lower, digit, symbol - the
+# others have no such requirement but share the format for consistency.
 #
-# The service port binds to loopback. A self-hosted runner publishes container ports on its own
-# host, and 0.0.0.0 would expose SQL Server to that machine's network for the life of the job.
+# Every service port binds to loopback. A self-hosted runner publishes container ports on its own
+# host, and 0.0.0.0 would expose the engine to that machine's network for the life of the job.
+#
+# Ports are offset from both each engine's default AND from this repo's own docker-compose.yml
+# (mssql 1433->1435, postgres 5432->5434, mysql/mariadb 3306->3309/3310). The self-hosted runner
+# is a developer's own machine, which - per docs/05-quality/reports - routinely has its own
+# long-lived torture-{postgres,mysql,mariadb} containers bound to docker-compose.yml's ports
+# (5433/3308/3307) for local dev-box testing. Binding CI's ephemeral containers to those same
+# ports would collide with them rather than fail cleanly, exactly the trap the pre-existing mssql
+# offset (1433->1435, avoiding a native SQL Server install) already existed to avoid.
 jobs:
   build-and-test:
     name: Build & Test
@@ -72,8 +81,64 @@ jobs:
           --health-timeout 5s
           --health-retries 10
           --health-start-period 20s
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ vars.CI_POSTGRES_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
+          # Pre-created so the bootstrap step below can connect straight to it - the seed script
+          # itself (data/postgres/create-northwind.sql) assumes the target database already
+          # exists, same as it does against torture-postgres locally.
+          POSTGRES_DB: northwind
+        ports:
+          - "127.0.0.1:5434:5432"
+        # -h 127.0.0.1, not the bare default: these entrypoints run a temporary --skip-networking
+        # (socket-only) server first to apply MYSQL_DATABASE/POSTGRES_DB and the root password,
+        # then restart as the real one. A socket-routed probe (pg_isready/mysqladmin with no -h,
+        # or -h localhost against mysql/mariadb) can report healthy against that temporary server,
+        # before the seeded database or credentials the bootstrap step below needs actually exist.
+        # Forcing TCP fails during that window instead of racing it.
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 10s
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ vars.CI_MYSQL_ROOT_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
+          MYSQL_DATABASE: northwind
+        ports:
+          - "127.0.0.1:3309:3306"
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 20s
+      # mariadb:11, not mysql:8's client names: unlike the mysql image, MariaDB's own image is not
+      # guaranteed to ship the mysql*-named compat binaries. scripts/reset-test-databases.ps1 and
+      # scripts/cleanup/benchmark-databases.ps1 already select mariadb/mariadb-admin specifically
+      # for this same image; matched here rather than assuming mysqladmin/mysql also exist in it.
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: ${{ vars.CI_MARIADB_ROOT_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
+          MARIADB_DATABASE: northwind
+        ports:
+          - "127.0.0.1:3310:3306"
+        options: >-
+          --health-cmd "mariadb-admin ping -h 127.0.0.1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 20s
     env:
       CI_SA_CRED: ${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
+      CI_PG_CRED: ${{ vars.CI_POSTGRES_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
+      CI_MYSQL_CRED: ${{ vars.CI_MYSQL_ROOT_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
+      CI_MARIADB_CRED: ${{ vars.CI_MARIADB_ROOT_PASSWORD || format('Ci#{0}xJ', github.run_id) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -103,6 +168,35 @@ jobs:
           docker exec ${{ job.services.mssql.id }} /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$CI_SA_CRED" -C -i /tmp/nw.sql
           docker exec ${{ job.services.mssql.id }} /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$CI_SA_CRED" -C -d Northwind -i /tmp/sp.sql
 
+      # No -h/PGPASSWORD needed: docker exec runs psql inside the container itself, which
+      # connects over the default Unix socket rather than TCP, and the official postgres image's
+      # default pg_hba.conf trusts local socket connections unconditionally. Only the test suite's
+      # TCP connection through the published port (below) needs CI_PG_CRED.
+      - name: Bootstrap PostgreSQL Northwind
+        run: |
+          docker cp data/postgres/create-northwind.sql ${{ job.services.postgres.id }}:/tmp/nw.sql
+          docker cp data/postgres/create-stored-procedures.sql ${{ job.services.postgres.id }}:/tmp/sp.sql
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -d northwind -v ON_ERROR_STOP=1 -f /tmp/nw.sql
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -d northwind -v ON_ERROR_STOP=1 -f /tmp/sp.sql
+
+      - name: Bootstrap MySQL Northwind
+        run: |
+          docker cp data/mysql/create-northwind.sql ${{ job.services.mysql.id }}:/tmp/nw.sql
+          docker cp data/mysql/create-stored-procedures.sql ${{ job.services.mysql.id }}:/tmp/sp.sql
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -p"$CI_MYSQL_CRED" northwind -e "SOURCE /tmp/nw.sql"
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -p"$CI_MYSQL_CRED" northwind -e "SOURCE /tmp/sp.sql"
+
+      # Same seed scripts as MySQL: data/mysql/create-northwind.sql targets MySQL-compatible
+      # syntax that MariaDB accepts as-is, same as TestConfiguration aliasing the two connection
+      # strings onto each other when only one is configured on a dev box. Client is `mariadb`, not
+      # `mysql` - see the mariadb service definition's comment above.
+      - name: Bootstrap MariaDB Northwind
+        run: |
+          docker cp data/mysql/create-northwind.sql ${{ job.services.mariadb.id }}:/tmp/nw.sql
+          docker cp data/mysql/create-stored-procedures.sql ${{ job.services.mariadb.id }}:/tmp/sp.sql
+          docker exec ${{ job.services.mariadb.id }} mariadb -uroot -p"$CI_MARIADB_CRED" northwind -e "SOURCE /tmp/nw.sql"
+          docker exec ${{ job.services.mariadb.id }} mariadb -uroot -p"$CI_MARIADB_CRED" northwind -e "SOURCE /tmp/sp.sql"
+
       - name: Restore
         run: dotnet restore Jaunty.slnx
 
@@ -112,13 +206,26 @@ jobs:
       - name: Build
         run: dotnet build Jaunty.slnx -c Release --no-restore --no-incremental
 
-      - name: Test - Core (SQLite + SQL Server)
+      # PostgreSQL and SqlServer are exercised here directly (Postgres/SqlServer attributes read
+      # their own connection strings). MariaDB is too, but via JAUNTY_TEST_MARIADB alone -
+      # MariaDBAttribute.IsAvailable/DialectReachability only ever read
+      # TestConfiguration.MariaDbConnectionString, never MySqlConnectionString, so a
+      # JAUNTY_TEST_MYSQL here would sit unused; it belongs on the Scaffolding step instead, whose
+      # MySqlSchemaReaderTests is the one thing in this repo that targets mysql:8 specifically.
+      # JAUNTY_REQUIRE_MYSQL still applies here: it is MariaDBAttribute's own RequireVariable
+      # (DialectReachability.RequireMySql - "one name for both engines"), so it gates the MariaDB
+      # container it's paired with here just as much as it gates MySQL on the Scaffolding step.
+      - name: Test - Core (SQLite + SQL Server + PostgreSQL + MariaDB)
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
-          # The mssql service container is provisioned above, so an unreachable SQL Server here is
-          # a broken job rather than a machine without the engine. Without this the dialect rows
-          # would skip and the leg would report green having tested SQLite only.
+          JAUNTY_TEST_POSTGRESQL: Host=localhost;Port=5434;Database=northwind;Username=postgres;Password=${{ vars.CI_POSTGRES_PASSWORD || format('Ci#{0}xJ', github.run_id) }};
+          JAUNTY_TEST_MARIADB: Server=localhost;Port=3310;Database=northwind;Uid=root;Pwd=${{ vars.CI_MARIADB_ROOT_PASSWORD || format('Ci#{0}xJ', github.run_id) }};SslMode=Disabled;AllowLoadLocalInfile=true;AllowPublicKeyRetrieval=true
+          # The mssql/postgres/mariadb service containers are provisioned above, so an unreachable
+          # engine here is a broken job rather than a machine without it. Without these the dialect
+          # rows would skip and the leg would report green having tested SQLite only.
           JAUNTY_REQUIRE_SQLSERVER: "1"
+          JAUNTY_REQUIRE_POSTGRESQL: "1"
+          JAUNTY_REQUIRE_MYSQL: "1"
         run: >-
           dotnet test --project tests/Extrode.Jaunty.Tests
           -c Release
@@ -184,7 +291,13 @@ jobs:
       - name: Test - Scaffolding
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
+          JAUNTY_TEST_POSTGRESQL: Host=localhost;Port=5434;Database=northwind;Username=postgres;Password=${{ vars.CI_POSTGRES_PASSWORD || format('Ci#{0}xJ', github.run_id) }};
+          # AllowPublicKeyRetrieval is required by MySqlConnector (this project's driver) against
+          # MySQL 8's default auth plugin over an unencrypted connection.
+          JAUNTY_TEST_MYSQL: Server=localhost;Port=3309;Database=northwind;Uid=root;Pwd=${{ vars.CI_MYSQL_ROOT_PASSWORD || format('Ci#{0}xJ', github.run_id) }};SslMode=Disabled;AllowLoadLocalInfile=true;AllowPublicKeyRetrieval=true
           JAUNTY_REQUIRE_SQLSERVER: "1"
+          JAUNTY_REQUIRE_POSTGRESQL: "1"
+          JAUNTY_REQUIRE_MYSQL: "1"
         run: >-
           dotnet test --project tests/Extrode.Jaunty.Scaffolding.Tests
           -c Release
@@ -207,6 +320,12 @@ jobs:
         # exits 8 ("zero tests ran") for every project in the solution the namespace
         # filter excludes, and dotnet test counts that as an error per project even
         # though the FlatFiles projects themselves pass.
+        env:
+          # ImportUsingDbBatchLiveTests needs a CanCreateBatch-capable target; SQLite's
+          # SqliteConnection reports false, so the DuckDB.Tests project's own DbBatch coverage
+          # depends on this the same way Core/Scaffolding above depend on it.
+          JAUNTY_TEST_POSTGRESQL: Host=localhost;Port=5434;Database=northwind;Username=postgres;Password=${{ vars.CI_POSTGRES_PASSWORD || format('Ci#{0}xJ', github.run_id) }};
+          JAUNTY_REQUIRE_POSTGRESQL: "1"
         run: |
           dotnet test --project tests/Extrode.Jaunty.FlatFiles.Tests -c Release --no-build --framework net8.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles.trx
           dotnet test --project tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net8.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb.trx
@@ -215,13 +334,20 @@ jobs:
       # the runner is self-hosted and a matrix re-spins the SQL Server service
       # container per leg. These also carry the T13 loader assertion, which fails
       # if a net10 leg silently loads a net8-compiled Extrode.Jaunty.dll.
-      - name: Test - Core net10 (SQLite + SQL Server)
+      # See the net8 Core step above for why JAUNTY_TEST_MYSQL is deliberately absent here
+      # (MariaDBAttribute only ever reads MariaDbConnectionString, never MySqlConnectionString)
+      # while JAUNTY_REQUIRE_MYSQL still applies (it is MariaDBAttribute's own RequireVariable).
+      - name: Test - Core net10 (SQLite + SQL Server + PostgreSQL + MariaDB)
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
-          # The mssql service container is provisioned above, so an unreachable SQL Server here is
-          # a broken job rather than a machine without the engine. Without this the dialect rows
-          # would skip and the leg would report green having tested SQLite only.
+          JAUNTY_TEST_POSTGRESQL: Host=localhost;Port=5434;Database=northwind;Username=postgres;Password=${{ vars.CI_POSTGRES_PASSWORD || format('Ci#{0}xJ', github.run_id) }};
+          JAUNTY_TEST_MARIADB: Server=localhost;Port=3310;Database=northwind;Uid=root;Pwd=${{ vars.CI_MARIADB_ROOT_PASSWORD || format('Ci#{0}xJ', github.run_id) }};SslMode=Disabled;AllowLoadLocalInfile=true;AllowPublicKeyRetrieval=true
+          # The mssql/postgres/mariadb service containers are provisioned above, so an unreachable
+          # engine here is a broken job rather than a machine without it. Without these the dialect
+          # rows would skip and the leg would report green having tested SQLite only.
           JAUNTY_REQUIRE_SQLSERVER: "1"
+          JAUNTY_REQUIRE_POSTGRESQL: "1"
+          JAUNTY_REQUIRE_MYSQL: "1"
         run: >-
           dotnet test --project tests/Extrode.Jaunty.Tests
           -c Release
@@ -278,7 +404,11 @@ jobs:
       - name: Test - Scaffolding net10
         env:
           JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || format('Ci#{0}xJ', github.run_id) }};TrustServerCertificate=true;
+          JAUNTY_TEST_POSTGRESQL: Host=localhost;Port=5434;Database=northwind;Username=postgres;Password=${{ vars.CI_POSTGRES_PASSWORD || format('Ci#{0}xJ', github.run_id) }};
+          JAUNTY_TEST_MYSQL: Server=localhost;Port=3309;Database=northwind;Uid=root;Pwd=${{ vars.CI_MYSQL_ROOT_PASSWORD || format('Ci#{0}xJ', github.run_id) }};SslMode=Disabled;AllowLoadLocalInfile=true;AllowPublicKeyRetrieval=true
           JAUNTY_REQUIRE_SQLSERVER: "1"
+          JAUNTY_REQUIRE_POSTGRESQL: "1"
+          JAUNTY_REQUIRE_MYSQL: "1"
         run: >-
           dotnet test --project tests/Extrode.Jaunty.Scaffolding.Tests
           -c Release
@@ -298,6 +428,9 @@ jobs:
 
       - name: Test - FlatFiles net10 (DuckDB)
         # See the net8 FlatFiles step above: --project, not --solution + --filter-namespace.
+        env:
+          JAUNTY_TEST_POSTGRESQL: Host=localhost;Port=5434;Database=northwind;Username=postgres;Password=${{ vars.CI_POSTGRES_PASSWORD || format('Ci#{0}xJ', github.run_id) }};
+          JAUNTY_REQUIRE_POSTGRESQL: "1"
         run: |
           dotnet test --project tests/Extrode.Jaunty.FlatFiles.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-net10.trx
           dotnet test --project tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb-net10.trx
