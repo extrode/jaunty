@@ -237,8 +237,8 @@ public sealed class SQLiteSchemaReaderEdgeCaseTests : IDisposable
     /// the real column-body close, and embedded "WITHOUT ROWID" text must not reach the tail
     /// scanner. If the bracket-skip loop (<c>while (... createSql[i] != ']') i++;</c>) under- or
     /// over-runs, the embedded <c>)</c> is treated as the real close and the text after it - here,
-    /// "WITHOUT ROWID" - leaks into what <see cref="SQLiteSchemaReader.TailDeclaresWithoutRowId"/>
-    /// scans, flipping a table that never declares the option to one that appears to.
+    /// "WITHOUT ROWID" - leaks into what the private tail scanner reads, flipping a table that
+    /// never declares the option to one that appears to.
     /// </summary>
     [Fact]
     public void IsWithoutRowId_BracketQuotedIdentifierWithEmbeddedParenAndKeyword_DoesNotLeakIntoTail()
@@ -310,6 +310,11 @@ public sealed class SQLiteSchemaReaderEdgeCaseTests : IDisposable
     public void IsWithoutRowId_WithoutKeywordNotImmediatelyFollowedByRowid_ResetsAndStillFindsTheRealPair()
     {
         Assert.True(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT) WITHOUT FOO WITHOUT ROWID"));
+
+        // The positive case above passes even under a latched flag that never clears after the
+        // first WITHOUT, since a second WITHOUT ROWID follows anyway. This is what actually
+        // requires the reset: FOO must clear the flag so the later, unrelated ROWID does not match.
+        Assert.False(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT) WITHOUT FOO ROWID"));
     }
 
     private async Task<DatabaseSchema> ReadAsync(SchemaReaderOptions options)
