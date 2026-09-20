@@ -70,6 +70,8 @@ public class GeneratorCachingTests
         #else
             public HandRolled ReadEntity(IDataReader reader) => new HandRolled();
         #endif
+
+            public static void BindInsert(IDbCommand command, HandRolled entity) { }
         }
         """;
 
@@ -174,6 +176,12 @@ public class GeneratorCachingTests
     {
         (GeneratorDriver driver, Compilation compilation) = RunFirst(HandWrittenMapperSource, UnrelatedSource);
 
+        // The pipeline actually produced a value on the first run - otherwise a transform that
+        // always returns null would pass the reused-outputs assertion below for a trivial reason
+        // (nothing to compare), not because HandWrittenMapper.Equals worked.
+        Diagnostic firstRunWarning = Assert.Single(driver.GetRunResult().Results.SelectMany(r => r.Diagnostics), d => d.Id == "JAUNTYGEN002");
+        Assert.Contains("BindInsert", firstRunWarning.GetMessage(), StringComparison.Ordinal);
+
         driver = RunAgain(driver, compilation, treeIndex: 1, """
             namespace CacheProbe;
 
@@ -188,26 +196,37 @@ public class GeneratorCachingTests
     }
 
     [Fact]
-    public void AddingAConventionBinderToTheHandWrittenMapper_DoesRerunTheStep()
+    public void RenamingTheConventionBinder_DoesRerunTheStep()
     {
         // The negative control for the test above: without it, a HandWrittenMapper.Equals that
         // ignored Members/Supplies would report this edit as cached too, and the diagnostic message
-        // would still list only "ReadEntity" after BindInsert was added.
+        // would still name "BindInsert" after the method was renamed. "BindUpdate" is the same
+        // length as "BindInsert" so the class declaration's span - and therefore Location, the one
+        // field this edit must NOT change - stays identical; only Members/Supplies differ. Renaming
+        // rather than inserting a new method is deliberate: inserting would grow the span and let a
+        // comparer that dropped Members/Supplies but kept Location still report Modified.
         (GeneratorDriver driver, Compilation compilation) = RunFirst(HandWrittenMapperSource, UnrelatedSource);
 
-        driver = RunAgain(driver, compilation, treeIndex: 0, HandWrittenMapperSource.Replace(
-            "public int Id { get; set; }",
-            "public int Id { get; set; }\n\n    public static void BindInsert(IDbCommand command, HandRolled entity) { }"));
+        driver = RunAgain(driver, compilation, treeIndex: 0, HandWrittenMapperSource.Replace("BindInsert", "BindUpdate"));
 
         Assert.Contains(OutputReasons(driver), reason => reason is IncrementalStepRunReason.Modified or IncrementalStepRunReason.New);
         Diagnostic warning = Assert.Single(driver.GetRunResult().Results.SelectMany(r => r.Diagnostics), d => d.Id == "JAUNTYGEN002");
-        Assert.Contains("BindInsert", warning.GetMessage(), StringComparison.Ordinal);
+        Assert.Contains("BindUpdate", warning.GetMessage(), StringComparison.Ordinal);
+        Assert.DoesNotContain("BindInsert", warning.GetMessage(), StringComparison.Ordinal);
     }
 
     [Fact]
     public void EditingAnUnrelatedFile_DoesNotRerunTheParameterRootingStep()
     {
         (GeneratorDriver driver, Compilation compilation) = RunFirst(ParameterRootingSource, UnrelatedSource);
+
+        // Same premise-check as the HandWrittenMapper positive test above: confirm the call site
+        // actually rooted a witness on the first run, so "everything stayed cached" below is not
+        // trivially true because the transform produced nothing to compare.
+        Assert.Contains(
+            "new { Id = default(int) }",
+            driver.GetRunResult().Results.SelectMany(r => r.GeneratedSources).Single(s => s.HintName.Contains("ParameterRoots")).SourceText.ToString(),
+            StringComparison.Ordinal);
 
         driver = RunAgain(driver, compilation, treeIndex: 1, """
             namespace CacheProbe;
