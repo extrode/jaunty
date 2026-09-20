@@ -126,8 +126,15 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
     /// </summary>
     private static byte[] BuildMidFileInvalidUtf8Csv()
     {
+        // CopyBufferChars is 4096, and StreamReader's Read(buffer, 0, 4096) keeps refilling its
+        // own internal buffer from the file until the caller's span is full or the file hits EOF
+        // - it does not stop at the first internal chunk. A clean prefix has to clear 4096 bytes
+        // with real margin, or the very first Read still swallows the bad bytes in the same call
+        // and nothing is written before the exception (1000 rows below is ~10 KB, comfortably past
+        // that threshold so a full 4096-char Read succeeds and is written before a later Read
+        // reaches the invalid sequence).
         var bytes = new List<byte>(Encoding.ASCII.GetBytes("id,note\n"));
-        for (int i = 0; i < 300; i++)
+        for (int i = 0; i < 1000; i++)
             bytes.AddRange(Encoding.ASCII.GetBytes($"{i},row-{i}\n"));
         bytes.AddRange(Encoding.ASCII.GetBytes("9999,"));
         bytes.AddRange(new byte[] { 0xC3, 0x28, 0xA0, 0xA1 });

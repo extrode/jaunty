@@ -348,6 +348,18 @@ run here really means these were exercised end-to-end, not silently skipped:
   left clean. An async-sibling live test was also added, since only the sync path had one. A
   one-sentence addition to `ICopyImportWriter.Cancel`'s remarks now documents the implicit
   ordering contract (mark aborted before anything that can throw) that made the Npgsql fix safe.
+  **Second correction (independent `review-deep` re-verification, 2026-09-20):** the fixture built
+  for finding (2) above still didn't clear it — 300 rows totaled ~3.4 KB, under `CopyBufferChars`
+  (4096), and `StreamReader.Read` keeps refilling from the file until the caller's span is full or
+  EOF, not just until its own internal chunk boundary — so the entire file still decoded (and
+  failed) inside the *first* `Read` call, with nothing written before the exception. Fixed by
+  raising the clean prefix to 1000 rows (~10 KB, comfortably past 4096 with margin), confirmed by
+  re-running the test: the first full 4096-char `Read` now succeeds and is written to the live COPY
+  stream before a later `Read` hits the invalid bytes, so `Cancel()` is now exercised against a
+  stream that has actually sent data. All other findings from the first pass ((a) the
+  `RequireFileOnThisMachine` reorder, (c) `DecoderFallbackException` as the correct and
+  non-runtime-dependent exception type, (d) the async sibling) were independently re-confirmed
+  correct with no changes needed. Re-verified green on net8.0/net10.0/net472 after the fixture fix.
 - `Extrode.Jaunty`'s in-transaction FK-toggle branches in Bulk{Insert,Delete,Update}(Async) —
   Postgres/MySQL only, SQLite and SqlServer don't take that branch shape — **verified**, part of
   the same 5042/5042 zero-skip run.
