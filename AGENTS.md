@@ -31,7 +31,7 @@ for that: contributions require a signed CLA and must be authored by a human
 - `docs/laws/` holds invariants that must hold before merge, each proven by a
   tagged test.
 - Any reflection call added under `src/` needs an `AOT-SAFE` justification
-  comment — `scripts/Verify-NativeAOT.ps1` fails CI otherwise.
+  comment — `scripts/verify-nativeaot.ps1` fails CI otherwise.
 
 ## CI
 

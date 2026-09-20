@@ -129,11 +129,11 @@ Three places, and the link checker gates the last one:
 ```bash
 dotnet build Jaunty.slnx -c Release            # 0 warnings; analyzers are errors here
 dotnet test  Jaunty.slnx -c Release            # all frameworks
-pwsh scripts/Verify-NativeAOT.ps1              # markers-only reflection scan over src/
+pwsh scripts/verify-nativeaot.ps1              # markers-only reflection scan over src/
 node scripts/check-doc-links.mjs
 ```
 
-`Verify-NativeAOT.ps1` fails on any reflection call in `src/` that is not annotated with an
+`verify-nativeaot.ps1` fails on any reflection call in `src/` that is not annotated with an
 `AOT-SAFE:` marker in the contiguous comment block immediately above it. The marker has to say
 *why* the call is safe. Putting it anywhere else is silently ignored - it reads as an ordinary
 failure with no hint that a marker was present.

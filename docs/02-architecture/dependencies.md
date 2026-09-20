@@ -181,7 +181,7 @@ warning. Verified after the split, 2026-08-29:
 
 | Check | Result |
 |---|---|
-| `scripts/Verify-NativeAOT.ps1` | PASS — 21 reflection sites, all carrying a reviewed `AOT-SAFE` justification |
+| `scripts/verify-nativeaot.ps1` | PASS — 21 reflection sites, all carrying a reviewed `AOT-SAFE` justification |
 | NativeAOT publish, `net8.0` win-x64 (control) | binary produced, 36.98 MB |
 | NativeAOT publish, `net10.0` win-x64 | binary produced and runs, 34.63 MB |
 | Trim/AOT warnings from any **Jaunty** assembly | **none** |
