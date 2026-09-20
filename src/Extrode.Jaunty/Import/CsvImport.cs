@@ -699,15 +699,18 @@ public static class CsvImportExtensions
             ICopyImportWriter? copy = JauntyConfig.CopyImportFactory?.Invoke(connection, copyCommand);
             if (copy is not null)
             {
-                // This branch streams the file from here, so its absence here is an error Extrode.Jaunty
-                // can diagnose. The server-side fallback below is not gated on it - see
-                // RequireFileOnThisMachine.
-                RequireFileOnThisMachine(filePath);
-
                 TextWriter textWriter = copy.Writer;
 
                 try
                 {
+                    // This branch streams the file from here, so its absence here is an error
+                    // Extrode.Jaunty can diagnose. The server-side fallback below is not gated on
+                    // it - see RequireFileOnThisMachine. Checked inside the try (rather than
+                    // before it, as this used to) so a missing file cancels and disposes `copy`
+                    // like any other failure below, instead of leaving the connection stuck in
+                    // Npgsql's CopyIn mode with nothing to clean it up.
+                    RequireFileOnThisMachine(filePath);
+
                     // AUD-R34-010: this was a ReadLine/WriteLine loop, which re-terminates every
                     // line with the writer's NewLine - Environment.NewLine by default. A newline
                     // inside a quoted field (RFC 4180, and handled deliberately by ReadCsvRecord
@@ -799,15 +802,15 @@ public static class CsvImportExtensions
             ICopyImportWriter? copy = JauntyConfig.CopyImportFactory?.Invoke(connection, copyCommand);
             if (copy is not null)
             {
-                // This branch streams the file from here, so its absence here is an error Extrode.Jaunty
-                // can diagnose. The server-side fallback below is not gated on it - see
-                // RequireFileOnThisMachine.
-                RequireFileOnThisMachine(filePath);
-
                 TextWriter textWriter = copy.Writer;
 
                 try
                 {
+                    // This branch streams the file from here, so its absence here is an error
+                    // Extrode.Jaunty can diagnose. See the sync sibling for why this check moved
+                    // inside the try.
+                    RequireFileOnThisMachine(filePath);
+
                     // AUD-R34-010: see the sync sibling - a ReadLine/WriteLine loop rewrote every
                     // newline, including the ones inside quoted fields, to the host's newline.
                     using var fileReader = new StreamReader(filePath, options.Encoding);

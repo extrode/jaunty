@@ -118,16 +118,41 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
     }
 
     /// <summary>
+    /// Builds a CSV file large enough to span more than one <c>ImportCsv</c> read buffer
+    /// (<c>CopyBufferChars</c> is 4096), with valid rows in the earlier buffers and an invalid
+    /// UTF-8 byte sequence only in the last one, so some rows are genuinely streamed and written
+    /// to the live COPY before the decode failure hits - not merely a same-buffer failure with
+    /// nothing written yet.
+    /// </summary>
+    private static byte[] BuildMidFileInvalidUtf8Csv()
+    {
+        var bytes = new List<byte>(Encoding.ASCII.GetBytes("id,note\n"));
+        for (int i = 0; i < 300; i++)
+            bytes.AddRange(Encoding.ASCII.GetBytes($"{i},row-{i}\n"));
+        bytes.AddRange(Encoding.ASCII.GetBytes("9999,"));
+        bytes.AddRange(new byte[] { 0xC3, 0x28, 0xA0, 0xA1 });
+        bytes.AddRange(Encoding.ASCII.GetBytes("\n"));
+        return bytes.ToArray();
+    }
+
+    private static CsvImportOptions StrictUtf8Options() => new()
+    {
+        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true),
+    };
+
+    /// <summary>
     /// <c>CsvImportPostgreSqlStdinTests</c>'s fake <c>CopyWriter</c> treats <c>Cancel()</c> as a
     /// no-op recorder, so it never reproduces what the real Npgsql driver does: once
     /// <c>Cancel()</c> succeeds, the underlying stream is already ended, and the subsequent
-    /// <c>Dispose()</c> from <c>ImportPostgreSqlAsync</c>'s enclosing <c>using (copy)</c> throws
+    /// <c>Dispose()</c> from <c>ImportPostgreSql</c>'s enclosing scope used to call
+    /// <c>Dispose()</c> a second time via an implicit <c>using (copy)</c> finally, which throws
     /// <see cref="ObjectDisposedException"/> - which, thrown from a <c>finally</c> while the
     /// original decode failure is propagating, replaces it. A caller would see "the COPY operation
-    /// has already ended" instead of the decode error that actually caused the import to fail.
+    /// has already ended" instead of the decode error that actually caused the import to fail, and
+    /// the connection would be left mid-copy since nothing cancelled it correctly either.
     /// </summary>
     [Fact]
-    public void ImportCsv_WhenTheFileFailsToDecode_SurfacesTheDecodeFailureNotAnObjectDisposedException()
+    public void ImportCsv_WhenTheFileFailsToDecodeMidFile_SurfacesTheDecodeFailureNotAnObjectDisposedException()
     {
         using NpgsqlConnection conn = OpenOrSkip();
         CreateTable(conn, "npgsql_copy_writer_decode_failure");
@@ -137,21 +162,40 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
         Directory.CreateDirectory(dir);
         try
         {
-            var bytes = new List<byte>(Encoding.ASCII.GetBytes("id,note\n1,first\n2,"));
-            bytes.AddRange(new byte[] { 0xC3, 0x28, 0xA0, 0xA1 });
-            bytes.AddRange(Encoding.ASCII.GetBytes("\n"));
             string path = Path.Combine(dir, "bad.csv");
-            File.WriteAllBytes(path, bytes.ToArray());
-
-            var options = new CsvImportOptions
-            {
-                Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true),
-            };
+            File.WriteAllBytes(path, BuildMidFileInvalidUtf8Csv());
 
             Exception thrown = Assert.ThrowsAny<Exception>(
-                () => conn.ImportCsv("npgsql_copy_writer_decode_failure", path, options));
+                () => conn.ImportCsv("npgsql_copy_writer_decode_failure", path, StrictUtf8Options()));
 
-            Assert.IsNotType<ObjectDisposedException>(thrown);
+            Assert.IsType<DecoderFallbackException>(thrown);
+            Assert.Equal(0, Count(conn, "npgsql_copy_writer_decode_failure"));
+        }
+        finally
+        {
+            try { Directory.Delete(dir, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_WhenTheFileFailsToDecodeMidFile_SurfacesTheDecodeFailureNotAnObjectDisposedException()
+    {
+        using NpgsqlConnection conn = OpenOrSkip();
+        CreateTable(conn, "npgsql_copy_writer_decode_failure_async");
+        JauntyNpgsql.Use();
+
+        string dir = Path.Combine(Path.GetTempPath(), $"jaunty_pg_live_decode_async_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        try
+        {
+            string path = Path.Combine(dir, "bad-async.csv");
+            File.WriteAllBytes(path, BuildMidFileInvalidUtf8Csv());
+
+            Exception thrown = await Assert.ThrowsAnyAsync<Exception>(
+                async () => await conn.ImportCsvAsync("npgsql_copy_writer_decode_failure_async", path, StrictUtf8Options()));
+
+            Assert.IsType<DecoderFallbackException>(thrown);
+            Assert.Equal(0, Count(conn, "npgsql_copy_writer_decode_failure_async"));
         }
         finally
         {
