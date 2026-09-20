@@ -45,6 +45,46 @@ public class ExecuteTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void Execute_PlainSql_NoParameters_ReturnsRowsAffected(DialectInfo dialect)
+    {
+        // coverage-gaps-2026-09-20: the 1-arg Execute(conn, sql) overload had no functional test
+        // anywhere -- only a whitespace-throw case touched it.
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var rows = ctx.Connection.Execute(
+            $"INSERT INTO {TableName} (name, value) VALUES ('Literal', 100)");
+
+        Assert.Equal(1, rows);
+        Assert.Equal(1, GetRowCount(ctx.Connection));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Execute_WithCommandOptionsOnly_NoParameters_ReturnsRowsAffected(DialectInfo dialect)
+    {
+        // coverage-gaps-2026-09-20: the 2-arg Execute(conn, sql, CommandOptions) overload had no
+        // functional test either.
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        using var tx = ctx.Connection.BeginTransaction();
+
+        var rows = ctx.Connection.Execute(
+            $"INSERT INTO {TableName} (name, value) VALUES ('WithOptions', 100)",
+            CommandOptions.WithTransaction(tx));
+
+        Assert.Equal(1, rows);
+        tx.Commit();
+        Assert.Equal(1, GetRowCount(ctx.Connection));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Execute_Update_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);

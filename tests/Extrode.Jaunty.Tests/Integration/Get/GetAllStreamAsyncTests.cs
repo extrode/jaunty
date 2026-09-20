@@ -1,6 +1,7 @@
 #if ASYNC_ENUMERABLE_SUPPORT
 using System.Data;
 using System.Data.Common;
+using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Tests.Entities;
 using Extrode.Jaunty.Tests.Helpers.Dialects;
 
@@ -88,6 +89,28 @@ public class GetAllStreamAsyncTests : IClassFixture<DialectFixture>
         }
 
         Assert.Equal(2, count);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GetAllStreamAsync_WithCommandOptions_YieldsAllRows(DialectInfo dialect)
+    {
+        // coverage-gaps-2026-09-20: GetAllStreamAsync<T>(conn, options, ct) had zero test callers
+        // passing CommandOptions<T> -- only the parameterless overload was exercised.
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        InsertRows(ctx.Connection, 3);
+        var dbConn = (DbConnection)ctx.Connection;
+
+        var list = new List<GetTestEntity>();
+        await foreach (var row in dbConn.GetAllStreamAsync(CommandOptions<GetTestEntity>.WithTimeout(30)))
+            list.Add(row);
+
+        Assert.Equal(3, list.Count);
+        Assert.All(list, r => Assert.True(r.Id > 0));
     }
 
     [Theory]

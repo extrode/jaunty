@@ -122,6 +122,66 @@ public class FluentGroupByJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public void GroupBy_Having_NotEqual_FiltersGroups()
+    {
+        // coverage-gaps-2026-09-20: only > and < were exercised anywhere for joined HAVING.
+        // Category 1 has 4 products, category 2 has 5, category 3 has 2.
+        var results = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .GroupBy((p, c) => p.CategoryId)
+            .Having(g => g.Count() != 4)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.NotEqual(4, r.Count));
+        Assert.DoesNotContain(results, r => r.CategoryId == 1);
+    }
+
+    [Fact]
+    public void GroupBy_Having_GreaterThanOrEqual_FiltersGroups()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .GroupBy((p, c) => p.CategoryId)
+            .Having(g => g.Count() >= 4)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count >= 4));
+        Assert.DoesNotContain(results, r => r.CategoryId == 3);
+    }
+
+    [Fact]
+    public void GroupBy_Having_LessThanOrEqual_FiltersGroups()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .GroupBy((p, c) => p.CategoryId)
+            .Having(g => g.Count() <= 2)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        var result = Assert.Single(results);
+        Assert.Equal((short?)3, result.CategoryId);
+    }
+
+    [Fact]
+    public void GroupBy_Having_UnsupportedOperator_Throws()
+    {
+        // `&` on bool operands is a non-short-circuit ExpressionType.And, not AndAlso -- the
+        // joined operator switch has no arm for it and falls to the NotSupportedException default.
+        Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .InnerJoin<Category>()
+                .On(p => p.CategoryId, c => c.CategoryId)
+                .GroupBy((p, c) => p.CategoryId)
+                .Having(g => g.Count() > 3 & g.Count() < 5)
+                .Select(g => new { CategoryId = g.Key, Count = g.Count() }));
+    }
+
+    [Fact]
     public void GroupBy_Having_AndAlsoOfTwoAggregates_FiltersGroupsCorrectly()
     {
         // AUD-R14 batch-5 finding #3 regression: JoinedGroupByExpressionVisitor previously

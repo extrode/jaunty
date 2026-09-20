@@ -447,6 +447,25 @@ public class WriteObservabilityTests : IDisposable
     }
 
     // ---------------------------------------------------------------------------
+    // coverage-gaps-2026-09-20: ExecuteNonQueryCoreAsync's interceptor-pipeline branch had no
+    // caller that both registered an interceptor and awaited the async path - ExecuteAsync is the
+    // only public API that reaches ExecuteNonQueryCoreAsync with a DbConnection.
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task ExecuteAsync_IsIntercepted()
+    {
+        await _connection.ExecuteAsync(
+            "INSERT INTO write_obs_widgets (Name, Quantity) VALUES (@Name, @Quantity)",
+            new { Name = "a", Quantity = 1 },
+            TestContext.Current.CancellationToken);
+
+        Assert.Single(_interceptor.Executing);
+        Assert.Single(_interceptor.Executed);
+        Assert.NotEmpty(_logged);
+    }
+
+    // ---------------------------------------------------------------------------
     // Failure reporting
     // ---------------------------------------------------------------------------
 

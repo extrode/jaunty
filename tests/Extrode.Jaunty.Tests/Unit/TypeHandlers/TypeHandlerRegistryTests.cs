@@ -321,6 +321,28 @@ public class TypeHandlerRegistryTests : IDisposable
 
     #endregion
 
+    #region No Handler Registered (coverage-gaps-2026-09-20)
+
+    [Fact]
+    public void TryConvertToDb_WithNoHandlerRegistered_ReturnsFalse()
+    {
+        bool ok = TypeHandlerRegistry.TryConvertToDb("x", out object? dbValue);
+
+        Assert.False(ok);
+        Assert.Null(dbValue);
+    }
+
+    [Fact]
+    public void TryConvertFromDb_WithNoHandlerRegistered_ReturnsFalse()
+    {
+        bool ok = TypeHandlerRegistry.TryConvertFromDb<string>("x", out string? result);
+
+        Assert.False(ok);
+        Assert.Null(result);
+    }
+
+    #endregion
+
     #region Concurrent Register/Remove (Finding: _handlerCount race)
 
     [Fact]
