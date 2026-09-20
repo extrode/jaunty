@@ -15,6 +15,17 @@ quick-wins batch plus the deferred bulk async `RollbackAsync` fixture, built aft
 fixed and merged to `dev`; see the "FIXED" annotations throughout. `ExecuteReaderDirect` was
 deleted as confirmed dead code rather than tested.
 
+**Status update 2026-09-20 (assembly-by-assembly close-out):** after the quick-wins batch, every
+remaining highest-value item in the `Extrode.Jaunty` (core) and `Extrode.Jaunty.Fluent` sections is
+now also fixed, each verified by an independent `review-deep` pass before moving to the next
+assembly. Core's closed-connection/`CommandTimeout`/`CommandType.StoredProcedure` sweep surfaced a
+real production bug (`Upsert`/`UpsertAsync` silently dropping `CommandType`, see bug #3) and, per
+the review pass, an initially incomplete async closed-connection test set — both are now fixed.
+Fluent's flagged-uncertain `JoinedQueryBuilderSelect*` always-throws question is resolved (the
+success path is real and reachable; every prior test just happened to hit a same-name-column
+collision), and its non-`DbConnection`/closed-connection pattern gap is covered. Remaining OPEN
+items are in `Extrode.Jaunty.Extensions.Reflection` and `Extrode.Jaunty.SourceGenerator`.
+
 **Fixed in the process**: `scripts/coverage.ps1` passed `--nologo` to `dotnet test`, which broke
 Microsoft.Testing.Platform's `--coverage` path outright — the run reported "Zero tests ran" (exit
 5) with it present, and passed normally without it. All 10 suites now produce a cobertura report;
@@ -111,7 +122,14 @@ artifact).
   `ExecuteBatch`, sync and async, via `CommandOptionsSweepTests` (`RecordingDbConnection` for
   timeout/command-type assertions, a temp-file-backed connection for the closed-connection
   lifecycle — `:memory:` can't be used there since SQLite tears the database down when the last
-  connection to it closes). `Upsert`/`UpsertAsync` failed against production code, not the test:
+  connection to it closes). An independent `review-deep` pass caught that the first version of
+  this file only exercised the closed-connection lifecycle for the sync half of
+  `GetAll`/`Delete`/`Update`/`Upsert`/`Query` and skipped `QueryAsync` in the timeout/command-type
+  sweep entirely — the async code paths are separate implementations from sync (e.g.
+  `UpsertCoreDirectAsync`'s own `finally` block) and weren't covered by testing the sync side.
+  `QueryAsync_WithTimeoutAndCommandType_AppliesBoth` and the five missing
+  `*Async_GivenAClosedConnection_OpensExecutesAndCloses` cases were added to close that gap.
+  `Upsert`/`UpsertAsync` failed against production code, not the test:
   `UpsertCoreDirect`/`UpsertCoreDirectAsync` (`Write/Upsert.cs`, `Write/UpsertAsync.cs`) never
   assigned `command.CommandType` from `CommandOptions` at all — every other single-entity write
   sets it via its `*Core.cs` file, but Upsert implements its execution inline (AUD-R26) and this
@@ -132,11 +150,13 @@ routed `DbConnection`s to the other overload first.
   `WhereExpressionVisitor.MirrorOperator` was 0/8 covered — covered via
   `WhereExpressionVisitorTests`' "Reversed-Operand Comparisons" region (`10 < p.UnitPrice`,
   `10 >= p.UnitPrice`).
-- **OPEN.** Possible always-throws path: `JoinedQueryBuilderSelect*.SelectWithMapping`/`SelectWithMapperAsync`'s
-  row-loop and success return are uncovered while the ambiguous-column guard above it is covered —
-  in every existing test, a 3-DTO-over-a-join select throws before mapping a row. Flagged uncertain
-  by the reviewer (rests on how coverlet counts the method-exit sequence point) but worth one
-  confirming test.
+- **FIXED 2026-09-20 — confirmed reachable, not an always-throws.** `JoinedQueryBuilderSelect*.SelectWithMapping`/
+  `SelectWithMapper`(`Async`)'s row-loop and success return. Every existing custom-DTO join test
+  joins two Northwind entities whose FK/PK share a column name (`category_id`), which always
+  collides under the unaliased `SELECT *` these methods issue and throws before mapping a row.
+  `JoinedQuerySelectDtoSuccessPathTests` adds two fixture tables that join on differently-named
+  columns (`id`/`from_id`) — nothing collides, and the mapping loop genuinely runs and returns
+  rows, for both `Select<T>()`/`SelectAsync<T>()` and `Select(mapper)`/`SelectAsync(mapper)`.
 - **PARTIALLY FIXED 2026-09-20 — corrected.** `GROUP BY`/`HAVING` operators: the original claim that
   only `>` and `<` were exercised was wrong for `=` — `FluentGroupByTests.cs:406` already covered
   `Min(...) == "Chai"` before this pass (caught by an independent `review-deep` verification).
@@ -144,10 +164,13 @@ routed `DbConnection`s to the other overload first.
   via `FluentGroupByTests`/`FluentGroupByJoinTests` for both single-entity and joined group-by.
 - **FIXED 2026-09-20.** `Sql.Year/Month/Day` in a SELECT projection — covered via
   `SelectExpressionVisitorTests.Visit_SqlYear_GeneratesYearFunction` and its Month/Day twins.
-- The ~40-instance `if (_connection is not DbConnection dbConn) throw` guard and the ~25-instance
-  `wasClosed` auto-open/close lifecycle are each one pattern repeated many times (every fixture
-  hands in an already-open `SQLiteConnection`), not that many independent gaps — one non-`DbConnection`
-  fake and one closed-connection fixture variant would close most of both groups.
+- **FIXED 2026-09-20.** The ~40-instance `if (_connection is not DbConnection dbConn) throw` guard
+  and the ~25-instance `wasClosed` auto-open/close lifecycle — each one pattern repeated many times
+  (every fixture hands in an already-open `SQLiteConnection`), not that many independent gaps.
+  Covered via `QueryBuilderConnectionLifecycleTests` on `QueryBuilder<T>.Delete`/`DeleteAsync`
+  (representative of the shared pattern): a non-`DbConnection` `IDbConnectionWrapper` proves the
+  async guard throws while the sync path still works, and a temp-file-backed closed connection
+  proves the auto-open/close lifecycle for both sync and async.
 
 Corrected against the 2026-07-04 report: `JoinedQuery4Builder<T1..T4>` is **no longer** 0/164
 (partially covered now, 28 methods still gap); `JoinClause4Builder<T1..T4>` is **fully covered**
