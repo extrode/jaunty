@@ -55,22 +55,61 @@ public class BulkCopyDialectFactoryTests
         Assert.Null(wrapper.CreateBulkCopyProvider());
     }
 
+    /// <summary>
+    /// coverage-gaps-2026-09-20: this theory previously asserted 12 of the ~39 <see cref="ISqlDialect"/>
+    /// members each wrapper forwards, leaving ~27 one-line forwarders per wrapper (~90+ instances
+    /// across all four) with no assertion anywhere in <c>tests/</c>. Extended to every member so one
+    /// parameterized test per wrapper closes all of them at once, per the report's own suggested
+    /// approach, rather than one test per forwarder.
+    /// </summary>
     [Theory]
     [MemberData(nameof(WrapperDelegationCases))]
     public void Wrapper_DelegatesNonBulkCopyMembersToInnerDialect(ISqlDialect wrapper, ISqlDialect inner)
     {
         Assert.Equal(inner.ParameterPrefix, wrapper.ParameterPrefix);
         Assert.Equal(inner.SupportsForeignKeyToggle, wrapper.SupportsForeignKeyToggle);
+        Assert.Equal(inner.RequiresAutocommitForForeignKeyToggle, wrapper.RequiresAutocommitForForeignKeyToggle);
         Assert.Equal(inner.SupportsUpsert, wrapper.SupportsUpsert);
         Assert.Equal(inner.SupportsMultiRowInsert, wrapper.SupportsMultiRowInsert);
         Assert.Equal(inner.MaxParametersPerStatement, wrapper.MaxParametersPerStatement);
         Assert.Equal(inner.GetDefaultSchema(), wrapper.GetDefaultSchema());
         Assert.Equal(inner.EscapeTableName(null, "orders"), wrapper.EscapeTableName(null, "orders"));
         Assert.Equal(inner.EscapeColumnName("name"), wrapper.EscapeColumnName("name"));
+        Assert.Equal(inner.EscapeStringLiteral("O'Brien"), wrapper.EscapeStringLiteral("O'Brien"));
+        Assert.Equal(inner.GetLastInsertIdSql("id"), wrapper.GetLastInsertIdSql("id"));
         Assert.Equal(inner.GetPagingSql("SELECT 1", 0, 10), wrapper.GetPagingSql("SELECT 1", 0, 10));
         Assert.Equal(inner.IsKeyword("select"), wrapper.IsKeyword("select"));
+        Assert.Equal(inner.GenerateCaseSensitiveLike("name", "@p", "\\"), wrapper.GenerateCaseSensitiveLike("name", "@p", "\\"));
+        Assert.Equal(inner.GenerateCaseInsensitiveLike("name", "@p", "\\"), wrapper.GenerateCaseInsensitiveLike("name", "@p", "\\"));
+        Assert.Equal(inner.GenerateCaseInsensitiveEquals("name", "@p"), wrapper.GenerateCaseInsensitiveEquals("name", "@p"));
+        Assert.Equal(inner.FormatContainsPattern("abc"), wrapper.FormatContainsPattern("abc"));
+        Assert.Equal(inner.FormatStartsWithPattern("abc"), wrapper.FormatStartsWithPattern("abc"));
+        Assert.Equal(inner.FormatEndsWithPattern("abc"), wrapper.FormatEndsWithPattern("abc"));
+        Assert.Equal(inner.FormatBooleanLiteral(true), wrapper.FormatBooleanLiteral(true));
+        Assert.Equal(inner.GetDisableForeignKeyChecksSql(), wrapper.GetDisableForeignKeyChecksSql());
+        Assert.Equal(inner.GetEnableForeignKeyChecksSql(), wrapper.GetEnableForeignKeyChecksSql());
+        Assert.Equal(inner.GenerateCoalesce("a", "b"), wrapper.GenerateCoalesce("a", "b"));
+        Assert.Equal(inner.GenerateIsNull("a", "b"), wrapper.GenerateIsNull("a", "b"));
+        Assert.Equal(inner.GenerateNullIf("a", "b"), wrapper.GenerateNullIf("a", "b"));
+        Assert.Equal(inner.GenerateLength("name"), wrapper.GenerateLength("name"));
         Assert.Equal(inner.GenerateUpper("name"), wrapper.GenerateUpper("name"));
+        Assert.Equal(inner.GenerateLower("name"), wrapper.GenerateLower("name"));
+        Assert.Equal(inner.GenerateTrim("name"), wrapper.GenerateTrim("name"));
+        Assert.Equal(inner.GenerateSubstring("name", "1", "3"), wrapper.GenerateSubstring("name", "1", "3"));
+        Assert.Equal(inner.GenerateYear("dt"), wrapper.GenerateYear("dt"));
+        Assert.Equal(inner.GenerateMonth("dt"), wrapper.GenerateMonth("dt"));
+        Assert.Equal(inner.GenerateDay("dt"), wrapper.GenerateDay("dt"));
+        Assert.Equal(
+            inner.GenerateUpsertSql("orders", ["id", "name"], ["@id", "@name"], ["name"], ["@name"], ["id"], ["@id"]),
+            wrapper.GenerateUpsertSql("orders", ["id", "name"], ["@id", "@name"], ["name"], ["@name"], ["id"], ["@id"]));
         Assert.Equal(inner.GenerateRowNumber(), wrapper.GenerateRowNumber());
+        Assert.Equal(inner.GenerateRank(), wrapper.GenerateRank());
+        Assert.Equal(inner.GenerateDenseRank(), wrapper.GenerateDenseRank());
+        Assert.Equal(inner.GenerateNTile(4), wrapper.GenerateNTile(4));
+        Assert.Equal(
+            inner.GenerateOverClause(["region"], [("total", true)]),
+            wrapper.GenerateOverClause(["region"], [("total", true)]));
+        Assert.Equal(inner.GenerateWindowAggregate("SUM", "amount"), wrapper.GenerateWindowAggregate("SUM", "amount"));
     }
 
     public static IEnumerable<object[]> WrapperDelegationCases()
