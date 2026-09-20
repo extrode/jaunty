@@ -13,6 +13,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Data.Sqlite" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
+		<PackageReference Include="Npgsql" /><!-- live-Postgres target for ImportUsingDbBatchAsync coverage; Sqlite's DbConnection reports CanCreateBatch=false -->
 		<PackageReference Include="Microsoft.NET.Test.Sdk" />
 		<PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />

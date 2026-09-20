@@ -34,8 +34,8 @@ low-priority ~90-forwarder item are all fixed, as is `Extrode.Jaunty.SourceGener
 `Extrode.Jaunty.Extensions.Logging`/`Npgsql` were already fixed or corrected in the quick-wins batch
 above. Every non-class-4 OPEN item in this report is now closed.
 
-**Status update 2026-09-20 (class-4 live-engine pass): CLOSED except FlatFiles.DuckDB's remote
-extension path.** SqlServer, PostgreSQL and MySQL/MariaDB were brought up locally (native service +
+**Status update 2026-09-20 (class-4 live-engine pass): CLOSED, including both FlatFiles.DuckDB
+items.** SqlServer, PostgreSQL and MySQL/MariaDB were brought up locally (native service +
 `docker start torture-postgres torture-mysql torture-mariadb`, reseeded via
 `reset-test-databases.ps1`) and every suite re-run with `JAUNTY_REQUIRE_*` set so a skip would fail
 instead of passing silently — 5042/5042 (`Extrode.Jaunty.Tests`) and 50/50
@@ -43,9 +43,10 @@ instead of passing silently — 5042/5042 (`Extrode.Jaunty.Tests`) and 50/50
 production bug in the PostgreSQL client-side COPY path (a post-`Cancel()` `Dispose()` masking the
 real decode failure with `ObjectDisposedException` — see the "0% only because of environment"
 section below for the full writeup) and added the first live-connection test for
-`NpgsqlCopyImportWriter`. The only remaining open item in this entire report is
-`FlatFiles.DuckDB.ImportExecutor`'s remote-URI extension-loading branch, which needs network
-reachability to DuckDB's extension repository rather than a database engine.
+`NpgsqlCopyImportWriter`. `FlatFiles.DuckDB.ImportExecutor`'s two remaining items — the remote-URI
+extension-loading branch (needed network reachability to DuckDB's extension repository) and
+`ImportUsingDbBatchAsync` (needed a `CanCreateBatch`-capable target connection, which the SQLite
+fixture this project used isn't) — are both now fixed too; no open item remains in this report.
 
 **Fixed in the process**: `scripts/coverage.ps1` passed `--nologo` to `dotnet test`, which broke
 Microsoft.Testing.Platform's `--coverage` path outright — the run reported "Zero tests ran" (exit
@@ -277,8 +278,26 @@ DuckDB import/write-back internals. Two worth calling out:
 - **FIXED 2026-09-20.** `ExpressionTranslator`'s `NOT (...)` negation (`VisitExpression`, `!x.Flag`)
   had no predicate test at all — covered via
   `ExpressionTranslatorTests.Translate_NotOperator_GeneratesNegatedBoolColumnSql`.
-- `ImportExecutor.ImportUsingDbBatchAsync` (31 lines) needs a live SqlClient/Npgsql target — SQLite
-  reports `CanCreateBatch == false`, so this path can't be reached with the local fixture.
+- **FIXED 2026-09-20.** `ImportExecutor.ImportUsingDbBatchAsync` (31 lines) needed a live
+  SqlClient/Npgsql target — SQLite reports `CanCreateBatch == false` (confirmed live), so this
+  path was unreachable with the local fixture. Added `Npgsql` as a package reference to
+  `Extrode.Jaunty.FlatFiles.DuckDB.Tests` plus `ImportUsingDbBatchLiveTests.cs` against the
+  `torture-postgres` container: a guard test asserting `NpgsqlConnection.CanCreateBatch` (so a
+  future Npgsql downgrade that silently drops `DbBatch` support fails loudly instead of quietly
+  losing coverage again), a basic round-trip, and — per independent `review-deep` finding — a
+  `batchSize: 2`-against-5-rows progress-callback test that directly distinguishes this branch
+  from `ImportUsingSingleCommandAsync` by observable behavior (only `ImportUsingDbBatchAsync`
+  flushes and reuses the same `DbBatch` mid-stream, producing one more progress callback than the
+  single-command fallback would). That same review also flagged the shared-database `inventory`
+  table as a cross-run collision risk, fixed by switching to `CREATE TEMP TABLE` (session-scoped,
+  no cleanup needed), and a dead "not configured" skip branch (the helper's connection string is
+  never actually empty, unlike `TestConfiguration`'s siblings), removed. Verified: 4/4 on net8.0
+  and net10.0, full suite 919/919 with `JAUNTY_REQUIRE_POSTGRESQL=1` set (no silent skip).
+  **Known limitation, not fixed here**: CI provisions no Postgres service for this test project (nor
+  for `Extrode.Jaunty.Tests`' own Postgres-live tests added earlier this pass), so
+  `JAUNTY_REQUIRE_POSTGRESQL` is unset in CI and this closes the gap on dev boxes with
+  `torture-postgres` running, not in CI — consistent with, not a regression from, the rest of this
+  session's Postgres-live-test additions.
 
 ## Extrode.Jaunty.Scaffolding / Scaffolding.Cli
 
@@ -378,16 +397,15 @@ run here really means these were exercised end-to-end, not silently skipped:
   (a misattributed guard-comment, an unenforced "rather than hanging" claim, a latent
   Range-request fragility, and a missing network-availability skip-gate among the real ones); all
   fixed and re-verified (3/3 on net8.0/net10.0, full suite green).
-  `FlatFiles.DuckDB.ImportExecutor.ImportUsingDbBatchAsync` — **still open, and unrelated to the
-  above**: it needs a `CanCreateBatch`-capable target connection (Npgsql/MySqlConnector/SqlClient)
-  in `Extrode.Jaunty.FlatFiles.DuckDB.Tests`, which has no such package references or connection
-  config today. Bringing up live SqlServer/MySQL/Postgres containers didn't touch it because the
-  gap isn't the engines' availability, it's test-project wiring; flagged as a follow-on scope
-  decision, not pursued in this pass.
+  `FlatFiles.DuckDB.ImportExecutor.ImportUsingDbBatchAsync` — **FIXED**, unrelated to the above:
+  needed a `CanCreateBatch`-capable target connection, which `Extrode.Jaunty.FlatFiles.DuckDB.Tests`
+  had no package reference or connection config for. Added `Npgsql` plus
+  `ImportUsingDbBatchLiveTests.cs` against `torture-postgres`; verified 3/3 on net8.0/net10.0 and
+  green with `JAUNTY_REQUIRE_POSTGRESQL=1` set. See the `Extrode.Jaunty.FlatFiles.DuckDB` section
+  above for detail.
 
-The 2026-07-04 report's original caveat ("no live containers available") is resolved for the three
-engines this pass covered. `FlatFiles.DuckDB`'s remote-extension path remains the one genuinely
-open class-4 item in this report.
+The 2026-07-04 report's original caveat ("no live containers available") is resolved for all four
+engines this pass covered. No genuinely open class-4 item remains in this report.
 
 ## How this was produced
 
