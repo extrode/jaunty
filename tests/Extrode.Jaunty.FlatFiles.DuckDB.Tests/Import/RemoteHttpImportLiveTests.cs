@@ -23,7 +23,14 @@ namespace Extrode.Jaunty.FlatFiles.DuckDB.Tests.Import;
 /// </summary>
 public sealed class RemoteHttpImportLiveTests : IDisposable
 {
+    // DuckDB's httpfs client issues ranged GETs and rejects a 200 response whose Content-Length
+    // differs from the requested range - MiniHttpServer below always answers with the full body
+    // regardless of any Range header, which only agrees with a ranged request when the whole file
+    // fits in httpfs's first read. Keep this small; growing it past that threshold breaks both
+    // positive tests below with an unrelated "Content-Length mismatches requested range" error.
     private const string CsvBody = "id,name\n1,widget\n2,gadget\n3,gizmo\n";
+
+    private static readonly Lazy<bool> _canReachExtensionRepo = new(ProbeExtensionRepoReachable);
 
     private readonly MiniHttpServer _server = new(CsvBody);
 
@@ -31,6 +38,26 @@ public sealed class RemoteHttpImportLiveTests : IDisposable
     {
         _server.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    private static void SkipIfExtensionRepoUnreachable()
+    {
+        if (!_canReachExtensionRepo.Value)
+            Assert.Skip("extensions.duckdb.org is not reachable from this machine/runner.");
+    }
+
+    private static bool ProbeExtensionRepoReachable()
+    {
+        try
+        {
+            using var client = new TcpClient();
+            Task connectTask = client.ConnectAsync("extensions.duckdb.org", 443);
+            return connectTask.Wait(TimeSpan.FromSeconds(5)) && client.Connected;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public class RemoteCsvItem
@@ -42,6 +69,8 @@ public sealed class RemoteHttpImportLiveTests : IDisposable
     [Fact]
     public void FlatFileOpen_GivenAnHttpUrl_InstallsHttpfsAndReadsTheRemoteFile()
     {
+        SkipIfExtensionRepoUnreachable();
+
         using IFlatFile db = FlatFile.Open(_server.BaseUrl + "data.csv");
 
         List<RemoteCsvItem> rows = db.Query<RemoteCsvItem>("SELECT * FROM data ORDER BY id");
@@ -54,6 +83,8 @@ public sealed class RemoteHttpImportLiveTests : IDisposable
     [Fact]
     public async Task RegisterSourceAsync_GivenAnHttpUrl_InstallsHttpfsAndReadsTheRemoteFile()
     {
+        SkipIfExtensionRepoUnreachable();
+
         using var db = new DuckDb();
         var source = new CsvFileSource("remote_async", _server.BaseUrl + "data-async.csv", typeof(RemoteCsvItem));
 
@@ -65,14 +96,16 @@ public sealed class RemoteHttpImportLiveTests : IDisposable
         Assert.Equal("gizmo", rows[2].Name);
     }
 
-    [Fact]
+    [Fact(Timeout = 15_000)]
     public void FlatFileOpen_GivenAnUnreachableHttpUrl_ThrowsRatherThanHanging()
     {
-        // R27 batch 13's guard: a failed INSTALL/LOAD (or, here, a failed read after a successful
-        // install) must not leave the extension marked loaded, or a later registration on the same
-        // DuckDb instance would skip the install and die much later with DuckDB's opaque
-        // "extension not loaded" error instead of surfacing this one. httpfs itself installs fine;
-        // it is the read against a closed port that fails.
+        // Proves DuckDB surfaces a connection-refused read failure as a prompt exception rather
+        // than hanging - not the R27 batch 13 "don't leave the extension marked loaded" guard.
+        // That guard only fires when INSTALL/LOAD itself throws; here httpfs installs and loads
+        // fine (this machine can already reach extensions.duckdb.org, verified by the two tests
+        // above), and the failure is RegisterSource's later read against the closed port. The
+        // [Fact(Timeout = ...)] is what actually backs "RatherThanHanging" - without it, a real
+        // hang would hang the test run instead of failing it.
         var probe = new TcpListener(IPAddress.Loopback, 0);
         probe.Start();
         int deadPort = ((IPEndPoint)probe.LocalEndpoint).Port;
