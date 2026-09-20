@@ -10,9 +10,10 @@ classified into one of six reasons — see "How this was produced" at the end.
 **Status update 2026-09-20 (post-review):** an independent `review-deep` pass verified this report
 before the quick-wins batch was implemented. It confirmed bug #1 as real (now fixed) and bug #2 as
 a false positive (no fix needed), and corrected two sub-claims — the HAVING `=` operator and the
-`IsWithoutRowId` comment-handling item, both marked inline below. 12 of the quick-win items below
-are now fixed and merged to `dev`; see the "FIXED"/"OPEN" annotations throughout. The one deferred
-item — bulk async `RollbackAsync` — needs a new mid-batch-failure fixture and wasn't a quick win.
+`IsWithoutRowId` comment-handling item, both marked inline below. All 13 items below — the full
+quick-wins batch plus the deferred bulk async `RollbackAsync` fixture, built afterward — are now
+fixed and merged to `dev`; see the "FIXED" annotations throughout. `ExecuteReaderDirect` was
+deleted as confirmed dead code rather than tested.
 
 **Fixed in the process**: `scripts/coverage.ps1` passed `--nologo` to `dotnet test`, which broke
 Microsoft.Testing.Platform's `--coverage` path outright — the run reported "Zero tests ran" (exit
@@ -87,11 +88,12 @@ artifact).
 - **FIXED 2026-09-20.** `ExecuteNonQueryCoreAsync`'s entire async-interceptor path
   (`Internals/Write/ExecuteNonQueryCore.cs:165-217`, complexity 38, 59 lines) — covered via
   `WriteObservabilityTests.ExecuteAsync_IsIntercepted`.
-- **OPEN — not a quick win, deferred.** `BulkDeleteAsync`/`BulkUpdateAsync`'s own-transaction
-  `RollbackAsync` after a mid-batch failure (`BulkDeleteAsync.cs:400`, `BulkUpdateAsync.cs:393`) —
-  tested in sync (`BulkDelete.cs:372`) but never async; the one async failure test throws before
-  `BeginTransactionAsync`, so the guarded call is skipped. Needs a new fixture that fails mid-batch
-  *after* the transaction opens.
+- **FIXED 2026-09-20.** `BulkDeleteAsync`/`BulkUpdateAsync`'s own-transaction `RollbackAsync` after
+  a mid-batch failure (`BulkDeleteAsync.cs:400`, `BulkUpdateAsync.cs:393`) — the only prior failure
+  test threw before `BeginTransactionAsync`, so the guarded call never ran. Covered via
+  `BulkAsyncMidBatchRollbackTests`: a two-row batch where the second row fails (FK violation for
+  delete, unique-index violation for update) after the transaction already opened, confirming the
+  first row's write is rolled back.
 - **FIXED 2026-09-20.** `GetAllStream<T>(conn, options)` / `GetAllStreamAsync<T>(conn, options, ct)`
   — covered via `GetAllStreamAsyncTests.GetAllStreamAsync_WithCommandOptions_YieldsAllRows` and the
   sync twin in `GetAllTests`.
