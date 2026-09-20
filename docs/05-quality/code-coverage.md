@@ -51,7 +51,19 @@ needs changing to be included.
 
 ---
 
-## The 2026-08-27 baseline
+## The 2026-09-20 baseline
+
+Superseded the 2026-08-27 baseline below; current numbers, per-file ranking, and a full
+method-level "why is this uncovered" triage (genuine gap vs. dead platform path vs. defensive code
+vs. live-DB-only vs. tooling artifact) live in
+[`reports/coverage-gaps-2026-09-20.md`](reports/coverage-gaps-2026-09-20.md). Headline: **88.9%
+line coverage (22,883/25,750 lines), 3,987 methods, 806 with at least one uncovered line.** That
+report also fixed a real bug
+in `scripts/coverage.ps1`: a `--nologo` flag silently broke `dotnet test --coverage` (reported
+"Zero tests ran" instead of failing loudly), so any coverage run before this date should be treated
+as suspect until re-verified.
+
+## The 2026-08-27 baseline (historical)
 
 Measured across 8 suites and 8,471 tests, 0 failures. Reports were union-merged per `(file, line)`,
 with nested compiler-generated classes folded into their outer class and partial classes keyed by
