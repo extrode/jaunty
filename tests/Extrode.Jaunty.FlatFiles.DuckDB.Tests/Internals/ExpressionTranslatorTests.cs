@@ -41,6 +41,20 @@ public class ExpressionTranslatorTests
     }
 
     [Fact]
+    public void Translate_NotOperator_GeneratesNegatedBoolColumnSql()
+    {
+        // Arrange
+        Expression<Func<InventoryItem, bool>> predicate = x => !x.InStock;
+
+        // Act
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("NOT (\"InStock\" = true)", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
     public void Translate_GreaterThanOperator_GeneratesCorrectSql()
     {
         // Arrange
