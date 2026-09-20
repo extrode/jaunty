@@ -38,6 +38,13 @@ public interface ICopyImportWriter : IDisposable
     /// unwinds through <c>using</c> without a cancel, the rows written so far are committed while
     /// the caller sees an exception saying the import failed. That divergence is silent: no error
     /// names it, and the table simply holds part of the file.
+    /// <para>
+    /// Callers dispose the writer after a failed <see cref="Cancel"/>/<see cref="CancelAsync"/>
+    /// too, in case cancelling itself failed to abort the copy. An implementation must therefore
+    /// mark itself aborted <em>before</em> attempting anything that can throw, so that a
+    /// <see cref="Cancel"/> that fails partway still leaves <see cref="IDisposable.Dispose"/>
+    /// unable to complete the copy - never the other way around.
+    /// </para>
     /// </remarks>
     void Cancel();
 
