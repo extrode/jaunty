@@ -36,7 +36,7 @@ dotnet publish samples/NativeAOT-Basic -c Release -f net10.0 -r linux-x64
 ```
 
 Substitute your own RID (`win-x64`, `osx-arm64`, …). A clean publish with no `IL2xxx` or
-`IL3xxx` warnings is the result being demonstrated. `scripts/Verify-NativeAOT.ps1` is a
+`IL3xxx` warnings is the result being demonstrated. `scripts/verify-nativeaot.ps1` is a
 faster text-level gate over the whole tree, but it is a gate, not a proof — see the note at
 the top of that script.
 

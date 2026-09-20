@@ -706,7 +706,7 @@ ADO.NET drivers and BCL serialization assemblies that the core does not referenc
 2026-08-29 by publishing the CLI on `net8.0` (36.98 MB) and `net10.0` (34.63 MB) for win-x64.
 
 Every reflection site in the shipped assemblies carries a reviewed `AOT-SAFE` justification, checked
-by `scripts/Verify-NativeAOT.ps1` and listed in
+by `scripts/verify-nativeaot.ps1` and listed in
 [reflection-and-trimming.md](docs/02-architecture/reflection-and-trimming.md). Two projects are
 excluded because AOT does not apply to them: `Extrode.Jaunty.Extensions.Reflection`, whose purpose is
 reflection and which you reference to opt out of the guarantee, and `Extrode.Jaunty.SourceGenerator`, which
