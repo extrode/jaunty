@@ -704,46 +704,53 @@ public static class CsvImportExtensions
                 // RequireFileOnThisMachine.
                 RequireFileOnThisMachine(filePath);
 
-                using (copy)
-                {
-                    TextWriter textWriter = copy.Writer;
+                TextWriter textWriter = copy.Writer;
 
-                    try
+                try
+                {
+                    // AUD-R34-010: this was a ReadLine/WriteLine loop, which re-terminates every
+                    // line with the writer's NewLine - Environment.NewLine by default. A newline
+                    // inside a quoted field (RFC 4180, and handled deliberately by ReadCsvRecord
+                    // below) was therefore rewritten to the host's newline on the way to the
+                    // server: an embedded LF arrived as CRLF on Windows, an embedded CRLF arrived
+                    // as LF on Linux. Same class of defect as AUD-R26's ROWTERMINATOR finding.
+                    // Copying characters through verbatim leaves the file's own bytes intact and
+                    // lets COPY apply its own rules.
+                    using var fileReader = new StreamReader(filePath, options.Encoding);
+                    char[] buffer = new char[CopyBufferChars];
+                    int read;
+                    while ((read = fileReader.Read(buffer, 0, buffer.Length)) > 0)
                     {
-                        // AUD-R34-010: this was a ReadLine/WriteLine loop, which re-terminates every
-                        // line with the writer's NewLine - Environment.NewLine by default. A newline
-                        // inside a quoted field (RFC 4180, and handled deliberately by ReadCsvRecord
-                        // below) was therefore rewritten to the host's newline on the way to the
-                        // server: an embedded LF arrived as CRLF on Windows, an embedded CRLF arrived
-                        // as LF on Linux. Same class of defect as AUD-R26's ROWTERMINATOR finding.
-                        // Copying characters through verbatim leaves the file's own bytes intact and
-                        // lets COPY apply its own rules.
-                        using var fileReader = new StreamReader(filePath, options.Encoding);
-                        char[] buffer = new char[CopyBufferChars];
-                        int read;
-                        while ((read = fileReader.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            textWriter.Write(buffer, 0, read);
-                        }
+                        textWriter.Write(buffer, 0, read);
                     }
-                    catch
-                    {
-                        // AUD-R34-011: the copy writer *completes* the COPY when disposed and
-                        // aborts it only on an explicit Cancel(). Without this, a failure part-way
-                        // through the file - a decoding error under a strict Encoding, an I/O error -
-                        // unwound through `using`, committed the rows written so far, and left the
-                        // caller with an exception and a silently partial import.
-                        //
-                        // This used to reach Cancel by reflection, so a trimmed build found no
-                        // method, cancelled nothing and committed the partial import anyway - the
-                        // defect this catch block exists to prevent, reintroduced by the mechanism
-                        // meant to fix it. ICopyImportWriter.Cancel is a compile-time call.
-                        //
-                        // A cancel that itself fails must not replace the original failure: the
-                        // caller needs to know why the import stopped, not why the abort did.
-                        try { copy.Cancel(); } catch { }
-                        throw;
-                    }
+
+                    copy.Dispose();
+                }
+                catch
+                {
+                    // AUD-R34-011: the copy writer *completes* the COPY when disposed and
+                    // aborts it only on an explicit Cancel(). Without this, a failure part-way
+                    // through the file - a decoding error under a strict Encoding, an I/O error -
+                    // unwound through `using`, committed the rows written so far, and left the
+                    // caller with an exception and a silently partial import.
+                    //
+                    // This used to reach Cancel by reflection, so a trimmed build found no
+                    // method, cancelled nothing and committed the partial import anyway - the
+                    // defect this catch block exists to prevent, reintroduced by the mechanism
+                    // meant to fix it. ICopyImportWriter.Cancel is a compile-time call.
+                    //
+                    // A cancel that itself fails must not replace the original failure: the
+                    // caller needs to know why the import stopped, not why the abort did. This
+                    // used to be `using (copy)` around the whole block, which called Dispose() a
+                    // second time as its implicit finally after a successful Cancel() had already
+                    // ended the underlying stream - Npgsql's writer then throws
+                    // ObjectDisposedException out of that finally, which replaces the real decode
+                    // failure being propagated rather than joining it. Disposing explicitly here,
+                    // wrapped in its own try/catch, keeps the original exception the one the
+                    // caller sees.
+                    try { copy.Cancel(); } catch { }
+                    try { copy.Dispose(); } catch { }
+                    throw;
                 }
 
                 return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
@@ -797,30 +804,33 @@ public static class CsvImportExtensions
                 // RequireFileOnThisMachine.
                 RequireFileOnThisMachine(filePath);
 
-                using (copy)
-                {
-                    TextWriter textWriter = copy.Writer;
+                TextWriter textWriter = copy.Writer;
 
-                    try
+                try
+                {
+                    // AUD-R34-010: see the sync sibling - a ReadLine/WriteLine loop rewrote every
+                    // newline, including the ones inside quoted fields, to the host's newline.
+                    using var fileReader = new StreamReader(filePath, options.Encoding);
+                    char[] buffer = new char[CopyBufferChars];
+                    int read;
+                    while ((read = await fileReader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
                     {
-                        // AUD-R34-010: see the sync sibling - a ReadLine/WriteLine loop rewrote every
-                        // newline, including the ones inside quoted fields, to the host's newline.
-                        using var fileReader = new StreamReader(filePath, options.Encoding);
-                        char[] buffer = new char[CopyBufferChars];
-                        int read;
-                        while ((read = await fileReader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
-                        {
-                            await textWriter.WriteAsync(buffer, 0, read).ConfigureAwait(false);
-                        }
+                        await textWriter.WriteAsync(buffer, 0, read).ConfigureAwait(false);
                     }
-                    catch
-                    {
-                        // AUD-R34-011: see the sync sibling - disposing the copy writer completes the
-                        // COPY, so a mid-file failure has to cancel it explicitly or the rows written
-                        // so far are committed behind the caller's back.
-                        try { await copy.CancelAsync().ConfigureAwait(false); } catch { }
-                        throw;
-                    }
+
+                    copy.Dispose();
+                }
+                catch
+                {
+                    // AUD-R34-011: see the sync sibling - disposing the copy writer completes the
+                    // COPY, so a mid-file failure has to cancel it explicitly or the rows written
+                    // so far are committed behind the caller's back. Disposing explicitly here
+                    // (rather than via an enclosing `using (copy)`) keeps a post-Cancel
+                    // ObjectDisposedException from Dispose() from replacing the real failure that
+                    // triggered the cancel - see the sync sibling for the full explanation.
+                    try { await copy.CancelAsync().ConfigureAwait(false); } catch { }
+                    try { copy.Dispose(); } catch { }
+                    throw;
                 }
 
                 return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
