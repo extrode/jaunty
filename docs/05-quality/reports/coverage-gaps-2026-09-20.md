@@ -179,10 +179,19 @@ was removed or renamed — don't carry the item forward).
 
 ## Extrode.Jaunty.Extensions.Reflection — highest-value genuine gaps
 
-- `MetadataCache.CreateSetter`'s type-handler-on-`Nullable<T>` branch and its `handler.Parse`-throws
-  branch on the *read* path — the write-path equivalent is tested, the read path isn't.
-- `JauntyReflectionExtensions`'s typed update/delete binders' wrong-entity-type guard — the insert
-  equivalent is tested, update/delete aren't.
+- **FIXED 2026-09-20.** `MetadataCache.CreateSetter`'s type-handler-on-`Nullable<T>` branch and its
+  `handler.Parse`-throws branch on the *read* path had no test — the write-path equivalent
+  (`ThrowingTypeHandlerContractTests`) was covered, the read path wasn't. Covered directly via
+  `MetadataCache<T>.GetSetters`/`PropertySetter<T>.Set` against a hand-rolled `IDataReader`, per the
+  established pattern in `ReflectionSetterCachingTests`, in
+  `TypeHandlerReadPathReflectionTests.NullablePropertyWithARegisteredHandler_ConvertsTheParsedValueToTheUnderlyingType`
+  and `...NullablePropertyWhoseHandlerThrows_WrapsTheFailureInAnInvalidOperationException`.
+- **FIXED 2026-09-20 — corrected.** `JauntyReflectionExtensions`'s typed insert/update/delete
+  binders' wrong-entity-type guard (`if (entityObj is not T entity) throw new
+  InvalidOperationException(...)`, identical in all three) was claimed to have its insert equivalent
+  already tested — a grep for the guard's exact message text across `tests/` found zero matches for
+  any of the three binder kinds. Added `TypedBinderWrongEntityTypeTests`, covering insert, update,
+  and delete for both a wrong-type object and `null`.
 - ~90 pure one-line forwarder methods across the four `*DialectWithBulkCopy` wrapper classes
   (`EscapeStringLiteral`, `GenerateCoalesce`, window functions, etc.) — lowest priority in the
   whole inventory; one parameterized "every `ISqlDialect` member forwards to inner" test per
