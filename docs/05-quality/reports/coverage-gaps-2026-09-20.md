@@ -223,14 +223,29 @@ coverage collector (the generator itself only executes inside `csc`). Only tests
 `ParameterRootingEmissionTests`) actually exercise the generator in-process and count as real
 coverage of it.
 
-**FIXED 2026-09-20.** `HandWrittenMapper.Equals`/`GetHashCode` and `ParameterRoot`/`ParameterSite`'s
-`Equals`/`GetHashCode` were untested by the incremental-cache tests — `GeneratorCachingTests` never
-included a hand-written mapper or a parameter call site in its second-run comparison. Added four
-tests: `EditingAnUnrelatedFile_DoesNotRerunTheHandWrittenMapperStep` and
-`AddingAConventionBinderToTheHandWrittenMapper_DoesRerunTheStep` (positive/negative pair covering
-`HandWrittenMapper`'s comparer), and the equivalent pair for `ParameterRoot`/`ParameterSite`
+**FIXED 2026-09-20 — corrected.** `HandWrittenMapper.Equals` and `ParameterRoot`/`ParameterSite`'s
+`Equals` were untested by the incremental-cache tests — `GeneratorCachingTests` never included a
+hand-written mapper or a parameter call site in its second-run comparison. Added four tests:
+`EditingAnUnrelatedFile_DoesNotRerunTheHandWrittenMapperStep` and
+`RenamingTheConventionBinder_DoesRerunTheStep` (positive/negative pair covering `HandWrittenMapper`'s
+comparer), and the equivalent pair for `ParameterRoot`/`ParameterSite`
 (`EditingAnUnrelatedFile_DoesNotRerunTheParameterRootingStep` /
 `ChangingTheRootedParametersShape_DoesRerunTheStep`). No production bug found.
+**Correction (independent `review-deep` verification, 2026-09-20):** "Equals/GetHashCode" overstated
+the fix — the Roslyn incremental driver's state tables compare cached values with `comparer.Equals`
+only, never `GetHashCode`, so `HandWrittenMapper.GetHashCode`/`ParameterRoot.GetHashCode`/
+`ParameterSite.GetHashCode` remain genuinely untested and should still show red in a future coverage
+run; only the `Equals` half is closed. The review also caught that the first negative-control test
+(inserting a new `BindInsert` method) grew the class's syntax span, so it could pass even if `Equals`
+dropped `Supplies`/`Members` and kept only `Location` — fixed by renaming an already-present binder
+to a same-length name (`BindInsert` → `BindUpdate`) instead, which isolates `Members`/`Supplies`
+from `Location`. Both positive tests were also missing a first-run assertion that the pipeline
+produced a non-null value at all (a transform that always returns `null` would pass the "everything
+stayed cached" assertion trivially); both now assert the first run's diagnostic/generated text
+before checking the second run is cached. Separately noted, not fixed: `ParameterSite.Location` is
+still a raw Roslyn `Location` (unlike `HandWrittenMapper.Location`, which AUD-R35-230 already moved
+to the tree-independent `LocationInfo`) — the same syntax-tree-rooting retention AUD-R35-230 removed
+elsewhere, left in place here.
 
 ## Extrode.Jaunty.FlatFiles / FlatFiles.DuckDB
 
