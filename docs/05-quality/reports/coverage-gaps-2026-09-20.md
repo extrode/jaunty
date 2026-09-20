@@ -23,8 +23,18 @@ real production bug (`Upsert`/`UpsertAsync` silently dropping `CommandType`, see
 the review pass, an initially incomplete async closed-connection test set — both are now fixed.
 Fluent's flagged-uncertain `JoinedQueryBuilderSelect*` always-throws question is resolved (the
 success path is real and reachable; every prior test just happened to hit a same-name-column
-collision), and its non-`DbConnection`/closed-connection pattern gap is covered. Remaining OPEN
-items are in `Extrode.Jaunty.Extensions.Reflection` and `Extrode.Jaunty.SourceGenerator`.
+collision), and its non-`DbConnection`/closed-connection pattern gap is covered.
+
+**Status update 2026-09-20 (close-out complete):** `Extrode.Jaunty.Extensions.Reflection`'s two
+remaining genuine gaps (the read-path type-handler branch, the wrong-entity-type guard) and its
+low-priority ~90-forwarder item are all fixed, as is `Extrode.Jaunty.SourceGenerator`'s
+`HandWrittenMapper`/`ParameterRoot`/`ParameterSite` `Equals` gap — each verified by an independent
+`review-deep` pass, with every correction that pass surfaced folded back into this report inline.
+`Extrode.Jaunty.FlatFiles`/`FlatFiles.DuckDB`, `Extrode.Jaunty.Scaffolding`/`Scaffolding.Cli`, and
+`Extrode.Jaunty.Extensions.Logging`/`Npgsql` were already fixed or corrected in the quick-wins batch
+above. Every non-class-4 OPEN item in this report is now closed; what remains under "0% only because
+of environment" needs live SqlServer/MySQL/Postgres containers to verify, per that section's own
+caveat, not further test-writing against the current local fixtures.
 
 **Fixed in the process**: `scripts/coverage.ps1` passed `--nologo` to `dotnet test`, which broke
 Microsoft.Testing.Platform's `--coverage` path outright — the run reported "Zero tests ran" (exit
