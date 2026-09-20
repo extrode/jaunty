@@ -190,6 +190,9 @@ public static partial class Jaunty
 
             command.CommandText = cached.UpsertSql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
