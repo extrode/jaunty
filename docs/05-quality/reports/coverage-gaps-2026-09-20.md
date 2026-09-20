@@ -365,10 +365,25 @@ run here really means these were exercised end-to-end, not silently skipped:
   the same 5042/5042 zero-skip run.
 - `CsvImport`'s live MySQL/SqlServer/Postgres import paths, and `ExecuteStoredProcedure*`'s
   output-parameter paths (SQLite has no stored procedures) — **verified**, same run.
-- `FlatFiles.DuckDB.ImportExecutor.ImportUsingDbBatchAsync` and `EnsureExtensionsLoadedAsync`'s
-  remote-URI branch — **still open.** Out of scope for this pass: needs network reachability to
-  DuckDB's extension repository, not a SqlServer/MySQL/Postgres engine, so bringing up the three
-  containers above didn't touch it. No test for it exists yet.
+- `EnsureExtensionsLoaded(Async)`'s remote-URI branch — **FIXED.** This machine reaches
+  `extensions.duckdb.org` directly (confirmed via `Invoke-WebRequest`), so
+  `RemoteHttpImportLiveTests.cs` was added: a local HTTP server (a raw `TcpListener`, not
+  `System.Net.HttpListener` — the latter's `"localhost"` prefix and DuckDB's native httpfs client
+  resolve loopback differently in this environment and the connection never arrived) serves a CSV
+  over `http://127.0.0.1:.../data.csv`, exercising `FlatFile.IsRemoteUri` /
+  `GetDuckDbExtensionForScheme` / `INSTALL`+`LOAD httpfs` / the R27 batch 13 failed-install guard
+  the same way a real `s3://` or `https://` source would, for both the sync (`FlatFile.Open`) and
+  async (`RegisterSourceAsync`) paths, plus an unreachable-host case proving DuckDB surfaces a
+  read failure promptly rather than hanging. Independent `review-deep` verification found 8 issues
+  (a misattributed guard-comment, an unenforced "rather than hanging" claim, a latent
+  Range-request fragility, and a missing network-availability skip-gate among the real ones); all
+  fixed and re-verified (3/3 on net8.0/net10.0, full suite green).
+  `FlatFiles.DuckDB.ImportExecutor.ImportUsingDbBatchAsync` — **still open, and unrelated to the
+  above**: it needs a `CanCreateBatch`-capable target connection (Npgsql/MySqlConnector/SqlClient)
+  in `Extrode.Jaunty.FlatFiles.DuckDB.Tests`, which has no such package references or connection
+  config today. Bringing up live SqlServer/MySQL/Postgres containers didn't touch it because the
+  gap isn't the engines' availability, it's test-project wiring; flagged as a follow-on scope
+  decision, not pursued in this pass.
 
 The 2026-07-04 report's original caveat ("no live containers available") is resolved for the three
 engines this pass covered. `FlatFiles.DuckDB`'s remote-extension path remains the one genuinely
