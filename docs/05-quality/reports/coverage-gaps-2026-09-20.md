@@ -32,9 +32,20 @@ low-priority ~90-forwarder item are all fixed, as is `Extrode.Jaunty.SourceGener
 `review-deep` pass, with every correction that pass surfaced folded back into this report inline.
 `Extrode.Jaunty.FlatFiles`/`FlatFiles.DuckDB`, `Extrode.Jaunty.Scaffolding`/`Scaffolding.Cli`, and
 `Extrode.Jaunty.Extensions.Logging`/`Npgsql` were already fixed or corrected in the quick-wins batch
-above. Every non-class-4 OPEN item in this report is now closed; what remains under "0% only because
-of environment" needs live SqlServer/MySQL/Postgres containers to verify, per that section's own
-caveat, not further test-writing against the current local fixtures.
+above. Every non-class-4 OPEN item in this report is now closed.
+
+**Status update 2026-09-20 (class-4 live-engine pass): CLOSED except FlatFiles.DuckDB's remote
+extension path.** SqlServer, PostgreSQL and MySQL/MariaDB were brought up locally (native service +
+`docker start torture-postgres torture-mysql torture-mariadb`, reseeded via
+`reset-test-databases.ps1`) and every suite re-run with `JAUNTY_REQUIRE_*` set so a skip would fail
+instead of passing silently — 5042/5042 (`Extrode.Jaunty.Tests`) and 50/50
+(`Extrode.Jaunty.Scaffolding.Tests`), zero skips, all three TFMs. This surfaced and fixed one real
+production bug in the PostgreSQL client-side COPY path (a post-`Cancel()` `Dispose()` masking the
+real decode failure with `ObjectDisposedException` — see the "0% only because of environment"
+section below for the full writeup) and added the first live-connection test for
+`NpgsqlCopyImportWriter`. The only remaining open item in this entire report is
+`FlatFiles.DuckDB.ImportExecutor`'s remote-URI extension-loading branch, which needs network
+reachability to DuckDB's extension repository rather than a database engine.
 
 **Fixed in the process**: `scripts/coverage.ps1` passed `--nologo` to `dotnet test`, which broke
 Microsoft.Testing.Platform's `--coverage` path outright — the run reported "Zero tests ran" (exit
@@ -296,22 +307,60 @@ report's Postgres-BulkCopy category.
 
 ## 0% only because of environment (class 4 — verify with containers before writing tests)
 
-Same category the 2026-07-04 report warned about, still present:
+**Status update 2026-09-20 (live-engine verification pass): CLOSED for SqlServer/MySQL/Postgres.**
+The torture-test containers (`torture-postgres`, `torture-mysql`, `torture-mariadb`) and the
+local native SqlServer instance were brought up and reseeded via
+`scripts/reset-test-databases.ps1 --execute -SkipLocal`, then every suite was re-run with
+`JAUNTY_REQUIRE_SQLSERVER=1 JAUNTY_REQUIRE_POSTGRESQL=1 JAUNTY_REQUIRE_MYSQL=1` (a stopped/absent
+engine fails loudly instead of skipping — see `DialectReachability`/`RequiredEngine`), so a green
+run here really means these were exercised end-to-end, not silently skipped:
 - `Extrode.Jaunty.Extensions.Reflection.BulkCopy.{PostgreSql,SqlServer}BulkCopyProvider`'s
-  `CopyToServer(Async)` bodies.
-- `Extrode.Jaunty.Scaffolding.Providers.{SqlServer,PostgreSql,MySql}SchemaReader` (all methods).
-- `Extrode.Jaunty.Extensions.Npgsql.NpgsqlCopyImportWriter`.
+  `CopyToServer(Async)` bodies — **verified**, `Extrode.Jaunty.Tests` 5042/5042 with 0 skips
+  (net8.0/net10.0/net472).
+- `Extrode.Jaunty.Scaffolding.Providers.{SqlServer,PostgreSql,MySql}SchemaReader` (all methods) —
+  **verified**, `Extrode.Jaunty.Scaffolding.Tests` 50/50 with 0 skips.
+- `Extrode.Jaunty.Extensions.Npgsql.NpgsqlCopyImportWriter` — **FIXED, and a real bug found.** No
+  test had ever opened a real `NpgsqlConnection` against this class before (the existing
+  `CsvImportPostgreSqlStdinTests` fakes the factory with a recording writer that never reproduces
+  Npgsql's real `Dispose`-after-`Cancel` behavior). Added
+  `NpgsqlCopyImportWriterLiveTests.cs` against the live container, which surfaced a genuine
+  production defect: `ImportPostgreSql(Async)` wrapped the write loop in `using (copy)`; on a
+  mid-file failure it called `copy.Cancel()` (which ends the underlying Npgsql stream), then the
+  `using` block's implicit `finally` called `copy.Dispose()` again, which Npgsql throws
+  `ObjectDisposedException` for — and an exception thrown from a `finally` while another
+  propagates *replaces* it, so callers saw "The COPY operation has already ended" instead of the
+  decode error that actually caused the import to fail. Fixed in `CsvImport.cs`'s
+  `ImportPostgreSql`/`ImportPostgreSqlAsync` by disposing explicitly inside the try/catch (swallowed
+  on the cancel path) instead of via an enclosing `using`. Reproduced and re-verified fixed against
+  the live container on net8.0/net10.0/net472.
+  **Correction (independent `review-deep` verification, 2026-09-20):** the root cause and fix are
+  correct, but the pass found one real pre-existing leak the fix should also close and two test
+  weaknesses, all now fixed: (1) `RequireFileOnThisMachine(filePath)` ran *before* the `try` around
+  the write loop, so a missing file left a caller-owned, already-open connection stuck in Npgsql's
+  CopyIn mode with nothing to cancel or dispose it — moved inside the `try` (both sync and async) so
+  it is cancelled/disposed like any other mid-copy failure; (2) the original test's file was small
+  enough to fail decoding on the very first buffered read, so despite its name no bytes had actually
+  reached the live COPY stream before the failure — replaced with a fixture that spans multiple
+  4096-char read buffers, so earlier rows really are written before the invalid byte sequence hits;
+  (3) the assertion only checked `IsNotType<ObjectDisposedException>`, which would also pass for an
+  unrelated masking exception — tightened to `IsType<DecoderFallbackException>` (confirmed as the
+  real exception type by running the test) plus a `Count(...) == 0` check that the connection was
+  left clean. An async-sibling live test was also added, since only the sync path had one. A
+  one-sentence addition to `ICopyImportWriter.Cancel`'s remarks now documents the implicit
+  ordering contract (mark aborted before anything that can throw) that made the Npgsql fix safe.
 - `Extrode.Jaunty`'s in-transaction FK-toggle branches in Bulk{Insert,Delete,Update}(Async) —
-  Postgres/MySQL only, SQLite and SqlServer don't take that branch shape.
+  Postgres/MySQL only, SQLite and SqlServer don't take that branch shape — **verified**, part of
+  the same 5042/5042 zero-skip run.
 - `CsvImport`'s live MySQL/SqlServer/Postgres import paths, and `ExecuteStoredProcedure*`'s
-  output-parameter paths (SQLite has no stored procedures).
+  output-parameter paths (SQLite has no stored procedures) — **verified**, same run.
 - `FlatFiles.DuckDB.ImportExecutor.ImportUsingDbBatchAsync` and `EnsureExtensionsLoadedAsync`'s
-  remote-URI branch (needs network + extension repo).
+  remote-URI branch — **still open.** Out of scope for this pass: needs network reachability to
+  DuckDB's extension repository, not a SqlServer/MySQL/Postgres engine, so bringing up the three
+  containers above didn't touch it. No test for it exists yet.
 
-This run had no live SqlServer/MySQL/Postgres containers up locally — same caveat as the
-2026-07-04 report. A future run with containers (as CI's `full-suite` job has, via the `mssql`
-service container) would separate any remaining real gaps from this category definitively, same
-recommendation as before.
+The 2026-07-04 report's original caveat ("no live containers available") is resolved for the three
+engines this pass covered. `FlatFiles.DuckDB`'s remote-extension path remains the one genuinely
+open class-4 item in this report.
 
 ## How this was produced
 
