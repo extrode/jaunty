@@ -196,15 +196,30 @@ public sealed class SQLiteSchemaReaderEdgeCaseTests : IDisposable
         => Assert.Equal(expected, SQLiteSchemaReader.IsWithoutRowId(createSql));
 
     /// <summary>
-    /// An escaped quote inside an identifier must not end the quoted run - if it did, the parser
-    /// would fall out of the string mid-body and start counting parentheses that belong to a
-    /// column name.
+    /// An unescaped, different quote character inside a quoted identifier is just ordinary text -
+    /// no escaping question arises since it isn't the delimiter.
     /// </summary>
     [Fact]
-    public void IsWithoutRowId_HandlesDoubledQuotesInsideIdentifiers()
+    public void IsWithoutRowId_ToleratesADifferentQuoteCharacterInsideAnIdentifier()
     {
         Assert.False(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT, \"order''s (notes)\" TEXT)"));
         Assert.True(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT, \"order''s (notes)\" TEXT) WITHOUT ROWID"));
+    }
+
+    /// <summary>
+    /// coverage-gaps-2026-09-20: the test above doubles a single quote inside a double-quoted
+    /// identifier, which SQLite doesn't treat as an escape at all (the delimiter is what must be
+    /// doubled) -- it never actually exercised the <c>createSql[i+1] == quote</c> escape branch.
+    /// This doubles the identifier's own delimiter (SQLite's real escaping rule for a literal
+    /// <c>"</c> inside a <c>"</c>-quoted name). If the escape check were wrong, the quoted run
+    /// would end at the first embedded <c>"</c>, and the stray <c>s (notes)"</c> that follows
+    /// would mis-count a paren and desynchronize depth tracking for the rest of the statement.
+    /// </summary>
+    [Fact]
+    public void IsWithoutRowId_HandlesADoubledDelimiterInsideAnIdentifier()
+    {
+        Assert.False(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT, \"order\"\"s (notes)\" TEXT)"));
+        Assert.True(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT, \"order\"\"s (notes)\" TEXT) WITHOUT ROWID"));
     }
 
     private async Task<DatabaseSchema> ReadAsync(SchemaReaderOptions options)

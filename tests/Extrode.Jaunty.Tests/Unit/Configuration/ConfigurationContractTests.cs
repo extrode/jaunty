@@ -3,6 +3,8 @@ using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Interceptors;
 using Extrode.Jaunty.Interfaces;
 
+using Microsoft.Extensions.Logging;
+
 using Xunit;
 
 namespace Extrode.Jaunty.Tests.Unit.Configuration;
@@ -212,6 +214,45 @@ public class ConfigurationContractTests : IDisposable
 
         configuration.MaskedValueFormat = "[redacted]";
         Assert.Equal("[redacted]", configuration.MaskedValueFormat);
+    }
+
+    // ------------------------------------------------------------------
+    // coverage-gaps-2026-09-20: LoggingConfiguration's fluent builder methods had zero test
+    // references anywhere in either test project.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void WithSensitiveParameters_AddsNames_AndReturnsThis()
+    {
+        var configuration = new LoggingConfiguration();
+
+        LoggingConfiguration result = configuration.WithSensitiveParameters("Ssn", "Pin");
+
+        Assert.Same(configuration, result);
+        Assert.True(configuration.IsSensitiveParameter("EmployeeSsnValue"));
+        Assert.True(configuration.IsSensitiveParameter("Pin"));
+    }
+
+    [Fact]
+    public void WithSlowQueryThreshold_SetsTheThreshold_AndReturnsThis()
+    {
+        var configuration = new LoggingConfiguration();
+
+        LoggingConfiguration result = configuration.WithSlowQueryThreshold(TimeSpan.FromSeconds(5));
+
+        Assert.Same(configuration, result);
+        Assert.Equal(TimeSpan.FromSeconds(5), configuration.SlowQueryThreshold);
+    }
+
+    [Fact]
+    public void WithMinimumLogLevel_SetsTheLevel_AndReturnsThis()
+    {
+        var configuration = new LoggingConfiguration();
+
+        LoggingConfiguration result = configuration.WithMinimumLogLevel(LogLevel.Warning);
+
+        Assert.Same(configuration, result);
+        Assert.Equal(LogLevel.Warning, configuration.MinimumLogLevel);
     }
 
     // ------------------------------------------------------------------

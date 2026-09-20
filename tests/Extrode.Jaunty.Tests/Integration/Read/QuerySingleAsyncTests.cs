@@ -49,6 +49,25 @@ public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public async Task QuerySingleAsync_SqlOnly_NoParameters_ReturnsResult(DialectInfo dialect)
+    {
+        // coverage-gaps-2026-09-20: every other test in this file passes a parameters object,
+        // null!, or a cancellation token -- the plain sql-only overload's happy path was untested.
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QuerySingleAsync<Product>(
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = 1");
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ProductId);
+        Assert.NotNull(product.ProductName);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QuerySingleAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

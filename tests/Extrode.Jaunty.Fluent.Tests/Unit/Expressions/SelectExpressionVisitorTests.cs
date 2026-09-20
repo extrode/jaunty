@@ -115,6 +115,39 @@ public class SelectExpressionVisitorTests
     }
 
     [Fact]
+    public void Visit_SqlYear_GeneratesYearFunction()
+    {
+        Expression<Func<Order, object>> expr = o => Sql.Year(o.OrderDate);
+        var visitor = new SelectExpressionVisitor<Order>(_dialect);
+        var columns = visitor.Translate(expr);
+
+        var column = Assert.Single(columns);
+        Assert.Contains("YEAR([order_date])", column.Sql);
+    }
+
+    [Fact]
+    public void Visit_SqlMonth_GeneratesMonthFunction()
+    {
+        Expression<Func<Order, object>> expr = o => Sql.Month(o.OrderDate);
+        var visitor = new SelectExpressionVisitor<Order>(_dialect);
+        var columns = visitor.Translate(expr);
+
+        var column = Assert.Single(columns);
+        Assert.Contains("MONTH([order_date])", column.Sql);
+    }
+
+    [Fact]
+    public void Visit_SqlDay_GeneratesDayFunction()
+    {
+        Expression<Func<Order, object>> expr = o => Sql.Day(o.OrderDate);
+        var visitor = new SelectExpressionVisitor<Order>(_dialect);
+        var columns = visitor.Translate(expr);
+
+        var column = Assert.Single(columns);
+        Assert.Contains("DAY([order_date])", column.Sql);
+    }
+
+    [Fact]
     public void Visit_SqlUpper_GeneratesUpperFunction()
     {
         Expression<Func<Product, object>> expr = p => Sql.Upper(p.ProductName);
