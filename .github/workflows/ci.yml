@@ -302,6 +302,15 @@ jobs:
           dotnet test --project tests/Extrode.Jaunty.FlatFiles.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-net10.trx
           dotnet test --project tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests -c Release --no-build --framework net10.0 --coverage --coverage-output-format cobertura --report-trx --report-trx-filename test-results-flatfiles-duckdb-net10.trx
 
+      # Every step above can pass with exit 0 while having silently skipped every test it owns -
+      # `dotnet test` does not fail on that by itself. Ported 2026-09-20 from JauntyQ's
+      # scripts/skip-audit.js after JauntyQ measured exactly this: an 8-run sample where one run
+      # skipped 101 tests across 3 assemblies and exited 0, with no logger recording why. This
+      # step reads every trx this job produced and fails if any skip isn't on the allowlist
+      # scripts/skip-audit.ps1 keeps for jaunty's own known-legitimate skips.
+      - name: Skip audit
+        run: pwsh -NoProfile -File scripts/skip-audit.ps1
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
