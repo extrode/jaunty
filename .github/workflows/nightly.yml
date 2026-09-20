@@ -104,6 +104,10 @@ jobs:
           JAUNTY_REQUIRE_SQLSERVER: "1"
         run: dotnet test --solution Jaunty.slnx -c Release --no-build --framework net10.0 --report-trx --report-trx-filename nightly-net10.trx
 
+      # See ci.yml's own "Skip audit" step for why this exists.
+      - name: Skip audit
+        run: pwsh -NoProfile -File scripts/skip-audit.ps1
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
@@ -140,6 +144,10 @@ jobs:
 
       - name: Test net472 - Core unit
         run: dotnet test --project tests/Extrode.Jaunty.UnitTests -c Release --no-build --framework net472 --report-trx --report-trx-filename nightly-net472-unit.trx
+
+      # See ci.yml's own "Skip audit" step for why this exists.
+      - name: Skip audit
+        run: pwsh -NoProfile -File scripts/skip-audit.ps1
 
       - name: Upload test results
         if: always()
