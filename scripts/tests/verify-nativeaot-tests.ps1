@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Tests for scripts/Verify-NativeAOT.ps1, written 2026-07-30 with its markers-only rewrite.
+# Tests for scripts/verify-nativeaot.ps1, written 2026-07-30 with its markers-only rewrite.
 #
 # Each case perturbs the tree with a temp probe file, runs the scanner, and asserts the exit
 # code. Cases 2-5 pin the specific defects the rewrite fixed, so a regression to any of them
@@ -8,7 +8,7 @@
 
 $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$scanner = Join-Path (Split-Path -Parent $scriptDir) 'Verify-NativeAOT.ps1'
+$scanner = Join-Path (Split-Path -Parent $scriptDir) 'verify-nativeaot.ps1'
 $repoRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
 $probe = Join-Path $repoRoot 'src\Extrode.Jaunty\ScannerTestProbeExtensions.cs'
 

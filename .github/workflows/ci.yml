@@ -332,7 +332,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Run NativeAOT verification
-        run: pwsh scripts/Verify-NativeAOT.ps1
+        run: pwsh scripts/verify-nativeaot.ps1
 
   # No duplicate-run condition here, deliberately. `needs` already skips this job
   # when build-and-test is skipped, and an explicit `if` would REPLACE the
