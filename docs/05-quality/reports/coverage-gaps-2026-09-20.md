@@ -82,6 +82,10 @@ artifact).
    binds to the more specific `SpParameters?` overload. That's the overload the test's own
    surrounding comments say it's targeting — the test name is imprecise, but the test isn't wrong.
    Left as-is.
+3. **FIXED 2026-09-20.** `UpsertCoreDirect`/`UpsertCoreDirectAsync` (`Write/Upsert.cs`,
+   `Write/UpsertAsync.cs`) never assigned `command.CommandType` from `CommandOptions` — found while
+   closing the closed-connection/`CommandTimeout`/`CommandType.StoredProcedure` sweep below.
+   `CommandType.StoredProcedure`/`.TableDirect` were silently discarded on every `Upsert` call.
 
 ## Extrode.Jaunty (core) — highest-value genuine gaps
 
@@ -102,9 +106,18 @@ artifact).
   `Execute_WithCommandOptionsOnly_NoParameters_ReturnsRowsAffected`.
 - **FIXED 2026-09-20.** `QuerySingleAsync<T>(conn, sql, ct)` — covered via
   `QuerySingleAsyncTests.QuerySingleAsync_SqlOnly_NoParameters_ReturnsResult`.
-- **OPEN.** A closed-connection / `CommandTimeout` / `CommandType.StoredProcedure` sweep is missing
-  consistently across `Get`/`GetAll`/`Delete`/`Update`/`Upsert`/`Query`/`ExecuteBatch`, sync and
-  async (~80+ lines total) — three fixture variants would close most of it at once.
+- **FIXED 2026-09-20 — surfaced a real bug.** The closed-connection / `CommandTimeout` /
+  `CommandType.StoredProcedure` sweep across `Get`/`GetAll`/`Delete`/`Update`/`Upsert`/`Query`/
+  `ExecuteBatch`, sync and async, via `CommandOptionsSweepTests` (`RecordingDbConnection` for
+  timeout/command-type assertions, a temp-file-backed connection for the closed-connection
+  lifecycle — `:memory:` can't be used there since SQLite tears the database down when the last
+  connection to it closes). `Upsert`/`UpsertAsync` failed against production code, not the test:
+  `UpsertCoreDirect`/`UpsertCoreDirectAsync` (`Write/Upsert.cs`, `Write/UpsertAsync.cs`) never
+  assigned `command.CommandType` from `CommandOptions` at all — every other single-entity write
+  sets it via its `*Core.cs` file, but Upsert implements its execution inline (AUD-R26) and this
+  branch was missed there. `CommandType.StoredProcedure`/`.TableDirect` were silently discarded on
+  every `Upsert`/`UpsertAsync` call. Fixed by adding the same conditional assignment the other
+  writes use.
 - **FIXED 2026-09-20.** `TypeHandlerRegistry.TryConvertFromDb`/`TryConvertToDb` no-handler-registered
   paths — covered via `TypeHandlerRegistryTests`' "No Handler Registered" region.
 
