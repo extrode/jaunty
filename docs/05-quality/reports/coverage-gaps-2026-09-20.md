@@ -171,6 +171,10 @@ routed `DbConnection`s to the other overload first.
   (representative of the shared pattern): a non-`DbConnection` `IDbConnectionWrapper` proves the
   async guard throws while the sync path still works, and a temp-file-backed closed connection
   proves the auto-open/close lifecycle for both sync and async.
+  **Correction (independent `review-deep` verification, 2026-09-20):** this closes the item by
+  representation, not by coverage — the join builders' own `wasClosed` bodies and guards
+  (`JoinedQueryBuilderSelect.cs`, sync and async) are separate code paths that remain unexecuted on
+  their closed/non-`DbConnection` branches. No production bug was found in either path exercised.
 
 Corrected against the 2026-07-04 report: `JoinedQuery4Builder<T1..T4>` is **no longer** 0/164
 (partially covered now, 28 methods still gap); `JoinClause4Builder<T1..T4>` is **fully covered**
