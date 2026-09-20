@@ -202,10 +202,13 @@ was removed or renamed — don't carry the item forward).
   already tested — a grep for the guard's exact message text across `tests/` found zero matches for
   any of the three binder kinds. Added `TypedBinderWrongEntityTypeTests`, covering insert, update,
   and delete for both a wrong-type object and `null`.
-- ~90 pure one-line forwarder methods across the four `*DialectWithBulkCopy` wrapper classes
-  (`EscapeStringLiteral`, `GenerateCoalesce`, window functions, etc.) — lowest priority in the
-  whole inventory; one parameterized "every `ISqlDialect` member forwards to inner" test per
-  wrapper closes all of them at once rather than one test per forwarder.
+- **FIXED 2026-09-20.** ~90 pure one-line forwarder methods across the four `*DialectWithBulkCopy`
+  wrapper classes (`EscapeStringLiteral`, `GenerateCoalesce`, window functions, etc.) — lowest
+  priority in the whole inventory. `BulkCopyDialectFactoryTests.Wrapper_DelegatesNonBulkCopyMembersToInnerDialect`
+  already existed as exactly the "one parameterized test per wrapper" the report suggested, but only
+  asserted 12 of ~39 `ISqlDialect` members; extended to assert all of them (every member except the
+  two deliberately-overridden bulk-copy ones, already covered by adjacent tests in the same file).
+  No production bug found.
 - `PostgreSqlBulkCopyProvider`/`SqlServerBulkCopyProvider`'s actual `CopyToServer(Async)` bodies are
   class 4 (need a live Postgres/SqlServer connection) — the *unreachable-branch* guards around them
   (Npgsql/SqlClient member-resolution failures) are class 3, not gaps, since those packages are
