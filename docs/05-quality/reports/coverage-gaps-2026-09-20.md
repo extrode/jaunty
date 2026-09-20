@@ -293,11 +293,10 @@ DuckDB import/write-back internals. Two worth calling out:
   no cleanup needed), and a dead "not configured" skip branch (the helper's connection string is
   never actually empty, unlike `TestConfiguration`'s siblings), removed. Verified: 4/4 on net8.0
   and net10.0, full suite 919/919 with `JAUNTY_REQUIRE_POSTGRESQL=1` set (no silent skip).
-  **Known limitation, not fixed here**: CI provisions no Postgres service for this test project (nor
-  for `Extrode.Jaunty.Tests`' own Postgres-live tests added earlier this pass), so
-  `JAUNTY_REQUIRE_POSTGRESQL` is unset in CI and this closes the gap on dev boxes with
-  `torture-postgres` running, not in CI — consistent with, not a regression from, the rest of this
-  session's Postgres-live-test additions.
+  **CI follow-up 2026-09-21**: `.github/workflows/ci.yml` now provisions a `postgres` service
+  (alongside new `mysql`/`mariadb` services) for the FlatFiles/DuckDB, Core, and Scaffolding test
+  legs, each with `JAUNTY_REQUIRE_POSTGRESQL=1` set, so this gap is now closed in CI as well as on
+  dev boxes with `torture-postgres` running.
 
 ## Extrode.Jaunty.Scaffolding / Scaffolding.Cli
 
@@ -321,8 +320,8 @@ this was a test-only fix.
 `LoggingConfiguration`'s fluent builder (`WithSensitiveParameters`, `WithSlowQueryThreshold`,
 `WithMinimumLogLevel`) — covered via `ConfigurationContractTests`' new region. `Extensions.Npgsql`
 is 40% covered but only 9 units of complexity total — `NpgsqlCopyImportWriter`'s constructor/dispose
-surface needs a live Postgres connection (class 4, still open), consistent with the 2026-07-04
-report's Postgres-BulkCopy category.
+surface needed a live Postgres connection (class 4); see the class-4 section below for the fix and
+the real bug it found.
 
 ## 0% only because of environment (class 4 — verify with containers before writing tests)
 
@@ -379,6 +378,17 @@ run here really means these were exercised end-to-end, not silently skipped:
   `RequireFileOnThisMachine` reorder, (c) `DecoderFallbackException` as the correct and
   non-runtime-dependent exception type, (d) the async sibling) were independently re-confirmed
   correct with no changes needed. Re-verified green on net8.0/net10.0/net472 after the fixture fix.
+  **Third correction (comprehensive `review-deep` pass, 2026-09-21):** `NpgsqlCopyImportWriterLiveTests.cs`'s
+  own `OpenOrSkip()` never consulted `JAUNTY_REQUIRE_POSTGRESQL` — it only checked
+  `TestConfiguration.HasPostgreSql` and caught the connect exception, so a broken/unreachable
+  Postgres service in CI (which now sets the require flag; see the FlatFiles/DuckDB item above)
+  would have silently skipped all seven tests instead of failing loudly, contradicting
+  `skip-audit.ps1`'s own stated rationale for allowlisting that skip reason. Fixed to mirror
+  `ImportUsingDbBatchLiveTests.cs`'s `OpenOrSkip()`: both the not-configured and unreachable paths
+  now throw when `DialectReachability.IsRequired(DialectReachability.RequirePostgreSql)` is true.
+  Verified 7/7 pass normally (0 skipped) and 7/7 pass with `JAUNTY_REQUIRE_POSTGRESQL=1` set (0
+  skipped, 0 failed). The pre-existing `PostgreSqlBulkCopyProviderTests.cs` has the same gap but
+  was untouched by this session's diff — left out of scope, noted here for a future pass.
 - `Extrode.Jaunty`'s in-transaction FK-toggle branches in Bulk{Insert,Delete,Update}(Async) —
   Postgres/MySQL only, SQLite and SqlServer don't take that branch shape — **verified**, part of
   the same 5042/5042 zero-skip run.
@@ -393,10 +403,11 @@ run here really means these were exercised end-to-end, not silently skipped:
   `GetDuckDbExtensionForScheme` / `INSTALL`+`LOAD httpfs` / the R27 batch 13 failed-install guard
   the same way a real `s3://` or `https://` source would, for both the sync (`FlatFile.Open`) and
   async (`RegisterSourceAsync`) paths, plus an unreachable-host case proving DuckDB surfaces a
-  read failure promptly rather than hanging. Independent `review-deep` verification found 8 issues
-  (a misattributed guard-comment, an unenforced "rather than hanging" claim, a latent
-  Range-request fragility, and a missing network-availability skip-gate among the real ones); all
-  fixed and re-verified (3/3 on net8.0/net10.0, full suite green).
+  read failure promptly rather than hanging. Independent `review-deep` verification raised 8
+  findings; 4 were real and fixed (a misattributed guard-comment, an unenforced "rather than
+  hanging" claim, a latent Range-request fragility, and a missing network-availability skip-gate),
+  the other 4 were checked against the code and confirmed to need no change. All re-verified (3/3
+  on net8.0/net10.0, full suite green).
   `FlatFiles.DuckDB.ImportExecutor.ImportUsingDbBatchAsync` — **FIXED**, unrelated to the above:
   needed a `CanCreateBatch`-capable target connection, which `Extrode.Jaunty.FlatFiles.DuckDB.Tests`
   had no package reference or connection config for. Added `Npgsql` plus
