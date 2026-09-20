@@ -203,4 +203,37 @@ public class ImportTypeMappingTests : IDisposable
         Assert.Equal("INTEGER", sqlite.MapClrTypeToSqlType(typeof(long)));
         Assert.Equal("BLOB", sqlite.MapClrTypeToSqlType(typeof(byte[])));
     }
+
+    /// <summary>
+    /// mutation-gaps-2026-09-21: <see cref="PreviouslyUnmappedTypesNoLongerCollapseToText"/> only
+    /// asserts "not the engine's catch-all text type", which a mutant that replaces e.g.
+    /// <c>"DATE"</c> with <c>""</c> still satisfies (<c>""</c> is not <c>"NVARCHAR(MAX)"</c>
+    /// either) - independent `review-deep` verification of the resulting mutation-testing report
+    /// found every one of these eight column-type literals on SQL Server and PostgreSQL survives
+    /// mutation to an empty string with no test failing. Pins the exact SQL type for each, the way
+    /// <see cref="TheAlreadyMappedTypesAreUnchanged"/> already does for the original thirteen.
+    /// </summary>
+    [Fact]
+    public void PreviouslyUnmappedTypesHaveTheExactColumnType()
+    {
+        var sqlServer = new SqlServerImportDialect();
+        Assert.Equal("DATE", sqlServer.MapClrTypeToSqlType(typeof(DateOnly)));
+        Assert.Equal("TIME", sqlServer.MapClrTypeToSqlType(typeof(TimeOnly)));
+        Assert.Equal("TIME", sqlServer.MapClrTypeToSqlType(typeof(TimeSpan)));
+        Assert.Equal("NCHAR(1)", sqlServer.MapClrTypeToSqlType(typeof(char)));
+        Assert.Equal("BIGINT", sqlServer.MapClrTypeToSqlType(typeof(uint)));
+        Assert.Equal("DECIMAL(20,0)", sqlServer.MapClrTypeToSqlType(typeof(ulong)));
+        Assert.Equal("SMALLINT", sqlServer.MapClrTypeToSqlType(typeof(sbyte)));
+        Assert.Equal("INT", sqlServer.MapClrTypeToSqlType(typeof(ushort)));
+
+        var postgres = new PostgreSqlImportDialect();
+        Assert.Equal("DATE", postgres.MapClrTypeToSqlType(typeof(DateOnly)));
+        Assert.Equal("TIME", postgres.MapClrTypeToSqlType(typeof(TimeOnly)));
+        Assert.Equal("INTERVAL", postgres.MapClrTypeToSqlType(typeof(TimeSpan)));
+        Assert.Equal("CHAR(1)", postgres.MapClrTypeToSqlType(typeof(char)));
+        Assert.Equal("BIGINT", postgres.MapClrTypeToSqlType(typeof(uint)));
+        Assert.Equal("NUMERIC(20,0)", postgres.MapClrTypeToSqlType(typeof(ulong)));
+        Assert.Equal("SMALLINT", postgres.MapClrTypeToSqlType(typeof(sbyte)));
+        Assert.Equal("INTEGER", postgres.MapClrTypeToSqlType(typeof(ushort)));
+    }
 }
