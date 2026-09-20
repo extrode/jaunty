@@ -39,8 +39,10 @@ public class QueryBuilderConnectionLifecycleTests
 
         using var connection = new IDbConnectionWrapper(inner);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             connection.From<QbclWidget>().Where(w => w.Id == 1).DeleteAsync());
+
+        Assert.Equal("Async operations require a DbConnection.", ex.Message);
     }
 
     [Fact]
