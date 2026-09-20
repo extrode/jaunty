@@ -189,7 +189,13 @@ was removed or renamed — don't carry the item forward).
   `MetadataCache<T>.GetSetters`/`PropertySetter<T>.Set` against a hand-rolled `IDataReader`, per the
   established pattern in `ReflectionSetterCachingTests`, in
   `TypeHandlerReadPathReflectionTests.NullablePropertyWithARegisteredHandler_ConvertsTheParsedValueToTheUnderlyingType`
-  and `...NullablePropertyWhoseHandlerThrows_WrapsTheFailureInAnInvalidOperationException`.
+  and `...NullablePropertyWhoseHandlerThrows_WrapsTheFailureInAnInvalidOperationException`. **Note
+  (independent `review-deep` verification, 2026-09-20):** the throws-arm test is non-vacuous and
+  mutation-kills its branch; the nullable-conversion-arm test reaches the line but does not
+  distinguish the `ChangeType` conversion sub-arm from an identity pass-through, because
+  `TypeHandler<T>.Parse` always returns the already-underlying type — that sub-arm is effectively
+  dead for any well-behaved handler and cannot be meaningfully pinned through the public
+  `TypeHandler<T>` contract. Not a masked bug, just a reach-vs-pin distinction worth recording.
 - **FIXED 2026-09-20 — corrected.** `JauntyReflectionExtensions`'s typed insert/update/delete
   binders' wrong-entity-type guard (`if (entityObj is not T entity) throw new
   InvalidOperationException(...)`, identical in all three) was claimed to have its insert equivalent
@@ -214,12 +220,14 @@ coverage collector (the generator itself only executes inside `csc`). Only tests
 `ParameterRootingEmissionTests`) actually exercise the generator in-process and count as real
 coverage of it.
 
-Worth acting on regardless of that caveat: **`HandWrittenMapper.Equals`/`GetHashCode` and
-`ParameterRoot`/`ParameterSite`'s `Equals`/`GetHashCode` are untested by the incremental-cache
-tests** — `GeneratorCachingTests` never includes a hand-written mapper or a parameter call site in
-its second-run comparison. A broken equality comparer here would silently regress incremental
-generation (re-running the generator on every keystroke instead of caching), and nothing would
-catch it.
+**FIXED 2026-09-20.** `HandWrittenMapper.Equals`/`GetHashCode` and `ParameterRoot`/`ParameterSite`'s
+`Equals`/`GetHashCode` were untested by the incremental-cache tests — `GeneratorCachingTests` never
+included a hand-written mapper or a parameter call site in its second-run comparison. Added four
+tests: `EditingAnUnrelatedFile_DoesNotRerunTheHandWrittenMapperStep` and
+`AddingAConventionBinderToTheHandWrittenMapper_DoesRerunTheStep` (positive/negative pair covering
+`HandWrittenMapper`'s comparer), and the equivalent pair for `ParameterRoot`/`ParameterSite`
+(`EditingAnUnrelatedFile_DoesNotRerunTheParameterRootingStep` /
+`ChangingTheRootedParametersShape_DoesRerunTheStep`). No production bug found.
 
 ## Extrode.Jaunty.FlatFiles / FlatFiles.DuckDB
 

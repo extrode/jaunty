@@ -55,6 +55,40 @@ public class GeneratorCachingTests
         }
         """;
 
+    private const string HandWrittenMapperSource = """
+        using System.Data;
+        using Extrode.Jaunty.Interfaces;
+
+        namespace CacheProbe;
+
+        public class HandRolled : IMapped<HandRolled>
+        {
+            public int Id { get; set; }
+
+        #if NET8_0_OR_GREATER
+            public static HandRolled ReadEntity(IDataReader reader) => new HandRolled();
+        #else
+            public HandRolled ReadEntity(IDataReader reader) => new HandRolled();
+        #endif
+        }
+        """;
+
+    private const string ParameterRootingSource = """
+        using System.Data;
+
+        using Extrode.Jaunty;
+
+        namespace CacheProbe;
+
+        public class DataAccess
+        {
+            public void Run(IDbConnection connection)
+            {
+                connection.Execute("UPDATE t SET x = 1 WHERE id = @Id", new { Id = 1 });
+            }
+        }
+        """;
+
     private static readonly CSharpParseOptions ParseOptions = CSharpParseOptions.Default
         .WithPreprocessorSymbols("NET8_0_OR_GREATER", "NET6_0_OR_GREATER");
 
@@ -125,6 +159,86 @@ public class GeneratorCachingTests
         Assert.Contains(
             "customer_name",
             driver.GetRunResult().Results.SelectMany(r => r.GeneratedSources).Single().SourceText.ToString());
+    }
+
+    // ------------------------------------------------------------------
+    // coverage-gaps-2026-09-20: HandWrittenMapper and ParameterRoot/ParameterSite's Equals/
+    // GetHashCode were never exercised by a second-run comparison - none of the above fixtures
+    // declare a hand-written IMapped<T>/convention binder or a Query/Execute call site, so those
+    // two pipelines never ran here at all. A broken comparer on either would silently regress
+    // incremental generation and nothing above would catch it.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void EditingAnUnrelatedFile_DoesNotRerunTheHandWrittenMapperStep()
+    {
+        (GeneratorDriver driver, Compilation compilation) = RunFirst(HandWrittenMapperSource, UnrelatedSource);
+
+        driver = RunAgain(driver, compilation, treeIndex: 1, """
+            namespace CacheProbe;
+
+            public class NotAnEntity
+            {
+                public int Value => 1;
+                public int Doubled => Value * 2;
+            }
+            """);
+
+        AssertAllOutputsReused(driver);
+    }
+
+    [Fact]
+    public void AddingAConventionBinderToTheHandWrittenMapper_DoesRerunTheStep()
+    {
+        // The negative control for the test above: without it, a HandWrittenMapper.Equals that
+        // ignored Members/Supplies would report this edit as cached too, and the diagnostic message
+        // would still list only "ReadEntity" after BindInsert was added.
+        (GeneratorDriver driver, Compilation compilation) = RunFirst(HandWrittenMapperSource, UnrelatedSource);
+
+        driver = RunAgain(driver, compilation, treeIndex: 0, HandWrittenMapperSource.Replace(
+            "public int Id { get; set; }",
+            "public int Id { get; set; }\n\n    public static void BindInsert(IDbCommand command, HandRolled entity) { }"));
+
+        Assert.Contains(OutputReasons(driver), reason => reason is IncrementalStepRunReason.Modified or IncrementalStepRunReason.New);
+        Diagnostic warning = Assert.Single(driver.GetRunResult().Results.SelectMany(r => r.Diagnostics), d => d.Id == "JAUNTYGEN002");
+        Assert.Contains("BindInsert", warning.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EditingAnUnrelatedFile_DoesNotRerunTheParameterRootingStep()
+    {
+        (GeneratorDriver driver, Compilation compilation) = RunFirst(ParameterRootingSource, UnrelatedSource);
+
+        driver = RunAgain(driver, compilation, treeIndex: 1, """
+            namespace CacheProbe;
+
+            public class NotAnEntity
+            {
+                public int Value => 1;
+                public int Doubled => Value * 2;
+            }
+            """);
+
+        AssertAllOutputsReused(driver);
+    }
+
+    [Fact]
+    public void ChangingTheRootedParametersShape_DoesRerunTheStep()
+    {
+        // The negative control: without a correct ParameterRoot/ParameterSite comparer, adding a
+        // property to the anonymous parameters object would be cached as "nothing changed" and the
+        // emitted witness would keep rooting the old, narrower shape.
+        (GeneratorDriver driver, Compilation compilation) = RunFirst(ParameterRootingSource, UnrelatedSource);
+
+        driver = RunAgain(driver, compilation, treeIndex: 0, ParameterRootingSource.Replace(
+            "new { Id = 1 }",
+            "new { Id = 1, Name = \"a\" }"));
+
+        Assert.Contains(OutputReasons(driver), reason => reason is IncrementalStepRunReason.Modified or IncrementalStepRunReason.New);
+        Assert.Contains(
+            "new { Id = default(int), Name = default(string) }",
+            driver.GetRunResult().Results.SelectMany(r => r.GeneratedSources).Single(s => s.HintName.Contains("ParameterRoots")).SourceText.ToString(),
+            StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------------
