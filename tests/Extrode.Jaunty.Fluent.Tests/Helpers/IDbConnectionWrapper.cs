@@ -5,7 +5,7 @@ namespace Extrode.Jaunty.Fluent.Tests.Helpers;
 /// <summary>
 /// Wraps a real IDbConnection without extending DbConnection, so an
 /// <c>is DbConnection</c> check fails. Used to verify async code paths reject a
-/// non-DbConnection with a clear NotSupportedException instead of silently falling back
+/// non-DbConnection with a clear InvalidOperationException instead of silently falling back
 /// to a blocking synchronous call.
 /// </summary>
 public class IDbConnectionWrapper : IDbConnection
