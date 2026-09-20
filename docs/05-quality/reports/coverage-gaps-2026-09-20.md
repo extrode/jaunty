@@ -7,6 +7,13 @@ Every uncovered method was then read against source and tests by seven independe
 passes (one per assembly, `Extrode.Jaunty` split into 4 sub-batches for turn-budget reasons) and
 classified into one of six reasons — see "How this was produced" at the end.
 
+**Status update 2026-09-20 (post-review):** an independent `review-deep` pass verified this report
+before the quick-wins batch was implemented. It confirmed bug #1 as real (now fixed) and bug #2 as
+a false positive (no fix needed), and corrected two sub-claims — the HAVING `=` operator and the
+`IsWithoutRowId` comment-handling item, both marked inline below. 12 of the quick-win items below
+are now fixed and merged to `dev`; see the "FIXED"/"OPEN" annotations throughout. The one deferred
+item — bulk async `RollbackAsync` — needs a new mid-batch-failure fixture and wasn't a quick win.
+
 **Fixed in the process**: `scripts/coverage.ps1` passed `--nologo` to `dotnet test`, which broke
 Microsoft.Testing.Platform's `--coverage` path outright — the run reported "Zero tests ran" (exit
 5) with it present, and passed normally without it. All 10 suites now produce a cobertura report;
@@ -65,55 +72,63 @@ artifact).
 
 ## Real bugs found during triage (not gaps — defects)
 
-1. **Mis-bound test, not a mis-classified line.** `InterceptorElapsedScopeTests.cs:118` calls
-   `ExecuteWithInterception(…, () => ran = true)`. An assignment expression has a value, so C#
-   binds that lambda to the `Func<bool>` overload, not the `Action` overload the test is named for
-   (`TheSyncActionOverload_RunsTheFullLifecycle`). The `Action` overload's body has never actually
-   run under that test. Fix: `() => { ran = true; }`.
-2. **`StoredProcedureNullParametersTests.cs:68`** passes literal `null`, which overload resolution
-   binds to the more specific `SpParameters?` overload, not the `object?` overload the test name
-   implies. Same shape as #1: a test that looks like it exercises one overload silently exercises
-   another.
+1. **FIXED 2026-09-20.** Mis-bound test, not a mis-classified line. `InterceptorElapsedScopeTests.cs:118`
+   called `ExecuteWithInterception(…, () => ran = true)`. An assignment expression has a value, so
+   C# binds that lambda to the `Func<bool>` overload, not the `Action` overload the test was named
+   for (`TheSyncActionOverload_RunsTheFullLifecycle`). Fixed to `() => { ran = true; }`.
+2. **FALSE POSITIVE — confirmed by an independent `review-deep` pass, no fix needed.**
+   `StoredProcedureNullParametersTests.cs:68` passes literal `null`, which overload resolution
+   binds to the more specific `SpParameters?` overload. That's the overload the test's own
+   surrounding comments say it's targeting — the test name is imprecise, but the test isn't wrong.
+   Left as-is.
 
 ## Extrode.Jaunty (core) — highest-value genuine gaps
 
-- `ExecuteNonQueryCoreAsync`'s entire async-interceptor path (`Internals/Write/ExecuteNonQueryCore.cs:165-217`,
-  complexity 38, 59 lines) — no test anywhere combines a registered interceptor with `ExecuteAsync`.
-- `BulkDeleteAsync`/`BulkUpdateAsync`'s own-transaction `RollbackAsync` after a mid-batch failure
-  (`BulkDeleteAsync.cs:400`, `BulkUpdateAsync.cs:393`) — tested in sync (`BulkDelete.cs:372`) but
-  never async; the one async failure test throws before `BeginTransactionAsync`, so the guarded
-  call is skipped.
-- `GetAllStream<T>(conn, options)` / `GetAllStreamAsync<T>(conn, options, ct)` — public overloads
-  with zero callers in either test project.
-- `Execute(conn, sql)` and `Execute(conn, sql, CommandOptions)` — the two simplest public
-  non-query entry points have **no functional test at all** (only a whitespace-throw case touches
-  the 2-arg overload).
-- `QuerySingleAsync<T>(conn, sql, ct)` — every existing test passes a parameters object or `null!`;
-  the plain sql-only happy path is untested.
-- A closed-connection / `CommandTimeout` / `CommandType.StoredProcedure` sweep is missing
+- **FIXED 2026-09-20.** `ExecuteNonQueryCoreAsync`'s entire async-interceptor path
+  (`Internals/Write/ExecuteNonQueryCore.cs:165-217`, complexity 38, 59 lines) — covered via
+  `WriteObservabilityTests.ExecuteAsync_IsIntercepted`.
+- **OPEN — not a quick win, deferred.** `BulkDeleteAsync`/`BulkUpdateAsync`'s own-transaction
+  `RollbackAsync` after a mid-batch failure (`BulkDeleteAsync.cs:400`, `BulkUpdateAsync.cs:393`) —
+  tested in sync (`BulkDelete.cs:372`) but never async; the one async failure test throws before
+  `BeginTransactionAsync`, so the guarded call is skipped. Needs a new fixture that fails mid-batch
+  *after* the transaction opens.
+- **FIXED 2026-09-20.** `GetAllStream<T>(conn, options)` / `GetAllStreamAsync<T>(conn, options, ct)`
+  — covered via `GetAllStreamAsyncTests.GetAllStreamAsync_WithCommandOptions_YieldsAllRows` and the
+  sync twin in `GetAllTests`.
+- **FIXED 2026-09-20.** `Execute(conn, sql)` and `Execute(conn, sql, CommandOptions)` — covered via
+  `ExecuteTests.Execute_PlainSql_NoParameters_ReturnsRowsAffected` and
+  `Execute_WithCommandOptionsOnly_NoParameters_ReturnsRowsAffected`.
+- **FIXED 2026-09-20.** `QuerySingleAsync<T>(conn, sql, ct)` — covered via
+  `QuerySingleAsyncTests.QuerySingleAsync_SqlOnly_NoParameters_ReturnsResult`.
+- **OPEN.** A closed-connection / `CommandTimeout` / `CommandType.StoredProcedure` sweep is missing
   consistently across `Get`/`GetAll`/`Delete`/`Update`/`Upsert`/`Query`/`ExecuteBatch`, sync and
   async (~80+ lines total) — three fixture variants would close most of it at once.
-- `TypeHandlerRegistry.TryConvertFromDb`/`TryConvertToDb` no-handler-registered paths — untested in
-  both projects (one has a note questioning whether the method still has a production caller at
-  all; worth resolving before writing tests for it).
+- **FIXED 2026-09-20.** `TypeHandlerRegistry.TryConvertFromDb`/`TryConvertToDb` no-handler-registered
+  paths — covered via `TypeHandlerRegistryTests`' "No Handler Registered" region.
 
-Dead-code candidate: `ExecuteReaderDirect` (65 lines, cx 38) in `Internals/Read/ExecuteReader.cs`
-is unreachable — every real ADO.NET `IDbConnection` is also a `DbConnection`, and all 25 call
-sites already route `DbConnection`s to the other overload first. Delete rather than test.
+**DELETED 2026-09-20** (not tested — confirmed dead by an independent `review-deep` pass):
+`ExecuteReaderDirect` (65 lines, cx 38) in `Internals/Read/ExecuteReader.cs` was unreachable —
+every real ADO.NET `IDbConnection` is also a `DbConnection`, and all real call sites already
+routed `DbConnection`s to the other overload first.
 
 ## Extrode.Jaunty.Fluent — highest-value genuine gaps
 
-- **The reversed-operand form of a WHERE comparison is never tested.** `WhereExpressionVisitor.MirrorOperator`
-  is 0/8 covered; its only call site is always hit with the column on the left (`p.Price < 10`
-  works, `10 < p.Price` and `null == p.X` do not).
-- **Possible always-throws path**: `JoinedQueryBuilderSelect*.SelectWithMapping`/`SelectWithMapperAsync`'s
+- **FIXED 2026-09-20.** The reversed-operand form of a WHERE comparison is never tested.
+  `WhereExpressionVisitor.MirrorOperator` was 0/8 covered — covered via
+  `WhereExpressionVisitorTests`' "Reversed-Operand Comparisons" region (`10 < p.UnitPrice`,
+  `10 >= p.UnitPrice`).
+- **OPEN.** Possible always-throws path: `JoinedQueryBuilderSelect*.SelectWithMapping`/`SelectWithMapperAsync`'s
   row-loop and success return are uncovered while the ambiguous-column guard above it is covered —
   in every existing test, a 3-DTO-over-a-join select throws before mapping a row. Flagged uncertain
   by the reviewer (rests on how coverlet counts the method-exit sequence point) but worth one
   confirming test.
-- `GROUP BY`/`HAVING` operators: only `>` and `<` are exercised anywhere; `=`, `<>`, `>=`, `<=` and
-  the unsupported-operator throw are not, for both joined and single-entity group-by.
-- `Sql.Year/Month/Day` in a SELECT projection — untested; the WHERE-clause equivalents are covered.
+- **PARTIALLY FIXED 2026-09-20 — corrected.** `GROUP BY`/`HAVING` operators: the original claim that
+  only `>` and `<` were exercised was wrong for `=` — `FluentGroupByTests.cs:406` already covered
+  `Min(...) == "Chai"` before this pass (caught by an independent `review-deep` verification).
+  `<>`, `>=`, `<=`, and the unsupported-operator throw were genuinely untested and are now covered
+  via `FluentGroupByTests`/`FluentGroupByJoinTests` for both single-entity and joined group-by.
+- **FIXED 2026-09-20.** `Sql.Year/Month/Day` in a SELECT projection — covered via
+  `SelectExpressionVisitorTests.Visit_SqlYear_GeneratesYearFunction` and its Month/Day twins.
 - The ~40-instance `if (_connection is not DbConnection dbConn) throw` guard and the ~25-instance
   `wasClosed` auto-open/close lifecycle are each one pattern repeated many times (every fixture
   hands in an already-open `SQLiteConnection`), not that many independent gaps — one non-`DbConnection`
@@ -161,8 +176,9 @@ Mostly small, trivial one-line gaps (empty input, an unlisted enum arm, a format
 combination) across `JsonFileSource`, `ParquetFileSource`/`TsvFileSource`, `DuckDb`,
 `ExpressionTranslator`, `MappedPropertyFilter`, `ReaderValueConverter`, `TablePromoter`, and the
 DuckDB import/write-back internals. Two worth calling out:
-- `ExpressionTranslator`'s `NOT (...)` negation (`VisitExpression`, `!x.Flag`) has no predicate test
-  at all — a real, if small, feature gap, not defensive code.
+- **FIXED 2026-09-20.** `ExpressionTranslator`'s `NOT (...)` negation (`VisitExpression`, `!x.Flag`)
+  had no predicate test at all — covered via
+  `ExpressionTranslatorTests.Translate_NotOperator_GeneratesNegatedBoolColumnSql`.
 - `ImportExecutor.ImportUsingDbBatchAsync` (31 lines) needs a live SqlClient/Npgsql target — SQLite
   reports `CanCreateBatch == false`, so this path can't be reached with the local fixture.
 
@@ -171,17 +187,25 @@ DuckDB import/write-back internals. Two worth calling out:
 Confirms the 2026-07-04 report's "0% only because containers were absent" category is still
 largely true: every `{SqlServer,PostgreSql,MySql}SchemaReader` method (connection open, schema
 read, table/column/PK/FK reads) is gated by `RequiredEngine.cs`'s live-engine skip, same as before.
-New finding: `SQLiteSchemaReader.IsWithoutRowId`'s quoted-identifier escaping (doubled `'` inside a
-`"`-quoted identifier — the existing test doubles the wrong quote character) and its `--`/`/* */`
-comment-inside-column-body handling are genuine gaps, not container-gated.
+**PARTIALLY FIXED 2026-09-20 — corrected.** New finding as originally stated was half wrong: the
+`--`/`/* */` comment-inside-column-body handling claim was already covered by
+`IsWithoutRowId_ReadsTheTableOptionsTailOnly`'s existing `InlineData` rows (caught by an
+independent `review-deep` verification) — no test was added for that half. The other half was
+real but mis-described: the existing `IsWithoutRowId_ToleratesADifferentQuoteCharacterInsideAnIdentifier`
+test (renamed from a doubled-`'` framing) doubles an unrelated `'` character, which SQLite never
+treats as an escape — it never exercised the reader's actual doubled-*delimiter* (`""`) escape
+branch. Added `IsWithoutRowId_HandlesADoubledDelimiterInsideAnIdentifier`, which doubles the real
+`"` delimiter; the production code in `SQLiteSchemaReader.IsWithoutRowId` was already correct, so
+this was a test-only fix.
 
 ## Extrode.Jaunty.Extensions.Logging / Npgsql
 
-Small assemblies, mostly trivial "no test calls this public overload" gaps in
+**FIXED 2026-09-20.** Small assemblies, mostly trivial "no test calls this public overload" gaps in
 `LoggingConfiguration`'s fluent builder (`WithSensitiveParameters`, `WithSlowQueryThreshold`,
-`WithMinimumLogLevel`) and its `ISet<string>` surface. `Extensions.Npgsql` is 40% covered but only
-9 units of complexity total — `NpgsqlCopyImportWriter`'s constructor/dispose surface needs a live
-Postgres connection (class 4), consistent with the 2026-07-04 report's Postgres-BulkCopy category.
+`WithMinimumLogLevel`) — covered via `ConfigurationContractTests`' new region. `Extensions.Npgsql`
+is 40% covered but only 9 units of complexity total — `NpgsqlCopyImportWriter`'s constructor/dispose
+surface needs a live Postgres connection (class 4, still open), consistent with the 2026-07-04
+report's Postgres-BulkCopy category.
 
 ## 0% only because of environment (class 4 — verify with containers before writing tests)
 
