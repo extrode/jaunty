@@ -222,6 +222,96 @@ public sealed class SQLiteSchemaReaderEdgeCaseTests : IDisposable
         Assert.True(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT, \"order\"\"s (notes)\" TEXT) WITHOUT ROWID"));
     }
 
+    // ------------------------------------------------------------------
+    // mutation-gaps-2026-09-21: live mutation testing showed 77 of this file's 104 survivors
+    // cluster in IsWithoutRowId/TailDeclaresWithoutRowId's character-by-character scan (roughly
+    // lines 276-412) - the bracket-identifier, in-body comment, paren-depth, and "sawWithout"
+    // word-tracking logic were exercised by existing tests (so mutants are "Survived", not
+    // "NoCoverage") but nothing asserted a result that actually depended on getting those branches
+    // right. Each test below is built so a specific operator flip (&&/||, !=/==, </<=,  the initial
+    // "sawWithout = false", or an off-by-one on the scan index) changes the boolean it returns.
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// A bracket-quoted identifier's content is opaque: an embedded <c>)</c> must not be seen as
+    /// the real column-body close, and embedded "WITHOUT ROWID" text must not reach the tail
+    /// scanner. If the bracket-skip loop (<c>while (... createSql[i] != ']') i++;</c>) under- or
+    /// over-runs, the embedded <c>)</c> is treated as the real close and the text after it - here,
+    /// "WITHOUT ROWID" - leaks into what <see cref="SQLiteSchemaReader.TailDeclaresWithoutRowId"/>
+    /// scans, flipping a table that never declares the option to one that appears to.
+    /// </summary>
+    [Fact]
+    public void IsWithoutRowId_BracketQuotedIdentifierWithEmbeddedParenAndKeyword_DoesNotLeakIntoTail()
+    {
+        Assert.False(SQLiteSchemaReader.IsWithoutRowId(
+            "CREATE TABLE t (a INT, [bad)WITHOUT ROWID] TEXT)"));
+        Assert.True(SQLiteSchemaReader.IsWithoutRowId(
+            "CREATE TABLE t (a INT, [bad)name] TEXT) WITHOUT ROWID"));
+    }
+
+    /// <summary>
+    /// A line comment inside the column-definition body (before the body's closing paren) is
+    /// handled by <see cref="SQLiteSchemaReader.IsWithoutRowId"/>'s own comment check, not by
+    /// <c>TailDeclaresWithoutRowId</c>'s - a distinct code path from the existing
+    /// <c>-- WITHOUT ROWID</c>/<c>/* WITHOUT ROWID */</c> cases above, which only cover a comment
+    /// in the table-options tail after the body has already closed. A stray <c>)</c> and
+    /// "WITHOUT ROWID" text placed inside an in-body comment must not desynchronize paren depth
+    /// or be seen by the tail scanner.
+    /// </summary>
+    [Fact]
+    public void IsWithoutRowId_LineCommentInsideTheColumnBody_SkipsParenAndKeywordsInsideIt()
+    {
+        Assert.False(SQLiteSchemaReader.IsWithoutRowId(
+            "CREATE TABLE t (a INT, -- has a paren ) WITHOUT ROWID\n b INT)"));
+    }
+
+    /// <summary>
+    /// The block-comment counterpart of the test above, targeting the same in-body comment check
+    /// but for <c>/* ... */</c> rather than <c>--</c>.
+    /// </summary>
+    [Fact]
+    public void IsWithoutRowId_BlockCommentInsideTheColumnBody_SkipsParenAndKeywordsInsideIt()
+    {
+        Assert.False(SQLiteSchemaReader.IsWithoutRowId(
+            "CREATE TABLE t (a INT, /* has a paren ) WITHOUT ROWID */ b INT)"));
+    }
+
+    /// <summary>
+    /// Two independent, non-nested paren groups inside the body (not one nested inside the other,
+    /// unlike the existing <c>CHECK (b IN (1, 2, 3))</c> case) exercise the open/close depth
+    /// bookkeeping enough times in a row that an off-by-one on either branch's index advance would
+    /// desynchronize which <c>)</c> is "the" body-closing one.
+    /// </summary>
+    [Theory]
+    [InlineData("CREATE TABLE t (a INT, b INT, CHECK ((b > 0) AND (b < 100)))", false)]
+    [InlineData("CREATE TABLE t (a INT, b INT, CHECK ((b > 0) AND (b < 100))) WITHOUT ROWID", true)]
+    public void IsWithoutRowId_AdjacentNestedParenGroups_StillTracksDepthToTheRealClose(string createSql, bool expected)
+        => Assert.Equal(expected, SQLiteSchemaReader.IsWithoutRowId(createSql));
+
+    /// <summary>
+    /// "ROWID" appearing in the tail without a preceding "WITHOUT" must not match - targets both
+    /// the initial <c>sawWithout = false</c> (a mutant that starts it <c>true</c> would match on
+    /// the very first "ROWID"-equal word) and the <c>sawWithout &amp;&amp; word.Equals("ROWID")</c>
+    /// check itself (a mutant that turns <c>&amp;&amp;</c> into <c>||</c> would match regardless of
+    /// <c>sawWithout</c>).
+    /// </summary>
+    [Fact]
+    public void IsWithoutRowId_RowidWordWithoutAPrecedingWithoutKeyword_IsNotWithoutRowid()
+    {
+        Assert.False(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT) ROWID"));
+        Assert.False(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT) FOO ROWID"));
+    }
+
+    /// <summary>
+    /// A "WITHOUT" not immediately followed by "ROWID" must reset the tracked state rather than
+    /// stay latched, so a real "WITHOUT ROWID" pair later in the tail is still found.
+    /// </summary>
+    [Fact]
+    public void IsWithoutRowId_WithoutKeywordNotImmediatelyFollowedByRowid_ResetsAndStillFindsTheRealPair()
+    {
+        Assert.True(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT) WITHOUT FOO WITHOUT ROWID"));
+    }
+
     private async Task<DatabaseSchema> ReadAsync(SchemaReaderOptions options)
         => await new SQLiteSchemaReader().ReadSchemaAsync(_connectionString, options, TestContext.Current.CancellationToken);
 }
