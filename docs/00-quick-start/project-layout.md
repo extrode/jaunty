@@ -67,7 +67,7 @@ jaunty/
 |--------|---------|--------------|
 | `benchmarks/` | BenchmarkDotNet projects and their reports | `Extrode.Jaunty.Benchmarks/`, `Extrode.Jaunty.FlatFiles.Benchmarks/`, `BENCHMARK-RESULTS.md` |
 | `samples/` | Sample projects | Four `NativeAOT-*` samples; four `torture-test-*` ports (Conduit, eShopOnWeb, Sakila) |
-| `scripts/` | Build and utility scripts | `build.ps1`, `build-aot.ps1`, `Verify-NativeAOT.ps1`, `coverage.ps1`, `reset-test-databases.ps1` |
+| `scripts/` | Build and utility scripts | `build.ps1`, `build-aot.ps1`, `verify-nativeaot.ps1`, `coverage.ps1`, `reset-test-databases.ps1` |
 | `data/` | Test databases and seed scripts | `sqlite/Northwind.db` (tracked; the source of the others), `postgres/`, `mysql/`, `sqlserver/` create scripts, `basic.csv` |
 
 ### Distribution Folders
@@ -233,7 +233,7 @@ See [`03-development/file-naming-convention.md`](../03-development/file-naming-c
 |--------|---------|
 | `scripts/build.ps1` | Standard build |
 | `scripts/build-aot.ps1` | NativeAOT build |
-| `scripts/Verify-NativeAOT.ps1` | NativeAOT verification: every reflection site carries a reviewed justification |
+| `scripts/verify-nativeaot.ps1` | NativeAOT verification: every reflection site carries a reviewed justification |
 | `scripts/coverage.ps1` | Coverage run with `coverage.runsettings` |
 | `scripts/build-docs.sh` | Generates `dist/docs-site/` from `docs/` |
 | `scripts/reset-test-databases.ps1` / `.sh` | Drops and recreates the server test databases |

@@ -26,7 +26,7 @@ sites on this page execute**.
 it is how you opt **out** of the AOT guarantee. `Extrode.Jaunty.SourceGenerator` is not either — it runs
 inside the compiler and is never published.
 
-The count is enforced. `scripts/Verify-NativeAOT.ps1` fails the build if any reflection site in a
+The count is enforced. `scripts/verify-nativeaot.ps1` fails the build if any reflection site in a
 publishable assembly lacks a reviewed justification next to it, and `-Verbose` prints the whole
 inventory. There are **15** at the time of writing.
 
@@ -161,7 +161,7 @@ tool that generates source; it is never part of your published application.
 
 ## What the verifier does and does not prove
 
-`scripts/Verify-NativeAOT.ps1` checks that a justification **exists** next to each reflection
+`scripts/verify-nativeaot.ps1` checks that a justification **exists** next to each reflection
 site. It does not check that the justification is **true**, and it cannot trace a call graph.
 Treat a PASS as "every site has been reviewed", not as a proof of AOT safety.
 
