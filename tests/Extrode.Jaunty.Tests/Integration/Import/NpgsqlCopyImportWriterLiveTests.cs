@@ -4,6 +4,7 @@ using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Extensions.Npgsql;
 using Extrode.Jaunty.Import;
 using Extrode.Jaunty.Tests.Helpers;
+using Extrode.Jaunty.Tests.Helpers.Dialects;
 
 using Npgsql;
 
@@ -28,10 +29,18 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    // Consults DialectReachability.IsRequired the same way DialectDataAttributeBase does, so a
+    // broken/unreachable postgres service in CI (which sets JAUNTY_REQUIRE_POSTGRESQL) fails this
+    // class loudly instead of silently skipping all seven tests - the original version of this
+    // method only checked TestConfiguration.HasPostgreSql / caught the connect exception, never
+    // the require flag, so it could report green in CI having tested nothing.
     private static NpgsqlConnection OpenOrSkip()
     {
         if (!TestConfiguration.HasPostgreSql)
         {
+            if (DialectReachability.IsRequired(DialectReachability.RequirePostgreSql))
+                throw new InvalidOperationException($"PostgreSQL required by {DialectReachability.RequirePostgreSql} but not configured. Set JAUNTY_TEST_POSTGRESQL.");
+
             Assert.Skip("PostgreSQL not configured. Set JAUNTY_TEST_POSTGRESQL or ConnectionStrings:PostgreSql.");
         }
 
@@ -43,6 +52,9 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
         catch (Exception ex)
         {
             conn.Dispose();
+            if (DialectReachability.IsRequired(DialectReachability.RequirePostgreSql))
+                throw new InvalidOperationException($"PostgreSQL required by {DialectReachability.RequirePostgreSql} but unreachable: {ex.Message}", ex);
+
             Assert.Skip($"PostgreSQL not reachable: {ex.Message}");
         }
         return conn;
