@@ -137,6 +137,25 @@ public class GetAllTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void GetAllStream_WithCommandOptions_YieldsAllRows(DialectInfo dialect)
+    {
+        // coverage-gaps-2026-09-20: GetAllStream<T>(conn, options) had zero test callers passing
+        // CommandOptions<T> -- only the parameterless overload was exercised.
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        InsertRows(ctx.Connection, 3);
+
+        var rows = ctx.Connection.GetAllStream(CommandOptions<GetTestEntity>.WithTimeout(30)).ToList();
+
+        Assert.Equal(3, rows.Count);
+        Assert.All(rows, r => Assert.True(r.Id > 0));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GetAll_WithTransaction_ReadsWithinTx(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
