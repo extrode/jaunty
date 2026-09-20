@@ -10,10 +10,11 @@ using Xunit;
 namespace Extrode.Jaunty.Tests.Unit.Extensions.Reflection;
 
 /// <summary>
-/// coverage-gaps-2026-09-20: <c>GetTypedUpdateBinder</c>/<c>GetTypedDeleteBinder</c>'s
-/// <c>entityObj is not T</c> guard had no test reaching either — only a throwing type handler on
-/// the insert path was covered elsewhere (<see cref="ThrowingTypeHandlerContractTests"/>), which
-/// exercises a different branch of the same generated delegate.
+/// coverage-gaps-2026-09-20: <c>GetTypedInsertBinder</c>/<c>GetTypedUpdateBinder</c>/
+/// <c>GetTypedDeleteBinder</c>'s <c>entityObj is not T</c> guard had no test reaching any of the
+/// three — a throwing type handler on the insert path was covered elsewhere
+/// (<see cref="ThrowingTypeHandlerContractTests"/>), but that exercises the type-handler write-wrap
+/// branch, never the wrong-type guard.
 /// </summary>
 [Collection("Type Handler Operations")]
 public class TypedBinderWrongEntityTypeTests
