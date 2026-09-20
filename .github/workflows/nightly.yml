@@ -276,6 +276,10 @@ jobs:
         project:
           - Extrode.Jaunty.UnitTests
           - Extrode.Jaunty.Fluent.Tests
+          - Extrode.Jaunty.Tests
+          - Extrode.Jaunty.Scaffolding.Tests
+          - Extrode.Jaunty.SourceGenerator.Tests
+          - Extrode.Jaunty.FlatFiles.DuckDB.Tests
         include:
           # Extrode.Jaunty.Tests also exercises Internals/Parameters and Dialects code that
           # Extrode.Jaunty.UnitTests's own stryker-config.json mutates - without it in scope,
