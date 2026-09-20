@@ -179,13 +179,30 @@ untested either way.
 
 ## Status
 
-Discovery only — no fixes applied in this pass. All three findings above are candidates for
-follow-up test work — dialect type-mapping `[Theory]` coverage for the uncommon CLR types, targeted
-edge-case tests for the SQLite DDL tokenizer's comment/quote/bracket branches, and a
-`DetectProviderTests` suite covering ambiguous/boundary connection strings for each of the four
-providers — not yet done. The remaining survivor clusters (`MySqlSchemaReader.cs`,
-`SqlServerSchemaReader.cs`, `PostgreSqlSchemaReader.cs`, and DuckDB's `WriteBack*.cs` files) have
-not been drilled into.
+All three findings above are fixed, each on its own branch, each independently verified by a
+fable `review-deep` pass before merging into `dev`:
+
+- **Discovery 1** (dialect type-mapping): `ImportTypeMappingTests.cs` pins the exact SQL type for
+  all 8 previously-loosely-tested CLR types on both `SqlServerImportDialect` and
+  `PostgreSqlImportDialect`. Fable review found no issues.
+- **Discovery 2** (SQLite tokenizer): 6 new edge-case tests in `SQLiteSchemaReaderEdgeCaseTests.cs`
+  target the bracket-identifier, in-body comment, paren-depth, and `sawWithout`-latching branches.
+  A scoped Stryker re-run confirmed 8 previously-surviving mutants at the targeted lines are now
+  killed (matched by line/column/mutator/replacement, not raw survivor counts — a single-file
+  scoped run isn't directly comparable to the original whole-project run's totals). Fable review
+  caught one test whose only assertion passed even under the latched-flag bug it claimed to catch;
+  fixed by adding the discriminating negative case.
+- **Discovery 3** (`DetectProvider`): the original claim of "zero direct tests" was itself wrong —
+  a `tests/**/*.cs` grep run without `shopt -s globstar` silently missed two files one level too
+  deep, both with 12+ pre-existing `DetectProvider` test cases. Reverted the redundant test file
+  written on that false premise; added 3 narrowly-targeted `[Fact]`s to the existing
+  `ScaffolderTests.cs` for the conjuncts that were genuinely untested. Fable review caught that one
+  of the three didn't actually depend on the conjunct it claimed to test, and that a report claim
+  about `&&`/`||` mutants was unverified against the real Stryker data (partly false); both fixed.
+
+The remaining survivor clusters (`MySqlSchemaReader.cs`, `SqlServerSchemaReader.cs`,
+`PostgreSqlSchemaReader.cs`, and DuckDB's `WriteBack*.cs` files) have not been drilled into — this
+pass targeted the three highest-yield, already-documented findings only.
 
 Live-run reproduction: `dotnet stryker --concurrency 4` from
 `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/` or `tests/Extrode.Jaunty.Scaffolding.Tests/`
