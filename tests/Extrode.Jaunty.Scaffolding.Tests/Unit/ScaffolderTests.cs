@@ -130,4 +130,42 @@ public class ScaffolderTests
         var result = Scaffolder.DetectProvider("Server=localhost;Database=app;Uid=root;Pwd=x;");
         Assert.Equal(DatabaseProvider.MySql, result);
     }
+
+    // mutation-gaps-2026-09-21: live mutation testing found survivors in DetectProvider despite
+    // the coverage above - the three cases below cover branches this file otherwise never
+    // reaches at all (Integrated Security=, bare User=), plus the Postgres port heuristic's
+    // negative/boundary side.
+
+    [Fact]
+    public void DetectProvider_SqlServerIntegratedSecurity_DetectsSqlServer()
+    {
+        // Trusted_Connection= and User Id= are exercised elsewhere; Integrated Security= - the
+        // third alternative in that same conjunct - never appears in any other test. "User=" is
+        // added so the assertion actually depends on that conjunct: without Integrated
+        // Security=, this string has no Trusted_Connection=/User Id= signal for the SQL Server
+        // rule either, so it would fall through to the MySQL rule (Server= + Database= + User=)
+        // instead of the SqlServer default - a bare "Integrated Security=True;" alone would pass
+        // this assertion even if that alternative were mutated away, since the string would just
+        // fall to the SqlServer default at the bottom of the method either way.
+        var result = Scaffolder.DetectProvider("Server=.;Database=Foo;Integrated Security=True;User=root;Pwd=x;");
+        Assert.Equal(DatabaseProvider.SqlServer, result);
+    }
+
+    [Fact]
+    public void DetectProvider_MySqlWithBareUserKey_DetectsMySql()
+    {
+        // "Uid=" is exercised elsewhere; the bare "User=" alternative never appears.
+        var result = Scaffolder.DetectProvider("Server=localhost;Database=app;User=root;Pwd=x;");
+        Assert.Equal(DatabaseProvider.MySql, result);
+    }
+
+    [Fact]
+    public void DetectProvider_ServerAliasWithNonPostgresPort_DoesNotDetectPostgreSql()
+    {
+        // The positive counterpart (Port=5432) is DetectProvider_NpgsqlServerAliasWithDefaultPort_
+        // DetectsPostgreSql above; nothing exercises the negative side of that same comparison, so
+        // a mutant that always treats the port as the Postgres default would survive.
+        var result = Scaffolder.DetectProvider("Server=.;Port=1433;Database=app;User Id=sa;Password=x;");
+        Assert.Equal(DatabaseProvider.SqlServer, result);
+    }
 }

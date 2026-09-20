@@ -124,33 +124,48 @@ parsing-heavy and under-edge-case-tested; this is the first time it's been locat
 The remaining `MySqlSchemaReader.cs`/`SqlServerSchemaReader.cs`/`PostgreSqlSchemaReader.cs`
 survivors (88 combined) and `Scaffolder.cs` (46) have not been drilled into yet.
 
-## Discovery 3 — `Scaffolder.DetectProvider`'s connection-string heuristic has zero direct tests
+## Discovery 3 — `Scaffolder.DetectProvider`'s connection-string heuristic had a handful of untested conjuncts
 
-`Scaffolder.cs`'s 46 survivors include a striking case: `grep -rn "DetectProvider" tests/**/*.cs`
-returns nothing — no test file references it by name at all. It is `internal static`, so the only
-way any test reaches it is transitively, through `Scaffold(options)`/`ScaffoldAsync` with
-`Provider = DatabaseProvider.AutoDetect` and a real connection string — meaning something does
-execute the method (mutants here are `Survived`, not `NoCoverage`), but nothing asserts on its
-actual classification decision for an ambiguous or boundary connection string.
+**Correction:** the original pass here claimed `grep -rn "DetectProvider" tests/**/*.cs` returned
+nothing. That grep was run without `shopt -s globstar`, so `tests/**/*.cs` silently behaved like
+`tests/*/*.cs` (exactly one directory level) and missed
+`tests/Extrode.Jaunty.Scaffolding.Tests/Unit/ScaffolderTests.cs` and `ScaffolderDiagnosticsTests.cs`,
+both of which contain extensive, pre-existing direct coverage of `DetectProvider` (12+ `[Theory]`/
+`[Fact]` cases covering SQLite, SQL Server, PostgreSQL, MySQL, the Npgsql `Server=`/`Host=` alias
+ambiguity, and the unparseable-input fallback). An independent fable `review-deep` pass caught this
+and it led to briefly writing a ~90%-redundant new test file, which was reverted (`git rm`).
+
+What live mutation data actually showed, once the existing coverage was accounted for: every `&&`/
+`||` in the four detection heuristics *is* exercised by some existing test, but none of them isolate
+a single conjunct by giving it its only signal — e.g. `Trusted_Connection=` and `User Id=` both
+appear in tests that satisfy the SQL Server heuristic, but `Integrated Security=` (the third
+alternative in that same conjunct) never appears anywhere. Three genuine, narrow gaps were
+identified this way and closed with targeted `[Fact]` additions to the existing `ScaffolderTests.cs`
+rather than a new file: `Integrated Security=` as the sole SQL Server auth signal, bare `User=` as
+the sole MySQL identity signal, and the Postgres-port heuristic's negative/boundary case (a non-5432
+port with the `Server=`/`Host=`-alias shape).
 
 The method (`src/Extrode.Jaunty.Scaffolding/Scaffolder.cs:281`) is a deliberately-ordered set of
 heuristics with real, commented-on rationale — e.g. Postgres is checked *before* SQL Server
 specifically because Npgsql accepts `Server=`/`User Id=` as aliases for its own `Host=`/`Username=`
-keys, so a valid Npgsql string could otherwise satisfy the SQL Server heuristic first. Every `&&`
-in that ordering can be flipped to `||` (and vice versa) without any test failing:
+keys, so a valid Npgsql string could otherwise satisfy the SQL Server heuristic first. Not every
+`&&`/`||` in that ordering survives mutation — several are already caught by existing tests via
+short-circuit behavior (e.g. flipping the leading `&&` on line 315 or 320 changes which provider
+an *already-tested* connection string resolves to, so those specific mutants are `Killed`). The
+live mutation report showed these specific survivors before the three `[Fact]` additions above:
 
 ```csharp
 if (hasDatabase && (keys.ContainsKey("username") || hasUserId) &&
-    (keys.ContainsKey("host") || isPostgresPort))                  // -> && / || survive
+    (keys.ContainsKey("host") || isPostgresPort))
     return DatabaseProvider.PostgreSql;
 
-if ((hasServer || hasDataSource) &&
-    (hasInitialCatalog || hasDatabase) &&
+if ((hasServer || hasDataSource) &&                                  // -> || survives
+    (hasInitialCatalog || hasDatabase) &&                             // -> && survives
     (keys.ContainsKey("trusted_connection") || hasUserId || keys.ContainsKey("integrated security")))
-    return DatabaseProvider.SqlServer;                              // -> && / || survive, 3 spots
+    return DatabaseProvider.SqlServer;                                // -> && / || survive here too
 
-if (hasServer && hasDatabase && (keys.ContainsKey("uid") || keys.ContainsKey("user")))
-    return DatabaseProvider.MySql;                                  // -> && / || survive
+if (hasServer && hasDatabase && (keys.ContainsKey("uid") || keys.ContainsKey("user")))  // -> && / || survive
+    return DatabaseProvider.MySql;
 ```
 
 Given the code comments explicitly describe *why* the Postgres-before-SqlServer ordering exists
