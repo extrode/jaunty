@@ -248,6 +248,21 @@ public class CommandOptionsSweepTests
         Assert.Equal(CommandType.StoredProcedure, connection.ExecutedCommandType);
     }
 
+    [Fact]
+    public async Task QueryAsync_WithTimeoutAndCommandType_AppliesBoth()
+    {
+        using RecordingDbConnection connection = OpenSeeded();
+
+        List<SweepWidget> widgets = await connection.QueryAsync<SweepWidget>(
+            "SELECT id AS Id, name AS Name FROM sweep_widget",
+            new CommandOptions<SweepWidget>(commandTimeout: 77, commandType: CommandType.StoredProcedure),
+            TestContext.Current.CancellationToken);
+
+        Assert.Single(widgets);
+        Assert.Equal(77, connection.ExecutedTimeout);
+        Assert.Equal(CommandType.StoredProcedure, connection.ExecutedCommandType);
+    }
+
     // ------------------------------------------------------------------
     // Closed-connection auto-open/close lifecycle
     // ------------------------------------------------------------------
@@ -286,11 +301,33 @@ public class CommandOptionsSweepTests
     }
 
     [Fact]
+    public async Task GetAllAsync_GivenAClosedConnection_OpensExecutesAndCloses()
+    {
+        using var fixture = new ClosedConnectionFixture();
+
+        List<SweepWidget> widgets = await fixture.Connection.GetAllAsync<SweepWidget>(TestContext.Current.CancellationToken);
+
+        Assert.Single(widgets);
+        Assert.Equal(ConnectionState.Closed, fixture.Connection.State);
+    }
+
+    [Fact]
     public void Delete_GivenAClosedConnection_OpensExecutesAndCloses()
     {
         using var fixture = new ClosedConnectionFixture();
 
         int rows = fixture.Connection.Delete<SweepWidget>(new SweepWidget { Id = 1 });
+
+        Assert.Equal(1, rows);
+        Assert.Equal(ConnectionState.Closed, fixture.Connection.State);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_GivenAClosedConnection_OpensExecutesAndCloses()
+    {
+        using var fixture = new ClosedConnectionFixture();
+
+        int rows = await fixture.Connection.DeleteAsync<SweepWidget>(new SweepWidget { Id = 1 }, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, rows);
         Assert.Equal(ConnectionState.Closed, fixture.Connection.State);
@@ -308,11 +345,33 @@ public class CommandOptionsSweepTests
     }
 
     [Fact]
+    public async Task UpdateAsync_GivenAClosedConnection_OpensExecutesAndCloses()
+    {
+        using var fixture = new ClosedConnectionFixture();
+
+        int rows = await fixture.Connection.UpdateAsync(new SweepWidget { Id = 1, Name = "b" }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, rows);
+        Assert.Equal(ConnectionState.Closed, fixture.Connection.State);
+    }
+
+    [Fact]
     public void Upsert_GivenAClosedConnection_OpensExecutesAndCloses()
     {
         using var fixture = new ClosedConnectionFixture();
 
         int rows = fixture.Connection.Upsert(new SweepWidget { Id = 1, Name = "b" });
+
+        Assert.Equal(1, rows);
+        Assert.Equal(ConnectionState.Closed, fixture.Connection.State);
+    }
+
+    [Fact]
+    public async Task UpsertAsync_GivenAClosedConnection_OpensExecutesAndCloses()
+    {
+        using var fixture = new ClosedConnectionFixture();
+
+        int rows = await fixture.Connection.UpsertAsync(new SweepWidget { Id = 1, Name = "b" }, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, rows);
         Assert.Equal(ConnectionState.Closed, fixture.Connection.State);
@@ -347,6 +406,18 @@ public class CommandOptionsSweepTests
         using var fixture = new ClosedConnectionFixture();
 
         List<SweepWidget> widgets = fixture.Connection.Query<SweepWidget>("SELECT id AS Id, name AS Name FROM sweep_widget");
+
+        Assert.Single(widgets);
+        Assert.Equal(ConnectionState.Closed, fixture.Connection.State);
+    }
+
+    [Fact]
+    public async Task QueryAsync_GivenAClosedConnection_OpensExecutesAndCloses()
+    {
+        using var fixture = new ClosedConnectionFixture();
+
+        List<SweepWidget> widgets = await fixture.Connection.QueryAsync<SweepWidget>(
+            "SELECT id AS Id, name AS Name FROM sweep_widget", TestContext.Current.CancellationToken);
 
         Assert.Single(widgets);
         Assert.Equal(ConnectionState.Closed, fixture.Connection.State);
