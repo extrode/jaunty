@@ -55,8 +55,8 @@ jaunty/
 | Folder | Purpose | Key Contents |
 |--------|---------|--------------|
 | `src/` | Source code for the 9 packages plus the source generator that ships inside the core package | `Extrode.Jaunty/`, `Extrode.Jaunty.Fluent/`, `Extrode.Jaunty.FlatFiles/`, `Extrode.Jaunty.SourceGenerator/` |
-| `tests/` | The 10 test projects, shared helpers, and the server seed scripts | `Extrode.Jaunty.Tests/`, `Extrode.Jaunty.UnitTests/`, `Helpers/`, `*-setup.sql` |
-| `docs/` | Documentation source | Organized by topic (00-quick-start through 08-learn), plus `decisions/`, `plans/`, `specs/`, `lessons/`, `architecture/` |
+| `tests/` | The 10 test projects and shared helpers | `Extrode.Jaunty.Tests/`, `Extrode.Jaunty.UnitTests/`, `Helpers/` |
+| `docs/` | Documentation source | Organized by topic (00-quick-start through 08-learn), plus `decisions/`, `plans/`, `specs/`, `lessons/` |
 | `docs/specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
 | `work/` | The work underway. **Untracked** — held in a private repository, so a clone will not contain it | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
 | `audit/` | The 36-round audit record. **Untracked**, same private repository, which also holds the summary written from it | `roundNN/`, `findings-registry.md`, `coverage-ledger.md` |
@@ -122,10 +122,6 @@ src/
 ```
 tests/
 ├── Helpers/                       # Shared across projects
-├── database-setup.sql             # SQL Server seed
-├── postgres-setup.sql
-├── mysql-setup.sql
-├── mariadb-setup.sql
 │
 ├── Extrode.Jaunty.Tests/                  # Core integration suite, per engine
 │   ├── Integration/               # Read/, Write/, Multiple/, Streaming/, StoredProcedure/, Dialects/ ...
