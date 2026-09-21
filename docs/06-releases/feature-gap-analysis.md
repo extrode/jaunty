@@ -470,6 +470,6 @@ Use this section to record decisions made during discussion.
 
 ## Appendix A: Related Documentation
 
-- [architecture-decisions.md](../02-architecture/architecture-decisions.md)
+- [architecture-decisions.md](../_decisions/architecture-decisions.md)
 - [Design Philosophy](../02-architecture/design-philosophy.md)
 - [Known Limitations](../03-development/limitations.md)

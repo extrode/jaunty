@@ -12,7 +12,7 @@ Historical documents from Jaunty development, organized by time period.
 - Temporary artifacts (benchmarks, screenshots from specific dates)
 
 **DO NOT use archives for**:
-- Current guidance (see docs outside `99-archive/`)
+- Current guidance (see docs outside `_archive/`)
 - Active development reference
 - Production decisions
 
@@ -34,7 +34,7 @@ Historical documents from Jaunty development, organized by time period.
 Archives are organized by **content period** (when the content was created/relevant), not archive date:
 
 ```
-99-archive/
+_archive/
 ├── 2026-01-early-development/     # Content from January 2026
 ├── 2026-02-code-quality/          # Content from February 2026
 └── 2026-03-misc-artifacts/        # Ongoing/miscellaneous
