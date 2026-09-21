@@ -224,10 +224,10 @@ The PostgreSQL and MySQL versions alias their result columns to PascalCase
 Postgres). That is load-bearing: `Product.ReadEntity` looks up `ProductId`, not
 `product_id`, so an unaliased procedure returns rows that cannot be mapped.
 
-> `tests/database-setup.sql`, `tests/postgres-setup.sql` and `tests/mysql-setup.sql`
-> are an older, divergent set of the same procedures. The `data/` scripts above are the
-> ones `scripts/reset-test-databases.ps1` uses and the ones the green suite was verified
-> against. Prefer them.
+> An older, divergent set of the same procedures used to live at `tests/database-setup.sql`,
+> `tests/postgres-setup.sql` and `tests/mysql-setup.sql`; removed as dead (2026-09-21) since
+> nothing referenced them. The `data/` scripts above are the ones
+> `scripts/reset-test-databases.ps1` uses and the ones the green suite was verified against.
 
 ### Step 4: Configure connection strings
 

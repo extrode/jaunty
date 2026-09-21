@@ -1,4 +1,4 @@
-# 07-design — Visual Design Source
+# site-design — Visual Design Source
 
 This directory contains the authoritative visual design for the Jaunty documentation site.
 

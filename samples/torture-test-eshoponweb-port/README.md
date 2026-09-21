@@ -27,3 +27,11 @@ See the private torture-test gaps log for the 2 real Jaunty bugs/gaps this surfa
 `OFFSET`/`FETCH` requiring a preceding `ORDER BY` that `SqlServerDialect.GetPagingSql`
 doesn't enforce or supply) and the private torture-test lessons-learned notes for process
 lessons (dos and don'ts for running a test like this).
+
+## Reference DDL
+
+`db/{mariadb,mssql,mysql,postgres}/schema.sql` are reference copies of the DDL each
+dialect's embedded C# schema class creates at runtime (e.g. `db/mariadb/schema.sql` mirrors
+`src/Infrastructure/Data/Persistence/MySqlSchema.cs`, which MariaDB shares). They aren't
+executed directly — kept here so the shape of each dialect's schema is readable without
+digging through the C#.
