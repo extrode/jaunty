@@ -1,6 +1,6 @@
 # Tasks: Fluent NativeAOT-Safe Metadata Resolution
 
-**Input**: `docs/specs/003-fluent-nativeaot-metadata/`
+**Input**: `docs/_specs/003-fluent-nativeaot-metadata/`
 **Prerequisites**: `plan.md` (required), `spec.md` (required)
 
 ---

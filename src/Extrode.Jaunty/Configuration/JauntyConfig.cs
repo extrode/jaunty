@@ -65,7 +65,7 @@ public static class JauntyConfig
     /// The default is not raised for large reads, and there is no growth logic to keep an unhinted
     /// list under the large-object threshold: a caller reading thousands of rows passes
     /// <c>CommandOptions&lt;T&gt;.WithExpectedRowCount(n)</c>. Measured and decided 2026-09-02,
-    /// docs/decisions/2026-09-02-012-result-list-default-capacity-stays-64.md.
+    /// docs/_decisions/2026-09-02-012-result-list-default-capacity-stays-64.md.
     /// </remarks>
     public static int QueryResultCapacity
     {

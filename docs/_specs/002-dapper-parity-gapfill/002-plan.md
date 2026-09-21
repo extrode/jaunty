@@ -3,7 +3,7 @@
 **Branch**: `002-dapper-parity-gapfill`
 **Date**: 2026-07-03
 **Spec**: [002-spec.md](002-spec.md)
-**Input**: `/specs/002-dapper-parity-gapfill/spec.md`
+**Input**: `/_specs/002-dapper-parity-gapfill/spec.md`
 
 ---
 
@@ -51,7 +51,7 @@
 ### Documentation (this feature)
 
 ```
-docs/specs/002-dapper-parity-gapfill/
+docs/_specs/002-dapper-parity-gapfill/
 ├── spec.md          # Feature spec
 ├── plan.md          # This file
 ├── tasks.md         # Task list

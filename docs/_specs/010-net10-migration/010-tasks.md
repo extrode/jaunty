@@ -48,12 +48,12 @@ files** are untouched.
   **DONE 2026-07-30, merged `237b1493`.** Measured 3 → 2 in the measurement worktree via
   `dotnet build src/Extrode.Jaunty/Extrode.Jaunty.csproj -f net10.0 --no-incremental`. net8 clean build 0/0. Unit
   suite 2913 passed / 0 failed. Perturbation-checked: gutting the method fails exactly 2 tests.
-- [x] **T2** 009 scope amendment — files: `docs/specs/009-aot-annotation-pass/009-spec.md` —
+- [x] **T2** 009 scope amendment — files: `docs/_specs/009-aot-annotation-pass/009-spec.md` —
   covers: §3.3 — done when: `ParameterBinder:81/:920` and `ParameterCache`'s `IL2070` are in 009's
   scope and the two `IL2111`s are marked closed by 010.
   **DONE 2026-07-30.** T1 also removed `LoggingInterceptor` from 009's residue entirely.
 - [x] **T3** AC2 clean-build clause and AC5 rescope — files:
-  `docs/specs/010-net10-migration/010-spec.md` — covers: AC2, AC5 — done when: AC5 states three
+  `docs/_specs/010-net10-migration/010-spec.md` — covers: AC2, AC5 — done when: AC5 states three
   mechanical checks (publish exit 0 with no new `ilc` diagnostic; exit code equals net8; stdout
   equals net8 modulo timings and paths).
   **DONE 2026-07-30.** The AC2 *relaxation* the first draft called mandatory was dissolved by T1.
@@ -325,7 +325,7 @@ files** are untouched.
   (+843%), Dapper (+821%), RepoDb (+826%) on the same cases. Delta section appended to
   `benchmarks/BENCHMARK-RESULTS.md`; artifacts
   `docs/benchmark-artifacts/results/BenchmarkRun-joined-2026-07-30-17-29-17-report.{csv,md}`.
-- [x] **T21** Set `Status: done` — files: `docs/specs/010-net10-migration/010-spec.md` — covers: all
+- [x] **T21** Set `Status: done` — files: `docs/_specs/010-net10-migration/010-spec.md` — covers: all
   — done when: every AC is met or explicitly amended, with the command that produced each claim.
   DONE 2026-07-30: Status flipped to done; §8 evidence table carries a command per AC; AC2's
   deferral clause struck with amendment (T5 dissolved; two NoWarn scope exclusions recorded);

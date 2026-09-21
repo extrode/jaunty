@@ -26,7 +26,7 @@ namespace Extrode.Jaunty.Fluent.Tests.Unit;
 ///
 /// <para>
 /// Not reachable through a shipped dialect: all four return <c>"@"</c> from <c>ParameterPrefix</c>.
-/// It is the assumption <c>docs/specs/008-dialect-parameter-binding</c> exists to remove, so these
+/// It is the assumption <c>docs/_specs/008-dialect-parameter-binding</c> exists to remove, so these
 /// tests pin the behaviour ahead of that work rather than leaving it to be rediscovered.
 /// </para>
 /// </summary>

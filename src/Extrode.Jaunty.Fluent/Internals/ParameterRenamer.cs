@@ -39,7 +39,7 @@ internal static class ParameterRenamer
             // pattern faithful to the original name.
             //
             // Not reachable through a shipped dialect today: all four return "@" from
-            // ParameterPrefix. It is exactly the assumption docs/specs/008-dialect-parameter-binding
+            // ParameterPrefix. It is exactly the assumption docs/_specs/008-dialect-parameter-binding
             // sets out to remove, so it is fixed with that work in view rather than found again
             // afterwards.
             bool hasSigil = name.Length > 0 && name[0] is '@' or '$' or ':';

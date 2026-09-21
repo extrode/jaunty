@@ -20,7 +20,7 @@ A `PackageReference` to `Microsoft.Extensions.Logging.Abstractions` added to the
 because a logging call was convenient, and the shipped nuspec growing a dependency group.
 
 ## Proof notes
-Enacted on approval of the plan in ~/.claude/docs/plans/2026-09-18-014-laws-and-proofs-workflow.md.
+Enacted on approval of the plan in ~/.claude/docs/_plans/2026-09-18-014-laws-and-proofs-workflow.md.
 The plan's draft said "no PackageReference at all"; the csproj has two, both netstandard2.0-only
 backports that `PackageDependencyTests` already pins, so the statement was corrected to the
 contract that is true and that test became the proof.

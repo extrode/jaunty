@@ -3,7 +3,7 @@
 **Branch**: `003-fluent-nativeaot-metadata`
 **Date**: 2026-07-07
 **Spec**: [003-spec.md](003-spec.md)
-**Input**: `docs/specs/003-fluent-nativeaot-metadata/003-spec.md`
+**Input**: `docs/_specs/003-fluent-nativeaot-metadata/003-spec.md`
 
 ---
 
@@ -53,7 +53,7 @@ to `JauntyConfig.ReflectionTableMetadataResolver` only when no source-generated 
 ### Documentation (this feature)
 
 ```
-docs/specs/003-fluent-nativeaot-metadata/
+docs/_specs/003-fluent-nativeaot-metadata/
 ├── spec.md          # Feature spec
 ├── plan.md          # This file
 └── tasks.md         # Task list
