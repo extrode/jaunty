@@ -85,13 +85,14 @@ Quality assurance and testing documentation:
 
 - **[05-quality/](05-quality/README.md)**
   - [Code Coverage](05-quality/code-coverage.md)
-  - [Production Readiness Report](05-quality/reports/production-readiness-2026-07-02.md)
-  - [Coverage Gap Inventory](05-quality/reports/coverage-gaps-2026-07-04.md)
-  - [Benchmarks](05-quality/reports/benchmarks-2026-09-02.md) - four providers against a corrected
-    hand-coded baseline; earlier reports [2026-07-29](05-quality/reports/benchmarks-2026-07-29.md)
-    and [2026-07-04](05-quality/reports/benchmarks-2026-07-04.md)
   - [How Jaunty got fast](08-learn/how-jaunty-got-fast.md) - the read-path story, code before
     and after each step, with the numbers
+- **[_reports/](_reports/)** - dated, point-in-time snapshots, never revised in place
+  - [Production Readiness Report](_reports/production-readiness-2026-07-02.md)
+  - [Coverage Gap Inventory](_reports/coverage-gaps-2026-07-04.md)
+  - [Benchmarks](_reports/benchmarks-2026-09-02.md) - four providers against a corrected
+    hand-coded baseline; earlier reports [2026-07-29](_reports/benchmarks-2026-07-29.md)
+    and [2026-07-04](_reports/benchmarks-2026-07-04.md)
 
 ### 6. Releases & Planning
 
@@ -159,13 +160,13 @@ leaves a published site that disagrees with the markdown it came from, so the tw
 
 ## Historical Documents
 
-- **[99-archive/](99-archive/README.md)** - Historical and superseded documents
+- **[_archive/](_archive/README.md)** - Historical and superseded documents
   - Early development notes (2026-01)
   - Code quality initiatives (2026-02)
   - NativeAOT migration (2026-02)
   - Miscellaneous artifacts (2026-03+)
 
-> **Note**: Only use `99-archive/` for context and history. Use documentation outside `99-archive/` as the source of truth.
+> **Note**: Only use `_archive/` for context and history. Use documentation outside `_archive/` as the source of truth.
 
 ---
 

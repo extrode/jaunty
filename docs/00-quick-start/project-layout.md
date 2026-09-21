@@ -56,7 +56,7 @@ jaunty/
 |--------|---------|--------------|
 | `src/` | Source code for the 9 packages plus the source generator that ships inside the core package | `Extrode.Jaunty/`, `Extrode.Jaunty.Fluent/`, `Extrode.Jaunty.FlatFiles/`, `Extrode.Jaunty.SourceGenerator/` |
 | `tests/` | The 10 test projects and shared helpers | `Extrode.Jaunty.Tests/`, `Extrode.Jaunty.UnitTests/`, `Helpers/` |
-| `docs/` | Documentation source | Organized by topic (00-quick-start through 08-learn), plus `_decisions/`, `_laws/`, `_plans/`, `_specs/`, `_lessons/`, `_site-design/` |
+| `docs/` | Documentation source | Organized by topic (00-quick-start through 08-learn), plus `_decisions/`, `_laws/`, `_plans/`, `_reports/`, `_specs/`, `_lessons/`, `_archive/`, `_site-design/` |
 | `docs/_specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
 | `work/` | The work underway. **Untracked** — held in a private repository, so a clone will not contain it | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
 | `audit/` | The 36-round audit record. **Untracked**, same private repository, which also holds the summary written from it | `roundNN/`, `findings-registry.md`, `coverage-ledger.md` |
@@ -154,15 +154,16 @@ docs/
 ├── 02-architecture/               # Architecture docs
 ├── 03-development/                # Development guides
 ├── 04-extensions/                 # Extension docs
-├── 05-quality/                    # Quality, testing, audit record, benchmark reports
+├── 05-quality/                    # Quality and testing guides, living pages only
 ├── 06-releases/                   # Release runbook, order templates
 ├── 08-learn/                      # Tutorials, exercises, error messages, migration guides
-├── 99-archive/                    # Historical documents
+├── _archive/                      # Historical, superseded documents (never revised in place)
 ├── _assets/                       # Media assets (logos, charts, diagrams)
 ├── _site-design/                  # Docs-site visual design source
 ├── _decisions/                    # Dated decision records
 ├── _laws/                         # Invariants that must hold before merge
 ├── _plans/                        # Dated implementation plans
+├── _reports/                      # Dated point-in-time reports (benchmarks, coverage, audits)
 ├── _specs/                        # Numbered feature specifications
 ├── _lessons/                      # Lessons for AI assistants and for humans
 ├── constitution.md                # The binding rules for the codebase
@@ -179,8 +180,7 @@ docs/
 |------|------------|---------|
 | Documentation | `lowercase-with-hyphens.md` | `api-design-guidelines.md` |
 | Folders | `lowercase-with-hyphens/` | `00-quick-start/` |
-| Special | `_prefix/` sorts first | `_assets/` |
-| Special | `99-prefix/` sorts last | `99-archive/` |
+| Special | `_prefix/` marks a folder outside the numbered reading order - site infrastructure or a dated, append-only record (never revised in place) | `_assets/`, `_decisions/`, `_archive/` |
 
 See [`03-development/file-naming-convention.md`](../03-development/file-naming-convention.md) for the complete standard.
 
@@ -218,7 +218,7 @@ See [`03-development/file-naming-convention.md`](../03-development/file-naming-c
 | API reference | [`docs/01-api-reference/`](../01-api-reference/README.md) |
 | Architecture | [`docs/02-architecture/`](../02-architecture/README.md) |
 | Development guides | [`docs/03-development/`](../03-development/README.md) |
-| Historical docs | [`docs/99-archive/`](../99-archive/) |
+| Historical docs | [`docs/_archive/`](../_archive/) |
 
 ---
 

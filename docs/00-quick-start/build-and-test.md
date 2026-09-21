@@ -161,7 +161,7 @@ Benchmarks are in a separate project. Run with:
 dotnet run -c Release --project benchmarks/Extrode.Jaunty.Benchmarks
 ```
 
-The published reports are under [`../05-quality/reports/`](../05-quality/README.md).
+The published reports are under [`../_reports/`](../05-quality/README.md).
 
 ## See Also
 

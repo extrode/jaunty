@@ -44,7 +44,7 @@ for that: contributions require a signed CLA and must be authored by a human
 ## Docs
 
 - `docs/` is numbered by area (`00-quick-start` through `08-learn`); see
-  [docs/README.md](docs/README.md) for the index. `docs/99-archive/` is frozen
+  [docs/README.md](docs/README.md) for the index. `docs/_archive/` is frozen
   history — don't edit it to fix a broken link, update the citing side instead.
 - Before writing code or docs, check
   [api-design-guidelines.md](docs/03-development/api-design-guidelines.md) and

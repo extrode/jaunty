@@ -8,7 +8,7 @@ Jaunty is a micro-ORM for .NET: you write SQL, it gives you objects back, and it
 
 **The reflection tax.** Jaunty resolves row mappers through a fixed ladder, and reflection is the last rung, not the first. See the diagram below - this is the design decision most users never notice, and the reason Jaunty works under Native AOT where reflection-based mappers break.
 
-**Allocation overhead.** Measured against Dapper, EF Core, RepoDb, and linq2db in the in-repo benchmark suite, Jaunty is the lowest-allocating of the compared ORMs and competitive with Dapper on throughput (see the [quality section](../05-quality/README.md) for the published benchmark reports - the claims here are measured, not aspirational; the full numbers are in [benchmarks-2026-09-02.md](../05-quality/reports/benchmarks-2026-09-02.md)).
+**Allocation overhead.** Measured against Dapper, EF Core, RepoDb, and linq2db in the in-repo benchmark suite, Jaunty is the lowest-allocating of the compared ORMs and competitive with Dapper on throughput (see the [quality section](../05-quality/README.md) for the published benchmark reports - the claims here are measured, not aspirational; the full numbers are in [benchmarks-2026-09-02.md](../_reports/benchmarks-2026-09-02.md)).
 
 **Slow bulk writes.** `Extrode.Jaunty.Extensions.Reflection` routes 100+ row operations to native bulk APIs per provider: `SqlBulkCopy` on SQL Server, binary `COPY` on PostgreSQL, chunked multi-row `INSERT` on MySQL/MariaDB, and a prepared-statement loop on SQLite (where "clever" bulk paths measured slower than the simple one, so Jaunty does the simple one).
 
@@ -67,4 +67,4 @@ Rule of thumb: JauntyQ when your queries are known at build time and you can com
 
 - [Quick start](README.md) - install and first query in five minutes.
 - [Learn by doing](../08-learn/README.md) - a guided tutorial and coding exercises.
-- Design decisions - why strict mapping, why `CommandOptions`, why the single-scalar parameter shorthand stops at one name: [Under the hood](../../README.md#under-the-hood) in the repository README and [architecture-decisions.md](../02-architecture/architecture-decisions.md).
+- Design decisions - why strict mapping, why `CommandOptions`, why the single-scalar parameter shorthand stops at one name: [Under the hood](../../README.md#under-the-hood) in the repository README and [architecture-decisions.md](../_decisions/architecture-decisions.md).

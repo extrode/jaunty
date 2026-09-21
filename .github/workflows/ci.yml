@@ -48,7 +48,7 @@ permissions:
 #
 # Ports are offset from both each engine's default AND from this repo's own docker-compose.yml
 # (mssql 1433->1435, postgres 5432->5434, mysql/mariadb 3306->3309/3310). The self-hosted runner
-# is a developer's own machine, which - per docs/05-quality/reports - routinely has its own
+# is a developer's own machine, which - per docs/_reports - routinely has its own
 # long-lived torture-{postgres,mysql,mariadb} containers bound to docker-compose.yml's ports
 # (5433/3308/3307) for local dev-box testing. Binding CI's ephemeral containers to those same
 # ports would collide with them rather than fail cleanly, exactly the trap the pre-existing mssql
