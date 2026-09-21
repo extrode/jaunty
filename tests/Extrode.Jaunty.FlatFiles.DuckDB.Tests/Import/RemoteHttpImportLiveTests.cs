@@ -105,9 +105,11 @@ public sealed class RemoteHttpImportLiveTests : IDisposable
         // fine (this machine can already reach extensions.duckdb.org, verified by the two tests
         // above), and the failure is RegisterSource's later read against the closed port. The
         // [Fact(Timeout = ...)] is what actually backs "RatherThanHanging" - without it, a real
-        // hang would hang the test run instead of failing it. FlatFile.Open is synchronous, so
-        // it's run on the thread pool and awaited with the test's cancellation token so xunit can
-        // still tear the run down promptly if the timeout fires.
+        // hang would hang the test run instead of failing it. FlatFile.Open is synchronous and
+        // takes no CancellationToken, so it can't be cancelled once it's running; the token below
+        // is referenced only to satisfy xUnit1069 (the pool thread would still leak until DuckDB
+        // itself gives up), and WaitAsync lets the await return the moment the timeout fires
+        // instead of blocking on the (uncancellable) Task.Run.
         var probe = new TcpListener(IPAddress.Loopback, 0);
         probe.Start();
         int deadPort = ((IPEndPoint)probe.LocalEndpoint).Port;
@@ -116,7 +118,8 @@ public sealed class RemoteHttpImportLiveTests : IDisposable
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
 
         await Assert.ThrowsAnyAsync<Exception>(() =>
-            Task.Run(() => FlatFile.Open($"http://127.0.0.1:{deadPort}/missing.csv"), cancellationToken));
+            Task.Run(() => FlatFile.Open($"http://127.0.0.1:{deadPort}/missing.csv"))
+                .WaitAsync(cancellationToken));
     }
 
     /// <summary>
