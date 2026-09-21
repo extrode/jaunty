@@ -156,10 +156,9 @@ docs/
 ├── 04-extensions/                 # Extension docs
 ├── 05-quality/                    # Quality, testing, audit record, benchmark reports
 ├── 06-releases/                   # Release runbook, order templates
-├── 07-design/                     # Docs-site design source
 ├── 08-learn/                      # Tutorials, exercises, error messages, migration guides
 ├── 99-archive/                    # Historical documents
-├── _assets/                       # Media assets (logos, charts, diagrams)
+├── _assets/                       # Media assets (logos, charts, diagrams); site-design/ holds docs-site visual design source
 ├── decisions/                     # Dated decision records
 ├── plans/                         # Dated implementation plans
 ├── specs/                         # Numbered feature specifications
