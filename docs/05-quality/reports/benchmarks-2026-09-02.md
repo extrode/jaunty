@@ -27,7 +27,7 @@ Three things in Jaunty's read path and three in the harness. The read-path chang
 1. A `decimal` property on a column that reports `double` is read through `GetDouble` and cast,
    decided once per result set. On SQLite that is every `REAL` column.
 2. The per-column `IsDBNull` pre-check ahead of non-nullable value types is gone; the named
-   NULL error is produced from a `catch` instead ([decision 010](../../decisions/2026-09-02-010-null-guard-by-catch-not-precheck.md)).
+   NULL error is produced from a `catch` instead ([decision 010](../../_decisions/2026-09-02-010-null-guard-by-catch-not-precheck.md)).
 3. A custom mapper is handed to the row loop as given, without a wrapping delegate.
 
 The harness fixes answer the validity findings the July report and a 2026-09-02 review raised:
@@ -115,7 +115,7 @@ starts at the default 64 doubles to 16,384 slots for 10,000 rows, and that last 
 Confirmed the same evening by setting the default to 10,000 in the harness and re-running
 PostgreSQL at 10,000 rows: unhinted `Query<T>` 4,228 us, no Gen2, the hinted case's allocation.
 The default stays 64; the reasoning is in
-[decision 012](../../decisions/2026-09-02-012-result-list-default-capacity-stays-64.md). EF Core's 100-row MariaDB case at 9 ms is
+[decision 012](../../_decisions/2026-09-02-012-result-list-default-capacity-stays-64.md). EF Core's 100-row MariaDB case at 9 ms is
 `ServerVersion.AutoDetect` making a round trip inside the measured region, a harness cost, not a
 library one.
 
@@ -147,7 +147,7 @@ delegate meeting a changed shape, and on Microsoft.Data.Sqlite that is a native 
 ## SQLite, 10,000 rows, after the `FieldCount` guard removal
 
 Later the same day the per-row `reader.FieldCount` check was removed from the generated row mapper
-([decision 011](../../decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)) and
+([decision 011](../../_decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)) and
 the run above was repeated on the same harness: 3m40s for 22 cases. **The 10,000-row SQLite rows in
 the README come from this run.**
 

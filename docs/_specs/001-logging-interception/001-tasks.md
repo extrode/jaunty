@@ -1,6 +1,6 @@
 # Tasks: Logging and Command Interception
 
-**Input**: `docs/specs/001-logging-interception/`
+**Input**: `docs/_specs/001-logging-interception/`
 **Prerequisites**: `plan.md` (required), `spec.md` (required)
 
 ---

@@ -21,7 +21,7 @@ is a bug (docs/constitution.md, Architecture invariants).
 returning two setters and an entity whose `Value` stays 0.
 
 ## Proof notes
-Enacted on approval of the plan in ~/.claude/docs/plans/2026-09-18-014-laws-and-proofs-workflow.md.
+Enacted on approval of the plan in ~/.claude/docs/_plans/2026-09-18-014-laws-and-proofs-workflow.md.
 The plan named `DrDispatcher.cs` as the scope; the strict-versus-projection decision is made in
 the Reflection extension's `MetadataCache.GetSetters`, so the scope was corrected to the code
 that throws.

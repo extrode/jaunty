@@ -1,6 +1,6 @@
 # Tasks: GroupBy on Joined Queries
 
-**Input**: `docs/specs/004-fluent-groupby-joins/`
+**Input**: `docs/_specs/004-fluent-groupby-joins/`
 **Prerequisites**: `plan.md` (required), `spec.md` (required)
 
 ---

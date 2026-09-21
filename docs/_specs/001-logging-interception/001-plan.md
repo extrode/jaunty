@@ -3,7 +3,7 @@
 **Branch**: `001-logging-interception`
 **Date**: 2026-03-10
 **Spec**: [001-spec.md](001-spec.md)
-**Input**: `/specs/001-logging-interception/spec.md`
+**Input**: `/_specs/001-logging-interception/spec.md`
 
 ---
 
@@ -54,7 +54,7 @@
 ### Documentation (this feature)
 
 ```
-docs/specs/001-logging-interception/
+docs/_specs/001-logging-interception/
 ├── spec.md          # Feature spec
 ├── plan.md          # This file
 ├── tasks.md         # Task list
