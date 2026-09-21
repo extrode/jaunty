@@ -28,7 +28,7 @@ for that: contributions require a signed CLA and must be authored by a human
 
 - Every change carries tests in the same branch — no "add tests later."
 - Run the full suite before merging: `dotnet test Jaunty.slnx`.
-- `docs/laws/` holds invariants that must hold before merge, each proven by a
+- `docs/_laws/` holds invariants that must hold before merge, each proven by a
   tagged test.
 - Any reflection call added under `src/` needs an `AOT-SAFE` justification
   comment — `scripts/verify-nativeaot.ps1` fails CI otherwise.

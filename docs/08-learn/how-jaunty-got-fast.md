@@ -118,7 +118,7 @@ and linq2db, because none of them pre-size. On PostgreSQL the unhinted read was 
 case gave 4.2 ms with no Gen2, so the growth is the whole gap. The default stays 64 all the same:
 a default sized for a 10,000-row read is the wrong default for a library whose most common query
 returns one row, and the hint costs one argument
-([decision 012](../decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
+([decision 012](../_decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
 
 ## The number that did not fit
 
@@ -170,7 +170,7 @@ column. Every supported provider's typed getter already throws on NULL, so the r
 in one `try` per row, and the `catch` walks the non-nullable ordinals to name the column. A
 `try` region costs nothing until something throws. The guarantee is unchanged, the message is
 unchanged, and the provider's exception rides along as `InnerException`. Decision 010 in
-`docs/decisions/` records why this must not be reverted.
+`docs/_decisions/` records why this must not be reverted.
 
 The emitted mapper for the benchmark entity, before and after:
 
@@ -316,7 +316,7 @@ the closure per result set, so the reuse it protected against never happens insi
 a caller that keeps a delegate across `NextResult()` is misusing a per-result-set factory.
 Removing it took `Query<T>` at 10,000 rows on SQLite from 5.42 ms to 4.95 ms, 1.17x the hand
 loop, measured alone the same evening
-([decision 011](../decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
+([decision 011](../_decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
 What remains is the `IsDBNull` on the nullable `product_name` column, which the hand loop skips
 and the mapper cannot: NULL is a legitimate value there.
 

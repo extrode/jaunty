@@ -9,7 +9,7 @@ and, more usefully, a **gate** for deciding where each is worth adding to a code
 has 8,471 passing tests. In jaunty it was an orphan — not merely un-actioned but **untracked**:
 the file was never committed, so no spec, plan or todo referenced it and `git log` had never seen
 it. The sibling repo operationalized the same document on 2026-08-24
-(`../jauntyq/docs/plans/2026-08-24-011-testing-strategy-implementation.md`); this plan is
+(`../jauntyq/docs/_plans/2026-08-24-011-testing-strategy-implementation.md`); this plan is
 jaunty's, and it re-measures rather than inherits, because two of jauntyq's headline findings do
 not reproduce here.
 

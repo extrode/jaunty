@@ -35,7 +35,7 @@ jaunty/
 │   ├── src/                             # Source code packages
 │   ├── tests/                           # Test projects
 │   ├── docs/                            # Documentation (Markdown source)
-│   │   └── specs/                       # Specifications, NNN-slug/NNN-spec.md
+│   │   └── _specs/                      # Specifications, NNN-slug/NNN-spec.md
 │   ├── work/                            # The work underway (tasklist, status, todo); untracked
 │   ├── audit/                           # The audit record; untracked
 │   │
@@ -56,8 +56,8 @@ jaunty/
 |--------|---------|--------------|
 | `src/` | Source code for the 9 packages plus the source generator that ships inside the core package | `Extrode.Jaunty/`, `Extrode.Jaunty.Fluent/`, `Extrode.Jaunty.FlatFiles/`, `Extrode.Jaunty.SourceGenerator/` |
 | `tests/` | The 10 test projects and shared helpers | `Extrode.Jaunty.Tests/`, `Extrode.Jaunty.UnitTests/`, `Helpers/` |
-| `docs/` | Documentation source | Organized by topic (00-quick-start through 08-learn), plus `decisions/`, `plans/`, `specs/`, `lessons/` |
-| `docs/specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
+| `docs/` | Documentation source | Organized by topic (00-quick-start through 08-learn), plus `_decisions/`, `_laws/`, `_plans/`, `_specs/`, `_lessons/`, `_site-design/` |
+| `docs/_specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
 | `work/` | The work underway. **Untracked** — held in a private repository, so a clone will not contain it | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
 | `audit/` | The 36-round audit record. **Untracked**, same private repository, which also holds the summary written from it | `roundNN/`, `findings-registry.md`, `coverage-ledger.md` |
 
@@ -158,11 +158,13 @@ docs/
 ├── 06-releases/                   # Release runbook, order templates
 ├── 08-learn/                      # Tutorials, exercises, error messages, migration guides
 ├── 99-archive/                    # Historical documents
-├── _assets/                       # Media assets (logos, charts, diagrams); site-design/ holds docs-site visual design source
-├── decisions/                     # Dated decision records
-├── plans/                         # Dated implementation plans
-├── specs/                         # Numbered feature specifications
-├── lessons/                       # Lessons for AI assistants and for humans
+├── _assets/                       # Media assets (logos, charts, diagrams)
+├── _site-design/                  # Docs-site visual design source
+├── _decisions/                    # Dated decision records
+├── _laws/                         # Invariants that must hold before merge
+├── _plans/                        # Dated implementation plans
+├── _specs/                        # Numbered feature specifications
+├── _lessons/                      # Lessons for AI assistants and for humans
 ├── constitution.md                # The binding rules for the codebase
 └── conventions.md                 # Naming, git and cleanup conventions
 ```

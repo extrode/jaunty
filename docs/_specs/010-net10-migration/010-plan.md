@@ -90,7 +90,7 @@ ParameterCache.cs(40)       IL2111    <- method group, NOT IL2072
 | `src/Extrode.Jaunty/Interceptors/LoggingInterceptor.cs:194` | **Rewrite the suppression justification**, which `010-spec.md:67` records as false. Use the honest template already at `ParameterCache.cs:49` — *suppressed pending a source-generated binding path; POCOs must be otherwise rooted*. This is the half that makes the annotation removal safe rather than merely quiet. | §3.3 |
 | `src/Extrode.Jaunty/Interceptors/LoggingInterceptor.cs:202` | Delete the `// AOT-SAFE:` marker along with the annotation it describes. | §3.3 |
 | `tests/Extrode.Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:79-83` | Rewrite the dead control — see Data/interfaces. | §3.4 |
-| `docs/specs/009-aot-annotation-pass/009-spec.md:141-144` | Scope amendment — see below. | §3.3 |
+| `docs/_specs/009-aot-annotation-pass/009-spec.md:141-144` | Scope amendment — see below. | §3.3 |
 
 **Decision, taken 2026-07-30 in the user's absence, then reversed the same day after review.**
 

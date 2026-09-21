@@ -1,6 +1,6 @@
 # Tasks: Micro-ORM Parity Gap-fill
 
-**Input**: `docs/specs/002-dapper-parity-gapfill/`
+**Input**: `docs/_specs/002-dapper-parity-gapfill/`
 **Prerequisites**: `plan.md` (required), `spec.md` (required)
 
 ## Format

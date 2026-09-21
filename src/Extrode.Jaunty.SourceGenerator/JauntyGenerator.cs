@@ -1197,7 +1197,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // that guard: FieldCount is a native call per row on
         // Microsoft.Data.Sqlite, about 0.4 ms per 10,000 rows, paid on every
         // row to cover a misuse no caller in this repository commits.
-        // docs/decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md
+        // docs/_decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md
         sb.AppendLine($"        public static Func<IDataReader, {className}> CreateRowMapper(IDataReader reader)");
         sb.AppendLine("        {");
         sb.AppendLine("            var entry = OrdinalMap.Resolve(reader);");
@@ -1262,7 +1262,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // 2026-09-02), and every supported provider already throws from its typed getter on a
             // NULL. The named error AUD-R35-069 introduced is kept: a try region is free until an
             // exception is thrown, and the catch re-examines the row to name the property.
-            // Do not restore the pre-check: docs/decisions/2026-09-02-010-null-guard-by-catch-not-precheck.md
+            // Do not restore the pre-check: docs/_decisions/2026-09-02-010-null-guard-by-catch-not-precheck.md
             // has the measurements and the per-provider proof that typed getters throw on NULL.
             sb.AppendLine("        private static void ThrowIfNonNullableColumnIsNull(IDataReader reader, int[] ord, Exception inner)");
             sb.AppendLine("        {");
