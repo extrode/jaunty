@@ -44,7 +44,7 @@ land without an immediate runtime cost; it takes effect whenever the owner flips
    the netstandard2.0 parser) / defensive branch that can't be hit / generated code miscounted /
    tested only transitively and worth double-checking. I synthesize their output into the report
    rather than trusting it uncritically — spot-check a sample against source before writing it up.
-6. Write `docs/05-quality/reports/coverage-gaps-2026-09-20.md`, matching the existing
+6. Write `docs/_reports/coverage-gaps-2026-09-20.md`, matching the existing
    `coverage-gaps-2026-07-04.md` format (per-assembly table, prioritized genuine-gap list,
    "0% only because X" category, reproduction command). Update `code-coverage.md`'s baseline
    section to point at the new dated report instead of carrying stale inline numbers.

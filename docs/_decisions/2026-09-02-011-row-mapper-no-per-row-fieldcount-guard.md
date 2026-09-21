@@ -32,7 +32,7 @@ commits:
 ## Measured
 
 SQLite, 10,000 rows, warm job, 15 iterations, the same harness as
-[benchmarks-2026-09-02.md](../05-quality/reports/benchmarks-2026-09-02.md), run alone before
+[benchmarks-2026-09-02.md](../_reports/benchmarks-2026-09-02.md), run alone before
 and after the change on the same machine the same evening:
 
 | Case | With the guard | Without | Change |

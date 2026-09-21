@@ -141,7 +141,7 @@ Every item here was reachable from caller-supplied input.
   rather than pre-checking, and the audit record lists it under fixes that were later reworked.
 - `QueryBenchmarks`: two custom-mapper cases that read the SQLite `REAL` price through
   `GetDouble`, with and without `WithExpectedRowCount`, beside the two `GetDecimal` cases.
-- `docs/05-quality/reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
+- `docs/_reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
   harness. The hand-coded baseline reads each column as its reported type (it paid a text
   round-trip on SQLite `REAL` before, which is why two libraries measured faster than ADO.NET
   in July), RepoDb's SQLite bool workaround is registered for SQLite only, and the warm job
@@ -532,7 +532,7 @@ Every item here was reachable from caller-supplied input.
   built-in `GITHUB_TOKEN`; the `NUGET_API_KEY` secret is no longer required.
 - Source generator: per-result-set `CreateRowMapper` + direct typed getters;
   10k-row SQLite reads went from 1.80x to 1.03x vs hand-coded ADO.NET
-  (Dapper parity). See docs/05-quality/reports/benchmarks-2026-07-04.md.
+  (Dapper parity). See docs/_reports/benchmarks-2026-07-04.md.
 
 ### Fixed
 
