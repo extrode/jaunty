@@ -1,0 +1,316 @@
+.
+|-- .claude
+|-- .config
+|-- .github
+|   |-- ISSUE_TEMPLATE
+|   `-- workflows
+|-- benchmarks
+|   |-- Extrode.Jaunty.Benchmarks
+|   |   |-- Benchmarks
+|   |   |-- Config
+|   |   `-- Entities
+|   `-- Extrode.Jaunty.FlatFiles.Benchmarks
+|-- data
+|   |-- mysql
+|   |-- postgres
+|   |-- sqlite
+|   `-- sqlserver
+|-- docs
+|   |-- 00-quick-start
+|   |-- 01-api-reference
+|   |-- 02-architecture
+|   |-- 03-development
+|   |-- 04-extensions
+|   |   `-- flatfiles
+|   |-- 05-quality
+|   |   `-- reports
+|   |-- 06-releases
+|   |-- 07-design
+|   |-- 08-learn
+|   |   `-- migrating
+|   |-- 99-archive
+|   |   |-- 2026-01-early-development
+|   |   |   |-- api-analysis
+|   |   |   |-- assessments
+|   |   |   |-- brainstorm
+|   |   |   |-- framework-comparison
+|   |   |   |   |-- 11ty
+|   |   |   |   |-- docfx
+|   |   |   |   |-- from-scratch
+|   |   |   |   |-- mkdocs-material
+|   |   |   |   `-- vitepress
+|   |   |   |-- old-api-reference
+|   |   |   |-- refactors
+|   |   |   `-- scripts
+|   |   |-- 2026-02-code-coverage
+|   |   |-- 2026-02-code-quality
+|   |   |   `-- doc-coverage
+|   |   |-- 2026-02-nativeaot-migration
+|   |   |-- 2026-03-docs-reorganization
+|   |   `-- 2026-03-misc-artifacts
+|   |-- _assets
+|   |   |-- benchmarks
+|   |   |-- logo
+|   |   `-- screenshots
+|   |-- architecture
+|   |-- benchmark-artifacts
+|   |   `-- results
+|   |-- decisions
+|   |-- laws
+|   |-- lessons
+|   |-- plans
+|   `-- specs
+|       |-- 001-logging-interception
+|       |-- 002-dapper-parity-gapfill
+|       |-- 003-fluent-nativeaot-metadata
+|       |-- 004-fluent-groupby-joins
+|       |-- 005-fluent-bulk-operations
+|       |-- 006-joined-query-api
+|       |-- 007-flatfiles
+|       |-- 008-dialect-parameter-binding
+|       |-- 009-aot-annotation-pass
+|       |-- 010-net10-migration
+|       `-- 011-aot-parameter-binding
+|-- samples
+|   |-- NativeAOT-Basic
+|   |-- NativeAOT-CustomMapper
+|   |-- NativeAOT-FluentQuery
+|   |-- NativeAOT-WithReflection
+|   |-- torture-test-conduit-port
+|   |   |-- src
+|   |   |   `-- Conduit
+|   |   |       |-- Domain
+|   |   |       |-- Features
+|   |   |       |   |-- Articles
+|   |   |       |   |-- Comments
+|   |   |       |   |-- Favorites
+|   |   |       |   |-- Followers
+|   |   |       |   |-- Profiles
+|   |   |       |   |-- Tags
+|   |   |       |   `-- Users
+|   |   |       `-- Infrastructure
+|   |   `-- tests
+|   |       `-- Conduit.IntegrationTests
+|   |           `-- Features
+|   |               |-- Articles
+|   |               |-- Comments
+|   |               `-- Users
+|   |-- torture-test-eshoponweb-port
+|   |   |-- src
+|   |   |   |-- Infrastructure
+|   |   |   |   `-- Data
+|   |   |   |       |-- Persistence
+|   |   |   |       `-- Queries
+|   |   |   |-- PublicApi
+|   |   |   `-- Web
+|   |   |       `-- Configuration
+|   |   `-- tests
+|   |       `-- FunctionalTests
+|   |           |-- PublicApi
+|   |           `-- Web
+|   |-- torture-test-sakila-codegen
+|   |   |-- mariadb
+|   |   |-- mssql
+|   |   |-- mysql
+|   |   |-- postgres
+|   |   `-- sqlite
+|   `-- torture-test-sakila-queries
+|       `-- Entities
+|-- scripts
+|   |-- cleanup
+|   `-- tests
+|-- seed
+|   |-- mariadb
+|   |-- mssql
+|   |-- mysql
+|   |-- postgres
+|   `-- sakila
+|-- src
+|   |-- Extrode.Jaunty
+|   |   |-- Attributes
+|   |   |-- Configuration
+|   |   |-- Core
+|   |   |-- Diagnostics
+|   |   |-- Dialects
+|   |   |-- Execute
+|   |   |-- Import
+|   |   |-- Interceptors
+|   |   |-- Interfaces
+|   |   |-- Internals
+|   |   |   |-- BulkCopy
+|   |   |   |-- Entity
+|   |   |   |-- Parameters
+|   |   |   |-- Read
+|   |   |   `-- Write
+|   |   |-- Multiple
+|   |   |-- Read
+|   |   |-- StoredProcedure
+|   |   |-- Streaming
+|   |   |-- TypeHandlers
+|   |   `-- Write
+|   |-- Extrode.Jaunty.Extensions.Logging
+|   |   |-- Configuration
+|   |   `-- Interceptors
+|   |-- Extrode.Jaunty.Extensions.Npgsql
+|   |-- Extrode.Jaunty.Extensions.Reflection
+|   |   |-- BulkCopy
+|   |   |-- Dialects
+|   |   `-- Internals
+|   |-- Extrode.Jaunty.FlatFiles
+|   |   |-- Core
+|   |   |-- FileSources
+|   |   |-- Import
+|   |   |-- Interfaces
+|   |   |-- Internals
+|   |   `-- WriteBack
+|   |-- Extrode.Jaunty.FlatFiles.DuckDB
+|   |   |-- Core
+|   |   |-- Dialects
+|   |   |-- Internals
+|   |   |   `-- Import
+|   |   |-- Multiple
+|   |   |-- Read
+|   |   |-- Write
+|   |   `-- WriteBack
+|   |-- Extrode.Jaunty.Fluent
+|   |   |-- Builders
+|   |   |   |-- Insert
+|   |   |   |-- Join
+|   |   |   |-- Query
+|   |   |   `-- SetOperations
+|   |   |-- Expressions
+|   |   |   `-- Join
+|   |   |-- Interfaces
+|   |   `-- Internals
+|   |-- Extrode.Jaunty.Scaffolding
+|   |   |-- Abstractions
+|   |   |-- CodeGeneration
+|   |   |-- Configuration
+|   |   |-- Internals
+|   |   |-- Providers
+|   |   |   |-- MySql
+|   |   |   |-- PostgreSql
+|   |   |   |-- SQLite
+|   |   |   `-- SqlServer
+|   |   `-- Schema
+|   |-- Extrode.Jaunty.Scaffolding.Cli
+|   |   `-- Commands
+|   `-- Extrode.Jaunty.SourceGenerator
+|-- tests
+|   |-- Extrode.Jaunty.FlatFiles.DuckDB.Tests
+|   |   |-- Core
+|   |   |-- Dialects
+|   |   |-- Helpers
+|   |   |   `-- Entities
+|   |   |-- Import
+|   |   |-- Integration
+|   |   |-- Internals
+|   |   |-- Performance
+|   |   |   `-- LargeDatasets
+|   |   |-- Read
+|   |   |   |-- EdgeCases
+|   |   |   `-- Fluent
+|   |   |-- Unit
+|   |   |-- Write
+|   |   |-- WriteBack
+|   |   `-- data
+|   |       |-- csv
+|   |       |-- json
+|   |       |-- parquet
+|   |       `-- tsv
+|   |-- Extrode.Jaunty.FlatFiles.Tests
+|   |   |-- Core
+|   |   |-- FileSources
+|   |   `-- Internals
+|   |-- Extrode.Jaunty.Fluent.ConfigTests
+|   |   `-- Unit
+|   |-- Extrode.Jaunty.Fluent.SourceGen.Tests
+|   |   |-- Entities
+|   |   `-- Integration
+|   |-- Extrode.Jaunty.Fluent.Tests
+|   |   |-- Entities
+|   |   |-- Helpers
+|   |   |-- Integration
+|   |   |-- Unit
+|   |   |   |-- Builders
+|   |   |   |   |-- Join
+|   |   |   |   `-- Query
+|   |   |   |-- Expressions
+|   |   |   |   `-- Join
+|   |   |   `-- Internals
+|   |   `-- data
+|   |-- Extrode.Jaunty.Scaffolding.Cli.Tests
+|   |-- Extrode.Jaunty.Scaffolding.Tests
+|   |   |-- CodeGeneration
+|   |   |-- Helpers
+|   |   |-- Integration
+|   |   `-- Unit
+|   |-- Extrode.Jaunty.SourceGenerator.Tests
+|   |   `-- Entities
+|   |       `-- HintCollision
+|   |           `-- NsAWidget
+|   |-- Extrode.Jaunty.Tests
+|   |   |-- Entities
+|   |   |-- Helpers
+|   |   |   `-- Dialects
+|   |   |-- Integration
+|   |   |   |-- Core
+|   |   |   |-- Dialects
+|   |   |   |-- Execute
+|   |   |   |-- Get
+|   |   |   |-- IDbConnectionFallback
+|   |   |   |-- Import
+|   |   |   |-- Infrastructure
+|   |   |   |-- Multiple
+|   |   |   |-- Read
+|   |   |   |   `-- Configuration
+|   |   |   |-- StoredProcedure
+|   |   |   |-- Streaming
+|   |   |   |-- TransactionSafety
+|   |   |   |-- TypeHandlers
+|   |   |   `-- Write
+|   |   |-- Performance
+|   |   `-- Unit
+|   |       |-- BulkCopy
+|   |       |-- Configuration
+|   |       |-- Core
+|   |       |-- Dialects
+|   |       |-- Extensions
+|   |       |   `-- Reflection
+|   |       |-- Helpers
+|   |       |-- Import
+|   |       |-- Interceptors
+|   |       |-- Internals
+|   |       |   `-- BulkCopy
+|   |       |-- Read
+|   |       |-- StoredProcedures
+|   |       |-- TypeHandlers
+|   |       `-- Write
+|   |-- Extrode.Jaunty.UnitTests
+|   |   `-- Unit
+|   |       |-- Attributes
+|   |       |-- Configuration
+|   |       |-- Core
+|   |       |-- Diagnostics
+|   |       |-- Dialects
+|   |       |-- Execute
+|   |       |-- Interceptors
+|   |       |-- Interfaces
+|   |       |-- Internals
+|   |       |   |-- BulkCopy
+|   |       |   |-- Entity
+|   |       |   `-- Write
+|   |       |-- Laws
+|   |       |-- Read
+|   |       |-- Reflection
+|   |       |-- StoredProcedures
+|   |       |-- Streaming
+|   |       `-- Write
+|   `-- Helpers
+`-- tools
+    |-- Extrode.Jaunty.Fuzz
+    |   `-- corpus
+    `-- native
+        `-- sqlite-interop-osx-arm64
+            |-- MangleMap
+            `-- src
