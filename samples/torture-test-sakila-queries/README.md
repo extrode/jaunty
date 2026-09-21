@@ -43,7 +43,7 @@ That file is gitignored (`/data/**/*.db`), like every other database fixture in 
 
 **None of the five works from a bare clone.** The schemas and data come from two external
 gitignored clones and are multi-MB, so they are not vendored here.
-[`seed/sakila/README.md`](../../seed/sakila/README.md) is the setup: which upstream repo feeds
+[the sakila-codegen sample's source-data setup section](../torture-test-sakila-codegen/README.md#sakilapagila-source-data-setup) is the setup: which upstream repo feeds
 which target, the container names and ports, and the load order.
 
 ## Reading the output
