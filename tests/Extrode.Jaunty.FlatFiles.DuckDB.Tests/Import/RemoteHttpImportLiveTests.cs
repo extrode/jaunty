@@ -97,7 +97,7 @@ public sealed class RemoteHttpImportLiveTests : IDisposable
     }
 
     [Fact(Timeout = 15_000)]
-    public void FlatFileOpen_GivenAnUnreachableHttpUrl_ThrowsRatherThanHanging()
+    public async Task FlatFileOpen_GivenAnUnreachableHttpUrl_ThrowsRatherThanHanging()
     {
         // Proves DuckDB surfaces a connection-refused read failure as a prompt exception rather
         // than hanging - not the R27 batch 13 "don't leave the extension marked loaded" guard.
@@ -105,13 +105,18 @@ public sealed class RemoteHttpImportLiveTests : IDisposable
         // fine (this machine can already reach extensions.duckdb.org, verified by the two tests
         // above), and the failure is RegisterSource's later read against the closed port. The
         // [Fact(Timeout = ...)] is what actually backs "RatherThanHanging" - without it, a real
-        // hang would hang the test run instead of failing it.
+        // hang would hang the test run instead of failing it. FlatFile.Open is synchronous, so
+        // it's run on the thread pool and awaited with the test's cancellation token so xunit can
+        // still tear the run down promptly if the timeout fires.
         var probe = new TcpListener(IPAddress.Loopback, 0);
         probe.Start();
         int deadPort = ((IPEndPoint)probe.LocalEndpoint).Port;
         probe.Stop();
 
-        Assert.ThrowsAny<Exception>(() => FlatFile.Open($"http://127.0.0.1:{deadPort}/missing.csv"));
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            Task.Run(() => FlatFile.Open($"http://127.0.0.1:{deadPort}/missing.csv"), cancellationToken));
     }
 
     /// <summary>
