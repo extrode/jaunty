@@ -6,12 +6,16 @@ Documentation for Jaunty quality assurance, testing strategies, and code coverag
 
 ## Reports
 
-- [`reports/production-readiness-2026-07-02.md`](reports/production-readiness-2026-07-02.md) - Production readiness assessment (July 2026)
+Dated, point-in-time reports (benchmarks, coverage gaps, audits) live in
+[`../_reports/`](../_reports/), not here - this folder holds the living quality/testing guides,
+`../_reports/` holds the dated snapshots. See
+[`../_reports/production-readiness-2026-07-02.md`](../_reports/production-readiness-2026-07-02.md)
+for the production readiness assessment (July 2026).
 
 ## Code Coverage
 
 - [`code-coverage.md`](code-coverage.md) - **How to run coverage, what `coverage.runsettings` does, and the 2026-08-27 baseline**
-- [`reports/coverage-gaps-2026-07-04.md`](reports/coverage-gaps-2026-07-04.md) - Coverage gap inventory (July 2026; older dotCover analysis archived under `../99-archive/2026-02-code-coverage/`)
+- [`../_reports/coverage-gaps-2026-07-04.md`](../_reports/coverage-gaps-2026-07-04.md) - Coverage gap inventory (July 2026; older dotCover analysis archived under `../_archive/2026-02-code-coverage/`)
 
 ---
 
