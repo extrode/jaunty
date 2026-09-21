@@ -3,7 +3,7 @@
 **Branch**: `004-fluent-groupby-joins`
 **Date**: 2026-07-07
 **Spec**: [004-spec.md](004-spec.md)
-**Input**: `docs/specs/004-fluent-groupby-joins/004-spec.md`
+**Input**: `docs/_specs/004-fluent-groupby-joins/004-spec.md`
 
 ---
 
@@ -54,7 +54,7 @@ fragments are new.
 ### Documentation (this feature)
 
 ```
-docs/specs/004-fluent-groupby-joins/
+docs/_specs/004-fluent-groupby-joins/
 ├── spec.md
 ├── plan.md          # This file
 └── tasks.md
