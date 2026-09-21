@@ -1,0 +1,384 @@
+.
+|-- .claude
+|-- .github
+|   |-- ISSUE_TEMPLATE
+|   `-- workflows
+|-- artifacts
+|   |-- coverage
+|   |   |-- Extrode.JauntyQ.Analysis.Tests
+|   |   |   |-- cced1da6-526b-4f96-bc55-fa8c151df067
+|   |   |   `-- e1e138e7-2f22-4f2c-99d1-5b661e5b5848
+|   |   |-- Extrode.JauntyQ.Cli.Tests
+|   |   |   |-- 297659e6-26ce-4a58-b026-89c6e98da0d9
+|   |   |   `-- d34cfb7c-1f15-4837-8518-b3b8ed0635a0
+|   |   |-- Extrode.JauntyQ.DdlSchema.Sqlite.Tests
+|   |   |   `-- be6c0048-4680-4e64-959a-9f2a87a89a9c
+|   |   |-- Extrode.JauntyQ.EShopOnWeb.Sqlite.Tests
+|   |   |   `-- 3555f289-1227-429f-9cc0-8f09bf71a209
+|   |   |-- Extrode.JauntyQ.Northwind.Tests
+|   |   |   `-- 1179bf33-5c25-47fa-93fe-5540bb504457
+|   |   |-- Extrode.JauntyQ.Sakila.Sqlite.Tests
+|   |   |   `-- 05e85e79-cc6d-4e64-9867-458ec406e3a4
+|   |   |-- Extrode.JauntyQ.Schema.Extraction.Tests
+|   |   |   |-- d3d7a6a8-db68-4abf-982d-e46165a969dd
+|   |   |   `-- e1120dc8-332e-4617-a19f-d5393e7b20d9
+|   |   |-- Extrode.JauntyQ.SqlParser.Tests
+|   |   |   |-- a255f63a-e267-4ee8-9617-d6ad3fd77147
+|   |   |   `-- d5d5aec4-444c-475a-a21b-e054703c1635
+|   |   |-- Extrode.JauntyQ.Sqlite.Tests
+|   |   |   `-- 2c3723a8-3f8d-43bc-b495-2249492b99d2
+|   |   `-- report
+|   `-- test-results
+|       `-- 20260903-160431
+|-- benchmarks
+|   `-- Extrode.JauntyQ.Benchmarks
+|       `-- db
+|           |-- schema
+|           `-- tables
+|               `-- Widgets
+|-- data
+|-- docs
+|   |-- 00-overview
+|   |-- 01-getting-started
+|   |-- 02-learn
+|   |-- 03-guides
+|   |-- 06-reference
+|   |-- 07-roadmap
+|   |-- _assets
+|   |   `-- logo
+|   |-- assets
+|   |-- decisions
+|   |-- handoffs
+|   |-- lessons
+|   |-- plans
+|   `-- specs
+|-- samples
+|   |-- Extrode.JauntyQ.AdventureWorksLite.SqlServer.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Customer
+|   |           |-- Employee
+|   |           |-- Person
+|   |           |-- Product
+|   |           |-- ProductVendor
+|   |           |-- SalesOrderDetail
+|   |           |-- SalesOrderDetailExtended
+|   |           `-- SalesOrderHeader
+|   |-- Extrode.JauntyQ.Aot.Smoke
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           `-- Widgets
+|   |-- Extrode.JauntyQ.Chinook.Sqlite.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Album
+|   |           |-- Artist
+|   |           |-- Customer
+|   |           |-- Employee
+|   |           |-- Genre
+|   |           |-- Invoice
+|   |           |-- InvoiceLine
+|   |           |-- Playlist
+|   |           |-- PlaylistTrack
+|   |           `-- Track
+|   |-- Extrode.JauntyQ.Conduit.Differential.Tests
+|   |-- Extrode.JauntyQ.Conduit.MariaDb.Tests
+|   |   |-- Auth
+|   |   |-- Contracts
+|   |   |-- Domain
+|   |   |-- Http
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- ArticleTags
+|   |           |-- Articles
+|   |           |-- Comments
+|   |           |-- Favorites
+|   |           |-- Follows
+|   |           |-- Tags
+|   |           `-- Users
+|   |-- Extrode.JauntyQ.Conduit.MySql.Tests
+|   |   |-- Auth
+|   |   |-- Contracts
+|   |   |-- Domain
+|   |   |-- Http
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- ArticleTags
+|   |           |-- Articles
+|   |           |-- Comments
+|   |           |-- Favorites
+|   |           |-- Follows
+|   |           |-- Tags
+|   |           `-- Users
+|   |-- Extrode.JauntyQ.Conduit.Postgres.Tests
+|   |   |-- Auth
+|   |   |-- Contracts
+|   |   |-- Domain
+|   |   |-- Http
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- ArticleTags
+|   |           |-- Articles
+|   |           |-- Comments
+|   |           |-- Favorites
+|   |           |-- Follows
+|   |           |-- Tags
+|   |           `-- Users
+|   |-- Extrode.JauntyQ.Conduit.SqlServer.Tests
+|   |   |-- Auth
+|   |   |-- Contracts
+|   |   |-- Domain
+|   |   |-- Http
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- ArticleTags
+|   |           |-- Articles
+|   |           |-- Comments
+|   |           |-- Favorites
+|   |           |-- Follows
+|   |           |-- Tags
+|   |           `-- Users
+|   |-- Extrode.JauntyQ.Conduit.Sqlite.Tests
+|   |   |-- Auth
+|   |   |-- Contracts
+|   |   |-- Domain
+|   |   |-- Http
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- ArticleTags
+|   |           |-- Articles
+|   |           |-- Comments
+|   |           |-- Favorites
+|   |           |-- Follows
+|   |           |-- Tags
+|   |           `-- Users
+|   |-- Extrode.JauntyQ.DdlSchema.Sqlite.Tests
+|   |   `-- db
+|   |       `-- ddl
+|   |-- Extrode.JauntyQ.EShopOnWeb.MariaDb.Tests
+|   |   |-- Domain
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Basket
+|   |           |-- BasketItem
+|   |           |-- CatalogItem
+|   |           |-- OrderItem
+|   |           `-- Orders
+|   |-- Extrode.JauntyQ.EShopOnWeb.MySql.Tests
+|   |   |-- Domain
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Basket
+|   |           |-- BasketItem
+|   |           |-- CatalogItem
+|   |           |-- OrderItem
+|   |           `-- Orders
+|   |-- Extrode.JauntyQ.EShopOnWeb.Postgres.Tests
+|   |   |-- Domain
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Basket
+|   |           |-- BasketItem
+|   |           |-- CatalogItem
+|   |           |-- OrderItem
+|   |           `-- Orders
+|   |-- Extrode.JauntyQ.EShopOnWeb.SqlServer.Tests
+|   |   |-- Domain
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Basket
+|   |           |-- BasketItem
+|   |           |-- CatalogItem
+|   |           |-- OrderItem
+|   |           `-- Orders
+|   |-- Extrode.JauntyQ.EShopOnWeb.Sqlite.Tests
+|   |   |-- Domain
+|   |   |-- Repositories
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Basket
+|   |           |-- BasketItem
+|   |           |-- CatalogItem
+|   |           |-- OrderItem
+|   |           `-- Orders
+|   |-- Extrode.JauntyQ.MySql.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           `-- Products
+|   |-- Extrode.JauntyQ.Northwind.Tests
+|   |   `-- db
+|   |       |-- migrations
+|   |       |-- schema
+|   |       |-- tables
+|   |       |   |-- Categories
+|   |       |   |-- Customers
+|   |       |   |-- EmployeeTerritories
+|   |       |   |-- Employees
+|   |       |   |-- OrderDetails
+|   |       |   |-- Orders
+|   |       |   |-- Products
+|   |       |   |-- Region
+|   |       |   |-- Shippers
+|   |       |   |-- Suppliers
+|   |       |   `-- Territories
+|   |       `-- views
+|   |           |-- AlphabeticalListOfProducts
+|   |           |-- CategorySalesFor1997
+|   |           |-- CurrentProductList
+|   |           |-- CustomerAndSuppliersByCity
+|   |           |-- OrderDetailsExtended
+|   |           |-- OrderSubtotals
+|   |           |-- OrdersQry
+|   |           |-- ProductSalesFor1997
+|   |           |-- ProductsAboveAveragePrice
+|   |           |-- ProductsByCategory
+|   |           |-- QuarterlyOrders
+|   |           |-- SalesByCategory
+|   |           |-- SalesTotalsByAmount
+|   |           |-- SummaryOfSalesByQuarter
+|   |           `-- SummaryOfSalesByYear
+|   |-- Extrode.JauntyQ.Packaged.Smoke
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           `-- Widgets
+|   |-- Extrode.JauntyQ.Pagila.Postgres.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Actor
+|   |           |-- Category
+|   |           |-- Customer
+|   |           |-- Film
+|   |           |-- Payment
+|   |           `-- Rental
+|   |-- Extrode.JauntyQ.Postgres.Tests
+|   |   `-- db
+|   |       `-- schema
+|   |-- Extrode.JauntyQ.Sakila.MariaDb.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Actor
+|   |           |-- Category
+|   |           |-- Customer
+|   |           |-- Film
+|   |           |-- Language
+|   |           |-- Payment
+|   |           |-- Rental
+|   |           `-- Staff
+|   |-- Extrode.JauntyQ.Sakila.MySql.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Actor
+|   |           |-- Category
+|   |           |-- Customer
+|   |           |-- Film
+|   |           |-- Language
+|   |           |-- Payment
+|   |           |-- Rental
+|   |           `-- Staff
+|   |-- Extrode.JauntyQ.Sakila.Postgres.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Actor
+|   |           |-- Category
+|   |           |-- Customer
+|   |           |-- Film
+|   |           |-- Language
+|   |           |-- Payment
+|   |           |-- Rental
+|   |           `-- Staff
+|   |-- Extrode.JauntyQ.Sakila.SqlServer.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Actor
+|   |           |-- Category
+|   |           |-- Customer
+|   |           |-- Film
+|   |           |-- Language
+|   |           |-- Payment
+|   |           |-- Rental
+|   |           `-- Staff
+|   |-- Extrode.JauntyQ.Sakila.Sqlite.Tests
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Actor
+|   |           |-- Category
+|   |           |-- Customer
+|   |           |-- Film
+|   |           |-- Language
+|   |           |-- Payment
+|   |           |-- Rental
+|   |           `-- Staff
+|   |-- Extrode.JauntyQ.Sample
+|   |   `-- db
+|   |       |-- schema
+|   |       `-- tables
+|   |           |-- Employees
+|   |           `-- Products
+|   `-- Extrode.JauntyQ.Sqlite.Tests
+|       `-- db
+|           |-- schema
+|           `-- tables
+|               |-- Categories
+|               `-- Products
+|-- scripts
+|   |-- cleanup
+|   `-- repo-split
+|-- src
+|   |-- Extrode.JauntyQ.Analysis
+|   |   |-- Diff
+|   |   |-- Impact
+|   |   `-- Migrations
+|   |-- Extrode.JauntyQ.Cli
+|   |-- Extrode.JauntyQ.Cli.Core
+|   |-- Extrode.JauntyQ.Generator
+|   |   |-- Directives
+|   |   |-- build
+|   |   `-- buildTransitive
+|   |-- Extrode.JauntyQ.Runtime
+|   |-- Extrode.JauntyQ.Schema
+|   |-- Extrode.JauntyQ.Schema.Extraction
+|   `-- Extrode.JauntyQ.SqlParser
+|       |-- IR
+|       `-- Tokens
+|-- test-infra
+|-- tests
+|   |-- Extrode.JauntyQ.Analysis.Tests
+|   |-- Extrode.JauntyQ.Cli.Tests
+|   |-- Extrode.JauntyQ.Generator.Tests
+|   |   `-- PublicApi
+|   |-- Extrode.JauntyQ.Schema.Extraction.Tests
+|   |   `-- canonical
+|   `-- Extrode.JauntyQ.SqlParser.Tests
+`-- tools
+    `-- Extrode.JauntyQ.Fuzz
+        `-- corpus
