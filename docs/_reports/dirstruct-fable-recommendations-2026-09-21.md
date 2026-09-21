@@ -96,7 +96,7 @@ Cost is honest: Jaunty renames 8 numbered folders and every relative link; Jaunt
 
 ## 7. What would change this recommendation
 
-- If the shared Docs tool (`C:\home\code\beparey.com\docsgen`, unrenamed per [[docs-generator-extraction-plan]]) hardcodes prefix-to-section names, the map in section 5 must follow the tool, not the other way round. Fable could not read that path in its sandboxed session — verify before acting on section 5.
+- If the shared Docs tool (at the path recorded in [[docs-generator-extraction-plan]], under the retired-owner domain) hardcodes prefix-to-section names, the map in section 5 must follow the tool, not the other way round. Fable could not read that path in its sandboxed session — verify before acting on section 5.
 - If the public flip of Jaunty (per [[jaunty-rc2-release-state]]) is imminent, do the section 5 rename after the flip, not before; everything else in this doc is safe pre-flip.
 - If any live consumer of `seed/` turns up outside the repo (the private `jaunty-audit` junction, per [[jaunty-private-work-junction]]), keep `seed/sakila/README.md` where it is until that consumer is repointed.
 
