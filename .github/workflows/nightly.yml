@@ -133,6 +133,14 @@ jobs:
             8.0.x
             10.0.x
 
+      # CsvImport's file-based SQLite path shells out to the sqlite3 CLI. ubuntu-latest ships
+      # it; windows-latest does not, so every CsvImportTests case on that path failed with
+      # "The system cannot find the file specified".
+      - name: Install sqlite3 CLI
+        run: |
+          choco install sqlite --no-progress -y
+          sqlite3 -version
+
       - name: Restore
         run: dotnet restore Jaunty.slnx
 
