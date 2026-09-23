@@ -127,7 +127,8 @@ public class QueryBenchmarks
     // The lesson the generated mapper learned, applied by hand. Microsoft.Data.Sqlite implements
     // GetDecimal on a REAL column as text formatting plus decimal.Parse, so on SQLite the price is
     // read as the double it is stored as and cast (measured 2026-09-02: 4.8 ms vs 1.8 ms per 10k
-    // rows). The other providers store a real decimal and GetDouble would throw, so there Setup
+    // rows). The cast can differ from GetDecimal past the 15th significant digit on SQLite 3.53+
+    // (docs/_decisions 013). The other providers store a real decimal and GetDouble would throw, so there Setup
     // falls back to CustomMapper and the two cases read the same; only the SQLite column compares.
     private static readonly CommandOptions<JauntyProduct> SqliteDoubleMapper =
         CommandOptions<JauntyProduct>.WithMapper(static reader => new JauntyProduct
