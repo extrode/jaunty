@@ -12,7 +12,9 @@ namespace Extrode.Jaunty.SourceGenerator.Tests;
 /// through <c>GetDouble</c> and cast; any other column type keeps <c>GetDecimal</c>. Microsoft.Data.Sqlite
 /// implements <c>GetDecimal</c> on a REAL column as text formatting plus <c>decimal.Parse</c>, which
 /// measured at 4.8 ms per 10k rows against 1.8 ms for <c>GetDouble</c> (2026-09-02). The decision is
-/// made once per result set, when the ordinal map is resolved.
+/// made once per result set, when the ordinal map is resolved. The cast matches the reflection
+/// mapper's <c>Convert.ChangeType</c> (15 significant digits), not <c>GetDecimal</c>: SQLite 3.53
+/// formats REAL with up to 17 digits, so the two can differ past the 15th.
 /// </summary>
 public sealed class GeneratedDecimalReadTests
 {
@@ -89,7 +91,7 @@ public sealed class GeneratedDecimalReadTests
     [InlineData(0.1, "0.1")]
     [InlineData(1234567890.123456, "1234567890.12346")]
     [InlineData(2.675, "2.675")]
-    public void ASqliteRealColumn_MapsTheSameValueGetDecimalWouldHave(double stored, string expected)
+    public void ASqliteRealColumn_MapsTheSameValueTheReflectionMapperWould(double stored, string expected)
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
@@ -112,7 +114,7 @@ public sealed class GeneratedDecimalReadTests
         GenProduct viaReadEntity = GenProduct.ReadEntity(reader);
 
         Assert.Equal(decimal.Parse(expected, System.Globalization.CultureInfo.InvariantCulture), viaRowMapper.UnitPrice);
-        Assert.Equal(reader.GetDecimal(2), viaRowMapper.UnitPrice);
+        Assert.Equal(Convert.ChangeType(reader.GetValue(2), typeof(decimal), System.Globalization.CultureInfo.InvariantCulture), viaRowMapper.UnitPrice);
         Assert.Equal(viaRowMapper.UnitPrice, viaReadEntity.UnitPrice);
     }
 

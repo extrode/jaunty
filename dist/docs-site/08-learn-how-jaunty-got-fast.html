@@ -473,6 +473,11 @@ significant digits, and that is the rounding the <code>decimal(double)</code> co
 two paths agree on every value tried, including 0.1, 1/3, 2.675, 1e22 and 12345.678901234567.
 Only the scale can differ: <code>0.0000001</code> where the text path gave <code>0.00000010</code>. A test compares
 both paths against a live SQLite reader for each of those values.</p>
+<p>That held until SQLite 3.53.4 (SQLitePCLRaw 3.0.5), which formats a <code>REAL</code> with up to 17 digits,
+so <code>GetDecimal</code> now returns <code>1234567890.123456</code> where the cast gives <code>1234567890.12346</code>. The cast
+stayed: it is the same value the reflection mapper's <code>Convert.ChangeType</code> produces, and nothing
+both exact and fast was found. The test now compares against the reflection conversion. Decision
+013 in <code>docs/_decisions/</code> has the measurements.</p>
 <h2 id="step-5-hand-a-custom-mapper-back-as-it-was-given">Step 5: hand a custom mapper back as it was given</h2>
 <p><code>CommandOptions&lt;T&gt;.WithMapper(Func&lt;IDataReader, T&gt;)</code> lets you write the row mapping yourself.
 <code>Func&lt;in T, out TResult&gt;</code> is contravariant in its argument, so that delegate already is a

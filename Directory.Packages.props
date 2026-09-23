@@ -47,7 +47,7 @@
     <!-- Database drivers used by tests/benchmarks/the scaffolding CLI tool - not a dependency
          propagated into a consumer's own project, so bumped to latest without the same-major
          constraint. net472 keeps the latest patch within the major that still supports it. -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.3" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.3" Condition="'$(TargetFramework)' == 'net472'" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.31" Condition="'$(TargetFramework)' == 'net472'" />
@@ -60,7 +60,7 @@
          ASqliteRealColumn_MapsTheSameValueGetDecimalWouldHave(1234567890.123456, ...) fail, because
          GetDecimal() now returns 16-sig-fig precision while (decimal)GetDouble() still rounds to 15.
          Bumping this needs a fix to the generator's invariant first, not just a test update. -->
-    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
     <PackageVersion Include="MySqlConnector" Version="2.6.2" />
     <!-- MySql.Data 26.7.0: Oracle changed its version numbering scheme between 9.7.0 and this
          release (confirmed via nuget.org publisher metadata - still Oracle Corporation, no gap in
