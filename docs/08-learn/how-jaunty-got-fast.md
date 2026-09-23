@@ -234,6 +234,12 @@ two paths agree on every value tried, including 0.1, 1/3, 2.675, 1e22 and 12345.
 Only the scale can differ: `0.0000001` where the text path gave `0.00000010`. A test compares
 both paths against a live SQLite reader for each of those values.
 
+That held until SQLite 3.53.4 (SQLitePCLRaw 3.0.5), which formats a `REAL` with up to 17 digits,
+so `GetDecimal` now returns `1234567890.123456` where the cast gives `1234567890.12346`. The cast
+stayed: it is the same value the reflection mapper's `Convert.ChangeType` produces, and nothing
+both exact and fast was found. The test now compares against the reflection conversion. Decision
+013 in `docs/_decisions/` has the measurements.
+
 ## Step 5: hand a custom mapper back as it was given
 
 `CommandOptions<T>.WithMapper(Func<IDataReader, T>)` lets you write the row mapping yourself.

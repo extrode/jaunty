@@ -19,6 +19,14 @@ default lives in `src/Directory.Build.props`.
   likewise for `Jaunty.Fluent`, `Jaunty.FlatFiles`, etc.). The product name ("Jaunty"), the
   `Jaunty.slnx` solution file, and the `github.com/extrode/jaunty` repository are unchanged.
 
+### Changed
+
+- **SQLite bundle is now SQLitePCLRaw 3.0.5 (SQLite 3.53.4); Microsoft.Data.SqlClient is 7.1.0.**
+  SQLite 3.53 formats `REAL` with up to 17 significant digits, so `GetDecimal` on a `REAL` column
+  can now differ past the 15th digit from Jaunty's own reads. Every Jaunty read path, generated
+  and reflection, converts a `REAL` to `decimal` with 15-significant-digit rounding. Hand-written
+  mappers that call `GetDecimal` may see the extra digits.
+
 ## [1.0.0-rc.2] - 2026-09-03
 
 ### Breaking changes since 1.0.0-rc.1

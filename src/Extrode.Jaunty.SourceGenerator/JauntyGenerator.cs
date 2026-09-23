@@ -1900,8 +1900,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// <remarks>
     /// Microsoft.Data.Sqlite implements <c>GetDecimal</c> on a REAL column as text formatting plus
     /// <c>decimal.Parse</c>; measured 2026-09-02 at 4.8 ms per 10k rows against 1.8 ms for
-    /// <c>GetDouble</c>. SQLite formats REAL to text with 15 significant digits, the same rounding
-    /// the <c>decimal(double)</c> constructor applies, so the cast yields the same value. Decided
+    /// <c>GetDouble</c>. The cast rounds to 15 significant digits, the same value the reflection
+    /// mapper's <c>Convert.ChangeType</c> produces from the boxed double. <c>GetDecimal</c> can differ
+    /// past the 15th digit: SQLite 3.53 formats REAL with up to 17 (docs/_decisions 013). Decided
     /// once per result set from <c>GetFieldType</c>; on providers whose column is a real decimal
     /// the flag is false and <c>GetDecimal</c> is reached unchanged.
     /// </remarks>
