@@ -45,13 +45,14 @@ public class BulkInsertChunkingTests : IDisposable
         try { Directory.Delete(DataDir, true); } catch { }
     }
 
-    [Fact]
-    public void Insert_CollectionExceedingMaxParametersPerStatement_ChunksAcrossMultipleStatements()
+    [Theory]
+    [InlineData(6000)]
+    [InlineData(10922)]
+    public void Insert_CollectionExceedingMaxParametersPerStatement_ChunksAcrossMultipleStatements(int rowCount)
     {
         // InventoryItem has 6 mapped columns, so a single unchunked statement for this many rows
         // would need 6 * rowCount parameters — comfortably over DuckDB's 32768-parameter limit
         // for one COPY/INSERT statement (6 * 6000 = 36000). Without chunking this would throw.
-        const int rowCount = 6000;
         var newItems = new InventoryItem[rowCount];
         for (int i = 0; i < rowCount; i++)
         {
@@ -74,10 +75,11 @@ public class BulkInsertChunkingTests : IDisposable
         Assert.Equal(rowCount, results.Count);
     }
 
-    [Fact]
-    public async Task InsertAsync_CollectionExceedingMaxParametersPerStatement_ChunksAcrossMultipleStatements()
+    [Theory]
+    [InlineData(6000)]
+    [InlineData(10922)]
+    public async Task InsertAsync_CollectionExceedingMaxParametersPerStatement_ChunksAcrossMultipleStatements(int rowCount)
     {
-        const int rowCount = 6000;
         var newItems = new InventoryItem[rowCount];
         for (int i = 0; i < rowCount; i++)
         {
