@@ -2,17 +2,17 @@
 # Written 2026-09-24 by Claude. Owner ruling that day: on mb1, ~/Developer holds code under
 # ~/Developer/code/<domain>/<repo>, same as the Windows box, and nothing else. The mutation-runner
 # setup of 2026-09-24 added four top-level folders that do not fit that layout. This script moves
-# what is worth keeping into the repos' gitignored tmp/ and removes the rest. Run ON mb1.
+# the reports into the repos' gitignored tmp/ and removes the rest. Run ON mb1.
 #
-#   ~/Developer/bin/mutate             -> ~/Developer/code/extrode.com/jaunty/tmp/mb1-mutate/mutate
+#   ~/Developer/bin/mutate             removed (tracked now as jaunty's scripts/mutation/mutate.sh;
+#                                      refuses until origin/dev in the mb1 clone has that file)
 #   ~/Developer/mutation-reports/<r>/  -> ~/Developer/code/extrode.com/<r>/tmp/mutation-reports/
 #   ~/Developer/bundles/               removed (git bundles already fetched into the clones)
 #   ~/Developer/tools/stryker-4.16.0/  removed (side-by-side comparison with Stryker 5 is done)
 #   ~/Developer/bin, ~/Developer/tools removed only if empty afterwards
 #
-# After this, run the runner as:
-#   MUTATE_REPORTS=~/Developer/code/extrode.com/jaunty/tmp/mutation-reports \
-#     ~/Developer/code/extrode.com/jaunty/tmp/mb1-mutate/mutate jaunty --ref dev
+# After this, run the runner as (reports land in <repo>/tmp/mutation-reports by default):
+#   ~/Developer/code/extrode.com/jaunty/scripts/mutation/mutate.sh jaunty --ref dev
 #
 # Dry run (default):  bash mb1-developer-extras.sh
 # Apply:              bash mb1-developer-extras.sh --execute --delete-tools
@@ -32,7 +32,7 @@ for arg in "$@"; do
 done
 
 if [ "$EXECUTE" -eq 1 ] && [ "$DELETE" -eq 0 ]; then
-    echo "refuse: removing the bundles and the Stryker 4.16 install is irreversible; pass --delete-tools with --execute."
+    echo "refuse: removing the old runner, the bundles and the Stryker 4.16 install is irreversible; pass --delete-tools with --execute."
     exit 2
 fi
 
@@ -45,7 +45,7 @@ fi
 if [ ! -d "$JAUNTY/.git" ]; then
     echo "refuse: $JAUNTY is missing."; exit 1
 fi
-if pgrep -f "dotnet-stryker|Stryker.CLI|/bin/mutate" >/dev/null 2>&1; then
+if pgrep -f "dotnet-stryker|Stryker.CLI|/bin/mutate|mutate.sh __run" >/dev/null 2>&1; then
     echo "refuse: a mutation run is in progress. Wait for it to finish."; exit 1
 fi
 
@@ -71,6 +71,16 @@ move() {
     fi
 }
 
+remove_file() {
+    local file="$1"
+    if [ "$EXECUTE" -eq 1 ]; then
+        echo "-- remove $file"
+        rm -f -- "$file"
+    else
+        echo "would remove $file"
+    fi
+}
+
 remove() {
     local dir="$1"
     local size; size="$(du -sh "$dir" | cut -f1)"
@@ -82,13 +92,14 @@ remove() {
     fi
 }
 
-# 2. The runner script.
+# 2. The old runner, only once its tracked replacement is on origin/dev
+#    (after dev is pushed: git -C ~/Developer/code/extrode.com/jaunty fetch origin).
 if [ ! -e "$DEV/bin/mutate" ]; then
     echo "skip:  $DEV/bin/mutate is already gone"
-elif ! ignored "$JAUNTY" "tmp/mb1-mutate/mutate"; then
-    echo "refuse: jaunty's tmp/ is not gitignored. Left $DEV/bin/mutate alone."; failed=1
+elif ! git -C "$JAUNTY" cat-file -e origin/dev:scripts/mutation/mutate.sh 2>/dev/null; then
+    echo "refuse: origin/dev in $JAUNTY has no scripts/mutation/mutate.sh yet (push dev, then fetch). Left $DEV/bin/mutate alone."; failed=1
 else
-    move "$DEV/bin/mutate" "$JAUNTY/tmp/mb1-mutate/mutate"
+    remove_file "$DEV/bin/mutate"
 fi
 
 # 3. Mutation reports, one folder per repo.
