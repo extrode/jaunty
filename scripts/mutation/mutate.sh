@@ -6,9 +6,9 @@
 # uses the jaunty shape (project + extra-test-project) or the jauntyq shape (label, directory,
 # configFile, extraArgs).
 #
-#   mutate <repo> [--ref <branch>] [--bundle <file>] [--only a,b] [--concurrency N]
+#   mutate.sh <repo> [--ref <branch>] [--bundle <file>] [--only a,b] [--concurrency N]
 #                 [--list] [--foreground]
-#   mutate status [<repo>]
+#   mutate.sh status [<repo>]
 #
 #   <repo>         directory name under $MUTATE_ROOT, cloned from github.com/extrode/<repo> if absent
 #   --ref          branch to test (default: dev)
@@ -19,11 +19,19 @@
 #   --foreground   run attached; default is detached under nohup + caffeinate, so an SSH
 #                  disconnect or idle sleep does not kill a multi-hour run
 #
-# Reports: $MUTATE_REPORTS/<repo>/<stamp>-<sha>/<label>/reports/, summary.md alongside.
+# Reports: <repo>/tmp/mutation-reports/<stamp>-<sha>/<label>/reports/, summary.md alongside,
+# plus mutate.sh, the copy of this script that produced them. Set MUTATE_REPORTS to put them in
+# $MUTATE_REPORTS/<repo>/ instead.
+#
+# On mb1: ~/Developer/code/extrode.com/jaunty/scripts/mutation/mutate.sh jaunty --ref dev
 set -euo pipefail
 
 MUTATE_ROOT="${MUTATE_ROOT:-$HOME/Developer/code/extrode.com}"
-MUTATE_REPORTS="${MUTATE_REPORTS:-$HOME/Developer/mutation-reports}"
+reports_base() {
+  if [[ -n "${MUTATE_REPORTS:-}" ]]; then echo "$MUTATE_REPORTS/$1"; else echo "$MUTATE_ROOT/$1/tmp/mutation-reports"; fi
+}
+# Read now: checking out --ref can remove or replace this file, and the detached run execs a copy.
+SELF_SRC=$(cat "$0")
 export DOTNET_ROOT="$HOME/.dotnet"
 export PATH="$HOME/.dotnet:$HOME/.dotnet/tools:/Applications/Docker.app/Contents/Resources/bin:$PATH"
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
@@ -31,17 +39,22 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 die() { echo "mutate: $*" >&2; exit 2; }
 
 if [[ "${1:-}" == status ]]; then
-  base="$MUTATE_REPORTS${2:+/$2}"
-  pgrep -fl "dotnet-stryker|Stryker.CLI|mutate __run" || echo "no mutation run in progress"
-  latest=$(ls -td "$base"/*/ "$base"/*/*/ 2>/dev/null | grep -E '/[0-9]{8}-[0-9]{4}-[0-9a-f]+/$' | head -1 || true)
-  [[ -n "$latest" ]] && { echo "latest: $latest"; tail -5 "$latest/run.log" 2>/dev/null; [[ -f "$latest/summary.md" ]] && cat "$latest/summary.md"; }
+  base=$(reports_base "${2:-*}")
+  pgrep -fl "dotnet-stryker|Stryker.CLI|mutate.sh __run" || echo "no mutation run in progress"
+  # shellcheck disable=SC2086
+  latest=$(ls -td $base/*/ 2>/dev/null | grep -E '/[0-9]{8}-[0-9]{4}-[0-9a-f]+/$' | head -1 || true)
+  if [[ -n "$latest" ]]; then
+    echo "latest: $latest"
+    if [[ -f "$latest/run.log" ]]; then tail -5 "$latest/run.log"; fi
+    if [[ -f "$latest/summary.md" ]]; then cat "$latest/summary.md"; fi
+  fi
   exit 0
 fi
 
 RUN_DETACHED=0
 if [[ "${1:-}" == __run ]]; then RUN_DETACHED=1; shift; fi
 
-REPO="${1:-}"; [[ -n "$REPO" && "$REPO" != -* ]] || die "usage: mutate <repo> [--ref b] [--bundle f] [--only a,b] [--concurrency N] [--list] [--foreground]"
+REPO="${1:-}"; [[ -n "$REPO" && "$REPO" != -* ]] || die "usage: mutate.sh <repo> [--ref b] [--bundle f] [--only a,b] [--concurrency N] [--list] [--foreground]"
 shift
 REF=dev BUNDLE="" ONLY="" CONC=8 LIST=0 FG=0 OUT=""
 while [[ $# -gt 0 ]]; do
@@ -114,18 +127,20 @@ if [[ $RUN_DETACHED -eq 0 ]]; then
   [[ -f "$DIR/.github/workflows/nightly.yml" ]] || die "$REPO has no .github/workflows/nightly.yml"
   if [[ $LIST -eq 1 ]]; then jobs_tsv | column -t -s '|'; exit 0; fi
   SHA=$(git -C "$DIR" rev-parse --short HEAD)
-  OUT="$MUTATE_REPORTS/$REPO/$(date +%Y%m%d-%H%M)-$SHA"
+  OUT="$(reports_base "$REPO")/$(date +%Y%m%d-%H%M)-$SHA"
   mkdir -p "$OUT"
+  printf '%s\n' "$SELF_SRC" > "$OUT/mutate.sh"
+  chmod +x "$OUT/mutate.sh"
   args=(--ref "$REF" --concurrency "$CONC" --out "$OUT")
   [[ -n "$ONLY" ]] && args+=(--only "$ONLY")
   if [[ $FG -eq 1 ]]; then
-    caffeinate -ims "$0" __run "$REPO" "${args[@]}" 2>&1 | tee "$OUT/run.log"
+    caffeinate -ims "$OUT/mutate.sh" __run "$REPO" "${args[@]}" 2>&1 | tee "$OUT/run.log"
     exit "${PIPESTATUS[0]}"
   fi
-  nohup caffeinate -ims "$0" __run "$REPO" "${args[@]}" > "$OUT/run.log" 2>&1 < /dev/null &
+  nohup caffeinate -ims "$OUT/mutate.sh" __run "$REPO" "${args[@]}" > "$OUT/run.log" 2>&1 < /dev/null &
   echo "started (pid $!), $REPO @ $SHA"
   echo "log:     $OUT/run.log"
-  echo "status:  mutate status $REPO"
+  echo "status:  $0 status $REPO"
   exit 0
 fi
 
