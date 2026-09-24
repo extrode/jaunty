@@ -353,12 +353,11 @@ internal sealed class JoinedGroupByExpressionVisitor
         {
             // AUD-R35-195, the joined copy - a non-assignment binding was skipped in silence,
             // leaving no column, no alias and no error.
-            if (binding is not MemberAssignment assignment)
-            {
-                throw new NotSupportedException(
+            // Throw expression rather than a guard block, for Stryker (see SelectExpressionVisitor).
+            MemberAssignment assignment = binding as MemberAssignment
+                ?? throw new NotSupportedException(
                     $"Member binding '{binding.BindingType}' is not supported in GROUP BY Select. " +
                     "Only member assignments (Member = expression) can be translated.");
-            }
 
             var memberName = assignment.Member.Name;
             (string sql, string _) = TranslateExpression(assignment.Expression, memberName, groupingParam);
@@ -525,28 +524,28 @@ internal sealed class JoinedGroupByExpressionVisitor
         }
 
         // Composite key: (t1,t2) => new { t1.CategoryId, t2.SupplierId }
-        if (body is NewExpression newExpr)
+        // Throw expressions rather than guard blocks or a trailing throw, for Stryker (see
+        // SelectExpressionVisitor): removing a trailing throw leaves a path with no return.
+        NewExpression newExpr = body as NewExpression
+            ?? throw new NotSupportedException($"Cannot extract GROUP BY columns from expression type '{body.NodeType}'.");
+
+        var columns = new string[newExpr.Arguments.Count];
+        var propertyToColumn = new Dictionary<string, string>();
+
+        for (int i = 0; i < newExpr.Arguments.Count; i++)
         {
-            var columns = new string[newExpr.Arguments.Count];
-            var propertyToColumn = new Dictionary<string, string>();
+            MemberExpression memberArg = newExpr.Arguments[i] as MemberExpression
+                ?? throw new NotSupportedException("GROUP BY key must be property expressions.");
 
-            for (int i = 0; i < newExpr.Arguments.Count; i++)
-            {
-                if (newExpr.Arguments[i] is not MemberExpression memberArg)
-                    throw new NotSupportedException("GROUP BY key must be property expressions.");
+            int paramIndex = GetParameterIndex(memberArg, keySelector.Parameters);
+            string qualified = GetQualifiedColumnName(paramIndex, memberArg.Member.Name);
+            columns[i] = qualified;
 
-                int paramIndex = GetParameterIndex(memberArg, keySelector.Parameters);
-                string qualified = GetQualifiedColumnName(paramIndex, memberArg.Member.Name);
-                columns[i] = qualified;
-
-                var keyPropertyName = newExpr.Members?[i]?.Name ?? memberArg.Member.Name;
-                propertyToColumn[keyPropertyName] = qualified;
-            }
-
-            return (columns, propertyToColumn);
+            var keyPropertyName = newExpr.Members?[i]?.Name ?? memberArg.Member.Name;
+            propertyToColumn[keyPropertyName] = qualified;
         }
 
-        throw new NotSupportedException($"Cannot extract GROUP BY columns from expression type '{body.NodeType}'.");
+        return (columns, propertyToColumn);
     }
 
     private static int GetParameterIndex(MemberExpression memberExpr, ReadOnlyCollection<ParameterExpression> parameters)
