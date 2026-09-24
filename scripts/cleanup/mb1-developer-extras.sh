@@ -7,6 +7,7 @@
 #   ~/Developer/bin/mutate             removed (tracked now as jaunty's scripts/mutation/mutate.sh;
 #                                      refuses until origin/dev in the mb1 clone has that file)
 #   ~/Developer/mutation-reports/<r>/  -> ~/Developer/code/extrode.com/<r>/tmp/mutation-reports/
+#                                      (run by run, merging with anything already there)
 #   ~/Developer/bundles/               removed (git bundles already fetched into the clones)
 #   ~/Developer/tools/stryker-4.16.0/  removed (side-by-side comparison with Stryker 5 is done)
 #   ~/Developer/bin, ~/Developer/tools removed only if empty afterwards
@@ -115,7 +116,15 @@ else
         if ! ignored "$CODE/$repo" "tmp/mutation-reports"; then
             echo "refuse: $repo's tmp/ is not gitignored. Left $src alone."; failed=1; continue
         fi
-        move "$src" "$CODE/$repo/tmp/mutation-reports"
+        # Run by run, so reports the new runner already wrote there are kept; a run folder whose
+        # name is already taken is refused by move and left behind.
+        for run in "$src"/*; do
+            [ -e "$run" ] || continue
+            move "$run" "$CODE/$repo/tmp/mutation-reports/$(basename "$run")"
+        done
+        if [ "$EXECUTE" -eq 1 ]; then
+            rmdir "$src" 2>/dev/null && echo "-- remove empty $src" || true
+        fi
     done
     if [ "$EXECUTE" -eq 1 ]; then
         rmdir "$DEV/mutation-reports" 2>/dev/null && echo "-- remove empty $DEV/mutation-reports" || true
