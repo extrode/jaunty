@@ -97,7 +97,7 @@ A mapper supplied this way is honoured on the multi-entity overloads too — `Qu
 > a projection delegate. It was `[Obsolete]` from 2026-02-19 and has been removed along with the rest
 > of the obsolete multi-entity surface. The `QueryStream` loop above is its direct replacement and
 > allocates no more than the combiner did. See
-> [the decision record](../_decisions/2026-08-02-001-remove-obsolete-multi-entity-overloads.md).
+> [the decision record](../decisions/2026-08-02-001-remove-obsolete-multi-entity-overloads.md).
 
 ## How Ordinal Claiming Works
 

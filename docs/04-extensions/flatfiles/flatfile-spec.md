@@ -31,11 +31,11 @@ This project lives in the **existing Jaunty solution** as new projects added to 
 
 ```
 1. docs/constitution.md     ← Governing principles (READ FIRST)
-2. docs/_specs/spec.md              ← What we're building and why
-3. docs/_specs/plan.md              ← How we're building it (architecture)
-4. docs/_specs/data-model.md        ← Interfaces, types, mappings
-5. docs/_specs/milestones.md        ← Feature list, priorities, gates
-6. docs/_specs/tasks.md             ← Task breakdown (execute these)
+2. docs/specs/spec.md              ← What we're building and why
+3. docs/specs/plan.md              ← How we're building it (architecture)
+4. docs/specs/data-model.md        ← Interfaces, types, mappings
+5. docs/specs/milestones.md        ← Feature list, priorities, gates
+6. docs/specs/tasks.md             ← Task breakdown (execute these)
 7. docs/architecture/*.mermaid         ← Visual architecture reference
 ```
 

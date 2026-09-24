@@ -36,7 +36,7 @@ public class DocumentedApiTests
 
     private static readonly string[] SkippedPathFragments =
     [
-        "/docs/_archive/", "/docs/_plans/", "/docs/_specs/", "/docs/_decisions/", "/docs/_reports/",
+        "/docs/archive/", "/docs/plans/", "/docs/specs/", "/docs/decisions/", "/docs/reports/",
         "/dist/docs-site/archive-", "/dist/docs-site/plans-", "/dist/docs-site/decisions-",
     ];
 

@@ -149,7 +149,7 @@ Every item here was reachable from caller-supplied input.
   rather than pre-checking, and the audit record lists it under fixes that were later reworked.
 - `QueryBenchmarks`: two custom-mapper cases that read the SQLite `REAL` price through
   `GetDouble`, with and without `WithExpectedRowCount`, beside the two `GetDecimal` cases.
-- `docs/_reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
+- `docs/reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
   harness. The hand-coded baseline reads each column as its reported type (it paid a text
   round-trip on SQLite `REAL` before, which is why two libraries measured faster than ADO.NET
   in July), RepoDb's SQLite bool workaround is registered for SQLite only, and the warm job
@@ -211,12 +211,12 @@ Every item here was reachable from caller-supplied input.
   which is how every library caller uses it; the per-row guard that fell back to `ReadEntity`
   for a delegate reused across `NextResult()` was one native call per row on
   Microsoft.Data.Sqlite. `Query<T>` at 10k rows on SQLite: 5.42 ms to 4.95 ms
-  ([decision 011](docs/_decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
+  ([decision 011](docs/decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
 - **Docs: why an unhinted `Query<T>` trails the hinted one at 10k rows, and why the default
   capacity stays 64.** The list's last doubling lands on the large-object heap and costs a Gen2;
   pre-sizing the harness to 10,000 removed the whole 3.7 ms gap on PostgreSQL. README, report,
   article and `QueryResultCapacity` say to pass `WithExpectedRowCount`
-  ([decision 012](docs/_decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
+  ([decision 012](docs/decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
 - **Docs: the accuracy pass over the README, `SECURITY.md`, the docs index and the quick-start.**
   The README, the quick-start, the learn and API-reference indexes and the comparison chart
   claimed positional parameter binding; there is none. A lone scalar binds the one parameter the
@@ -540,7 +540,7 @@ Every item here was reachable from caller-supplied input.
   built-in `GITHUB_TOKEN`; the `NUGET_API_KEY` secret is no longer required.
 - Source generator: per-result-set `CreateRowMapper` + direct typed getters;
   10k-row SQLite reads went from 1.80x to 1.03x vs hand-coded ADO.NET
-  (Dapper parity). See docs/_reports/benchmarks-2026-07-04.md.
+  (Dapper parity). See docs/reports/benchmarks-2026-07-04.md.
 
 ### Fixed
 

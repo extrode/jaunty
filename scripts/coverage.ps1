@@ -1,5 +1,5 @@
 # Line-coverage run over the tests/ suites, emitting cobertura for the coverage x complexity
-# cross-reference in docs/_plans/2026-08-27-003-testing-strategy-implementation.md.
+# cross-reference in docs/plans/2026-08-27-003-testing-strategy-implementation.md.
 #
 #   pwsh -NoProfile -File scripts/coverage.ps1              # all suites
 #   pwsh -NoProfile -File scripts/coverage.ps1 -Suite Extrode.Jaunty.Tests
