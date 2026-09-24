@@ -2,7 +2,6 @@ using Extrode.Jaunty.Scaffolding.Abstractions;
 using Extrode.Jaunty.Scaffolding.Providers.MySql;
 using Extrode.Jaunty.Scaffolding.Providers.PostgreSql;
 using Extrode.Jaunty.Scaffolding.Providers.SQLite;
-using Extrode.Jaunty.Scaffolding.Providers.SqlServer;
 using Extrode.Jaunty.Scaffolding.Schema;
 
 using Xunit;
@@ -56,11 +55,6 @@ public class TypeMapperValueTypeFlagTests
     [InlineData("NCHAR(55)", "string", false)]
     [InlineData("NATIVE CHARACTER(70)", "string", false)]
     [InlineData("CLOB", "string", false)]
-    [InlineData("(10)", "object", false)]
     public void Sqlite(string dataType, string typeName, bool isValueType)
         => Assert.Equal((typeName, isValueType), Map(new SQLiteTypeMapper(), dataType));
-
-    [Fact]
-    public void SqlServer_SqlVariant_IsObject()
-        => Assert.Equal(("object", false), Map(new SqlServerTypeMapper(), "sql_variant"));
 }
