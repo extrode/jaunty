@@ -44,11 +44,7 @@ $targets = @(
 foreach ($rel in $targets) {
   if (-not (Test-Path $rel)) { Write-Host "   skip: $rel (already gone)"; continue }
   $tracked = git ls-files -- $rel
-  if ($tracked) {
-    Write-Host "   refuse: $rel is tracked by git. Propose it as a commit instead. Left alone."
-    $Failed = $true
-    continue
-  }
+  if ($tracked) { Write-Host "   skip: $rel (now tracked; the untracked copy is gone)"; continue }
   $copy = $null
   foreach ($ref in 'dev', 'chore/docs-drop-underscore-prefixes') {
     git cat-file -e "${ref}:$rel" 2>$null
