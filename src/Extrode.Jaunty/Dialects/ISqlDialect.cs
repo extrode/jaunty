@@ -18,7 +18,7 @@ public interface ISqlDialect
     /// on SQL Server, search_path on PostgreSQL, the connection's ATTACH set on SQLite, the
     /// selected database on MySQL. Any constant substituted for it is wrong for some session, and
     /// silently so whenever a table of the same name exists in the schema it guessed. A schema
-    /// reaches the SQL only when the caller names one; see docs/_decisions/2026-09-02-009.
+    /// reaches the SQL only when the caller names one; see docs/decisions/2026-09-02-009.
     /// </remarks>
     string GetDefaultSchema();
 

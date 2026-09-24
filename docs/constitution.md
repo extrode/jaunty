@@ -2,7 +2,7 @@
 
 Binding project rules. These are the WON'T-change decisions. Contributors obey them;
 changing one is a deliberate governance act, not a casual edit. This is NOT lessons-learned
-(see docs/_lessons/) and NOT mechanical conventions (see docs/conventions.md).
+(see docs/lessons/) and NOT mechanical conventions (see docs/conventions.md).
 
 Status: active · Last reviewed: 2026-07-29
 Content grafted from `docs/constitution.md` (version 2026-03) when the repo moved
@@ -30,7 +30,7 @@ src/
   Extrode.Jaunty.Fluent/             # Fluent API
   Extrode.Jaunty.FlatFiles/          # Flat file interfaces
   Extrode.Jaunty.FlatFiles.DuckDB/   # DuckDB implementation (net8.0+)
-docs/_specs/                  # Specifications, NNN-slug/NNN-spec.md
+docs/specs/                  # Specifications, NNN-slug/NNN-spec.md
 ```
 
 ## Security / data
@@ -44,7 +44,7 @@ docs/_specs/                  # Specifications, NNN-slug/NNN-spec.md
 
 ## Governance
 - Supersedes ad-hoc practices. To change a rule: record the change + date + why, right here.
-- **Spec-first.** No code without a spec and a plan under `docs/_specs/NNN-slug/`. Each
+- **Spec-first.** No code without a spec and a plan under `docs/specs/NNN-slug/`. Each
   milestone carries entry and exit criteria; acceptance criteria are testable assertions.
 - One commit per completed task, `type(component): T### — description`, including the test
   count. PRs verify compliance; a deviation is documented in the PR or it did not happen.

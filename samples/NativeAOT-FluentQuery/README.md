@@ -54,7 +54,7 @@ Substitute your own RID and adjust the path accordingly.
 
 ## See also
 
-- [`docs/_specs/003-fluent-nativeaot-metadata/`](../../docs/_specs/003-fluent-nativeaot-metadata)
+- [`docs/specs/003-fluent-nativeaot-metadata/`](../../docs/specs/003-fluent-nativeaot-metadata)
   — the spec that made this sample possible
 - [`docs/02-architecture/reflection-and-trimming.md`](../../docs/02-architecture/reflection-and-trimming.md)
 - [`NativeAOT-Basic`](../NativeAOT-Basic) — the same entity through the non-fluent API

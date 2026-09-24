@@ -8,7 +8,7 @@ using Extrode.Jaunty.Extensions.Reflection;
 namespace Extrode.Jaunty.Tests.Unit.Laws;
 
 /// <summary>
-/// Proof of docs/_laws/001-strict-mapping-rejects-unmapped-property.md. For every subset of the
+/// Proof of docs/laws/001-strict-mapping-rejects-unmapped-property.md. For every subset of the
 /// entity's columns, with or without a stray extra column, strict mapping throws exactly when the
 /// result set is not the entity's full shape, and a missing property is named in the message.
 /// </summary>
@@ -46,7 +46,7 @@ public class L001StrictMappingLawTests : IDisposable
 
     // 2^4 masks x 2 extra-column states = 32, small enough to enumerate outright rather than
     // sample: exhaustive over this fixture's fixed 4-column entity, not a claim about every
-    // possible entity shape. See docs/_laws/001-strict-mapping-rejects-unmapped-property.md.
+    // possible entity shape. See docs/laws/001-strict-mapping-rejects-unmapped-property.md.
     private static IEnumerable<(bool[] Mask, bool Extra)> AllShapes()
     {
         for (int m = 0; m < 1 << Columns.Length; m++)
