@@ -2,7 +2,7 @@
 
 Mechanical how-we-work rules. Defaults are project-local;
 this file records project-specific deltas. Binding principles live in docs/constitution.md;
-project memory lives in docs/_lessons/.
+project memory lives in docs/lessons/.
 
 ## File & directory naming
 - kebab-case for files and dirs: `mail-pipeline.md`, `data-model.sql`.
@@ -31,6 +31,6 @@ project memory lives in docs/_lessons/.
   pattern in the repo.
 
 ## Specs freshness
-- When code diverges from a shipped spec, update `docs/_specs/NNN-*/spec.md` (bump its `Status:`
+- When code diverges from a shipped spec, update `docs/specs/NNN-*/spec.md` (bump its `Status:`
   and add a `last-verified: <date>` line). `/spec-status` flags any spec older than its own
   plan/tasks as stale.

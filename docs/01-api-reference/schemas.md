@@ -196,4 +196,4 @@ the rows landing in whatever the second one called the table.
 
 - [`attributes.md`](attributes.md) — `[Table]` and the rest of the mapping attributes
 - [`configuration.md`](configuration.md) — `SchemaNameResolver` and the other resolvers
-- `docs/_decisions/2026-09-02-009-schema-qualification-policy.md` — why the policy is omission
+- `docs/decisions/2026-09-02-009-schema-qualification-policy.md` — why the policy is omission

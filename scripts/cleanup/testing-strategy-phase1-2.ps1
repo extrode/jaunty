@@ -1,6 +1,6 @@
 # Remove what the testing-strategy Phase 1 and Phase 2 work left behind, written 2026-08-27.
 #
-# Produced by docs/_plans/2026-08-27-003-testing-strategy-implementation.md.
+# Produced by docs/plans/2026-08-27-003-testing-strategy-implementation.md.
 #
 #   tests/Extrode.Jaunty.UnitTests/StrykerOutput      337 MB  mutation reports, gitignored (.gitignore:385)
 #   tests/Extrode.Jaunty.Fluent.Tests/StrykerOutput    31 MB  same

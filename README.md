@@ -1,7 +1,7 @@
 # Jaunty
 
 <p align="center">
-  <img src="docs/_assets/logo/jaunty-mark.svg" alt="Jaunty" width="160">
+  <img src="docs/assets/logo/jaunty-mark.svg" alt="Jaunty" width="160">
 </p>
 
 The micro-ORM that respects your SQL and your time.
@@ -730,14 +730,14 @@ more use the provider's native path:
 Thresholds, batch size and timeout are on `BulkCopyConfiguration`. Native bulk UPDATE and DELETE
 do not exist in most providers, so those run as optimized SQL inside a transaction. Read-path
 comparisons against ADO.NET, Dapper, EF Core, RepoDb and linq2db are in
-[benchmarks-2026-07-04.md](docs/_reports/benchmarks-2026-07-04.md): Jaunty is the
+[benchmarks-2026-07-04.md](docs/reports/benchmarks-2026-07-04.md): Jaunty is the
 lowest-allocating of the compared ORMs and competitive with Dapper on throughput.
 
 ---
 
 ## Comparison
 
-![Feature comparison: Jaunty, Dapper, EF Core](docs/_assets/benchmarks/comparison.svg)
+![Feature comparison: Jaunty, Dapper, EF Core](docs/assets/benchmarks/comparison.svg)
 
 <details>
 <summary>Text version</summary>
@@ -788,17 +788,17 @@ reports showed two libraries faster than ADO.NET. The SQLite column is from a se
 harness, repeated after the generated mapper's per-row `FieldCount` guard was removed, because the
 38-minute four-provider run drifted on that in-process column; the report shows all three.
 
-![Read path, 10,000 rows, relative to ADO.NET](docs/_assets/benchmarks/read-path-10k-rows-table.svg)
+![Read path, 10,000 rows, relative to ADO.NET](docs/assets/benchmarks/read-path-10k-rows-table.svg)
 
 The same numbers as the extra time each library spends over ADO.NET:
 
-![Read path, 10,000 rows, time over ADO.NET](docs/_assets/benchmarks/read-path-10k-rows.svg)
+![Read path, 10,000 rows, time over ADO.NET](docs/assets/benchmarks/read-path-10k-rows.svg)
 
 Allocation at 10,000 rows on SQL Server. Lower is better here too.
 
-![Allocation, 10,000 rows on SQL Server](docs/_assets/benchmarks/allocation-10k-rows-table.svg)
+![Allocation, 10,000 rows on SQL Server](docs/assets/benchmarks/allocation-10k-rows-table.svg)
 
-![Allocation, 10,000 rows on SQL Server, bytes over ADO.NET](docs/_assets/benchmarks/allocation-10k-rows.svg)
+![Allocation, 10,000 rows on SQL Server, bytes over ADO.NET](docs/assets/benchmarks/allocation-10k-rows.svg)
 
 <details>
 <summary>Text version</summary>
@@ -833,9 +833,9 @@ estimate is enough; it does not have to be exact.
 
 The full run, the machine, the 100-row tables, the harness corrections and the comparison with
 the July numbers are in
-[benchmarks-2026-09-02.md](docs/_reports/benchmarks-2026-09-02.md). The earlier reports
-are [benchmarks-2026-07-29.md](docs/_reports/benchmarks-2026-07-29.md) and
-[benchmarks-2026-07-04.md](docs/_reports/benchmarks-2026-07-04.md). How the read path
+[benchmarks-2026-09-02.md](docs/reports/benchmarks-2026-09-02.md). The earlier reports
+are [benchmarks-2026-07-29.md](docs/reports/benchmarks-2026-07-29.md) and
+[benchmarks-2026-07-04.md](docs/reports/benchmarks-2026-07-04.md). How the read path
 got from 1.80x slower than ADO.NET to where it is, step by step with the code, is in
 [How Jaunty got fast](docs/08-learn/how-jaunty-got-fast.md).
 
@@ -846,7 +846,7 @@ got from 1.80x slower than ADO.NET to where it is, step by step with the code, i
 - [Migrating from Dapper or EF Core](docs/08-learn/migrating/README.md), and the strict-mapping rule to read first
 - [Error messages, explained](docs/08-learn/error-messages.md): the query that produces each one, and the fix
 - [Fluent API reference](docs/01-api-reference/fluent-api.md)
-- [Architecture decisions](docs/_decisions/architecture-decisions.md)
+- [Architecture decisions](docs/decisions/architecture-decisions.md)
 - [Contributing](CONTRIBUTING.md)
 
 ---

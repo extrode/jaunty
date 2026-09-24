@@ -118,7 +118,7 @@ and linq2db, because none of them pre-size. On PostgreSQL the unhinted read was 
 case gave 4.2 ms with no Gen2, so the growth is the whole gap. The default stays 64 all the same:
 a default sized for a 10,000-row read is the wrong default for a library whose most common query
 returns one row, and the hint costs one argument
-([decision 012](../_decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
+([decision 012](../decisions/2026-09-02-012-result-list-default-capacity-stays-64.md)).
 
 ## The number that did not fit
 
@@ -170,7 +170,7 @@ column. Every supported provider's typed getter already throws on NULL, so the r
 in one `try` per row, and the `catch` walks the non-nullable ordinals to name the column. A
 `try` region costs nothing until something throws. The guarantee is unchanged, the message is
 unchanged, and the provider's exception rides along as `InnerException`. Decision 010 in
-`docs/_decisions/` records why this must not be reverted.
+`docs/decisions/` records why this must not be reverted.
 
 The emitted mapper for the benchmark entity, before and after:
 
@@ -238,7 +238,7 @@ That held until SQLite 3.53.4 (SQLitePCLRaw 3.0.5), which formats a `REAL` with 
 so `GetDecimal` now returns `1234567890.123456` where the cast gives `1234567890.12346`. The cast
 stayed: it is the same value the reflection mapper's `Convert.ChangeType` produces, and nothing
 both exact and fast was found. The test now compares against the reflection conversion. Decision
-013 in `docs/_decisions/` has the measurements.
+013 in `docs/decisions/` has the measurements.
 
 ## Step 5: hand a custom mapper back as it was given
 
@@ -308,7 +308,7 @@ The runs above compare against the July baseline so that the before and after ar
 loop. The baseline was then fixed to read the price as the type the column reports, RepoDb's
 SQLite-only bool workaround was confined to SQLite, and the warm job went from 5 to 15
 iterations. The full four-provider run on that harness is
-[benchmarks-2026-09-02.md](../_reports/benchmarks-2026-09-02.md), and it is what the
+[benchmarks-2026-09-02.md](../reports/benchmarks-2026-09-02.md), and it is what the
 README quotes. On that harness, SQLite at 10,000 rows measured alone: the hand-coded loop 4.08 ms, Jaunty
 `Query<T>` 5.42 ms, RepoDb 5.77 ms, Dapper 7.45 ms. So the honest sentence is this: Jaunty is
 the fastest of the five libraries measured on SQLite and SQL Server, level with RepoDb on the
@@ -322,7 +322,7 @@ the closure per result set, so the reuse it protected against never happens insi
 a caller that keeps a delegate across `NextResult()` is misusing a per-result-set factory.
 Removing it took `Query<T>` at 10,000 rows on SQLite from 5.42 ms to 4.95 ms, 1.17x the hand
 loop, measured alone the same evening
-([decision 011](../_decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
+([decision 011](../decisions/2026-09-02-011-row-mapper-no-per-row-fieldcount-guard.md)).
 What remains is the `IsDBNull` on the nullable `product_name` column, which the hand loop skips
 and the mapper cannot: NULL is a legitimate value there.
 
@@ -349,7 +349,7 @@ The full parameter set runs 1, 100 and 10,000 rows on SQLite, SQL Server, Postgr
 MariaDB; the server providers need the `docker-compose.yml` containers and a local SQL Server.
 Edit the two `[Params]` attributes in `QueryBenchmarks.cs` to narrow a run.
 
-The earlier reports are [benchmarks-2026-07-04.md](../_reports/benchmarks-2026-07-04.md)
-and [benchmarks-2026-07-29.md](../_reports/benchmarks-2026-07-29.md). The
+The earlier reports are [benchmarks-2026-07-04.md](../reports/benchmarks-2026-07-04.md)
+and [benchmarks-2026-07-29.md](../reports/benchmarks-2026-07-29.md). The
 performance rules the code is written to are in
 [performance-spec.md](../02-architecture/performance-spec.md).

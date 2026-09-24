@@ -10,7 +10,7 @@ namespace Extrode.Jaunty.Tests.Integration.Read;
 /// (products JOIN categories), so the routes documented in
 /// docs/01-api-reference/multi-entity-mapping.md are covered as a set rather than
 /// individually. Added when the obsolete combiner overload was removed; see
-/// docs/_decisions/2026-08-02-001-remove-obsolete-multi-entity-overloads.md.
+/// docs/decisions/2026-08-02-001-remove-obsolete-multi-entity-overloads.md.
 /// </summary>
 public class MultiTableMappingRoutesTests : IClassFixture<DialectFixture>
 {

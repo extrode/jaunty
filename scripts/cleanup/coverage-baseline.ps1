@@ -1,7 +1,7 @@
 # Cleanup for the testing-strategy close-out (work of 2026-08-30).
 #
 # Produced while closing the last three open items in
-# docs/_plans/2026-08-27-003-testing-strategy-implementation.md: the EXISTS visitor's dispatcher
+# docs/plans/2026-08-27-003-testing-strategy-implementation.md: the EXISTS visitor's dispatcher
 # coverage, the streaming lifecycle's SqlServer variants, and the fuzz harness's first real run.
 #
 # Only the merged branch is listed. The scratch this work created under the project's own tmp/
