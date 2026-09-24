@@ -4,7 +4,7 @@
 # tracked, so the untracked copy blocks `git merge` / `git checkout` of a dev that has the rename.
 # It is removed only while a tracked copy exists at the same path on dev or the branch.
 #
-# Works from the main checkout or any worktree: targets the main checkout.
+# Runs from any directory: targets the main checkout of the repo holding this script.
 # Dry run by default. --execute / -e acts. Deleting the untracked file is irreversible and needs
 # --delete-untracked on top of --execute.
 $ErrorActionPreference = 'Stop'
@@ -26,7 +26,7 @@ foreach ($a in $args) {
   }
 }
 
-$common = (git rev-parse --path-format=absolute --git-common-dir)
+$common = (git -C $PSScriptRoot rev-parse --path-format=absolute --git-common-dir)
 if (-not $common) { Write-Error 'Not inside a git repository.'; exit 1 }
 $repo = Split-Path $common -Parent
 Set-Location $repo
