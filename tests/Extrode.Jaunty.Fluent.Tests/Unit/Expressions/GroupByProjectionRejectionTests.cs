@@ -234,6 +234,28 @@ public class GroupByProjectionRejectionTests
         Assert.Equal(new[] { "CategoryId", "Count" }, aliases);
     }
 
+    [Fact]
+    public void Joined_KeySelectorThatIsNeitherMemberNorNew_IsRejected()
+    {
+        Expression<Func<Product, Category, object>> keySelector = (p, c) => p.CategoryId + 1;
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector));
+
+        Assert.Equal("Cannot extract GROUP BY columns from expression type 'Add'.", ex.Message);
+    }
+
+    [Fact]
+    public void Joined_CompositeKeyWithANonMemberArgument_IsRejected()
+    {
+        Expression<Func<Product, Category, object>> keySelector = (p, c) => new { p.CategoryId, Next = p.CategoryId + 1 };
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector));
+
+        Assert.Equal("GROUP BY key must be property expressions.", ex.Message);
+    }
+
     private sealed class KeyHolder
     {
         public object? Key { get; set; }

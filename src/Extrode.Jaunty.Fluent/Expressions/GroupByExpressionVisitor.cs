@@ -117,12 +117,11 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
             // error. A projection made only of those emitted an empty SELECT list and failed at the
             // server naming nothing the caller wrote. Every other unsupported shape in this
             // translator throws and names the node.
-            if (binding is not MemberAssignment assignment)
-            {
-                throw new NotSupportedException(
+            // Throw expression rather than a guard block, for Stryker (see SelectExpressionVisitor).
+            MemberAssignment assignment = binding as MemberAssignment
+                ?? throw new NotSupportedException(
                     $"Member binding '{binding.BindingType}' is not supported in GROUP BY Select. " +
                     "Only member assignments (Member = expression) can be translated.");
-            }
 
             var memberName = assignment.Member.Name;
             (string? sql, string _) = TranslateExpression(assignment.Expression, memberName);
