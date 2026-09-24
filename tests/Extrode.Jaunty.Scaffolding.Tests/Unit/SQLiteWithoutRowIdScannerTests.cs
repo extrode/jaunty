@@ -25,6 +25,12 @@ public class SQLiteWithoutRowIdScannerTests
     [InlineData("CREATE TABLE t (a INT) WITHOUT /*/ x */ ROWID", true)]
     [InlineData("CREATE TABLE t (a INT) WITHOUT -- c\n ROWID", true)]
     [InlineData("CREATE TABLE t (a INT) WITHOUT - ROWID", true)]
+    [InlineData("CREATE TABLE t (a INT /* c */) WITHOUT ROWID", true)]
+    [InlineData("CREATE TABLE t (a INT /*(*/) WITHOUT ROWID", true)]
+    [InlineData("CREATE TABLE t (a INT /* a*b ) WITHOUT ROWID */)", false)]
+    [InlineData("CREATE TABLE t (a INT /* x/ ) WITHOUT ROWID */)", false)]
+    [InlineData("CREATE TABLE t (a INT DEFAULT (random()), b INT) WITHOUT ROWID", true)]
+    [InlineData("CREATE TABLE t (a INT) WITHOUT /*c*/ROWID", true)]
     public void OnlyTheRealOptionsTailCounts(string createSql, bool expected)
         => Assert.Equal(expected, SQLiteSchemaReader.IsWithoutRowId(createSql));
 
@@ -37,6 +43,12 @@ public class SQLiteWithoutRowIdScannerTests
     [InlineData("CREATE TABLE t (a INT) WITHOUT /* unterminated")]
     [InlineData("CREATE TABLE t (a INT) -")]
     [InlineData("CREATE TABLE t (a INT")]
+    [InlineData("[x) WITHOUT ROWID]")]
+    [InlineData("CREATE TABLE t (a -")]
+    [InlineData("CREATE TABLE t (a /")]
+    [InlineData("CREATE TABLE t (a INT /* x*")]
+    [InlineData("CREATE TABLE t (a) /")]
+    [InlineData("CREATE TABLE t (a) /* x*")]
     public void AStatementEndingMidToken_IsNotWithoutRowId(string createSql)
         => Assert.False(SQLiteSchemaReader.IsWithoutRowId(createSql));
 }
