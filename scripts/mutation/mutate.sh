@@ -37,12 +37,22 @@ export PATH="$HOME/.dotnet:$HOME/.dotnet/tools:/Applications/Docker.app/Contents
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 
 die() { echo "mutate: $*" >&2; exit 2; }
+RUN_PATTERN="dotnet-stryker|Stryker.CLI|mutate.sh __run"
 
 if [[ "${1:-}" == status ]]; then
-  base=$(reports_base "${2:-*}")
-  pgrep -fl "dotnet-stryker|Stryker.CLI|mutate.sh __run" || echo "no mutation run in progress"
-  # shellcheck disable=SC2086
-  latest=$(ls -td $base/*/ 2>/dev/null | grep -E '/[0-9]{8}-[0-9]{4}-[0-9a-f]+/$' | head -1 || true)
+  if [[ -n "${2:-}" ]]; then set -- "$(reports_base "$2")"/*/
+  elif [[ -n "${MUTATE_REPORTS:-}" ]]; then set -- "$MUTATE_REPORTS"/*/*/
+  else set -- "$MUTATE_ROOT"/*/tmp/mutation-reports/*/
+  fi
+  pgrep -fl "$RUN_PATTERN" || echo "no mutation run in progress"
+  # By name, not mtime: <stamp>-<sha> sorts by start time, and a later write into an old run
+  # folder must not make it "latest".
+  latest="" best=""
+  for d in "$@"; do
+    n=$(basename "$d")
+    [[ "$n" =~ ^[0-9]{8}-[0-9]{4}-[0-9a-f]+$ ]] || continue
+    if [[ "$n" > "$best" ]]; then best="$n"; latest="$d"; fi
+  done
   if [[ -n "$latest" ]]; then
     echo "latest: $latest"
     if [[ -f "$latest/run.log" ]]; then tail -5 "$latest/run.log"; fi
@@ -104,6 +114,20 @@ for c in combos:
 PY
 }
 
+# Sets JOBS to the rows to run. Dies on an empty job list or an --only label with no job, so a
+# run cannot finish with failed=0 having tested nothing.
+select_jobs() {
+  local all label rest
+  all=$(jobs_tsv) || die "could not read the job list from $REPO's nightly.yml"
+  [[ -n "$all" ]] || die "$REPO's nightly.yml lists no mutation jobs"
+  for label in ${ONLY//,/ }; do
+    printf '%s\n' "$all" | cut -d'|' -f1 | grep -qxF -- "$label" || die "--only: $REPO has no job labelled '$label' (see --list)"
+  done
+  JOBS=$(printf '%s\n' "$all" | while IFS='|' read -r label rest; do
+    if [[ -z "$ONLY" || ",$ONLY," == *",$label,"* ]]; then printf '%s|%s\n' "$label" "$rest"; fi
+  done)
+}
+
 sync_repo() {
   if [[ ! -d "$DIR/.git" ]]; then
     git clone --quiet "https://github.com/extrode/$REPO.git" "$DIR"
@@ -123,11 +147,17 @@ sync_repo() {
 if [[ $RUN_DETACHED -eq 0 ]]; then
   # --list must not move the checkout: a run in progress, or another session, may be using it.
   if [[ $LIST -eq 1 && -f "$DIR/.github/workflows/nightly.yml" ]]; then jobs_tsv | column -t -s '|'; exit 0; fi
+  # A second run would move the checkout under the first one's Stryker.
+  if pgrep -f "$RUN_PATTERN" >/dev/null 2>&1; then
+    die "a mutation run is already in progress (see: $0 status); one at a time"
+  fi
   sync_repo
   [[ -f "$DIR/.github/workflows/nightly.yml" ]] || die "$REPO has no .github/workflows/nightly.yml"
   if [[ $LIST -eq 1 ]]; then jobs_tsv | column -t -s '|'; exit 0; fi
+  select_jobs
   SHA=$(git -C "$DIR" rev-parse --short HEAD)
   OUT="$(reports_base "$REPO")/$(date +%Y%m%d-%H%M)-$SHA"
+  [[ ! -e "$OUT" ]] || die "$OUT already exists; wait a minute and start again"
   mkdir -p "$OUT"
   printf '%s\n' "$SELF_SRC" > "$OUT/mutate.sh"
   chmod +x "$OUT/mutate.sh"
@@ -140,12 +170,13 @@ if [[ $RUN_DETACHED -eq 0 ]]; then
   nohup caffeinate -ims "$OUT/mutate.sh" __run "$REPO" "${args[@]}" > "$OUT/run.log" 2>&1 < /dev/null &
   echo "started (pid $!), $REPO @ $SHA"
   echo "log:     $OUT/run.log"
-  echo "status:  $0 status $REPO"
+  echo "status:  $OUT/mutate.sh status $REPO"
   exit 0
 fi
 
 # ---- detached body: repo already at the target commit ----
 cd "$DIR"
+select_jobs
 echo "== $REPO @ $(git rev-parse --short HEAD) ($(git log -1 --format=%s)), concurrency $CONC, $(date)"
 
 if [[ -x tools/native/sqlite-interop-osx-arm64/build.sh && ! -f tools/native/sqlite-interop-osx-arm64/artifacts/SQLite.Interop.dll ]]; then
@@ -163,7 +194,6 @@ echo "stryker $(dotnet tool list --local | awk '$1 == "dotnet-stryker" {print $2
 failed=0
 # '|', not a tab: tab is IFS whitespace, so read would merge the empty configFile field away.
 while IFS='|' read -r label directory config extra; do
-  if [[ -n "$ONLY" && ",$ONLY," != *",$label,"* ]]; then continue; fi
   echo
   echo "== $label  (tests/$directory${config:+, $config}${extra:+, $extra})  $(date +%H:%M:%S)"
   start=$SECONDS
@@ -177,7 +207,7 @@ while IFS='|' read -r label directory config extra; do
     echo "   FAILED (exit $?) in $(( (SECONDS - start) / 60 )) min, see $label.log"
     failed=1
   fi
-done < <(jobs_tsv)
+done <<< "$JOBS"
 
 python3 - "$OUT" > "$OUT/summary.md" <<'PY'
 import glob, json, os, sys
