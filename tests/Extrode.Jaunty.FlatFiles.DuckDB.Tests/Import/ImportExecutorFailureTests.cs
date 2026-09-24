@@ -83,6 +83,25 @@ public class ImportExecutorFailureTests : IDisposable
         Assert.IsType<SqliteException>(ex.InnerException);
     }
 
+    [Fact]
+    public async Task ATargetTableMissingAMappedColumn_NamesTheColumnAndTable()
+    {
+        using DuckDb db = Open<Item>();
+        using SqliteConnection target = Sqlite();
+        using (SqliteCommand create = target.CreateCommand())
+        {
+            create.CommandText = "CREATE TABLE items (ItemId INTEGER PRIMARY KEY)";
+            create.ExecuteNonQuery();
+        }
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => db.ImportIntoAsync<Item>(target).AsTask());
+
+        Assert.Equal(
+            "Schema alignment failed: Target table 'items' does not contain column 'ItemName' " +
+            "required by entity mapping. Available columns: ItemId",
+            ex.Message);
+    }
+
     [Table("items")]
     public class Item
     {
