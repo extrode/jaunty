@@ -13,7 +13,7 @@
          of those crefs member 1, so removing 1 alone would not compile under warnings-as-errors.
       3. JoinParameterRenameRegexes, an entire internal static class with no references at all.
 
-    docs/_plans/2026-09-01-006-elegant-join-sql.md:253 already records 1 and 2 as stale artefacts
+    docs/plans/2026-09-01-006-elegant-join-sql.md:253 already records 1 and 2 as stale artefacts
     left in place at the time. The same file says at :110 that they were "kept, not removed - they
     have direct unit tests and other callers"; that line is stale, and the search above is what
     supersedes it.

@@ -8,7 +8,7 @@ using Extrode.Jaunty.Extensions.Reflection;
 namespace Extrode.Jaunty.Tests.Unit.Laws;
 
 /// <summary>
-/// Proof of docs/_laws/002-projection-never-throws-for-missing-column.md. For every subset of the
+/// Proof of docs/laws/002-projection-never-throws-for-missing-column.md. For every subset of the
 /// entity's columns, with or without a stray extra column, projection mapping never throws, maps
 /// exactly the columns present, and touches no property whose column is absent.
 /// </summary>
@@ -46,7 +46,7 @@ public class L002ProjectionLawTests : IDisposable
 
     // 2^4 masks x 2 extra-column states = 32, small enough to enumerate outright rather than
     // sample: exhaustive over this fixture's fixed 4-column entity, not a claim about every
-    // possible entity shape. See docs/_laws/002-projection-never-throws-for-missing-column.md.
+    // possible entity shape. See docs/laws/002-projection-never-throws-for-missing-column.md.
     private static IEnumerable<(bool[] Mask, bool Extra)> AllShapes()
     {
         for (int m = 0; m < 1 << Columns.Length; m++)

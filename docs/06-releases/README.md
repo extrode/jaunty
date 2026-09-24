@@ -20,7 +20,7 @@ its terms are available on request rather than published here. To ask, open a
 
 ## Reports
 
-- [`../_reports/production-readiness-2026-07-02.md`](../_reports/production-readiness-2026-07-02.md) - Production readiness assessment
+- [`../reports/production-readiness-2026-07-02.md`](../reports/production-readiness-2026-07-02.md) - Production readiness assessment
 
 ---
 

@@ -13,7 +13,7 @@ jaunty/
 ├── README.md                      # Project overview
 ├── Jaunty.slnx                    # Solution file
 │
-├── docs/                          # Documentation (00-quick-start through 08-learn, _archive)
+├── docs/                          # Documentation (00-quick-start through 08-learn, archive)
 ├── src/                           # The 9 packages plus the source generator
 │   ├── Extrode.Jaunty/                    # Core micro-ORM (package Extrode.Jaunty)
 │   ├── Extrode.Jaunty.SourceGenerator/    # Roslyn generator, packed inside Extrode.Jaunty

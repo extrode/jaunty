@@ -7,7 +7,7 @@
 # Execute:            .\scripts\cleanup\net10-langversion-work.ps1 --execute
 # Also drop worktree: .\scripts\cleanup\net10-langversion-work.ps1 --execute --delete-worktrees
 #
-# DELIBERATELY NOT REMOVED: probe/net10-feasibility. docs/_specs/010-net10-migration/010-spec.md
+# DELIBERATELY NOT REMOVED: probe/net10-feasibility. docs/specs/010-net10-migration/010-spec.md
 # section 8 cites it as the evidence record for every measurement in section 2; deleting it makes
 # the spec unreproducible. It is listed at the end as retained, not as a candidate.
 
