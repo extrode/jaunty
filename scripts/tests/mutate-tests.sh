@@ -85,27 +85,27 @@ check "usage: unknown flag exits 2" '[ $code -eq 2 ] && echo "$out" | grep -q "u
 stamp() {
   mkdir -p "$1"
   printf '%s\n' "$2" > "$1/summary.md"
-  touch -d "$3" "$1"
+  touch -t "$3" "$1"
 }
-stamp "$root/jshape/tmp/mutation-reports/20260101-0000-abc1234" "# jshape old" "2026-01-01 00:00"
-stamp "$root/jshape/tmp/mutation-reports/20260102-0000-def5678" "# jshape new" "2026-01-02 00:00"
-stamp "$root/qshape/tmp/mutation-reports/20260103-0000-0a1b2c3" "# qshape newest" "2026-01-03 00:00"
+stamp "$root/jshape/tmp/mutation-reports/20260101-0000-abc1234" "# jshape old" 202602010000
+stamp "$root/jshape/tmp/mutation-reports/20260102-0000-def5678" "# jshape new" 202601020000
+stamp "$root/qshape/tmp/mutation-reports/20260103-0000-0a1b2c3" "# qshape newest" 202601030000
 mkdir -p "$root/jshape/tmp/mutation-reports/not-a-run"
 
 out="$(run "$runner" status jshape 2>&1)"
-check "status <repo>: reads <repo>/tmp/mutation-reports and picks the newest run" \
+check "status <repo>: picks the newest run by name, not by folder mtime" \
   'echo "$out" | grep -q "# jshape new" && ! echo "$out" | grep -q "# jshape old"' "$out"
 
 out="$(run "$runner" status 2>&1)"
 check "status: without a repo picks the newest run across repos" 'echo "$out" | grep -q "# qshape newest"' "$out"
 
 running="$root/qshape/tmp/mutation-reports/20260105-0000-2222222"
-mkdir -p "$running" && printf '== core  (tests/Q.Core.Tests)\n' > "$running/run.log" && touch -d "2026-01-05 00:00" "$running"
+mkdir -p "$running" && printf '== core  (tests/Q.Core.Tests)\n' > "$running/run.log"
 out="$(run "$runner" status qshape 2>&1)"; code=$?
 check "status: run in progress (log, no summary yet) shows the log and exits 0" \
   '[ $code -eq 0 ] && echo "$out" | grep -q "== core  (tests/Q.Core.Tests)"' "$out"
 
-stamp "$scr/reports/jshape/20260104-0000-1111111" "# override" "2026-01-04 00:00"
+stamp "$scr/reports/jshape/20260104-0000-1111111" "# override" 202601040000
 out="$(MUTATE_REPORTS="$scr/reports" run "$runner" status jshape 2>&1)"
 check "status: MUTATE_REPORTS overrides the report location" \
   'echo "$out" | grep -q "# override" && ! echo "$out" | grep -q "# jshape new"' "$out"
@@ -119,10 +119,24 @@ cp "$runner" "$src/scripts/mutation/mutate.sh"
 g -C "$src" add -A && g -C "$src" commit -qm "chore: with runner"
 g -C "$src" checkout -qb dev
 g -C "$src" rm -q scripts/mutation/mutate.sh && g -C "$src" commit -qm "chore: without runner"
-g -C "$src" bundle create -q "$scr/dev.bundle" dev 2>/dev/null
+g -C "$src" checkout -qb dev2
+printf 'x\n' > "$src/x.txt" && g -C "$src" add x.txt && g -C "$src" commit -qm "chore: second ref"
+g -C "$src" bundle create -q "$scr/dev.bundle" dev dev2 2>/dev/null
 g clone -q --branch main "$src" "$root/fx"
 printf 'tmp/\n' > "$root/fx/.git/info/exclude"
 cp "$root/fx/scripts/mutation/mutate.sh" "$scr/launched.sh"
+head0="$(git -C "$root/fx" rev-parse HEAD)"
+
+printf '#!/usr/bin/env bash\nexit 0\n' > "$scr/bin/pgrep" && chmod +x "$scr/bin/pgrep"
+out="$(run "$runner" fx --bundle "$scr/dev.bundle" --ref dev --foreground 2>&1)"; code=$?
+rm -f "$scr/bin/pgrep"
+check "launch: refuses while a mutation run is in progress, checkout untouched" \
+  '[ $code -eq 2 ] && echo "$out" | grep -q "already in progress" && [ "$(git -C "$root/fx" rev-parse HEAD)" = "$head0" ]' "$out"
+
+out="$(run "$runner" fx --bundle "$scr/dev.bundle" --ref dev --only B.Test --foreground 2>&1)"; code=$?
+check "launch: --only label with no job fails before anything starts" \
+  '[ $code -eq 2 ] && echo "$out" | grep -q "no job labelled '"'"'B.Test'"'"'" && [ ! -e "$scr/caffeinate.args" ] && [ ! -d "$root/fx/tmp/mutation-reports" ]' "$out"
+g -C "$root/fx" checkout -q main
 
 out="$(run "$root/fx/scripts/mutation/mutate.sh" fx --bundle "$scr/dev.bundle" --ref dev --foreground 2>&1)"; code=$?
 copy="$(ls "$root"/fx/tmp/mutation-reports/*/mutate.sh 2>/dev/null | head -1)"
@@ -132,6 +146,31 @@ check "launch: report folder holds a byte-identical copy of the runner" '[ -n "$
 check "launch: detached run is started from the copy" \
   '[ -f "$scr/caffeinate.args" ] && [ "$(sed -n 1p "$scr/caffeinate.args")" = "$copy" ] && sed -n 2,3p "$scr/caffeinate.args" | tr "\n" " " | grep -q "^__run fx "' \
   "$(cat "$scr/caffeinate.args" 2>/dev/null)"
+
+rm -f "$scr/caffeinate.args"
+sha="$(git -C "$root/fx" rev-parse --short HEAD)"
+for s in $(python3 -c "import datetime as d; n = d.datetime.now(); print(*[(n + d.timedelta(minutes=i)).strftime('%Y%m%d-%H%M') for i in (0, 1)])"); do
+  mkdir -p "$root/fx/tmp/mutation-reports/$s-$sha"
+done
+out="$(run "$runner" fx --bundle "$scr/dev.bundle" --ref dev --foreground 2>&1)"; code=$?
+check "launch: refuses to reuse an existing report folder" \
+  '[ $code -eq 2 ] && echo "$out" | grep -q "already exists" && [ ! -e "$scr/caffeinate.args" ]' "$out"
+
+out="$(run "$runner" fx --bundle "$scr/dev.bundle" --ref dev2 2>&1)"; code=$?
+out2="$(printf '%s\n' "$out" | sed -n 's/^status:  \(.*\) status fx$/\1/p')"
+for _ in $(seq 60); do [ -s "$scr/caffeinate.args" ] && break; sleep 1; done
+check "detached: prints a status hint pointing at the saved copy" \
+  '[ $code -eq 0 ] && echo "$out" | grep -q "^started (pid" && [ -f "$out2" ] && case "$out2" in "$root"/fx/tmp/mutation-reports/*/mutate.sh) true ;; *) false ;; esac' "$out"
+check "detached: background run is started from the saved copy" \
+  '[ "$(sed -n 1p "$scr/caffeinate.args" 2>/dev/null)" = "$out2" ]' "$(cat "$scr/caffeinate.args" 2>/dev/null)"
+
+out="$(run "$runner" __run fx --only B.Test --out "$scr/o" 2>&1)"; code=$?
+check "__run: --only label with no job fails instead of running zero jobs" \
+  '[ $code -eq 2 ] && echo "$out" | grep -q "no job labelled"' "$out"
+
+out="$(run "$runner" __run nostryker --out "$scr/o" 2>&1)"; code=$?
+check "__run: workflow with no stryker job fails instead of running zero jobs" \
+  '[ $code -eq 2 ] && echo "$out" | grep -q "could not read the job list"' "$out"
 
 echo
 echo "$pass passed, $fail failed"
