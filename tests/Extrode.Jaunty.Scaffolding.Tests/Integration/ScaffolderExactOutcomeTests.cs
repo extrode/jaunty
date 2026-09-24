@@ -166,7 +166,7 @@ public class ScaffolderExactOutcomeTests : IDisposable
     [Fact]
     public async Task ABlankOrAlreadyQuotedInnerMessage_IsNotRepeated()
     {
-        Assert.Equal("failed: root cause -> last", await ErrorFromGeneratorThrowing(Chain("failed: root cause", " ", "root cause", "last")));
+        Assert.Equal("failed:root -> last", await ErrorFromGeneratorThrowing(Chain("failed:root", " ", "root", "last")));
     }
 
     [Fact]
