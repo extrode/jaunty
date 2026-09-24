@@ -77,12 +77,12 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             // tree - used to be skipped in silence, producing a projection with a column missing and
             // no way to tell. The same gap was closed in the GROUP BY visitors as AUD-R35-195. Every
             // other untranslatable shape in this class throws and names what it saw.
-            if (binding is not MemberAssignment assignment)
-            {
-                throw new NotSupportedException(
+            // A throw expression, not `if (... is not MemberAssignment assignment) throw`: Stryker's
+            // block removal leaves `assignment` unassigned there and drops every mutant in the method.
+            MemberAssignment assignment = binding as MemberAssignment
+                ?? throw new NotSupportedException(
                     $"Member binding '{binding.BindingType}' is not supported in SELECT projections. " +
                     "Only member assignments (Member = expression) can be translated.");
-            }
 
             var alias = assignment.Member.Name;
             var sql = TranslateProjectionExpression(assignment.Expression);
