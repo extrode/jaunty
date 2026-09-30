@@ -26,6 +26,7 @@ internal sealed class SQLiteDialectWithBulkCopy : ISqlDialect, ISubstringToEndDi
 
     public bool SupportsNativeBulkCopy => false; // SQLite has no true native bulk copy
 
+    // Stryker disable once Block : an emptied body returns default, which for this reference type is the null the body returns
     public IBulkCopyProvider? CreateBulkCopyProvider()
     {
         // PROD-120 (2026-07-04): intentionally null. SQLite has no native bulk
