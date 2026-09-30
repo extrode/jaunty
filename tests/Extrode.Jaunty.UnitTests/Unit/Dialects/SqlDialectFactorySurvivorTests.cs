@@ -166,6 +166,30 @@ public class SqlDialectFactorySurvivorTests
         public IDbConnection InnerConnection => throw new InvalidOperationException("disposed");
     }
 
+    [Fact]
+    public void AProbeThatThrows_LeavesTheBaseDialect()
+    {
+        var dialect = new SQLiteDialect();
+
+        Assert.Same(dialect, SqlDialectFactory.TryEnhance(dialect, _ => throw new InvalidOperationException("boom")));
+    }
+
+    [Fact]
+    public void AProbeReturningNull_LeavesTheBaseDialect()
+    {
+        var dialect = new SQLiteDialect();
+
+        Assert.Same(dialect, SqlDialectFactory.TryEnhance(dialect, _ => null));
+    }
+
+    [Fact]
+    public void AProbeReturningADialect_ReplacesTheBaseDialect()
+    {
+        var replacement = new SqlServerDialect();
+
+        Assert.Same(replacement, SqlDialectFactory.TryEnhance(new SQLiteDialect(), _ => replacement));
+    }
+
     private static string DialectNameOf(IDbConnection connection)
         => SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection)).GetType().Name;
 
