@@ -128,6 +128,39 @@ public class ScaffolderExactOutcomeTests : IDisposable
     }
 
     [Fact]
+    public async Task SeveralCollidingClassNames_AreJoinedWithSemicolons()
+    {
+        Exec("CREATE TABLE product (id INTEGER PRIMARY KEY)");
+        Exec("CREATE TABLE products (id INTEGER PRIMARY KEY)");
+        Exec("CREATE TABLE category (id INTEGER PRIMARY KEY)");
+        Exec("CREATE TABLE categories (id INTEGER PRIMARY KEY)");
+
+        ScaffoldResult result = await new Scaffolder().ScaffoldAsync(Options());
+
+        Assert.Equal(
+            "Multiple tables map to the same generated class name: " +
+            "Category <- [categories, category]; Product <- [product, products]. " +
+            "Use ClassPrefix/ClassSuffix, disable Singularize, or exclude one of the tables.",
+            result.Error);
+    }
+
+    [Fact]
+    public async Task SeveralExistingOutputFiles_AreListedCommaSeparated()
+    {
+        Exec("CREATE TABLE widgets (id INTEGER PRIMARY KEY)");
+        Exec("CREATE TABLE gadgets (id INTEGER PRIMARY KEY)");
+        Directory.CreateDirectory(_outputDir);
+        string gadget = Path.Combine(_outputDir, "Gadget.cs");
+        string widget = Path.Combine(_outputDir, "Widget.cs");
+        await File.WriteAllTextAsync(gadget, "// mine");
+        await File.WriteAllTextAsync(widget, "// mine");
+
+        ScaffoldResult result = await new Scaffolder().ScaffoldAsync(Options());
+
+        Assert.Equal($"File(s) already exists: {gadget}, {widget}. Use --force to overwrite.", result.Error);
+    }
+
+    [Fact]
     public async Task NullOptions_AreReportedAsSuch()
     {
         ScaffoldResult result = await new Scaffolder().ScaffoldAsync(null!);

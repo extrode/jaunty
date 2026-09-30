@@ -45,4 +45,33 @@ public class MySqlSchemaReaderTests
 
         Assert.False(MySqlSchemaReader.ShouldSkipDatabase(options, "mydb"));
     }
+
+    [Fact]
+    public void ShouldSkipDatabase_EmptyIncludeSchemas_ReturnsFalse()
+    {
+        var options = new SchemaReaderOptions { IncludeSchemas = [] };
+
+        Assert.False(MySqlSchemaReader.ShouldSkipDatabase(options, "mydb"));
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(42, 42)]
+    [InlineData(-5, -5)]
+    [InlineData(2147483647, int.MaxValue)]
+    [InlineData(2147483648L, int.MaxValue)]
+    [InlineData(4294967295L, int.MaxValue)]
+    public void ToClampedInt32_IntegralValues_ClampToInt32(long value, int expected)
+    {
+        Assert.Equal(expected, MySqlSchemaReader.ToClampedInt32(value));
+    }
+
+    [Theory]
+    [InlineData("18446744073709551615", int.MaxValue)]
+    [InlineData("7", 7)]
+    public void ToClampedInt32_UnsignedAndDecimalValues_ClampToInt32(string value, int expected)
+    {
+        Assert.Equal(expected, MySqlSchemaReader.ToClampedInt32(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)));
+        Assert.Equal(expected, MySqlSchemaReader.ToClampedInt32(ulong.Parse(value, System.Globalization.CultureInfo.InvariantCulture)));
+    }
 }
