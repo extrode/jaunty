@@ -138,7 +138,7 @@ internal sealed class JoinedGroupByExpressionVisitor
         {
             "Count" => "count",
             "Sum" => "sum",
-            "Avg" or "Average" => "avg",
+            "Avg" => "avg",
             "Min" => "min",
             "Max" => "max",
             _ => null
