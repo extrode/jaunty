@@ -300,19 +300,12 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
             expr = unary.Operand;
         }
 
-        if (expr is ParameterExpression param)
-        {
-            return param.Type.IsGenericType &&
-                   param.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>);
-        }
-
-        // Also handle cases where it might be a MemberExpression to the parameter
-        if (expr?.Type.IsGenericType == true && expr.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>))
-        {
-            return true;
-        }
-
-        return false;
+        // Only the lambda's own parameter is the grouping being translated. Any other
+        // IGrouping-typed expression (a captured variable, a property) is a different sequence, and
+        // treating it as this one silently rewrote its aggregates into COUNT(*) over this group.
+        return expr is ParameterExpression param
+            && param.Type.IsGenericType
+            && param.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>);
     }
 
         // AUD-R26-058: the raw-name half of the same AUD-R25 conversion. This one never

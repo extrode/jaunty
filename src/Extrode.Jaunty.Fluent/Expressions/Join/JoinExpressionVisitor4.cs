@@ -77,6 +77,15 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
         // Handle null comparisons: emit IS NULL / IS NOT NULL instead of = NULL / <> NULL.
         if (node.NodeType is ExpressionType.Equal or ExpressionType.NotEqual)
         {
+            // Both sides closed over null: C# says null == null is true, but SQL's NULL = NULL is
+            // UNKNOWN and would match no rows. Fold it to the constant C# would have produced.
+            if (leftColumn is null && rightColumn is null && IsNullValue(node.Left) && IsNullValue(node.Right))
+            {
+                _sql.Append(node.NodeType == ExpressionType.Equal ? "1 = 1" : "1 = 0");
+                _sql.Append(')');
+                return node;
+            }
+
             if (leftColumn is not null && rightColumn is null && IsNullValue(node.Right))
             {
                 _sql.Append(leftColumn);
@@ -110,7 +119,7 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
             ExpressionType.LessThanOrEqual => " <= ",
             ExpressionType.GreaterThan => " > ",
             ExpressionType.GreaterThanOrEqual => " >= ",
-            _ => throw new NotSupportedException($"Operator {node.NodeType} is not supported.")
+            _ => throw new NotSupportedException($"Operator {node.NodeType} is not supported in JOIN expressions.")
         });
 
         if (rightColumn is not null)
