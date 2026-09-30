@@ -12,6 +12,13 @@ namespace Extrode.Jaunty.Tests.Unit.Dialects;
 [Collection("Dialect Factory Survivors")]
 public class SqlDialectFactorySurvivorTests
 {
+    public SqlDialectFactorySurvivorTests()
+    {
+        var cache = typeof(SqlDialectFactory).GetField("_innerConnectionAccessors", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+        ((System.Collections.IDictionary)cache).Clear();
+        SqlDialectFactory.InvalidateResolvedDialects();
+    }
+
 #if NET
     public interface ITestWrapperDialect : ISqlDialect, IDialectWrapper
     {
@@ -86,6 +93,15 @@ public class SqlDialectFactorySurvivorTests
         public IDbConnection WrappedConnection { get; }
     }
 
+    private sealed class ComputedPropertyWrapper : StubConnection
+    {
+        private readonly object[] _holder;
+
+        public ComputedPropertyWrapper(IDbConnection inner) => _holder = [inner];
+
+        public IDbConnection WrappedConnection => (IDbConnection)_holder[0];
+    }
+
     private sealed class TwoFieldWrapper : StubConnection
     {
         private readonly IDbConnection _a;
@@ -156,6 +172,10 @@ public class SqlDialectFactorySurvivorTests
     [Fact]
     public void AFieldDecorator_ResolvesToTheInnerDialect()
         => Assert.Equal(nameof(SQLiteDialect), DialectNameOf(new FieldWrapper(new SqliteConnection())));
+
+    [Fact]
+    public void AComputedPropertyDecorator_ResolvesToTheInnerDialect()
+        => Assert.Equal(nameof(SQLiteDialect), DialectNameOf(new ComputedPropertyWrapper(new SqliteConnection())));
 
     [Fact]
     public void APropertyDecorator_ResolvesToTheInnerDialect()

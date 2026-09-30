@@ -275,8 +275,6 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
     // Implementation moved to Extrode.Jaunty.Extensions.Reflection (optional package)
     public bool SupportsNativeBulkCopy => false;
 
-    public IBulkCopyProvider? CreateBulkCopyProvider()
-    {
-        return null; // Requires Extrode.Jaunty.Extensions.Reflection package
-    }
+    // Requires Extrode.Jaunty.Extensions.Reflection package
+    public IBulkCopyProvider? CreateBulkCopyProvider() => null;
 }
