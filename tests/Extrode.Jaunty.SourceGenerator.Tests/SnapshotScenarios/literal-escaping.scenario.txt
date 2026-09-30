@@ -1,0 +1,24 @@
+using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Interfaces;
+
+namespace Snapshots.Escaping;
+
+[Table("odd\\name\"quoted\"\0\a\b\f\n\r\t\v\u0001\u0085\u2028\u2029end")]
+public partial class OddNames : IMapped<OddNames>
+{
+    [Key] [Column("back\\slash")] public int Id { get; set; }
+    [Column("quote\"d")] public string? Quoted { get; set; }
+    [Column("nul\0")] public string? Nul { get; set; }
+    [Column("bell\a")] public string? Bell { get; set; }
+    [Column("back\bspace")] public string? Backspace { get; set; }
+    [Column("form\ffeed")] public string? FormFeed { get; set; }
+    [Column("new\nline")] public string? NewLine { get; set; }
+    [Column("car\rreturn")] public string? CarriageReturn { get; set; }
+    [Column("tab\tstop")] public string? Tab { get; set; }
+    [Column("vert\vtab")] public string? VerticalTab { get; set; }
+    [Column("ctl\u0001x")] public string? Control { get; set; }
+    [Column("nel\u0085x")] public string? NextLine { get; set; }
+    [Column("ls\u2028x")] public string? LineSeparator { get; set; }
+    [Column("ps\u2029x")] public string? ParagraphSeparator { get; set; }
+    [Column("ünï")] public string? Accented { get; set; }
+}
