@@ -70,10 +70,9 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         // spec 010 T16), and the PostgreSQL reader already uses this form. Under NativeAOT a
         // literal for an unreferenced assembly simply returns null and falls through.
         var type = Type.GetType("Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite");
-        // Stryker disable once String,NullCoalescing,Assignment : the fallback assembly (System.Data.SQLite) is not referenced by the test project, so its type name and the fallback itself are unobservable
+        // Stryker disable once String : the primary provider assembly always loads in the test project, so the fallback type name (System.Data.SQLite) is never evaluated
         type ??= Type.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite");
 
-        // Stryker disable once Conditional : the provider assembly is always loadable in the test project, so a null type is unreachable and Create(type) is the only observable path
         if (type != null)
             return ReflectedConnectionFactory.Create(type, connectionString);
 
@@ -115,9 +114,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                 !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
 
-            // Stryker disable once Equality : an empty exclude list contains nothing, so Count >= 0 rejects exactly the rows Count > 0 does
-            if (options.ExcludeTables?.Count > 0 &&
-                options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
+            if (options.ExcludeTables?.Contains(tableName, StringComparer.OrdinalIgnoreCase) == true)
                 continue;
 
             tableNames.Add(tableName);
@@ -197,7 +194,6 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                 if (hidden == 1) continue;
 
                 var columnName = reader.GetString(1);
-                // Stryker disable once Conditional,String : PRAGMA table_xinfo reports an untyped column as '' and never NULL, so the "TEXT" arm is unreachable
                 var dataType = reader.IsDBNull(2) ? "TEXT" : reader.GetString(2);
                 var notNull = reader.GetInt32(3) != 0;
                 var defaultValue = reader.IsDBNull(4) ? null : reader.GetString(4);
@@ -299,7 +295,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
             char ch = createSql[i];
 
             // Quoted string literals and quoted identifiers. SQLite doubles the quote character
-            // to escape it, so a doubled quote continues the run rather than ending it.
+            // to escape it, so a doubled quote closes the run and the next pass reopens it.
             if (ch is '\'' or '"' or '`')
             {
                 char quote = ch;
@@ -309,13 +305,6 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                     if (createSql[i] != quote)
                     {
                         i++;
-                        continue;
-                    }
-
-                    // Stryker disable once Equality : a doubled quote read as close-then-reopen skips exactly the same text, so treating it as a doubled quote is unobservable
-                    if (i + 1 < createSql.Length && createSql[i + 1] == quote)
-                    {
-                        i += 2;
                         continue;
                     }
 
@@ -332,7 +321,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                 i++;
                 while (i < createSql.Length && createSql[i] != ']')
                     i++;
-                // Stryker disable once Equality,Statement,Unary : the closing ']' is not a token the loop acts on, so stepping past it or re-reading it ends in the same state
+                // Stryker disable once Equality,Statement : the closing ']' is not a token the loop acts on, so stepping past it or re-reading it ends in the same state
                 if (i < createSql.Length)
                     i++;
                 continue;
@@ -396,8 +385,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         {
             char ch = sql[i];
 
-            // Stryker disable once Arithmetic : testing the previous dash instead of the next starts the same comment skip one dash later
-            if (ch == '-' && i + 1 < sql.Length && sql[i + 1] == '-')
+            if (ch == '-' && sql.AsSpan(i).StartsWith("--".AsSpan()))
             {
                 while (i < sql.Length && sql[i] != '\n')
                     i++;
@@ -528,7 +516,6 @@ public sealed class SQLiteSchemaReader : ISchemaReader
 
             if (referencedColumn is null)
             {
-                // Stryker disable once Assignment,NullCoalescing : recreating the cache for every row changes how many PRAGMAs run, never the result
                 parentKeys ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
                 if (!parentKeys.TryGetValue(referencedTable, out List<string>? keyColumns))

@@ -185,6 +185,19 @@ public class SQLiteSchemaReaderScriptedTests
     }
 
     [Fact]
+    public async Task ReadSchemaAsync_ColumnWithNullDeclaredType_DefaultsToText()
+    {
+        var db = new Dictionary<string, FakeTable>
+        {
+            ["t"] = new() { CreateSql = null, Columns = [Col(0, "v", null, 0, null, 0)] }
+        };
+
+        DatabaseSchema schema = await Read(Connection(db));
+
+        Assert.Equal("TEXT", schema.Tables[0].Columns[0].DataType);
+    }
+
+    [Fact]
     public async Task ReadSchemaAsync_CompositeKey_ReportsColumnsInKeyOrderAndNoIdentity()
     {
         var db = new Dictionary<string, FakeTable>

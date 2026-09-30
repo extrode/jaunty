@@ -121,7 +121,6 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
     internal static DbConnection CreateConnection(string connectionString)
     {
         var type = Type.GetType("Npgsql.NpgsqlConnection, Npgsql");
-        // Stryker disable once Conditional : the provider assembly is always loadable in the test project, so a null type is unreachable and Create(type) is the only observable path
         if (type != null)
             return ReflectedConnectionFactory.Create(type, connectionString);
 
@@ -159,9 +158,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
                 !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
 
-            // Stryker disable once Equality : an empty exclude list contains nothing, so Count >= 0 rejects exactly the rows Count > 0 does
-            if (options.ExcludeTables?.Count > 0 &&
-                options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
+            if (options.ExcludeTables?.Contains(tableName, StringComparer.OrdinalIgnoreCase) == true)
                 continue;
 
             tables.Add((schemaName, tableName));
