@@ -108,6 +108,7 @@ internal static class TablePromoter
         }
         catch
         {
+            // Stryker disable once Statement : DuckDBTransaction.Dispose rolls back an uncommitted transaction, so the explicit Rollback changes nothing
             try { transaction.Rollback(); } catch { }
             throw;
         }
@@ -157,10 +158,13 @@ internal static class TablePromoter
         await using (transaction.ConfigureAwait(false))
         {
             DuckDBCommand cmd = connection.CreateCommand();
+            // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
             await using var cmdDisposer = cmd.ConfigureAwait(false);
             cmd.CommandText = sql;
             cmd.Transaction = transaction;
+            // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
             await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
     }

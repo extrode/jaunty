@@ -50,6 +50,7 @@ public sealed partial class DuckDb
         }
 
         var originalPath = source.FilePath;
+        // Stryker disable once NullCoalescing,String : GetDirectoryName returns "" for a bare file name and null only for a root, which a file source is not; "." and "" resolve to the same directory
         var directory = Path.GetDirectoryName(originalPath) ?? ".";
 
         // AUD-R26-063: unique per call, not derived only from the original name. The old

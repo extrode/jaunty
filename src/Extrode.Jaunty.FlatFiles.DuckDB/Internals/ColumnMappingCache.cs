@@ -90,6 +90,7 @@ internal static class ColumnMappingCache
     /// </summary>
     private static Func<object, object?> CreateGetter(PropertyInfo prop)
     {
+        // Stryker disable once String : the parameter name exists only inside the expression tree, the compiled delegate does not expose it
         ParameterExpression param = System.Linq.Expressions.Expression.Parameter(typeof(object), "entity");
         UnaryExpression cast = System.Linq.Expressions.Expression.Convert(param, prop.DeclaringType!);
         MemberExpression access = System.Linq.Expressions.Expression.Property(cast, prop);
@@ -102,6 +103,7 @@ internal static class ColumnMappingCache
     /// </summary>
     private static Action<object, object?> CreateSetter(PropertyInfo prop)
     {
+        // Stryker disable once String : the parameter name exists only inside the expression tree, the compiled delegate does not expose it
         ParameterExpression entityParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "entity");
         ParameterExpression valueParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "value");
         UnaryExpression cast = System.Linq.Expressions.Expression.Convert(entityParam, prop.DeclaringType!);

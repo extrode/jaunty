@@ -50,6 +50,7 @@ public sealed partial class DuckDb
         // their async twins). A single-row VALUES insert affects exactly one row or throws today, so
         // this changes nothing now - it keeps the flag's meaning uniform if this statement ever grows
         // a conflict clause, which is exactly how the SQLite import path acquired DO NOTHING.
+        // Stryker disable once Equality : a single-row VALUES insert affects exactly one row or throws, so result is never 0
         if (result > 0) _modified.TryAdd(typeof(T), true);
         return result;
     }
