@@ -40,6 +40,7 @@ $trees = @(
 )
 
 $scratch = @(
+    'tests/Extrode.Jaunty.Scaffolding.Tests/Unit/ZzScratchMutantTests.cs',
     '.worktrees/test-mutants-duckdb-tests/tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Scratch',
     '.worktrees/test-mutants-duckdb-tests/tests/Extrode.Jaunty.Tests/Scratch'
 )
@@ -48,8 +49,10 @@ Write-Host '== 1. untracked audit scratch folders'
 foreach ($rel in $scratch) {
     $path = Join-Path $repo $rel
     if (-not (Test-Path -LiteralPath $path)) { Write-Host "skip:  $rel no longer exists"; continue }
-    $inner = $rel -replace '^\.worktrees/[^/]+/', ''
-    $wt = Join-Path $repo ($rel -replace '^(\.worktrees/[^/]+)/.*$', '$1')
+    if ($rel -like '.worktrees/*') {
+        $inner = $rel -replace '^\.worktrees/[^/]+/', ''
+        $wt = Join-Path $repo ($rel -replace '^(\.worktrees/[^/]+)/.*$', '$1')
+    } else { $inner = $rel; $wt = $repo }
     git -C $wt ls-files --error-unmatch -- $inner > $null 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "refuse: $rel is tracked by git. Propose it as a commit instead. Left alone."
