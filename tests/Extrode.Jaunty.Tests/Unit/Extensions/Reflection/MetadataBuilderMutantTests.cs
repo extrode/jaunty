@@ -74,6 +74,20 @@ public class MetadataBuilderMutantTests
     }
 
     [Fact]
+    public void ANewNameNeverDisplacesAnEarlierPropertyOfABaseType()
+    {
+        PropertyInfo[] input =
+        [
+            Prop(typeof(BaseShape), "A"),
+            Prop(typeof(BaseShape), "X"),
+            Prop(typeof(DerivedShape), "B"),
+            Prop(typeof(DerivedShape), "A"),
+        ];
+
+        Assert.Equal([Prop(typeof(DerivedShape), "A"), Prop(typeof(BaseShape), "X"), Prop(typeof(DerivedShape), "B")], MostDerived(input));
+    }
+
+    [Fact]
     public void IndexersPassThroughUntouched()
     {
         PropertyInfo[] input = typeof(IndexedShape).GetProperties(BindingFlags.Instance | BindingFlags.Public);
@@ -171,7 +185,7 @@ public class MetadataBuilderMutantTests
         TypeBuilder entity = module.DefineType("LookAlikeEntity", TypeAttributes.Public | TypeAttributes.Class);
         entity.DefineDefaultConstructor(MethodAttributes.Public);
         entity.SetCustomAttribute(positional
-            ? Attribute(table, true, "named_table", ("Schema", "named_schema"))
+            ? Attribute(table, true, "named_table", ("Name", "wrong_table"), ("Schema", "named_schema"))
             : Attribute(table, false, null, ("Name", "named_table"), ("Schema", "named_schema")));
 
         void AddProperty(string name, Type type, CustomAttributeBuilder? attribute)
@@ -195,11 +209,11 @@ public class MetadataBuilderMutantTests
         }
 
         CustomAttributeBuilder Generated(int option) => positional
-            ? Attribute(generated, true, option)
+            ? Attribute(generated, true, option, ("DatabaseGeneratedOption", option == 1 ? 2 : 1))
             : Attribute(generated, false, null, ("DatabaseGeneratedOption", option));
 
         AddProperty("Id", typeof(int), Generated(1));
-        AddProperty("Label", typeof(string), positional ? Attribute(column, true, "named_label") : Attribute(column, false, null, ("Name", "named_label")));
+        AddProperty("Label", typeof(string), positional ? Attribute(column, true, "named_label", ("Name", "wrong_label")) : Attribute(column, false, null, ("Name", "named_label")));
         AddProperty("Stamp", typeof(int), Generated(2));
 
         Type built = entity.CreateType();
