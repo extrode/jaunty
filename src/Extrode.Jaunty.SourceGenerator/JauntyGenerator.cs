@@ -394,7 +394,6 @@ public partial class JauntyGenerator : IIncrementalGenerator
             }
         }
 
-        // Stryker disable once Boolean : perf-only syntactic pre-filter: a class with no binder-named method has no convention binders, and FindHandWrittenMapper returns null for it either way
         return false;
     }
 
@@ -711,8 +710,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
             for (int i = 0; i < properties.Count; i++)
             {
                 if (properties[i].IsIdentityInferred)
+                {
+                    var reset = properties[i] with { IsIdentity = false };
                     // Stryker disable once Boolean : IsIdentityInferred is read only by this post-pass, so the value written back is never observed
-                    properties[i] = properties[i] with { IsIdentity = false, IsIdentityInferred = false };
+                    properties[i] = reset with { IsIdentityInferred = false };
+                }
             }
         }
 
@@ -783,7 +785,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 && constructor.DeclaredAccessibility != Accessibility.Protected)
             {
                 hasParameterlessConstructor = true;
-                // Stryker disable once Statement : removing the break lets the loop finish over the remaining modifiers, which leaves isPartial true, so the result is identical
+                // Stryker disable once Statement : equivalent: removing the break lets the constructor loop visit the remaining constructors, which can only set hasParameterlessConstructor to true again, so the result is identical
                 break;
             }
         }
@@ -822,7 +824,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             string? keyword = TypeKeyword(containing);
 
             if (keyword is null)
-                // Stryker disable once String : unreachable: a type that encloses a class is always a class, struct, record or interface, so TypeKeyword never returns null here
+                // Stryker disable once String : unreachable: IsDeclaredPartial returns false first for any enclosing type whose declaration is not a TypeDeclarationSyntax, and TypeKeyword is non-null for class, struct, record and interface
                 return (default, $"its enclosing type '{containing.Name}' is not a class, struct, record or interface");
 
             chain.Add(new ContainingTypeInfo(
@@ -844,7 +846,6 @@ public partial class JauntyGenerator : IIncrementalGenerator
         foreach (SyntaxReference reference in symbol.DeclaringSyntaxReferences)
         {
             if (reference.GetSyntax() is not TypeDeclarationSyntax declaration)
-                // Stryker disable once Boolean : unreachable: every source declaration of a class, struct, record or interface is a TypeDeclarationSyntax
                 return false;
 
             var isPartial = false;
@@ -862,8 +863,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 return false;
         }
 
-        // Stryker disable once Equality : a type reaching this check always has a source declaration, so Length is never 0 and > 0 equals >= 0
-        return symbol.DeclaringSyntaxReferences.Length > 0;
+        return !symbol.DeclaringSyntaxReferences.IsEmpty;
     }
 
     /// <summary>
@@ -887,7 +887,6 @@ public partial class JauntyGenerator : IIncrementalGenerator
     private static string GetHintName(INamedTypeSymbol classSymbol)
     {
         var fullName = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        // Stryker disable once String : FullyQualifiedFormat always prefixes a named type with global::, so StartsWith is true for the original and the empty string alike
         if (fullName.StartsWith("global::", StringComparison.Ordinal))
             fullName = fullName.Substring("global::".Length);
 
@@ -1813,7 +1812,6 @@ public partial class JauntyGenerator : IIncrementalGenerator
             return;
         }
 
-        // Stryker disable once Statement,String : unreachable: NeedsNullCheck is false only for non-nullable value types, which return above via IsNonNullableValueType
         sb.AppendLine($"{indent}entity.{property.PropertyName} = {valueExpression};");
     }
 
@@ -1873,13 +1871,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // declares its own Guid, DateTime, TimeSpan or DateTimeOffset produced CS0426 in a
             // .g.cs the consumer cannot edit. The `_` arm below already got this right by passing
             // the qualified typeName straight through.
-            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "global::System.Guid" => new("reader.GetValue", "global::System.Guid", false),
-            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "global::System.DateTime" => new("reader.GetDateTime", "global::System.DateTime", false),
-            // Stryker disable once String,Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type; the arm is also identical to the fall-through arm
             "global::System.TimeSpan" => new("reader.GetValue", "global::System.TimeSpan", false),
-            // Stryker disable once String,Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type; the arm is also identical to the fall-through arm
             "global::System.DateTimeOffset" => new("reader.GetValue", "global::System.DateTimeOffset", false),
 
             // Nullable value types - needs null check
@@ -1891,12 +1885,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
             "float?" => new("reader.GetFloat", "float", true),
             "short?" => new("reader.GetInt16", "short", true),
             "byte?" => new("reader.GetByte", "byte", true),
-            // Stryker disable once String : the arm is identical to the fall-through arm, which returns the same reader, type argument and true
             "global::System.Guid?" => new("reader.GetValue", "global::System.Guid", true),
             "global::System.DateTime?" => new("reader.GetDateTime", "global::System.DateTime", true),
-            // Stryker disable once String : the arm is identical to the fall-through arm, which returns the same reader, type argument and true
             "global::System.TimeSpan?" => new("reader.GetValue", "global::System.TimeSpan", true),
-            // Stryker disable once String : the arm is identical to the fall-through arm, which returns the same reader, type argument and true
             "global::System.DateTimeOffset?" => new("reader.GetValue", "global::System.DateTimeOffset", true),
 
             // Reference types - needs null check

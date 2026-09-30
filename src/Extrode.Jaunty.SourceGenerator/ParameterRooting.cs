@@ -669,7 +669,6 @@ public partial class JauntyGenerator
                 or SpecialType.System_DateTime;
         }
 
-        // Stryker disable once String : unreachable: System.DateTime has a SpecialType, so it returns from the SpecialType branch above
         return type.ToDisplayString() is "System.DateTime" or "System.DateTimeOffset" or "System.TimeSpan"
             or "System.Guid" or "System.DateOnly" or "System.TimeOnly"
             or "byte[]";
