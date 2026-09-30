@@ -81,13 +81,25 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
           AND tc.table_name = @TableName
         ORDER BY kcu.ordinal_position";
 
+    private readonly Func<string, DbConnection> _connectionFactory;
+
+    /// <summary>Creates a reader that opens its connection through the installed ADO.NET provider.</summary>
+    public PostgreSqlSchemaReader() : this(CreateConnection)
+    {
+    }
+
+    internal PostgreSqlSchemaReader(Func<string, DbConnection> connectionFactory)
+    {
+        _connectionFactory = connectionFactory;
+    }
+
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
         string connectionString,
         SchemaReaderOptions options,
         CancellationToken cancellationToken = default)
     {
-        using DbConnection connection = CreateConnection(connectionString);
+        using DbConnection connection = _connectionFactory(connectionString);
         await OpenConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
 
         var tables = new List<TableSchema>();
@@ -106,12 +118,14 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
         };
     }
 
-    private static DbConnection CreateConnection(string connectionString)
+    internal static DbConnection CreateConnection(string connectionString)
     {
         var type = Type.GetType("Npgsql.NpgsqlConnection, Npgsql");
+        // Stryker disable once Conditional : the provider assembly is always loadable in the test project, so a null type is unreachable and Create(type) is the only observable path
         if (type != null)
             return ReflectedConnectionFactory.Create(type, connectionString);
 
+        // Stryker disable once String : the message only surfaces when no provider assembly is loadable, which the test project's references rule out
         throw new InvalidOperationException("Could not find PostgreSQL provider. Please install Npgsql.");
     }
 
@@ -145,6 +159,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
                 !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
 
+            // Stryker disable once Equality : an empty exclude list contains nothing, so Count >= 0 rejects exactly the rows Count > 0 does
             if (options.ExcludeTables?.Count > 0 &&
                 options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;

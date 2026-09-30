@@ -21,6 +21,18 @@ public sealed class SQLiteSchemaReader : ISchemaReader
     // single quotes below.
     private static string EscapeForPragmaLiteral(string tableName) => tableName.Replace("'", "''");
 
+    private readonly Func<string, DbConnection> _connectionFactory;
+
+    /// <summary>Creates a reader that opens its connection through the installed ADO.NET provider.</summary>
+    public SQLiteSchemaReader() : this(CreateConnection)
+    {
+    }
+
+    internal SQLiteSchemaReader(Func<string, DbConnection> connectionFactory)
+    {
+        _connectionFactory = connectionFactory;
+    }
+
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
         string connectionString,
@@ -28,7 +40,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         CancellationToken cancellationToken = default)
     {
         // Create connection using reflection to avoid compile-time dependency
-        using DbConnection connection = CreateConnection(connectionString);
+        using DbConnection connection = _connectionFactory(connectionString);
         await OpenConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
 
         var tables = new List<TableSchema>();
@@ -50,19 +62,22 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         };
     }
 
-    private static DbConnection CreateConnection(string connectionString)
+    internal static DbConnection CreateConnection(string connectionString)
     {
         // Try to load Microsoft.Data.Sqlite first, then System.Data.SQLite.
         // Literal type names, not a loop over an array: the trim analyzer only recognizes
         // Type.GetType on a string it can see (IL2057, fatal at ilc on the NativeAOT publish -
         // spec 010 T16), and the PostgreSQL reader already uses this form. Under NativeAOT a
         // literal for an unreferenced assembly simply returns null and falls through.
-        var type = Type.GetType("Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite")
-                ?? Type.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite");
+        var type = Type.GetType("Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite");
+        // Stryker disable once String,NullCoalescing,Assignment : the fallback assembly (System.Data.SQLite) is not referenced by the test project, so its type name and the fallback itself are unobservable
+        type ??= Type.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite");
 
+        // Stryker disable once Conditional : the provider assembly is always loadable in the test project, so a null type is unreachable and Create(type) is the only observable path
         if (type != null)
             return ReflectedConnectionFactory.Create(type, connectionString);
 
+        // Stryker disable once String : the message only surfaces when no provider assembly is loadable, which the test project's references rule out
         throw new InvalidOperationException(
             "Could not find SQLite provider. Please install Microsoft.Data.Sqlite or System.Data.SQLite.");
     }

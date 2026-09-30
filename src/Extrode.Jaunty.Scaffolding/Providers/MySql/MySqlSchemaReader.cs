@@ -70,13 +70,25 @@ public sealed class MySqlSchemaReader : ISchemaReader
         -- paired with the referenced ones by luck.
         ORDER BY CONSTRAINT_NAME, ORDINAL_POSITION";
 
+    private readonly Func<string, DbConnection> _connectionFactory;
+
+    /// <summary>Creates a reader that opens its connection through the installed ADO.NET provider.</summary>
+    public MySqlSchemaReader() : this(CreateConnection)
+    {
+    }
+
+    internal MySqlSchemaReader(Func<string, DbConnection> connectionFactory)
+    {
+        _connectionFactory = connectionFactory;
+    }
+
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
         string connectionString,
         SchemaReaderOptions options,
         CancellationToken cancellationToken = default)
     {
-        using DbConnection connection = CreateConnection(connectionString);
+        using DbConnection connection = _connectionFactory(connectionString);
         await OpenConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
 
         var tables = new List<TableSchema>();
@@ -95,7 +107,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
         };
     }
 
-    private static DbConnection CreateConnection(string connectionString)
+    internal static DbConnection CreateConnection(string connectionString)
     {
         // Try to load MySqlConnector first, then MySql.Data.
         // Literal type names, not a loop over an array: the trim analyzer only recognizes
@@ -103,12 +115,15 @@ public sealed class MySqlSchemaReader : ISchemaReader
         // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
         // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
         // returns null and falls through.
-        var type = Type.GetType("MySqlConnector.MySqlConnection, MySqlConnector")
-                ?? Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data");
+        var type = Type.GetType("MySqlConnector.MySqlConnection, MySqlConnector");
+        // Stryker disable once String,NullCoalescing,Assignment : the fallback assembly (MySql.Data) is not referenced by the test project, so its type name and the fallback itself are unobservable
+        type ??= Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data");
 
+        // Stryker disable once Conditional : the provider assembly is always loadable in the test project, so a null type is unreachable and Create(type) is the only observable path
         if (type != null)
             return ReflectedConnectionFactory.Create(type, connectionString);
 
+        // Stryker disable once String : the message only surfaces when no provider assembly is loadable, which the test project's references rule out
         throw new InvalidOperationException("Could not find MySQL provider. Please install MySqlConnector or MySql.Data.");
     }
 
@@ -140,6 +155,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
                 !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
 
+            // Stryker disable once Equality : an empty exclude list contains nothing, so Count >= 0 rejects exactly the rows Count > 0 does
             if (options.ExcludeTables?.Count > 0 &&
                 options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
