@@ -201,7 +201,6 @@ internal static class ParameterBinder
         if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
             return false;
 
-        // Stryker disable once Logical : a performance short-circuit only - a dictionary or scalar type is never a TemplateCache key, so the lookup it skips would miss and return false anyway
         if (IsNamedValueDictionary(parameters) || IsScalarType(parameters.GetType()))
             return false;
 
@@ -692,15 +691,8 @@ internal static class ParameterBinder
 
         int delimLen = tagEnd + 1 - dollarPos;
         int searchFrom = tagEnd + 1;
-        // Stryker disable once Equality : a delimiter that ends exactly at the end returns len, the same value the unterminated fallback below returns
-        while (searchFrom + delimLen <= len)
-        {
-            if (string.CompareOrdinal(sql, searchFrom, sql, dollarPos, delimLen) == 0)
-                return searchFrom + delimLen;
-            searchFrom++;
-        }
-
-        return len;
+        int found = sql.IndexOf(sql.Substring(dollarPos, delimLen), searchFrom, StringComparison.Ordinal);
+        return found == -1 ? len : found + delimLen;
     }
 
     // Literal/comment-aware placeholder rewrite. Walks the SQL using the same tokenization rules as
@@ -938,7 +930,6 @@ internal static class ParameterBinder
     /// <summary>
     /// The predicate half of <see cref="AsNamedValues"/>, for callers that only need the answer.
     /// </summary>
-    // Stryker disable once Logical : only TryRebind calls this, as a short-circuit ahead of a TemplateCache lookup that cannot hit for any dictionary type
     private static bool IsNamedValueDictionary(object parameters) =>
         parameters is IDictionary<string, object?> or IReadOnlyDictionary<string, object?> or IDictionary;
 
@@ -1069,8 +1060,7 @@ internal static class ParameterBinder
         // was silently accepted while an unused key of any other spelling threw. It is no longer
         // reachable - BuildCaseInsensitiveIndex rejects the duplicate outright, because with
         // case-insensitive matching there is no answer to which of the two the caller meant.
-        // Stryker disable once Equality : equal counts mean every key was bound, so the block finds nothing unused and throws nothing
-        if (dictParams.Count > bound.Count)
+        if (dictParams.Count != bound.Count)
         {
             List<string>? unused = null;
             foreach (string key in dictParams.Keys)
