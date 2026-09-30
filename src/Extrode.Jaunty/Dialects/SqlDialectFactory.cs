@@ -412,6 +412,7 @@ public static class SqlDialectFactory
             {
                 return get(c) as IDbConnection;
             }
+            // Stryker disable once Block : Stryker rewrites a removed body in a value-returning lambda to return default, which is the null this returns
             catch
             {
                 // A decorator whose accessor throws (disposed, not yet initialised) is simply not a
@@ -441,6 +442,7 @@ public static class SqlDialectFactory
             var enhanced = getDialectMethod.Invoke(null, new object[] { dialect });
             return enhanced as ISqlDialect ?? dialect;
         }
+        // Stryker disable once Block : unreachable in a test - no input makes the optional factory throw, and the body is only a fallback for a missing or broken extension package
         catch
         {
             // Extensions.Reflection not loaded or error occurred - use base dialect
