@@ -692,6 +692,7 @@ internal static class ParameterBinder
 
         int delimLen = tagEnd + 1 - dollarPos;
         int searchFrom = tagEnd + 1;
+        // Stryker disable once Equality : a delimiter that ends exactly at the end returns len, the same value the unterminated fallback below returns
         while (searchFrom + delimLen <= len)
         {
             if (string.CompareOrdinal(sql, searchFrom, sql, dollarPos, delimLen) == 0)
@@ -1045,6 +1046,7 @@ internal static class ParameterBinder
             // fallback index.
             if (!dictParams.TryGetValue(sqlName, out object? value))
             {
+                // Stryker disable once Assignment : memoisation only - rebuilding the index per missing key yields the same index
                 caseInsensitive ??= BuildCaseInsensitiveIndex(dictParams);
 
                 if (!caseInsensitive.TryGetValue(sqlName, out value))
@@ -1067,6 +1069,7 @@ internal static class ParameterBinder
         // was silently accepted while an unused key of any other spelling threw. It is no longer
         // reachable - BuildCaseInsensitiveIndex rejects the duplicate outright, because with
         // case-insensitive matching there is no answer to which of the two the caller meant.
+        // Stryker disable once Equality : equal counts mean every key was bound, so the block finds nothing unused and throws nothing
         if (dictParams.Count > bound.Count)
         {
             List<string>? unused = null;
