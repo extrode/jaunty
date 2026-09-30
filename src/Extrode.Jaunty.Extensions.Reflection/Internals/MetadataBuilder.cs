@@ -236,13 +236,10 @@ internal static class MetadataBuilder
     /// </summary>
     private static bool IsMoreDerived(PropertyInfo candidate, PropertyInfo incumbent)
     {
-        Type? candidateType = candidate.DeclaringType;
-        Type? incumbentType = incumbent.DeclaringType;
+        Type candidateType = candidate.DeclaringType!;
+        Type incumbentType = incumbent.DeclaringType!;
 
-        return candidateType is not null
-            && incumbentType is not null
-            && candidateType != incumbentType
-            && incumbentType.IsAssignableFrom(candidateType);
+        return candidateType != incumbentType && incumbentType.IsAssignableFrom(candidateType);
     }
 
     private static bool HasAttribute(MemberInfo member, string attributeTypeName)
