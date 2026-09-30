@@ -11,7 +11,7 @@ public class SqlServerDialectSurvivorTests
     private const string Injected = "ORDER BY (SELECT NULL)";
 
     private bool IsOrdered(string baseSql)
-        => !_dialect.GetPagingSql(baseSql, 10, 20).Contains(Injected, StringComparison.Ordinal);
+        => _dialect.GetPagingSql(baseSql, 10, 20).IndexOf(Injected, StringComparison.Ordinal) < 0;
 
     [Theory]
     [InlineData("SELECT 1 -")]
