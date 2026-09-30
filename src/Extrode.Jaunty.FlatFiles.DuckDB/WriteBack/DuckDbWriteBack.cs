@@ -50,7 +50,7 @@ public sealed partial class DuckDb
         }
 
         var originalPath = source.FilePath;
-        // Stryker disable once String : GetDirectoryName returns "" for a bare file name, and "" and "." resolve to the same directory
+        // Stryker disable once String : the fallback is reached only for a null result (root path), and "" and "." combine to the same path
         var directory = Path.GetDirectoryName(originalPath) ?? ".";
 
         // AUD-R26-063: unique per call, not derived only from the original name. The old
