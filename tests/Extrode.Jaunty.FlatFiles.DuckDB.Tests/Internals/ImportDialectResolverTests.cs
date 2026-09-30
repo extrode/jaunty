@@ -199,6 +199,35 @@ public class ImportDialectResolverTests
         Assert.IsType<PostgreSqlImportDialect>(ImportDialectResolver.Resolve(conn, null));
     }
 
+    [Fact]
+    public void Resolve_EquallySpecificKeysBothMatch_TheOrdinallySmallestWins()
+    {
+        string[] windows = ["TestsTie", "estsTieC", "stsTieCo", "tsTieCon", "sTieConn", "TieConne"];
+        var dialects = windows.ToDictionary(w => w, _ => new StubImportDialect());
+        foreach (string window in windows.Reverse())
+            ImportDialectResolver.Register(window, dialects[window]);
+
+        using var conn = new ImportDialectResolverTestsTieConnection();
+
+        Assert.Same(dialects["TestsTie"], ImportDialectResolver.Resolve(conn, null));
+    }
+
+    private sealed class ImportDialectResolverTestsTieConnection : DbConnection
+    {
+        #pragma warning disable CS8765
+        public override string ConnectionString { get; set; } = "";
+        #pragma warning restore CS8765
+        public override string Database => "";
+        public override string DataSource => "";
+        public override string ServerVersion => "";
+        public override System.Data.ConnectionState State => System.Data.ConnectionState.Closed;
+        public override void ChangeDatabase(string databaseName) { }
+        public override void Close() { }
+        public override void Open() { }
+        protected override System.Data.Common.DbTransaction BeginDbTransaction(System.Data.IsolationLevel isolationLevel) => throw new NotSupportedException();
+        protected override System.Data.Common.DbCommand CreateDbCommand() => throw new NotSupportedException();
+    }
+
     private sealed class ImportDialectResolverTestsAmbiguousSpecificConnection : DbConnection
     {
         #pragma warning disable CS8765 // DbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
