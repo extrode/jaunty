@@ -1,0 +1,271 @@
+using System.Numerics;
+
+namespace Extrode.Jaunty.Stubs
+{
+    public class Api
+    {
+        public static void Values(object values) { }
+        public static void Set(object parameters) { }
+        public static void WhereRaw(string sql, object parameters) { }
+        public static void AndRaw(string sql, object parameters) { }
+        public static void OrRaw(string sql, object parameters) { }
+        public static void QueryThings(string sql, object parameters) { }
+        public static void ExecuteThings(string sql, object parameters) { }
+        public static void ExecuteValues(string sql, object values) { }
+        public static void NotCandidate(string sql, object parameters) { }
+        public static void QueryOne(object parameters) { }
+        public static void ExecuteLoose(string sql, object args) { }
+        public static void ExecuteWrongType(string sql, string parameters) { }
+        public static void ExecuteOptional(string sql, string other, object? parameters = null) { }
+        public static void ExecuteSets(string sql, IEnumerable<object> parameterSets) { }
+        public static void ExecuteArr(string sql, object[] parameterSets) { }
+        public static void ExecuteList(string sql, List<object> parameterSets) { }
+        public static void ExecuteGeneric<T>(string sql, T parameterSets) where T : IEnumerable<object> { }
+        public static void ExecuteNotSeq(string sql, int parameterSets) { }
+        public static void ExecuteObjectSeq(string sql, object parameterSets) { }
+        public static void ExecuteStringSeq(string sql, string parameterSets) { }
+
+        public void QueryInstance(string sql, object parameters) { }
+
+        public static void Simple()
+        {
+            Values(new { SimpleName = 1 });
+        }
+    }
+
+    public interface IStringDict : IDictionary<string, int> { }
+    public interface IStringRoDict : IReadOnlyDictionary<string, int> { }
+    public interface IIntDict : IDictionary<int, string> { }
+    public interface IIntRoDict : IReadOnlyDictionary<int, string> { }
+}
+
+namespace Consumer
+{
+    using Extrode.Jaunty.Stubs;
+
+    public class Named { public int Id { get; set; } }
+    public class SeqDirect { public int Id { get; set; } }
+    public class SeqArray { public int Id { get; set; } }
+    public class SeqList { public int Id { get; set; } }
+    public class SeqCustom { public int Id { get; set; } }
+    public class SeqGenericOnly { public int Id { get; set; } }
+    public class SeqNotSeq { public int Id { get; set; } }
+    public class Gen<T> { public T? Item { get; set; } }
+    internal class Hidden { public int Id { get; set; } }
+    internal class CustomList : List<SeqCustom> { }
+    public class SeqBoxElem { public int Id { get; set; } }
+    public class SeqIface1 { public int Id { get; set; } }
+    public class SeqIface2 { public int Id { get; set; } }
+    public class Box<T> : List<SeqBoxElem> { }
+    public class EqBefore : IEquatable<EqBefore>, IEnumerable<SeqIface1>
+    {
+        public bool Equals(EqBefore? other) => false;
+        public IEnumerator<SeqIface1> GetEnumerator() => throw new NotImplementedException();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw new NotImplementedException();
+    }
+    public class EqAfter : IEnumerable<SeqIface2>, IEquatable<EqAfter>
+    {
+        public bool Equals(EqAfter? other) => false;
+        public IEnumerator<SeqIface2> GetEnumerator() => throw new NotImplementedException();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw new NotImplementedException();
+    }
+    public enum Color { Red }
+    file class FileLocal { public int Id { get; set; } }
+    internal class HiddenOuter { public class InsideInternal { public int Id { get; set; } } }
+
+    public class Outer
+    {
+        public class PubNested { public int Id { get; set; } }
+        private class PrivNested { public int Id { get; set; } }
+        protected class ProtNested { public int Id { get; set; } }
+        internal protected class ProtInternalNested { public int Id { get; set; } }
+        private protected class PrivProtNested { public int Id { get; set; } }
+        private class PrivOuter { public class DeepPublic { public int Id { get; set; } } }
+        internal class InternalNested { public int Id { get; set; } }
+
+        public static void Nesting()
+        {
+            Api.Values(new PubNested());
+            Api.Values(new PrivNested());
+            Api.Values(new ProtNested());
+            Api.Values(new ProtInternalNested());
+            Api.Values(new PrivProtNested());
+            Api.Values(new PrivOuter.DeepPublic());
+            Api.Values(new InternalNested());
+            Api.Values(new Gen<PrivNested>());
+            Api.Values(new Gen<PubNested>());
+            Api.Values(new PrivNested[0]);
+            Api.Values(new PubNested[0]);
+            Api.Values(new Gen<Gen<PrivNested>>());
+            Api.Values(new { Nested = new PrivNested() });
+        }
+    }
+
+    internal class Calls
+    {
+        public void Entry(Api db)
+        {
+            Api.Values(new { A = 1 });
+            Api.Set(new { B = "x" });
+            Api.WhereRaw("a", new { C = 1.5 });
+            Api.AndRaw("a", new { D = 1L });
+            Api.OrRaw("a", new { E = 1m });
+            Api.QueryThings("a", new { F = 1f });
+            Api.ExecuteThings("a", new { G = 'c' });
+            Api.ExecuteValues("a", new { H = true });
+            Api.NotCandidate("a", new { I = (short)1 });
+            Api.QueryOne(new { J = 1 });
+            Api.ExecuteLoose("a", new { K = 1 });
+            Api.ExecuteWrongType("a", "text");
+            Api.ExecuteOptional("a", "b");
+            Api.ExecuteOptional(sql: "a", other: "b", parameters: new { L = 1 });
+            Api.ExecuteOptional(other: "b", sql: "a", parameters: new { M = 1 });
+            Api.ExecuteThings(parameters: new { N = 1 }, sql: "a");
+            Api.ExecuteThings(sql: "a", parameters: new { O = 1 });
+            Api.ExecuteNotSeq("a", 1);
+            Api.ExecuteObjectSeq("a", new { P = 1 });
+            Api.ExecuteStringSeq("a", "abc");
+            db?.QueryInstance("a", new { Q = 1 });
+            Api.Values(new { Z = 1, Y = 2 });
+            Api.Values(new { Y = 2, Z = 1 });
+            Api.Values(new { Z = 1, Y = 2 });
+        }
+
+        public void Sequences(IEnumerable<SeqDirect> e, SeqArray[] arr, List<SeqList> list, CustomList custom, IEnumerable<object> objs, List<object> objList, object[] objArr)
+        {
+            Api.ExecuteSets("a", new[] { new { S = 1 } });
+            Api.ExecuteSets("a", arr);
+            Api.ExecuteSets("a", list);
+            Api.ExecuteSets("a", e);
+            Api.ExecuteSets("a", custom);
+            Api.ExecuteSets("a", objs);
+            Api.ExecuteArr("a", arr);
+            Api.ExecuteArr("a", objArr);
+            Api.ExecuteList("a", objList);
+            Api.ExecuteGeneric("a", new List<SeqGenericOnly>());
+            Api.ExecuteSets("a", new List<Hidden>());
+            Api.ExecuteSets("a", new List<string>());
+            Api.ExecuteSets("a", new Box<int>());
+            Api.ExecuteSets("a", new EqBefore());
+            Api.ExecuteSets("a", new EqAfter());
+            Api.ExecuteSets("a", new Dictionary<string, object>[0]);
+        }
+
+        public void SequenceOfTypeParameter<T>(T sets) where T : IEnumerable<object>
+        {
+            Api.ExecuteSets("a", sets);
+        }
+
+        public void Anonymous(List<int> ids, int[] arr)
+        {
+            Api.Values(new { Ids = ids, Arr = arr, Name = "n", Color = Color.Red });
+            Api.Values(new { Inner = new { Deep = 1 } });
+            Api.Values(new { L1 = new { L2 = new { L3 = new { L4 = 1 } } } });
+            Api.Values(new { L1 = new { L2 = new { L3 = new { L4 = new { L5 = 1 } } } } });
+            Api.Values(new { L1 = new { L2 = new { L3 = new { L4 = new { L5 = new { L6 = 1 } } } } } });
+            Api.Values(new { Hidden = new Hidden() });
+            Api.Values(new { Items = new[] { new { X = 1 } }.ToList() });
+            Api.Values(new { Items = new[] { new { X = 1 } } });
+            Api.Values(new { Named = new Named(), Gen = new Gen<Named>() });
+            Api.Values(new { Nullable = (int?)1, Text = (string?)null });
+            dynamic dd = 1;
+            Api.Values(new { Dyn = dd });
+        }
+
+        public void NamedShapes(Named n, Gen<int> g, Hidden h, Outer.PubNested pn, HiddenOuter.InsideInternal ii, (int a, string b) tuple, Named[] arr, Gen<Named>[] gens)
+        {
+            Api.Values(n);
+            Api.Values(g);
+            Api.Values(h);
+            Api.Values(pn);
+            Api.Values(ii);
+            Api.Values(tuple);
+            Api.Values(arr);
+            Api.Values(gens);
+            Api.Values(new FileLocal());
+            Api.Values(new Gen<FileLocal>());
+            Api.Values(new Gen<(int, string)>());
+            Api.Values(new Gen<Dictionary<int, string>>());
+            Api.Values(new List<Named>());
+            Api.Values(new Named[][] { });
+        }
+
+        public void Dictionaries(Dictionary<string, int> d, IDictionary<string, int> id, IReadOnlyDictionary<string, int> rd, Dictionary<int, string> di, IDictionary<int, string> idi, IReadOnlyDictionary<int, string> rdi, IStringDict sd, IStringRoDict srd, IIntDict intd, IIntRoDict intrd, Dictionary<string, object> obj, Dictionary<Named, string> nk)
+        {
+            Api.Values(d);
+            Api.Values(id);
+            Api.Values(rd);
+            Api.Values(di);
+            Api.Values(idi);
+            Api.Values(rdi);
+            Api.Values(sd);
+            Api.Values(srd);
+            Api.Values(intd);
+            Api.Values(intrd);
+            Api.Values(obj);
+            Api.Values(nk);
+            Api.Values(new SortedDictionary<string, int>());
+            Api.Values(new SortedList<int, int>());
+        }
+
+        public void Scalars(bool a, char b, sbyte c, byte d, short e, ushort f, int g, uint h, long i, ulong j, IntPtr k, UIntPtr l, float m, double n, string o, decimal p, DateTime q, DateTimeOffset r, TimeSpan s, Guid t, DateOnly u, TimeOnly v, byte[] w, Color x, Color? y, int? z, Guid? aa, DateTimeOffset? ab, TimeSpan? ac, DateTime? ad, BigInteger ae, BigInteger? af, Array ag, IDisposable ah, IEnumerable<int> ai, int[] aj, object[] ak, string[] al, ValueType am, Delegate an, Enum ao, decimal[] ap)
+        {
+            Api.Values(a); Api.Values(b); Api.Values(c); Api.Values(d); Api.Values(e); Api.Values(f);
+            Api.Values(g); Api.Values(h); Api.Values(i); Api.Values(j); Api.Values(k); Api.Values(l);
+            Api.Values(m); Api.Values(n); Api.Values(o); Api.Values(p); Api.Values(q); Api.Values(r);
+            Api.Values(s); Api.Values(t); Api.Values(u); Api.Values(v); Api.Values(w); Api.Values(x);
+            Api.Values(y); Api.Values(z); Api.Values(aa); Api.Values(ab); Api.Values(ac); Api.Values(ad);
+            Api.Values(ae); Api.Values(af); Api.Values(ag); Api.Values(ah); Api.Values(ai); Api.Values(aj);
+            Api.Values(ak); Api.Values(al); Api.Values(am); Api.Values(an); Api.Values(ao); Api.Values(ap);
+        }
+
+        public void Nulls()
+        {
+            Api.Values((object?)null);
+            Api.Values(null);
+            Api.Values(default(string));
+            Api.Set((string?)null);
+            bool flag = Environment.TickCount > 0;
+            Api.Values(flag ? null : null);
+        }
+
+        public void Erased(object p, dynamic dyn)
+        {
+            object local = new { Id = 1 };
+            Api.Values(local);
+            Api.Values(p);
+            Api.Values((p));
+            Api.Values(p!);
+            Api.Values((p!));
+            Api.Values(dyn);
+            Api.WhereRaw("a", local);
+            Api.ExecuteThings("a", p);
+        }
+
+        private object field = new { Id = 1 };
+        public void FromField() { Api.Values(field); Api.Values(this.field); Api.Values(FromMember()); }
+        private object FromMember() => field;
+
+        public void Generic<T>(T value, T[] arr, List<T> list)
+        {
+            T local = value;
+            Api.Values(value);
+            Api.Values((value));
+            Api.Values(value!);
+            Api.Values(local);
+            Api.Values(arr);
+            Api.Values(list);
+            Api.Values(new { Item = value });
+            Api.Values(new Gen<T>());
+        }
+
+        public void Duplicates()
+        {
+            Api.Values(new Named());
+            Api.Set(new Named());
+            Api.Values(new Hidden());
+            Api.Values(new { Dup = 1 });
+            Api.Set(new { Dup = 1 });
+        }
+    }
+}
