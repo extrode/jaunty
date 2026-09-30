@@ -137,7 +137,7 @@ internal static class TablePromoter
             var sql = dialect.GeneratePromoteToTableSql(source);
 
             await CommandObservation.ExecuteAsync(sql, null, connection, DuckDbObservation.Text,
-                async () => { await PromoteDirectAsync(connection, sql, cancellationToken).ConfigureAwait(false); return true; },
+                () => PromoteDirectAsync(connection, sql, cancellationToken),
                 cancellationToken).ConfigureAwait(false);
 
             state.Promoted.Add(source);
@@ -149,7 +149,7 @@ internal static class TablePromoter
         }
     }
 
-    private static async ValueTask PromoteDirectAsync(DuckDBConnection connection, string sql, CancellationToken cancellationToken)
+    private static async ValueTask<object?> PromoteDirectAsync(DuckDBConnection connection, string sql, CancellationToken cancellationToken)
     {
         CommandObservation.Log(sql, null);
 
@@ -166,5 +166,7 @@ internal static class TablePromoter
             // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        return null;
     }
 }

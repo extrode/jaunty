@@ -99,18 +99,10 @@ internal static class MappedPropertyFilter
 
     private static bool IsMoreDerivedThan(PropertyInfo candidate, PropertyInfo incumbent)
     {
-        Type? candidateType = candidate.DeclaringType;
-        Type? incumbentType = incumbent.DeclaringType;
+        Type candidateType = candidate.DeclaringType!;
+        Type incumbentType = incumbent.DeclaringType!;
 
-        // Stryker disable once Logical : DeclaringType is null only for module-level members, which no Type.GetProperties result contains, so `a is null || b is null` and `a is null && b is null` agree on every reachable input
-        if (candidateType is null || incumbentType is null)
-            return false;
-
-        if (candidateType == incumbentType)
-            return false;
-
-        // candidate is more derived when the incumbent's declaring type is one of its bases.
-        return incumbentType.IsAssignableFrom(candidateType);
+        return candidateType != incumbentType && incumbentType.IsAssignableFrom(candidateType);
     }
 
     /// <summary>
