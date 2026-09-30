@@ -120,6 +120,7 @@ internal static class NonQueryExecutor
         ApplyOptions(cmd, options);
         foreach (DuckDBParameter param in parameters)
             cmd.Parameters.Add(param);
+        // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
         return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
