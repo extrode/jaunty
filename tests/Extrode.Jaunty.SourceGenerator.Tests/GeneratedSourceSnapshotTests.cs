@@ -42,6 +42,19 @@ public sealed class GeneratedSourceSnapshotTests
     }
 
     [Fact]
+    public void EveryApprovedSnapshot_MatchesASourceGeneratedWithinThisTest()
+    {
+        IReadOnlyDictionary<string, string> fresh = GenerateAll();
+
+        string[] mismatched = [.. fresh
+            .Where(kv => Normalize(ReadResource(SnapshotPrefix + kv.Key + ".approved.txt")) != Normalize(kv.Value))
+            .Select(kv => kv.Key)
+            .OrderBy(k => k, StringComparer.Ordinal)];
+
+        Assert.Empty(mismatched);
+    }
+
+    [Fact]
     public void EverySnapshotResource_HasAGeneratedSource()
     {
         string[] approved = Resources(SnapshotPrefix)
