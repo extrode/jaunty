@@ -345,8 +345,8 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         }
 
         var overClause = _dialect.GenerateOverClause(
-            partitionBy.Count > 0 ? partitionBy.ToArray() : null,
-            orderBy.Count > 0 ? orderBy.ToArray() : null);
+            partitionBy.ToArray(),
+            orderBy.ToArray());
 
         return functionSql + overClause;
     }
@@ -364,15 +364,12 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             case "Avg":
             case "Min":
             case "Max":
-                string? aggregateColumn = null;
-                if (methodCall.Arguments.Count > 0)
-                {
-                    aggregateColumn = TranslateColumnArgument(methodCall.Arguments[0]);
-                }
+                string aggregateColumn = TranslateColumnArgument(methodCall.Arguments[0]);
                 return _dialect.GenerateWindowAggregate(methodCall.Method.Name.ToUpperInvariant(), aggregateColumn);
             case "Count":
                 return _dialect.GenerateWindowAggregate("COUNT", null);
             default:
+                // Stryker disable once String : unreachable - every Sql method returning a window builder is listed above, and a hand-built call cannot root a chain in any other method
                 throw new NotSupportedException($"Window function base '{methodCall.Method.Name}' is not supported.");
         }
     }

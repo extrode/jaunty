@@ -106,8 +106,8 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         }
 
         // Handle comparison operators - need to determine which side is outer vs subquery
-        (bool IsColumn, string Sql, object? Value) leftInfo = AnalyzeExpression(node.Left);
-        (bool IsColumn, string Sql, object? Value) rightInfo = AnalyzeExpression(node.Right);
+        (bool IsColumn, string? Sql, object? Value) leftInfo = AnalyzeExpression(node.Left);
+        (bool IsColumn, string? Sql, object? Value) rightInfo = AnalyzeExpression(node.Right);
 
         // Handle null comparisons: emit IS NULL / IS NOT NULL instead of binding a NULL
         // parameter, since SQL's three-valued logic means "col = @p" with @p bound to NULL
@@ -163,7 +163,7 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
 
     protected override Expression VisitMember(MemberExpression node)
     {
-        (bool IsColumn, string Sql, object? Value) info = AnalyzeExpression(node);
+        (bool IsColumn, string? Sql, object? Value) info = AnalyzeExpression(node);
         if (info.IsColumn)
         {
             _sql.Append(info.Sql);
@@ -302,7 +302,7 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         => throw new NotSupportedException(
             $"'{node.Name}' is the whole entity, not a condition. Correlate on a column of it.");
 
-    private (bool IsColumn, string Sql, object? Value) AnalyzeExpression(Expression expression)
+    private (bool IsColumn, string? Sql, object? Value) AnalyzeExpression(Expression expression)
     {
         // Unwrap Convert. AUD-R35-021: ConvertChecked was missing, so a checked cast on a
         // correlated column fell through to the evaluate-as-a-constant tail below.
@@ -337,18 +337,18 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
             // It's a captured variable - evaluate it
             RequireNoCorrelationParameter(expression);
             var value = EvaluateExpression(expression);
-            return (false, string.Empty, value);
+            return (false, null, value);
         }
 
         if (expression is ConstantExpression constant)
         {
-            return (false, string.Empty, constant.Value);
+            return (false, null, constant.Value);
         }
 
         // Evaluate other expressions
         RequireNoCorrelationParameter(expression);
         var evalValue = EvaluateExpression(expression);
-        return (false, string.Empty, evalValue);
+        return (false, null, evalValue);
     }
 
     /// <summary>
@@ -365,7 +365,7 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     /// </summary>
     private void RequireNoCorrelationParameter(Expression expression)
     {
-        if (!CorrelationParameterFinder.Contains(expression, _outerParam, _subqueryParam))
+        if (!CorrelationParameterFinder.Contains(expression, _outerParam!, _subqueryParam!))
             return;
 
         throw new NotSupportedException(
@@ -376,15 +376,12 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
 
     private sealed class CorrelationParameterFinder : ExpressionVisitor
     {
-        private ParameterExpression? _first;
-        private ParameterExpression? _second;
+        private ParameterExpression _first = null!;
+        private ParameterExpression _second = null!;
         private bool _found;
 
-        public static bool Contains(Expression expression, ParameterExpression? first, ParameterExpression? second)
+        public static bool Contains(Expression expression, ParameterExpression first, ParameterExpression second)
         {
-            if (first is null && second is null)
-                return false;
-
             var finder = new CorrelationParameterFinder { _first = first, _second = second };
             finder.Visit(expression);
             return finder._found;
