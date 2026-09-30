@@ -166,9 +166,6 @@ internal static class MetadataCache<T>
             {
                 ColumnMetadata column = columns[i];
 
-                if (column.ColumnName.Equals(column.PropertyName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
                 if (!nameToIndex.ContainsKey(column.PropertyName))
                     nameToIndex[column.PropertyName] = i;
             }
@@ -527,20 +524,14 @@ internal static class MetadataCache<T>
     /// <summary>The default path: Convert.ChangeType via a compiled expression tree.</summary>
     private static Action<T, IDataRecord, int> CreateConvertingSetter(PropertyInfo property, Type propertyType)
     {
-        // Stryker disable once String : the parameter name exists only inside the expression tree, the compiled delegate does not expose it
-        ParameterExpression target = Expression.Parameter(typeof(T), "target");
-        ParameterExpression record = Expression.Parameter(typeof(IDataRecord), "record");
-        ParameterExpression index = Expression.Parameter(typeof(int), "index");
+        ParameterExpression target = Expression.Parameter(typeof(T));
+        ParameterExpression record = Expression.Parameter(typeof(IDataRecord));
+        ParameterExpression index = Expression.Parameter(typeof(int));
         MethodCallExpression getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
-
-        Type conversionType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
         Expression valueExpression = Expression.Convert(
             Expression.Call(typeof(DbValueConverter).GetMethod(nameof(DbValueConverter.ChangeType), [typeof(object), typeof(Type)])!,
-            getValue, Expression.Constant(conversionType)), conversionType);
-
-        if (propertyType != conversionType)
-            valueExpression = Expression.Convert(valueExpression, propertyType);
+            getValue, Expression.Constant(propertyType)), propertyType);
 
         BinaryExpression assign = Expression.Assign(Expression.Property(target, property), valueExpression);
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();

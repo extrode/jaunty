@@ -64,6 +64,7 @@ internal static class MultiEntityMapperCore
             if (replacement != -1)
             {
                 result.Add(new PropertySetter<T>(setter.Context, replacement));
+                // Stryker disable once Statement : FindNextUnclaimedOrdinal matches the same single-owner name lookup as the first binding, so no later property can bind the ordinal this replacement took
                 claimedByThisType.Add(replacement);
             }
             // Otherwise there is no remaining unclaimed column with this name; the
