@@ -201,6 +201,16 @@ public class WhereVisitorExactShapeTests
     public void ACaseChainRootedInAnotherMethod_IsNamed()
         => Assert.Equal("Unexpected method 'GetCase' in CASE expression chain.", Rejection(p => GetCase().When(x => x.Discontinued, 1).End() == 1));
 
+    private static CaseBuilder<Product, int> Case() => throw new InvalidOperationException();
+
+    [Fact]
+    public void ACaseChainRootedInAnotherMethodNamedCase_IsNamed()
+        => Assert.Equal("Unexpected method 'Case' in CASE expression chain.", Rejection(p => Case().When(x => x.Discontinued, 1).End() == 1));
+
+    [Fact]
+    public void ACaseWhenReferencingTheOuterParameter_ComparesTheColumns()
+        => Assert.Equal("(CASE WHEN ([unit_price] < [units_in_stock]) THEN @SqlFn ELSE @SqlFn2 END > @Value)", SqlOf(p => Sql.Case<Product, int>().When(x => x.UnitPrice < p.UnitsInStock, 1).Else(0) > 0));
+
     [Fact]
     public void ACaseWithNoWhen_IsRejected()
     {
