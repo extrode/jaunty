@@ -153,6 +153,7 @@ internal static class TablePromoter
     {
         CommandObservation.Log(sql, null);
 
+        // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
         DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
