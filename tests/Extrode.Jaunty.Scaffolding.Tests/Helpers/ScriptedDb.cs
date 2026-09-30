@@ -128,7 +128,17 @@ internal sealed class ScriptedCommand : DbCommand
 
     public override int ExecuteNonQuery() => throw new NotSupportedException();
 
-    public override object? ExecuteScalar() => throw new NotSupportedException();
+    public override object? ExecuteScalar()
+    {
+        DataTable table = _connection.Respond(this);
+        return table.Rows.Count == 0 ? null : table.Rows[0][0];
+    }
+
+    public override async Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
+    {
+        await _connection.AsyncPoint().ConfigureAwait(false);
+        return ExecuteScalar();
+    }
 
     public override void Prepare()
     {
