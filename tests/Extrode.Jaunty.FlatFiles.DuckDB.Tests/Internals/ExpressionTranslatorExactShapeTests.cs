@@ -67,6 +67,29 @@ public class ExpressionTranslatorExactShapeTests
     }
 
     [Fact]
+    public void InClause_ViaMemoryExtensionsOverAMutableSpanConversion_UnwrapsToTheArray()
+    {
+        int[] ids = [1, 2];
+        ParameterExpression x = Expression.Parameter(typeof(SalesRecord), "x");
+        MethodInfo toSpan = typeof(Span<int>).GetMethod("op_Implicit", [typeof(int[])])!;
+        MethodInfo contains = typeof(MemoryExtensions).GetMethods()
+            .Single(m => m.Name == "Contains" && m.GetParameters().Length == 2 &&
+                         m.GetParameters()[0].ParameterType.IsGenericType &&
+                         m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(Span<>))
+            .MakeGenericMethod(typeof(int));
+        var body = Expression.Call(
+            contains,
+            Expression.Call(toSpan, Expression.Constant(ids)),
+            Expression.Property(x, nameof(SalesRecord.Id)));
+        var predicate = Expression.Lambda<Func<SalesRecord, bool>>(body, x);
+
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        Assert.Equal("\"Id\" IN ($1, $2)", sql);
+        Assert.Equal(2, parameters.Count);
+    }
+
+    [Fact]
     public void InClause_WithoutAnEntityMember_IsRejected()
     {
         var ids = new List<int> { 1 };
