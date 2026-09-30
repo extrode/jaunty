@@ -102,6 +102,7 @@ internal static class MappedPropertyFilter
         Type? candidateType = candidate.DeclaringType;
         Type? incumbentType = incumbent.DeclaringType;
 
+        // Stryker disable once Logical : DeclaringType is null only for module-level members, which no Type.GetProperties result contains, so `a is null || b is null` and `a is null && b is null` agree on every reachable input
         if (candidateType is null || incumbentType is null || candidateType == incumbentType)
             return false;
 
