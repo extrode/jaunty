@@ -300,10 +300,12 @@ jobs:
           # Extrode.Jaunty.Tests also exercises Internals/Parameters and Dialects code that
           # Extrode.Jaunty.UnitTests's own stryker-config.json mutates - without it in scope,
           # mutants only that second project covers report NoCoverage even though something
-          # does kill them. Confirmed via -tp/--test-project in `dotnet stryker --help`;
-          # Fluent.Tests has not been analyzed for the same gap, so it is left alone.
+          # does kill them. --test-project replaces Stryker's default test project rather than
+          # adding to it (the 2026-09-24 report's testFiles held 252 files, none from UnitTests),
+          # so both projects are named. Fluent.Tests has not been analyzed for the same gap, so
+          # it is left alone.
           - project: Extrode.Jaunty.UnitTests
-            extra-test-project: --test-project ../Extrode.Jaunty.Tests/Extrode.Jaunty.Tests.csproj
+            extra-test-project: --test-project ../Extrode.Jaunty.UnitTests/Extrode.Jaunty.UnitTests.csproj --test-project ../Extrode.Jaunty.Tests/Extrode.Jaunty.Tests.csproj
     steps:
       - name: Checkout
         uses: actions/checkout@v7
