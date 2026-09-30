@@ -270,6 +270,40 @@ public class JoinedGroupByVisitorExactShapeTests
         Assert.Equal(["SUM(p.[unit_price]) AS [S]"], SingleKey().TranslateSelect(wrapped).SelectColumns);
     }
 
+    [System.ComponentModel.DataAnnotations.Schema.Table("sym")]
+    public sealed class Symbolic
+    {
+        [System.ComponentModel.DataAnnotations.Schema.Column("$")]
+        public int Weird { get; set; }
+    }
+
+    [Fact]
+    public void AColumnWhoseNameSanitizesToNothing_FallsBackToThePositionalName()
+    {
+        var visitor = new JoinedGroupByExpressionVisitor(
+            _dialect,
+            [FluentMetadataCache.GetMetadata<Symbolic>(), FluentMetadataCache.GetMetadata<Category>()],
+            [FluentMetadataCache.GetForDialect<Symbolic>(_dialect), FluentMetadataCache.GetForDialect<Category>(_dialect)],
+            ["", "c"],
+            (Expression<Func<Symbolic, Category, int>>)((s, c) => s.Weird));
+        var parameters = new ParameterCollection();
+
+        string sql = visitor.TranslateHavingPredicate((Expression<Func<IGroupingJoined<int, Symbolic, Category>, bool>>)(g => g.Sum((s, c) => s.Weird) > 5), parameters);
+
+        Assert.Equal("SUM(.[$]) > @sum|@sum", sql + "|" + string.Join(",", parameters.GetAll().Select(x => x.Name)));
+    }
+
+    [Fact]
+    public void AComparisonWithNoAggregate_BindsPositionalNames()
+    {
+        int a = 3;
+        int b = 4;
+
+        var result = Having(g => a < b);
+
+        Assert.Equal("@jhp_0 < @jhp_1|@jhp_0,@jhp_1", result.Sql + "|" + string.Join(",", result.Parameters.Select(x => x.Name)));
+    }
+
     [Fact]
     public void AKeySelectorReadingThroughAConversion_ResolvesItsParameter()
     {

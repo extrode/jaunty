@@ -181,4 +181,13 @@ public class WhereVisitorSurvivorTests
         Assert.Equal("5", FormatLength(5));
         Assert.Equal("1.5", FormatLength(1.5));
     }
+
+    public sealed class Maybe
+    {
+        public bool? Flag { get; set; }
+    }
+
+    [Fact]
+    public void ACastNullableBoolColumn_IsTheBareColumn()
+        => Assert.Equal("[Flag]", new WhereExpressionVisitor<Maybe>(_dialect).Translate(m => (bool)m.Flag!).Sql);
 }

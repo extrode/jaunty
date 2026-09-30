@@ -12,6 +12,7 @@ namespace Extrode.Jaunty.Tests.Unit.Dialects;
 [Collection("Dialect Factory Survivors")]
 public class SqlDialectFactorySurvivorTests
 {
+#if NET
     public interface ITestWrapperDialect : ISqlDialect, IDialectWrapper
     {
     }
@@ -49,6 +50,7 @@ public class SqlDialectFactorySurvivorTests
 
         Assert.Same(chain[8], SqlDialectFactory.Unwrap(chain[0]));
     }
+#endif
 
     private abstract class StubConnection : IDbConnection
     {
