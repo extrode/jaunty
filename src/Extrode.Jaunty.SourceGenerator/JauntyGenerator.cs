@@ -585,6 +585,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // PropertyDroppedByGeneratorDescriptor for why neither side can simply move.
             if (prop.SetMethod.IsInitOnly)
             {
+                // Stryker disable once Linq : a property symbol always has at least one location (source or metadata), so First() cannot throw here
                 dropped.Add(new DroppedPropertyInfo(
                     prop.Name,
                     "its setter is 'init'-only and the generated mapper assigns properties after construction",
@@ -605,6 +606,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             {
                 // AUD-R34-030: same silent divergence as the init-only case above - CanWrite is true
                 // and SetValue reaches a non-public setter, so reflection maps this column.
+                // Stryker disable once Linq : a property symbol always has at least one location (source or metadata), so First() cannot throw here
                 dropped.Add(new DroppedPropertyInfo(
                     prop.Name,
                     "its setter is not accessible from the entity class, so the generated assignment would not compile",
@@ -708,7 +710,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
             for (int i = 0; i < properties.Count; i++)
             {
                 if (properties[i].IsIdentityInferred)
-                    properties[i] = properties[i] with { IsIdentity = false, IsIdentityInferred = false };
+                {
+                    var reset = properties[i] with { IsIdentity = false };
+                    // Stryker disable once Boolean : IsIdentityInferred is read only by this post-pass, so the value written back is never observed
+                    properties[i] = reset with { IsIdentityInferred = false };
+                }
             }
         }
 
@@ -731,6 +737,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             TableName: tableName,
             SchemaName: schemaName,
             Properties: new EquatableArray<PropertyMetadata>(properties.ToImmutableArray()),
+            // Stryker disable once Linq : the entity class is the [Table]-attributed syntax node, so its symbol always has a source location
             DiagnosticLocation: LocationInfo.From(classSymbol.Locations.FirstOrDefault()),
             ContainingTypes: containingTypes,
             UnsupportedNestingReason: unsupportedNesting,
@@ -778,6 +785,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 && constructor.DeclaredAccessibility != Accessibility.Protected)
             {
                 hasParameterlessConstructor = true;
+                // Stryker disable once Statement : equivalent: removing the break lets the constructor loop visit the remaining constructors, which can only set hasParameterlessConstructor to true again, so the result is identical
                 break;
             }
         }
@@ -816,6 +824,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             string? keyword = TypeKeyword(containing);
 
             if (keyword is null)
+                // Stryker disable once String : unreachable: IsDeclaredPartial returns false first for any enclosing type whose declaration is not a TypeDeclarationSyntax, and TypeKeyword is non-null for class, struct, record and interface
                 return (default, $"its enclosing type '{containing.Name}' is not a class, struct, record or interface");
 
             chain.Add(new ContainingTypeInfo(
@@ -854,7 +863,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 return false;
         }
 
-        return symbol.DeclaringSyntaxReferences.Length > 0;
+        return !symbol.DeclaringSyntaxReferences.IsEmpty;
     }
 
     /// <summary>
@@ -921,6 +930,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         Accessibility.Private => "private",
         // NotApplicable shouldn't reach here for a named type; internal is the C# default for a
         // type declaration with no modifier, so it is the safest thing to mirror.
+        // Stryker disable once String : unreachable: Accessibility.NotApplicable does not occur for a named type
         _ => "internal"
     };
 
@@ -1830,13 +1840,21 @@ public partial class JauntyGenerator : IIncrementalGenerator
         return typeName switch
         {
             // Non-nullable value types - no null check needed
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "int" => new("reader.GetInt32", "int", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "long" => new("reader.GetInt64", "long", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "bool" => new("reader.GetBoolean", "bool", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "decimal" => new("reader.GetDecimal", "decimal", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "double" => new("reader.GetDouble", "double", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "float" => new("reader.GetFloat", "float", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "short" => new("reader.GetInt16", "short", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "byte" => new("reader.GetByte", "byte", false),
             // AUD-R34-034: GetValue, not GetGuid. Guid does not implement IConvertible, and a
             // provider that stores a GUID column as TEXT or BLOB - SQLite above all - throws
