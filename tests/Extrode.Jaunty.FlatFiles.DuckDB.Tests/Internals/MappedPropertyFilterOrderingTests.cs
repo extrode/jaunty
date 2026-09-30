@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Reflection.Emit;
 
 using Extrode.Jaunty.FlatFiles.DuckDB.Internals;
 
@@ -70,4 +71,44 @@ public class MappedPropertyFilterOrderingTests
     [Fact]
     public void UnrelatedDeclarations_AreNotMoreDerivedThanEachOther() =>
         Assert.False(MoreDerived(ValueOn(typeof(Parent)), typeof(Shadowed).GetProperty("Item")!));
+
+    private static Type EmitTwoPropertiesNamedCode()
+    {
+        AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TwoCodes_" + Guid.NewGuid().ToString("N")), AssemblyBuilderAccess.Run);
+        TypeBuilder type = assembly.DefineDynamicModule("main").DefineType("TwoCodes", TypeAttributes.Public | TypeAttributes.Class);
+        type.DefineDefaultConstructor(MethodAttributes.Public);
+
+        foreach (Type propertyType in new[] { typeof(int), typeof(string) })
+        {
+            FieldBuilder field = type.DefineField("_code" + propertyType.Name, propertyType, FieldAttributes.Private);
+            PropertyBuilder property = type.DefineProperty("Code", PropertyAttributes.None, propertyType, null);
+            MethodAttributes attributes = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
+
+            MethodBuilder getter = type.DefineMethod("get_Code", attributes, propertyType, Type.EmptyTypes);
+            ILGenerator get = getter.GetILGenerator();
+            get.Emit(OpCodes.Ldarg_0);
+            get.Emit(OpCodes.Ldfld, field);
+            get.Emit(OpCodes.Ret);
+
+            MethodBuilder setter = type.DefineMethod("set_Code", attributes, null, [propertyType]);
+            ILGenerator set = setter.GetILGenerator();
+            set.Emit(OpCodes.Ldarg_0);
+            set.Emit(OpCodes.Ldarg_1);
+            set.Emit(OpCodes.Stfld, field);
+            set.Emit(OpCodes.Ret);
+
+            property.SetGetMethod(getter);
+            property.SetSetMethod(setter);
+        }
+
+        return type.CreateType();
+    }
+
+    [Fact]
+    public void TwoUnrelatedPropertiesOnOneTypeWithOneName_KeepTheFirst()
+    {
+        List<PropertyInfo> mapped = MappedPropertyFilter.GetMappedProperties(EmitTwoPropertiesNamedCode());
+
+        Assert.Equal(typeof(int), Assert.Single(mapped).PropertyType);
+    }
 }

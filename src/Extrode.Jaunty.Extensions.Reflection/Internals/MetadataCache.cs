@@ -260,7 +260,6 @@ internal static class MetadataCache<T>
                 _columnNames = new string[_fieldCount];
 
                 for (int i = 0; i < _fieldCount; i++)
-                    // Stryker disable once String : BuildSetters has already thrown for a null column name before this entry is constructed, so the placeholder text is never observable
                     _columnNames[i] = reader.GetName(i) ?? string.Empty;
 
                 Setters = setters;
@@ -312,7 +311,6 @@ internal static class MetadataCache<T>
 
                 for (int i = 0; i < fieldCount; i++)
                 {
-                    // Stryker disable once String : a null column name makes BuildSetters throw after this is built and before anything is cached, so the placeholder text is never observable
                     parts[i + 2] = reader.GetName(i) ?? string.Empty;
                 }
 

@@ -142,7 +142,6 @@ public static class SpecialTypeMappers
             return value;
 
         // Handle nullable types
-        // Stryker disable once NullCoalescing : DbValueConversion.Convert unwraps Nullable itself, so passing the nullable type through gives the same result
         Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
         return DbValueConverter.ChangeType(value, underlyingType);

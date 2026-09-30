@@ -105,6 +105,7 @@ internal static class ColumnMappingCache
     {
         // Stryker disable once String : the parameter name exists only inside the expression tree, the compiled delegate does not expose it
         ParameterExpression entityParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "entity");
+        // Stryker disable once String : the parameter name exists only inside the expression tree, the compiled delegate does not expose it
         ParameterExpression valueParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "value");
         UnaryExpression cast = System.Linq.Expressions.Expression.Convert(entityParam, prop.DeclaringType!);
         UnaryExpression convertedValue = System.Linq.Expressions.Expression.Convert(valueParam, prop.PropertyType);

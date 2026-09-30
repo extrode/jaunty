@@ -278,8 +278,7 @@ internal static class ImportExecutor
                     var value = reader.GetValue(readerColumnMap[i]);
                     DbParameter param = parameterFactory.CreateParameter();
                     param.ParameterName = $"@p{i}";
-                    // Stryker disable once Conditional : ConvertValue returns DBNull.Value for a DBNull input, so always converting binds the same value
-                    param.Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType, transform);
+                    param.Value = ConvertValue(value, mappingList[i].PropertyType, transform);
                     batchCommand.Parameters.Add(param);
                 }
 

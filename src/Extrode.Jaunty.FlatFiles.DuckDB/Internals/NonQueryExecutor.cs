@@ -115,6 +115,7 @@ internal static class NonQueryExecutor
         CommandObservation.Log(sql, described);
 
         DuckDBCommand cmd = connection.CreateCommand();
+        // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
         await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = sql;
         ApplyOptions(cmd, options);
