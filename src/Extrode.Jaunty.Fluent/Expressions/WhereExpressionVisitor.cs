@@ -41,10 +41,37 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         _sql.Clear();
         _parameters.Clear();
 
-        Visit(predicate.Body);
+        VisitPredicate(predicate.Body);
 
         return (_sql.ToString(), _parameters);
     }
+
+    /// <summary>
+    /// A captured bool used where a predicate is expected (<c>p =&gt; flag</c>, <c>p.A &amp;&amp; flag</c>,
+    /// <c>!flag</c>) is a constant truth value, not a value to compare. Rendering it as a bare
+    /// parameter gave <c>WHERE @Value</c>, which SQL Server rejects; a literal <c>true</c> already
+    /// renders as <c>1 = 1</c>, so a closed bool now does too.
+    /// </summary>
+    private void VisitPredicate(Expression node)
+    {
+        if (node is MemberExpression { Type: var type } member && type == typeof(bool)
+            && !ReferencesLambdaParameter(member) && EvaluateExpression(member) is bool value)
+        {
+            _sql.Append(value ? "1 = 1" : "1 = 0");
+            return;
+        }
+
+        Visit(node);
+    }
+
+    /// <summary>
+    /// <c>string.Contains(null)</c>, <c>StartsWith(null)</c> and <c>EndsWith(null)</c> throw
+    /// <see cref="ArgumentNullException"/> in C#. Translating them to an empty pattern silently
+    /// matched every row, so a null search value is rejected the same way.
+    /// </summary>
+    private static string EvaluateSearchValue(MethodCallExpression node)
+        => EvaluateExpression(node.Arguments[0])?.ToString()
+            ?? throw new ArgumentNullException("value", $"'{node.Method.Name}' was given a null search value, which string.{node.Method.Name} rejects.");
 
     private string GetParameterName(string baseName)
     {
@@ -68,9 +95,9 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // Handle logical operators (&&, ||)
         if (node.NodeType is ExpressionType.AndAlso or ExpressionType.OrElse)
         {
-            Visit(node.Left);
+            VisitPredicate(node.Left);
             _sql.Append(node.NodeType == ExpressionType.AndAlso ? " AND " : " OR ");
-            Visit(node.Right);
+            VisitPredicate(node.Right);
             _sql.Append(')');
             return node;
         }
@@ -194,32 +221,32 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 {
                     case "Contains":
                         {
-                            var value = EvaluateExpression(node.Arguments[0]);
+                            var value = EvaluateSearchValue(node);
                             var paramName = GetParameterName(columnName);
                             _sql.Append(IsCaseInsensitiveComparison(node)
                                 ? _dialect.GenerateCaseInsensitiveLike(escapedColumn, paramName, "\\")
                                 : _dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                            _parameters.Add((paramName, _dialect.FormatContainsPattern(value?.ToString() ?? "")));
+                            _parameters.Add((paramName, _dialect.FormatContainsPattern(value)));
                             return node;
                         }
                     case "StartsWith":
                         {
-                            var value = EvaluateExpression(node.Arguments[0]);
+                            var value = EvaluateSearchValue(node);
                             var paramName = GetParameterName(columnName);
                             _sql.Append(IsCaseInsensitiveComparison(node)
                                 ? _dialect.GenerateCaseInsensitiveLike(escapedColumn, paramName, "\\")
                                 : _dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                            _parameters.Add((paramName, _dialect.FormatStartsWithPattern(value?.ToString() ?? "")));
+                            _parameters.Add((paramName, _dialect.FormatStartsWithPattern(value)));
                             return node;
                         }
                     case "EndsWith":
                         {
-                            var value = EvaluateExpression(node.Arguments[0]);
+                            var value = EvaluateSearchValue(node);
                             var paramName = GetParameterName(columnName);
                             _sql.Append(IsCaseInsensitiveComparison(node)
                                 ? _dialect.GenerateCaseInsensitiveLike(escapedColumn, paramName, "\\")
                                 : _dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                            _parameters.Add((paramName, _dialect.FormatEndsWithPattern(value?.ToString() ?? "")));
+                            _parameters.Add((paramName, _dialect.FormatEndsWithPattern(value)));
                             return node;
                         }
                     case "Equals" when node.Arguments.Count >= 1:
@@ -727,7 +754,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         if (node.NodeType == ExpressionType.Not)
         {
             _sql.Append("NOT (");
-            Visit(node.Operand);
+            VisitPredicate(node.Operand);
             _sql.Append(')');
             return node;
         }

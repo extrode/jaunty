@@ -14,8 +14,7 @@ public class JoinVisitorSharedCaseTests
 {
     private static readonly TestDialect Dialect = new();
 
-    private const string AddRejected2 = "Operator Add is not supported in JOIN expressions.";
-    private const string AddRejected34 = "Operator Add is not supported.";
+    private const string AddRejected = "Operator Add is not supported in JOIN expressions.";
 
     private static readonly Dictionary<string, (LambdaExpression Predicate, string Expected)> Cases = Build();
 
@@ -38,7 +37,8 @@ public class JoinVisitorSharedCaseTests
             ["CapturedNull"] = (P((p, c) => c.Description == noName), "(c.[description] IS NULL)"),
             ["ConvertedCapturedNull"] = (P((p, c) => p.ProductId == noShort), "(p.[product_id] IS NULL)"),
             ["OrderedAgainstNull"] = (P((p, c) => p.SupplierId > noInt), "(p.[supplier_id] > NULL)"),
-            ["NullAgainstNull"] = (P((p, c) => noName == null), "(NULL = NULL)"),
+            ["NullAgainstNull"] = (P((p, c) => noName == null), "(1 = 1)"),
+            ["NullAgainstNullNotEqual"] = (P((p, c) => noName != null), "(1 = 0)"),
             ["BareColumn"] = (P((p, c) => p.Discontinued), "p.[discontinued]"),
             ["Not"] = (P((p, c) => !p.Discontinued), "NOT (p.[discontinued])"),
             ["NotComparison"] = (P((p, c) => !(p.CategoryId == c.CategoryId)), "NOT ((p.[category_id] = c.[category_id]))"),
@@ -65,7 +65,7 @@ public class JoinVisitorSharedCaseTests
             ["WholeEntity"] = (P((p, c) => c == null), "!'c' is a whole entity, not a condition. Compare its properties instead."),
             ["Method"] = (P((p, c) => c.CategoryName.StartsWith("B")), "!Method 'StartsWith' is not supported in JOIN expressions."),
             ["Negate"] = (P((p, c) => -p.ProductId == c.CategoryId), "!Unary operator 'Negate' is not supported in JOIN expressions."),
-            ["Add"] = (P((p, c) => p.ProductId + c.CategoryId == 3), "!" + AddRejected2),
+            ["Add"] = (P((p, c) => p.ProductId + c.CategoryId == 3), "!" + AddRejected),
         };
     }
 
@@ -100,8 +100,7 @@ public class JoinVisitorSharedCaseTests
 
     private static string Expected(string name, int arity)
     {
-        string expected = Cases[name].Expected;
-        return arity == 2 || expected != "!" + AddRejected2 ? expected : "!" + AddRejected34;
+        return Cases[name].Expected;
     }
 
     [Theory]

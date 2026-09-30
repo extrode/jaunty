@@ -84,10 +84,10 @@ public class GroupByVisitorExactShapeTests
         => Assert.Equal(["COUNT(*) AS [C]"], Select(g => new { C = ((IGrouping<short, Product>)(object)g).Count() }));
 
     [Fact]
-    public void AGroupingHeldInAVariable_IsTreatedAsTheGrouping()
+    public void AGroupingHeldInAVariable_IsNotTheGrouping()
     {
         IGrouping<short, Product> other = null!;
-        Assert.Equal(["COUNT(*) AS [C]"], Select(g => new { C = other.Count() }));
+        Assert.Equal("Method 'Count' on type 'IGrouping`2' is not supported in GROUP BY Select.", Rejection(g => new { C = other.Count() }));
     }
 
     [Fact]

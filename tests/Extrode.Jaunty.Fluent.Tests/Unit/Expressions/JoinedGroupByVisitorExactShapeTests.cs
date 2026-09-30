@@ -85,7 +85,7 @@ public class JoinedGroupByVisitorExactShapeTests
         var (sql, parameters) = Having(g => a > 1 || g.Count() > 0);
 
         Assert.Equal("(@jhp_0 > @jhp_1 OR COUNT(*) > @count)", sql);
-        Assert.Equal(3, parameters.Count);
+        Assert.Equal([("@jhp_0", (object?)2), ("@jhp_1", 1), ("@count", 0)], parameters);
     }
 
     [Fact]

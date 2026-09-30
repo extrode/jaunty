@@ -111,10 +111,10 @@ internal class TestDialect : ISqlDialect
             """;
     }
 
-    public string GenerateRowNumber() => "ROW_NUMBER() OVER ()";
-    public string GenerateRank() => "RANK() OVER ()";
-    public string GenerateDenseRank() => "DENSE_RANK() OVER ()";
-    public string GenerateNTile(int buckets) => $"NTILE({buckets}) OVER ()";
+    public string GenerateRowNumber() => "ROW_NUMBER()";
+    public string GenerateRank() => "RANK()";
+    public string GenerateDenseRank() => "DENSE_RANK()";
+    public string GenerateNTile(int buckets) => $"NTILE({buckets})";
 
     public string GenerateOverClause(string[]? partitionBy, (string column, bool descending)[]? orderBy)
     {
