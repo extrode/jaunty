@@ -9,25 +9,26 @@ namespace Extrode.Jaunty.FlatFiles.DuckDB.Tests.Helpers;
 
 internal sealed class CountingSynchronizationContext : SynchronizationContext
 {
-    private readonly int[] _shared;
+    private readonly int[] _state = new int[3] { 0, 0, -1 };
 
-    public CountingSynchronizationContext() => _shared = new int[1];
+    public int Posts => Volatile.Read(ref _state[0]);
 
-    private CountingSynchronizationContext(int[] shared) => _shared = shared;
+    public int Operations => Volatile.Read(ref _state[1]);
 
-    public int Posts => Volatile.Read(ref _shared[0]);
+    public void DeferOnlyOperation(int index) => Volatile.Write(ref _state[2], index);
 
-    public CountingSynchronizationContext Fork() => new(_shared);
+    internal bool NextOperationIsDeferred() =>
+        Interlocked.Increment(ref _state[1]) - 1 == Volatile.Read(ref _state[2]);
 
     public override void Post(SendOrPostCallback d, object? state)
     {
-        Interlocked.Increment(ref _shared[0]);
+        Interlocked.Increment(ref _state[0]);
         ThreadPool.QueueUserWorkItem(_ => d(state));
     }
 
     public override void Send(SendOrPostCallback d, object? state)
     {
-        Interlocked.Increment(ref _shared[0]);
+        Interlocked.Increment(ref _state[0]);
         d(state);
     }
 }
@@ -105,11 +106,21 @@ internal sealed class ProbeSqliteConnection : DbConnection
 
     internal Task<T> Later<T>(Func<T> work)
     {
+        if (Context is { } context && !context.NextOperationIsDeferred())
+        {
+            try
+            {
+                return Task.FromResult(work());
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<T>(ex);
+            }
+        }
+
         var completion = new TaskCompletionSource<T>(TaskCreationOptions.None);
         ThreadPool.QueueUserWorkItem(_ =>
         {
-            SynchronizationContext? previous = SynchronizationContext.Current;
-            SynchronizationContext.SetSynchronizationContext(Context?.Fork());
             try
             {
                 completion.SetResult(work());
@@ -117,10 +128,6 @@ internal sealed class ProbeSqliteConnection : DbConnection
             catch (Exception ex)
             {
                 completion.SetException(ex);
-            }
-            finally
-            {
-                SynchronizationContext.SetSynchronizationContext(previous);
             }
         });
         return completion.Task;

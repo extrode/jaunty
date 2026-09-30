@@ -70,14 +70,10 @@ public class ImportExecutorDirectTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await Import(source, target, options, cts.Token));
     }
 
-    [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void TheImportNeverReturnsToTheCallersContext(bool canBatch, bool createTable)
+    private static int ImportWithOneOperationDeferred(bool canBatch, bool createTable, int deferred)
     {
         var context = new CountingSynchronizationContext();
+        context.DeferOnlyOperation(deferred);
         using ProbeSqliteConnection source = SourceWithRows(context);
         using var target = new ProbeSqliteConnection(canBatch, context);
         if (!createTable)
@@ -96,6 +92,21 @@ public class ImportExecutorDirectTests
         }
 
         Assert.Equal(5, import.GetAwaiter().GetResult());
-        Assert.Equal(0, context.Posts);
+        Assert.True(context.Posts == 0, $"deferring operation {deferred} returned the import to the caller's context {context.Posts} time(s)");
+        return context.Operations;
+    }
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void TheImportNeverReturnsToTheCallersContext(bool canBatch, bool createTable)
+    {
+        int operations = ImportWithOneOperationDeferred(canBatch, createTable, deferred: -1);
+
+        Assert.True(operations > 5, $"only {operations} asynchronous operations were seen");
+        for (int deferred = 0; deferred < operations; deferred++)
+            ImportWithOneOperationDeferred(canBatch, createTable, deferred);
     }
 }
