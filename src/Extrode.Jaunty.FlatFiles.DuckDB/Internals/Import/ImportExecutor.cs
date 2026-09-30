@@ -278,7 +278,7 @@ internal static class ImportExecutor
                     var value = reader.GetValue(readerColumnMap[i]);
                     DbParameter param = parameterFactory.CreateParameter();
                     param.ParameterName = $"@p{i}";
-                    param.Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType, transform);
+                    param.Value = ConvertValue(value, mappingList[i].PropertyType, transform);
                     batchCommand.Parameters.Add(param);
                 }
 

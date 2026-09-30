@@ -55,12 +55,13 @@ internal static class MultiEntityMapperCore
             if (!alreadyClaimed.Contains(ord) && !claimedByThisType.Contains(ord))
             {
                 result.Add(setter);
+                // Stryker disable once Statement : a reader column binds to exactly one property (ColumnBindsTo mirrors the single-owner lookup in BuildSetters), so no other property can meet an ordinal this one claimed; the set only has to hold replacements
                 claimedByThisType.Add(ord);
                 continue;
             }
 
             int replacement = FindNextUnclaimedOrdinal<T>(reader, setter.Context, alreadyClaimed, claimedByThisType);
-            if (replacement >= 0)
+            if (replacement != -1)
             {
                 result.Add(new PropertySetter<T>(setter.Context, replacement));
                 claimedByThisType.Add(replacement);

@@ -527,6 +527,7 @@ internal static class ExpressionTranslator
                         return true;
 
                     default:
+                        // Stryker disable once Boolean : Expression.MakeMemberAccess only builds a MemberExpression over a field or a property (ExpressionTranslatorFastPathTests pins this), so no other member kind reaches here
                         return false;
                 }
 
