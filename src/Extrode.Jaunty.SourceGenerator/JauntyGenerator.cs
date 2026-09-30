@@ -753,8 +753,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// <c>partial</c>, non-file-local class, and every violation emitted a <c>.g.cs</c> that failed
     /// the consumer's build with nothing explaining it: <c>abstract</c> gives CS0144 on the emitted
     /// <c>new Order()</c> (the reflection twin throws a clear <c>InvalidOperationException</c>
-    /// instead), a parameterized-only constructor gives CS1729, <c>static</c> cannot implement
-    /// <c>IMapped&lt;T&gt;</c>, a generic <c>Repo&lt;T&gt;</c> generates an arity-0
+    /// instead), a parameterized-only constructor gives CS1729, a non-public parameterless one
+    /// (internal, protected internal, private protected) gives CS0310 against the <c>new()</c>
+    /// constraint, <c>static</c> cannot implement <c>IMapped&lt;T&gt;</c>, a generic <c>Repo&lt;T&gt;</c> generates an arity-0
     /// <c>partial class Repo</c> that is a different type so every member access is CS1061, a
     /// non-<c>partial</c> class gives CS0260, and a <c>file</c>-local one gets a distinct
     /// non-file-local partial in another file.
@@ -781,8 +782,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         foreach (IMethodSymbol constructor in classSymbol.InstanceConstructors)
         {
             if (constructor.Parameters.Length == 0
-                && constructor.DeclaredAccessibility != Accessibility.Private
-                && constructor.DeclaredAccessibility != Accessibility.Protected)
+                && constructor.DeclaredAccessibility == Accessibility.Public)
             {
                 hasParameterlessConstructor = true;
                 // Stryker disable once Statement : equivalent: removing the break lets the constructor loop visit the remaining constructors, which can only set hasParameterlessConstructor to true again, so the result is identical
@@ -791,7 +791,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         }
 
         if (!hasParameterlessConstructor)
-            return "it has no accessible parameterless constructor and the generated mapper has to construct it";
+            return "it has no public parameterless constructor, which the mapper interface's 'new()' constraint requires";
 
         return null;
     }

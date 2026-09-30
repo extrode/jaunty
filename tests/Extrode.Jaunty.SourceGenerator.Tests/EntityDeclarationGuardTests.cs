@@ -94,6 +94,19 @@ public class EntityDeclarationGuardTests
             "private Order() { } public int Id { get; set; }"));
     }
 
+    [Theory]
+    [InlineData("internal")]
+    [InlineData("protected internal")]
+    [InlineData("private protected")]
+    public void AnEntityWithANonPublicParameterlessConstructor_ReportsJauntyGen004AndGeneratesNothing(string accessibility)
+    {
+        Diagnostic diagnostic = AssertSkippedWithDiagnostic(Entity(
+            "public partial class Order",
+            $"{accessibility} Order() {{ }} public int Id {{ get; set; }}"));
+
+        Assert.Contains("public parameterless constructor", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
     // ------------------------------------------------------------------
     // Controls: the shapes that were always fine must stay fine.
     // ------------------------------------------------------------------

@@ -19,6 +19,13 @@ default lives in `src/Directory.Build.props`.
   likewise for `Jaunty.Fluent`, `Jaunty.FlatFiles`, etc.). The product name ("Jaunty"), the
   `Jaunty.slnx` solution file, and the `github.com/extrode/jaunty` repository are unchanged.
 
+### Fixed
+
+- **A `[Table]` entity whose only parameterless constructor is `internal`, `protected internal` or
+  `private protected` now gets a `JAUNTYGEN004` warning instead of a CS0310 build error inside the
+  generated file.** The generated mapper implements `IMapped<T>`, which requires a public
+  parameterless constructor. Make the constructor `public` to get a generated mapper.
+
 ### Changed
 
 - **SQLite bundle is now SQLitePCLRaw 3.0.5 (SQLite 3.53.4); Microsoft.Data.SqlClient is 7.1.0.**
