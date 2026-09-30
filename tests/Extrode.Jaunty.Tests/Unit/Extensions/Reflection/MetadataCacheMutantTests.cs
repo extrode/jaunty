@@ -1,6 +1,8 @@
 using System.Data;
 using System.Reflection;
+#if !NETFRAMEWORK
 using System.Runtime.Loader;
+#endif
 
 using Extrode.Jaunty.Attributes;
 using Extrode.Jaunty.Configuration;
@@ -141,6 +143,7 @@ public class MetadataCacheMutantTests : IDisposable
         }
     }
 
+#if !NETFRAMEWORK
     private sealed class IsolatedContext : AssemblyLoadContext
     {
         private readonly string _path;
@@ -172,4 +175,5 @@ public class MetadataCacheMutantTests : IDisposable
             context.Unload();
         }
     }
+#endif
 }
