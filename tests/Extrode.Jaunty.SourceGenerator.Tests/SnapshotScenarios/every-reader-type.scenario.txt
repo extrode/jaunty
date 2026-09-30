@@ -1,0 +1,71 @@
+using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Interfaces;
+
+namespace Snapshots.EveryType;
+
+public enum Colour { Red, Green }
+
+public struct Money { public decimal Amount { get; set; } }
+
+[Table("every_type", "dbo")]
+public partial class EveryType : IMapped<EveryType>
+{
+    public int Id { get; set; }
+    public long LongValue { get; set; }
+    public bool BoolValue { get; set; }
+    public decimal DecimalValue { get; set; }
+    public double DoubleValue { get; set; }
+    public float FloatValue { get; set; }
+    public short ShortValue { get; set; }
+    public byte ByteValue { get; set; }
+    public Guid GuidValue { get; set; }
+    public DateTime DateTimeValue { get; set; }
+    public TimeSpan TimeSpanValue { get; set; }
+    public DateTimeOffset DateTimeOffsetValue { get; set; }
+
+    public int? NullableInt { get; set; }
+    public long? NullableLong { get; set; }
+    public bool? NullableBool { get; set; }
+    public decimal? NullableDecimal { get; set; }
+    public double? NullableDouble { get; set; }
+    public float? NullableFloat { get; set; }
+    public short? NullableShort { get; set; }
+    public byte? NullableByte { get; set; }
+    public Guid? NullableGuid { get; set; }
+    public DateTime? NullableDateTime { get; set; }
+    public TimeSpan? NullableTimeSpan { get; set; }
+    public DateTimeOffset? NullableDateTimeOffset { get; set; }
+
+    public string Text { get; set; } = "";
+    public string? NullableText { get; set; }
+    public char CharValue { get; set; }
+    public uint UnsignedInt { get; set; }
+    public ulong UnsignedLong { get; set; }
+    public sbyte SignedByte { get; set; }
+    public ushort UnsignedShort { get; set; }
+    public DateOnly DateOnlyValue { get; set; }
+    public TimeOnly TimeOnlyValue { get; set; }
+    public byte[] Bytes { get; set; } = [];
+    public Colour Colour { get; set; }
+    public Colour? NullableColour { get; set; }
+    [EnumStorage(EnumStorage.String)] public Colour StoredAsString { get; set; }
+    [EnumStorage(EnumStorage.Numeric)] public Colour? StoredAsNumber { get; set; }
+    public Money Money { get; set; }
+    public object? Anything { get; set; }
+}
+
+[Table("only_nullable")]
+public partial class OnlyNullable : IMapped<OnlyNullable>
+{
+    [Key] public string? Code { get; set; }
+    public int? Count { get; set; }
+    public string? Note { get; set; }
+}
+
+[Table("plain_decimal")]
+public partial class PlainDecimal : IMapped<PlainDecimal>
+{
+    public long Id { get; set; }
+    public decimal Total { get; set; }
+    public decimal? Discount { get; set; }
+}

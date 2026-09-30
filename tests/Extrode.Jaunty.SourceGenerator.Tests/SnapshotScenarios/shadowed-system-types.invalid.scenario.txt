@@ -1,0 +1,32 @@
+using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Interfaces;
+
+namespace System
+{
+    public class Guid { }
+    public class DateTime { }
+    public class TimeSpan { }
+    public class DateTimeOffset { }
+}
+
+namespace Extrode.Jaunty.Stubs
+{
+    public class Api
+    {
+        public static void Values(object values) { }
+        public static void Use() => Values(new global::System.DateTime());
+    }
+}
+
+namespace Snapshots.Shadowed
+{
+    [Table("shadowed")]
+    public partial class Shadowed : IMapped<Shadowed>
+    {
+        [Key] public int Id { get; set; }
+        public global::System.Guid G { get; set; } = new();
+        public global::System.DateTime D { get; set; } = new();
+        public global::System.TimeSpan T { get; set; } = new();
+        public global::System.DateTimeOffset O { get; set; } = new();
+    }
+}

@@ -207,6 +207,7 @@ public partial class JauntyGenerator
 
         int arity = invocation.ArgumentList.Arguments.Count;
         if (arity == 0)
+            // Stryker disable once Boolean : perf-only syntactic pre-filter: a zero-argument call has no parameters argument, and FindParameterSite yields no site for it either way
             return false;
 
         string? name = invocation.Expression switch
@@ -567,6 +568,7 @@ public partial class JauntyGenerator
         if (type is IArrayTypeSymbol array)
             return IsNameableFrom(array.ElementType);
 
+        // Stryker disable once Logical : redundant with the not-INamedTypeSymbol check below, which also returns false for pointer, type parameter and function pointer types
         if (type is IPointerTypeSymbol or ITypeParameterSymbol or IFunctionPointerTypeSymbol)
             return false;
 
