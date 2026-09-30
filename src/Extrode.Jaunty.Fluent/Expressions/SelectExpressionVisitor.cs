@@ -374,13 +374,17 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         }
     }
 
+    private static Expression? PeelWrapper(Expression expression) => expression switch
+    {
+        LambdaExpression lambda => lambda.Body,
+        UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.Quote } unary => unary.Operand,
+        _ => null
+    };
+
     private string TranslateColumnArgument(Expression arg)
     {
-        while (true)
+        for (Expression? inner; (inner = PeelWrapper(arg)) is not null; arg = inner)
         {
-            if (arg is LambdaExpression lambda) { arg = lambda.Body; continue; }
-            if (arg is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote)) { arg = unary.Operand; continue; }
-            break;
         }
 
         if (arg is MemberExpression member && IsParameterMember(member))

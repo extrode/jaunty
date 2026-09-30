@@ -463,6 +463,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             return node;
         }
 
+        // Stryker disable once Conditional : equivalent - the early exit only skips visiting nodes once Found is already true, and VisitParameter can only set it true again
         public override Expression? Visit(Expression? node) => Found ? node : base.Visit(node);
     }
 
@@ -551,10 +552,6 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             {
                 // When(condition, result) - arguments[0] is condition, arguments[1] is result
                 Expression condition = methodCall.Arguments[0];
-                if (condition is LambdaExpression lambda)
-                {
-                    condition = lambda.Body;
-                }
                 whenClauses.Insert(0, (condition, methodCall.Arguments[1]));
                 current = methodCall.Object;
             }
@@ -839,7 +836,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             return (rightColumn, rightRaw, leftValue, false);
         }
 
-        return (null, null, null, false);
+        return default;
     }
 
     // R28: the no-column fallback above used to test only for a literal null, but the main

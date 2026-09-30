@@ -171,8 +171,7 @@ internal sealed class JoinedGroupByExpressionVisitor
 
         Expression body = lambda.Body;
 
-        if (body is UnaryExpression unaryBody &&
-            (unaryBody.NodeType == ExpressionType.Convert || unaryBody.NodeType == ExpressionType.Quote))
+        if (body is UnaryExpression { NodeType: ExpressionType.Convert } unaryBody)
         {
             body = unaryBody.Operand;
         }
@@ -368,20 +367,8 @@ internal sealed class JoinedGroupByExpressionVisitor
 
     private (string Sql, string Alias) TranslateExpression(Expression expr, string defaultAlias, ParameterExpression groupingParam)
     {
-        while (true)
-        {
-            if (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
-            {
-                expr = unary.Operand;
-                continue;
-            }
-            if (expr is LambdaExpression lambda)
-            {
-                expr = lambda.Body;
-                continue;
-            }
-            break;
-        }
+        while (expr is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.Quote } unary)
+            expr = unary.Operand;
 
         // g.Key (single-column key)
         if (expr is MemberExpression keyMember && keyMember.Member.Name == "Key" && IsGroupingAccess(keyMember.Expression, groupingParam))
@@ -475,15 +462,8 @@ internal sealed class JoinedGroupByExpressionVisitor
     {
         if (expr == null) return $"{aggregate}(*)";
 
-        while (true)
-        {
-            if (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
-            {
-                expr = unary.Operand;
-                continue;
-            }
-            break;
-        }
+        while (expr is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.Quote } unary)
+            expr = unary.Operand;
 
         if (expr is LambdaExpression lambda)
         {
@@ -552,7 +532,7 @@ internal sealed class JoinedGroupByExpressionVisitor
     {
         Expression? root = memberExpr.Expression;
 
-        while (root is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        while (root is UnaryExpression { NodeType: ExpressionType.Convert } unary)
             root = unary.Operand;
 
         if (root is ParameterExpression param)
@@ -567,7 +547,7 @@ internal sealed class JoinedGroupByExpressionVisitor
 
     private static bool IsGroupingAccess(Expression? expr, ParameterExpression groupingParam)
     {
-        while (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        while (expr is UnaryExpression { NodeType: ExpressionType.Convert } unary)
             expr = unary.Operand;
 
         return expr is ParameterExpression p && ReferenceEquals(p, groupingParam);

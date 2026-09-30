@@ -231,6 +231,77 @@ public class JoinedGroupByVisitorExactShapeTests
 
         Assert.Equal("Cannot resolve which joined entity member 'CategoryId' belongs to.", ex.Message);
     }
+    private sealed class WrapQuotes(int depth) : ExpressionVisitor
+    {
+        protected override Expression VisitUnary(UnaryExpression node)
+        {
+            if (node.NodeType != ExpressionType.Quote)
+                return base.VisitUnary(node);
+
+            Expression wrapped = node;
+            for (int i = 0; i < depth; i++)
+                wrapped = Expression.Convert(wrapped, node.Type);
+            return wrapped;
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void AnAggregateSelectorBehindConversions_IsStillTheColumn(int depth)
+    {
+        Expression<Func<IGroupingJoined<short?, Product, Category>, bool>> having = g => g.Sum((p, c) => p.UnitPrice) > 5m;
+        var wrapped = (Expression<Func<IGroupingJoined<short?, Product, Category>, bool>>)new WrapQuotes(depth).Visit(having);
+        var parameters = new ParameterCollection();
+
+        string sql = SingleKey().TranslateHavingPredicate(wrapped, parameters);
+
+        Assert.Equal("SUM(p.[unit_price]) > @sum_p_unit_price", sql);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void AnAggregateSelectBehindConversions_IsStillTheColumn(int depth)
+    {
+        Expression<Func<IGroupingJoined<short?, Product, Category>, object>> select = g => new { S = g.Sum((p, c) => p.UnitPrice) };
+        var wrapped = (Expression<Func<IGroupingJoined<short?, Product, Category>, object>>)new WrapQuotes(depth).Visit(select);
+
+        Assert.Equal(["SUM(p.[unit_price]) AS [S]"], SingleKey().TranslateSelect(wrapped).SelectColumns);
+    }
+
+    [Fact]
+    public void AKeySelectorReadingThroughAConversion_ResolvesItsParameter()
+    {
+        var p = Expression.Parameter(typeof(Product), "p");
+        var c = Expression.Parameter(typeof(Category), "c");
+        var key = Expression.Convert(Expression.Property(Expression.Convert(p, typeof(Product)), nameof(Product.CategoryId)), typeof(object));
+
+        var columns = Visitor(Expression.Lambda(key, p, c)).TranslateSelect((Expression<Func<IGroupingJoined<short?, Product, Category>, object>>)(g => new { C = g.Count() })).SelectColumns;
+
+        Assert.Equal(["COUNT(*) AS [C]"], columns);
+    }
+
+    [Fact]
+    public void AKeySelectorReadingThroughATypeAs_IsRejected()
+    {
+        var p = Expression.Parameter(typeof(Product), "p");
+        var c = Expression.Parameter(typeof(Category), "c");
+        var key = Expression.Property(Expression.TypeAs(p, typeof(Product)), nameof(Product.CategoryId));
+
+        var ex = Assert.Throws<NotSupportedException>(() => Visitor(Expression.Lambda(key, p, c)));
+
+        Assert.Equal("Cannot resolve which joined entity member 'CategoryId' belongs to.", ex.Message);
+    }
+
+    [Fact]
+    public void AGroupingReachedThroughATypeAs_IsNotTheGrouping()
+    {
+        Expression<Func<IGroupingJoined<short?, Product, Category>, object>> expr = g => new { C = (g as IGroupingJoined<short?, Product, Category>)!.Count() };
+
+        Assert.Throws<NotSupportedException>(() => SingleKey().TranslateSelect(expr));
+    }
+
 }
 
 internal static class JAgg
