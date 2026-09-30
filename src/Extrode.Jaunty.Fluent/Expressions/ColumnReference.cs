@@ -45,11 +45,4 @@ internal static class ColumnReference
             $"'{leaf}' into SQL - use the Sql.* helpers for the supported spellings " +
             "(Sql.Year, Sql.Month, Sql.Day, Sql.Length, ...), or compute the value in memory.");
     }
-
-    /// <summary>
-    /// Whether <paramref name="member"/> reads a member directly off the lambda parameter.
-    /// </summary>
-    /// <param name="member">The member expression to test.</param>
-    public static bool IsDirect(MemberExpression member) =>
-        member.Expression is null or ParameterExpression;
 }
