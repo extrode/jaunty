@@ -228,9 +228,10 @@ public sealed class MySqlSchemaReader : ISchemaReader
     /// <see cref="int"/>, clamping to <see cref="int.MaxValue"/> instead of throwing
     /// <see cref="OverflowException"/> when the underlying value exceeds Int32 range.
     /// </summary>
-    private static int ToClampedInt32(object value)
+    internal static int ToClampedInt32(object value)
     {
         var decimalValue = Convert.ToDecimal(value);
+        // Stryker disable once Equality : at exactly int.MaxValue both branches return int.MaxValue
         return decimalValue > int.MaxValue ? int.MaxValue : Convert.ToInt32(decimalValue);
     }
 
