@@ -367,8 +367,6 @@ internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDeci
     // Implementation moved to Extrode.Jaunty.Extensions.Reflection (optional package)
     public bool SupportsNativeBulkCopy => false;
 
-    public IBulkCopyProvider? CreateBulkCopyProvider()
-    {
-        return null; // Requires Extrode.Jaunty.Extensions.Reflection package
-    }
+    // Requires Extrode.Jaunty.Extensions.Reflection package
+    public IBulkCopyProvider? CreateBulkCopyProvider() => null;
 }

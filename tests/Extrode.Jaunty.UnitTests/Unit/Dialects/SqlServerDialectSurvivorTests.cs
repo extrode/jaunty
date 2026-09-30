@@ -15,6 +15,14 @@ public class SqlServerDialectSurvivorTests
 
     [Theory]
     [InlineData("SELECT 1 -")]
+    [InlineData("-- ORDER BY x\nSELECT 1")]
+    [InlineData("/*  ORDER BY x */ SELECT 1")]
+    [InlineData("/* a/b ORDER BY x */ SELECT 1")]
+    [InlineData("/* a*b ORDER BY x */ SELECT 1")]
+    [InlineData("SELECT 1 /**/(SELECT 2 ORDER BY x) y")]
+    [InlineData("SELECT 'a'\"ORDER BY\"")]
+    [InlineData("SELECT 'a'(SELECT 1 ORDER BY x)")]
+    [InlineData("SELECT ((SELECT 1) ORDER BY x)")]
     [InlineData("SELECT 1 /")]
     [InlineData("SELECT 1 -- ORDER BY x")]
     [InlineData("SELECT 1 /* ORDER BY x")]
@@ -44,6 +52,7 @@ public class SqlServerDialectSurvivorTests
 
     [Theory]
     [InlineData("ORDER BY id")]
+    [InlineData("/* c */* ORDER BY x")]
     [InlineData("ORDER BY")]
     [InlineData("SELECT 1 ORDER BY")]
     [InlineData("SELECT 1 ORDER BY(x)")]

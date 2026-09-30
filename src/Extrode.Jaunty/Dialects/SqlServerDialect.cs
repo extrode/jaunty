@@ -103,6 +103,7 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
             {
                 i += 2;
                 while (i < len && sql[i] is not ('\n' or '\r')) i++;
+                // Stryker disable once Statement : the walk sits on the newline (or the end) here, and the fall-through i++ only steps over it
                 continue;
             }
 
@@ -110,7 +111,7 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
             {
                 i += 2;
                 while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
-                i = i + 1 < len ? i + 2 : len;
+                i = Math.Min(i + 2, len);
                 continue;
             }
 
@@ -181,11 +182,8 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
 
         int len = sql.Length;
 
-        if (i + Order.Length > len ||
-            string.Compare(sql, i, Order, 0, Order.Length, StringComparison.OrdinalIgnoreCase) != 0)
-        {
+        if (string.Compare(sql, i, Order, 0, Order.Length, StringComparison.OrdinalIgnoreCase) != 0)
             return false;
-        }
 
         if (i > 0 && IsIdentifierChar(sql[i - 1]))
             return false;
@@ -197,11 +195,8 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
 
         while (j < len && char.IsWhiteSpace(sql[j])) j++;
 
-        if (j + By.Length > len ||
-            string.Compare(sql, j, By, 0, By.Length, StringComparison.OrdinalIgnoreCase) != 0)
-        {
+        if (string.Compare(sql, j, By, 0, By.Length, StringComparison.OrdinalIgnoreCase) != 0)
             return false;
-        }
 
         int after = j + By.Length;
 
@@ -483,8 +478,6 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
     // Implementation moved to Extrode.Jaunty.Extensions.Reflection (optional package)
     public bool SupportsNativeBulkCopy => false;
 
-    public IBulkCopyProvider? CreateBulkCopyProvider()
-    {
-        return null; // Requires Extrode.Jaunty.Extensions.Reflection package
-    }
+    // Requires Extrode.Jaunty.Extensions.Reflection package
+    public IBulkCopyProvider? CreateBulkCopyProvider() => null;
 }

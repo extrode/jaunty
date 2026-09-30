@@ -201,6 +201,7 @@ internal static class ParameterBinder
         if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
             return false;
 
+        // Stryker disable once Logical : a performance short-circuit only - a dictionary or scalar type is never a TemplateCache key, so the lookup it skips would miss and return false anyway
         if (IsNamedValueDictionary(parameters) || IsScalarType(parameters.GetType()))
             return false;
 
@@ -327,7 +328,8 @@ internal static class ParameterBinder
             if (templates is null)
             {
                 IDbDataParameter[] created = CreateTemplates(command);
-                templates = Interlocked.CompareExchange(ref _templates, created, null) ?? created;
+                Interlocked.CompareExchange(ref _templates, created, null);
+                templates = Volatile.Read(ref _templates)!;
             }
 
             IDataParameterCollection pCollection = command.Parameters;
@@ -466,11 +468,8 @@ internal static class ParameterBinder
                     expansions ??= new List<CollectionExpansion>(2);
                     expansions.Add(new CollectionExpansion(sqlName, Array.Empty<object?>(), 0, meta.Property));
                 }
-
-                continue;
             }
-
-            if (IsCollection(value, out IEnumerable? items, out var count))
+            else if (IsCollection(value, out IEnumerable? items, out var count))
             {
                 expansions ??= new List<CollectionExpansion>(2);
                 expansions.Add(new CollectionExpansion(sqlName, items, count, meta.Property));
@@ -613,6 +612,7 @@ internal static class ParameterBinder
             {
                 i += 2;
                 while (i < len && sql[i] is not ('\n' or '\r')) i++;
+                // Stryker disable once Statement : the walk sits on the newline (or the end) here, and the fall-through i++ only steps over it
                 continue;
             }
 
@@ -620,7 +620,7 @@ internal static class ParameterBinder
             {
                 i += 2;
                 while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
-                i = i + 1 < len ? i + 2 : len;
+                i = Math.Min(i + 2, len);
                 continue;
             }
 
@@ -636,7 +636,7 @@ internal static class ParameterBinder
                 i++;
                 while (i < len)
                 {
-                    if (escapes && sql[i] == '\\' && i + 1 < len) { i += 2; continue; }
+                    if (escapes && sql[i] == '\\') { i += 2; continue; }
 
                     if (sql[i] == terminator)
                     {
@@ -652,14 +652,13 @@ internal static class ParameterBinder
             if (c == '@' && i + 1 < len && sql[i + 1] == '@')
             {
                 i += 2;
-                while (i < len && IsParameterChar(sql[i])) i++;
                 continue;
             }
 
             if (c == '$')
             {
                 int dollarQuoteEnd = TrySkipDollarQuotedString(sql, i, len);
-                if (dollarQuoteEnd >= 0)
+                if (dollarQuoteEnd != -1)
                 {
                     i = dollarQuoteEnd;
                     continue;
@@ -732,7 +731,7 @@ internal static class ParameterBinder
                 int start = i;
                 i += 2;
                 while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
-                i = i + 1 < len ? i + 2 : len;
+                i = Math.Min(i + 2, len);
                 sb.Append(sql, start, i - start);
                 continue;
             }
@@ -748,9 +747,9 @@ internal static class ParameterBinder
                 i++;
                 while (i < len)
                 {
-                    if (escapes && sql[i] == '\\' && i + 1 < len)
+                    if (escapes && sql[i] == '\\')
                     {
-                        i += 2;
+                        i = Math.Min(i + 2, len);
                         continue;
                     }
 
@@ -775,7 +774,6 @@ internal static class ParameterBinder
             {
                 int start = i;
                 i += 2;
-                while (i < len && IsParameterChar(sql[i])) i++;
                 sb.Append(sql, start, i - start);
                 continue;
             }
@@ -785,7 +783,7 @@ internal static class ParameterBinder
             if (c == '$')
             {
                 int dollarQuoteEnd = TrySkipDollarQuotedString(sql, i, len);
-                if (dollarQuoteEnd >= 0)
+                if (dollarQuoteEnd != -1)
                 {
                     sb.Append(sql, i, dollarQuoteEnd - i);
                     i = dollarQuoteEnd;
@@ -939,12 +937,13 @@ internal static class ParameterBinder
     /// <summary>
     /// The predicate half of <see cref="AsNamedValues"/>, for callers that only need the answer.
     /// </summary>
+    // Stryker disable once Logical : only TryRebind calls this, as a short-circuit ahead of a TemplateCache lookup that cannot hit for any dictionary type
     private static bool IsNamedValueDictionary(object parameters) =>
         parameters is IDictionary<string, object?> or IReadOnlyDictionary<string, object?> or IDictionary;
 
     private static bool IsScalarType(Type type)
     {
-        Type underlying = Nullable.GetUnderlyingType(type) ?? type;
+        Type underlying = type;
         return underlying.IsPrimitive
             || underlying.IsEnum
             || underlying == typeof(string)
