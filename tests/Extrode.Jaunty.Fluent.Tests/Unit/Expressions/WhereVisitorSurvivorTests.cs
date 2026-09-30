@@ -144,4 +144,41 @@ public class WhereVisitorSurvivorTests
 
         Assert.ThrowsAny<Exception>(() => new WhereExpressionVisitor<Product>(_dialect).Translate(Expression.Lambda<Func<Product, bool>>(body, p)));
     }
+
+    private sealed class NullFormatting
+    {
+        public override string? ToString() => null;
+    }
+
+    private static string FormatLength(object? length)
+    {
+        var method = typeof(WhereExpressionVisitor<Product>).GetMethod("FormatSubstringLength", BindingFlags.NonPublic | BindingFlags.Static)!;
+        try
+        {
+            return (string)method.Invoke(null, [length])!;
+        }
+        catch (TargetInvocationException ex)
+        {
+            throw ex.InnerException!;
+        }
+    }
+
+    [Fact]
+    public void ASubstringLengthOfNull_IsRejected()
+        => Assert.Equal(
+            "The length argument of Substring(start, length) evaluated to null and cannot be translated to SQL.",
+            Assert.Throws<NotSupportedException>(() => FormatLength(null)).Message);
+
+    [Fact]
+    public void ASubstringLengthThatFormatsToNull_IsRejected()
+        => Assert.Equal(
+            "The length argument of Substring(start, length) could not be formatted for SQL.",
+            Assert.Throws<NotSupportedException>(() => FormatLength(new NullFormatting())).Message);
+
+    [Fact]
+    public void ASubstringLength_FormatsInvariantly()
+    {
+        Assert.Equal("5", FormatLength(5));
+        Assert.Equal("1.5", FormatLength(1.5));
+    }
 }
