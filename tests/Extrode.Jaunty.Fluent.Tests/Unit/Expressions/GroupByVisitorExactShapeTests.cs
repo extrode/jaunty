@@ -129,6 +129,39 @@ public class GroupByVisitorExactShapeTests
             "Project its parts instead - g.Key.PropertyName - or select the bare key, g => g.Key.",
             ex.Message);
     }
+    private sealed class WrapQuotes(int depth) : ExpressionVisitor
+    {
+        protected override Expression VisitUnary(UnaryExpression node)
+        {
+            if (node.NodeType != ExpressionType.Quote)
+                return base.VisitUnary(node);
+
+            Expression wrapped = node;
+            for (int i = 0; i < depth; i++)
+                wrapped = Expression.Convert(wrapped, node.Type);
+            return wrapped;
+        }
+    }
+
+    [Fact]
+    public void AGroupingReachedThroughAConversion_IsStillTheGrouping()
+        => Assert.Equal(["COUNT(*) AS [C]", "[category_id] AS [K]"], Select(g => new { C = ((IGrouping<short, Product>)(object)g).Count(), K = ((IGrouping<short, Product>)(object)g).Key }));
+
+    [Fact]
+    public void AGroupingReachedThroughATypeAs_IsNotTheGrouping()
+        => Assert.Throws<NotSupportedException>(() => Select(g => new { C = (g as IGrouping<short, Product>)!.Count() }));
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void AnAggregateSelectorBehindConversions_IsStillTheColumn(int depth)
+    {
+        Expression<Func<IGrouping<short, Product>, object>> select = g => new { S = g.Sum(p => p.UnitPrice) };
+        var wrapped = (Expression<Func<IGrouping<short, Product>, object>>)new WrapQuotes(depth).Visit(select);
+
+        Assert.Equal(["SUM([unit_price]) AS [S]"], Visitor().TranslateSelect(wrapped).SelectColumns);
+    }
+
 }
 
 internal static class Agg
