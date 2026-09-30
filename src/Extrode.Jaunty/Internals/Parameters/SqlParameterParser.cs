@@ -94,8 +94,6 @@ internal static class SqlParameterParser
             if (c == '@' && i + 1 < len && sql[i + 1] == '@')
             {
                 i += 2;
-                while (i < len && IsParameterChar(sql[i]))
-                    i++;
                 continue;
             }
 
@@ -106,7 +104,7 @@ internal static class SqlParameterParser
             if (c == '$')
             {
                 int dollarQuoteEnd = TrySkipDollarQuoted(sql, i);
-                if (dollarQuoteEnd >= 0)
+                if (dollarQuoteEnd != -1)
                 {
                     i = dollarQuoteEnd;
                     continue;
@@ -145,6 +143,7 @@ internal static class SqlParameterParser
 
         int delimLen = tagEnd + 1 - dollarPos;
         int searchFrom = tagEnd + 1;
+        // Stryker disable once Equality : a delimiter that ends exactly at the end returns len, the same value the unterminated fallback below returns
         while (searchFrom + delimLen <= len)
         {
             if (sql.Slice(searchFrom, delimLen).SequenceEqual(sql.Slice(dollarPos, delimLen)))
@@ -188,7 +187,7 @@ internal static class SqlParameterParser
             // the caller decides, by passing the flag on for ' and " and hard-coding it false
             // for the bracket and backtick identifier runs. See the backslashEscapes parameter
             // on ExtractParameterNames.
-            if (backslashEscapes && sql[i] == '\\' && i + 1 < len)
+            if (backslashEscapes && sql[i] == '\\')
             {
                 i += 2;
                 continue;
@@ -240,6 +239,7 @@ internal static class SqlParameterParser
             if (c == '-' && i + 1 < len && sql[i + 1] == '-')
             {
                 i = SkipToEndOfLineClassic(sql, i + 2, len);
+                // Stryker disable once Statement : the walk sits on the newline (or the end) here, and the fall-through i++ only steps over it
                 continue;
             }
 
@@ -277,15 +277,13 @@ internal static class SqlParameterParser
             if (c == '@' && i + 1 < len && sql[i + 1] == '@')
             {
                 i += 2;
-                while (i < len && IsParameterChar(sql[i]))
-                    i++;
                 continue;
             }
 
             if (c == '$')
             {
                 int dollarQuoteEnd = TrySkipDollarQuotedClassic(sql, i, len);
-                if (dollarQuoteEnd >= 0)
+                if (dollarQuoteEnd != -1)
                 {
                     i = dollarQuoteEnd;
                     continue;
@@ -315,6 +313,7 @@ internal static class SqlParameterParser
 
         int delimLen = tagEnd + 1 - dollarPos;
         int searchFrom = tagEnd + 1;
+        // Stryker disable once Equality : a delimiter that ends exactly at the end returns len, the same value the unterminated fallback below returns
         while (searchFrom + delimLen <= len)
         {
             if (string.CompareOrdinal(sql, searchFrom, sql, dollarPos, delimLen) == 0)
@@ -352,7 +351,7 @@ internal static class SqlParameterParser
         while (i < len)
         {
             // AUD-R34-014: see the span twin.
-            if (backslashEscapes && sql[i] == '\\' && i + 1 < len)
+            if (backslashEscapes && sql[i] == '\\')
             {
                 i += 2;
                 continue;
