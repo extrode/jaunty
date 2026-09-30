@@ -28,6 +28,13 @@ public sealed class MetadataAndLanguageVersionTests
         }
         """;
 
+    private const string ScriptEntity = """
+        using Extrode.Jaunty.Attributes;
+
+        [Table("orders")]
+        public partial class Order { public int Id { get; set; } }
+        """;
+
     private const string RootingCall = """
         namespace Extrode.Jaunty.Stubs
         {
@@ -106,5 +113,30 @@ public sealed class MetadataAndLanguageVersionTests
         Generate(RootingCall, LanguageVersion.CSharp8, null, out ImmutableArray<string> generated);
 
         Assert.DoesNotContain("JauntyAotParameterRoots.g.cs", generated);
+    }
+
+    [Fact]
+    public void AScriptClass_IsReportedAsNotPartialWithoutCrashing()
+    {
+        CSharpParseOptions scriptOptions = GeneratorHarness.ParseOptions.WithKind(SourceCodeKind.Script);
+
+        var compilation = CSharpCompilation.CreateScriptCompilation(
+            "ScriptProbe",
+            CSharpSyntaxTree.ParseText(ScriptEntity, scriptOptions),
+            Paths.Select(p => (MetadataReference)MetadataReference.CreateFromFile(p)),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            generators: [new global::Extrode.Jaunty.SourceGenerator.JauntyGenerator().AsSourceGenerator()],
+            additionalTexts: null,
+            parseOptions: scriptOptions,
+            optionsProvider: null,
+            driverOptions: new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None));
+
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out ImmutableArray<Diagnostic> diagnostics);
+
+        Diagnostic reported = Assert.Single(diagnostics);
+        Assert.Equal("JAUNTYGEN004", reported.Id);
+        Assert.Contains("is not declared 'partial'", reported.GetMessage(), StringComparison.Ordinal);
     }
 }

@@ -78,6 +78,13 @@ public class SelfRooted : IMapped<SelfRooted>, IGeneratedAccessors<SelfRooted>
     Action<IDbCommand, SelfRooted> IGeneratedAccessors<SelfRooted>.DeleteBinder => (c, e) => { };
 }
 
+public partial class SplitAcrossParts { }
+
+public partial class SplitAcrossParts
+{
+    public static void BindInsert(IDbCommand command, SplitAcrossParts entity) { }
+}
+
 public class UnrelatedBase : Exception { }
 
 public class OwnBinder : IOwn
