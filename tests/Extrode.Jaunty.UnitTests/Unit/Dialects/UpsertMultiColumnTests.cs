@@ -21,3 +21,23 @@ public class UpsertMultiColumnTests
     public void MySql_SeparatesEveryColumnAndParameter()
         => Assert.StartsWith("INSERT INTO t (a, b, c) VALUES (@a, @b, @c) ON DUPLICATE KEY UPDATE ", Upsert(new MySqlDialect()), StringComparison.Ordinal);
 }
+
+public class OverClauseMultiColumnTests
+{
+    private static readonly (string column, bool descending)[] Order = [("a", false), ("b", true), ("c", false)];
+
+    [Fact]
+    public void MySql_SeparatesEveryOrderColumn()
+        => Assert.Equal(" OVER (PARTITION BY p, q ORDER BY a, b DESC, c)", new MySqlDialect().GenerateOverClause(["p", "q"], Order));
+
+    [Fact]
+    public void PostgreSql_SeparatesEveryOrderColumn()
+        => Assert.Equal(" OVER (PARTITION BY p, q ORDER BY a, b DESC, c)", new PostgreSqlDialect().GenerateOverClause(["p", "q"], Order));
+}
+
+public class SqliteTableNameTests
+{
+    [Fact]
+    public void EscapeTableName_RejectsAnUnsafeName()
+        => Assert.Throws<ArgumentException>(() => new SQLiteDialect().EscapeTableName(null, "a;b"));
+}

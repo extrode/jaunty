@@ -78,6 +78,13 @@ public class SqlLexerBoundaryTests
     private static string[] ExpectedNames(string template)
         => template.Contains("{R}Ids") ? new[] { "Ids" } : Array.Empty<string>();
 
+    private static string Replace(string sql, bool backslashEscapes)
+    {
+        MethodInfo method = typeof(ParameterBinder).GetMethod(
+            "ReplaceParametersLiteralAware", BindingFlags.NonPublic | BindingFlags.Static)!;
+        return (string)method.Invoke(null, new object[] { sql, '@', new Dictionary<string, string> { ["Ids"] = "X" }, backslashEscapes })!;
+    }
+
     private static string[] Classic(string sql, bool backslashEscapes)
     {
         MethodInfo method = typeof(SqlParameterParser).GetMethod(
@@ -141,6 +148,30 @@ public class SqlLexerBoundaryTests
     }
 
     [Theory]
+    [MemberData(nameof(Cases))]
+    public void ReplaceWalker_RewritesOnlyRealPlaceholders(string template)
+    {
+        string sql = Expand(template, '@', '@');
+        string expected = template.Replace("{R}Ids", "X").Replace("{Z}", "@").Replace("{R}", "@");
+
+        Assert.Equal(expected, Replace(sql, false));
+        Assert.Equal(expected, Replace(sql, true));
+    }
+
+    [Fact]
+    public void ReplaceWalker_AnEmptyNameIsNeverAPlaceholder()
+    {
+        MethodInfo method = typeof(ParameterBinder).GetMethod(
+            "ReplaceParametersLiteralAware", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        Assert.Equal("a @ b", (string)method.Invoke(null, new object[] { "a @ b", '@', new Dictionary<string, string> { [""] = "X" }, false })!);
+    }
+
+    [Fact]
+    public void DetectParameterPrefix_ASystemVariableDoesNotHideALaterDollarParameter()
+        => Assert.Equal("$", ParameterBinder.DetectParameterPrefix("@@xy $Ids"));
+
+    [Theory]
     [InlineData("'a\\' {R}Ids'", false, true)]
     [InlineData("'a\\' {R}Ids'", true, false)]
     [InlineData("\"a\\\" {R}Ids\"", false, true)]
@@ -150,6 +181,8 @@ public class SqlLexerBoundaryTests
     [InlineData("'\\", true, false)]
     [InlineData("'a\\'' {R}Ids", true, true)]
     [InlineData("'a\\\\' {R}Ids", true, true)]
+    [InlineData("'a\\\\\\' {R}Ids", true, false)]
+    [InlineData("'\\x", true, false)]
     public void BackslashEscapes_ApplyOnlyToStringLiteralsOnEnginesThatHaveThem(string template, bool backslashEscapes, bool expectReal)
     {
         string sql = Expand(template, '@', '@');
@@ -157,6 +190,7 @@ public class SqlLexerBoundaryTests
 
         Assert.Equal(expected, SqlParameterParser.ExtractParameterNames(sql, backslashEscapes));
         Assert.Equal(expected, Classic(sql, backslashEscapes));
+        Assert.Equal(expectReal ? sql.Replace("@Ids", "X") : sql, Replace(sql, backslashEscapes));
 
         string dollar = Expand(template, '@', '$');
         Assert.Equal(expectReal ? "$" : "@", ParameterBinder.DetectParameterPrefix(dollar, backslashEscapes));

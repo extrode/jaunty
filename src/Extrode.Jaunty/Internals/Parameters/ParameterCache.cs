@@ -113,7 +113,7 @@ internal static class ParameterCache
     /// </remarks>
     private static Func<object, object?> CreateGetter(PropertyInfo prop)
     {
-        ParameterExpression obj = Expression.Parameter(typeof(object), "o");
+        ParameterExpression obj = Expression.Parameter(typeof(object));
         UnaryExpression cast = Expression.Convert(obj, prop.DeclaringType!);
         MemberExpression access = Expression.Property(cast, prop);
         UnaryExpression box = Expression.Convert(access, typeof(object));

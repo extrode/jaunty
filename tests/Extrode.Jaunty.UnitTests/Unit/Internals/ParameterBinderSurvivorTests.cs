@@ -46,6 +46,12 @@ public class ParameterBinderSurvivorTests
         public int A { get; set; }
     }
 
+    public ParameterBinderSurvivorTests()
+    {
+        var shapes = typeof(ParameterBinder).GetField("ShapeCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
+        ((IDictionary)shapes).Clear();
+    }
+
     private static string Unique() => Guid.NewGuid().ToString("N");
 
     private static FakeCommand Command(string sql) => new() { CommandText = sql };
