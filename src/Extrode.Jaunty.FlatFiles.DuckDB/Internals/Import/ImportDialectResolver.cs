@@ -65,6 +65,7 @@ internal static class ImportDialectResolver
         if (explicitDialect is not null)
             return explicitDialect;
 
+        // Stryker disable once String : Type.FullName is null only for generic type parameters, which a connection instance never has
         var typeName = connection.GetType().FullName ?? "";
 
         // Check custom registrations first.
