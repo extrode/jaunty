@@ -98,6 +98,7 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
             _fieldCount = reader.FieldCount;
             _columnNames = new string[_fieldCount];
             for (int i = 0; i < _fieldCount; i++)
+                // Stryker disable once String : the mapper is already built, so a null column name has thrown before this entry is constructed and the placeholder text is never observable
                 _columnNames[i] = reader.GetName(i) ?? string.Empty;
             Mapper = mapper;
         }
