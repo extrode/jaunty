@@ -135,7 +135,7 @@ public class MetadataBuilderMutantTests
         {
             FieldBuilder field = builder.DefineField("_" + name, type, FieldAttributes.Private);
             first ??= field;
-            PropertyBuilder property = builder.DefineProperty(name, PropertyAttributes.None, type, null);
+            PropertyBuilder property = builder.DefineProperty(name, System.Reflection.PropertyAttributes.None, type, null);
             MethodBuilder getter = builder.DefineMethod("get_" + name, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, type, Type.EmptyTypes);
             ILGenerator get = getter.GetILGenerator();
             get.Emit(OpCodes.Ldarg_0);
@@ -155,7 +155,7 @@ public class MetadataBuilderMutantTests
             ConstructorBuilder ctor = builder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [first!.FieldType]);
             ILGenerator il = ctor.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Call, typeof(Attribute).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes)!);
+            il.Emit(OpCodes.Call, typeof(Attribute).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null)!);
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Stfld, first);
@@ -191,7 +191,7 @@ public class MetadataBuilderMutantTests
         void AddProperty(string name, Type type, CustomAttributeBuilder? attribute)
         {
             FieldBuilder field = entity.DefineField("_" + name, type, FieldAttributes.Private);
-            PropertyBuilder property = entity.DefineProperty(name, PropertyAttributes.None, type, null);
+            PropertyBuilder property = entity.DefineProperty(name, System.Reflection.PropertyAttributes.None, type, null);
             MethodBuilder getter = entity.DefineMethod("get_" + name, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, type, Type.EmptyTypes);
             ILGenerator get = getter.GetILGenerator();
             get.Emit(OpCodes.Ldarg_0);
