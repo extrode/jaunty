@@ -95,7 +95,7 @@ public class JoinExpressionVisitorExactShapeTests
 
     [Fact]
     public void AnUnsupportedBinaryOperator_IsNamed()
-        => Assert.Equal("Operator Add is not supported in JOIN expressions.", Rejection((p, c) => p.ProductId + c.CategoryId == 3 && p.ProductId + 1 > 0));
+        => Assert.Equal("Operator Add is not supported in JOIN expressions.", Rejection((p, c) => p.ProductId + c.CategoryId == 3));
 
     [Fact]
     public void AMethodCall_IsNamed()

@@ -151,7 +151,7 @@ public class SelectVisitorExactShapeTests
     [Fact]
     public void AWindowChain_KeepsPartitionAndOrderDirection()
         => Assert.Equal(
-            [("ROW_NUMBER() OVER ()OVER (PARTITION BY [category_id] ORDER BY [unit_price] ASC, [product_id] DESC )", "R")],
+            [("ROW_NUMBER()OVER (PARTITION BY [category_id] ORDER BY [unit_price] ASC, [product_id] DESC )", "R")],
             Cols(p => new { R = (long)Sql.RowNumber<Product>().PartitionBy(x => x.CategoryId).OrderBy(x => x.UnitPrice).OrderByDescending(x => x.ProductId) }));
 
     [Fact]
@@ -163,7 +163,7 @@ public class SelectVisitorExactShapeTests
     [Fact]
     public void AFunctionAsAPartitionKey_IsTranslated()
         => Assert.Equal(
-            [("ROW_NUMBER() OVER ()OVER (PARTITION BY UPPER([product_name]) )", "R")],
+            [("ROW_NUMBER()OVER (PARTITION BY UPPER([product_name]) )", "R")],
             Cols(p => new { R = (long)Sql.RowNumber<Product>().PartitionBy(x => Sql.Upper(x.ProductName)) }));
 
     [Fact]

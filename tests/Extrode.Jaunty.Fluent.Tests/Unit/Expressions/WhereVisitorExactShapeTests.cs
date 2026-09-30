@@ -87,13 +87,13 @@ public class WhereVisitorExactShapeTests
     }
 
     [Fact]
-    public void ANullSearchValue_IsAnEmptyPattern()
+    public void ANullSearchValue_IsRejectedLikeStringDoes()
     {
         string? none = null;
 
-        Assert.Equal([("@product_name", (object?)"%%")], Translate(p => p.ProductName.Contains(none!)).Parameters);
-        Assert.Equal([("@product_name", (object?)"%")], Translate(p => p.ProductName.StartsWith(none!)).Parameters);
-        Assert.Equal([("@product_name", (object?)"%")], Translate(p => p.ProductName.EndsWith(none!)).Parameters);
+        Assert.Equal("value", Assert.Throws<ArgumentNullException>(() => Translate(p => p.ProductName.Contains(none!))).ParamName);
+        Assert.Equal("value", Assert.Throws<ArgumentNullException>(() => Translate(p => p.ProductName.StartsWith(none!))).ParamName);
+        Assert.Equal("value", Assert.Throws<ArgumentNullException>(() => Translate(p => p.ProductName.EndsWith(none!))).ParamName);
     }
 
     private static string CannotTranslate(MethodCallExpression node)
@@ -156,14 +156,38 @@ public class WhereVisitorExactShapeTests
     }
 
     [Fact]
-    public void ACapturedBool_IsBoundNotTreatedAsAColumn()
+    public void ACapturedBool_IsAConstantTruthValue()
     {
-        bool flag = true;
-        var (sql, parameters) = Translate(p => flag);
+        bool yes = true;
+        bool no = false;
 
-        Assert.Equal("@Value", sql);
-        Assert.Equal([("@Value", (object?)true)], parameters);
+        Assert.Equal(("1 = 1", 0), Shape(Translate(p => yes)));
+        Assert.Equal(("1 = 0", 0), Shape(Translate(p => no)));
+        Assert.Equal(("NOT (1 = 1)", 0), Shape(Translate(p => !yes)));
     }
+
+    [Fact]
+    public void ACapturedBool_BesideAColumnPredicate_IsAConstantTruthValue()
+    {
+        bool yes = true;
+        var (sql, parameters) = Translate(p => p.Discontinued && yes);
+
+        Assert.Equal("([discontinued] = 1 AND 1 = 1)", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
+    public void ACapturedBool_ComparedWithAColumn_IsStillBound()
+    {
+        bool yes = true;
+        var (sql, parameters) = Translate(p => p.Discontinued == yes);
+
+        Assert.Equal([("@discontinued", (object?)true)], parameters);
+        Assert.DoesNotContain("1 = 1", sql);
+    }
+
+    private static (string Sql, int Parameters) Shape((string Sql, List<(string Name, object? Value)> Parameters) t)
+        => (t.Sql, t.Parameters.Count);
 
     [Fact]
     public void ABareCase_IsRejected()
