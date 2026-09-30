@@ -41,6 +41,32 @@ public class ParameterBinderSurvivorTests
         public IEnumerable? Tags { get; set; }
     }
 
+    public sealed class IntKeyedDictionary : IDictionary
+    {
+        public int Id { get; set; }
+
+        int ICollection.Count => 1;
+        bool ICollection.IsSynchronized => false;
+        object ICollection.SyncRoot => this;
+        bool IDictionary.IsFixedSize => true;
+        bool IDictionary.IsReadOnly => true;
+        ICollection IDictionary.Keys => new[] { 1 };
+        ICollection IDictionary.Values => new[] { 2 };
+        object? IDictionary.this[object key]
+        {
+            get => 2;
+            set => throw new NotSupportedException();
+        }
+
+        void IDictionary.Add(object key, object? value) => throw new NotSupportedException();
+        void IDictionary.Clear() => throw new NotSupportedException();
+        bool IDictionary.Contains(object key) => false;
+        void IDictionary.Remove(object key) => throw new NotSupportedException();
+        void ICollection.CopyTo(Array array, int index) => throw new NotSupportedException();
+        IDictionaryEnumerator IDictionary.GetEnumerator() => new Hashtable { [1] = 2 }.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IDictionary)this).GetEnumerator();
+    }
+
     public sealed class OneProp
     {
         public int A { get; set; }
@@ -170,6 +196,18 @@ public class ParameterBinderSurvivorTests
         command.Parameters.Add("junk");
 
         Assert.False(ParameterBinder.TryRebind(command, new OneProp { A = 2 }));
+    }
+
+    [Fact]
+    public void TryRebind_ADictionaryShapeBoundThroughItsProperties_IsRefused()
+    {
+        string sql = "x = @Id -- " + Unique();
+        var parameters = new IntKeyedDictionary { Id = 1 };
+        ParameterBinder.Bind(Command(sql), parameters);
+        var command = Command(sql);
+        ParameterBinder.Bind(command, parameters);
+
+        Assert.False(ParameterBinder.TryRebind(command, parameters));
     }
 
     private sealed class FakeCommand : IDbCommand

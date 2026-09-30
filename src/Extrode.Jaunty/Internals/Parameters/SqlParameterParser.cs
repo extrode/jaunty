@@ -143,15 +143,8 @@ internal static class SqlParameterParser
 
         int delimLen = tagEnd + 1 - dollarPos;
         int searchFrom = tagEnd + 1;
-        // Stryker disable once Equality : a delimiter that ends exactly at the end returns len, the same value the unterminated fallback below returns
-        while (searchFrom + delimLen <= len)
-        {
-            if (sql.Slice(searchFrom, delimLen).SequenceEqual(sql.Slice(dollarPos, delimLen)))
-                return searchFrom + delimLen;
-            searchFrom++;
-        }
-
-        return len; // Unterminated dollar-quote: skip to end rather than mis-scan the remainder.
+        int found = sql.Slice(searchFrom).IndexOf(sql.Slice(dollarPos, delimLen));
+        return found == -1 ? len : searchFrom + found + delimLen; // Unterminated dollar-quote: skip to end rather than mis-scan the remainder.
     }
 
     private static int SkipToEndOfLine(ReadOnlySpan<char> sql, int i)
@@ -313,15 +306,8 @@ internal static class SqlParameterParser
 
         int delimLen = tagEnd + 1 - dollarPos;
         int searchFrom = tagEnd + 1;
-        // Stryker disable once Equality : a delimiter that ends exactly at the end returns len, the same value the unterminated fallback below returns
-        while (searchFrom + delimLen <= len)
-        {
-            if (string.CompareOrdinal(sql, searchFrom, sql, dollarPos, delimLen) == 0)
-                return searchFrom + delimLen;
-            searchFrom++;
-        }
-
-        return len;
+        int found = sql.IndexOf(sql.Substring(dollarPos, delimLen), searchFrom, StringComparison.Ordinal);
+        return found == -1 ? len : found + delimLen;
     }
 
     private static int SkipToEndOfLineClassic(string sql, int i, int len)

@@ -426,27 +426,32 @@ public static class SqlDialectFactory
     /// Attempts to enhance dialect with bulk copy support via Extrode.Jaunty.Extensions.Reflection.
     /// Uses reflection to avoid hard dependency on the extension package.
     /// </summary>
-    private static ISqlDialect TryEnhanceWithBulkCopy(ISqlDialect dialect)
+    private static ISqlDialect TryEnhanceWithBulkCopy(ISqlDialect dialect) => TryEnhance(dialect, ProbeBulkCopyFactory);
+
+    internal static ISqlDialect TryEnhance(ISqlDialect dialect, Func<ISqlDialect, ISqlDialect?> probe)
     {
         try
         {
-            var factoryType = Type.GetType("Extrode.Jaunty.Extensions.Reflection.Dialects.BulkCopyDialectFactory, Extrode.Jaunty.Extensions.Reflection");
-            if (factoryType == null)
-                return dialect;
-
-            // AOT-SAFE: optional-extension probe; when trimming removes the type or method this returns null and the base dialect is used unchanged
-            MethodInfo? getDialectMethod = factoryType.GetMethod("GetDialect", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (getDialectMethod == null)
-                return dialect;
-
-            var enhanced = getDialectMethod.Invoke(null, new object[] { dialect });
-            return enhanced as ISqlDialect ?? dialect;
+            return probe(dialect) ?? dialect;
         }
-        // Stryker disable once Block : unreachable in a test - no input makes the optional factory throw, and the body is only a fallback for a missing or broken extension package
         catch
         {
             // Extensions.Reflection not loaded or error occurred - use base dialect
             return dialect;
         }
+    }
+
+    private static ISqlDialect? ProbeBulkCopyFactory(ISqlDialect dialect)
+    {
+        var factoryType = Type.GetType("Extrode.Jaunty.Extensions.Reflection.Dialects.BulkCopyDialectFactory, Extrode.Jaunty.Extensions.Reflection");
+        if (factoryType == null)
+            return null;
+
+        // AOT-SAFE: optional-extension probe; when trimming removes the type or method this returns null and the base dialect is used unchanged
+        MethodInfo? getDialectMethod = factoryType.GetMethod("GetDialect", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        if (getDialectMethod == null)
+            return null;
+
+        return getDialectMethod.Invoke(null, new object[] { dialect }) as ISqlDialect;
     }
 }
