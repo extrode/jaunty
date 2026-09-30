@@ -155,6 +155,12 @@ public class SelectVisitorExactShapeTests
             Cols(p => new { R = (long)Sql.RowNumber<Product>().PartitionBy(x => x.CategoryId).OrderBy(x => x.UnitPrice).OrderByDescending(x => x.ProductId) }));
 
     [Fact]
+    public void AWindowChainRootedInAnotherSqlMethod_IsNamed()
+        => Assert.Equal(
+            "Window function base 'Coalesce' is not supported.",
+            Rejection(p => new { R = (long)Sql.Coalesce(Sql.RowNumber<Product>(), Sql.Rank<Product>()).OrderBy(x => x.ProductId) }));
+
+    [Fact]
     public void AWindowAggregate_TranslatesItsColumn()
         => Assert.Equal(
             [("SUM([unit_price])OVER ()", "S")],

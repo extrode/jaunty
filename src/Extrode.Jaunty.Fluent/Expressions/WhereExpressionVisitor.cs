@@ -462,9 +462,6 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             Found = true;
             return node;
         }
-
-        // Stryker disable once Conditional : equivalent - the early exit only skips visiting nodes once Found is already true, and VisitParameter can only set it true again
-        public override Expression? Visit(Expression? node) => Found ? node : base.Visit(node);
     }
 
     private Expression HandleSqlFunction(MethodCallExpression node)
