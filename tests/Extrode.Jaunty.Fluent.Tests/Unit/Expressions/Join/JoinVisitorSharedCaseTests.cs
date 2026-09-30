@@ -23,6 +23,7 @@ public class JoinVisitorSharedCaseTests
         string? noName = null;
         short? noShort = null;
         int? noInt = null;
+        string? someName = "x";
         Func<int, bool> isOne = x => x == 1;
         var list = new List<int> { 1 };
         var pc = new[] { Expression.Parameter(typeof(Product), "p"), Expression.Parameter(typeof(Category), "c") };
@@ -39,6 +40,7 @@ public class JoinVisitorSharedCaseTests
             ["OrderedAgainstNull"] = (P((p, c) => p.SupplierId > noInt), "(p.[supplier_id] > NULL)"),
             ["NullAgainstNull"] = (P((p, c) => noName == null), "(1 = 1)"),
             ["NullAgainstNullNotEqual"] = (P((p, c) => noName != null), "(1 = 0)"),
+            ["NullAgainstCapturedValue"] = (P((p, c) => null == someName), "(NULL = @jp0)"),
             ["BareColumn"] = (P((p, c) => p.Discontinued), "p.[discontinued]"),
             ["Not"] = (P((p, c) => !p.Discontinued), "NOT (p.[discontinued])"),
             ["NotComparison"] = (P((p, c) => !(p.CategoryId == c.CategoryId)), "NOT ((p.[category_id] = c.[category_id]))"),
