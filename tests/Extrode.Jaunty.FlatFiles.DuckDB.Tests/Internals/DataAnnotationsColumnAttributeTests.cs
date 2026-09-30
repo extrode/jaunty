@@ -31,6 +31,10 @@ public class DataAnnotationsColumnAttributeTests
         [Column(TypeName = "varchar")]
         public string TypeOnly { get; set; } = string.Empty;
 
+        [System.ComponentModel.Description("unrelated")]
+        [Column("after_other_attribute")]
+        public string AfterOther { get; set; } = string.Empty;
+
         // Both attributes: Extrode.Jaunty's must win, as it does in MetadataBuilder.
         [JauntyColumn("jaunty_wins")]
         [Column("annotations_lose")]
@@ -42,6 +46,9 @@ public class DataAnnotationsColumnAttributeTests
 
     [Fact]
     public void APositionalName_IsUsed() => Assert.Equal("annotated_name", ColumnFor(nameof(AnnotatedEntity.Positional)));
+
+    [Fact]
+    public void AColumnAttributeAfterAnUnrelatedOne_IsStillFound() => Assert.Equal("after_other_attribute", ColumnFor(nameof(AnnotatedEntity.AfterOther)));
 
     [Fact]
     public void AnEmptyName_FallsBackToThePropertyName() => Assert.Equal(nameof(AnnotatedEntity.Empty), ColumnFor(nameof(AnnotatedEntity.Empty)));
