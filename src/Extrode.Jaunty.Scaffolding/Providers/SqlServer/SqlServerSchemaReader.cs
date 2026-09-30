@@ -113,13 +113,25 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         -- ones, so an unordered read pairs them by whatever order the engine happened to pick.
         ORDER BY fk.name, fkc.constraint_column_id";
 
+    private readonly Func<string, DbConnection> _connectionFactory;
+
+    /// <summary>Creates a reader that opens its connection through the installed ADO.NET provider.</summary>
+    public SqlServerSchemaReader() : this(CreateConnection)
+    {
+    }
+
+    internal SqlServerSchemaReader(Func<string, DbConnection> connectionFactory)
+    {
+        _connectionFactory = connectionFactory;
+    }
+
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
         string connectionString,
         SchemaReaderOptions options,
         CancellationToken cancellationToken = default)
     {
-        using DbConnection connection = CreateConnection(connectionString);
+        using DbConnection connection = _connectionFactory(connectionString);
         await OpenConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
 
         var tables = new List<TableSchema>();
@@ -138,7 +150,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         };
     }
 
-    private static DbConnection CreateConnection(string connectionString)
+    internal static DbConnection CreateConnection(string connectionString)
     {
         // Try Microsoft.Data.SqlClient first, then System.Data.SqlClient.
         // Literal type names, not a loop over an array: the trim analyzer only recognizes
@@ -146,14 +158,17 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
         // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
         // returns null and falls through.
-        var type = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
-                ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
+        var type = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient");
+        // Stryker disable once String,NullCoalescing,Assignment : the fallback assembly (System.Data.SqlClient) is not referenced by the test project, so its type name and the fallback itself are unobservable
+        type ??= Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
 
+        // Stryker disable once Conditional : the provider assembly is always loadable in the test project, so a null type is unreachable and Create(type) is the only observable path
         if (type != null)
         {
             return ReflectedConnectionFactory.Create(type, connectionString);
         }
 
+        // Stryker disable once String : the message only surfaces when no provider assembly is loadable, which the test project's references rule out
         throw new InvalidOperationException(
             "Could not find SQL Server provider. Please install Microsoft.Data.SqlClient or System.Data.SqlClient.");
     }
@@ -190,6 +205,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
                 !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
 
+            // Stryker disable once Equality : an empty exclude list contains nothing, so Count >= 0 rejects exactly the rows Count > 0 does
             if (options.ExcludeTables?.Count > 0 &&
                 options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;

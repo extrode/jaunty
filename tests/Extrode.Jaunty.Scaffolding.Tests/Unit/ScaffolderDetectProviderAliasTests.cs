@@ -29,6 +29,8 @@ public class ScaffolderDetectProviderAliasTests
     [InlineData("Uid=u", DatabaseProvider.SqlServer)]
     [InlineData("Server=s;Uid=u", DatabaseProvider.SqlServer)]
     [InlineData("Database=d;User=u", DatabaseProvider.SqlServer)]
+    [InlineData("Server=s;Database=d;Uid=u", DatabaseProvider.MySql)]
+    [InlineData("Server=s;Database=d;User=u", DatabaseProvider.MySql)]
     public void EachAliasCarriesItsOwnWeight(string connectionString, DatabaseProvider expected)
         => Assert.Equal(expected, Scaffolder.DetectProvider(connectionString));
 }
