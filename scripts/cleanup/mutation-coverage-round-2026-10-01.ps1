@@ -79,7 +79,11 @@ $scratch = @(
   'tmp/mutprobe.py', 'tmp/ut-file.py', 'tmp/ut-sum.py', 'tmp/fl-list.py', 'tmp/addtests.py',
   'tmp/edit1.py', 'tmp/edit2.py', 'tmp/edit3.py', 'tmp/edit4.py', 'tmp/edit5.py',
   'tmp/edit6.py', 'tmp/edit7.py', 'tmp/edit8.py', 'tmp/edit9.py',
-  'tmp/ut.json', 'tmp/fl'
+  'tmp/ut.json', 'tmp/fl',
+  'tmp/dev8.bundle', 'tmp/dev9.bundle', 'tmp/mb1-job8.sh', 'tmp/mb1-job9.sh',
+  'tmp/job8-ut.out', 'tmp/job8-fl.out', 'tmp/job9-ut.out', 'tmp/ut2.json', 'tmp/ut3.json', 'tmp/fl3.json',
+  'tmp/refute-prompt.txt', 'tmp/refute.out', 'tmp/addt.py', 'tmp/addt2.py',
+  'tmp/srcedit.py', 'tmp/srcedit2.py', 'tmp/srcedit3.py', 'tmp/srcedit4.py'
 )
 foreach ($rel in $scratch) {
   if (-not (Test-Path -LiteralPath $rel)) { continue }
