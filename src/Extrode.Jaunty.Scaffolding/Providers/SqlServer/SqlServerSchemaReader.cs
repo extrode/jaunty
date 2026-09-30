@@ -159,10 +159,9 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
         // returns null and falls through.
         var type = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient");
-        // Stryker disable once String,NullCoalescing,Assignment : the fallback assembly (System.Data.SqlClient) is not referenced by the test project, so its type name and the fallback itself are unobservable
+        // Stryker disable once String : the primary provider assembly always loads in the test project, so the fallback type name (System.Data.SqlClient) is never evaluated
         type ??= Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
 
-        // Stryker disable once Conditional : the provider assembly is always loadable in the test project, so a null type is unreachable and Create(type) is the only observable path
         if (type != null)
         {
             return ReflectedConnectionFactory.Create(type, connectionString);
@@ -205,9 +204,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
                 !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
 
-            // Stryker disable once Equality : an empty exclude list contains nothing, so Count >= 0 rejects exactly the rows Count > 0 does
-            if (options.ExcludeTables?.Count > 0 &&
-                options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
+            if (options.ExcludeTables?.Contains(tableName, StringComparer.OrdinalIgnoreCase) == true)
                 continue;
 
             tables.Add((schemaName, tableName));

@@ -59,11 +59,7 @@ public sealed class SqlServerTypeMapper : ITypeMapper
             "geography" or "geometry" or "hierarchyid" =>
                 new CSharpTypeInfo { TypeName = "byte[]", IsValueType = false },
 
-            // sql_variant
-            // Stryker disable once String : the arm returns exactly what the default arm returns, so its pattern is unobservable
-            "sql_variant" => new CSharpTypeInfo { TypeName = "object", IsValueType = false },
-
-            // Default to object for unknown types
+            // Default to object for unknown types, sql_variant included
             _ => new CSharpTypeInfo { TypeName = "object", IsValueType = false }
         };
     }

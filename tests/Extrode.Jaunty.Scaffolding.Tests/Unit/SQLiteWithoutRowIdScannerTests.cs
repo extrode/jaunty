@@ -38,6 +38,10 @@ public class SQLiteWithoutRowIdScannerTests
     [InlineData("CREATE TABLE t ([a]) WITHOUT ROWID", true)]
     [InlineData("CREATE TABLE t (a INT, [x(] TEXT) WITHOUT ROWID", true)]
     [InlineData("-- note\nCREATE TABLE t (a INT) WITHOUT ROWID", true)]
+    [InlineData("CREATE TABLE \"t\"(a INT PRIMARY KEY) WITHOUT ROWID", true)]
+    [InlineData("CREATE TABLE t (x INT, \"a\"\"b) WITHOUT ROWID\" TEXT)", false)]
+    [InlineData("CREATE TABLE t (x TEXT DEFAULT 'it''s ) WITHOUT ROWID')", false)]
+    [InlineData("CREATE TABLE t (a INT) -WITHOUT ROWID", true)]
     public void OnlyTheRealOptionsTailCounts(string createSql, bool expected)
         => Assert.Equal(expected, SQLiteSchemaReader.IsWithoutRowId(createSql));
 

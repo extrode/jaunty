@@ -116,10 +116,9 @@ public sealed class MySqlSchemaReader : ISchemaReader
         // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
         // returns null and falls through.
         var type = Type.GetType("MySqlConnector.MySqlConnection, MySqlConnector");
-        // Stryker disable once String,NullCoalescing,Assignment : the fallback assembly (MySql.Data) is not referenced by the test project, so its type name and the fallback itself are unobservable
+        // Stryker disable once String : the primary provider assembly always loads in the test project, so the fallback type name (MySql.Data) is never evaluated
         type ??= Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data");
 
-        // Stryker disable once Conditional : the provider assembly is always loadable in the test project, so a null type is unreachable and Create(type) is the only observable path
         if (type != null)
             return ReflectedConnectionFactory.Create(type, connectionString);
 
@@ -155,9 +154,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
                 !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
 
-            // Stryker disable once Equality : an empty exclude list contains nothing, so Count >= 0 rejects exactly the rows Count > 0 does
-            if (options.ExcludeTables?.Count > 0 &&
-                options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
+            if (options.ExcludeTables?.Contains(tableName, StringComparer.OrdinalIgnoreCase) == true)
                 continue;
 
             tables.Add(tableName);
@@ -247,8 +244,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
     internal static int ToClampedInt32(object value)
     {
         var decimalValue = Convert.ToDecimal(value);
-        // Stryker disable once Equality : at exactly int.MaxValue both branches return int.MaxValue
-        return decimalValue > int.MaxValue ? int.MaxValue : Convert.ToInt32(decimalValue);
+        return Convert.ToInt32(Math.Min(decimalValue, int.MaxValue));
     }
 
     private static async Task<PrimaryKeyInfo?> ReadPrimaryKeyAsync(
