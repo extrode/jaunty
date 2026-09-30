@@ -37,7 +37,7 @@ public class PackageIdentityTests
     private static readonly string[] RetiredOwnerScanSkippedFragments =
     [
         "/.git/", "/bin/", "/obj/", "/node_modules/", "/tmp/", "/TestResults/", "/.worktrees/",
-        "/.claude/", "/work/", "/audit/",
+        "/.claude/", "/work/", "/audit/", "/scripts/cleanup/",
     ];
 
     private static readonly string[] PackCriticalProperties =
