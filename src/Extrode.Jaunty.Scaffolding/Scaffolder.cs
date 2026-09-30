@@ -16,6 +16,18 @@ namespace Extrode.Jaunty.Scaffolding;
 /// </summary>
 public sealed class Scaffolder
 {
+    private readonly Func<DatabaseProvider, (ISchemaReader, ITypeMapper)> _providerComponents;
+
+    /// <summary>Creates a scaffolder that uses the built-in schema readers and type mappers.</summary>
+    public Scaffolder() : this(GetProviderComponents)
+    {
+    }
+
+    internal Scaffolder(Func<DatabaseProvider, (ISchemaReader, ITypeMapper)> providerComponents)
+    {
+        _providerComponents = providerComponents;
+    }
+
     /// <summary>
     /// Scaffolds entity classes from a database.
     /// </summary>
@@ -36,12 +48,11 @@ public sealed class Scaffolder
                 : options.Provider;
 
             // Get schema reader and type mapper for provider
-            (ISchemaReader? schemaReader, ITypeMapper? typeMapper) = GetProviderComponents(provider);
+            (ISchemaReader? schemaReader, ITypeMapper? typeMapper) = _providerComponents(provider);
 
             // Read schema
             SchemaReaderOptions readerOptions = ToReaderOptions(options);
 
-            // Stryker disable once Boolean : the only reader reachable without a live server, SQLite's, completes synchronously, so ConfigureAwait cannot change where this resumes
             DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
                 options.ConnectionString,
                 readerOptions,
@@ -214,9 +225,8 @@ public sealed class Scaffolder
             ? DetectProvider(connectionString)
             : provider;
 
-        (ISchemaReader? schemaReader, ITypeMapper _) = GetProviderComponents(resolvedProvider);
+        (ISchemaReader? schemaReader, ITypeMapper _) = _providerComponents(resolvedProvider);
 
-        // Stryker disable once Boolean : the only reader reachable without a live server, SQLite's, completes synchronously, so ConfigureAwait cannot change where this resumes
         DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
             connectionString,
             options ?? new SchemaReaderOptions(),
