@@ -114,4 +114,55 @@ public class ReaderMemoAndSchemaKeyTests : IDisposable
 
         Assert.Equal($"{ConfigurationGeneration.Current}|2\u001FId\u001F", key);
     }
+
+    private const string Marker = "Stryker was here!";
+
+    public class MarkedName
+    {
+        public int Id { get; set; }
+
+        [Extrode.Jaunty.Attributes.Column(Marker)]
+        public string? Name { get; set; }
+    }
+
+    public class MarkedId
+    {
+        [Extrode.Jaunty.Attributes.Column(Marker)]
+        public int Id { get; set; }
+    }
+
+    [Fact]
+    public void AReaderEntryForAMissingName_DoesNotRememberAPlaceholderAsAName()
+    {
+        MetadataCache<MarkedName>.GetSetters(new MutableStubReader(["", "Id"], [1, 2]), MappingMode.Projection);
+        var reader = new MutableStubReader([null, "Id"], [1, 2]);
+        Assert.Single(MetadataCache<MarkedName>.GetSetters(reader, MappingMode.Projection));
+
+        reader.Reshape([Marker, "Id"], ["named", 1]);
+
+        Assert.Equal(2, MetadataCache<MarkedName>.GetSetters(reader, MappingMode.Projection).Length);
+    }
+
+    [Fact]
+    public void ASignatureForAMissingName_DoesNotCollideWithAPlaceholderNamedColumn()
+    {
+        MetadataCache<MarkedId>.GetSetters(new MutableStubReader([Marker], [1]), MappingMode.Projection);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            MetadataCache<MarkedId>.GetSetters(new MutableStubReader([null], [1]), MappingMode.Projection));
+
+        Assert.Equal("Column 0 has no name", ex.Message);
+    }
+
+    [Fact]
+    public void APairMapperEntryForAMissingName_DoesNotRememberAPlaceholderAsAName()
+    {
+        MultiEntityMapper<MarkedName, MemoPairRight>.Get(new MutableStubReader(["", "Id"], [1, 2]));
+        var reader = new MutableStubReader([null, "Id"], [1, 2]);
+        MultiEntityMapper<MarkedName, MemoPairRight> first = MultiEntityMapper<MarkedName, MemoPairRight>.Get(reader);
+
+        reader.Reshape([Marker, "Id"], ["named", 1]);
+
+        Assert.NotSame(first, MultiEntityMapper<MarkedName, MemoPairRight>.Get(reader));
+    }
 }

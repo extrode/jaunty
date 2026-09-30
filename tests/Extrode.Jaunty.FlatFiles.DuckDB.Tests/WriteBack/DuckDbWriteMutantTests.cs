@@ -228,4 +228,30 @@ public sealed class DuckDbWriteMutantTests : IDisposable
 
         Assert.Empty(Directory.GetFiles(_dataDir, ".*.tmp.*"));
     }
+
+    private void AssertTheTempFileIsBesideTheSource()
+    {
+        string expected = _dataDir.Replace(Path.DirectorySeparatorChar, '/') + "/.inventory.tmp";
+        Assert.Contains(_logged, sql => sql.Replace(Path.DirectorySeparatorChar, '/').Contains(expected, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AnInPlaceSave_WritesItsTempFileBesideTheSource()
+    {
+        using DuckDb db = NewDb();
+
+        db.Save<InventoryItem>(WriteBackMode.Overwrite);
+
+        AssertTheTempFileIsBesideTheSource();
+    }
+
+    [Fact]
+    public async Task AnInPlaceSaveAsync_WritesItsTempFileBesideTheSource()
+    {
+        using DuckDb db = NewDb();
+
+        await db.SaveAsync<InventoryItem>(WriteBackMode.Overwrite);
+
+        AssertTheTempFileIsBesideTheSource();
+    }
 }

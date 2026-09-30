@@ -122,4 +122,44 @@ public sealed class TablePromoterObservationTests : IDisposable
         Assert.True(source.IsPromotedToTable);
         Assert.Equal(0, context.Posts);
     }
+
+    [Fact]
+    public void AFailedPromotion_LeavesTheConnectionUsableBeforeAnyCallerUnwinds()
+    {
+        using (DuckDBCommand setup = _connection.CreateCommand())
+        {
+            setup.CommandText = "CREATE TABLE src(s VARCHAR); INSERT INTO src VALUES ('x'); CREATE VIEW bad_view AS SELECT CAST(s AS INTEGER) a FROM src";
+            setup.ExecuteNonQuery();
+        }
+
+        string seen = "";
+        bool Probe()
+        {
+            try
+            {
+                using DuckDBCommand cmd = _connection.CreateCommand();
+                cmd.CommandText = "SELECT 1";
+                seen = cmd.ExecuteScalar()?.ToString() ?? "";
+            }
+            catch (Exception ex)
+            {
+                seen = ex.Message;
+            }
+
+            return false;
+        }
+
+        try
+        {
+            TablePromoter.EnsurePromotedToTable(_connection, new ViewSource("bad_view"), _dialect);
+        }
+        catch (Exception) when (Probe())
+        {
+        }
+        catch (DuckDBException)
+        {
+        }
+
+        Assert.Equal("1", seen);
+    }
 }

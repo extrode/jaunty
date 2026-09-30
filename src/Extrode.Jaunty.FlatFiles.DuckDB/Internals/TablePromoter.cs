@@ -108,7 +108,6 @@ internal static class TablePromoter
         }
         catch
         {
-            // Stryker disable once Statement : DuckDBTransaction.Dispose rolls back an uncommitted transaction, so the explicit Rollback changes nothing
             try { transaction.Rollback(); } catch { }
             throw;
         }

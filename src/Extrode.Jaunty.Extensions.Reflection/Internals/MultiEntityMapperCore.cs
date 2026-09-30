@@ -61,8 +61,7 @@ internal static class MultiEntityMapperCore
             }
 
             int replacement = FindNextUnclaimedOrdinal<T>(reader, setter.Context, alreadyClaimed, claimedByThisType);
-            // Stryker disable once Equality : the replacement is the leftmost unclaimed match and BuildSetters already bound the setter to the leftmost match, so a replacement is always greater than the original ordinal and never 0
-            if (replacement >= 0)
+            if (replacement != -1)
             {
                 result.Add(new PropertySetter<T>(setter.Context, replacement));
                 claimedByThisType.Add(replacement);
