@@ -72,11 +72,13 @@ public class ImportObservabilityTests : IDisposable
     private sealed class RecordingInterceptor : ICommandInterceptor
     {
         public List<string> Executing { get; } = [];
+        public List<CommandContext> Contexts { get; } = [];
         public int Executed { get; private set; }
 
         public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken cancellationToken)
         {
             Executing.Add(context.CommandText);
+            Contexts.Add(context);
             return default;
         }
 
@@ -175,5 +177,40 @@ public class ImportObservabilityTests : IDisposable
         await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(createTableIfMissing: true));
 
         Assert.Contains(_interceptor.Executing, sql => sql.Contains("CREATE TABLE", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task TheLoggerSeesEveryStatementOfAnImport_InOrder()
+    {
+        using SqliteConnection sqlite = CreateSqliteConnection();
+
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(createTableIfMissing: true));
+
+        Assert.Equal(
+            [
+                "CREATE TABLE IF NOT EXISTS \"inventory\" (\"ItemId\" INTEGER PRIMARY KEY NOT NULL, \"ItemName\" TEXT NOT NULL, \"Category\" TEXT NOT NULL, \"StockQuantity\" INTEGER NOT NULL, \"UnitPrice\" REAL NOT NULL, \"InStock\" INTEGER NOT NULL)",
+                "SELECT * FROM \"inventory\" WHERE 0=1",
+                "SELECT * FROM \"inventory\"",
+                "INSERT INTO \"inventory\" (\"ItemId\", \"ItemName\", \"Category\", \"StockQuantity\", \"UnitPrice\", \"InStock\") VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+            ],
+            _logged);
+    }
+
+    [Fact]
+    public async Task TheInsertIsDescribedAsAnImportOfTheEntityWithAnUnknownRowCount()
+    {
+        using SqliteConnection sqlite = CreateSqliteConnection();
+        CreateInventoryTable(sqlite);
+
+        await _db.ImportIntoAsync<InventoryItem>(sqlite);
+
+        CommandContext insert = Assert.Single(
+            _interceptor.Contexts, c => c.CommandText.Contains("INSERT", StringComparison.OrdinalIgnoreCase));
+        object description = insert.Parameters!;
+        Type type = description.GetType();
+
+        Assert.Equal("ImportInto", type.GetProperty("Operation")!.GetValue(description));
+        Assert.Equal("InventoryItem", type.GetProperty("EntityType")!.GetValue(description));
+        Assert.Null(type.GetProperty("RowCount")!.GetValue(description));
     }
 }
