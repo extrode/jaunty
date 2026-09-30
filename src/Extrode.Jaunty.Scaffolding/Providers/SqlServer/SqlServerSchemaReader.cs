@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 using Extrode.Jaunty.Scaffolding.Abstractions;
 using Extrode.Jaunty.Scaffolding.Internals;
@@ -162,14 +163,17 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         // Stryker disable once String : the primary provider assembly always loads in the test project, so the fallback type name (System.Data.SqlClient) is never evaluated
         type ??= Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
 
-        if (type != null)
-        {
-            return ReflectedConnectionFactory.Create(type, connectionString);
-        }
+        return FromProviderType(type, connectionString);
+    }
 
-        // Stryker disable once String : the message only surfaces when no provider assembly is loadable, which the test project's references rule out
-        throw new InvalidOperationException(
-            "Could not find SQL Server provider. Please install Microsoft.Data.SqlClient or System.Data.SqlClient.");
+    internal static DbConnection FromProviderType(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? type,
+        string connectionString)
+    {
+        if (type != null)
+            return ReflectedConnectionFactory.Create(type, connectionString);
+
+        throw new InvalidOperationException("Could not find SQL Server provider. Please install Microsoft.Data.SqlClient or System.Data.SqlClient.");
     }
 
     private static async Task OpenConnectionAsync(DbConnection connection, CancellationToken cancellationToken)
