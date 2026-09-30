@@ -74,7 +74,7 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
         {
             // Both sides closed over null: C# says null == null is true, but SQL's NULL = NULL is
             // UNKNOWN and would match no rows. Fold it to the constant C# would have produced.
-            if (leftColumn is null && rightColumn is null && IsNullValue(node.Left) && IsNullValue(node.Right))
+            if (IsNullValue(node.Left) && IsNullValue(node.Right))
             {
                 _sql.Append(node.NodeType == ExpressionType.Equal ? "1 = 1" : "1 = 0");
                 _sql.Append(')');

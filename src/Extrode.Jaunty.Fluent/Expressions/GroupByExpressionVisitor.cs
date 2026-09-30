@@ -132,21 +132,9 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
     private (string Sql, string Alias) TranslateExpression(Expression expr, string defaultAlias)
     {
-        // Recursively unwrap Convert, Quote, and Lambda
-        while (true)
-        {
-            if (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
-            {
-                expr = unary.Operand;
-                continue;
-            }
-            if (expr is LambdaExpression lambda)
-            {
-                expr = lambda.Body;
-                continue;
-            }
-            break;
-        }
+        // Recursively unwrap Convert and Quote
+        while (expr is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.Quote } unary)
+            expr = unary.Operand;
 
         // g.Key
         if (IsKeyAccess(expr))
@@ -295,7 +283,7 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
     private bool IsGroupingParameter(Expression? expr)
     {
-        while (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        while (expr is UnaryExpression { NodeType: ExpressionType.Convert } unary)
         {
             expr = unary.Operand;
         }
