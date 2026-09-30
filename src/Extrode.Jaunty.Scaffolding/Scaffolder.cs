@@ -39,13 +39,7 @@ public sealed class Scaffolder
             (ISchemaReader? schemaReader, ITypeMapper? typeMapper) = GetProviderComponents(provider);
 
             // Read schema
-            var readerOptions = new SchemaReaderOptions
-            {
-                IncludeTables = options.IncludeTables.Count > 0 ? options.IncludeTables : null,
-                ExcludeTables = options.ExcludeTables.Count > 0 ? options.ExcludeTables : null,
-                IncludeSchemas = options.IncludeSchemas.Count > 0 ? options.IncludeSchemas : null,
-                IncludeForeignKeys = options.IncludeForeignKeys
-            };
+            SchemaReaderOptions readerOptions = ToReaderOptions(options);
 
             DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
                 options.ConnectionString,
@@ -231,6 +225,17 @@ public sealed class Scaffolder
             .ToList();
     }
 
+    internal static SchemaReaderOptions ToReaderOptions(ScaffoldOptions options)
+    {
+        return new SchemaReaderOptions
+        {
+            IncludeTables = options.IncludeTables.Count > 0 ? options.IncludeTables : null,
+            ExcludeTables = options.ExcludeTables.Count > 0 ? options.ExcludeTables : null,
+            IncludeSchemas = options.IncludeSchemas.Count > 0 ? options.IncludeSchemas : null,
+            IncludeForeignKeys = options.IncludeForeignKeys
+        };
+    }
+
     private static void ValidateOptions(ScaffoldOptions options)
     {
         // AUD-R32-007 (re-found from round 27): a null options dereferenced inside ScaffoldAsync's
@@ -352,7 +357,7 @@ public sealed class Scaffolder
         }
     }
 
-    private static bool TryGetValue(Dictionary<string, string> keys, out string value, params string[] candidates)
+    internal static bool TryGetValue(Dictionary<string, string> keys, out string value, params string[] candidates)
     {
         foreach (var candidate in candidates)
         {
