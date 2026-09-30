@@ -126,6 +126,7 @@ namespace Consumer
             Api.ExecuteObjectSeq("a", new { P = 1 });
             Api.ExecuteStringSeq("a", "abc");
             db?.QueryInstance("a", new { Q = 1 });
+            ((Api.Set))(new { Paren = 1 });
             Api.Values(new { Z = 1, Y = 2 });
             Api.Values(new { Y = 2, Z = 1 });
             Api.Values(new { Z = 1, Y = 2 });
