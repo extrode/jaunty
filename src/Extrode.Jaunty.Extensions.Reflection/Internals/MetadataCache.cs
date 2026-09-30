@@ -527,6 +527,7 @@ internal static class MetadataCache<T>
     /// <summary>The default path: Convert.ChangeType via a compiled expression tree.</summary>
     private static Action<T, IDataRecord, int> CreateConvertingSetter(PropertyInfo property, Type propertyType)
     {
+        // Stryker disable once String : the parameter name exists only inside the expression tree, the compiled delegate does not expose it
         ParameterExpression target = Expression.Parameter(typeof(T), "target");
         ParameterExpression record = Expression.Parameter(typeof(IDataRecord), "record");
         ParameterExpression index = Expression.Parameter(typeof(int), "index");
@@ -547,6 +548,7 @@ internal static class MetadataCache<T>
 
     private static Func<T, object?> CreateGetter(PropertyInfo property)
     {
+        // Stryker disable once String : the parameter name exists only inside the expression tree, the compiled delegate does not expose it
         ParameterExpression target = Expression.Parameter(typeof(T), "target");
         MemberExpression access = Expression.Property(target, property);
         UnaryExpression box = Expression.Convert(access, typeof(object));
