@@ -100,6 +100,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                 !options.IncludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
 
+            // Stryker disable once Equality : an empty exclude list contains nothing, so Count >= 0 rejects exactly the rows Count > 0 does
             if (options.ExcludeTables?.Count > 0 &&
                 options.ExcludeTables.Contains(tableName, StringComparer.OrdinalIgnoreCase))
                 continue;
@@ -181,6 +182,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                 if (hidden == 1) continue;
 
                 var columnName = reader.GetString(1);
+                // Stryker disable once Conditional,String : PRAGMA table_xinfo reports an untyped column as '' and never NULL, so the "TEXT" arm is unreachable
                 var dataType = reader.IsDBNull(2) ? "TEXT" : reader.GetString(2);
                 var notNull = reader.GetInt32(3) != 0;
                 var defaultValue = reader.IsDBNull(4) ? null : reader.GetString(4);
@@ -273,6 +275,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
     internal static bool IsWithoutRowId(string createSql)
     {
         var depth = 0;
+        // Stryker disable once Boolean : a ')' that returns depth to 0 implies an earlier '(' already set sawBody, so its starting value is unobservable
         var sawBody = false;
         var i = 0;
 
@@ -294,6 +297,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                         continue;
                     }
 
+                    // Stryker disable once Equality : a doubled quote read as close-then-reopen skips exactly the same text, so treating it as a doubled quote is unobservable
                     if (i + 1 < createSql.Length && createSql[i + 1] == quote)
                     {
                         i += 2;
@@ -309,9 +313,11 @@ public sealed class SQLiteSchemaReader : ISchemaReader
 
             if (ch == '[')
             {
+                // Stryker disable once Statement : the loop below steps past a '[' because it is not ']'
                 i++;
                 while (i < createSql.Length && createSql[i] != ']')
                     i++;
+                // Stryker disable once Equality,Statement,Unary : the closing ']' is not a token the loop acts on, so stepping past it or re-reading it ends in the same state
                 if (i < createSql.Length)
                     i++;
                 continue;
@@ -321,6 +327,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
             {
                 while (i < createSql.Length && createSql[i] != '\n')
                     i++;
+                // Stryker disable once Statement : falling through steps past the newline, which is not a token
                 continue;
             }
 
@@ -374,10 +381,12 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         {
             char ch = sql[i];
 
+            // Stryker disable once Arithmetic : testing the previous dash instead of the next starts the same comment skip one dash later
             if (ch == '-' && i + 1 < sql.Length && sql[i + 1] == '-')
             {
                 while (i < sql.Length && sql[i] != '\n')
                     i++;
+                // Stryker disable once Statement : falling through steps past the newline, which is not a token
                 continue;
             }
 
@@ -504,6 +513,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
 
             if (referencedColumn is null)
             {
+                // Stryker disable once Assignment,NullCoalescing : recreating the cache for every row changes how many PRAGMAs run, never the result
                 parentKeys ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
                 if (!parentKeys.TryGetValue(referencedTable, out List<string>? keyColumns))

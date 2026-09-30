@@ -41,6 +41,7 @@ public sealed class Scaffolder
             // Read schema
             SchemaReaderOptions readerOptions = ToReaderOptions(options);
 
+            // Stryker disable once Boolean : the only reader reachable without a live server, SQLite's, completes synchronously, so ConfigureAwait cannot change where this resumes
             DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
                 options.ConnectionString,
                 readerOptions,
@@ -215,6 +216,7 @@ public sealed class Scaffolder
 
         (ISchemaReader? schemaReader, ITypeMapper _) = GetProviderComponents(resolvedProvider);
 
+        // Stryker disable once Boolean : the only reader reachable without a live server, SQLite's, completes synchronously, so ConfigureAwait cannot change where this resumes
         DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
             connectionString,
             options ?? new SchemaReaderOptions(),
@@ -347,10 +349,12 @@ public sealed class Scaffolder
             var keys = new Dictionary<string, string>(builder.Count, StringComparer.OrdinalIgnoreCase);
 
             foreach (string key in builder.Keys.Cast<string>())
+                // Stryker disable once String : DbConnectionStringBuilder never yields a null value for a key it holds
                 keys[key.Trim()] = builder[key]?.ToString() ?? string.Empty;
 
             return keys;
         }
+        // Stryker disable once Block : an empty handler yields the same null result
         catch (ArgumentException)
         {
             return null;

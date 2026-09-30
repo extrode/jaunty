@@ -16,6 +16,7 @@ public sealed class SQLiteTypeMapper : ITypeMapper
 
         // Extract base type (remove size specifications)
         var parenIndex = dataType.IndexOf('(');
+        // Stryker disable once Equality : a type that starts with '(' matches no arm before or after stripping, so index 0 is unobservable
         if (parenIndex > 0)
             dataType = dataType[..parenIndex].Trim();
 
