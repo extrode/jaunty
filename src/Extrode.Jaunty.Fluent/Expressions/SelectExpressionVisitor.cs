@@ -369,7 +369,6 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             case "Count":
                 return _dialect.GenerateWindowAggregate("COUNT", null);
             default:
-                // Stryker disable once String : unreachable - every Sql method returning a window builder is listed above, and a hand-built call cannot root a chain in any other method
                 throw new NotSupportedException($"Window function base '{methodCall.Method.Name}' is not supported.");
         }
     }
