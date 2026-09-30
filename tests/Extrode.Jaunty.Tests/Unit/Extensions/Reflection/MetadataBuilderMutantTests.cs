@@ -112,13 +112,15 @@ public class MetadataBuilderMutantTests
         Assert.False(IsMoreDerived(Prop(typeof(UnrelatedShape), "A"), baseA));
     }
 
-    private static Type EmitLookAlike(ModuleBuilder module, string fullName, params (string Name, Type Type)[] properties)
+    private static Type EmitLookAlike(ModuleBuilder module, string fullName, bool positional, params (string Name, Type Type)[] properties)
     {
         TypeBuilder builder = module.DefineType(fullName, TypeAttributes.Public | TypeAttributes.Class, typeof(Attribute));
         builder.DefineDefaultConstructor(MethodAttributes.Public);
+        FieldBuilder? first = null;
         foreach ((string name, Type type) in properties)
         {
             FieldBuilder field = builder.DefineField("_" + name, type, FieldAttributes.Private);
+            first ??= field;
             PropertyBuilder property = builder.DefineProperty(name, PropertyAttributes.None, type, null);
             MethodBuilder getter = builder.DefineMethod("get_" + name, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, type, Type.EmptyTypes);
             ILGenerator get = getter.GetILGenerator();
@@ -134,27 +136,43 @@ public class MetadataBuilderMutantTests
             property.SetGetMethod(getter);
             property.SetSetMethod(setter);
         }
+        if (positional)
+        {
+            ConstructorBuilder ctor = builder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [first!.FieldType]);
+            ILGenerator il = ctor.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, typeof(Attribute).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes)!);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Stfld, first);
+            il.Emit(OpCodes.Ret);
+        }
         return builder.CreateType();
     }
 
-    private static CustomAttributeBuilder Attribute(Type attribute, params (string Name, object Value)[] named)
+    private static CustomAttributeBuilder Attribute(Type attribute, bool positional, object? positionalValue, params (string Name, object Value)[] named)
     {
         PropertyInfo[] props = named.Select(n => attribute.GetProperty(n.Name)!).ToArray();
-        return new CustomAttributeBuilder(attribute.GetConstructor(Type.EmptyTypes)!, [], props, named.Select(n => n.Value).ToArray());
+        ConstructorInfo ctor = positional
+            ? attribute.GetConstructors().Single(c => c.GetParameters().Length == 1)
+            : attribute.GetConstructor(Type.EmptyTypes)!;
+        return new CustomAttributeBuilder(ctor, positional ? [positionalValue!] : [], props, named.Select(n => n.Value).ToArray());
     }
 
-    private static EntityMetadata BuildLookAlikeEntity()
+    private static EntityMetadata BuildLookAlikeEntity(bool positional)
     {
         var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("LookAlikes_" + Guid.NewGuid().ToString("N")), AssemblyBuilderAccess.Run);
         ModuleBuilder module = assembly.DefineDynamicModule("main");
 
-        Type table = EmitLookAlike(module, "System.ComponentModel.DataAnnotations.Schema.TableAttribute", ("Name", typeof(string)), ("Schema", typeof(string)));
-        Type column = EmitLookAlike(module, "System.ComponentModel.DataAnnotations.Schema.ColumnAttribute", ("Name", typeof(string)));
-        Type generated = EmitLookAlike(module, "System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute", ("DatabaseGeneratedOption", typeof(int)));
+        Type table = EmitLookAlike(module, "System.ComponentModel.DataAnnotations.Schema.TableAttribute", positional, ("Name", typeof(string)), ("Schema", typeof(string)));
+        Type column = EmitLookAlike(module, "System.ComponentModel.DataAnnotations.Schema.ColumnAttribute", positional, ("Name", typeof(string)));
+        Type generated = EmitLookAlike(module, "System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute", positional, ("DatabaseGeneratedOption", typeof(int)));
 
         TypeBuilder entity = module.DefineType("LookAlikeEntity", TypeAttributes.Public | TypeAttributes.Class);
         entity.DefineDefaultConstructor(MethodAttributes.Public);
-        entity.SetCustomAttribute(Attribute(table, ("Name", "named_table"), ("Schema", "named_schema")));
+        entity.SetCustomAttribute(positional
+            ? Attribute(table, true, "named_table", ("Schema", "named_schema"))
+            : Attribute(table, false, null, ("Name", "named_table"), ("Schema", "named_schema")));
 
         void AddProperty(string name, Type type, CustomAttributeBuilder? attribute)
         {
@@ -176,18 +194,24 @@ public class MetadataBuilderMutantTests
             if (attribute is not null) property.SetCustomAttribute(attribute);
         }
 
-        AddProperty("Id", typeof(int), Attribute(generated, ("DatabaseGeneratedOption", 1)));
-        AddProperty("Label", typeof(string), Attribute(column, ("Name", "named_label")));
-        AddProperty("Stamp", typeof(int), Attribute(generated, ("DatabaseGeneratedOption", 2)));
+        CustomAttributeBuilder Generated(int option) => positional
+            ? Attribute(generated, true, option)
+            : Attribute(generated, false, null, ("DatabaseGeneratedOption", option));
+
+        AddProperty("Id", typeof(int), Generated(1));
+        AddProperty("Label", typeof(string), positional ? Attribute(column, true, "named_label") : Attribute(column, false, null, ("Name", "named_label")));
+        AddProperty("Stamp", typeof(int), Generated(2));
 
         Type built = entity.CreateType();
         return (EntityMetadata)typeof(MetadataBuilder).GetMethod("Build")!.MakeGenericMethod(built).Invoke(null, null)!;
     }
 
-    [Fact]
-    public void LookAlikeAttributesWithNamedArguments_AreReadByName()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LookAlikeAttributes_AreReadByConstructorOrNamedArgument(bool positional)
     {
-        EntityMetadata metadata = BuildLookAlikeEntity();
+        EntityMetadata metadata = BuildLookAlikeEntity(positional);
 
         Assert.Equal("named_table", metadata.TableName);
         Assert.Equal("named_schema", metadata.SchemaName);
