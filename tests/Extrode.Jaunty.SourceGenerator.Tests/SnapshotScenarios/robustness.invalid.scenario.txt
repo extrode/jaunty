@@ -1,0 +1,57 @@
+using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Interfaces;
+
+namespace Snapshots.Robustness {
+
+public enum Level { Low, High }
+
+[Table]
+public partial class NoTableName : IMapped<NoTableName>
+{
+    [Key] public int Id { get; set; }
+}
+
+[Table("robust")]
+public partial class BrokenAttributes : IMapped<BrokenAttributes>
+{
+    [Key] public int Id { get; set; }
+    [DatabaseGenerated] public int Generated { get; set; }
+    [EnumStorage] public Level Level { get; set; }
+    [Column] public string? Named { get; set; }
+}
+
+
+[Table("internal_ctor_entities")]
+public partial class InternalCtorEntity
+{
+    internal InternalCtorEntity() { }
+    [Key] public int Id { get; set; }
+}
+
+
+[Table("protected_internal_ctor_entities")]
+public partial class ProtectedInternalCtorEntity
+{
+    protected internal ProtectedInternalCtorEntity() { }
+    [Key] public int Id { get; set; }
+}
+
+public class Caller
+{
+    public void Call(Extrode.Jaunty.Stubs.Api db)
+    {
+        UndefinedType local = default;
+        Extrode.Jaunty.Stubs.Api.Values(local);
+        Extrode.Jaunty.Stubs.Api.Values(new UndefinedType());
+    }
+}
+
+}
+
+namespace Extrode.Jaunty.Stubs
+{
+    public class Api
+    {
+        public static void Values(object values) { }
+    }
+}

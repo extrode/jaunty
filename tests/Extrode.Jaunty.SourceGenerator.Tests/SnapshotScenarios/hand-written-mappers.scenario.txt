@@ -1,0 +1,114 @@
+using System;
+using System.Data;
+using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Interfaces;
+
+namespace Snapshots.HandWritten {
+
+public class MappedOnly : IMapped<MappedOnly>
+{
+    public static MappedOnly ReadEntity(IDataReader reader) => new MappedOnly();
+}
+
+public class BindInsertOnly { public static void BindInsert(IDbCommand command, BindInsertOnly entity) { } }
+public class BindUpdateOnly { public static void BindUpdate(IDbCommand command, BindUpdateOnly entity) { } }
+public class BindDeleteOnly { public static void BindDelete(IDbCommand command, BindDeleteOnly entity) { } }
+
+public class BindInsertAndDelete
+{
+    public static void BindInsert(IDbCommand command, BindInsertAndDelete entity) { }
+    public static void BindDelete(IDbCommand command, BindInsertAndDelete entity) { }
+}
+
+public class AllBinders
+{
+    public static void BindInsert(IDbCommand command, AllBinders entity) { }
+    public static void BindUpdate(IDbCommand command, AllBinders entity) { }
+    public static void BindDelete(IDbCommand command, AllBinders entity) { }
+}
+
+public class MappedAndInsert : IMapped<MappedAndInsert>
+{
+    public static MappedAndInsert ReadEntity(IDataReader reader) => new MappedAndInsert();
+    public static void BindInsert(IDbCommand command, MappedAndInsert entity) { }
+}
+
+public class MappedAndAllBinders : IMapped<MappedAndAllBinders>
+{
+    public static MappedAndAllBinders ReadEntity(IDataReader reader) => new MappedAndAllBinders();
+    public static void BindInsert(IDbCommand command, MappedAndAllBinders entity) { }
+    public static void BindUpdate(IDbCommand command, MappedAndAllBinders entity) { }
+    public static void BindDelete(IDbCommand command, MappedAndAllBinders entity) { }
+}
+
+public class WrongShapes
+{
+    public void BindInsert(IDbCommand command, WrongShapes entity) { }
+    internal static void BindUpdate(IDbCommand command, WrongShapes entity) { }
+    public static int BindDelete(IDbCommand command, WrongShapes entity) => 0;
+}
+
+public class WrongParameters
+{
+    public static void BindInsert(IDbCommand command, object entity) { }
+    public static void BindUpdate(IDbCommand command) { }
+    public static void BindDelete(IDataReader reader, WrongParameters entity) { }
+}
+
+public class WrongArity
+{
+    public static void BindInsert(IDbCommand command, WrongArity entity, int extra) { }
+}
+
+public class OverloadedBinder
+{
+    public static void BindInsert(IDbCommand command, int other) { }
+    public static void BindInsert(IDbCommand command, OverloadedBinder entity) { }
+    public static void BindUpdate(IDbCommand command, string other) { }
+    public static void BindUpdate(IDbCommand command, OverloadedBinder entity) { }
+}
+
+public class SelfRooted : IMapped<SelfRooted>, IGeneratedAccessors<SelfRooted>
+{
+    public static SelfRooted ReadEntity(IDataReader reader) => new SelfRooted();
+    Func<IDataReader, SelfRooted> IGeneratedAccessors<SelfRooted>.RowMapper => r => new SelfRooted();
+    Func<IDataReader, Func<IDataReader, SelfRooted>> IGeneratedAccessors<SelfRooted>.RowMapperFactory => r => rr => new SelfRooted();
+    Action<IDbCommand, SelfRooted> IGeneratedAccessors<SelfRooted>.InsertBinder => (c, e) => { };
+    Action<IDbCommand, SelfRooted> IGeneratedAccessors<SelfRooted>.UpdateBinder => (c, e) => { };
+    Action<IDbCommand, SelfRooted> IGeneratedAccessors<SelfRooted>.DeleteBinder => (c, e) => { };
+}
+
+public class UnrelatedBase : Exception { }
+
+public class OwnBinder : IOwn
+{
+    public static void BindInsert(IDbCommand command, OwnBinder entity) { }
+}
+
+public interface IOwn { }
+
+public class ForeignInterfaces : Snapshots.Foreign.IMapped<ForeignInterfaces>, Snapshots.Foreign.IGeneratedAccessors<ForeignInterfaces>
+{
+}
+
+
+[Table("with_binders")]
+public partial class TableWithBinders : IMapped<TableWithBinders>
+{
+    [Key] public int Id { get; set; }
+}
+
+[Table("with_base")]
+public partial class TableWithBase : UnrelatedBase
+{
+    [Key] public int Id { get; set; }
+    public static void BindInsert(IDbCommand command, object entity) { }
+}
+
+}
+
+namespace Snapshots.Foreign
+{
+    public interface IMapped<T> { }
+    public interface IGeneratedAccessors<T> { }
+}

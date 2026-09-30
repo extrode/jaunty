@@ -55,10 +55,24 @@ public sealed class GeneratedSourceSnapshotTests
     [Fact]
     public void EveryFixtureAndScenario_CompilesWithoutErrors()
     {
-        foreach ((string name, string[] sources) in Groups())
+        foreach ((string name, string[] sources) in Groups().Where(g => !g.Name.EndsWith(".invalid", StringComparison.Ordinal)))
         {
-            (_, ImmutableArray<Diagnostic> errors) = Run(sources);
+            (_, ImmutableArray<Diagnostic> errors, _) = Run(sources);
             Assert.True(errors.IsEmpty, name + ": " + string.Join(Environment.NewLine, errors));
+        }
+    }
+
+    [Fact]
+    public void InvalidScenarios_DoNotCrashTheGenerator()
+    {
+        (string Name, string[] Sources)[] invalid = [.. Groups().Where(g => g.Name.EndsWith(".invalid", StringComparison.Ordinal))];
+
+        Assert.NotEmpty(invalid);
+
+        foreach ((string name, string[] sources) in invalid)
+        {
+            (_, _, string diagnostics) = Run(sources);
+            Assert.False(diagnostics.Contains("CS8785", StringComparison.Ordinal), name + ": " + diagnostics);
         }
     }
 
@@ -68,9 +82,11 @@ public sealed class GeneratedSourceSnapshotTests
 
         foreach ((string name, string[] sources) in Groups())
         {
-            (ImmutableArray<(string HintName, string Text)> generated, _) = Run(sources);
+            (ImmutableArray<(string HintName, string Text)> generated, _, string diagnostics) = Run(sources);
             foreach ((string hint, string text) in generated)
                 all[name + "." + hint] = text;
+            if (diagnostics.Length > 0)
+                all[name + ".diagnostics"] = diagnostics;
         }
 
         return all;
@@ -84,12 +100,12 @@ public sealed class GeneratedSourceSnapshotTests
             yield return (scenario.Substring(ScenarioPrefix.Length, scenario.Length - ScenarioPrefix.Length - ".scenario.txt".Length), [ReadResource(scenario), ImplicitUsings]);
     }
 
-    private static (ImmutableArray<(string HintName, string Text)> Generated, ImmutableArray<Diagnostic> Errors) Run(string[] sources)
+    private static (ImmutableArray<(string HintName, string Text)> Generated, ImmutableArray<Diagnostic> Errors, string Diagnostics) Run(string[] sources)
     {
         var compilation = CSharpCompilation.Create(
             "SnapshotProbe",
             sources.Select(s => CSharpSyntaxTree.ParseText(s, GeneratorHarness.ParseOptions)),
-            GeneratorHarness.ReferenceAssemblyPaths().Select(p => (MetadataReference)MetadataReference.CreateFromFile(p)),
+            ReferencePaths().Select(p => (MetadataReference)MetadataReference.CreateFromFile(p)),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -99,13 +115,23 @@ public sealed class GeneratedSourceSnapshotTests
             optionsProvider: null,
             driverOptions: new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None));
 
-        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation output, out _);
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation output, out ImmutableArray<Diagnostic> generatorDiagnostics);
 
         ImmutableArray<(string, string)> generated =
             [.. driver.GetRunResult().Results.SelectMany(r => r.GeneratedSources).Select(s => (s.HintName, s.SourceText.ToString()))];
 
-        return (generated, [.. output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error)]);
+        string diagnostics = string.Concat(generatorDiagnostics
+            .OrderBy(d => d.ToString(), StringComparer.Ordinal)
+            .Select(d => string.Join("|", d.Id, d.Severity, d.GetMessage(), d.Descriptor.Title, d.Descriptor.Category, d.Descriptor.IsEnabledByDefault, d.Descriptor.DefaultSeverity, d.Location.GetLineSpan()) + "\n"));
+
+        return (generated, [.. output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error)], diagnostics);
     }
+
+    private static IEnumerable<string> ReferencePaths()
+        => ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
+            .Concat(GeneratorHarness.ReferenceAssemblyPaths())
+            .GroupBy(p => Path.GetFileName(p), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.Last());
 
     private static IEnumerable<string> Resources(string prefix)
         => typeof(GeneratedSourceSnapshotTests).Assembly.GetManifestResourceNames()
