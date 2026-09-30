@@ -141,10 +141,7 @@ public static class SpecialTypeMappers
         if (targetType.IsAssignableFrom(valueType))
             return value;
 
-        // Handle nullable types
-        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-        return DbValueConverter.ChangeType(value, underlyingType);
+        return DbValueConverter.ChangeType(value, targetType);
     }
 
     private static object CreateExpandoMapper(IDataReader reader)
