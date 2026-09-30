@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 using Extrode.Jaunty.Scaffolding.Abstractions;
 using Extrode.Jaunty.Scaffolding.Internals;
@@ -121,10 +122,16 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
     internal static DbConnection CreateConnection(string connectionString)
     {
         var type = Type.GetType("Npgsql.NpgsqlConnection, Npgsql");
+        return FromProviderType(type, connectionString);
+    }
+
+    internal static DbConnection FromProviderType(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? type,
+        string connectionString)
+    {
         if (type != null)
             return ReflectedConnectionFactory.Create(type, connectionString);
 
-        // Stryker disable once String : the message only surfaces when no provider assembly is loadable, which the test project's references rule out
         throw new InvalidOperationException("Could not find PostgreSQL provider. Please install Npgsql.");
     }
 

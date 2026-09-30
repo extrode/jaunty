@@ -334,8 +334,12 @@ public sealed class Scaffolder
             return DatabaseProvider.PostgreSql;
 
         // SQL Server detection
-        if ((hasServer || hasDataSource) &&
-            (hasInitialCatalog || hasDatabase) &&
+        var hasServerName = hasServer || hasDataSource;
+        var hasCatalog = hasInitialCatalog || hasDatabase;
+        // Stryker disable once Logical : a string that satisfies only one of the two falls through the MySQL test below, which needs both a server and a database, to the same SqlServer default
+        var hasServerAndCatalog = hasServerName && hasCatalog;
+
+        if (hasServerAndCatalog &&
             (keys.ContainsKey("trusted_connection") || hasUserId || keys.ContainsKey("integrated security")))
             return DatabaseProvider.SqlServer;
 
