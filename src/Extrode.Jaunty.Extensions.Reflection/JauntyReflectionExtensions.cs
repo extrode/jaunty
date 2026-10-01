@@ -286,6 +286,16 @@ public static class JauntyReflectionExtensions
         return (MappingMode mode) => (IDataReader reader) =>
         {
             PropertySetter<T>[] setters = MetadataCache<T>.GetSetters(reader, mode);
+
+            // AUD-R38-016: the setters take T by value, so on a struct every one of them wrote to a
+            // copy and the row came back all-default with no error - the shape AUD-R34-015 already
+            // rejects for multi-entity mapping.
+            if (typeof(T).IsValueType && setters.Length > 0)
+                throw new NotSupportedException(
+                    $"Entity mapping requires a reference type, and '{typeof(T).Name}' is a value type. " +
+                    "A struct entity is populated through a copy, so every mapped value would be " +
+                    "discarded and the entity returned all-default. Declare the entity as a class.");
+
             var entity = new T();
 
             foreach (PropertySetter<T> setter in setters)
