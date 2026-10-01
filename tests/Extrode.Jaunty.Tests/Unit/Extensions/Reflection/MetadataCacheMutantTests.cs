@@ -66,11 +66,12 @@ public class MetadataCacheMutantTests : IDisposable
     {
         PropertyContext<BindsTo> first = ContextFor(nameof(BindsTo.FirstName));
         PropertyContext<BindsTo> last = ContextFor(nameof(BindsTo.LastName));
-        JauntyConfig.ColumnNameResolver = name => name == nameof(BindsTo.LastName) ? "surname" : "";
+        JauntyConfig.ColumnNameResolver = name => "x_" + name.ToLowerInvariant();
 
-        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("surname", last));
-        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("surname", first));
-        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("unmapped", last));
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("x_firstname", first));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("x_firstname", last));
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("x_lastname", last));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("unmapped", first));
     }
 
     public class StringStored
