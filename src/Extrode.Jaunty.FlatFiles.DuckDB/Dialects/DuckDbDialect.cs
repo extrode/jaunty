@@ -385,7 +385,10 @@ public sealed class DuckDbDialect : IFlatFileDialect, ISubstringToEndDialect
     /// <inheritdoc />
     public string GeneratePromoteToTableSql(IFileSource source)
     {
-        var tmpTable = QuoteIdentifier(source.TableName + "_tmp");
+        // AUD-R38-077: a fixed "_tmp" suffix collided with a registered source of that name (tables
+        // and views share one catalog namespace), so promotion failed and the source could never
+        // be mutated. The scratch name is now unique per promotion.
+        var tmpTable = QuoteIdentifier($"{source.TableName}_tmp_{Guid.NewGuid():N}");
         var table = QuoteIdentifier(source.TableName);
 
         var sb = new StringBuilder();
