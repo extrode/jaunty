@@ -37,6 +37,43 @@ public class MetadataCacheMutantTests : IDisposable
         public int Count { get; set; }
     }
 
+    public class BindsTo
+    {
+        [Column("first_name")]
+        public string? FirstName { get; set; }
+
+        public string? LastName { get; set; }
+    }
+
+    private static PropertyContext<BindsTo> ContextFor(string propertyName)
+        => Array.Find(MetadataCache<BindsTo>.Properties, p => p.Property.Name == propertyName);
+
+    [Fact]
+    public void ColumnBindsTo_MatchesTheOwningPropertyOnly()
+    {
+        PropertyContext<BindsTo> first = ContextFor(nameof(BindsTo.FirstName));
+        PropertyContext<BindsTo> last = ContextFor(nameof(BindsTo.LastName));
+
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("first_name", first));
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("LastName", last));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("first_name", last));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("LastName", first));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("surname", last));
+    }
+
+    [Fact]
+    public void ColumnBindsTo_FallsBackToTheConfiguredResolver()
+    {
+        PropertyContext<BindsTo> first = ContextFor(nameof(BindsTo.FirstName));
+        PropertyContext<BindsTo> last = ContextFor(nameof(BindsTo.LastName));
+        JauntyConfig.ColumnNameResolver = name => "x_" + name.ToLowerInvariant();
+
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("x_firstname", first));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("x_firstname", last));
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("x_lastname", last));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("unmapped", first));
+    }
+
     public class StringStored
     {
         [EnumStorage(EnumStorage.String)]
@@ -75,13 +112,11 @@ public class MetadataCacheMutantTests : IDisposable
     }
 
     [Fact]
-    public void ANonNullableProperty_ReceivesAHandlersResultUnconverted()
+    public void ANonNullableProperty_ConvertsAHandlersCompatibleResult()
     {
         TypeHandlerRegistry.Register<int>(new TextHandler());
 
-        var ex = Assert.Throws<InvalidOperationException>(() => Read<PlainCount>("Count", 1));
-
-        Assert.Contains("failed to parse value for property 'Count'", ex.Message);
+        Assert.Equal(5, Read<PlainCount>("Count", 1).Count);
     }
 
     [Fact]

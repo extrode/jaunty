@@ -1,7 +1,10 @@
+using System.Data;
+
 using DuckDB.NET.Data;
 
 using Extrode.Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 
+using Extrode.Jaunty.FlatFiles.FileSources;
 using Extrode.Jaunty.FlatFiles.Import;
 
 using Microsoft.Data.Sqlite;
@@ -111,6 +114,98 @@ public class ImporterPathLanguageTests : IDisposable
 
         Assert.Equal("filePath", ex.ParamName);
         Assert.Contains("ftp://", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AClosedTargetConnection_IsClosedAgainAfterTheImport()
+    {
+        using var target = new SqliteConnection($"Data Source={Path.Combine(_dataDir, "target.db")};Pooling=False");
+
+        long imported = await FlatFileImporter.ImportAsync<InventoryItem>(
+            Path.Combine(_dataDir, "inventory_a.csv"), target, new ImportOptions(createTableIfMissing: true));
+
+        Assert.Equal(2, imported);
+        Assert.Equal(ConnectionState.Closed, target.State);
+        target.Open();
+        Assert.Equal(2, CountRows(target));
+    }
+
+    [Fact]
+    public async Task AClosedTargetConnection_IsClosedAgainWhenTheImportFails()
+    {
+        using var target = new SqliteConnection($"Data Source={Path.Combine(_dataDir, "target.db")};Pooling=False");
+
+        await Assert.ThrowsAnyAsync<Exception>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(Path.Combine(_dataDir, "inventory_a.csv"), target));
+
+        Assert.Equal(ConnectionState.Closed, target.State);
+    }
+
+    [Fact]
+    public async Task AnOpenTargetConnection_IsLeftOpen()
+    {
+        using SqliteConnection target = OpenTarget();
+
+        await FlatFileImporter.ImportAsync<InventoryItem>(
+            Path.Combine(_dataDir, "inventory_a.csv"), target, new ImportOptions(createTableIfMissing: true));
+
+        Assert.Equal(ConnectionState.Open, target.State);
+    }
+
+    [Fact]
+    public async Task ACancelledToken_IsObservedBeforeSourceRegistration()
+    {
+        using SqliteConnection target = OpenTarget();
+        string path = Path.Combine(_dataDir, "garbage.parquet");
+        File.WriteAllText(path, "not a parquet file");
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(path, target, cancellationToken: cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(o => o.AddParquet<InventoryItem>(path), target, cancellationToken: cts.Token));
+    }
+
+    [Fact]
+    public async Task ConfiguredSources_StillGetTheUniquenessCheck()
+    {
+        using SqliteConnection target = OpenTarget();
+        string a = Path.Combine(_dataDir, "inventory_a.csv");
+        string b = Path.Combine(_dataDir, "inventory_b.csv");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(
+                o =>
+                {
+                    o.AddCsv<InventoryItem>(a);
+                    o.Sources.Add(new CsvFileSource("inventory", b, typeof(InventoryItem)));
+                },
+                target));
+    }
+
+    [Fact]
+    public async Task AGlobWithNoExtension_ThrowsArgumentExceptionNamingTheParameter()
+    {
+        using SqliteConnection target = OpenTarget();
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(Path.Combine(_dataDir, "*"), target));
+
+        Assert.Equal("filePath", ex.ParamName);
+    }
+
+    [Fact]
+    public async Task AnUnsupportedExtension_ThrowsArgumentExceptionNamingTheParameter()
+    {
+        using SqliteConnection target = OpenTarget();
+        string path = Path.Combine(_dataDir, "data.foo");
+        File.WriteAllText(path, "x");
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(path, target));
+
+        Assert.Equal("filePath", ex.ParamName);
     }
 
     [Fact]

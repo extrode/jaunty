@@ -56,7 +56,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column, 
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryAsync{T1, T2}(IDbConnection, string, object, CancellationToken)"/>
@@ -113,7 +113,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column, 
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -177,7 +177,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column, 
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
@@ -239,7 +239,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column, 
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -361,7 +361,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns no results, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirstOrDefaultAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
@@ -417,7 +417,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns no results, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -479,7 +479,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns no results, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirstAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
@@ -541,7 +541,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns no results, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -669,7 +669,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column, 
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirstAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
@@ -727,7 +727,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column, 
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -791,7 +791,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column, 
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirstOrDefaultAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
@@ -855,7 +855,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column, 
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -981,7 +981,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns zero or more than one result, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QuerySingleOrDefaultAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryFirstAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
@@ -1037,7 +1037,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns zero or more than one result, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -1100,7 +1100,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns zero or more than one result, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QuerySingleAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
@@ -1162,7 +1162,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns zero or more than one result, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -1294,7 +1294,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns more than one result, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QuerySingleAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryFirstOrDefaultAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
@@ -1352,7 +1352,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns more than one result, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -1417,7 +1417,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns more than one result, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QuerySingleOrDefaultAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
@@ -1481,7 +1481,7 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns more than one result, 
-    /// when a property has no matching column, or when a non-nullable property receives a NULL value.
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -1591,7 +1591,7 @@ public static partial class Jaunty
     /// </para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, object, CancellationToken)"/>
@@ -1700,7 +1700,7 @@ public static partial class Jaunty
     /// </para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>

@@ -51,7 +51,27 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     private static readonly MethodInfo? DisposeAsyncMethod = NpgsqlBinaryImporterType?.GetMethod("DisposeAsync");
 
     /// <inheritdoc/>
-    public bool IsSupported => NpgsqlConnectionType != null && NpgsqlBinaryImporterType != null;
+    /// <remarks>
+    /// AUD-R38-070: the two types alone are not enough. BulkInsert chooses the native path on this
+    /// answer and does not fall back afterwards, so an Npgsql build missing any member the sync
+    /// guard in <see cref="CopyToServer"/> names would throw on every call instead of using the
+    /// loop path. The async path falls back to the sync members, so they are the ones required.
+    /// </remarks>
+    public bool IsSupported =>
+        AreMembersResolved(NpgsqlConnectionType, NpgsqlBinaryImporterType, BeginBinaryImportMethod, StartRowMethod, WriteGenericMethod, CompleteMethod, WriteNullMethod);
+
+    /// <summary>
+    /// The predicate behind <see cref="IsSupported"/>, taking its inputs as parameters so the
+    /// unresolved cases can be tested.
+    /// </summary>
+    internal static bool AreMembersResolved(Type? connectionType, Type? importerType, MethodInfo? beginBinaryImport, MethodInfo? startRow, MethodInfo? writeGeneric, MethodInfo? complete, MethodInfo? writeNull)
+        => connectionType != null
+            && importerType != null
+            && beginBinaryImport != null
+            && startRow != null
+            && writeGeneric != null
+            && complete != null
+            && writeNull != null;
 
     /// <inheritdoc/>
     public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)

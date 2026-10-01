@@ -936,7 +936,13 @@ internal static class ParameterBinder
         if (type == typeof(string) || type == typeof(byte[]))
             return false;
 
-        return typeof(IEnumerable).IsAssignableFrom(type);
+        // AUD-R38-130: a property declared as object (or an interface an array implements, such as
+        // ICloneable) can hold a collection on one call and null or a scalar on another. Answering
+        // false let the null call cache a plain template, and every later call with an array hit
+        // that template and bound the array unexpanded.
+        return typeof(IEnumerable).IsAssignableFrom(type)
+            || type == typeof(object)
+            || (type.IsInterface && type.IsAssignableFrom(typeof(object[])));
     }
 
     // AUD-R26: was a byte-identical private copy of SqlParameterParser's. Forwarded rather than
@@ -1328,6 +1334,7 @@ internal static class ParameterBinder
 
         if (property is not null)
         {
+            // AOT-SAFE: reads an attribute off a PropertyInfo the reflection path already holds, and the generated path never gets here (it passes enumStorageOverride and a null property).
             EnumStorageAttribute? enumAttr = EnumStorageAttributeCache.GetOrAdd(property, static p => p.GetCustomAttribute<EnumStorageAttribute>());
             if (enumAttr is not null)
             {

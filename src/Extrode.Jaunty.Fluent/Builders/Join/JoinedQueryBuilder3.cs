@@ -27,6 +27,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
     // AUD-R35-179. The join this clause builder has already contributed to the shared root. A second
     // On(...) on the same instance redefines it rather than appending a duplicate.
     private JoinInfo? _addedJoin;
+    private List<string>? _boundParameters;
 
     public JoinClause3Builder(JoinedQueryBuilder<T1, T2> parent, JoinType joinType, string? alias)
     {
@@ -76,7 +77,11 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
 
         // Renumbered against the query-wide sequence: each visitor mints its value parameters
         // from a counter that restarts at 0, so by the third join "jp0" is usually already bound.
-        return CreateJoinedQuery3(_parent.RegisterExpressionParameters(condition, parameters), alias);
+        ReleaseBoundParameters();
+        int start = _parent.ParameterCount;
+        JoinedQuery3Builder<T1, T2, T3> joinedQuery = CreateJoinedQuery3(_parent.RegisterExpressionParameters(condition, parameters), alias);
+        _boundParameters = _parent.ParameterNamesFrom(start);
+        return joinedQuery;
     }
 
     /// <inheritdoc cref="JoinClauseBuilder{TFrom, TJoin}.On(string, string)"/>
@@ -99,12 +104,24 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
     {
         string qualified = JoinParameterName.Qualify(_parent.Dialect.ParameterPrefix, parameterName, nameof(parameterName));
 
-        if (_parent.HasParameter(qualified))
+        if (_parent.HasParameter(qualified) && _boundParameters?.Exists(n => string.Equals(n, qualified, StringComparison.OrdinalIgnoreCase)) != true)
             throw JoinParameterName.DuplicateError(qualified, nameof(parameterName));
 
         JoinedQuery3Builder<T1, T2, T3> joinedQuery = CreateJoinedQuery3(condition);
         _parent.AddParameter(qualified, value);
+        _boundParameters = [qualified];
         return joinedQuery;
+    }
+
+    /// <summary>
+    /// AUD-R38-086: a second <c>On</c> redefines this join (AUD-R35-179), so the parameters the
+    /// previous condition bound are dropped with it. Left in place, they made a parameterised
+    /// redefinition throw as a duplicate and kept orphaned values bound to every later command.
+    /// </summary>
+    private void ReleaseBoundParameters()
+    {
+        _parent.RemoveParameters(_boundParameters);
+        _boundParameters = null;
     }
 
     /// <summary>
@@ -129,6 +146,8 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
 
     private JoinedQuery3Builder<T1, T2, T3> CreateJoinedQuery3(string onCondition, string? alias)
     {
+        ReleaseBoundParameters();
+
         var joinInfo = new JoinInfo(
             _joinType,
             _metadata.TableName,
@@ -399,9 +418,9 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         EntityMetadata t2Metadata = FluentMetadataCache.GetMetadata<T2>();
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
 
-        string[] t1Columns = _parent.GetPrefixedColumns(t1Metadata, _parent.FromAlias);
-        string[] t2Columns = _parent.GetPrefixedColumns(t2Metadata, _parent.Joins[0].Alias);
-        string[] t3Columns = _parent.GetPrefixedColumns(t3Metadata, _parent.Joins[1].Alias);
+        string[] t1Columns = _parent.GetPrefixedColumns<T1>(_parent.FromAlias);
+        string[] t2Columns = _parent.GetPrefixedColumns<T2>(_parent.Joins[0].Alias);
+        string[] t3Columns = _parent.GetPrefixedColumns<T3>(_parent.Joins[1].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).ToArray();
 
         string sql = _parent.BuildSelectSql(allColumns);
@@ -549,9 +568,9 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         EntityMetadata t2Metadata = FluentMetadataCache.GetMetadata<T2>();
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
 
-        string[] t1Columns = _parent.GetPrefixedColumns(t1Metadata, _parent.FromAlias);
-        string[] t2Columns = _parent.GetPrefixedColumns(t2Metadata, _parent.Joins[0].Alias);
-        string[] t3Columns = _parent.GetPrefixedColumns(t3Metadata, _parent.Joins[1].Alias);
+        string[] t1Columns = _parent.GetPrefixedColumns<T1>(_parent.FromAlias);
+        string[] t2Columns = _parent.GetPrefixedColumns<T2>(_parent.Joins[0].Alias);
+        string[] t3Columns = _parent.GetPrefixedColumns<T3>(_parent.Joins[1].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).ToArray();
 
         string sql = _parent.BuildSelectSql(allColumns);
@@ -563,7 +582,12 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         {
             var results = new List<(T1, T2, T3)>();
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
             _parent.BindParameters(command);
             FluentCommandOptions.Apply(command, _parent.Connection, options);
@@ -576,7 +600,12 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
 
             try
             {
+#if NET8_0_OR_GREATER
+                DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                await using var readerDisposer = reader.ConfigureAwait(false);
+#else
                 using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {

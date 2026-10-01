@@ -132,8 +132,8 @@ public class ScaffoldCommandTests : IDisposable
         var generatedFile = Path.Combine(_outputDir, "Product.cs");
         Assert.True(File.Exists(generatedFile));
         var code = await File.ReadAllTextAsync(generatedFile);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"products\")]", code);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Key]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"products\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Key]", code);
         Assert.Contains("public partial class Product", code);
     }
 
@@ -318,7 +318,7 @@ public class ScaffoldCommandTests : IDisposable
 
         Assert.Equal(0, exitCode);
         var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
-        Assert.DoesNotContain("[Extrode.Jaunty.Attributes.Key]", code);
+        Assert.DoesNotContain("[global::Extrode.Jaunty.Attributes.Key]", code);
     }
 
     [Fact]
@@ -352,7 +352,7 @@ public class ScaffoldCommandTests : IDisposable
 
         Assert.Equal(0, exitCode);
         var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
-        Assert.Contains("Extrode.Jaunty.Attributes.DatabaseGenerated(Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)", code);
+        Assert.Contains("Extrode.Jaunty.Attributes.DatabaseGenerated(global::Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)", code);
     }
 
     [Fact]
@@ -480,6 +480,14 @@ public class ScaffoldCommandTests : IDisposable
         var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
         Assert.DoesNotContain("namespace My.Entities;", code);
         Assert.Contains("namespace My.Entities", code);
+    }
+
+    [Fact]
+    public void ForceOption_HelpText_DoesNotPromiseAPrompt()
+    {
+        Option force = new ScaffoldCommand().Options.Single(o => o.Name == "--force");
+
+        Assert.DoesNotContain("prompt", force.Description, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

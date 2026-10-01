@@ -50,18 +50,17 @@ public class AliasEscapingFallbackTests
     }
 
     [Fact]
-    public void TwoTableJoin_GetPrefixedColumnsWithAlias_NoAlias_UsesEscapedTableName()
+    public void TwoTableJoin_JoinedEntityColumns_NoAlias_UseEscapedTableName()
     {
-        // Covers JoinedQueryBuilder.GetPrefixedColumnsWithAlias directly (internal API,
-        // reached in practice by SelectBoth()/SelectBothAsync(), which require a live
-        // connection to execute).
+        // Covers the joined entity's half of JoinedQueryBuilder.GetPrefixedColumns directly
+        // (internal API, reached in practice by SelectBoth()/SelectBothAsync(), which require a
+        // live connection to execute).
         var joined = _connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId);
 
         var builder = Assert.IsType<JoinedQueryBuilder<Product, Category>>(joined);
-        EntityMetadata metadata = FluentMetadataCache.GetMetadata<Category>();
-        string[] columns = builder.GetPrefixedColumnsWithAlias(metadata, tableAlias: null, columnPrefix: "j_");
+        string[] columns = builder.GetPrefixedColumns<Category>(alias: null);
 
         Assert.Contains(columns, c => c.StartsWith("[categories]."));
         Assert.DoesNotContain(columns, c => c.StartsWith("categories."));

@@ -451,6 +451,41 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
         Assert.Contains("SELECT * FROM products WHERE category_id = 2", sql);
     }
 
+    [Theory]
+    [InlineData("SELECT * FROM products WHERE product_name LIKE '%@example.com'")]
+    [InlineData("SELECT * FROM products -- owner@example.com\nWHERE category_id = 2")]
+    [InlineData("SELECT * FROM products /* @name */ WHERE category_id = 2")]
+    [InlineData("SELECT * FROM products WHERE product_name = '@'")]
+    [InlineData("SELECT * FROM products WHERE tags @> '{a}'")]
+    [InlineData("SELECT * FROM products WHERE \"weird@col\" = 1")]
+    public void Union_CustomImplementationWithAnAtOutsideAPlaceholder_IsAccepted(string operand)
+    {
+        var other = new StubQueryTerminal<Product>(operand);
+
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(other)
+            .ToSql();
+
+        Assert.Contains("UNION", sql);
+    }
+
+    [Theory]
+    [InlineData("SELECT * FROM products WHERE product_name = '@x' AND category_id = @cat")]
+    [InlineData("SELECT * FROM products WHERE category_id = @_cat")]
+    [InlineData("SELECT * FROM products WHERE tags @> '{a}' AND category_id = @cat")]
+    [InlineData("SELECT * FROM products WHERE category_id = @1")]
+    public void Union_CustomImplementationWithAPlaceholderAfterALiteral_StillThrows(string operand)
+    {
+        var other = new StubQueryTerminal<Product>(operand);
+
+        Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(other)
+                .ToSql());
+    }
+
     // ==========================================
     // Operands/first query with pre-existing ORDER BY / Take / Skip (AUD-R21)
     // ==========================================

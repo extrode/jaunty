@@ -20,6 +20,106 @@ public class JoinClauseRedefinedOnTests : IClassFixture<FluentDatabaseFixture>
     private static int Count(string sql, string needle) =>
         sql.Split(needle, StringSplitOptions.None).Length - 1;
 
+    private static IDictionary<string, object?> Bound<T1, T2, T3>(IJoinedQuery3<T1, T2, T3> query)
+        where T1 : new() where T2 : new() where T3 : new()
+        => (IDictionary<string, object?>)((JoinedQuery3Builder<T1, T2, T3>)query)._parent.DescribeParameters();
+
+    private static IDictionary<string, object?> Bound<T1, T2, T3, T4>(IJoinedQuery4<T1, T2, T3, T4> query)
+        where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+        => (IDictionary<string, object?>)((JoinedQuery4Builder<T1, T2, T3, T4>)query)._parent._parent.DescribeParameters();
+
+    private IJoinClause<Product, Category, Supplier> ThirdClause() => _fixture.Connection.From<Product>()
+        .InnerJoin<Category>()
+        .On(p => p.CategoryId, c => c.CategoryId)
+        .InnerJoin<Supplier>();
+
+    private IJoinClause<Product, Category, Supplier, Order> FourthClause() => _fixture.Connection.From<Product>()
+        .InnerJoin<Category>()
+        .On(p => p.CategoryId, c => c.CategoryId)
+        .InnerJoin<Supplier>()
+        .On(p => p.SupplierId, s => s.SupplierId)
+        .InnerJoin<Product, Category, Supplier, Order>();
+
+    [Fact]
+    public void ThirdJoinClause_ParameterisedOnRedefined_RebindsTheSameName()
+    {
+        var clause = ThirdClause();
+
+        clause.On("suppliers.supplier_id = @sid", "sid", 1);
+        var query = clause.On("suppliers.supplier_id = @sid", "sid", 2);
+
+        Assert.Equal(2, Assert.Single(Bound(query)).Value);
+    }
+
+    [Fact]
+    public void ThirdJoinClause_PredicateOnRedefined_DropsTheFirstValues()
+    {
+        var clause = ThirdClause();
+        int first = 1, second = 2;
+
+        clause.On((p, c, s) => s.SupplierId == first);
+        var query = clause.On((p, c, s) => s.SupplierId == second);
+
+        Assert.Equal(second, Assert.Single(Bound(query)).Value);
+        Assert.Contains(Assert.Single(Bound(query)).Key, query.ToSql());
+    }
+
+    [Fact]
+    public void ThirdJoinClause_RedefinedWithoutParameters_DropsThePreviousOnes()
+    {
+        var clause = ThirdClause();
+
+        clause.On("suppliers.supplier_id = @sid", "sid", 1);
+        var query = clause.On("products.supplier_id", "suppliers.supplier_id");
+
+        Assert.Empty(Bound(query));
+    }
+
+    [Fact]
+    public void ThirdJoinClause_ANameBoundElsewhere_IsStillADuplicate()
+    {
+        var clause = ThirdClause();
+        clause.On("suppliers.supplier_id = @sid", "sid", 1);
+
+        var fourth = clause.On("suppliers.supplier_id = @sid", "sid", 1).InnerJoin<Product, Category, Supplier, Order>();
+
+        Assert.Throws<ArgumentException>(() => fourth.On("orders.employee_id = @sid", "sid", 3));
+    }
+
+    [Fact]
+    public void FourthJoinClause_ParameterisedOnRedefined_RebindsTheSameName()
+    {
+        var clause = FourthClause();
+
+        clause.On("orders.employee_id = @eid", "eid", 1);
+        var query = clause.On("orders.employee_id = @eid", "eid", 2);
+
+        Assert.Equal(2, Assert.Single(Bound(query)).Value);
+    }
+
+    [Fact]
+    public void FourthJoinClause_PredicateOnRedefined_DropsTheFirstValues()
+    {
+        var clause = FourthClause();
+        int first = 1, second = 2;
+
+        clause.On((p, c, s, o) => o.EmployeeId == first);
+        var query = clause.On((p, c, s, o) => o.EmployeeId == second);
+
+        Assert.Equal(second, Assert.Single(Bound(query)).Value);
+    }
+
+    [Fact]
+    public void FourthJoinClause_RedefinedWithoutParameters_DropsThePreviousOnes()
+    {
+        var clause = FourthClause();
+
+        clause.On("orders.employee_id = @eid", "eid", 1);
+        var query = clause.On("products.supplier_id", "orders.employee_id");
+
+        Assert.Empty(Bound(query));
+    }
+
     [Fact]
     public void ThirdJoinClause_OnCalledTwice_ProducesOneJoin()
     {

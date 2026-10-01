@@ -48,9 +48,9 @@ public class ScaffoldGeneratorCompositionTests
     private readonly EntityCodeGenerator _generator = new(new SQLiteTypeMapper());
 
     /// <summary>A SQLite-shaped table: name equal to the class name, no schema. The case that broke.</summary>
-    private static TableSchema SqliteShapedTable(string schema = "") => new()
+    private static TableSchema SqliteShapedTable(string schema = "", string name = "Customer") => new()
     {
-        TableName = "Customer",
+        TableName = name,
         SchemaName = schema,
         Columns =
         [
@@ -79,7 +79,7 @@ public class ScaffoldGeneratorCompositionTests
         // Redundant to a human reader; not redundant to the generator, which keys off it.
         var code = _generator.GenerateEntity(SqliteShapedTable(), DefaultOptions());
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"Customer\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"Customer\")]", code);
     }
 
     [Fact]
@@ -175,7 +175,29 @@ public class ScaffoldGeneratorCompositionTests
 
         (ImmutableArray<Diagnostic> diagnostics, int generatedFiles) = RunGeneratorAndCompile(code);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"Customer\", \"sales\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"Customer\", \"sales\")]", code);
+        Assert.Empty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.Equal(1, generatedFiles);
+    }
+
+    [Fact]
+    public void AClassNamedExtrode_StillCompilesWithTheGenerator()
+    {
+        var code = _generator.GenerateEntity(SqliteShapedTable(name: "Extrode"), DefaultOptions());
+
+        (ImmutableArray<Diagnostic> diagnostics, int generatedFiles) = RunGeneratorAndCompile(code);
+
+        Assert.Empty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.Equal(1, generatedFiles);
+    }
+
+    [Fact]
+    public void ANamespaceWithAnExtrodeSegment_StillCompilesWithTheGenerator()
+    {
+        var code = _generator.GenerateEntity(SqliteShapedTable(), new CodeGeneratorOptions { Namespace = "Acme.Extrode.Entities" });
+
+        (ImmutableArray<Diagnostic> diagnostics, int generatedFiles) = RunGeneratorAndCompile(code);
+
         Assert.Empty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
         Assert.Equal(1, generatedFiles);
     }

@@ -13,6 +13,48 @@ namespace Extrode.Jaunty.Tests.Unit.Configuration;
 public class SensitiveParameterSetTests
 {
     [Fact]
+    public void ANullAdd_IsIgnored_AndLaterNamesStillMask()
+    {
+        var configuration = new LoggingConfiguration();
+
+        Assert.False(configuration.SensitiveParameterNames.Add(null!));
+        configuration.WithSensitiveParameters("Ssn");
+
+        Assert.True(configuration.IsSensitiveParameter("EmployeeSsnValue"));
+        Assert.DoesNotContain(null, configuration.SensitiveParameterNames);
+    }
+
+    [Fact]
+    public void ANullInUnionWith_IsIgnored_AndTheRestIsAdded()
+    {
+        var configuration = new LoggingConfiguration();
+
+        configuration.SensitiveParameterNames.UnionWith(new string[] { null!, "Ssn" });
+
+        Assert.True(configuration.IsSensitiveParameter("EmployeeSsnValue"));
+        Assert.DoesNotContain(null, configuration.SensitiveParameterNames);
+    }
+
+    [Fact]
+    public void ANullInSymmetricExceptWith_IsIgnored_AndTheRestIsToggled()
+    {
+        var configuration = new LoggingConfiguration();
+
+        configuration.SensitiveParameterNames.SymmetricExceptWith(new string[] { null!, "Ssn" });
+
+        Assert.True(configuration.IsSensitiveParameter("EmployeeSsnValue"));
+        Assert.DoesNotContain(null, configuration.SensitiveParameterNames);
+    }
+
+    [Fact]
+    public void UnionWithNull_Throws()
+    {
+        var configuration = new LoggingConfiguration();
+
+        Assert.Throws<ArgumentNullException>(() => configuration.SensitiveParameterNames.UnionWith(null!));
+    }
+
+    [Fact]
     public void TheSeededNamesStillMask_OnWordBoundaries()
     {
         var configuration = new LoggingConfiguration();

@@ -17,6 +17,29 @@ public class TargetDdlGeneratorTests
         public string Name { get; set; } = string.Empty;
     }
 
+    private sealed class DataAnnotationsKeyEntity
+    {
+        [System.ComponentModel.DataAnnotations.Key]
+        public int Code { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+    }
+
+    [Fact]
+    public void GetKeyColumnName_DataAnnotationsKey_IsHonoured()
+    {
+        Assert.Equal("Code", TargetDdlGenerator.GetKeyColumnName(typeof(DataAnnotationsKeyEntity)));
+    }
+
+    [Fact]
+    public void GetColumnDefinitions_DataAnnotationsKey_IsThePrimaryKey()
+    {
+        var columns = TargetDdlGenerator.GetColumnDefinitions(typeof(DataAnnotationsKeyEntity));
+
+        Assert.True(columns.Single(c => c.Name == "Code").IsPrimaryKey);
+        Assert.False(columns.Single(c => c.Name == "Name").IsPrimaryKey);
+    }
+
     private sealed class NoKeyEntity
     {
         public int Id { get; set; }

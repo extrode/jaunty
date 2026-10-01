@@ -149,11 +149,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
 
     private static MultiEntityMapper<T1, T2, T3> CreateMapper(IDataReader reader)
     {
+        Type[] types = { typeof(T1), typeof(T2), typeof(T3) };
+        // AUD-R38-134: a struct entity is rejected before the resolver check, as arity 2 does, so
+        // the same mistake gets the same exception at every arity.
+        MultiEntityMapperNGuard.RequireReferenceTypes(types);
         Func<Type[], IDataReader, Action<object, IDataRecord>[]>? resolver = JauntyConfig.ReflectionMultiMapperResolverN;
         if (resolver is null)
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3). Ensure Extrode.Jaunty.Extensions.Reflection is loaded.");
-        Type[] types = { typeof(T1), typeof(T2), typeof(T3) };
         Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
@@ -220,11 +223,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
 
     private static MultiEntityMapper<T1, T2, T3, T4> CreateMapper(IDataReader reader)
     {
+        Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4) };
+        // AUD-R38-134: a struct entity is rejected before the resolver check, as arity 2 does, so
+        // the same mistake gets the same exception at every arity.
+        MultiEntityMapperNGuard.RequireReferenceTypes(types);
         Func<Type[], IDataReader, Action<object, IDataRecord>[]>? resolver = JauntyConfig.ReflectionMultiMapperResolverN;
         if (resolver is null)
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4). Ensure Extrode.Jaunty.Extensions.Reflection is loaded.");
-        Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4) };
         Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
@@ -296,11 +302,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5> CreateMapper(IDataReader reader)
     {
+        Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5) };
+        // AUD-R38-134: a struct entity is rejected before the resolver check, as arity 2 does, so
+        // the same mistake gets the same exception at every arity.
+        MultiEntityMapperNGuard.RequireReferenceTypes(types);
         Func<Type[], IDataReader, Action<object, IDataRecord>[]>? resolver = JauntyConfig.ReflectionMultiMapperResolverN;
         if (resolver is null)
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5). Ensure Extrode.Jaunty.Extensions.Reflection is loaded.");
-        Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5) };
         Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
@@ -377,11 +386,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6> CreateMapper(IDataReader reader)
     {
+        Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6) };
+        // AUD-R38-134: a struct entity is rejected before the resolver check, as arity 2 does, so
+        // the same mistake gets the same exception at every arity.
+        MultiEntityMapperNGuard.RequireReferenceTypes(types);
         Func<Type[], IDataReader, Action<object, IDataRecord>[]>? resolver = JauntyConfig.ReflectionMultiMapperResolverN;
         if (resolver is null)
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5, T6). Ensure Extrode.Jaunty.Extensions.Reflection is loaded.");
-        Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6) };
         Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
@@ -463,11 +475,14 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> CreateMapper(IDataReader reader)
     {
+        Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7) };
+        // AUD-R38-134: a struct entity is rejected before the resolver check, as arity 2 does, so
+        // the same mistake gets the same exception at every arity.
+        MultiEntityMapperNGuard.RequireReferenceTypes(types);
         Func<Type[], IDataReader, Action<object, IDataRecord>[]>? resolver = JauntyConfig.ReflectionMultiMapperResolverN;
         if (resolver is null)
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5, T6, T7). Ensure Extrode.Jaunty.Extensions.Reflection is loaded.");
-        Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7) };
         Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);

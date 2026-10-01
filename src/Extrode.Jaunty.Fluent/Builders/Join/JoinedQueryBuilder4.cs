@@ -28,6 +28,7 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
     // AUD-R35-179. The join this clause builder has already contributed to the shared root. A second
     // On(...) on the same instance redefines it rather than appending a duplicate.
     private JoinInfo? _addedJoin;
+    private List<string>? _boundParameters;
 
     public JoinClause4Builder(JoinedQuery3Builder<T1, T2, T3> parent, JoinType joinType, string? alias)
     {
@@ -99,7 +100,11 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
 
         // Renumbered against the query-wide sequence for the same reason as the arity-3 overload:
         // by the fourth join the query can already hold "jp0", and each visitor restarts at 0.
-        return CreateJoinedQuery4(root.RegisterExpressionParameters(condition, parameters), alias);
+        ReleaseBoundParameters();
+        int start = root.ParameterCount;
+        JoinedQuery4Builder<T1, T2, T3, T4> joinedQuery = CreateJoinedQuery4(root.RegisterExpressionParameters(condition, parameters), alias);
+        _boundParameters = root.ParameterNamesFrom(start);
+        return joinedQuery;
     }
 
     /// <inheritdoc cref="JoinClauseBuilder{TFrom, TJoin}.On(string, string)"/>
@@ -122,12 +127,20 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         JoinedQueryBuilder<T1, T2> root = _parent._parent;
         string qualified = JoinParameterName.Qualify(root.Dialect.ParameterPrefix, parameterName, nameof(parameterName));
 
-        if (root.HasParameter(qualified))
+        if (root.HasParameter(qualified) && _boundParameters?.Exists(n => string.Equals(n, qualified, StringComparison.OrdinalIgnoreCase)) != true)
             throw JoinParameterName.DuplicateError(qualified, nameof(parameterName));
 
         JoinedQuery4Builder<T1, T2, T3, T4> joinedQuery = CreateJoinedQuery4(condition);
         root.AddParameter(qualified, value);
+        _boundParameters = [qualified];
         return joinedQuery;
+    }
+
+    /// <inheritdoc cref="JoinClause3Builder{T1, T2, T3}.ReleaseBoundParameters"/>
+    private void ReleaseBoundParameters()
+    {
+        _parent._parent.RemoveParameters(_boundParameters);
+        _boundParameters = null;
     }
 
     /// <summary>
@@ -160,6 +173,8 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
 
     private JoinedQuery4Builder<T1, T2, T3, T4> CreateJoinedQuery4(string onCondition, string? alias)
     {
+        ReleaseBoundParameters();
+
         var joinInfo = new JoinInfo(
             _joinType,
             _metadata.TableName,
@@ -469,10 +484,10 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
         EntityMetadata t4Metadata = FluentMetadataCache.GetMetadata<T4>();
 
-        string[] t1Columns = _parent._parent.GetPrefixedColumns(t1Metadata, _parent._parent.FromAlias);
-        string[] t2Columns = _parent._parent.GetPrefixedColumns(t2Metadata, _parent._parent.Joins[0].Alias);
-        string[] t3Columns = _parent._parent.GetPrefixedColumns(t3Metadata, _parent._parent.Joins[1].Alias);
-        string[] t4Columns = _parent._parent.GetPrefixedColumns(t4Metadata, _parent._parent.Joins[2].Alias);
+        string[] t1Columns = _parent._parent.GetPrefixedColumns<T1>(_parent._parent.FromAlias);
+        string[] t2Columns = _parent._parent.GetPrefixedColumns<T2>(_parent._parent.Joins[0].Alias);
+        string[] t3Columns = _parent._parent.GetPrefixedColumns<T3>(_parent._parent.Joins[1].Alias);
+        string[] t4Columns = _parent._parent.GetPrefixedColumns<T4>(_parent._parent.Joins[2].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).Concat(t4Columns).ToArray();
 
         string sql = _parent._parent.BuildSelectSql(allColumns);
@@ -624,10 +639,10 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
         EntityMetadata t4Metadata = FluentMetadataCache.GetMetadata<T4>();
 
-        string[] t1Columns = _parent._parent.GetPrefixedColumns(t1Metadata, _parent._parent.FromAlias);
-        string[] t2Columns = _parent._parent.GetPrefixedColumns(t2Metadata, _parent._parent.Joins[0].Alias);
-        string[] t3Columns = _parent._parent.GetPrefixedColumns(t3Metadata, _parent._parent.Joins[1].Alias);
-        string[] t4Columns = _parent._parent.GetPrefixedColumns(t4Metadata, _parent._parent.Joins[2].Alias);
+        string[] t1Columns = _parent._parent.GetPrefixedColumns<T1>(_parent._parent.FromAlias);
+        string[] t2Columns = _parent._parent.GetPrefixedColumns<T2>(_parent._parent.Joins[0].Alias);
+        string[] t3Columns = _parent._parent.GetPrefixedColumns<T3>(_parent._parent.Joins[1].Alias);
+        string[] t4Columns = _parent._parent.GetPrefixedColumns<T4>(_parent._parent.Joins[2].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).Concat(t4Columns).ToArray();
 
         string sql = _parent._parent.BuildSelectSql(allColumns);
@@ -639,7 +654,12 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         {
             var results = new List<(T1, T2, T3, T4)>();
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
             _parent._parent.BindParameters(command);
             FluentCommandOptions.Apply(command, _parent._parent.Connection, options);
@@ -652,7 +672,12 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
             try
             {
-                using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                await using var readerDisposer = reader.ConfigureAwait(false);
+#else
+                using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {

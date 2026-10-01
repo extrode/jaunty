@@ -316,6 +316,82 @@ public class FluentQueryBuilderAdvancedTests : IDisposable
     }
 
     // ==========================================
+    // Update opening WhereIn / Between / Exists / InSubquery (AUD-R38-103)
+    // ==========================================
+
+    private void AssertUpdatesExactly(
+        Func<ISetClause<Product>, IUpdateWhereClause<Product>> updateFilter,
+        Func<IFromClause<Product>, IQueryTerminal<Product>> selectFilter)
+    {
+        int expected = (int)selectFilter(_db.Connection.From<Product>()).Count();
+        int total = (int)_db.Connection.From<Product>().Count();
+        Assert.InRange(expected, 1, total - 1);
+
+        int updated = updateFilter(_db.Connection.From<Product>().Set(p => p.ReorderLevel, (short)123)).Update();
+
+        Assert.Equal(expected, updated);
+        Assert.Equal(expected, (int)_db.Connection.From<Product>().Where(p => p.ReorderLevel == 123).Count());
+    }
+
+    [Fact]
+    public void Update_OpeningWhereIn_UpdatesOnlyTheListedRows()
+    {
+        string[] names = ["Chai", "Chang"];
+        AssertUpdatesExactly(u => u.WhereIn(p => p.ProductName, names), s => s.WhereIn(p => p.ProductName, names));
+    }
+
+    [Fact]
+    public void Update_OpeningWhereNotIn_UpdatesTheOtherRows()
+    {
+        string[] names = ["Chai", "Chang"];
+        AssertUpdatesExactly(u => u.WhereNotIn(p => p.ProductName, names), s => s.WhereNotIn(p => p.ProductName, names));
+    }
+
+    [Fact]
+    public void Update_OpeningWhereBetween_UpdatesTheRange()
+    {
+        AssertUpdatesExactly(u => u.WhereBetween(p => p.ProductId, 2, 4), s => s.WhereBetween(p => p.ProductId, 2, 4));
+    }
+
+    [Fact]
+    public void Update_OpeningWhereNotBetween_UpdatesOutsideTheRange()
+    {
+        AssertUpdatesExactly(u => u.WhereNotBetween(p => p.ProductId, 2, 4), s => s.WhereNotBetween(p => p.ProductId, 2, 4));
+    }
+
+    [Fact]
+    public void Update_OpeningWhereExists_UpdatesCorrelatedRows()
+    {
+        AssertUpdatesExactly(
+            u => u.WhereExists<Category>((p, c) => p.CategoryId == c.CategoryId && c.CategoryName == "Beverages"),
+            s => s.WhereExists<Category>((p, c) => p.CategoryId == c.CategoryId && c.CategoryName == "Beverages"));
+    }
+
+    [Fact]
+    public void Update_OpeningWhereNotExists_UpdatesUncorrelatedRows()
+    {
+        AssertUpdatesExactly(
+            u => u.WhereNotExists<Category>((p, c) => p.CategoryId == c.CategoryId && c.CategoryName == "Beverages"),
+            s => s.WhereNotExists<Category>((p, c) => p.CategoryId == c.CategoryId && c.CategoryName == "Beverages"));
+    }
+
+    [Fact]
+    public void Update_OpeningWhereInSubquery_UpdatesRowsInTheSubquery()
+    {
+        AssertUpdatesExactly(
+            u => u.WhereInSubquery(p => p.ProductId, (Product q) => q.ProductId, _db.Connection.From<Product>().Where(q => q.CategoryId == 1)),
+            s => s.WhereInSubquery(p => p.ProductId, (Product q) => q.ProductId, _db.Connection.From<Product>().Where(q => q.CategoryId == 1)));
+    }
+
+    [Fact]
+    public void Update_OpeningWhereNotInSubquery_UpdatesRowsOutsideTheSubquery()
+    {
+        AssertUpdatesExactly(
+            u => u.WhereNotInSubquery(p => p.ProductId, (Product q) => q.ProductId, _db.Connection.From<Product>().Where(q => q.CategoryId == 1)),
+            s => s.WhereNotInSubquery(p => p.ProductId, (Product q) => q.ProductId, _db.Connection.From<Product>().Where(q => q.CategoryId == 1)));
+    }
+
+    // ==========================================
     // Update AndIn / AndNotIn / OrIn / OrNotIn
     // ==========================================
 

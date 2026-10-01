@@ -418,8 +418,9 @@ internal static class MetadataCache<T>
                 {
                     object? convertedValue = handler.Parse(dbValue);
 
-                    // Convert to the property type (handles nullable)
-                    if (propertyType != underlyingType && convertedValue is not null)
+                    // AUD-R38-071: converted for a non-nullable property too, as the generated
+                    // binder now does, rather than only when the property is Nullable<T>.
+                    if (convertedValue is not null && !underlyingType.IsInstanceOfType(convertedValue))
                     {
                         property.SetValue(target, DbValueConverter.ChangeType(convertedValue, underlyingType));
                     }

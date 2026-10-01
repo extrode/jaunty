@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 #endif
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using Extrode.Jaunty.Attributes;
 using Extrode.Jaunty.Interfaces;
@@ -238,16 +239,22 @@ internal static class WriteParameterCache<T> where T : new()
     /// operation - <c>JauntyConfig.Reset()</c> and re-registration are both public), the second
     /// resolution can order columns differently while the getters keep the first order. That is an
     /// <em>equal-count reorder</em>: the worst misbind available, and the one the count check cannot
-    /// see. Re-checking whenever the collection identity changes costs one reference comparison per
-    /// bind - the bulk loops reuse a single collection for every row, so steady-state cost is
-    /// unchanged - and closes the case this guard exists for. The field is plain: a race can only
-    /// run the check twice, which is harmless.
+    /// see. Checking each collection the first time this setter sees it costs one weak-table lookup
+    /// per bind - the bulk loops reuse a single collection for every row - and closes the case this
+    /// guard exists for. The table holds its keys weakly, so it keeps no collection alive. A race
+    /// can only run the check twice, which is harmless.
     /// </para>
     /// </remarks>
+    private static readonly object VerifiedMarker = new();
+
     private static Action<IDataParameterCollection, T> CreateValueSetter(
         Func<T, object?>[] getters, PropertyInfo?[] properties, EnumStorage?[] storages, string[] columnNames, string operation)
     {
-        IDataParameterCollection? verifiedAgainst = null;
+        // AUD-R38-136: was a plain field holding the last collection checked, which kept that
+        // collection - and the last row's parameter values with it - alive in this static setter for
+        // the life of the process, and made two concurrent bulk operations on the same T re-check
+        // on every row as each overwrote the other's entry. Weak keys fix both.
+        var verified = new ConditionalWeakTable<IDataParameterCollection, object>();
 
         return (pc, entity) =>
         {
@@ -261,10 +268,10 @@ internal static class WriteParameterCache<T> where T : new()
                     "JauntyConfig.ReflectionTableMetadataResolver was replaced, or returns a different shape, between " +
                     "the two resolutions.");
 
-            if (!ReferenceEquals(pc, verifiedAgainst))
+            if (!verified.TryGetValue(pc, out _))
             {
                 VerifyParameterNames(pc, columnNames, operation);
-                verifiedAgainst = pc;
+                verified.GetValue(pc, static _ => VerifiedMarker);
             }
 
             for (int i = 0; i < getters.Length; i++)
@@ -401,10 +408,25 @@ internal static class WriteParameterCache<T> where T : new()
 
         ParameterExpression target = Expression.Parameter(typeof(T), "target");
         ParameterExpression value = Expression.Parameter(typeof(long), "value");
+        // AUD-R38-135: Convert is unchecked, so an identity past int.MaxValue written back to an
+        // IEntity<int> wrapped to a negative number and the entity disagreed with the returned key.
         MethodCallExpression setterCall = Expression.Call(
-            Expression.Convert(target, entityInterface), idProperty.SetMethod!, Expression.Convert(value, idType));
+            Expression.Convert(target, entityInterface), idProperty.SetMethod!, Expression.ConvertChecked(value, idType));
 
-        return Expression.Lambda<Action<T, long>>(setterCall, target, value).Compile();
+        Action<T, long> setter = Expression.Lambda<Action<T, long>>(setterCall, target, value).Compile();
+        return (entity, id) =>
+        {
+            try
+            {
+                setter(entity, id);
+            }
+            catch (OverflowException ex)
+            {
+                throw new InvalidOperationException(
+                    $"The database generated identity {id} for '{typeof(T).Name}', which does not fit its " +
+                    $"{idType.Name} Id. The row was inserted; declare the Id with a type wide enough for the column.", ex);
+            }
+        };
     }
 
     private static bool IsConvertibleFromInt64(Type type) => Type.GetTypeCode(type) switch

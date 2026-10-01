@@ -162,4 +162,20 @@ public class ListTablesCommandTests : IDisposable
         Assert.Equal(1, exitCode);
         Assert.Contains("Error:", errWriter.ToString());
     }
+
+    [Fact]
+    public async Task Invoke_WrappedConnectionFailure_ReportsTheInnerCause()
+    {
+        var command = new ListTablesCommand();
+        ParseResult result = command.Parse([
+            "--connection", "Host=127.0.0.1;Port=1;Timeout=2;Username=x;Password=y;Database=z",
+            "--provider", "PostgreSql"
+        ]);
+
+        (_, StringWriter errWriter) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains(" -> ", errWriter.ToString(), StringComparison.Ordinal);
+    }
 }

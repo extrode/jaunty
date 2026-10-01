@@ -55,7 +55,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         if (result is QueryBuilder<T> qb)
         {
             ParameterCollection innerParams = qb.GetParameters();
-            (sql, ParameterCollection renamedParams) = ParameterRenamer.Rename(sql, innerParams, "cte_src");
+            (sql, ParameterCollection renamedParams) = ParameterRenamer.Rename(sql, innerParams, "cte_src", _dialect);
             foreach ((string Name, object? Value) param in renamedParams.GetAll())
             {
                 _parameters.Add(param.Name, param.Value);
@@ -77,7 +77,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         if (query is QueryBuilder<T> qb)
         {
             ParameterCollection innerParams = qb.GetParameters();
-            (sql, ParameterCollection renamedParams) = ParameterRenamer.Rename(sql, innerParams, "cte_src");
+            (sql, ParameterCollection renamedParams) = ParameterRenamer.Rename(sql, innerParams, "cte_src", _dialect);
             foreach ((string Name, object? Value) param in renamedParams.GetAll())
             {
                 _parameters.Add(param.Name, param.Value);

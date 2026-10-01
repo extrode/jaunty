@@ -10,10 +10,11 @@ namespace Extrode.Jaunty.Extensions.Reflection;
 /// Shared ordinal-claiming algorithm used by all N-ary MultiEntityMapper variants.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Types are processed left-to-right: T1 claims ordinals first, T2 claims from the remainder,
 /// T3 from the remainder after T1+T2, and so on.
-/// </remarks>
-/// <remarks>
+/// </para>
+/// <para>
 /// AUD-R35-223. This class also carried a <c>BuildSetterArrays</c> driver that walked an array of
 /// per-position factories and skipped null entries as "custom mapper positions". Nothing ever
 /// called it - arity 2 and arities 3-7 all call <see cref="GetSettersExcluding{T}"/> directly and
@@ -22,6 +23,7 @@ namespace Extrode.Jaunty.Extensions.Reflection;
 /// (<c>MultiEntityCommandOptions.Mapper1..MapperN</c>) as a two-layer dead feature that was never
 /// functional, so the driver documented a capability the codebase had deliberately dropped.
 /// Removed rather than covered: it is internal, so nothing outside this assembly could bind to it.
+/// </para>
 /// </remarks>
 internal static class MultiEntityMapperCore
 {

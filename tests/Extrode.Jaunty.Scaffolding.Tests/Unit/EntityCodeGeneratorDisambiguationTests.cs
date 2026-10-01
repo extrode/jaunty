@@ -60,7 +60,7 @@ public class EntityCodeGeneratorDisambiguationTests
         string code = Generate("things", ["name", "Name"], generateColumnAttribute: false);
 
         Assert.Contains("public string? Name1", code, StringComparison.Ordinal);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"Name\")]", code, StringComparison.Ordinal);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"Name\")]", code, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public class EntityCodeGeneratorDisambiguationTests
         string code = Generate("Product", ["Product"], generateColumnAttribute: false);
 
         Assert.Contains("Product1", code, StringComparison.Ordinal);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"Product\")]", code, StringComparison.Ordinal);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"Product\")]", code, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -94,7 +94,7 @@ public class EntityCodeGeneratorDisambiguationTests
     {
         string code = Generate("things", ["first_name"], generateColumnAttribute: true);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"first_name\")]", code, StringComparison.Ordinal);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"first_name\")]", code, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public class EntityCodeGeneratorDisambiguationTests
 
         Assert.Contains("Name1", code, StringComparison.Ordinal);
         Assert.Contains("Name2", code, StringComparison.Ordinal);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"Name\")]", code, StringComparison.Ordinal);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"_name\")]", code, StringComparison.Ordinal);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"Name\")]", code, StringComparison.Ordinal);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"_name\")]", code, StringComparison.Ordinal);
     }
 }

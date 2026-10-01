@@ -52,8 +52,40 @@ public class CsvImportPostgresFallbackTests
         }
     }
 
+    [Fact]
+    public void ImportCsv_ServerSideFallbackFailure_NamesPostgresPermissions()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"jaunty_pgfb_{Guid.NewGuid():N}.csv");
+        File.WriteAllText(path, "Name,Age\nAlice,30\n");
+        try
+        {
+            using var connection = new NpgsqlConnection { FailCopy = true };
+
+            var ex = Assert.Throws<InvalidOperationException>(() => connection.ImportCsv("csv_import_test", path, new CsvImportOptions()));
+            Assert.Contains("pg_read_server_files", ex.Message, StringComparison.Ordinal);
+            Assert.Contains("COPY ... FROM STDIN", ex.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("bulkadmin", ex.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void TheSqlServerServerSideFailure_StillNamesSqlServerPermissions()
+    {
+        InvalidOperationException ex = CsvImportExtensions.SqlServerServerSideImportFailure("x.csv", new Exception("inner"));
+
+        Assert.Contains("SQL Server BULK INSERT", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("bulkadmin", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("BulkInsert<T>", ex.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("pg_read_server_files", ex.Message, StringComparison.Ordinal);
+    }
+
     private sealed class NpgsqlConnection : IDbConnection
     {
+        public bool FailCopy { get; set; }
         public string ConnectionString { get; set; } = "";
         public int ConnectionTimeout => 0;
         public string Database => "";
@@ -81,7 +113,7 @@ public class CsvImportPostgresFallbackTests
         public void Cancel() { }
         public IDbDataParameter CreateParameter() => throw new NotSupportedException();
         public void Dispose() { }
-        public int ExecuteNonQuery() => 0;
+        public int ExecuteNonQuery() => ((NpgsqlConnection)Connection!).FailCopy ? throw new InvalidOperationException("permission denied") : 0;
         public IDataReader ExecuteReader() => throw new NotSupportedException();
         public IDataReader ExecuteReader(CommandBehavior behavior) => throw new NotSupportedException();
         public object? ExecuteScalar() => null;

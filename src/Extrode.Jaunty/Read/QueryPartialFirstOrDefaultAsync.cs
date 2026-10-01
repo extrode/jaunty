@@ -41,8 +41,7 @@ public static partial class Jaunty
     /// 
     /// // Get first product or null if not found
     /// var product = await connection.QueryPartialFirstOrDefaultAsync&lt;Product&gt;(
-    ///     "SELECT TOP 1 id, name FROM products WHERE category_id = @CategoryId", 
-    ///     new { CategoryId = 999 });
+    ///     "SELECT TOP 1 id, name FROM products WHERE discontinued = 1 ORDER BY id");
     /// 
     /// if (product != null)
     /// {
@@ -51,6 +50,9 @@ public static partial class Jaunty
     /// }
     /// </code>
     /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>.
+    /// </exception>
     /// <seealso cref="QueryPartialFirstAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryPartialFirstOrDefault{T}(IDbConnection, string)"/>
     public static ValueTask<T?> QueryPartialFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
@@ -104,6 +106,9 @@ public static partial class Jaunty
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
     /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>.
+    /// </exception>
     /// <seealso cref="QueryPartialFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryPartialFirstAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     public static ValueTask<T?> QueryPartialFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
@@ -156,6 +161,9 @@ public static partial class Jaunty
     ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>.
+    /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="QueryPartialFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<T?> QueryPartialFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
@@ -213,6 +221,9 @@ public static partial class Jaunty
     /// </example>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>.
     /// </exception>
     /// <seealso cref="QueryPartialFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>

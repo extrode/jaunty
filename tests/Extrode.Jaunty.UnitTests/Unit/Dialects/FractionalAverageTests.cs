@@ -51,16 +51,21 @@ public class FractionalAverageTests
     public void ADialectThatDoesNotTruncate_GetsTheBareForm(string operand)
     {
         Assert.Equal($"AVG({operand})", FractionalAverage.Generate(Sqlite, operand));
-        Assert.Equal($"AVG({operand})", FractionalAverage.Generate(MySql, operand));
         Assert.Equal($"AVG({operand})", FractionalAverage.Generate(Postgres, operand));
     }
 
     [Fact]
-    public void TheThreeNonTruncatingDialects_DoNotImplementTheInterface()
+    public void TheTwoFullPrecisionDialects_DoNotImplementTheInterface()
     {
         Assert.IsNotAssignableFrom<IFractionalAverageDialect>(Sqlite);
-        Assert.IsNotAssignableFrom<IFractionalAverageDialect>(MySql);
         Assert.IsNotAssignableFrom<IFractionalAverageDialect>(Postgres);
+    }
+
+    [Fact]
+    public void MySql_AveragesAsDouble()
+    {
+        Assert.IsAssignableFrom<IFractionalAverageDialect>(MySql);
+        Assert.Equal("AVG(`qty` + 0E0)", FractionalAverage.Generate(MySql, "`qty`"));
     }
 
     [Fact]

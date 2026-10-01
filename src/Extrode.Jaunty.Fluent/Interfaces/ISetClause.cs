@@ -63,6 +63,83 @@ public interface ISetClause<T> where T : new()
     /// <param name="parameters">Anonymous object containing parameter values.</param>
     IUpdateWhereClause<T> WhereRaw(string rawSql, object parameters);
 
+    // AUD-R38-103: the same opening filters IFromClause<T> and IDistinctClause<T> offer. CF-9 gave
+    // IUpdateWhereClause<T> the And/Or forms; without these an UPDATE could only reach them after a
+    // first Where.
+    /// <summary>
+    /// Adds a WHERE condition where the column value is in the specified collection.
+    /// </summary>
+    /// <typeparam name="TValue">The type of values in the collection.</typeparam>
+    /// <param name="selector">Expression selecting the column to filter.</param>
+    /// <param name="values">Collection of values to match against.</param>
+    IUpdateWhereClause<T> WhereIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values);
+
+    /// <summary>
+    /// Adds a WHERE condition where the column value is NOT in the specified collection.
+    /// </summary>
+    /// <typeparam name="TValue">The type of values in the collection.</typeparam>
+    /// <param name="selector">Expression selecting the column to filter.</param>
+    /// <param name="values">Collection of values to exclude.</param>
+    IUpdateWhereClause<T> WhereNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values);
+
+    /// <summary>
+    /// Adds a WHERE condition where the column value is between the specified range (inclusive).
+    /// </summary>
+    /// <typeparam name="TValue">The type of the column value.</typeparam>
+    /// <param name="selector">Expression selecting the column to filter.</param>
+    /// <param name="from">The lower bound.</param>
+    /// <param name="to">The upper bound.</param>
+    IUpdateWhereClause<T> WhereBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to);
+
+    /// <summary>
+    /// Adds a WHERE condition where the column value is NOT between the specified range.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the column value.</typeparam>
+    /// <param name="selector">Expression selecting the column to filter.</param>
+    /// <param name="from">The lower bound.</param>
+    /// <param name="to">The upper bound.</param>
+    IUpdateWhereClause<T> WhereNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to);
+
+    /// <summary>
+    /// Adds a WHERE EXISTS condition where a correlated subquery returns any rows.
+    /// </summary>
+    /// <typeparam name="TSubquery">The type of entity in the subquery.</typeparam>
+    /// <param name="predicate">Expression relating the updated entity to the subquery entity.</param>
+    IUpdateWhereClause<T> WhereExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
+
+    /// <summary>
+    /// Adds a WHERE NOT EXISTS condition where a correlated subquery returns no rows.
+    /// </summary>
+    /// <typeparam name="TSubquery">The type of entity in the subquery.</typeparam>
+    /// <param name="predicate">Expression relating the updated entity to the subquery entity.</param>
+    IUpdateWhereClause<T> WhereNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
+
+    /// <summary>
+    /// Adds a WHERE condition where the column value is in the result of a subquery.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the column value.</typeparam>
+    /// <typeparam name="TSubquery">The subquery entity type.</typeparam>
+    /// <param name="selector">Expression selecting the column to filter.</param>
+    /// <param name="subquerySelector">Expression selecting the column from the subquery.</param>
+    /// <param name="subquery">The subquery terminal.</param>
+    IUpdateWhereClause<T> WhereInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new();
+
+    /// <summary>
+    /// Adds a WHERE condition where the column value is NOT in the result of a subquery.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the column value.</typeparam>
+    /// <typeparam name="TSubquery">The subquery entity type.</typeparam>
+    /// <param name="selector">Expression selecting the column to filter.</param>
+    /// <param name="subquerySelector">Expression selecting the column from the subquery.</param>
+    /// <param name="subquery">The subquery terminal.</param>
+    IUpdateWhereClause<T> WhereNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new();
+
     // UPDATE ALL (no WHERE) - use with caution
     /// <summary>
     /// Updates all rows in the table without a WHERE clause. Use with caution.

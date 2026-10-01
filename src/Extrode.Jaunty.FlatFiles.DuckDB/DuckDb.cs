@@ -72,9 +72,9 @@ public sealed partial class DuckDb : IFlatFile
         _options = options;
         _dialect = DuckDbDialect.Instance;
 
-        string connectionString = options.DatabasePath == ":memory:"
-            ? "DataSource=:memory:"
-            : $"DataSource={options.DatabasePath}";
+        // AUD-R38-076: built rather than interpolated, so a legal path holding ';' is quoted instead
+        // of failing to parse or being read as further configuration keys.
+        string connectionString = new DuckDBConnectionStringBuilder { DataSource = options.DatabasePath }.ConnectionString;
 
         _connection = new DuckDBConnection(connectionString);
 

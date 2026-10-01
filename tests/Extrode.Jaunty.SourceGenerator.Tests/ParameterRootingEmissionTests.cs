@@ -288,6 +288,74 @@ public class ParameterRootingEmissionTests
         Assert.Contains("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void AClassImplementingOnlyAStringToIntReadOnlyDictionary_IsNotTreatedAsBoundByKey()
+    {
+        var result = RunGenerator(Consumer(
+            """
+            Bag p = null!;
+            connection.Execute("DELETE FROM t WHERE id = @Id", p);
+            """,
+            """
+            public abstract class Bag : IReadOnlyDictionary<string, int>
+            {
+                public abstract int this[string key] { get; }
+                public abstract IEnumerable<string> Keys { get; }
+                public abstract IEnumerable<int> Values { get; }
+                public abstract int Count { get; }
+                public abstract bool ContainsKey(string key);
+                public abstract bool TryGetValue(string key, out int value);
+                public abstract IEnumerator<KeyValuePair<string, int>> GetEnumerator();
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            }
+            """));
+
+        Assert.Contains("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AClassImplementingAStringToObjectReadOnlyDictionary_IsTreatedAsBoundByKey()
+    {
+        var result = RunGenerator(Consumer(
+            """
+            Bag p = null!;
+            connection.Execute("DELETE FROM t WHERE id = @Id", p);
+            """,
+            """
+            public abstract class Bag : IReadOnlyDictionary<string, object?>
+            {
+                public abstract object? this[string key] { get; }
+                public abstract IEnumerable<string> Keys { get; }
+                public abstract IEnumerable<object?> Values { get; }
+                public abstract int Count { get; }
+                public abstract bool ContainsKey(string key);
+                public abstract bool TryGetValue(string key, out object? value);
+                public abstract IEnumerator<KeyValuePair<string, object?>> GetEnumerator();
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            }
+            """));
+
+        Assert.DoesNotContain(result.Diagnostics, d => d.Id == "JAUNTYGEN003");
+        Assert.DoesNotContain("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AConsumersOwnIDictionaryInterface_IsNotTreatedAsBoundByKey()
+    {
+        var result = RunGenerator(Consumer(
+            """
+            Bag p = new Bag();
+            connection.Execute("DELETE FROM t WHERE id = @Id", p);
+            """,
+            """
+            public interface IDictionary<TKey, TValue> { }
+
+            public sealed class Bag : IDictionary<string, object> { public int Id { get; set; } }
+            """));
+
+        Assert.Contains("JauntyAotParameterRoots", result.Source, StringComparison.Ordinal);
+    }
+
     /// <summary>
     /// <c>BigInteger</c> was on the scalar list here and is not on <c>ParameterBinder.IsScalarType</c>'s,
     /// so the binder reflects over its properties - the exact case rooting exists for.

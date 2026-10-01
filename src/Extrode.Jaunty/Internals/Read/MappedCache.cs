@@ -134,6 +134,8 @@ internal static class MappedCache<T> where T : new()
         return null;
     }
 
+    private delegate T StructReadEntity(ref T instance, IDataReader reader);
+
 #if NET5_0_OR_GREATER
     [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "Reached only when T is not source-generated - a source-generated T implements IGeneratedAccessors<T> and returns above, with no reflection. The remaining population is a hand-written IMapped<T>, whose ReadEntity this cannot arrange to preserve: the consumer must root it (for example with [DynamicDependency]) or implement IGeneratedAccessors<T>. The generator reports JAUNTYGEN002 for exactly this case, so it is a build-time warning rather than a trimmed-away method discovered at runtime. Spec 009.")]
 #endif
@@ -174,6 +176,20 @@ internal static class MappedCache<T> where T : new()
             // AUD-R35-120: same return-type check as the static lookup above, for the same reason.
             if (instanceMethod != null)
             {
+                // AUD-R38-132: an open-instance delegate over a struct method takes the instance by
+                // reference, so Func<T, IDataReader, T> does not bind and CreateDelegate threw out of
+                // the static initialiser for a struct entity.
+                if (typeof(T).IsValueType)
+                {
+                    // AOT-SAFE: delegate over the member resolved just above; same population and rooting.
+                    var byRef = (StructReadEntity)instanceMethod.CreateDelegate(typeof(StructReadEntity));
+                    return (IDataReader r) =>
+                    {
+                        T instance = new();
+                        return byRef(ref instance, r);
+                    };
+                }
+
                 // AOT-SAFE: delegate over the member resolved just above; same population and rooting.
                 var openDelegate = (Func<T, IDataReader, T>)instanceMethod.CreateDelegate(typeof(Func<T, IDataReader, T>));
                 return (IDataReader r) => openDelegate(new T(), r);

@@ -19,7 +19,27 @@ internal static class ImportExecutor
     /// <summary>
     /// Imports data from a DuckDB source table into a target database connection.
     /// </summary>
+    /// <remarks>
+    /// AUD-R38-082: a target connection handed over closed is closed again afterwards, on success
+    /// or failure, as core does for a connection it opened.
+    /// </remarks>
     public static async ValueTask<long> ExecuteAsync<T>(IDbConnection sourceConnection, IFileSource source, DbConnection targetConnection, ImportOptions options, CancellationToken cancellationToken) where T : class, new()
+    {
+        if (targetConnection.State == ConnectionState.Open)
+            return await ExecuteOnOpenTargetAsync<T>(sourceConnection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
+
+        await targetConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await ExecuteOnOpenTargetAsync<T>(sourceConnection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await targetConnection.CloseAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static async ValueTask<long> ExecuteOnOpenTargetAsync<T>(IDbConnection sourceConnection, IFileSource source, DbConnection targetConnection, ImportOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         Type entityType = typeof(T);
         IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(entityType);
@@ -27,10 +47,6 @@ internal static class ImportExecutor
 
         // Resolve the import dialect (explicit > custom registry > auto-detect)
         IImportDialect dialect = ImportDialectResolver.Resolve(targetConnection, options.Dialect);
-
-        // Ensure target connection is open
-        if (targetConnection.State != ConnectionState.Open)
-            await targetConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         // Create table if requested
         if (options.CreateTableIfMissing)

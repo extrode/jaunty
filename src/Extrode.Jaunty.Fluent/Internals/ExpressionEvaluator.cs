@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 namespace Extrode.Jaunty.Fluent.Internals;
 
@@ -42,8 +43,8 @@ internal static class ExpressionEvaluator
         // factory [RequiresDynamicCode] (IL3050) because it must construct a delegate type at
         // runtime, where Func<object?> is fixed at compile time and Compile() falls back to the
         // interpreter under NativeAOT. Also skips DynamicInvoke's reflection dispatch. Exceptions
-        // from the evaluated member now surface unwrapped instead of inside
-        // TargetInvocationException; the tests assert InnerException ?? ex for exactly this reason.
+        // from the evaluated member surface unwrapped instead of inside TargetInvocationException,
+        // on the reflection fast path too (AUD-R38-104).
         return TryEvaluate(expression, out object? value)
             ? value
             : Expression.Lambda<Func<object?>>(Expression.Convert(expression, typeof(object))).Compile()();
@@ -105,7 +106,19 @@ internal static class ExpressionEvaluator
                 if (instance is null && !getter.IsStatic)
                     return false;
 
-                value = property.GetValue(instance);
+                // AUD-R38-104: GetValue wraps what the getter throws in TargetInvocationException,
+                // where the compiled path throws it as is. Unwrapped so the exception a caller sees
+                // does not depend on which route read the property.
+                try
+                {
+                    value = property.GetValue(instance);
+                }
+                catch (TargetInvocationException ex) when (ex.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                    throw;
+                }
+
                 return true;
 
             default:

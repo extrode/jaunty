@@ -233,7 +233,7 @@ public class FlatFileTests
         // both "myfmt2" and ".myfmt2" registrations must resolve for a ".myfmt2" file.
         FlatFile.RegisterExtension("myfmt2", (tableName, path, type) => new CsvFileSource(tableName, path, type));
 
-        IFileSource source = FlatFile.CreateSourceFromExtension(".myfmt2", "t", "irrelevant.myfmt2", typeof(object));
+        IFileSource source = FlatFile.CreateSourceFromExtension(".myfmt2", "t", "irrelevant.myfmt2", typeof(object), "filePath");
 
         Assert.IsType<CsvFileSource>(source);
     }
@@ -279,7 +279,7 @@ public class FlatFileTests
             {
                 var ext = $".concurrentfmt{i}";
                 FlatFile.RegisterExtension(ext, (tableName, path, type) => new CsvFileSource(tableName, path, type));
-                IFileSource source = FlatFile.CreateSourceFromExtension(ext, "t", csvPath, typeof(object));
+                IFileSource source = FlatFile.CreateSourceFromExtension(ext, "t", csvPath, typeof(object), "filePath");
                 Assert.IsType<CsvFileSource>(source);
             }
             catch (Exception ex)
@@ -325,6 +325,24 @@ public class FlatFileTests
         // with no literal extension left over (e.g. "data/*") can't be mapped to a file format.
         var ex = Assert.Throws<ArgumentException>(() => FlatFile.Open("data/*"));
         Assert.Contains("Cannot infer file format", ex.Message);
+        Assert.Equal("filePath", ex.ParamName);
+    }
+
+    [Fact]
+    public void Open_UnsupportedExtension_NamesThePublicParameter()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"jaunty_flatfile_ext_{Guid.NewGuid():N}.foo");
+        File.WriteAllText(path, "x");
+        try
+        {
+            var ex = Assert.Throws<ArgumentException>(() => FlatFile.Open(path));
+            Assert.Contains("Unsupported file extension '.foo'", ex.Message);
+            Assert.Equal("filePath", ex.ParamName);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     // ==========================================
@@ -415,7 +433,7 @@ public class FlatFileTests
     [InlineData("data/file?.parquet", ".parquet")]
     public void InferExtensionFromGlob_InfersExtension(string glob, string expected)
     {
-        var result = (string)InvokePrivateStatic("InferExtensionFromGlob", [glob])!;
+        var result = (string)InvokePrivateStatic("InferExtensionFromGlob", [glob, "filePath"])!;
         Assert.Equal(expected, result);
     }
 }

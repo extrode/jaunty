@@ -119,7 +119,17 @@ public class BulkValueSetterAlignmentTests
     {
         private readonly List<object> _items = new();
 
-        public object this[int index] { get => _items[index]; set => _items[index] = value; }
+        public int IndexReads { get; private set; }
+
+        public object this[int index]
+        {
+            get
+            {
+                IndexReads++;
+                return _items[index];
+            }
+            set => _items[index] = value;
+        }
         public object this[string parameterName] { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         public bool IsFixedSize => false;
@@ -325,6 +335,47 @@ public class BulkValueSetterAlignmentTests
             Assert.Equal($"n{i}", ((IDataParameter)collection[1]).Value);
             Assert.Equal(i * 3, ((IDataParameter)collection[2]).Value);
         }
+    }
+
+    [Fact]
+    public void TwoAlternatingCollections_AreEachCheckedOnce()
+    {
+        Action<IDataParameterCollection, RecheckWidget>? setter =
+            WriteParameterCache<RecheckWidget>.InsertValueSetter;
+
+        FakeParameterCollection first = FakeParameterCollection.Named("@Id", "@Name", "@Quantity");
+        FakeParameterCollection second = FakeParameterCollection.Named("@Id", "@Name", "@Quantity");
+
+        for (int i = 0; i < 3; i++)
+        {
+            setter!(first, new RecheckWidget { Id = i });
+            setter!(second, new RecheckWidget { Id = i });
+        }
+
+        Assert.Equal(3 + (3 * 3), first.IndexReads);
+        Assert.Equal(3 + (3 * 3), second.IndexReads);
+    }
+
+    [Fact]
+    public void TheSetterDoesNotKeepTheLastCollectionAlive()
+    {
+        Action<IDataParameterCollection, RecheckWidget>? setter =
+            WriteParameterCache<RecheckWidget>.InsertValueSetter;
+
+        WeakReference collection = BindOnce(setter!);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(collection.IsAlive);
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static WeakReference BindOnce(Action<IDataParameterCollection, RecheckWidget> setter)
+    {
+        FakeParameterCollection collection = FakeParameterCollection.Named("@Id", "@Name", "@Quantity");
+        setter(collection, new RecheckWidget { Id = 1, Name = "big", Quantity = 1 });
+        return new WeakReference(collection);
     }
 
     /// <summary>

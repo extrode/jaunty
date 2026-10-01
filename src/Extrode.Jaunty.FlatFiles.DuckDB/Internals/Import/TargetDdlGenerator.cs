@@ -36,7 +36,7 @@ internal static class TargetDdlGenerator
 
         foreach (PropertyInfo prop in MappedPropertyFilter.GetMappedProperties(entityType))
         {
-            if (prop.GetCustomAttribute<KeyAttribute>() is null) continue;
+            if (!MappedPropertyFilter.IsKey(prop)) continue;
 
             if (keyProperty is not null)
             {
@@ -67,7 +67,7 @@ internal static class TargetDdlGenerator
             // AUD-R26-067: was a fourth inline copy of the "[Column] name or property name" rule.
             var columnName = MappedPropertyFilter.GetColumnName(prop);
             DuplicateColumnGuard.Claim(entityType, columnName, prop, claimed);
-            var isPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() is not null;
+            var isPrimaryKey = MappedPropertyFilter.IsKey(prop);
 
             // AUD-R26 (batch 7, medium/bug). Normalize here as well as unwrapping Nullable<T>,
             // because this is the only place that holds the PropertyInfo: [EnumStorage] is a

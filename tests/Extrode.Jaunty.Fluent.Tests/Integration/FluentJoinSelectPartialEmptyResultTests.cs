@@ -51,8 +51,9 @@ public class FluentJoinSelectPartialEmptyResultTests : IClassFixture<FluentDatab
     [Fact]
     public async Task SelectPartialFirstAsync_ValueTypeMapper_NoRows_Throws()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             EmptyJoin().SelectPartialFirstAsync("p.product_id", r => r.GetInt32(0)));
+        Assert.Equal("Sequence contains no elements of type 'Int32'.", ex.Message);
     }
 
     [Fact]

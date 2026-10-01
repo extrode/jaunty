@@ -252,7 +252,7 @@ public static class NamingHelper
             return word;
 
         if (IrregularPlurals.TryGetValue(word, out var singular))
-            return singular;
+            return IsAllCaps(word) ? singular.ToUpperInvariant() : singular;
 
         // AUD-R35-264: the whole-word lookup above has already answered every bare irregular, so
         // this pass only ever sees a compound (OrderIndices -> OrderIndex). It runs first because
@@ -271,8 +271,10 @@ public static class NamingHelper
             return ie;
 
         // -ies -> -y (e.g., categories -> category)
+        // AUD-R38-111: the "y" takes the case of the "S" it replaces, so CATEGORIES -> CATEGORY
+        // rather than CATEGORy. The shape rules below only strip characters and keep the case.
         if (word.EndsWith("ies", StringComparison.OrdinalIgnoreCase) && word.Length > 4)
-            return word[..^3] + "y";
+            return word[..^3] + (char.IsUpper(word[^1]) ? "Y" : "y");
 
         // The closed classes first - a word in either of these would be truncated by the
         // sibilant rules below (Statuses -> "Statuse" without the first, Caches -> "Cach"
@@ -346,17 +348,37 @@ public static class NamingHelper
                 continue;
 
             var start = word.Length - plural.Length;
-            if (start > 0 && !char.IsUpper(word[start]))
+
+            // AUD-R38-111: an all-caps word has no PascalCase segments, so every capital is not a
+            // boundary - ENTITIES is not ENTI + TIES - and its replacement is all caps too.
+            bool allCaps = IsAllCaps(word);
+            if (start > 0 && (allCaps || !char.IsUpper(word[start])))
                 continue;
 
-            var replacement = char.IsUpper(word[start])
-                ? char.ToUpperInvariant(singular[0]) + singular[1..]
-                : singular;
+            var replacement = allCaps
+                ? singular.ToUpperInvariant()
+                : char.IsUpper(word[start])
+                    ? char.ToUpperInvariant(singular[0]) + singular[1..]
+                    : singular;
 
             return word[..start] + replacement;
         }
 
         return null;
+    }
+
+    private static bool IsAllCaps(string word)
+    {
+        bool anyLetter = false;
+        foreach (char c in word)
+        {
+            if (char.IsLower(c))
+                return false;
+
+            anyLetter |= char.IsLetter(c);
+        }
+
+        return anyLetter;
     }
 
     /// <summary>

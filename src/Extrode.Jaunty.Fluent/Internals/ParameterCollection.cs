@@ -52,6 +52,48 @@ internal sealed class ParameterCollection
     public bool Contains(string name) => _names.Contains(name);
 
     /// <summary>
+    /// Whether a parameter differing from <paramref name="name"/> only in case was added. SQL Server
+    /// under its default case-insensitive collation reads <c>@P_ID</c> and <c>@p_id</c> as one
+    /// variable, so two such names in one batch fail as a duplicate declaration (AUD-R38-105).
+    /// </summary>
+    public bool ContainsIgnoringCase(string name)
+    {
+        for (int i = 0; i < _parameters.Count; i++)
+        {
+            if (string.Equals(_parameters[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The names added from position <paramref name="start"/> on, in the order they were added.
+    /// </summary>
+    public List<string> NamesFrom(int start)
+    {
+        var names = new List<string>(Math.Max(0, _parameters.Count - start));
+        for (int i = start; i < _parameters.Count; i++)
+            names.Add(_parameters[i].Name);
+        return names;
+    }
+
+    /// <summary>
+    /// Removes a parameter added earlier. Used when a join clause is redefined and the parameters
+    /// its previous condition bound are no longer referenced (AUD-R38-086).
+    /// </summary>
+    public void Remove(string name)
+    {
+        int index = _parameters.FindIndex(p => string.Equals(p.Name, name, StringComparison.Ordinal));
+        if (index < 0)
+            return;
+
+        _parameters.RemoveAt(index);
+        _names.Remove(name);
+        _strippedNames.Remove(StripSigil(name));
+    }
+
+    /// <summary>
     /// Builds a placeholder name derived from a caller-supplied column that is safe to use as a
     /// SQL parameter identifier and is not already in this collection.
     /// </summary>

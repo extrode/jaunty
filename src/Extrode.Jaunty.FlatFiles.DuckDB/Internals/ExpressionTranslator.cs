@@ -2,6 +2,7 @@ using System.Collections;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 using DuckDB.NET.Data;
@@ -530,6 +531,13 @@ internal static class ExpressionTranslator
         if (TryEvaluateWithoutCompiling(expression, out object? value))
             return value;
 
+        // AUD-R38-080: an operand that reads the entity (x => x.A == x.B) is not a value. Compiling
+        // it failed with an InvalidOperationException about an undefined variable; the class doc
+        // promises NotSupportedException for this shape.
+        if (EntityParameterFinder.ReadsEntity(expression))
+            throw new NotSupportedException(
+                $"'{expression}' reads the entity, so it cannot be used as a value. Property-to-property comparisons are not supported in flat file predicates.");
+
         // Not cached by expression.ToString(): closure-captured variables (e.g. `x => x.Age > someLocalVar`)
         // produce a new Expression instance per call but stringify identically across calls, so a
         // string-keyed cache would return a stale compiled delegate bound to an earlier call's captured value.
@@ -556,6 +564,37 @@ internal static class ExpressionTranslator
     /// are independent - Extrode.Jaunty.FlatFiles.DuckDB does not reference Extrode.Jaunty.Fluent.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Finds a parameter the operand does not declare itself, which can only be the predicate's
+    /// entity parameter. A nested lambda's own parameters (<c>list.Any(v =&gt; v &gt; 1)</c>) are
+    /// bound inside the operand and do not count.
+    /// </summary>
+    private sealed class EntityParameterFinder : ExpressionVisitor
+    {
+        private readonly HashSet<ParameterExpression> _declared = [];
+        private bool _found;
+
+        public static bool ReadsEntity(Expression expression)
+        {
+            var finder = new EntityParameterFinder();
+            finder.Visit(expression);
+            return finder._found;
+        }
+
+        protected override Expression VisitLambda<TDelegate>(Expression<TDelegate> node)
+        {
+            _declared.UnionWith(node.Parameters);
+            return base.VisitLambda(node);
+        }
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            if (!_declared.Contains(node))
+                _found = true;
+            return node;
+        }
+    }
+
     private static bool TryEvaluateWithoutCompiling(Expression expression, out object? value)
     {
         value = null;
@@ -600,7 +639,17 @@ internal static class ExpressionTranslator
                         if (instance is null && !getter.IsStatic)
                             return false;
 
-                        value = property.GetValue(instance);
+                        // AUD-R38-104: unwrapped, as the compiled path throws what the getter threw.
+                        try
+                        {
+                            value = property.GetValue(instance);
+                        }
+                        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+                        {
+                            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                            throw;
+                        }
+
                         return true;
 
                     default:

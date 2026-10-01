@@ -81,7 +81,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         => ExecutePartialAsync(_dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 1), options, async (reader, ct) =>
             await reader.ReadAsync(ct).ConfigureAwait(false)
                 ? mapper(reader)
-                : throw new InvalidOperationException("Sequence contains no elements."),
+                : throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'."),
             cancellationToken);
 
     public Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(

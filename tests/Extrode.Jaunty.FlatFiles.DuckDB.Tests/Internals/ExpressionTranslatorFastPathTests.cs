@@ -25,6 +25,7 @@ public class ExpressionTranslatorFastPathTests
         private int Hidden { get; } = 6;
         public int WriteOnly { set { } }
         public int this[int index] => index;
+        public int Throws => throw new InvalidOperationException("boom");
 
         public static MemberExpression HiddenOn(Box box) =>
             Expression.Property(Expression.Constant(box), typeof(Box).GetProperty(nameof(Hidden), BindingFlags.NonPublic | BindingFlags.Instance)!);
@@ -122,6 +123,15 @@ public class ExpressionTranslatorFastPathTests
         Expression<Func<int>> read = () => none!.Field;
 
         Assert.Throws<NullReferenceException>(() => Evaluate(read.Body));
+    }
+
+    [Fact]
+    public void AGetterThatThrows_SurfacesItsOwnException()
+    {
+        Box box = Make();
+        Expression<Func<int>> read = () => box.Throws;
+
+        Assert.Throws<InvalidOperationException>(() => Evaluate(read.Body));
     }
 
     [Fact]

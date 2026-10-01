@@ -42,7 +42,7 @@ internal static class ImportDialectResolver
     /// </summary>
     /// <exception cref="InvalidOperationException">
     /// The connection type is not recognised and nothing is registered for it. The message names the
-    /// type and <see cref="Register"/>.
+    /// type and <c>ImportOptions.Dialect</c>, the remedy a caller outside this assembly has.
     /// </exception>
     /// <remarks>
     /// <para>

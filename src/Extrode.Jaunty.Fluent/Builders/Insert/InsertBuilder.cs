@@ -89,7 +89,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         string propertyName = PropertyExtractor.ExtractPropertyName(selector);
         // Already escaped - see comment in Values(object) above.
         string columnName = GetColumnNameFromProperty(propertyName);
-        var paramName = $"{_dialect.ParameterPrefix}{propertyName}";
+        string paramName = _parameters.CreateDerivedName(_dialect.ParameterPrefix, propertyName);
         _parameters.Add(paramName, value);
         _columns.Add(new InsertColumn(columnName, paramName));
         return this;
@@ -97,7 +97,11 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
     public IValuesClause<T> Value(string column, object? value)
     {
-        var paramName = $"{_dialect.ParameterPrefix}{SanitizeParamName(column)}";
+        // AUD-R22: sanitized, because a space or other character invalid in a parameter identifier
+        // (e.g. Value("Order Date", value)) made a malformed placeholder. AUD-R38-090: and suffixed
+        // only on a collision, so "Order Date" and "Order_Date" no longer both claim @Order_Date
+        // and throw from ParameterCollection.Add.
+        string paramName = _parameters.CreateDerivedName(_dialect.ParameterPrefix, column);
         _parameters.Add(paramName, value);
         _columns.Add(new InsertColumn(_dialect.EscapeColumnName(column), paramName));
         return this;
@@ -301,7 +305,12 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 if (wasClosed)
                     await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+                DbCommand command = dbConnection.CreateCommand();
+                await using var commandDisposer = command.ConfigureAwait(false);
+#else
                 using DbCommand command = dbConnection.CreateCommand();
+#endif
                 _parameters.BindTo(command);
                 command.CommandText = commandText;
                 FluentCommandOptions.Apply(command, dbConnection, options);
@@ -349,21 +358,6 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 return columns[i];
         }
         return null;
-    }
-
-    // AUD-R22: column is the raw caller-supplied column name from the string-based Value
-    // overload. A space or other character invalid in a SQL parameter identifier (e.g.
-    // Value("Order Date", value)) used to be interpolated unsanitized, producing a malformed
-    // placeholder that fails at execution time.
-    private static string SanitizeParamName(string name)
-    {
-        char[] chars = name.ToCharArray();
-        for (int i = 0; i < chars.Length; i++)
-        {
-            if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '_')
-                chars[i] = '_';
-        }
-        return new string(chars);
     }
 
     #endregion

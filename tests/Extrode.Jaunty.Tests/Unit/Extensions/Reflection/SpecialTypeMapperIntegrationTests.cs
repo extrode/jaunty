@@ -69,6 +69,7 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
         var key = row.Keys.FirstOrDefault(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(key);
         Assert.True(row[key] > 0);
+        Assert.True(row.ContainsKey("CATEGORYID"));
     }
 
     #endregion

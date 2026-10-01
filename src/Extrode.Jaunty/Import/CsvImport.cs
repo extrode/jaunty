@@ -769,7 +769,7 @@ public static class CsvImportExtensions
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                throw ServerSideImportFailure(filePath, "PostgreSQL server-side COPY FROM", ex);
+                throw PostgresServerSideImportFailure(filePath, ex);
             }
         }
         finally
@@ -851,7 +851,7 @@ public static class CsvImportExtensions
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                throw ServerSideImportFailure(filePath, "PostgreSQL server-side COPY FROM", ex);
+                throw PostgresServerSideImportFailure(filePath, ex);
             }
         }
         finally
@@ -1047,7 +1047,7 @@ public static class CsvImportExtensions
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                throw ServerSideImportFailure(filePath, "SQL Server BULK INSERT", ex);
+                throw SqlServerServerSideImportFailure(filePath, ex);
             }
         }
         finally
@@ -1090,7 +1090,7 @@ public static class CsvImportExtensions
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                throw ServerSideImportFailure(filePath, "SQL Server BULK INSERT", ex);
+                throw SqlServerServerSideImportFailure(filePath, ex);
             }
         }
         finally
@@ -1318,7 +1318,26 @@ public static class CsvImportExtensions
     /// an ordinary typo. The provider exception is kept as the inner exception - it carries the
     /// error number and the server's own wording, and nothing here is a substitute for that.
     /// </remarks>
-    private static InvalidOperationException ServerSideImportFailure(string filePath, string importMethodName, Exception inner)
+    // AUD-R38-122: the permission and the client-side alternative are per engine. Both used to read
+    // SQL Server's, so a PostgreSQL permission failure named ADMINISTER BULK OPERATIONS.
+    internal static InvalidOperationException SqlServerServerSideImportFailure(string filePath, Exception inner) =>
+        ServerSideImportFailure(
+            filePath,
+            "SQL Server BULK INSERT",
+            "bulk-load permission (ADMINISTER BULK OPERATIONS, or membership of bulkadmin)",
+            "SQL Server's BulkInsert<T>, or one of the engines whose import streams from here",
+            inner);
+
+    internal static InvalidOperationException PostgresServerSideImportFailure(string filePath, Exception inner) =>
+        ServerSideImportFailure(
+            filePath,
+            "PostgreSQL server-side COPY FROM",
+            "permission to read server files (superuser, or membership of pg_read_server_files)",
+            "COPY ... FROM STDIN, which Extrode.Jaunty.Extensions.Npgsql provides once JauntyNpgsql.Use() is called",
+            inner);
+
+    private static InvalidOperationException ServerSideImportFailure(
+        string filePath, string importMethodName, string permission, string clientSideRoute, Exception inner)
     {
         string clientSide = File.Exists(filePath)
             ? "That path exists on the calling machine, which means the database server is a different machine (or the account it runs as cannot read the path)."
@@ -1327,9 +1346,8 @@ public static class CsvImportExtensions
         return new InvalidOperationException(
             $"{importMethodName} failed for '{filePath}'. This import path is resolved by the database server, " +
             $"not by the process calling Extrode.Jaunty, so the file must be readable by the server. {clientSide} " +
-            "The account also needs the server's bulk-load permission (ADMINISTER BULK OPERATIONS, or membership " +
-            "of bulkadmin). To import a file that lives on the calling machine, use a client-side route instead - " +
-            "SQL Server's BulkInsert<T>, or one of the engines whose import streams from here.",
+            $"The account also needs the server's {permission}. To import a file that lives on the calling " +
+            $"machine, use a client-side route instead - {clientSideRoute}.",
             inner);
     }
 

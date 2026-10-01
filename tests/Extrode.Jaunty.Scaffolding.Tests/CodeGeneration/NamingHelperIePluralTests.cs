@@ -27,6 +27,19 @@ public class NamingHelperIePluralTests
     public void AnIeSingularKeepsItsE(string plural, string expected) =>
         Assert.Equal(expected, NamingHelper.Singularize(plural));
 
+    [Theory]
+    [InlineData("CATEGORIES", "CATEGORY")]
+    [InlineData("COMPANIES", "COMPANY")]
+    [InlineData("ENTITIES", "ENTITY")]
+    [InlineData("Categories", "Category")]
+    [InlineData("categories", "category")]
+    [InlineData("MOVIES", "MOVIE")]
+    [InlineData("PEOPLE", "PERSON")]
+    [InlineData("SHELVES", "SHELF")]
+    [InlineData("STATUSES", "STATUS")]
+    public void TheIesRule_KeepsTheInputsCase(string plural, string expected) =>
+        Assert.Equal(expected, NamingHelper.Singularize(plural));
+
     /// <summary>
     /// Their own plurals, which no shape rule can recognise.
     /// </summary>

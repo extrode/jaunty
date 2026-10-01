@@ -611,9 +611,10 @@ public class DuckDbDialectTests
 
         var result = _dialect.GeneratePromoteToTableSql(source);
 
-        Assert.Contains("CREATE TABLE \"sales_tmp\" AS SELECT * FROM \"sales\"", result);
-        Assert.Contains("DROP VIEW \"sales\"", result);
-        Assert.Contains("ALTER TABLE \"sales_tmp\" RENAME TO \"sales\"", result);
+        Assert.Matches(
+            "^CREATE TABLE \"(sales_tmp_[0-9a-f]{32})\" AS SELECT \\* FROM \"sales\"; DROP VIEW \"sales\"; ALTER TABLE \"\\1\" RENAME TO \"sales\";$",
+            result);
+        Assert.NotEqual(result, _dialect.GeneratePromoteToTableSql(source));
     }
 
     // ==========================================
