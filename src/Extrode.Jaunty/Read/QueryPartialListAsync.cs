@@ -211,7 +211,14 @@ public static partial class Jaunty
 
         try
         {
+            // AUD-R38-140: a synchronous Dispose drains unread rows and result sets with blocking I/O,
+            // so these dispose asynchronously where the runtime allows, as the other async cores do.
+#if NET8_0_OR_GREATER
+            DbCommand command = connection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = connection.CreateCommand();
+#endif
             command.CommandText = sql;
 
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
@@ -228,7 +235,12 @@ public static partial class Jaunty
 
             var results = new List<IDictionary<string, object?>>();
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             var columnNames = new string[reader.FieldCount];
             for (int i = 0; i < columnNames.Length; i++)
