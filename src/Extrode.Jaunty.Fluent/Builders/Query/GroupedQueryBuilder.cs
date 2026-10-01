@@ -65,8 +65,8 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 #endif
         TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
     {
-        var sql = BuildSelectSql(selector);
-        return ExecuteQuery<TResult>(sql, selector, options);
+        var sql = BuildSelectSql(selector, out string[] aliases);
+        return ExecuteQuery<TResult>(sql, aliases, options);
     }
 
     public Task<List<TResult>> SelectAsync<
@@ -86,13 +86,13 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 #endif
         TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
     {
-        var sql = BuildSelectSql(selector);
-        return await ExecuteQueryAsync<TResult>(sql, selector, options, cancellationToken).ConfigureAwait(false);
+        var sql = BuildSelectSql(selector, out string[] aliases);
+        return await ExecuteQueryAsync<TResult>(sql, aliases, options, cancellationToken).ConfigureAwait(false);
     }
 
     public string ToSql<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
     {
-        return BuildSelectSql(selector);
+        return BuildSelectSql(selector, out _);
     }
 
     /// <summary>
@@ -117,10 +117,12 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return expr;
     }
 
-    private string BuildSelectSql<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    private string BuildSelectSql<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, out string[] aliases)
     {
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns, _keyMemberColumns);
-        (string[]? selectColumns, string[] _) = visitor.TranslateSelect(selector);
+        (string[]? selectColumns, string[] translatedAliases) = visitor.TranslateSelect(selector);
+        // AUD-R38-094: handed to the execute path, which used to translate the selector again.
+        aliases = translatedAliases;
 
         var sb = new StringBuilder(256);
 
@@ -171,10 +173,10 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors)]
 #endif
-        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
+        TResult>(string sql, string[] aliases, CommandOptions options)
         => CommandObservation.Execute(
             sql, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
-            () => ExecuteQueryDirect(sql, selector, options));
+            () => ExecuteQueryDirect<TResult>(sql, aliases, options));
 
     private List<TResult> ExecuteQueryDirect<
 #if NET5_0_OR_GREATER
@@ -182,10 +184,8 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors)]
 #endif
-        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
+        TResult>(string sql, string[] aliases, CommandOptions options)
     {
-        var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns, _keyMemberColumns);
-        (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
@@ -223,10 +223,10 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors)]
 #endif
-        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+        TResult>(string sql, string[] aliases, CommandOptions options, CancellationToken cancellationToken)
         => await CommandObservation.ExecuteAsync(
             sql, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
-            () => ExecuteQueryDirectAsync(sql, selector, options, cancellationToken), cancellationToken).ConfigureAwait(false);
+            () => ExecuteQueryDirectAsync<TResult>(sql, aliases, options, cancellationToken), cancellationToken).ConfigureAwait(false);
 
     private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<
 #if NET5_0_OR_GREATER
@@ -234,13 +234,11 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors)]
 #endif
-        TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+        TResult>(string sql, string[] aliases, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns, _keyMemberColumns);
-        (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
