@@ -19,20 +19,25 @@ internal static class SqlParameterParser
     /// pseudo-columns and <c>$5.00</c> is a money literal, and for MySQL/MariaDB, where <c>$</c> is
     /// only ever an identifier character.
     /// </param>
-    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false, bool dollarSigil = true)
+    /// <param name="bracketIdentifiers">
+    /// Whether <c>[</c> opens a quoted identifier. True only for SQL Server and SQLite; PostgreSQL's
+    /// <c>ARRAY[@a, @b]</c> and <c>tags[@i]</c> and DuckDB's <c>[@a, @b]</c> list literal hold real
+    /// placeholders, which a bracket run would hide from binding.
+    /// </param>
+    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false, bool dollarSigil = true, bool bracketIdentifiers = true)
     {
         if (string.IsNullOrWhiteSpace(sql))
             return [];
 
 #if NET8_0_OR_GREATER
-        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes, dollarSigil);
+        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes, dollarSigil, bracketIdentifiers);
 #else
-        return ExtractParameterNamesClassic(sql, backslashEscapes, dollarSigil);
+        return ExtractParameterNamesClassic(sql, backslashEscapes, dollarSigil, bracketIdentifiers);
 #endif
     }
 
 #if NET8_0_OR_GREATER
-    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes, bool dollarSigil)
+    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers)
     {
         // Deferred until the first sigil is found. Opening with a sized List cost every
         // parameterless statement a List plus its backing array - measured at 120 bytes/call by
@@ -72,16 +77,16 @@ internal static class SqlParameterParser
             // mode, which is the only mode that sets backslashEscapes. So the flag flows
             // through here exactly as it does for the single quote above, matching
             // ParameterBinder's own literal scanners, which both test `c is '\'' or '"'`.
-            // Bracket and backtick runs below are identifiers in every dialect and never take
-            // an escape.
+            // Bracket and backtick runs below are identifiers wherever they are recognised and
+            // never take an escape.
             if (c == '"')
             {
                 i = SkipQuoted(sql, i + 1, '"', backslashEscapes);
                 continue;
             }
 
-            // Skip bracket-quoted identifier (SQL Server)
-            if (c == '[')
+            // Skip bracket-quoted identifier (SQL Server, SQLite)
+            if (c == '[' && bracketIdentifiers)
             {
                 i = SkipQuoted(sql, i + 1, ']', backslashEscapes: false);
                 continue;
@@ -231,7 +236,7 @@ internal static class SqlParameterParser
     }
 #endif
 
-    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes, bool dollarSigil)
+    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers)
     {
         List<string>? names = null;
         var i = 0;
@@ -266,7 +271,7 @@ internal static class SqlParameterParser
                 continue;
             }
 
-            if (c == '[')
+            if (c == '[' && bracketIdentifiers)
             {
                 i = SkipQuotedClassic(sql, i + 1, len, ']', backslashEscapes: false);
                 continue;
