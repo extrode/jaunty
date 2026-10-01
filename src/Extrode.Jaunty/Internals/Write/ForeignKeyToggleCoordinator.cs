@@ -31,6 +31,7 @@ internal static class ForeignKeyToggleCoordinator
         => ignoreConstraints && dialect.RequiresAutocommitForForeignKeyToggle;
 
     /// <remarks>
+    /// <para>
     /// AUD-R35-131. These four took no timeout and never assigned <c>CommandTimeout</c>, so the
     /// disable/enable statements ran on the provider default - 30 seconds for SQL Server and MySQL -
     /// while every other command the same bulk operation issues honours the caller's
@@ -38,8 +39,8 @@ internal static class ForeignKeyToggleCoordinator
     /// contended still got a 30-second cap on the statement that turns enforcement back on, and a
     /// timeout there is exactly the failure that returns a pooled connection with foreign keys off -
     /// the hole AUD-R34-008 was filed to close from the other direction.
-    /// </remarks>
-    /// <remarks>
+    /// </para>
+    /// <para>
     /// AUD-R35-132. The statements are logged through <see cref="JauntyConfig.Logger"/> but are
     /// deliberately not routed through <c>CommandObservation</c>/<c>InterceptorPipeline</c>: a bulk
     /// operation reports exactly one interceptor event by design (see
@@ -48,6 +49,7 @@ internal static class ForeignKeyToggleCoordinator
     /// commands. The log line is what an audit reader needs to see that enforcement was suspended;
     /// carrying the fact into the interceptor payload instead is a `BulkOperationParameters` change
     /// and a product decision, recorded on the maintainers' backlog.
+    /// </para>
     /// </remarks>
     internal static void DisableSync(IDbConnection connection, ISqlDialect dialect, IDbTransaction? transaction, int? commandTimeout)
     {

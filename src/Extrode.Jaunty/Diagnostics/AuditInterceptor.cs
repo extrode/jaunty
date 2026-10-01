@@ -87,8 +87,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
     /// torn read the old code was open to, where <c>Count</c> and the enumeration could disagree
     /// under a concurrent write.
     /// </para>
-    /// </remarks>
-    /// <remarks>
+    /// <para>
     /// AUD-R35-151. This used to hand back the retained <see cref="AuditRecord"/> instances
     /// themselves, and every property on them is settable - so a consumer reading the trail could
     /// rewrite it in place, including <see cref="AuditRecord.Sequence"/>, which exists precisely so
@@ -99,6 +98,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
     /// at all: each is copied, and the result is a read-only view over a private array. The setters
     /// stay public - an <c>init</c>-only record would be a breaking change for consumers who build
     /// these, and copying at the boundary is where the guarantee belongs.
+    /// </para>
     /// </remarks>
     public IEnumerable<AuditRecord> GetRecentRecords(int count = 100)
     {
