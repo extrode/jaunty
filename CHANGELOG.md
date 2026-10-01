@@ -25,6 +25,15 @@ default lives in `src/Directory.Build.props`.
   `private protected` now gets a `JAUNTYGEN004` warning instead of a CS0310 build error inside the
   generated file.** The generated mapper implements `IMapped<T>`, which requires a public
   parameterless constructor. Make the constructor `public` to get a generated mapper.
+- **A `[Table]` entity with a `required` member, or whose public parameterless constructor is
+  `[Obsolete(..., error: true)]`, now gets a `JAUNTYGEN004` warning** instead of CS9040, CS9035 or
+  CS0619 build errors inside the generated file.
+- **A `[Table]` record (non-positional, with a public parameterless constructor) now gets a
+  generated mapper.** It was silently skipped before, so the first call threw
+  `No parameter binder found`. A positional record gets a `JAUNTYGEN004` warning.
+- **`JAUNTYGEN004` no longer says the entity will be mapped by reflection.** It is mapped only if
+  `UseReflectionMapping()` is called; otherwise the first call that needs it throws. The
+  diagnostic title and message now say so.
 
 ### Changed
 
