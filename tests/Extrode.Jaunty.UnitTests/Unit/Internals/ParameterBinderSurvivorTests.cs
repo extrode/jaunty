@@ -238,23 +238,24 @@ public class ParameterBinderSurvivorTests
     }
 
     [Fact]
-    public void ACollectionTypedShapeWithNothingToExpand_StillBindsEveryScalar()
+    public void ACollectionTypedShapeHoldingAScalar_StillBindsEveryParameter()
     {
         var command = Command("x = @Id AND y IN @Tags -- " + Unique());
 
-        ParameterBinder.Bind(command, new Tagged { Id = 4, Tags = null });
+        ParameterBinder.Bind(command, new Tagged { Id = 4, Tags = "abc" });
 
-        var parameter = command.Parameters.Cast<FakeParameter>().Single(p => p.ParameterName == "Id");
-        Assert.Equal(4, parameter.Value);
+        var bound = command.Parameters.Cast<FakeParameter>().ToDictionary(p => p.ParameterName, p => p.Value);
+        Assert.Equal(4, bound["Id"]);
+        Assert.Equal("abc", bound["Tags"]);
     }
 
     [Fact]
     public void ACollectionTypedShape_IsNeverCachedAsATemplate()
     {
         var command = Command("x = @Id AND y IN @Tags -- " + Unique());
-        ParameterBinder.Bind(command, new Tagged { Id = 1, Tags = null });
+        ParameterBinder.Bind(command, new Tagged { Id = 1, Tags = "abc" });
 
-        Assert.False(ParameterBinder.TryRebind(command, new Tagged { Id = 2, Tags = null }));
+        Assert.False(ParameterBinder.TryRebind(command, new Tagged { Id = 2, Tags = "abc" }));
     }
 
     [Fact]
