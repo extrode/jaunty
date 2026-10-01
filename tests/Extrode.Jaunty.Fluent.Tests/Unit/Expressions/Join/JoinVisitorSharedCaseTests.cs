@@ -28,6 +28,9 @@ public class JoinVisitorSharedCaseTests
         var list = new List<int> { 1 };
         var pc = new[] { Expression.Parameter(typeof(Product), "p"), Expression.Parameter(typeof(Category), "c") };
         Expression productId = Expression.Property(pc[0], nameof(Product.ProductId));
+        Expression categoryId = Expression.Property(pc[1], nameof(Category.CategoryId));
+        bool on = true;
+        bool off = false;
 
         return new()
         {
@@ -37,12 +40,12 @@ public class JoinVisitorSharedCaseTests
             ["RightIsNotNull"] = (P((p, c) => null != c.Description), "(c.[description] IS NOT NULL)"),
             ["CapturedNull"] = (P((p, c) => c.Description == noName), "(c.[description] IS NULL)"),
             ["ConvertedCapturedNull"] = (P((p, c) => p.ProductId == noShort), "(p.[product_id] IS NULL)"),
-            ["OrderedAgainstNull"] = (P((p, c) => p.SupplierId > noInt), "(p.[supplier_id] > NULL)"),
+            ["OrderedAgainstNull"] = (P((p, c) => p.SupplierId > noInt), "(1 = 0)"),
             ["NullAgainstNull"] = (P((p, c) => noName == null), "(1 = 1)"),
             ["NullAgainstNullNotEqual"] = (P((p, c) => noName != null), "(1 = 0)"),
             ["NullAgainstCapturedValue"] = (P((p, c) => null == someName), "(NULL = @jp0)"),
-            ["BareColumn"] = (P((p, c) => p.Discontinued), "p.[discontinued]"),
-            ["Not"] = (P((p, c) => !p.Discontinued), "NOT (p.[discontinued])"),
+            ["BareColumn"] = (P((p, c) => p.Discontinued), "p.[discontinued] = 1"),
+            ["Not"] = (P((p, c) => !p.Discontinued), "NOT (p.[discontinued] = 1)"),
             ["NotComparison"] = (P((p, c) => !(p.CategoryId == c.CategoryId)), "NOT ((p.[category_id] = c.[category_id]))"),
             ["Operators"] = (P((p, c) => p.ProductId != c.CategoryId && p.ProductId < c.CategoryId && p.ProductId <= c.CategoryId && p.ProductId > c.CategoryId && p.ProductId >= c.CategoryId),
                 "(((((p.[product_id] <> c.[category_id]) AND (p.[product_id] < c.[category_id])) AND (p.[product_id] <= c.[category_id])) AND (p.[product_id] > c.[category_id])) AND (p.[product_id] >= c.[category_id]))"),
@@ -68,6 +71,25 @@ public class JoinVisitorSharedCaseTests
             ["Method"] = (P((p, c) => c.CategoryName.StartsWith("B")), "!Method 'StartsWith' is not supported in JOIN expressions."),
             ["Negate"] = (P((p, c) => -p.ProductId == c.CategoryId), "!Unary operator 'Negate' is not supported in JOIN expressions."),
             ["Add"] = (P((p, c) => p.ProductId + c.CategoryId == 3), "!" + AddRejected),
+            ["NestedMember"] = (P((p, c) => p.ProductName.Length == c.CategoryId),
+                "!'p.ProductName.Length' is a member of a column, not a column. Extrode.Jaunty does not translate 'Length' into SQL - use the Sql.* helpers for the supported spellings (Sql.Year, Sql.Month, Sql.Day, Sql.Length, ...), or compute the value in memory."),
+            ["NestedMemberOnTheRight"] = (P((p, c) => c.CategoryId == c.CategoryName.Length),
+                "!'c.CategoryName.Length' is a member of a column, not a column. Extrode.Jaunty does not translate 'Length' into SQL - use the Sql.* helpers for the supported spellings (Sql.Year, Sql.Month, Sql.Day, Sql.Length, ...), or compute the value in memory."),
+            ["CapturedBool"] = (P((p, c) => on), "1 = 1"),
+            ["ConstantFalse"] = (P((p, c) => false), "1 = 0"),
+            ["ColumnAndCapturedBool"] = (P((p, c) => p.Discontinued && off), "(p.[discontinued] = 1 AND 1 = 0)"),
+            ["CapturedBoolOrColumn"] = (P((p, c) => on || p.Discontinued), "(1 = 1 OR p.[discontinued] = 1)"),
+            ["NotCapturedBool"] = (P((p, c) => !on), "NOT (1 = 1)"),
+            ["NotOrderedAgainstNull"] = (P((p, c) => !(p.SupplierId > noInt)), "NOT ((1 = 0))"),
+            ["NullOrderedAgainstColumn"] = (P((p, c) => noInt <= p.SupplierId), "(1 = 0)"),
+            ["ConvertChecked"] = (Expression.Lambda(Expression.Equal(Expression.ConvertChecked(productId, typeof(long)), Expression.ConvertChecked(categoryId, typeof(long))), pc),
+                "(p.[product_id] = c.[category_id])"),
+            ["ConvertCheckedAgainstAValue"] = (Expression.Lambda(Expression.Equal(Expression.ConvertChecked(productId, typeof(long)), Expression.Constant(5L)), pc),
+                "(p.[product_id] = @p_product_id)"),
+            ["OpaqueOverParameter"] = (P((p, c) => p.ProductName.Trim().Length == c.CategoryId),
+                "!'p.ProductName.Trim().Length' is not a translatable column reference, and it cannot be evaluated before the query because it still refers to a join parameter. Compare columns directly, or compute the value outside the predicate and capture it."),
+            ["OpaqueNullCheckOverParameter"] = (P((p, c) => (int?)p.ProductName.Trim().Length == null),
+                "!'p.ProductName.Trim().Length' is not a translatable column reference, and it cannot be evaluated before the query because it still refers to a join parameter. Compare columns directly, or compute the value outside the predicate and capture it."),
         };
     }
 

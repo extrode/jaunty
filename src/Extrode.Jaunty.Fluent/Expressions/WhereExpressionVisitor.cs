@@ -19,6 +19,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     private readonly StringBuilder _sql = new();
     private readonly List<(string Name, object? Value)> _parameters = new();
     private readonly Dictionary<string, int> _parameterCounts;
+    private ParameterExpression[] _lambdaParameters = [];
 
     /// <summary>
     /// Creates the visitor. <paramref name="parameterCounts"/>, when supplied, is shared across
@@ -40,6 +41,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     {
         _sql.Clear();
         _parameters.Clear();
+        _lambdaParameters = [predicate.Parameters[0]];
 
         VisitPredicate(predicate.Body);
 
@@ -437,8 +439,9 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     }
 
     /// <summary>
-    /// Whether <paramref name="expression"/> still contains a reference to the lambda's parameter,
-    /// which is what makes it impossible to evaluate as a constant.
+    /// Whether <paramref name="expression"/> still contains a reference to the lambda's own parameter,
+    /// which is what makes it impossible to evaluate as a constant. A nested lambda's parameter -
+    /// <c>a</c> in <c>allowed.Any(a =&gt; a == x)</c> - does not count (AUD-R38).
     /// </summary>
     /// <remarks>
     /// AUD-R26-056. <c>EvaluateExpression</c> closes over nothing, so a surviving
@@ -446,23 +449,8 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     /// runtime with a message about an undefined variable. Detecting it beforehand is what lets the
     /// caller be told which method was not translatable.
     /// </remarks>
-    private static bool ReferencesLambdaParameter(Expression expression)
-    {
-        var finder = new ParameterFinder();
-        finder.Visit(expression);
-        return finder.Found;
-    }
-
-    private sealed class ParameterFinder : ExpressionVisitor
-    {
-        public bool Found { get; private set; }
-
-        protected override Expression VisitParameter(ParameterExpression node)
-        {
-            Found = true;
-            return node;
-        }
-    }
+    private bool ReferencesLambdaParameter(Expression expression)
+        => ParameterReferenceFinder.Mentions(expression, _lambdaParameters);
 
     private Expression HandleSqlFunction(MethodCallExpression node)
     {
@@ -795,6 +783,18 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         => throw new NotSupportedException(
             "Indexer access is not supported inside a WHERE predicate. Read the element before " +
             "the query and compare against the value.");
+
+    /// <summary>
+    /// A bare parameter is not a condition or a value. With no override it returned silently and
+    /// appended nothing, leaving a dangling operator - the gap AUD-R35-020 closed in the EXISTS twin.
+    /// A nested lambda's own parameter list (<c>Sql.Case().When(x =&gt; ...)</c>, reached through
+    /// Quote) is still walked by the base descent and must pass.
+    /// </summary>
+    protected override Expression VisitParameter(ParameterExpression node)
+        => Array.IndexOf(_lambdaParameters, node) < 0
+            ? node
+            : throw new NotSupportedException(
+                $"'{node.Name}' is the whole entity, not a condition. Compare its properties instead.");
 
     protected override Expression VisitConstant(ConstantExpression node)
     {
