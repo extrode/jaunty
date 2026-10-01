@@ -28,6 +28,7 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
     // AUD-R35-179. The join this clause builder has already contributed to the shared root. A second
     // On(...) on the same instance redefines it rather than appending a duplicate.
     private JoinInfo? _addedJoin;
+    private List<string>? _boundParameters;
 
     public JoinClause4Builder(JoinedQuery3Builder<T1, T2, T3> parent, JoinType joinType, string? alias)
     {
@@ -99,7 +100,11 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
 
         // Renumbered against the query-wide sequence for the same reason as the arity-3 overload:
         // by the fourth join the query can already hold "jp0", and each visitor restarts at 0.
-        return CreateJoinedQuery4(root.RegisterExpressionParameters(condition, parameters), alias);
+        ReleaseBoundParameters();
+        int start = root.ParameterCount;
+        JoinedQuery4Builder<T1, T2, T3, T4> joinedQuery = CreateJoinedQuery4(root.RegisterExpressionParameters(condition, parameters), alias);
+        _boundParameters = root.ParameterNamesFrom(start);
+        return joinedQuery;
     }
 
     /// <inheritdoc cref="JoinClauseBuilder{TFrom, TJoin}.On(string, string)"/>
@@ -122,12 +127,20 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         JoinedQueryBuilder<T1, T2> root = _parent._parent;
         string qualified = JoinParameterName.Qualify(root.Dialect.ParameterPrefix, parameterName, nameof(parameterName));
 
-        if (root.HasParameter(qualified))
+        if (root.HasParameter(qualified) && _boundParameters?.Contains(qualified) != true)
             throw JoinParameterName.DuplicateError(qualified, nameof(parameterName));
 
         JoinedQuery4Builder<T1, T2, T3, T4> joinedQuery = CreateJoinedQuery4(condition);
         root.AddParameter(qualified, value);
+        _boundParameters = [qualified];
         return joinedQuery;
+    }
+
+    /// <inheritdoc cref="JoinClause3Builder{T1, T2, T3}.ReleaseBoundParameters"/>
+    private void ReleaseBoundParameters()
+    {
+        _parent._parent.RemoveParameters(_boundParameters);
+        _boundParameters = null;
     }
 
     /// <summary>
@@ -160,6 +173,8 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
 
     private JoinedQuery4Builder<T1, T2, T3, T4> CreateJoinedQuery4(string onCondition, string? alias)
     {
+        ReleaseBoundParameters();
+
         var joinInfo = new JoinInfo(
             _joinType,
             _metadata.TableName,
