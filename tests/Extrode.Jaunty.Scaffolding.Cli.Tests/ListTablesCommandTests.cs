@@ -108,6 +108,21 @@ public class ListTablesCommandTests : IDisposable
         Assert.Contains("products", output);
     }
 
+    [Theory]
+    [InlineData("main")]
+    [InlineData("MAIN")]
+    public async Task Invoke_SchemaFilterNamingMain_ListsTheTables(string schema)
+    {
+        var command = new ListTablesCommand();
+        ParseResult result = command.Parse(["--connection", _connectionString, "--provider", "SQLite", "--schemas", schema]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Found 2 table(s)", outWriter.ToString());
+    }
+
     [Fact]
     public async Task Invoke_FiltersBySchema_ExcludesNonMatchingTables()
     {
