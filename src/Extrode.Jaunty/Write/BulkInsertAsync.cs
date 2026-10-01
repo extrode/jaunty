@@ -358,7 +358,7 @@ public static partial class Jaunty
         Action<IDataParameterCollection, T> valueSetter,
         CancellationToken cancellationToken) where T : new()
     {
-        IReadOnlyList<ColumnMetadata> insertableColumns = ColumnMetadataHelper.GetInsertableColumns(cached.Metadata);
+        IReadOnlyList<ColumnMetadata> insertableColumns = cached.Metadata.InsertColumns;
         int colCount = insertableColumns.Count;
         if (colCount == 0) return 0;
 

@@ -16,7 +16,7 @@ namespace Extrode.Jaunty.Internals.Write;
 internal static class MultiRowInsertCache
 {
     // Not keyed by column layout, unlike _getterCache below. The old justification was that
-    // ColumnMetadataHelper.GetInsertableColumns(metadata) is deterministic per entity type, so the
+    // metadata.InsertColumns is deterministic per entity type, so the
     // column set and order for T never varies across calls - and AUD-R26 (batch 4) established that
     // it does vary, because metadata is built from JauntyConfig's schema/table/column name resolvers
     // and those are public and settable at any time. That is exactly the failure the old comment
@@ -73,7 +73,7 @@ internal static class MultiRowInsertCache
     /// </summary>
     public static Func<T, object?>[] GetOrBuildGetters<T>(EntityMetadata metadata)
     {
-        IReadOnlyList<ColumnMetadata> columns = ColumnMetadataHelper.GetInsertableColumns(metadata);
+        IReadOnlyList<ColumnMetadata> columns = metadata.InsertColumns;
         (Type, string) key = (typeof(T), BuildLayoutKey(columns));
 
         if (_getterCache.TryGetValue(key, out Delegate[]? cached))
@@ -144,7 +144,7 @@ internal static class MultiRowInsertCache
         string escapedTableName = dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
 
         // Get insertable columns (non-identity, non-computed)
-        IReadOnlyList<ColumnMetadata> insertableColumns = ColumnMetadataHelper.GetInsertableColumns(metadata);
+        IReadOnlyList<ColumnMetadata> insertableColumns = metadata.InsertColumns;
         int colCount = insertableColumns.Count;
 
         // Estimate capacity: table + columns + per-row params
