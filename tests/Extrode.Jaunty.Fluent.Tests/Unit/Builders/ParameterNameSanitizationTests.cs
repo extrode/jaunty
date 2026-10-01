@@ -48,6 +48,30 @@ public class ParameterNameSanitizationTests
         Assert.Contains("@Order_Date", sql);
     }
 
+    [Fact]
+    public void Value_TwoColumnsThatSanitizeAlike_GetDistinctPlaceholders()
+    {
+        var sql = _connection.Into<Product>()
+            .Value("Order Date", "2024-01-01")
+            .Value("Order_Date", "2024-01-02")
+            .ToSql();
+
+        Assert.Contains("@Order_Date,", sql);
+        Assert.Contains("@Order_Date_2", sql);
+    }
+
+    [Fact]
+    public void Value_ASelectorAfterAStringColumnOfTheSameName_GetsADistinctPlaceholder()
+    {
+        var sql = _connection.Into<Product>()
+            .Value("ProductName", "a")
+            .Value(p => p.ProductName, "b")
+            .ToSql();
+
+        Assert.Contains("@ProductName,", sql);
+        Assert.Contains("@ProductName_2", sql);
+    }
+
     private sealed class NoValidationConnection : IDbConnection
     {
         #pragma warning disable CS8767 // IDbConnection.ConnectionString is [AllowNull]; the attribute is not public on net472.
