@@ -241,6 +241,26 @@ public class SqlDialectTests
     }
 
     [Theory]
+    [InlineData("partition")]
+    [InlineData("Virtual")]
+    [InlineData("STORED")]
+    [InlineData("GENERATED")]
+    [InlineData("get")]
+    [InlineData("OPTIMIZER_COSTS")]
+    [InlineData("cube")]
+    [InlineData("function")]
+    [InlineData("INTERSECT")]
+    [InlineData("IO_AFTER_GTIDS")]
+    [InlineData("IO_BEFORE_GTIDS")]
+    [InlineData("returning")]
+    [InlineData("offset")]
+    [InlineData("vector")]
+    public void MySql_ReservedWordsMissingBeforeR38_AreEscaped(string column)
+    {
+        Assert.Equal($"`{column}`", _mySql.EscapeColumnName(column));
+    }
+
+    [Theory]
     [InlineData("db", "select", "db.`select`")]
     [InlineData("database", "ORDER", "`database`.`ORDER`")]
     public void MySql_EscapeTableName_WithSchema_Keyword_Escaped(string schema, string table, string expected)
@@ -769,7 +789,7 @@ public class SqlDialectTests
     [Fact]
     public void MySql_GenerateLength_ReturnsLength()
     {
-        Assert.Equal("LENGTH(col)", _mySql.GenerateLength("col"));
+        Assert.Equal("CHAR_LENGTH(col)", _mySql.GenerateLength("col"));
     }
 
     [Fact]

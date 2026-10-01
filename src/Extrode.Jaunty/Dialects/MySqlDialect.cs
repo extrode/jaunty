@@ -51,6 +51,16 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
         "CUME_DIST", "DENSE_RANK", "EMPTY", "EXCEPT", "FIRST_VALUE", "GROUPING", "GROUPS",
         "JSON_TABLE", "LAG", "LAST_VALUE", "LATERAL", "LEAD", "NTH_VALUE", "NTILE", "OF", "OVER",
         "PERCENT_RANK", "RANK", "RECURSIVE", "ROW", "ROWS", "ROW_NUMBER", "SYSTEM", "WINDOW",
+
+        // AUD-R38-052. Diffed against information_schema.KEYWORDS (RESERVED = 1) on MySQL 8.4, plus
+        // every word MariaDB 11.8 rejects as a bare column alias, 2026-10-01. Backticking a word
+        // that turns out not to be reserved is harmless; leaving a reserved one bare is error 1064.
+        "CUBE", "FUNCTION", "GENERATED", "GET", "INTERSECT", "IO_AFTER_GTIDS", "IO_BEFORE_GTIDS",
+        "OPTIMIZER_COSTS", "PARTITION", "STORED", "VIRTUAL",
+        "CURRENT_ROLE", "DELETE_DOMAIN_ID", "DO_DOMAIN_IDS", "IGNORE_DOMAIN_IDS",
+        "MASTER_DEMOTE_TO_REPLICA", "MASTER_DEMOTE_TO_SLAVE", "OFFSET", "PAGE_CHECKSUM",
+        "PARSE_VCOL_EXPR", "PORTION", "RETURNING", "REF_SYSTEM_ID", "SQL_AFTER_GTIDS",
+        "SQL_BEFORE_GTIDS", "STATS_AUTO_RECALC", "STATS_PERSISTENT", "STATS_SAMPLE_PAGES", "VECTOR",
     };
 
     public string ParameterPrefix => "@";
@@ -176,7 +186,8 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
     }
 
     // String functions
-    public string GenerateLength(string expression) => $"LENGTH({expression})";
+    // AUD-R38-051: LENGTH counts bytes on MySQL and MariaDB; string.Length counts characters.
+    public string GenerateLength(string expression) => $"CHAR_LENGTH({expression})";
     public string GenerateUpper(string expression) => $"UPPER({expression})";
     public string GenerateLower(string expression) => $"LOWER({expression})";
     public string GenerateTrim(string expression) => $"TRIM({expression})";
