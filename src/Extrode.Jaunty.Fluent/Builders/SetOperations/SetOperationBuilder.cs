@@ -585,8 +585,28 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         sb.Append(_firstQuerySql);
 
         // Chain operations (each with renamed parameters)
+        // AUD-R38-035: the chain is folded left-to-right. SQL Server, PostgreSQL and MySQL bind
+        // INTERSECT tighter than UNION/EXCEPT while SQLite does not, so a flat "A UNION B INTERSECT C"
+        // returned different rows per dialect. SQLite also refuses a parenthesised compound operand,
+        // so when INTERSECT follows a UNION/EXCEPT the prefix becomes a derived table instead.
+        bool prefixHasLooserOperator = false;
         foreach (SetOperationComponent operation in _operations)
         {
+            if (operation.OperationType == SetOperationType.Intersect)
+            {
+                if (prefixHasLooserOperator)
+                {
+                    string prefix = sb.ToString();
+                    sb.Clear();
+                    sb.Append("SELECT * FROM (").Append(prefix).Append(") ").Append(_dialect.EscapeTableName(null, "jaunty_set"));
+                    prefixHasLooserOperator = false;
+                }
+            }
+            else
+            {
+                prefixHasLooserOperator = true;
+            }
+
             sb.Append(' ');
             sb.Append(GetSetOperationKeyword(operation.OperationType));
             sb.Append(' ');
