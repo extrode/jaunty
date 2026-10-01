@@ -272,6 +272,40 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return !char.IsLetterOrDigit(c) && c != '_';
     }
 
+    /// <summary>
+    /// Reports whether <paramref name="sql"/> carries a real parameter placeholder.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-095. Was <c>sql.IndexOf(_dialect.ParameterPrefix)</c>, the heuristic AUD-R35-188
+    /// replaced on the <c>WhereInSubquery</c> twin: a parameter-free operand containing
+    /// <c>LIKE '%@example.com'</c> or an <c>@</c> in a comment was rejected. Literals, quoted
+    /// identifiers and comments are masked first, and the prefix must be followed by an identifier
+    /// character, which is what a placeholder looks like.
+    /// </remarks>
+    private static bool HasParameterPlaceholder(string sql, string parameterPrefix)
+    {
+        if (string.IsNullOrEmpty(parameterPrefix))
+            return false;
+
+        string scannable = MaskLiteralsAndComments(sql);
+        int from = 0;
+
+        while (from < scannable.Length)
+        {
+            int at = scannable.IndexOf(parameterPrefix, from, StringComparison.Ordinal);
+            if (at < 0)
+                return false;
+
+            int next = at + parameterPrefix.Length;
+            if (next < scannable.Length && (char.IsLetterOrDigit(scannable[next]) || scannable[next] == '_'))
+                return true;
+
+            from = at + 1;
+        }
+
+        return false;
+    }
+
     private ParameterCollection ExtractParameters(IQueryTerminal<T> query, string sql)
     {
         // SetOperationBuilder<T> does not implement IQueryTerminal<T>, so it can never
@@ -287,7 +321,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         // combined SQL with no corresponding values ever bound. Fail loudly instead of
         // silently emitting broken SQL, mirroring QueryBuilder<T>.BuildInSubqueryClause's
         // guard for the same class of gap in WhereInSubquery/WhereNotInSubquery.
-        if (sql.IndexOf(_dialect.ParameterPrefix, StringComparison.Ordinal) >= 0)
+        if (HasParameterPlaceholder(sql, _dialect.ParameterPrefix))
         {
             throw new NotSupportedException(
                 $"Union/UnionAll/Except/Intersect only supports merging parameters from " +
