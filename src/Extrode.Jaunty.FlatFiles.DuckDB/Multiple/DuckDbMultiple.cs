@@ -6,6 +6,7 @@ using DuckDB.NET.Data;
 
 using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Internals;
+using Extrode.Jaunty.Internals.Parameters;
 using Extrode.Jaunty.FlatFiles.DuckDB.Internals;
 
 namespace Extrode.Jaunty.FlatFiles.DuckDB;
@@ -139,6 +140,33 @@ public sealed partial class DuckDb
             sql, parameters, _connection, DuckDbObservation.Text,
             () => ExecuteQueryMultipleDirect(sql, parameters, options));
 
+    /// <summary>
+    /// AUD-R38-023: a string-keyed dictionary binds its entries, as it does on every core read path;
+    /// reflecting over it bound Count, Keys, Values and Comparer instead of the caller's values.
+    /// </summary>
+    private static void BindMultipleParameters(DbCommand cmd, object parameters)
+    {
+        IDictionary<string, object?>? named = ParameterBinder.AsNamedValues(parameters);
+        if (named is not null)
+        {
+            foreach (KeyValuePair<string, object?> pair in named)
+                AddNamedParameter(cmd, pair.Key, pair.Value);
+
+            return;
+        }
+
+        foreach (PropertyInfo prop in GetCachedParameterProperties(parameters.GetType()))
+            AddNamedParameter(cmd, prop.Name, prop.GetValue(parameters));
+    }
+
+    private static void AddNamedParameter(DbCommand cmd, string name, object? value)
+    {
+        DbParameter param = cmd.CreateParameter();
+        param.ParameterName = name;
+        param.Value = value ?? DBNull.Value;
+        cmd.Parameters.Add(param);
+    }
+
     private GridReader ExecuteQueryMultipleDirect(string sql, object? parameters, CommandOptions options)
     {
         CommandObservation.Log(sql, parameters);
@@ -152,17 +180,11 @@ public sealed partial class DuckDb
             if (parameters != null)
             {
                 // Bound by name, always - so the SQL must spell its placeholders $Foo, matching the
-                // property name. Verified: "SELECT $Val" binds; "SELECT @Val" fails with
+                // property name or dictionary key. Verified: "SELECT $Val" binds; "SELECT @Val" fails with
                 // 'Binder Error: Referenced column "Val" not found' because DuckDB does not treat @ as
                 // a placeholder prefix at all, and positional ? cannot be used through this overload
                 // since every parameter added here is named. Hence the $ spelling in the examples above.
-                foreach (PropertyInfo prop in GetCachedParameterProperties(parameters.GetType()))
-                {
-                    DbParameter param = cmd.CreateParameter();
-                    param.ParameterName = prop.Name;
-                    param.Value = prop.GetValue(parameters) ?? DBNull.Value;
-                    cmd.Parameters.Add(param);
-                }
+                BindMultipleParameters(cmd, parameters);
             }
 
             DuckDBDataReader reader = cmd.ExecuteReader();
