@@ -270,6 +270,76 @@ public static partial class Jaunty
         return ExecuteNonQueryWithOutputParametersAsync(connection, procedureName, parameters, spOptions, cancellationToken);
     }
 
+    /// <summary>
+    /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
+    /// returning the results as a list of entities of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
+    /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
+    /// bound to the <c>object? parameters</c> overload instead: the <see cref="SpParameters"/>
+    /// instance was bound as an anonymous object, its inputs were never sent and its outputs never
+    /// read back.
+    /// </remarks>
+    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CancellationToken cancellationToken) where T : new()
+        => ExecuteStoredProcedureAsync<T>(connection, procedureName, parameters, default(CommandOptions<T>), cancellationToken);
+
+    /// <summary>
+    /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
+    /// returning the first result.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
+    /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
+    /// bound to the <c>object? parameters</c> overload instead: the <see cref="SpParameters"/>
+    /// instance was bound as an anonymous object, its inputs were never sent and its outputs never
+    /// read back.
+    /// </remarks>
+    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CancellationToken cancellationToken) where T : new()
+        => ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, parameters, default(CommandOptions<T>), cancellationToken);
+
+    /// <summary>
+    /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
+    /// returning the first result or <see langword="default"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
+    /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
+    /// bound to the <c>object? parameters</c> overload instead: the <see cref="SpParameters"/>
+    /// instance was bound as an anonymous object, its inputs were never sent and its outputs never
+    /// read back.
+    /// </remarks>
+    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CancellationToken cancellationToken) where T : new()
+        => ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, parameters, default(CommandOptions<T>), cancellationToken);
+
+    /// <summary>
+    /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
+    /// returning a scalar value.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
+    /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
+    /// bound to the <c>object? parameters</c> overload instead: the <see cref="SpParameters"/>
+    /// instance was bound as an anonymous object, its inputs were never sent and its outputs never
+    /// read back.
+    /// </remarks>
+    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CancellationToken cancellationToken)
+        => ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, parameters, default(CommandOptions<T>), cancellationToken);
+
+    /// <summary>
+    /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
+    /// returning the number of rows affected.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
+    /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
+    /// bound to the <c>object? parameters</c> overload instead: the <see cref="SpParameters"/>
+    /// instance was bound as an anonymous object, its inputs were never sent and its outputs never
+    /// read back.
+    /// </remarks>
+    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters? parameters, CancellationToken cancellationToken)
+        => ExecuteStoredProcedureNonQueryAsync(connection, procedureName, parameters, default(CommandOptions), cancellationToken);
+
     #region Core async execution with output parameters
 
     // Internal (not private) so tests can pass a custom handler that cancels the operation's

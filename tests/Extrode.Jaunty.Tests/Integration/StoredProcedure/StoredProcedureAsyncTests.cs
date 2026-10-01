@@ -464,4 +464,106 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
     }
 
     #endregion
+
+    #region SpParameters with a positional token (AUD-R38-060)
+
+    private static SpParameters OutputCountParams(DialectInfo dialect)
+    {
+        var parameters = new SpParameters().AddInput(OutputCategoryParamName(dialect), 1);
+        if (UsesInOutForOutput(dialect))
+            parameters.AddInputOutput(OutputCountParamName(dialect), 0, DbType.Int32);
+        else
+            parameters.AddOutput(OutputCountParamName(dialect), DbType.Int32);
+        return parameters;
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureAsync_SpParametersAndToken_BindsTheInputs(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var cts = new CancellationTokenSource();
+
+        var products = await connection.ExecuteStoredProcedureAsync<Product>(
+            SpName("GetProductsByCategory", dialect), CategorySpParam(dialect, 1), cts.Token);
+
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureFirstAsync_SpParametersAndToken_BindsTheInputs(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var cts = new CancellationTokenSource();
+
+        var product = await connection.ExecuteStoredProcedureFirstAsync<Product>(
+            SpName("GetProductById", dialect), ProductSpParam(dialect, 2), cts.Token);
+
+        Assert.Equal(2, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureFirstOrDefaultAsync_SpParametersAndToken_BindsTheInputs(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var cts = new CancellationTokenSource();
+
+        var product = await connection.ExecuteStoredProcedureFirstOrDefaultAsync<Product>(
+            SpName("GetProductById", dialect), ProductSpParam(dialect, 3), cts.Token);
+
+        Assert.Equal(3, product!.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureScalarAsync_SpParametersAndToken_ReadsTheOutputs(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var cts = new CancellationTokenSource();
+        SpParameters parameters = OutputCountParams(dialect);
+
+        await connection.ExecuteStoredProcedureScalarAsync<int>(SpName("GetProductCountWithOutput", dialect), parameters, cts.Token);
+
+        Assert.True(parameters.Get<int>(OutputCountParamName(dialect)) > 0);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureNonQueryAsync_SpParametersAndToken_ReadsTheOutputs(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var cts = new CancellationTokenSource();
+        SpParameters parameters = OutputCountParams(dialect);
+
+        await connection.ExecuteStoredProcedureNonQueryAsync(SpName("GetProductCountWithOutput", dialect), parameters, cts.Token);
+
+        Assert.True(parameters.Get<int>(OutputCountParamName(dialect)) > 0);
+    }
+
+    [Theory]
+    [SqlServer]
+    public async Task ExecuteStoredProcedureNonQueryAsync_SpParametersPassedAsObject_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        object parameters = OutputCountParams(dialect);
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await connection.ExecuteStoredProcedureNonQueryAsync(SpName("GetProductCountWithOutput", dialect), parameters, CancellationToken.None));
+
+        Assert.Contains(nameof(SpParameters), ex.Message, StringComparison.Ordinal);
+    }
+
+    #endregion
 }
