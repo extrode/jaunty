@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 using Inner = System.Data.SQLite;
 
@@ -15,9 +16,10 @@ internal sealed class SQLiteConnection(string databasePath) : DbConnection
 {
     private readonly Inner.SQLiteConnection _inner = new($"Data Source={databasePath}");
 
-    public List<string> Events { get; } = new();
+    public List<string> Released { get; } = new();
 
-    public override string ConnectionString { get => _inner.ConnectionString; set => _inner.ConnectionString = value; }
+    [AllowNull]
+    public override string ConnectionString { get => _inner.ConnectionString; set => _inner.ConnectionString = value ?? ""; }
     public override string Database => _inner.Database;
     public override string DataSource => _inner.DataSource;
     public override string ServerVersion => _inner.ServerVersion;
@@ -29,13 +31,13 @@ internal sealed class SQLiteConnection(string databasePath) : DbConnection
 
     public override void Close()
     {
-        Events.Add("connection.Close");
+        Released.Add("connection.Close");
         _inner.Close();
     }
 
     public override Task CloseAsync()
     {
-        Events.Add("connection.CloseAsync");
+        Released.Add("connection.CloseAsync");
         _inner.Close();
         return Task.CompletedTask;
     }
@@ -56,7 +58,8 @@ internal sealed class ProbeCommand(SQLiteConnection connection, Inner.SQLiteComm
 {
     private bool _released;
 
-    public override string CommandText { get => inner.CommandText; set => inner.CommandText = value; }
+    [AllowNull]
+    public override string CommandText { get => inner.CommandText; set => inner.CommandText = value ?? ""; }
     public override int CommandTimeout { get => inner.CommandTimeout; set => inner.CommandTimeout = value; }
     public override CommandType CommandType { get => inner.CommandType; set => inner.CommandType = value; }
     public override bool DesignTimeVisible { get => inner.DesignTimeVisible; set => inner.DesignTimeVisible = value; }
@@ -77,7 +80,7 @@ internal sealed class ProbeCommand(SQLiteConnection connection, Inner.SQLiteComm
         if (!_released)
         {
             _released = true;
-            connection.Events.Add("command.DisposeAsync");
+            connection.Released.Add("command.DisposeAsync");
             inner.Dispose();
         }
         return ValueTask.CompletedTask;
@@ -88,7 +91,7 @@ internal sealed class ProbeCommand(SQLiteConnection connection, Inner.SQLiteComm
         if (disposing && !_released)
         {
             _released = true;
-            connection.Events.Add("command.Dispose");
+            connection.Released.Add("command.Dispose");
             inner.Dispose();
         }
         base.Dispose(disposing);
@@ -137,7 +140,7 @@ internal sealed class ProbeReader(SQLiteConnection connection, DbDataReader inne
         if (!_released)
         {
             _released = true;
-            connection.Events.Add("reader.DisposeAsync");
+            connection.Released.Add("reader.DisposeAsync");
             inner.Dispose();
         }
         return ValueTask.CompletedTask;
@@ -148,7 +151,7 @@ internal sealed class ProbeReader(SQLiteConnection connection, DbDataReader inne
         if (disposing && !_released)
         {
             _released = true;
-            connection.Events.Add("reader.Dispose");
+            connection.Released.Add("reader.Dispose");
             inner.Dispose();
         }
         base.Dispose(disposing);

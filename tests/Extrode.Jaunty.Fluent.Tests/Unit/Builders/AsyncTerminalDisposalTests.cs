@@ -58,15 +58,15 @@ public class AsyncTerminalDisposalTests : IDisposable
 
     private void AssertReleasedAsynchronously(bool readsRows = true)
     {
-        Assert.Contains("command.DisposeAsync", _probe.Events);
-        Assert.DoesNotContain("command.Dispose", _probe.Events);
+        Assert.Contains("command.DisposeAsync", _probe.Released);
+        Assert.DoesNotContain("command.Dispose", _probe.Released);
         if (readsRows)
         {
-            Assert.Contains("reader.DisposeAsync", _probe.Events);
-            Assert.DoesNotContain("reader.Dispose", _probe.Events);
+            Assert.Contains("reader.DisposeAsync", _probe.Released);
+            Assert.DoesNotContain("reader.Dispose", _probe.Released);
         }
-        Assert.Contains("connection.CloseAsync", _probe.Events);
-        Assert.DoesNotContain("connection.Close", _probe.Events);
+        Assert.Contains("connection.CloseAsync", _probe.Released);
+        Assert.DoesNotContain("connection.Close", _probe.Released);
         Assert.Equal(ConnectionState.Closed, _probe.State);
     }
 
