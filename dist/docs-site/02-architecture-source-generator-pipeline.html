@@ -272,7 +272,7 @@ so at the call site rather than letting it fail after publish.</p>
 <tr>
 <td><code>JAUNTYGEN004</code></td>
 <td>warning</td>
-<td>the entity is nested in a type no mapper can be generated into; reflection maps it instead</td>
+<td>no mapper was generated for the entity (not partial, abstract, generic, no usable constructor, or nested in such a type); it is mapped only if <code>UseReflectionMapping()</code> is called</td>
 </tr>
 <tr>
 <td><code>JAUNTYGEN005</code></td>
