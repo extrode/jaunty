@@ -2065,8 +2065,8 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     /// subquery SQL containing a literal <c>@</c> in a string constant or a comment - an email
     /// pattern such as <c>WHERE email LIKE '%@example.com'</c> is the obvious one - was rejected
     /// with a <see cref="NotSupportedException"/> describing a problem the caller did not have.
-    /// This skips single-quoted literals, double-quoted and backticked identifiers (each with its
-    /// doubled-quote escape), line comments and block comments, and then requires the prefix to be
+    /// This skips single-quoted literals, double-quoted and backticked identifiers (a doubled
+    /// quote inside one included), line comments and block comments, and then requires the prefix to be
     /// followed by an identifier character, which is what a placeholder actually looks like. The converse half of the original finding - a
     /// custom terminal using positional <c>?</c> placeholders passes and is spliced in unbound - is
     /// unchanged and is the safe direction, since there is no prefix to look for.
@@ -2084,21 +2084,12 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
 
             if (c is '\'' or '"' or '`')
             {
+                // A doubled quote needs no escape handling: closing the run and reopening it at
+                // the next quote skips exactly the same characters.
                 i++;
 
-                while (i < sql.Length)
-                {
-                    if (sql[i] == c)
-                    {
-                        // A doubled quote inside the run is an escaped quote, not the end of it.
-                        if (i + 1 < sql.Length && sql[i + 1] == c)
-                            i++;
-                        else
-                            break;
-                    }
-
+                while (i < sql.Length && sql[i] != c)
                     i++;
-                }
 
                 continue;
             }
