@@ -654,7 +654,12 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         {
             var results = new List<(T1, T2, T3, T4)>();
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
             _parent._parent.BindParameters(command);
             FluentCommandOptions.Apply(command, _parent._parent.Connection, options);
@@ -667,7 +672,12 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
             try
             {
-                using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                await using var readerDisposer = reader.ConfigureAwait(false);
+#else
+                using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
