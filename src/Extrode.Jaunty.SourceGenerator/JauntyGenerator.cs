@@ -242,7 +242,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // struct (or null), so an edit that does not change the answer is cached like everything
         // else in the pipeline.
         IncrementalValuesProvider<HandWrittenMapper?> handWrittenMappers = context.SyntaxProvider.CreateSyntaxProvider(
-            predicate: static (node, _) => node is ClassDeclarationSyntax candidate
+            // AUD-R38 generator audit: records too, as [Table] discovery accepts them - a record
+            // implementing IMapped<T> by hand went unwarned and failed on a trimmed publish.
+            predicate: static (node, _) => node is TypeDeclarationSyntax candidate and (ClassDeclarationSyntax or RecordDeclarationSyntax)
                 && (candidate.BaseList is not null || DeclaresConventionBinderByName(candidate)),
             transform: static (ctx, _) => FindHandWrittenMapper(ctx));
 
@@ -384,7 +386,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// predicate cannot be <c>BaseList: not null</c> alone. That gap was the reason the write path's
     /// reflection went unwarned while the read path's did not.
     /// </remarks>
-    private static bool DeclaresConventionBinderByName(ClassDeclarationSyntax candidate)
+    private static bool DeclaresConventionBinderByName(TypeDeclarationSyntax candidate)
     {
         foreach (MemberDeclarationSyntax member in candidate.Members)
         {
