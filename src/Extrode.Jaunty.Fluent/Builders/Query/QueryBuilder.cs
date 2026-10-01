@@ -2537,6 +2537,44 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         return this;
     }
 
+    // AUD-R38-103: the opening forms of the IUpdateWhereClause<T> And* members below, on the same
+    // Build*Clause helpers.
+    IUpdateWhereClause<T> ISetClause<T>.WhereIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+        => OpenUpdateWhere(BuildInClause(selector, values, negate: false));
+
+    IUpdateWhereClause<T> ISetClause<T>.WhereNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+        => OpenUpdateWhere(BuildInClause(selector, values, negate: true));
+
+    IUpdateWhereClause<T> ISetClause<T>.WhereBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+        => OpenUpdateWhere(BuildBetweenClause(selector, from, to, negate: false));
+
+    IUpdateWhereClause<T> ISetClause<T>.WhereNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+        => OpenUpdateWhere(BuildBetweenClause(selector, from, to, negate: true));
+
+    IUpdateWhereClause<T> ISetClause<T>.WhereExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate)
+        => OpenUpdateWhere(BuildExistsClause<TSubquery>(predicate, negate: false));
+
+    IUpdateWhereClause<T> ISetClause<T>.WhereNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate)
+        => OpenUpdateWhere(BuildExistsClause<TSubquery>(predicate, negate: true));
+
+    IUpdateWhereClause<T> ISetClause<T>.WhereInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery)
+        => OpenUpdateWhere(BuildInSubqueryClause(selector, subquerySelector, subquery, negate: false));
+
+    IUpdateWhereClause<T> ISetClause<T>.WhereNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery)
+        => OpenUpdateWhere(BuildInSubqueryClause(selector, subquerySelector, subquery, negate: true));
+
+    private IUpdateWhereClause<T> OpenUpdateWhere(string sql)
+    {
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
     /// <summary>
     /// AND condition for update WHERE clause.
     /// </summary>
