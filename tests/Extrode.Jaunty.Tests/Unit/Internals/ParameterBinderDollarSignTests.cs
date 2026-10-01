@@ -31,7 +31,7 @@ public class ParameterBinderDollarSignTests
     {
         MethodInfo method = typeof(SqlParameterParser).GetMethod(
             "ExtractParameterNamesClassic", BindingFlags.NonPublic | BindingFlags.Static)!;
-        return (string[])method.Invoke(null, new object[] { sql, false, dollarSigil })!;
+        return (string[])method.Invoke(null, new object[] { sql, false, dollarSigil, true })!;
     }
 
     [Theory]
