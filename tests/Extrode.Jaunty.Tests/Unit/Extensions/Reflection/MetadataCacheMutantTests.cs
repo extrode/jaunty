@@ -37,6 +37,42 @@ public class MetadataCacheMutantTests : IDisposable
         public int Count { get; set; }
     }
 
+    public class BindsTo
+    {
+        [Column("first_name")]
+        public string? FirstName { get; set; }
+
+        public string? LastName { get; set; }
+    }
+
+    private static PropertyContext<BindsTo> ContextFor(string propertyName)
+        => Array.Find(MetadataCache<BindsTo>.Properties, p => p.Property.Name == propertyName);
+
+    [Fact]
+    public void ColumnBindsTo_MatchesTheOwningPropertyOnly()
+    {
+        PropertyContext<BindsTo> first = ContextFor(nameof(BindsTo.FirstName));
+        PropertyContext<BindsTo> last = ContextFor(nameof(BindsTo.LastName));
+
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("first_name", first));
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("LastName", last));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("first_name", last));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("LastName", first));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("surname", last));
+    }
+
+    [Fact]
+    public void ColumnBindsTo_FallsBackToTheConfiguredResolver()
+    {
+        PropertyContext<BindsTo> first = ContextFor(nameof(BindsTo.FirstName));
+        PropertyContext<BindsTo> last = ContextFor(nameof(BindsTo.LastName));
+        JauntyConfig.ColumnNameResolver = name => name == nameof(BindsTo.LastName) ? "surname" : "";
+
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("surname", last));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("surname", first));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("unmapped", last));
+    }
+
     public class StringStored
     {
         [EnumStorage(EnumStorage.String)]
