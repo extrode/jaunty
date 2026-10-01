@@ -106,6 +106,69 @@ public class PostgreSqlBulkCopyProviderTests
         return Convert.ToInt64(cmd.ExecuteScalar());
     }
 
+    private static IDataReader Columns(params string[] names)
+    {
+        var table = new DataTable();
+        foreach (string name in names)
+            table.Columns.Add(name, typeof(string));
+        return table.CreateDataReader();
+    }
+
+    [Fact]
+    public void BuildCopyCommand_QuotesOnlyKeywords_LikeTheDialect()
+    {
+        string sql = PostgreSqlBulkCopyProvider.BuildCopyCommand(null, "Products", Columns("ProductName", "order"));
+
+        Assert.Equal("COPY Products (ProductName, \"order\") FROM STDIN BINARY", sql);
+    }
+
+    [Fact]
+    public void BuildCopyCommand_SchemaQualified_UsesTheDialectsQualification()
+    {
+        string sql = PostgreSqlBulkCopyProvider.BuildCopyCommand("Sales", "user", Columns("Id"));
+
+        Assert.Equal("COPY Sales.\"user\" (Id) FROM STDIN BINARY", sql);
+    }
+
+    [Fact]
+    public void BuildCopyCommand_EmptySchema_IsUnqualified()
+    {
+        string sql = PostgreSqlBulkCopyProvider.BuildCopyCommand("", "products", Columns("id"));
+
+        Assert.Equal("COPY products (id) FROM STDIN BINARY", sql);
+    }
+
+    [Fact]
+    public void BuildCopyCommand_InvalidColumnName_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            PostgreSqlBulkCopyProvider.BuildCopyCommand(null, "products", Columns("name\"; DROP TABLE users; --")));
+    }
+
+    [Fact]
+    public void CopyToServer_MixedCaseNames_ResolveToTheSameFoldedTableAsInsert()
+    {
+        using var conn = OpenOrSkip();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                DROP TABLE IF EXISTS bulkpgmixedcase;
+                CREATE TABLE BulkPgMixedCase (Id BIGSERIAL PRIMARY KEY, ProductName TEXT NOT NULL)
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var data = new DataTable();
+        data.Columns.Add("ProductName", typeof(string));
+        data.Rows.Add("first");
+        data.Rows.Add("second");
+
+        int copied = new PostgreSqlBulkCopyProvider().CopyToServer(conn, null, "BulkPgMixedCase", data.CreateDataReader(), new BulkCopyOptions());
+
+        Assert.Equal(2, copied);
+        Assert.Equal(2, Count(conn, "bulkpgmixedcase"));
+    }
+
     [Fact]
     public void IsSupported_NpgsqlReferenced_IsTrue()
     {
