@@ -196,16 +196,6 @@ public static class CsvImportExtensions
     {
         RequireFileOnThisMachine(filePath);
 
-        // Get the database file path from the connection string
-        string? dbPath = ExtractSqliteDbPath(connection.ConnectionString);
-        if (dbPath is null || IsSqliteInMemoryDataSource(dbPath))
-        {
-            // For in-memory databases (including shared-cache forms like
-            // "file::memory:?cache=shared"), fall back to prepared statement insert - the
-            // sqlite3 CLI would otherwise treat the connection string as a real file path.
-            return ImportViaPreparedStatements(connection, tableName, filePath, options);
-        }
-
         // The schema checks below read the connection's own schema set, and so does the
         // prepared-statement path they can route to. Both have to see one connection: the pool is
         // FIFO, so a probe that opens and closes hands its handle to the back of the queue and the
@@ -216,8 +206,19 @@ public static class CsvImportExtensions
         if (wasClosed)
             connection.Open();
 
+        string? dbPath;
         try
         {
+            // AUD-R38-009: the file used to be read out of the connection string by splitting on ';'
+            // and taking whatever followed a literal "Data Source=". That ignored Mode=Memory, the
+            // DataSource/Filename aliases and quoting, so "Data Source=Sharable;Mode=Memory" handed
+            // the CLI "Sharable" - it created that file in the working directory, imported there,
+            // exited 0, and the caller's database got nothing. The connection itself knows which
+            // file its main schema is; an in-memory database reports none.
+            dbPath = SqliteMainFile(connection);
+            if (dbPath is null)
+                return ImportViaPreparedStatements(connection, tableName, filePath, options);
+
             // The sqlite3 CLI is a separate process: it opens dbPath as its own "main" and has
             // attached nothing, so the caller's ATTACH aliases and temp tables do not exist for it.
             // Targeting one of those through the CLI fails two ways, and the quiet one is the
@@ -448,14 +449,6 @@ public static class CsvImportExtensions
         return command.ExecuteScalar() is not null;
     }
 
-    private static bool IsSqliteInMemoryDataSource(string dbPath)
-    {
-        // ":memory:" is a reserved SQLite keyword that can't legitimately appear in a real file
-        // path, so a substring match also catches shared-cache forms such as
-        // "file::memory:?cache=shared" that a literal ":memory:" comparison would miss.
-        return dbPath.IndexOf(":memory:", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-
     private static async ValueTask<long> ImportSqliteAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
         // sqlite3 CLI is process-based; offload the blocking call to a thread-pool thread so the
@@ -465,8 +458,8 @@ public static class CsvImportExtensions
 
     private static long ImportViaSqliteCli(string dbPath, string tableName, string filePath, CsvImportOptions options)
     {
-        // dbPath comes from the connection's own connection string ("Data Source=..."), unvalidated,
-        // and is interpolated directly into the sqlite3 CLI process's command-line arguments; a quote
+        // dbPath is the file PRAGMA database_list reports for main - a real path now, but still
+        // unvalidated, since SQLite accepts quote characters in file names - and is interpolated directly into the sqlite3 CLI process's command-line arguments; a quote
         // would let it break out of the quoted argument and inject additional CLI switches.
         if (dbPath.IndexOfAny(SqliteCliUnsafeChars) >= 0)
             throw new ArgumentException($"Database path contains characters that are not supported by the sqlite3 CLI: {dbPath}", nameof(dbPath));
@@ -1361,17 +1354,24 @@ public static class CsvImportExtensions
                 "Leave NullValue unset, or import into an in-memory SQLite database (which uses the prepared-statement fallback and honors NullValue).");
     }
 
-    private static string? ExtractSqliteDbPath(string connectionString)
+    /// <summary>
+    /// The file behind <paramref name="connection"/>'s main schema, or null when it has none - an
+    /// in-memory database, shared-cache or not. The connection must be open.
+    /// </summary>
+    private static string? SqliteMainFile(IDbConnection connection)
     {
-        // Parse "Data Source=path" from connection string
-        foreach (string part in connectionString.Split(';'))
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "PRAGMA database_list";
+
+        using IDataReader reader = command.ExecuteReader();
+        while (reader.Read())
         {
-            string trimmed = part.Trim();
-            if (trimmed.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase))
-            {
-                return trimmed.Substring("Data Source=".Length).Trim();
-            }
+            if (!string.Equals(reader.GetString(1), "main", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            return reader.IsDBNull(2) || reader.GetString(2).Length == 0 ? null : reader.GetString(2);
         }
+
         return null;
     }
 

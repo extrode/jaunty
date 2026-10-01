@@ -222,6 +222,83 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
+    [Fact]
+    public void ImportCsv_SqliteNamedSharedMemoryDatabase_ImportsIntoTheCallersDatabase()
+    {
+        var csvPath = ResolveCsvPath();
+        string name = $"jaunty_csv_shared_{Guid.NewGuid():N}";
+        using var connection = new SqliteConnection($"Data Source={name};Mode=Memory;Cache=Shared");
+        connection.Open();
+        CreateTable(connection, DialectProvider.MicrosoftSqlite);
+
+        long rows = connection.ImportCsv(TableName, csvPath);
+
+        Assert.Equal(ExpectedRowCount, rows);
+        Assert.Equal(ExpectedRowCount, GetRowCount(connection, DialectProvider.MicrosoftSqlite));
+        Assert.False(File.Exists(name));
+    }
+
+    [Fact]
+    public void ImportCsv_SqliteQuotedDataSource_ImportsIntoThatFile()
+    {
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_quoted_{Guid.NewGuid():N}.db");
+        string connectionString = $"Data Source='{tempDb}';Pooling=False";
+
+        try
+        {
+            using (var setup = new SqliteConnection(connectionString))
+            {
+                setup.Open();
+                CreateTable(setup, DialectProvider.MicrosoftSqlite);
+            }
+
+            using var importConn = new SqliteConnection(connectionString);
+            long rows = importConn.ImportCsv(TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+            importConn.Open();
+            Assert.Equal(ExpectedRowCount, GetRowCount(importConn, DialectProvider.MicrosoftSqlite));
+            Assert.False(File.Exists($"'{tempDb}'"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_SqliteFilenameKeyword_ImportsIntoThatFile()
+    {
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_filename_{Guid.NewGuid():N}.db");
+        string connectionString = $"Filename={tempDb};Pooling=False";
+
+        try
+        {
+            using (var setup = new SqliteConnection(connectionString))
+            {
+                setup.Open();
+                CreateTable(setup, DialectProvider.MicrosoftSqlite);
+            }
+
+            using var importConn = new SqliteConnection(connectionString);
+            long rows = importConn.ImportCsv(TableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+            importConn.Open();
+            Assert.Equal(ExpectedRowCount, GetRowCount(importConn, DialectProvider.MicrosoftSqlite));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
     // AUD-R22: sqlite3 doesn't report a row count itself, so ImportViaSqliteCli falls back to
     // CountCsvRows, which used to count physical lines via raw StreamReader.ReadLine() instead of
     // the RFC4180-aware ReadCsvRecord helper. A quoted field with an embedded newline was therefore
