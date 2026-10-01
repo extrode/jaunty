@@ -94,10 +94,14 @@ internal static class TargetDdlGenerator
     [ThreadStatic]
     private static NullabilityInfoContext? t_nullabilityContext;
 
+    // AUD-R38-021: only an explicit non-nullable annotation earns NOT NULL. A property compiled
+    // without nullable annotations (#nullable disable, older C#, VB) reports Unknown, and treating
+    // that as non-nullable put NOT NULL on every string and byte[] column, so an import with an
+    // empty cell failed on a constraint the entity never declared.
     private static bool IsNullableReferenceType(PropertyInfo prop)
     {
         NullabilityInfoContext context = t_nullabilityContext ??= new NullabilityInfoContext();
         NullabilityInfo nullabilityInfo = context.Create(prop);
-        return nullabilityInfo.WriteState == NullabilityState.Nullable;
+        return nullabilityInfo.WriteState != NullabilityState.NotNull;
     }
 }

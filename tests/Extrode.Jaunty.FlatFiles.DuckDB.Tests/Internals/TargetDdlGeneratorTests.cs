@@ -113,4 +113,33 @@ public class TargetDdlGeneratorTests
         Assert.False(columns.Single(c => c.Name == "Data").IsNullable);
         Assert.True(columns.Single(c => c.Name == "OptionalData").IsNullable);
     }
+
+    [Fact]
+    public void NullableObliviousReferenceProperties_AreNullable()
+    {
+        var columns = TargetDdlGenerator.GetColumnDefinitions(typeof(ObliviousEntity));
+
+        Assert.True(columns.Single(c => c.Name == "Name").IsNullable);
+        Assert.True(columns.Single(c => c.Name == "Payload").IsNullable);
+        Assert.False(columns.Single(c => c.Name == "Id").IsNullable);
+    }
+
+    [Fact]
+    public void NullableObliviousReferenceProperties_GetNoNotNullInTheDdl()
+    {
+        string sql = TargetDdlGenerator.GenerateCreateTableSql(typeof(ObliviousEntity), "oblivious", SqliteImportDialect.Instance);
+
+        Assert.DoesNotContain("\"Name\" TEXT NOT NULL", sql, StringComparison.Ordinal);
+        Assert.Contains("\"Name\" TEXT", sql, StringComparison.Ordinal);
+        Assert.Contains("\"Id\" INTEGER NOT NULL", sql, StringComparison.Ordinal);
+    }
 }
+
+#nullable disable
+internal sealed class ObliviousEntity
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public byte[] Payload { get; set; }
+}
+#nullable restore
