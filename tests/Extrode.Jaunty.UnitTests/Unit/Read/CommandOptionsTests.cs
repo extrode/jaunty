@@ -56,6 +56,20 @@ public class CommandOptionsTests
     }
 
     [Fact]
+    public void GenericWith_SetsAllThreeValues()
+    {
+        var transaction = new TestDbTransaction();
+        Func<IDataReader, int> mapper = _ => 7;
+
+        var options = CommandOptions<int>.With(mapper, transaction, 45);
+
+        Assert.Same(mapper, options.Mapper);
+        Assert.Same(transaction, options.Transaction);
+        Assert.Equal(45, options.CommandTimeout);
+        Assert.Null(options.ExpectedRowCount);
+    }
+
+    [Fact]
     public void IsReadonlyStruct()
     {
         var type = typeof(CommandOptions);

@@ -24,7 +24,8 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
         "NATURAL", "NCHAR", "NONE", "NOT", "NOTNULL", "NULL", "NULLIF", "NUMERIC", "OFFSET",
         "ON", "ONLY", "OR", "ORDER", "OUT", "OUTER", "OVERLAPS", "OVERLAY", "PLACING", "POSITION",
         "PRECISION", "PRIMARY", "REAL", "REFERENCES", "RETURNING", "RIGHT", "ROW", "SELECT",
-        "SESSION_USER", "SETOF", "SIMILAR", "SMALLINT", "SOME", "SUBSTRING", "SYMMETRIC",
+        // SYSTEM_USER: reserved from PostgreSQL 16, where bare it is the session-identity function.
+        "SESSION_USER", "SETOF", "SIMILAR", "SMALLINT", "SOME", "SUBSTRING", "SYMMETRIC", "SYSTEM_USER",
         "TABLE", "TABLESAMPLE", "THEN", "TIME", "TIMESTAMP", "TO", "TRAILING", "TREAT", "TRIM",
         "TRUE", "UNION", "UNIQUE", "USER", "USING", "VALUES", "VARCHAR", "VARIADIC", "VERBOSE",
         "WHEN", "WHERE", "WINDOW", "WITH"

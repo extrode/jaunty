@@ -50,6 +50,27 @@ public class MySqlDialectLiveTests : IClassFixture<DialectFixture>
         foreach (string word in MySqlDialectAddedKeywords.All)
             Assert.Equal(1L, Convert.ToInt64(Scalar(connection, $"SELECT {Dialect.EscapeColumnName(word)} FROM (SELECT 1 AS {Dialect.EscapeColumnName(word)}) t"), System.Globalization.CultureInfo.InvariantCulture));
     }
+
+    [Theory]
+    [MariaDB]
+    public void ALeadingDigitColumn_IsReadAsTheColumnNotALiteral(DialectInfo dialect)
+    {
+        using IDbConnection connection = _fixture.GetConnection(dialect);
+
+        foreach (string name in new[] { "1e3", "0x1F", "0b101" })
+            Assert.Equal(7L, Convert.ToInt64(Scalar(connection, $"SELECT {Dialect.EscapeColumnName(name)} FROM (SELECT 7 AS `{name}`) t"), System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [MariaDB]
+    public void AFractionalAverage_KeepsFullPrecision(DialectInfo dialect)
+    {
+        using IDbConnection connection = _fixture.GetConnection(dialect);
+
+        object? average = Scalar(connection, $"SELECT {FractionalAverage.Generate(Dialect, "v")} FROM (SELECT 1 AS v UNION ALL SELECT 1 UNION ALL SELECT 2) t");
+
+        Assert.Equal(4.0 / 3.0, Convert.ToDouble(average, System.Globalization.CultureInfo.InvariantCulture), 12);
+    }
 }
 
 internal static class MySqlDialectAddedKeywords

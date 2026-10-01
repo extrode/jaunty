@@ -1,8 +1,8 @@
 namespace Extrode.Jaunty.Dialects;
 
 /// <summary>
-/// Optional companion to <see cref="ISqlDialect"/> for engines whose <c>AVG</c> takes its result
-/// type from its operand, and so truncates the average of an integer column to an integer.
+/// Optional companion to <see cref="ISqlDialect"/> for engines whose <c>AVG</c> of an integer
+/// column is not a full-precision fraction: truncated to an integer, or rounded to a fixed scale.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -14,10 +14,11 @@ namespace Extrode.Jaunty.Dialects;
 /// promises the fractional result on every dialect.
 /// </para>
 /// <para>
-/// SQLite (always float), MySQL (decimal) and PostgreSQL (numeric) do not truncate, which is why a
-/// green suite never showed it - and why they do not implement this interface. A dialect that does
-/// not implement it is not broken; callers fall back to a bare <c>AVG</c>, which is already
-/// fractional there.
+/// SQLite (always float) and PostgreSQL (numeric) do not truncate, which is why a green suite never
+/// showed it - and why they do not implement this interface. A dialect that does not implement it
+/// is not broken; callers fall back to a bare <c>AVG</c>, which is already fractional there.
+/// MySQL and MariaDB do not truncate either, but return DECIMAL rounded to
+/// <c>div_precision_increment</c> digits (4 by default), so they implement it too (AUD-R38-121).
 /// </para>
 /// <para>
 /// Deliberately a separate interface rather than a member on <see cref="ISqlDialect"/>, for the
