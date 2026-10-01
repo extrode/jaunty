@@ -369,7 +369,10 @@ public sealed class LoggingConfiguration
             }
         }
 
-        public bool Add(string item) => Mutate(() => _names.Add(item));
+        // AUD-R38-065: a null used to go into the set and make every later Republish throw from
+        // SplitWords, so a name added afterwards was reported present but never masked. Nulls are
+        // dropped here as WithSensitiveParameters already drops them.
+        public bool Add(string item) => item is not null && Mutate(() => _names.Add(item));
 
         void ICollection<string>.Add(string item) => Add(item);
 
@@ -396,9 +399,18 @@ public sealed class LoggingConfiguration
 
         public void IntersectWith(IEnumerable<string> other) => Mutate(() => { _names.IntersectWith(other); return true; });
 
-        public void SymmetricExceptWith(IEnumerable<string> other) => Mutate(() => { _names.SymmetricExceptWith(other); return true; });
+        public void SymmetricExceptWith(IEnumerable<string> other) => Mutate(() => { _names.SymmetricExceptWith(WithoutNulls(other)); return true; });
 
-        public void UnionWith(IEnumerable<string> other) => Mutate(() => { _names.UnionWith(other); return true; });
+        public void UnionWith(IEnumerable<string> other) => Mutate(() => { _names.UnionWith(WithoutNulls(other)); return true; });
+
+        private static IEnumerable<string> WithoutNulls(IEnumerable<string> names)
+        {
+            foreach (string name in names ?? throw new ArgumentNullException(nameof(names)))
+            {
+                if (name is not null)
+                    yield return name;
+            }
+        }
 
         public bool IsProperSubsetOf(IEnumerable<string> other)
         {
