@@ -113,17 +113,11 @@ public sealed partial class DuckDb
             if (parameters != null)
             {
                 // Bound by name, always - so the SQL must spell its placeholders $Foo, matching the
-                // property name. Verified: "SELECT $Val" binds; "SELECT @Val" fails with
+                // property name or dictionary key. Verified: "SELECT $Val" binds; "SELECT @Val" fails with
                 // 'Binder Error: Referenced column "Val" not found' because DuckDB does not treat @ as
                 // a placeholder prefix at all, and positional ? cannot be used through this overload
                 // since every parameter added here is named. Hence the $ spelling in the examples above.
-                foreach (PropertyInfo prop in GetCachedParameterProperties(parameters.GetType()))
-                {
-                    DbParameter param = cmd.CreateParameter();
-                    param.ParameterName = prop.Name;
-                    param.Value = prop.GetValue(parameters) ?? DBNull.Value;
-                    cmd.Parameters.Add(param);
-                }
+                BindMultipleParameters(cmd, parameters);
             }
 
             DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
