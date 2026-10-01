@@ -174,7 +174,18 @@ public class SqlServerSchemaReaderTests
         }
         finally
         {
-            Execute(conn, $"DROP TABLE IF EXISTS {ClrPoints}; DROP TYPE IF EXISTS {ClrPointType};");
+            Execute(conn, $"""
+                DROP TABLE IF EXISTS {ClrPoints};
+                DROP TYPE IF EXISTS {ClrPointType};
+                BEGIN TRY
+                    DROP ASSEMBLY IF EXISTS scaffold_test_point;
+                    DECLARE @hash varbinary(64) = HASHBYTES('SHA2_512', CONVERT(varbinary(max), '0x{ScaffoldPointAssembly.Hex}', 1));
+                    IF EXISTS (SELECT 1 FROM sys.trusted_assemblies WHERE hash = @hash)
+                        EXEC sys.sp_drop_trusted_assembly @hash;
+                END TRY
+                BEGIN CATCH
+                END CATCH
+                """);
         }
     }
 
