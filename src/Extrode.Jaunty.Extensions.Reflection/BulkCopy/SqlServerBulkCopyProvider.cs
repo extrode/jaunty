@@ -74,6 +74,9 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 
     /// <inheritdoc/>
     public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
+        => ReflectedCall.Unwrapped(() => CopyToServerCore(connection, schemaName, tableName, data, options));
+
+    private static int CopyToServerCore(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
     {
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
@@ -111,7 +114,10 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     }
 
     /// <inheritdoc/>
-    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
+    public ValueTask<int> CopyToServerAsync(DbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
+        => ReflectedCall.UnwrappedAsync(() => CopyToServerAsyncCore(connection, schemaName, tableName, data, options, cancellationToken));
+
+    private static async ValueTask<int> CopyToServerAsyncCore(DbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
     {
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
