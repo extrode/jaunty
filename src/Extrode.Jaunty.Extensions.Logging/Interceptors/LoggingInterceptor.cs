@@ -29,7 +29,6 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
 {
     private readonly ILogger<LoggingInterceptor> _logger;
     private readonly LoggingConfiguration _config;
-    private readonly bool _hasSlowQueryThreshold;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LoggingInterceptor"/> class.
@@ -40,7 +39,6 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _config = config ?? new LoggingConfiguration();
-        _hasSlowQueryThreshold = _config.SlowQueryThreshold > TimeSpan.Zero;
     }
 
     /// <summary>
@@ -78,7 +76,10 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     /// <inheritdoc/>
     public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        var isSlow = _hasSlowQueryThreshold && context.Elapsed > _config.SlowQueryThreshold;
+        // AUD-R38-067: read live like every other flag; the configuration is a DI singleton that
+        // may be changed after this interceptor was built.
+        TimeSpan threshold = _config.SlowQueryThreshold;
+        var isSlow = threshold > TimeSpan.Zero && context.Elapsed > threshold;
         var level = isSlow ? SlowQueryLevel(_config.MinimumLogLevel) : _config.MinimumLogLevel;
 
         if (!IsEnabledAtLevel(level))
@@ -97,7 +98,7 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
                 "Completed {CommandType} in {ElapsedMilliseconds:F2}ms{SlowQueryIndicator}",
                 GetCommandTypeDescription(context.CommandType),
                 context.Elapsed.TotalMilliseconds,
-                isSlow ? $" (SLOW - exceeded {_config.SlowQueryThreshold.TotalMilliseconds}ms threshold)" : "");
+                isSlow ? $" (SLOW - exceeded {threshold.TotalMilliseconds}ms threshold)" : "");
         }
         else
         {
@@ -105,7 +106,7 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
                 level,
                 "Completed {CommandType}{SlowQueryIndicator}",
                 GetCommandTypeDescription(context.CommandType),
-                isSlow ? $" (SLOW - exceeded {_config.SlowQueryThreshold.TotalMilliseconds}ms threshold)" : "");
+                isSlow ? $" (SLOW - exceeded {threshold.TotalMilliseconds}ms threshold)" : "");
         }
 
         return new ValueTask();
@@ -163,7 +164,21 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     {
         var sb = new StringBuilder();
 
-        if (parameters is System.Collections.IDictionary dict)
+        // AUD-R38-068: the binder's own notion of a named-value dictionary, so an ExpandoObject or
+        // an IReadOnlyDictionary logs its entries rather than nothing or its Count/Keys/Values.
+        IDictionary<string, object?>? named = ParameterBinder.AsNamedValues(parameters);
+        if (named is not null)
+        {
+            var first = true;
+            foreach (KeyValuePair<string, object?> entry in named)
+            {
+                if (!first) sb.Append(", ");
+                first = false;
+
+                sb.Append(entry.Key).Append("=").Append(FormatParameterValue(entry.Key, entry.Value));
+            }
+        }
+        else if (parameters is System.Collections.IDictionary dict)
         {
             var first = true;
             foreach (System.Collections.DictionaryEntry entry in dict)

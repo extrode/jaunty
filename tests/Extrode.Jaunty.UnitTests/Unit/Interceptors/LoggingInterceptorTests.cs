@@ -931,6 +931,119 @@ public class LoggingInterceptorTests
 
     #endregion
 
+    #region Round 38 (AUD-R38-067..069)
+
+    [Fact]
+    public async Task OnCommandExecutedAsync_SlowQueryThresholdChangedAfterConstruction_IsHonoured()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { SlowQueryThreshold = TimeSpan.FromMilliseconds(100) };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        var context = new CommandContext("SELECT 1", null, CreateMockConnection(), CommandType.Text, TimeSpan.FromMilliseconds(500));
+
+        config.SlowQueryThreshold = TimeSpan.Zero;
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        config.SlowQueryThreshold = TimeSpan.FromMilliseconds(200);
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        Assert.Equal(2, provider.Logs.Count);
+        Assert.DoesNotContain("SLOW", provider.Logs[0].Message);
+        Assert.Contains("SLOW - exceeded 200ms threshold", provider.Logs[1].Message);
+    }
+
+    [Fact]
+    public async Task OnCommandExecutedAsync_SlowQueryThresholdEnabledAfterConstruction_DetectsSlowQueries()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { SlowQueryThreshold = TimeSpan.Zero };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+
+        config.SlowQueryThreshold = TimeSpan.FromMilliseconds(100);
+        await interceptor.OnCommandExecutedAsync(
+            new CommandContext("SELECT 1", null, CreateMockConnection(), CommandType.Text, TimeSpan.FromMilliseconds(500)), CancellationToken.None);
+
+        Assert.Contains("SLOW", Assert.Single(provider.Logs).Message);
+    }
+
+    [Fact]
+    public async Task OnCommandExecutingAsync_FormatsExpandoObjectParameters()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        dynamic parameters = new System.Dynamic.ExpandoObject();
+        parameters.Id = 42;
+        parameters.Password = "secret123";
+
+        await interceptor.OnCommandExecutingAsync(
+            new CommandContext("SELECT * FROM Users WHERE Id = @Id AND p = @Password", (object)parameters, CreateMockConnection(), CommandType.Text), CancellationToken.None);
+
+        string message = Assert.Single(provider.Logs).Message;
+        Assert.Contains("Id=42", message);
+        Assert.Contains("Password=***MASKED***", message);
+        Assert.DoesNotContain("secret123", message);
+    }
+
+    private sealed class ReadOnlyNamedValues : IReadOnlyDictionary<string, object?>
+    {
+        private readonly Dictionary<string, object?> _inner = new() { ["Id"] = 7 };
+
+        public object? this[string key] => _inner[key];
+        public IEnumerable<string> Keys => _inner.Keys;
+        public IEnumerable<object?> Values => _inner.Values;
+        public int Count => _inner.Count;
+        public bool ContainsKey(string key) => _inner.ContainsKey(key);
+        public bool TryGetValue(string key, out object? value) => _inner.TryGetValue(key, out value);
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => _inner.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Fact]
+    public async Task OnCommandExecutingAsync_FormatsReadOnlyDictionaryEntries()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+
+        await interceptor.OnCommandExecutingAsync(
+            new CommandContext("SELECT * FROM Users WHERE Id = @Id", new ReadOnlyNamedValues(), CreateMockConnection(), CommandType.Text), CancellationToken.None);
+
+        string message = Assert.Single(provider.Logs).Message;
+        Assert.Contains("Id=7", message);
+        Assert.DoesNotContain("Count=", message);
+    }
+
+    [Fact]
+    public async Task OnCommandExecutingAsync_FormatsNonStringKeyedDictionaryEntries()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        var parameters = new System.Collections.Hashtable { [1] = "one" };
+
+        await interceptor.OnCommandExecutingAsync(
+            new CommandContext("SELECT 1", parameters, CreateMockConnection(), CommandType.Text), CancellationToken.None);
+
+        Assert.Contains("1=\"one\"", Assert.Single(provider.Logs).Message);
+    }
+
+    [Fact]
+    public async Task OnCommandExecutingAsync_FormatsDateTimeOffsetAsRoundTrip()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        var at = new DateTimeOffset(2026, 10, 1, 12, 30, 45, TimeSpan.FromHours(2));
+
+        await interceptor.OnCommandExecutingAsync(
+            new CommandContext("SELECT 1 WHERE t = @At", new { At = at }, CreateMockConnection(), CommandType.Text), CancellationToken.None);
+
+        Assert.Contains("At=2026-10-01T12:30:45.0000000+02:00", Assert.Single(provider.Logs).Message);
+    }
+
+    #endregion
+
     #region Test Helper Classes
 
     private class TestLoggerProvider : ILoggerProvider, ILogger<LoggingInterceptor>
