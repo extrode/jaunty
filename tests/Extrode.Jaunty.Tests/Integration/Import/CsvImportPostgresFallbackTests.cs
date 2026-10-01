@@ -85,7 +85,7 @@ public class CsvImportPostgresFallbackTests
 
     private sealed class NpgsqlConnection : IDbConnection
     {
-        public bool FailCopy { get; init; }
+        public bool FailCopy { get; set; }
         public string ConnectionString { get; set; } = "";
         public int ConnectionTimeout => 0;
         public string Database => "";
