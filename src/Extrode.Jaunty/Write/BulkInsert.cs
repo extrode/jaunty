@@ -363,7 +363,7 @@ public static partial class Jaunty
     /// </summary>
     private static int BulkInsertMultiRow<T>(IDbConnection connection, IList<T> entityList, CachedCrudSql cached, ISqlDialect dialect, IDbTransaction? transaction, CommandOptions options, Action<IDataParameterCollection, T> valueSetter) where T : new()
     {
-        IReadOnlyList<ColumnMetadata> insertableColumns = ColumnMetadataHelper.GetInsertableColumns(cached.Metadata);
+        IReadOnlyList<ColumnMetadata> insertableColumns = cached.Metadata.InsertColumns;
         int colCount = insertableColumns.Count;
         if (colCount == 0) return 0;
 
