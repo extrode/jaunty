@@ -35,6 +35,10 @@ SELF_SRC=$(cat "$0")
 export DOTNET_ROOT="$HOME/.dotnet"
 export PATH="$HOME/.dotnet:$HOME/.dotnet/tools:/Applications/Docker.app/Contents/Resources/bin:$PATH"
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+# GitHub Actions sets CI=true for nightly.yml; the wall-clock performance tests skip on it. Without
+# it, one of them failing under load made Stryker abort the Jaunty.Tests job ("Initial testrun has
+# more than 50% failing tests"), run 20261001-2216-75a9fe9d.
+export CI=true
 
 die() { echo "mutate: $*" >&2; exit 2; }
 RUN_PATTERN="dotnet-stryker|Stryker.CLI|mutate.sh __run"

@@ -22,10 +22,11 @@ cat > "$scr/bin/caffeinate" <<EOF
 #!/usr/bin/env bash
 shift
 printf '%s\n' "\$@" > "$scr/caffeinate.args"
+printf '%s\n' "\${CI:-unset}" > "$scr/caffeinate.ci"
 EOF
 chmod +x "$scr/bin/caffeinate"
 
-run() { HOME="$scr/home" PATH="$scr/bin:$PATH" MUTATE_ROOT="$root" "$@"; }
+run() { env -u CI HOME="$scr/home" PATH="$scr/bin:$PATH" MUTATE_ROOT="$root" "$@"; }
 
 fixture() {
   local name="$1" body="$2"
@@ -146,6 +147,8 @@ check "launch: report folder holds a byte-identical copy of the runner" '[ -n "$
 check "launch: detached run is started from the copy" \
   '[ -f "$scr/caffeinate.args" ] && [ "$(sed -n 1p "$scr/caffeinate.args")" = "$copy" ] && sed -n 2,3p "$scr/caffeinate.args" | tr "\n" " " | grep -q "^__run fx "' \
   "$(cat "$scr/caffeinate.args" 2>/dev/null)"
+check "launch: detached run sees CI=true, as nightly.yml does on GitHub Actions" \
+  '[ "$(cat "$scr/caffeinate.ci" 2>/dev/null)" = "true" ]' "$(cat "$scr/caffeinate.ci" 2>/dev/null)"
 
 rm -f "$scr/caffeinate.args"
 sha="$(git -C "$root/fx" rev-parse --short HEAD)"
