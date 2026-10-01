@@ -118,15 +118,15 @@ public class ImporterPathLanguageTests : IDisposable
     public async Task ACancelledToken_IsObservedBeforeSourceRegistration()
     {
         using SqliteConnection target = OpenTarget();
-        string path = Path.Combine(_dataDir, "empty.csv");
-        File.WriteAllText(path, "");
+        string path = Path.Combine(_dataDir, "garbage.parquet");
+        File.WriteAllText(path, "not a parquet file");
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
             await FlatFileImporter.ImportAsync<InventoryItem>(path, target, cancellationToken: cts.Token));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-            await FlatFileImporter.ImportAsync<InventoryItem>(o => o.AddCsv<InventoryItem>(path), target, cancellationToken: cts.Token));
+            await FlatFileImporter.ImportAsync<InventoryItem>(o => o.AddParquet<InventoryItem>(path), target, cancellationToken: cts.Token));
     }
 
     [Fact]
