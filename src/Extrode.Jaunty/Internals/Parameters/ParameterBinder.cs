@@ -578,10 +578,7 @@ internal static class ParameterBinder
             for (int i = 0; i < count; i++)
             {
                 if (reserved.Contains(prefix + i))
-                {
                     clear = false;
-                    break;
-                }
             }
 
             if (clear)
