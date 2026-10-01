@@ -92,6 +92,7 @@ internal static class MappedPropertyFilter
 
             // Indexers are excluded before the name dictionary rather than by IsMapped below,
             // because several of them share the name "Item" without being a hide chain.
+            // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
             if (property.GetIndexParameters().Length > 0) continue;
 
             if (byName.TryGetValue(property.Name, out int existingIndex))
@@ -147,6 +148,7 @@ internal static class MappedPropertyFilter
     /// </remarks>
     public static string GetColumnName(PropertyInfo property)
     {
+        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         string? name = property.GetCustomAttribute<ColumnAttribute>()?.Name;
         if (!string.IsNullOrEmpty(name))
             return name!;
@@ -198,10 +200,12 @@ internal static class MappedPropertyFilter
         // "Item" with index parameters, and both call sites go on to build an Expression.Property
         // or read it as a column - which throws. MetadataBuilder and ParameterCache already skip
         // these (R16/AUD-R22); these two loops did not.
+        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         if (property.GetIndexParameters().Length > 0) return false;
 
         if (!property.CanRead || !property.CanWrite) return false;
 
+        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         if (property.GetCustomAttribute<IgnoreAttribute>() is not null) return false;
 
         foreach (CustomAttributeData attribute in property.GetCustomAttributesData())

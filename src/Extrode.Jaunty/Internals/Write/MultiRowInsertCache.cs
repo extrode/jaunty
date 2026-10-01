@@ -92,6 +92,7 @@ internal static class MultiRowInsertCache
             ParameterExpression param = Expression.Parameter(typeof(T), "e");
             MemberExpression access = Expression.Property(param, column.Property!);
             UnaryExpression box = Expression.Convert(access, typeof(object));
+            // AOT-SAFE: reached only for reflection-built metadata (a source-generated column carries Getter); the delegate type is fixed, so under NativeAOT Compile() runs on the expression interpreter.
             getters[c] = Expression.Lambda<Func<T, object?>>(box, param).Compile();
         }
 
