@@ -87,7 +87,10 @@ public class ResolveColumnNameChainTests : IDisposable
     [Fact]
     public void FieldSelector_StillThrowsArgumentException()
     {
-        Assert.Throws<ArgumentException>(() => Resolve(r => r.Field));
+        var ex = Assert.Throws<ArgumentException>(() => Resolve(r => r.Field));
+
+        Assert.Equal("columnSelector", ex.ParamName);
+        Assert.StartsWith("Column selector must be a property access expression.", ex.Message);
     }
 
     [Fact]

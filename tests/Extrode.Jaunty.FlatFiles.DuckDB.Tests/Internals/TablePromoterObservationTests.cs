@@ -162,4 +162,20 @@ public sealed class TablePromoterObservationTests : IDisposable
 
         Assert.Equal("1", seen);
     }
+
+    [Fact]
+    public async Task AFailedAsyncPromotion_LeavesTheConnectionUsable()
+    {
+        using (DuckDBCommand setup = _connection.CreateCommand())
+        {
+            setup.CommandText = "CREATE TABLE src(s VARCHAR); INSERT INTO src VALUES ('x'); CREATE VIEW bad_view AS SELECT CAST(s AS INTEGER) a FROM src";
+            setup.ExecuteNonQuery();
+        }
+
+        await Assert.ThrowsAnyAsync<DuckDBException>(() => TablePromoter.EnsurePromotedToTableAsync(_connection, new ViewSource("bad_view"), _dialect, default).AsTask());
+
+        using DuckDBCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT 1";
+        Assert.Equal(1, Convert.ToInt32(cmd.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture));
+    }
 }

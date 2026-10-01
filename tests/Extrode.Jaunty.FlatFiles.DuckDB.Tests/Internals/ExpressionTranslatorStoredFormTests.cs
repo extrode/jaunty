@@ -202,6 +202,9 @@ public class ExpressionTranslatorStoredFormTests : IDisposable
             Translate<GradedRow>(r => names.Contains(r.Name, StringComparer.InvariantCulture)));
 
         Assert.StartsWith("Contains with the comparer", ex.Message);
+        Assert.EndsWith(
+            "has no SQL equivalent in flat file predicates. Use the default or an ordinal comparer, or one of StringComparer's ignore-case comparers.",
+            ex.Message);
     }
 
     [Fact]

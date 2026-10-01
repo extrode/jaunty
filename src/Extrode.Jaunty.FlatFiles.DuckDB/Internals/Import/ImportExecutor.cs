@@ -239,7 +239,7 @@ internal static class ImportExecutor
                 for (int i = 0; i < mappingList.Count; i++)
                 {
                     var value = reader.GetValue(readerColumnMap[i]);
-                    paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType, transform);
+                    paramArray[i].Value = ConvertValue(value, mappingList[i].PropertyType, transform);
                 }
 
                 await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
