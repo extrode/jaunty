@@ -80,6 +80,21 @@ public class RawWhereFoldParenthesesTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public void AJoinedRawOrInFirstPosition_IsParenthesised()
+    {
+        const string joinedOr = "categories.category_name = 'A' OR categories.category_name = 'B'";
+
+        string sql = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where(joinedOr)
+            .Where((p, c) => p.UnitPrice > 10)
+            .ToSql();
+
+        Assert.Contains($"WHERE (({joinedOr}) AND ", sql, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AGroupedRawOrAfterAnExpression_IsParenthesised()
     {
         string sql = _fixture.Connection.From<Product>()
