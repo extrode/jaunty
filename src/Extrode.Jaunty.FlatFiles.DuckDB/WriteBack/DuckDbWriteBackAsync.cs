@@ -41,13 +41,7 @@ public sealed partial class DuckDb
                     "irreversibly, so only WriteBackMode.Overwrite is accepted here.");
         }
 
-        if (source.FilePaths.Count > 1)
-        {
-            throw new InvalidOperationException(
-                $"In-place WriteBack (WriteBackMode) is not supported for multi-file sources " +
-                $"(source '{source.TableName}' spans {source.FilePaths.Count} files). " +
-                "Use the overload that accepts an explicit output path instead.");
-        }
+        RequireInPlaceWriteBackIsLossless(source);
 
         var originalPath = source.FilePath;
         // Stryker disable once String : the fallback is reached only for a null result (root path), and "" and "." combine to the same path
