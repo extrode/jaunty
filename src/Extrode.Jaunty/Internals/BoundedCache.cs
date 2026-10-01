@@ -124,15 +124,23 @@ internal sealed class BoundedCache<TKey, TValue>
     /// </remarks>
     internal void Set(TKey key, TValue value)
     {
-        if (_entries.TryAdd(key, value))
+        // AUD-R38-127: the overwrite used the indexer, so a key another thread's Evict removed
+        // between the failed TryAdd and the write came back with no queue entry and no count, out
+        // of Evict's reach for good. TryUpdate only replaces a key that is still present; if it
+        // was evicted meanwhile, the loop re-adds it through the tracked TryAdd path.
+        while (true)
         {
-            Interlocked.Increment(ref _count);
-            _insertionOrder.Enqueue(key);
-            Evict();
-            return;
-        }
+            if (_entries.TryAdd(key, value))
+            {
+                Interlocked.Increment(ref _count);
+                _insertionOrder.Enqueue(key);
+                Evict();
+                return;
+            }
 
-        _entries[key] = value;
+            if (_entries.TryGetValue(key, out TValue? current) && _entries.TryUpdate(key, value, current))
+                return;
+        }
     }
 
     internal TValue GetOrAdd(TKey key, Func<TKey, TValue> factory)
