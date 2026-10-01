@@ -115,4 +115,70 @@ public class MultiEntityValueTypeEntityTests : IClassFixture<DialectFixture>
 
         Assert.Single(rows);
     }
+
+    [Theory]
+    [SystemSqlite]
+    public void SingleEntityQuery_WithAStructEntity_IsRejected(DialectInfo _)
+    {
+        using IDbConnection connection = CreateAndSeed();
+
+        var thrown = Assert.Throws<NotSupportedException>(() =>
+            connection.Query<ValueAuthor>("SELECT id, name FROM struct_authors").ToList());
+
+        Assert.Contains("'ValueAuthor'", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("value type", thrown.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task SingleEntityQueryAsync_WithAStructEntity_IsRejected(DialectInfo _)
+    {
+        using IDbConnection connection = CreateAndSeed();
+
+        await Assert.ThrowsAsync<NotSupportedException>(async () =>
+            await connection.QueryAsync<ValueAuthor>("SELECT id, name FROM struct_authors"));
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void SingleEntityQuery_WithAClassEntity_StillMaps(DialectInfo _)
+    {
+        using IDbConnection connection = CreateAndSeed();
+
+        RefBook book = connection.Query<RefBook>("SELECT id, author_id AS AuthorId, name FROM struct_books").Single();
+
+        Assert.Equal("Foundation", book.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void ReadPartial_StructWithAMappedColumn_IsRejected(DialectInfo _)
+    {
+        using IDbConnection connection = CreateAndSeed();
+        using GridReader grid = connection.QueryMultiple("SELECT id FROM struct_authors");
+
+        Assert.Throws<NotSupportedException>(() => grid.ReadPartial<ValueAuthor>());
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void SingleEntityQuery_TupleValueType_IsNotRejected(DialectInfo _)
+    {
+        using IDbConnection connection = CreateAndSeed();
+
+        Assert.Equal((1L, "Isaac Asimov"), connection.Query<(long, string)>("SELECT id, name FROM struct_authors").Single());
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void SingleEntityQuery_StructWithNoMappedColumn_IsNotRejected(DialectInfo _)
+    {
+        using IDbConnection connection = CreateAndSeed();
+
+        using GridReader grid = connection.QueryMultiple("SELECT id AS unrelated FROM struct_authors");
+
+        ValueAuthor author = grid.ReadPartial<ValueAuthor>().Single();
+
+        Assert.Equal(0, author.Id);
+    }
 }
