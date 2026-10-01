@@ -315,6 +315,58 @@ public class ParameterBinderInternalsTests
     }
 
     // ------------------------------------------------------------------
+    // AUD-R38 mutation survivors
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(CommandType.StoredProcedure)]
+    [InlineData(CommandType.TableDirect)]
+    public void Bind_SpParametersAsPlainObjectOnAProcedureCommand_Throws(CommandType commandType)
+    {
+        var command = new FakeCommand { CommandText = "dbo.Proc", CommandType = commandType };
+
+        var ex = Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, new StoredProcedure.SpParameters()));
+
+        Assert.Equal("parameters", ex.ParamName);
+        Assert.Contains("typed SpParameters", ex.Message);
+        Assert.Empty(command.Parameters);
+    }
+
+    [Fact]
+    public void BindFromDictionary_CollectionAfterScalars_ExpandsAndBindsEveryName()
+    {
+        var command = new FakeCommand { CommandText = "SELECT * FROM T WHERE A = @A AND Id IN @Ids AND B = @B" };
+        var parameters = new Dictionary<string, object?> { ["A"] = 1, ["Ids"] = new[] { 10, 20 }, ["B"] = "x" };
+
+        ParameterBinder.Bind(command, parameters);
+
+        Assert.DoesNotContain("@Ids ", command.CommandText);
+        Assert.Equal(
+            [("A", (object?)1), ("Ids0", 10), ("Ids1", 20), ("B", "x")],
+            command.Parameters.Cast<IDbDataParameter>().Select(p => (p.ParameterName, p.Value)));
+    }
+
+    [Fact]
+    public void BindFromDictionary_NullScalarBesideACollection_BindsDbNull()
+    {
+        var command = new FakeCommand { CommandText = "SELECT * FROM T WHERE Id IN @Ids AND B = @B" };
+        var parameters = new Dictionary<string, object?> { ["Ids"] = new int?[] { 1, null }, ["B"] = null };
+
+        ParameterBinder.Bind(command, parameters);
+
+        Assert.Equal(
+            [("Ids0", (object?)1), ("Ids1", DBNull.Value), ("B", DBNull.Value)],
+            command.Parameters.Cast<IDbDataParameter>().Select(p => (p.ParameterName, p.Value)));
+    }
+
+    [Fact]
+    public void ApplyTypeHandlerIfNeeded_StringOverrideWithoutAProperty_WinsOverTheNumericDefault()
+    {
+        Assert.Equal(Attributes.EnumStorage.Numeric, Extrode.Jaunty.Configuration.JauntyConfig.DefaultEnumStorage);
+        Assert.Equal("Second", ParameterBinder.ApplyTypeHandlerIfNeeded(Sample.Second, propertyInfo: null, Attributes.EnumStorage.String));
+    }
+
+    // ------------------------------------------------------------------
     // Fixtures
     // ------------------------------------------------------------------
 
