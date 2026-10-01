@@ -1,3 +1,5 @@
+using System.Data;
+
 using DuckDB.NET.Data;
 
 using Extrode.Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
@@ -112,6 +114,42 @@ public class ImporterPathLanguageTests : IDisposable
 
         Assert.Equal("filePath", ex.ParamName);
         Assert.Contains("ftp://", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AClosedTargetConnection_IsClosedAgainAfterTheImport()
+    {
+        using var target = new SqliteConnection($"Data Source={Path.Combine(_dataDir, "target.db")};Pooling=False");
+
+        long imported = await FlatFileImporter.ImportAsync<InventoryItem>(
+            Path.Combine(_dataDir, "inventory_a.csv"), target, new ImportOptions(createTableIfMissing: true));
+
+        Assert.Equal(2, imported);
+        Assert.Equal(ConnectionState.Closed, target.State);
+        target.Open();
+        Assert.Equal(2, CountRows(target));
+    }
+
+    [Fact]
+    public async Task AClosedTargetConnection_IsClosedAgainWhenTheImportFails()
+    {
+        using var target = new SqliteConnection($"Data Source={Path.Combine(_dataDir, "target.db")};Pooling=False");
+
+        await Assert.ThrowsAnyAsync<Exception>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(Path.Combine(_dataDir, "inventory_a.csv"), target));
+
+        Assert.Equal(ConnectionState.Closed, target.State);
+    }
+
+    [Fact]
+    public async Task AnOpenTargetConnection_IsLeftOpen()
+    {
+        using SqliteConnection target = OpenTarget();
+
+        await FlatFileImporter.ImportAsync<InventoryItem>(
+            Path.Combine(_dataDir, "inventory_a.csv"), target, new ImportOptions(createTableIfMissing: true));
+
+        Assert.Equal(ConnectionState.Open, target.State);
     }
 
     [Fact]

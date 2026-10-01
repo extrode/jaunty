@@ -351,6 +351,11 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// Imports data for the specified entity type into a target database connection.
     /// Reads from the flat file source (via DuckDB) and writes to the target using batched INSERTs.
     /// </summary>
+    /// <remarks>
+    /// A <paramref name="targetConnection"/> passed closed is opened for the import and closed
+    /// again afterwards, whether the import succeeds or fails; one passed open is left open. For an
+    /// in-memory SQLite target, pass it open, since closing such a connection discards its data.
+    /// </remarks>
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="targetConnection">The target ADO.NET connection to import into.</param>
     /// <param name="options">Import options (batch size, conflict strategy, etc.).</param>
