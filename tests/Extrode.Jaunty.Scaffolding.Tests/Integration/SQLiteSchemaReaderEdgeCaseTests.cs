@@ -345,6 +345,16 @@ public sealed class SQLiteSchemaReaderEdgeCaseTests : IDisposable
     }
 
     [Fact]
+    public async Task IncludeSchemas_Empty_IsNoFilter()
+    {
+        Exec("CREATE TABLE widgets (id INTEGER PRIMARY KEY)");
+
+        DatabaseSchema schema = await ReadAsync(new SchemaReaderOptions { IncludeSchemas = [] });
+
+        Assert.Single(schema.Tables);
+    }
+
+    [Fact]
     public async Task IncludeSchemas_ListingMainAmongOthers_ReadsMain()
     {
         Exec("CREATE TABLE widgets (id INTEGER PRIMARY KEY)");
