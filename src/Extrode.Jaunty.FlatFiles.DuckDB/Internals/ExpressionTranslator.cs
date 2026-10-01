@@ -2,6 +2,7 @@ using System.Collections;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 using DuckDB.NET.Data;
@@ -638,7 +639,17 @@ internal static class ExpressionTranslator
                         if (instance is null && !getter.IsStatic)
                             return false;
 
-                        value = property.GetValue(instance);
+                        // AUD-R38-104: unwrapped, as the compiled path throws what the getter threw.
+                        try
+                        {
+                            value = property.GetValue(instance);
+                        }
+                        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+                        {
+                            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                            throw;
+                        }
+
                         return true;
 
                     default:
