@@ -2209,7 +2209,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         if (subqueryParams != null)
         {
             var prefix = $"sq{_parameters.Count}";
-            (subquerySql, ParameterCollection renamedParams) = ParameterRenamer.Rename(subquerySql, subqueryParams, prefix);
+            (subquerySql, ParameterCollection renamedParams) = ParameterRenamer.Rename(subquerySql, subqueryParams, prefix, _dialect);
             foreach ((string? name, object? value) in renamedParams.GetAll())
             {
                 _parameters.Add(name, value);
