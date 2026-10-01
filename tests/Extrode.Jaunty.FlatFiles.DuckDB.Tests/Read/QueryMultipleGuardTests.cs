@@ -118,6 +118,53 @@ public class QueryMultipleGuardTests : IDisposable
         Assert.NotEmpty(grid.Read<SalesRecord>());
     }
 
+    public static TheoryData<object> NamedValueDictionaries() => new()
+    {
+        new Dictionary<string, object?> { ["Region"] = "Northeast" },
+        new Dictionary<string, string> { ["Region"] = "Northeast" },
+        new System.Collections.ObjectModel.ReadOnlyDictionary<string, object?>(new Dictionary<string, object?> { ["Region"] = "Northeast" }),
+    };
+
+    [Theory]
+    [MemberData(nameof(NamedValueDictionaries))]
+    public void ADictionaryOfNamedValues_BindsItsEntries(object parameters)
+    {
+        using GridReader grid = _db.QueryMultiple(Sql, parameters);
+
+        List<SalesRecord> rows = grid.Read<SalesRecord>();
+        Assert.NotEmpty(rows);
+        Assert.All(rows, r => Assert.Equal("Northeast", r.Region));
+    }
+
+    [Theory]
+    [MemberData(nameof(NamedValueDictionaries))]
+    public async Task ADictionaryOfNamedValues_BindsItsEntriesOnTheAsyncPathToo(object parameters)
+    {
+        using GridReader grid = await _db.QueryMultipleAsync(Sql, parameters);
+
+        List<SalesRecord> rows = grid.Read<SalesRecord>();
+        Assert.NotEmpty(rows);
+        Assert.All(rows, r => Assert.Equal("Northeast", r.Region));
+    }
+
+    [Fact]
+    public void ADictionaryNullEntry_BindsNull()
+    {
+        using GridReader grid = _db.QueryMultiple(Sql, new Dictionary<string, object?> { ["Region"] = null });
+
+        Assert.Empty(grid.Read<SalesRecord>());
+    }
+
+    [Fact]
+    public void ANonStringKeyedDictionary_FallsBackToItsProperties()
+    {
+        Assert.ThrowsAny<Exception>(() =>
+        {
+            using GridReader grid = _db.QueryMultiple(Sql, new Dictionary<int, string> { [1] = "Northeast" });
+            grid.Read<SalesRecord>();
+        });
+    }
+
     [Fact]
     public void AWriteOnlyPropertyOnTheParametersObject_IsSkipped()
     {

@@ -885,7 +885,7 @@ internal static class ParameterBinder
     /// returned as-is; any other string-keyed shape is copied into one, which costs an allocation on
     /// a path that would previously have thrown.
     /// </summary>
-    private static IDictionary<string, object?>? AsNamedValues(object parameters)
+    internal static IDictionary<string, object?>? AsNamedValues(object parameters)
     {
         if (parameters is IDictionary<string, object?> exact)
             return exact;
