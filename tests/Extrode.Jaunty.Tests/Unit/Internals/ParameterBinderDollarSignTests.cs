@@ -143,7 +143,7 @@ public class ParameterBinderDollarSignTests
     [Fact]
     public void Bind_CommandWithoutAConnection_KeepsDollarParameters()
     {
-        using var command = new SqliteCommand("SELECT * FROM t WHERE n = $name");
+        using var command = new SqliteCommand("SELECT * FROM detached WHERE n = $name");
 
         ParameterBinder.Bind(command, new { name = "a" });
 
