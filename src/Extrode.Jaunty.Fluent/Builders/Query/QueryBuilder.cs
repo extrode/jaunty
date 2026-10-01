@@ -9,6 +9,7 @@ using Extrode.Jaunty.Fluent.Expressions;
 using Extrode.Jaunty.Fluent.Internals;
 using Extrode.Jaunty.Internals.Entity;
 using Extrode.Jaunty.Internals.Parameters;
+using Extrode.Jaunty.Internals.Read;
 using Extrode.Jaunty.Configuration;
 using System.Globalization;
 using Extrode.Jaunty.Internals;
@@ -114,7 +115,9 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     /// would otherwise be spliced into the middle of a combined UNION/EXCEPT/INTERSECT
     /// statement instead of applying to the combined result.
     /// </summary>
-    internal bool HasOrderingOrPaging() => _orderByColumns.Count > 0 || _take.HasValue || _skip.HasValue;
+    internal bool HasOrderingOrPaging() => _orderByColumns.Count > 0 || HasPaging();
+
+    internal bool HasPaging() => _take.HasValue || _skip.HasValue;
 
     private string[] GetAllColumnNames() => _cache.ColumnNames.ToArray();
 
@@ -1637,17 +1640,11 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         if (value is null or DBNull)
             return default!;
 
-        Type targetType = typeof(TResult);
-        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-        // Handle conversion from database types to C# types, using
-        // CultureInfo.InvariantCulture, not the ambient CurrentCulture: providers routinely hand back
-        // a string where the column is TEXT/NUMERIC (SQLite in particular), and under a comma-decimal
-        // culture (de-DE, fr-FR, ...) Convert.ChangeType("1.5", typeof(decimal)) does not throw - it
-        // reads the period as a group separator and returns 15.
-        // Matches GroupedJoinedResultMapper.ConvertColumnValue and GridReader.ReadScalar.
-        var converted = Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
-        return (TResult)converted;
+        // AUD-R38-033: through DbValueConversion, as GroupedJoinedResultMapper.ConvertColumnValue is.
+        // A bare Convert.ChangeType could not reach an enum (Max over an INTEGER-backed enum came
+        // back as long) or a Guid stored as TEXT, both of which DbValueConversion handles; it also
+        // keeps the invariant-culture terminal conversion this used to do inline.
+        return (TResult)DbValueConversion.Convert(value, typeof(TResult));
     }
 
     private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
@@ -1857,9 +1854,25 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         // and rebuild with just the single column
         string subquerySql;
         ParameterCollection? subqueryParams = null;
+        bool pagedOperand = false;
 
         if (subquery is QueryBuilder<TSubquery> queryBuilder)
         {
+            // AUD-R38-034: the operand's SQL is spliced in from FROM onward, so its own ORDER BY and
+            // paging land inside IN (...). Ordering alone has no meaning there and SQL Server rejects
+            // it without TOP/OFFSET (error 1033), so it is refused. Paging is meaningful - "the first
+            // three categories" - but MySQL rejects LIMIT directly inside IN (error 1235), so a paged
+            // operand is wrapped in a derived table below, which every dialect accepts.
+            if (queryBuilder.HasOrderingOrPaging() && !queryBuilder.HasPaging())
+            {
+                throw new NotSupportedException(
+                    "WhereInSubquery/WhereNotInSubquery must not be given a subquery that is ordered but " +
+                    "not paged: ordering has no meaning inside IN (...), and SQL Server rejects it there. " +
+                    "Remove the OrderBy, or add Take/Skip if the ordering selects which rows qualify.");
+            }
+
+            pagedOperand = queryBuilder.HasPaging();
+
             // Access internal method to get parameters
             subqueryParams = queryBuilder.GetParameters();
             // Get the full SQL and modify it to select only the needed column
@@ -1890,6 +1903,9 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         {
             subquerySql = $"SELECT {escapedSubqueryColumn}{subquerySql.Substring(fromIndex)}";
         }
+
+        if (pagedOperand)
+            subquerySql = $"SELECT {escapedSubqueryColumn} FROM ({subquerySql}) {_dialect.EscapeTableName(null, "jaunty_in")}";
 
         // Merge subquery parameters with prefix to avoid conflicts
         if (subqueryParams != null)
