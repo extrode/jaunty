@@ -295,31 +295,24 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                 nameof(transaction));
     }
 
+    private static readonly global::Extrode.Jaunty.Dialects.PostgreSqlDialect Dialect = new();
+
     /// <summary>
     /// Builds the COPY command for PostgreSQL.
     /// </summary>
-    private static string BuildCopyCommand(string? schemaName, string tableName, IDataReader data)
+    /// <remarks>
+    /// AUD-R38-013: names are escaped the way the dialect escapes them for every other statement -
+    /// quoted only when they are keywords. Quoting every name made them case-sensitive here alone,
+    /// so <c>Products</c>/<c>ProductName</c> resolved to <c>products</c>/<c>productname</c> for
+    /// Insert and to a missing <c>"Products"</c> for the native bulk copy.
+    /// </remarks>
+    internal static string BuildCopyCommand(string? schemaName, string tableName, IDataReader data)
     {
-        global::Extrode.Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName), global::Extrode.Jaunty.Dialects.SqlIdentifierFlavor.PostgreSql);
-
-        string qualifiedTableName;
-        if (schemaName is null || schemaName.Length == 0)
-        {
-            qualifiedTableName = $"\"{tableName}\"";
-        }
-        else
-        {
-            global::Extrode.Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName), global::Extrode.Jaunty.Dialects.SqlIdentifierFlavor.PostgreSql);
-            qualifiedTableName = $"\"{schemaName}\".\"{tableName}\"";
-        }
+        string qualifiedTableName = Dialect.EscapeTableName(schemaName, tableName);
 
         var columnNames = new List<string>();
         for (int i = 0; i < data.FieldCount; i++)
-        {
-            string columnName = data.GetName(i);
-            global::Extrode.Jaunty.Dialects.SqlIdentifierValidator.Validate(columnName, nameof(data), global::Extrode.Jaunty.Dialects.SqlIdentifierFlavor.PostgreSql);
-            columnNames.Add($"\"{columnName}\"");
-        }
+            columnNames.Add(Dialect.EscapeColumnName(data.GetName(i)));
 
         var columns = string.Join(", ", columnNames);
         return $"COPY {qualifiedTableName} ({columns}) FROM STDIN BINARY";
