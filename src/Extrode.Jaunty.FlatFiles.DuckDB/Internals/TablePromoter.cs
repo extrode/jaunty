@@ -1,4 +1,6 @@
+using System.Data;
 using System.Data.Common;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 
 using DuckDB.NET.Data;
@@ -63,7 +65,18 @@ internal static class TablePromoter
     /// <param name="connection">The DuckDB connection.</param>
     /// <param name="source">The file source to promote.</param>
     /// <param name="dialect">The DuckDB dialect for SQL generation.</param>
-    public static void EnsurePromotedToTable(DuckDBConnection connection, IFileSource source, DuckDbDialect dialect)
+    /// <param name="transaction">The caller's transaction from <c>CommandOptions</c>, if any.</param>
+    /// <remarks>
+    /// AUD-R38-002: promotion used to open its own transaction unconditionally, and DuckDB.NET
+    /// refuses a second transaction on a connection ("Already in a transaction."), so the first
+    /// mutation of each source under a caller's transaction threw before it ran. Inside a caller's
+    /// transaction - passed in <c>CommandOptions</c>, or begun on the connection and not passed - the
+    /// promotion now joins it, and is not recorded: a rollback restores the view, so the next
+    /// mutation must look again. It looks in the catalog (AUD-R38-017), which also covers a
+    /// file-backed catalog reopened after an earlier instance's promotion persisted, where the
+    /// unconditional <c>DROP VIEW</c> used to fail on the existing table.
+    /// </remarks>
+    public static void EnsurePromotedToTable(DuckDBConnection connection, IFileSource source, DuckDbDialect dialect, IDbTransaction? transaction = null)
     {
         if (PreloadRegistry.IsPreloaded(connection, source))
             return;
@@ -76,13 +89,39 @@ internal static class TablePromoter
             if (state.Promoted.Contains(source))
                 return;
 
-            var sql = dialect.GeneratePromoteToTableSql(source);
-
-            CommandObservation.Execute(sql, null, connection, DuckDbObservation.Text, () =>
+            DbTransaction? callerTransaction = AsyncTransactionValidator.RequireDbTransaction(transaction);
+            DuckDBTransaction? ownTransaction = callerTransaction is null ? TryBeginOwnTransaction(connection) : null;
+            DbTransaction? active = callerTransaction ?? ownTransaction;
+            try
             {
-                PromoteDirect(connection, sql);
-                return true;
-            });
+                if (!ExistsAsTable(connection, source.TableName, active))
+                {
+                    var sql = dialect.GeneratePromoteToTableSql(source);
+
+                    CommandObservation.Execute(sql, null, connection, DuckDbObservation.Text, () =>
+                    {
+                        PromoteDirect(connection, sql, active);
+                        return true;
+                    });
+                }
+
+                if (ownTransaction is null)
+                    return;
+
+                ownTransaction.Commit();
+            }
+            catch
+            {
+                if (ownTransaction is not null)
+                {
+                    try { ownTransaction.Rollback(); } catch { }
+                }
+                throw;
+            }
+            finally
+            {
+                ownTransaction?.Dispose();
+            }
 
             state.Promoted.Add(source);
             source.IsPromotedToTable = true;
@@ -93,24 +132,42 @@ internal static class TablePromoter
         }
     }
 
-    private static void PromoteDirect(DuckDBConnection connection, string sql)
+    /// <summary>
+    /// Begins the promotion's own transaction, or returns <see langword="null"/> when the connection
+    /// already has one: DuckDB.NET throws <see cref="InvalidOperationException"/> for a second
+    /// <c>BeginTransaction</c> and has no public way to ask whether one is open.
+    /// </summary>
+    private static DuckDBTransaction? TryBeginOwnTransaction(DuckDBConnection connection)
+    {
+        try
+        {
+            return connection.BeginTransaction();
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    private static bool ExistsAsTable(DuckDBConnection connection, string tableName, DbTransaction? transaction)
+    {
+        using DuckDBCommand cmd = connection.CreateCommand();
+        cmd.CommandText = DuckDb.ExistsAsTableSql;
+        if (transaction is not null)
+            ((IDbCommand)cmd).Transaction = transaction;
+        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+    }
+
+    private static void PromoteDirect(DuckDBConnection connection, string sql, DbTransaction? transaction)
     {
         CommandObservation.Log(sql, null);
 
-        using DuckDBTransaction transaction = connection.BeginTransaction();
-        try
-        {
-            using DuckDBCommand cmd = connection.CreateCommand();
-            cmd.CommandText = sql;
-            cmd.Transaction = transaction;
-            cmd.ExecuteNonQuery();
-            transaction.Commit();
-        }
-        catch
-        {
-            try { transaction.Rollback(); } catch { }
-            throw;
-        }
+        using DuckDBCommand cmd = connection.CreateCommand();
+        cmd.CommandText = sql;
+        if (transaction is not null)
+            ((IDbCommand)cmd).Transaction = transaction;
+        cmd.ExecuteNonQuery();
     }
 
     /// <summary>
@@ -121,7 +178,9 @@ internal static class TablePromoter
     /// <param name="source">The file source to promote.</param>
     /// <param name="dialect">The DuckDB dialect for SQL generation.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
-    public static async ValueTask EnsurePromotedToTableAsync(DuckDBConnection connection, IFileSource source, DuckDbDialect dialect, CancellationToken cancellationToken)
+    /// <param name="transaction">The caller's transaction from <c>CommandOptions</c>, if any.</param>
+    /// <remarks>Same transaction and catalog handling as <see cref="EnsurePromotedToTable"/>.</remarks>
+    public static async ValueTask EnsurePromotedToTableAsync(DuckDBConnection connection, IFileSource source, DuckDbDialect dialect, CancellationToken cancellationToken, IDbTransaction? transaction = null)
     {
         if (PreloadRegistry.IsPreloaded(connection, source))
             return;
@@ -134,11 +193,38 @@ internal static class TablePromoter
             if (state.Promoted.Contains(source))
                 return;
 
-            var sql = dialect.GeneratePromoteToTableSql(source);
+            DbTransaction? callerTransaction = AsyncTransactionValidator.RequireDbTransaction(transaction);
+            DuckDBTransaction? ownTransaction = callerTransaction is null ? TryBeginOwnTransaction(connection) : null;
+            DbTransaction? active = callerTransaction ?? ownTransaction;
+            try
+            {
+                if (!await ExistsAsTableAsync(connection, source.TableName, active, cancellationToken).ConfigureAwait(false))
+                {
+                    var sql = dialect.GeneratePromoteToTableSql(source);
 
-            await CommandObservation.ExecuteAsync(sql, null, connection, DuckDbObservation.Text,
-                () => PromoteDirectAsync(connection, sql, cancellationToken),
-                cancellationToken).ConfigureAwait(false);
+                    await CommandObservation.ExecuteAsync(sql, null, connection, DuckDbObservation.Text,
+                        () => PromoteDirectAsync(connection, sql, active, cancellationToken),
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                if (ownTransaction is null)
+                    return;
+
+                // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
+                await ownTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                if (ownTransaction is not null)
+                {
+                    try { ownTransaction.Rollback(); } catch { }
+                }
+                throw;
+            }
+            finally
+            {
+                ownTransaction?.Dispose();
+            }
 
             state.Promoted.Add(source);
             source.IsPromotedToTable = true;
@@ -149,24 +235,32 @@ internal static class TablePromoter
         }
     }
 
-    private static async ValueTask<object?> PromoteDirectAsync(DuckDBConnection connection, string sql, CancellationToken cancellationToken)
+    private static async ValueTask<bool> ExistsAsTableAsync(DuckDBConnection connection, string tableName, DbTransaction? transaction, CancellationToken cancellationToken)
+    {
+        DuckDBCommand cmd = connection.CreateCommand();
+        // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
+        cmd.CommandText = DuckDb.ExistsAsTableSql;
+        if (transaction is not null)
+            ((IDbCommand)cmd).Transaction = transaction;
+        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
+        object? count = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return Convert.ToInt64(count, CultureInfo.InvariantCulture) > 0;
+    }
+
+    private static async ValueTask<object?> PromoteDirectAsync(DuckDBConnection connection, string sql, DbTransaction? transaction, CancellationToken cancellationToken)
     {
         CommandObservation.Log(sql, null);
 
+        DuckDBCommand cmd = connection.CreateCommand();
         // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
-        DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-        await using (transaction.ConfigureAwait(false))
-        {
-            DuckDBCommand cmd = connection.CreateCommand();
-            // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
-            await using var cmdDisposer = cmd.ConfigureAwait(false);
-            cmd.CommandText = sql;
-            cmd.Transaction = transaction;
-            // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
-            await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-        }
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
+        cmd.CommandText = sql;
+        if (transaction is not null)
+            ((IDbCommand)cmd).Transaction = transaction;
+        // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
+        await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         return null;
     }
