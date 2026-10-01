@@ -129,17 +129,19 @@ public sealed class CommandContext
     /// Gets the connection string with sensitive values (such as passwords) redacted.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The underlying provider's connection string is parsed with <see cref="DbConnectionStringBuilder"/>
     /// and any key whose name case-insensitively contains a sensitive fragment (password, pwd, secret,
     /// token, apikey, passfile) is removed before the string is rebuilt. This sanitization is performed
     /// unconditionally; it does not rely on the provider itself withholding sensitive data.
     /// If the connection string cannot be parsed, "(unknown)" is returned instead of the raw value.
-    /// </remarks>
-    /// <remarks>
+    /// </para>
+    /// <para>
     /// AUD-R35-167. <see cref="SanitizeConnectionString"/>'s <c>catch (ArgumentException)</c> covers
     /// only the parse; the <c>Connection.ConnectionString</c> access that produces its argument is
     /// evaluated first and was outside every guard, so a provider whose getter throws took the whole
     /// property down. Reading it is now inside the same try as everything else.
+    /// </para>
     /// </remarks>
     public string ConnectionString
     {

@@ -93,6 +93,34 @@ public class DocumentedApiTests
         Assert.NotEqual(before, global::Extrode.Jaunty.Internals.ConfigurationGeneration.Current);
     }
 
+    [Fact]
+    public void NoDocCommentCarriesTwoRemarksElements()
+    {
+        List<string> offences = new();
+
+        foreach ((string relative, string text) in PublishedMarkdown().Where(p => p.Relative.StartsWith("src/", StringComparison.Ordinal)))
+        {
+            string[] lines = text.Split('\n');
+            int remarks = 0;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string trimmed = lines[i].TrimStart();
+
+                if (!trimmed.StartsWith("///", StringComparison.Ordinal))
+                {
+                    remarks = 0;
+                    continue;
+                }
+
+                if (trimmed.Contains("<remarks>") && ++remarks == 2)
+                    offences.Add($"{relative}:{i + 1}");
+            }
+        }
+
+        Assert.Empty(offences);
+    }
+
     /// <summary>
     /// A page that says a name was wrong is not itself citing the name as API. The corrective
     /// notes are written as blockquotes, and the sketch in the design notes as a
