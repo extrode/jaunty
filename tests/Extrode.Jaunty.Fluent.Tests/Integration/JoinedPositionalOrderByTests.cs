@@ -76,9 +76,10 @@ public class JoinedPositionalOrderByTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public void FourWay_OrderByDescending_Runs()
     {
-        List<Product> results = TwoSuppliers().OrderByDescending((p, c, s1, s2) => s2.CompanyName).Select();
+        IJoinedQuery4<Product, Category, Supplier, Supplier> query = TwoSuppliers().OrderByDescending((p, c, s1, s2) => s2.CompanyName);
 
-        Assert.NotEmpty(results);
+        Assert.Matches(@"ORDER BY s2\.\W?company_name\W? DESC$", query.ToSql());
+        Assert.NotEmpty(query.Select());
     }
 
     [Fact]
