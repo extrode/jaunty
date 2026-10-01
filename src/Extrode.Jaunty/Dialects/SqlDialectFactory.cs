@@ -373,6 +373,7 @@ public static class SqlDialectFactory
             PropertyInfo? property = connectionType.GetProperty(
                 name, BindingFlags.Public | BindingFlags.Instance);
 
+            // AOT-SAFE: metadata read on the property the decorator probe just found; see the suppression above.
             if (property is null || property.GetIndexParameters().Length > 0 || !property.CanRead)
                 continue;
 

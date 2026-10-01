@@ -95,6 +95,7 @@ internal static class ColumnMappingCache
         UnaryExpression cast = System.Linq.Expressions.Expression.Convert(param, prop.DeclaringType!);
         MemberExpression access = System.Linq.Expressions.Expression.Property(cast, prop);
         UnaryExpression box = System.Linq.Expressions.Expression.Convert(access, typeof(object));
+        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         return System.Linq.Expressions.Expression.Lambda<Func<object, object?>>(box, param).Compile();
     }
 
@@ -110,6 +111,7 @@ internal static class ColumnMappingCache
         UnaryExpression cast = System.Linq.Expressions.Expression.Convert(entityParam, prop.DeclaringType!);
         UnaryExpression convertedValue = System.Linq.Expressions.Expression.Convert(valueParam, prop.PropertyType);
         BinaryExpression assign = System.Linq.Expressions.Expression.Assign(System.Linq.Expressions.Expression.Property(cast, prop), convertedValue);
+        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         return System.Linq.Expressions.Expression.Lambda<Action<object, object?>>(assign, entityParam, valueParam).Compile();
     }
 }
