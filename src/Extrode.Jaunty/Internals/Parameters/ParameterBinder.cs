@@ -475,7 +475,9 @@ internal static class ParameterBinder
             return resolved.TryGetValue(name, out value);
         }
 
-        public IEnumerable<string> Names => resolved.Keys;
+        // Every resolved key is a name the SQL uses, which ExpandCollectionParameters already
+        // reserves; any other dictionary key is rejected as unused after binding.
+        public IEnumerable<string> Names => [];
     }
 
     /// <summary>
