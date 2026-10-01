@@ -425,6 +425,19 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
 
     internal bool HasParameter(string name) => _parameters.Contains(name);
 
+    internal int ParameterCount => _parameters.Count;
+
+    internal List<string> ParameterNamesFrom(int start) => _parameters.NamesFrom(start);
+
+    internal void RemoveParameters(List<string>? names)
+    {
+        if (names is null)
+            return;
+
+        foreach (string name in names)
+            _parameters.Remove(name);
+    }
+
     /// <summary>
     /// What this builder binds, in the shape interceptors and <c>JauntyConfig.Logger</c>
     /// already understand. Nested grouped builders hold only a parent reference, so they
