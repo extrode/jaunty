@@ -76,6 +76,32 @@ internal static class PropertyExtractor
     }
 
     /// <summary>
+    /// Resolves a multi-parameter selector such as <c>(a, b, c) =&gt; c.Name</c> to the position of
+    /// the parameter it reads and the property it reads off it.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-040: lets a joined ORDER BY name its entity by position, which stays unambiguous when
+    /// two joined entities have the same type.
+    /// </remarks>
+    public static (int ParameterIndex, string PropertyName) ExtractParameterMember(LambdaExpression selector)
+    {
+        MemberInfo? memberInfo = GetMemberInfo(selector.Body);
+        int index = memberInfo is null ? -1 : selector.Parameters.IndexOf(RootParameter(selector.Body)!);
+        if (index < 0)
+            throw new ArgumentException($"Expression '{selector}' does not refer to a property of one of its parameters.", nameof(selector));
+        return (index, memberInfo!.Name);
+    }
+
+    private static ParameterExpression? RootParameter(Expression expression)
+    {
+        if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            expression = unary.Operand;
+        while (expression is MemberExpression member)
+            expression = member.Expression!;
+        return expression as ParameterExpression;
+    }
+
+    /// <summary>
     /// Extracts the property name from an order by expression that may return object.
     /// </summary>
     public static string ExtractOrderByProperty<T>(Expression<Func<T, object?>> selector)
