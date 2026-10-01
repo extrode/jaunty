@@ -48,6 +48,34 @@ public class ParameterBinderCollectionHandlerTests : IDisposable
     }
 
     [Fact]
+    public void Bind_ANullHandledValue_IsBoundAsDbNullWithoutCallingTheHandler()
+    {
+        JauntyConfig.RegisterTypeHandler(new NullAwareHandler());
+        using SqliteCommand command = Command("UPDATE handled_null SET Code = @Code");
+
+        ParameterBinder.Bind(command, new CodeHolder { Code = null });
+
+        Assert.Equal(DBNull.Value, command.Parameters["Code"].Value);
+    }
+
+    private sealed class Code
+    {
+        public string Text { get; set; } = "";
+    }
+
+    private sealed class CodeHolder
+    {
+        public Code? Code { get; set; }
+    }
+
+    private sealed class NullAwareHandler : TypeHandler<Code>
+    {
+        public override Code? Parse(object? dbValue) => dbValue is string s ? new Code { Text = s } : null;
+
+        public override object? ToDbValue(Code? value) => value is null ? "handler saw null" : value.Text;
+    }
+
+    [Fact]
     public void Bind_HandledCollection_BindsOneScalarThroughTheHandler()
     {
         JauntyConfig.RegisterTypeHandler(new JoinedTagsHandler());
