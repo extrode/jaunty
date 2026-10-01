@@ -614,6 +614,21 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 continue;
             }
 
+            // The binders and the ColumnInfo/EntityColumnInfo getter lambdas read every mapped
+            // property, so a write-only property gives CS0154 and a base-class `private get` gives
+            // CS0271 inside the .g.cs. MetadataBuilder tests CanWrite only and maps both, so this is
+            // the same reported divergence as the setter cases above.
+            if (prop.GetMethod is null
+                || !context.SemanticModel.Compilation.IsSymbolAccessibleWithin(prop.GetMethod, classSymbol))
+            {
+                // Stryker disable once Linq : a property symbol always has at least one location (source or metadata), so First() cannot throw here
+                dropped.Add(new DroppedPropertyInfo(
+                    prop.Name,
+                    "it has no getter accessible from the entity class, and the generated binders read every mapped property",
+                    LocationInfo.From(prop.Locations.FirstOrDefault())));
+                continue;
+            }
+
             // Support [Column] from both
             AttributeData? columnAttr = GetRecognizedAttribute(prop, JauntyColumnAttribute, DataAnnotationsColumnAttribute);
             // AUD-R32-006: an empty [Column("")] falls back to the property name rather than
