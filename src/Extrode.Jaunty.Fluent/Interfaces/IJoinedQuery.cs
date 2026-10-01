@@ -944,6 +944,32 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     /// </summary>
     IJoinedQuery3<T1, T2, T3> ThenByJoinedDescending<TKey>(Expression<Func<T3, TKey>> keySelector);
 
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) on a member of whichever entity the selector reads, picked
+    /// by its position in the lambda's parameter list rather than by its type.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-040: the type-keyed <c>OrderByJoined</c> overloads are ambiguous (CS0121) when two
+    /// joined entities have the same type, or both have the member being read. Example:
+    /// <c>.OrderBy((order, rep, approver) =&gt; approver.LastName)</c>.
+    /// </remarks>
+    IJoinedQuery3<T1, T2, T3> OrderBy<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) on a member of the entity the selector reads, by position.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OrderByDescending<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) on a member of the entity the selector reads, by position.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> ThenBy<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) on a member of the entity the selector reads, by position.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector);
+
     // --- GROUP BY Operations ---
 
     /// <summary>
@@ -1372,6 +1398,32 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     /// Adds an additional ORDER BY column (descending) for the fourth entity.
     /// </summary>
     IJoinedQuery4<T1, T2, T3, T4> ThenByJoinedDescending<TKey>(Expression<Func<T4, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) on a member of whichever entity the selector reads, picked
+    /// by its position in the lambda's parameter list rather than by its type.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-040: the type-keyed <c>OrderByJoined</c> overloads are ambiguous (CS0121) when two
+    /// joined entities have the same type, or both have the member being read. Example:
+    /// <c>.OrderBy((order, rep, approver, region) =&gt; approver.LastName)</c>.
+    /// </remarks>
+    IJoinedQuery4<T1, T2, T3, T4> OrderBy<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) on a member of the entity the selector reads, by position.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderByDescending<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) on a member of the entity the selector reads, by position.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenBy<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) on a member of the entity the selector reads, by position.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> keySelector);
 
     // --- GROUP BY Operations ---
 

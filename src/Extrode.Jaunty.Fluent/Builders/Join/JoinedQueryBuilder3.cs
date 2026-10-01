@@ -350,6 +350,28 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         return this;
     }
 
+    // AUD-R38-040: position-keyed ordering, unambiguous when two joined entities share a type.
+    public IJoinedQuery3<T1, T2, T3> OrderBy<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector) => AddPositionalOrderBy(keySelector, "ASC");
+
+    public IJoinedQuery3<T1, T2, T3> OrderByDescending<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector) => AddPositionalOrderBy(keySelector, "DESC");
+
+    public IJoinedQuery3<T1, T2, T3> ThenBy<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector) => AddPositionalOrderBy(keySelector, "ASC");
+
+    public IJoinedQuery3<T1, T2, T3> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector) => AddPositionalOrderBy(keySelector, "DESC");
+
+    private IJoinedQuery3<T1, T2, T3> AddPositionalOrderBy(LambdaExpression keySelector, string direction)
+    {
+        (int index, string propertyName) = PropertyExtractor.ExtractParameterMember(keySelector);
+        string columnName = index switch
+        {
+            0 => GetColumnNameForOrderBy<T1>(propertyName, _parent.FromAlias),
+            1 => GetColumnNameForOrderBy<T2>(propertyName, _parent.Joins[0].Alias),
+            _ => GetColumnNameForOrderBy<T3>(propertyName, _parent.Joins[1].Alias),
+        };
+        _parent.AddOrderByColumn(columnName, direction);
+        return this;
+    }
+
     // ==================== GROUP BY ====================
 
     public IGroupedJoinedQuery3<T1, T2, T3, TKey> GroupBy<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector)
