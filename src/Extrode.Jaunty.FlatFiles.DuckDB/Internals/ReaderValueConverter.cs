@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 
 namespace Extrode.Jaunty.FlatFiles.DuckDB.Internals;
 
@@ -245,6 +246,25 @@ internal static class ReaderValueConverter
             }
         }
 
+        // AUD-R38-022: SUM() returns HUGEINT even over INTEGER/BIGINT input, and DuckDB.NET reads
+        // HUGEINT/UHUGEINT as BigInteger, which is not IConvertible - so Convert.ChangeType below
+        // rejected every ordinary aggregate read into a numeric property.
+        if (value is BigInteger big && !underlyingType.IsEnum
+            && Type.GetTypeCode(underlyingType) is (>= TypeCode.SByte and <= TypeCode.Decimal) or TypeCode.String)
+        {
+            try
+            {
+                converted = ConvertBigInteger(big, Type.GetTypeCode(underlyingType));
+                return true;
+            }
+            catch (OverflowException ex)
+            {
+                converted = null;
+                reason = Describe(ex, value, underlyingType);
+                return false;
+            }
+        }
+
         if (underlyingType.IsEnum)
         {
             if (!convertEnums)
@@ -340,6 +360,22 @@ internal static class ReaderValueConverter
     /// <see cref="InvalidCastException"/> is a genuine type mismatch; the other two say the types
     /// are compatible and this particular value is not, which is a different thing to go and fix.
     /// </summary>
+    private static object ConvertBigInteger(BigInteger big, TypeCode target) => target switch
+    {
+        TypeCode.SByte => (object)(sbyte)big,
+        TypeCode.Byte => (object)(byte)big,
+        TypeCode.Int16 => (object)(short)big,
+        TypeCode.UInt16 => (object)(ushort)big,
+        TypeCode.Int32 => (object)(int)big,
+        TypeCode.UInt32 => (object)(uint)big,
+        TypeCode.Int64 => (object)(long)big,
+        TypeCode.UInt64 => (object)(ulong)big,
+        TypeCode.Decimal => (object)(decimal)big,
+        TypeCode.Double => (object)(double)big,
+        TypeCode.Single => (object)(float)big,
+        _ => big.ToString(CultureInfo.InvariantCulture)
+    };
+
     private static string? Describe(Exception ex, object value, Type targetType) => ex switch
     {
         OverflowException =>
