@@ -2042,16 +2042,13 @@ public partial class JauntyGenerator : IIncrementalGenerator
             "float?" => new("reader.GetFloat", "float", true),
             "short?" => new("reader.GetInt16", "short", true),
             "byte?" => new("reader.GetByte", "byte", true),
-            "global::System.Guid?" => new("reader.GetValue", "global::System.Guid", true),
             "global::System.DateTime?" => new("reader.GetDateTime", "global::System.DateTime", true),
-            "global::System.TimeSpan?" => new("reader.GetValue", "global::System.TimeSpan", true),
-            "global::System.DateTimeOffset?" => new("reader.GetValue", "global::System.DateTimeOffset", true),
 
             // Reference types - needs null check
             "string" => new("reader.GetString", "string", true),
 
-            // Everything else (enums, DateOnly/TimeOnly, char, uint, ulong, sbyte, ushort,
-            // byte[], ...) - needs null check, read through GetValue and convert.
+            // Everything else (Guid?, TimeSpan?, DateTimeOffset?, enums, DateOnly/TimeOnly, char,
+            // uint, ulong, sbyte, ushort, byte[], ...) - needs null check, read through GetValue and convert.
             // TypeForGetFieldValue must be the actual (non-nullable-suffixed) type so the
             // DbDataReader fast path's call is directly assignable to the property without an
             // invalid cast from object (CS0266).
