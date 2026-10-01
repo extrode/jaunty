@@ -43,6 +43,31 @@ default lives in `src/Directory.Build.props`.
 - **A `[Table]` entity with a `required` member, or whose public parameterless constructor is
   `[Obsolete(..., error: true)]`, now gets a `JAUNTYGEN004` warning** instead of CS9040, CS9035 or
   CS0619 build errors inside the generated file.
+  A parameterless constructor marked `[SetsRequiredMembers]` satisfies the constraint, so such an
+  entity now gets a generated mapper.
+- **The source generator no longer emits a generated file that fails to compile** for these entity
+  shapes:
+  - A write-only property, or an inherited one whose getter is `private`. It is left out of the
+    generated mapper and reported as `JAUNTYGEN005`, like an inaccessible setter.
+  - A C# keyword used as a name, such as `@event` or `@default`, for the entity, an enclosing type,
+    or a property. The column name stays the bare word.
+  - An entity property named `System`, `DBNull` or `StringComparison`.
+  - An entity that declares a member the generator also emits, such as a `TableName` or
+    `SchemaName` column property. It now gets `JAUNTYGEN004` and falls back to reflection.
+    Overloads of `BindInsert`/`BindUpdate`/`BindDelete`/`ReadEntity`/`CreateRowMapper` with
+    different parameters are still allowed.
+  - A `[Table] record struct`. It now gets `JAUNTYGEN004`.
+- **A generated `Guid` read on a `DbDataReader` now parses a text GUID**, as the reflection path
+  does. It used `GetFieldValue<Guid>`, which throws on providers that do not specialise it.
+- **Generated and reflection mapping now agree on two attribute edge cases.**
+  - A subclass of a DataAnnotations attribute, such as `MyColumn : ColumnAttribute`, is no longer
+    honoured on the generated path. Reflection never honoured it.
+  - An empty Jaunty `[Column("")]` beside a DataAnnotations `[Column("x")]` now maps to `x` on
+    both paths.
+- **`JAUNTYGEN002` now also warns about a record** that implements `IMapped<T>` by hand or
+  supplies convention binders.
+- **Two `[Table]` types whose names differ only by a verbatim `@`**, such as `Q.@class` and a
+  global `Q_class`, no longer get the same generated file name.
 - **A `[Table]` record (non-positional, with a public parameterless constructor) now gets a
   generated mapper.** It was silently skipped before, so the first call threw
   `No parameter binder found`. A positional record gets a `JAUNTYGEN004` warning.
