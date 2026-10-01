@@ -42,7 +42,7 @@ public static class FlatFileImporter
         var tableName = TableNameResolver.Resolve<T>();
 
         // Use the registry to create a source with the correct entity type
-        IFileSource source = FlatFile.CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(T));
+        IFileSource source = FlatFile.CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(T), nameof(filePath));
         IFlatFile db = FlatFile.Open(opts => opts.AddSource(source));
         await using var dbDisposer = db.ConfigureAwait(false);
 

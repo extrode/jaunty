@@ -114,6 +114,30 @@ public class ImporterPathLanguageTests : IDisposable
     }
 
     [Fact]
+    public async Task AGlobWithNoExtension_ThrowsArgumentExceptionNamingTheParameter()
+    {
+        using SqliteConnection target = OpenTarget();
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(Path.Combine(_dataDir, "*"), target));
+
+        Assert.Equal("filePath", ex.ParamName);
+    }
+
+    [Fact]
+    public async Task AnUnsupportedExtension_ThrowsArgumentExceptionNamingTheParameter()
+    {
+        using SqliteConnection target = OpenTarget();
+        string path = Path.Combine(_dataDir, "data.foo");
+        File.WriteAllText(path, "x");
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(path, target));
+
+        Assert.Equal("filePath", ex.ParamName);
+    }
+
+    [Fact]
     public async Task AnAllowedUriScheme_GetsPastPathResolution()
     {
         using SqliteConnection target = OpenTarget();
