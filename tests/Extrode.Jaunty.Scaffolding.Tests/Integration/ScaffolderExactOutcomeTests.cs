@@ -64,6 +64,43 @@ public class ScaffolderExactOutcomeTests : IDisposable
         return result.Error;
     }
 
+    private sealed class ThrowingOnSecondGenerator : ICodeGenerator
+    {
+        private readonly EntityCodeGenerator _inner = new(new Providers.SQLite.SQLiteTypeMapper());
+        private int _calls;
+
+        public string GenerateEntity(TableSchema table, CodeGeneratorOptions options) =>
+            ++_calls == 2 ? throw new InvalidOperationException("second table") : _inner.GenerateEntity(table, options);
+    }
+
+    [Fact]
+    public async Task AGeneratorThrowingOnALaterTable_LeavesNoFileWritten()
+    {
+        Exec("CREATE TABLE gadgets (id INTEGER PRIMARY KEY)");
+        Exec("CREATE TABLE widgets (id INTEGER PRIMARY KEY)");
+        ScaffoldOptions options = Options();
+        options.CodeGenerator = new ThrowingOnSecondGenerator();
+
+        ScaffoldResult result = await new Scaffolder().ScaffoldAsync(options);
+
+        Assert.False(result.Success);
+        Assert.False(File.Exists(Path.Combine(_outputDir, "Gadget.cs")));
+        Assert.False(File.Exists(Path.Combine(_outputDir, "Widget.cs")));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ListTables_ABlankConnectionString_Throws(string? connectionString)
+    {
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => new Scaffolder().ListTablesAsync(connectionString!, DatabaseProvider.AutoDetect, null));
+
+        Assert.Equal("connectionString", ex.ParamName);
+        Assert.StartsWith("Connection string is required.", ex.Message, StringComparison.Ordinal);
+    }
+
     private static Exception Chain(params string[] messages)
     {
         Exception? inner = null;
