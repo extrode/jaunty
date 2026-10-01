@@ -1117,6 +1117,104 @@ public class FluentCommandOptionsTests
     }
 
     // ------------------------------------------------------------------
+    // AUD-R38-041: the single-table aggregate and SelectPartial terminals.
+    // ------------------------------------------------------------------
+
+    private static readonly Dictionary<string, Action<IDbConnection, CommandOptions>> QueryTerminals = new()
+    {
+        ["SelectPartial(string)"] = (c, o) => c.From<Product>().SelectPartial(o, "name"),
+        ["SelectPartial(expr)"] = (c, o) => c.From<Product>().SelectPartial(o, p => p.Name),
+        ["SelectPartialFirst(string)"] = (c, o) => c.From<Product>().SelectPartialFirst(o, "name"),
+        ["SelectPartialFirst(expr)"] = (c, o) => c.From<Product>().SelectPartialFirst(o, p => p.Name),
+        ["SelectPartialFirstOrDefault(string)"] = (c, o) => c.From<Product>().SelectPartialFirstOrDefault(o, "name"),
+        ["SelectPartialFirstOrDefault(expr)"] = (c, o) => c.From<Product>().SelectPartialFirstOrDefault(o, p => p.Name),
+        ["SelectPartialSingle(string)"] = (c, o) => c.From<Product>().SelectPartialSingle(o, "name"),
+        ["SelectPartialSingle(expr)"] = (c, o) => c.From<Product>().SelectPartialSingle(o, p => p.Name),
+        ["SelectPartialSingleOrDefault(string)"] = (c, o) => c.From<Product>().SelectPartialSingleOrDefault(o, "name"),
+        ["SelectPartialSingleOrDefault(expr)"] = (c, o) => c.From<Product>().SelectPartialSingleOrDefault(o, p => p.Name),
+        ["Count"] = (c, o) => c.From<Product>().Count(p => p.Id, o),
+        ["LongCount"] = (c, o) => c.From<Product>().LongCount(p => p.Id, o),
+        ["Sum"] = (c, o) => c.From<Product>().Sum(p => p.Id, o),
+        ["Avg"] = (c, o) => c.From<Product>().Avg(p => p.Id, o),
+        ["Min"] = (c, o) => c.From<Product>().Min(p => p.Id, o),
+        ["Max"] = (c, o) => c.From<Product>().Max(p => p.Id, o),
+        ["SelectCount"] = (c, o) => c.From<Product>().SelectCount(p => p.Id, o),
+        ["SelectSum"] = (c, o) => c.From<Product>().SelectSum(p => p.Id, o),
+        ["SelectAvg"] = (c, o) => c.From<Product>().SelectAvg(p => p.Id, o),
+        ["SelectMin"] = (c, o) => c.From<Product>().SelectMin(p => p.Id, o),
+        ["SelectMax"] = (c, o) => c.From<Product>().SelectMax(p => p.Id, o),
+        ["SelectCount()"] = (c, o) => c.From<Product>().SelectCount(o),
+    };
+
+    private static readonly Dictionary<string, Func<DbConnection, CommandOptions, Task>> QueryAsyncTerminals = new()
+    {
+        ["SelectPartialAsync(string)"] = (c, o) => c.From<Product>().SelectPartialAsync(["name"], o),
+        ["SelectPartialAsync(expr)"] = (c, o) => c.From<Product>().SelectPartialAsync([p => p.Name], o),
+        ["SelectPartialFirstAsync(string)"] = (c, o) => c.From<Product>().SelectPartialFirstAsync(["name"], o),
+        ["SelectPartialFirstAsync(expr)"] = (c, o) => c.From<Product>().SelectPartialFirstAsync([p => p.Name], o),
+        ["SelectPartialFirstOrDefaultAsync(string)"] = (c, o) => c.From<Product>().SelectPartialFirstOrDefaultAsync(["name"], o),
+        ["SelectPartialFirstOrDefaultAsync(expr)"] = (c, o) => c.From<Product>().SelectPartialFirstOrDefaultAsync([p => p.Name], o),
+        ["SelectPartialSingleAsync(string)"] = (c, o) => c.From<Product>().SelectPartialSingleAsync(["name"], o),
+        ["SelectPartialSingleAsync(expr)"] = (c, o) => c.From<Product>().SelectPartialSingleAsync([p => p.Name], o),
+        ["SelectPartialSingleOrDefaultAsync(string)"] = (c, o) => c.From<Product>().SelectPartialSingleOrDefaultAsync(["name"], o),
+        ["SelectPartialSingleOrDefaultAsync(expr)"] = (c, o) => c.From<Product>().SelectPartialSingleOrDefaultAsync([p => p.Name], o),
+        ["CountAsync"] = (c, o) => c.From<Product>().CountAsync(p => p.Id, o),
+        ["LongCountAsync"] = (c, o) => c.From<Product>().LongCountAsync(p => p.Id, o),
+        ["SumAsync"] = (c, o) => c.From<Product>().SumAsync(p => p.Id, o),
+        ["AvgAsync"] = (c, o) => c.From<Product>().AvgAsync(p => p.Id, o),
+        ["MinAsync"] = (c, o) => c.From<Product>().MinAsync(p => p.Id, o),
+        ["MaxAsync"] = (c, o) => c.From<Product>().MaxAsync(p => p.Id, o),
+        ["SelectCountAsync"] = (c, o) => c.From<Product>().SelectCountAsync(p => p.Id, o),
+        ["SelectSumAsync"] = (c, o) => c.From<Product>().SelectSumAsync(p => p.Id, o),
+        ["SelectAvgAsync"] = (c, o) => c.From<Product>().SelectAvgAsync(p => p.Id, o),
+        ["SelectMinAsync"] = (c, o) => c.From<Product>().SelectMinAsync(p => p.Id, o),
+        ["SelectMaxAsync"] = (c, o) => c.From<Product>().SelectMaxAsync(p => p.Id, o),
+        ["SelectCountAsync()"] = (c, o) => c.From<Product>().SelectCountAsync(o),
+    };
+
+    public static TheoryData<string> QueryTerminalNames() => new(QueryTerminals.Keys);
+
+    public static TheoryData<string> QueryAsyncTerminalNames() => new(QueryAsyncTerminals.Keys);
+
+    [Theory]
+    [MemberData(nameof(QueryTerminalNames))]
+    public void QueryTerminal_WithOptions_AppliesTheTransactionAndTimeout(string terminal)
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        try
+        {
+            QueryTerminals[terminal](connection, new CommandOptions(transaction: transaction, commandTimeout: 47));
+        }
+        catch (Exception ex) when (ex is not Xunit.Sdk.XunitException)
+        {
+        }
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+        Assert.Equal(47, connection.LastCommand.CommandTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(QueryAsyncTerminalNames))]
+    public async Task QueryTerminalAsync_WithOptions_AppliesTheTransactionAndTimeout(string terminal)
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        try
+        {
+            await QueryAsyncTerminals[terminal](connection, new CommandOptions(transaction: transaction, commandTimeout: 48));
+        }
+        catch (Exception ex) when (ex is not Xunit.Sdk.XunitException)
+        {
+        }
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+        Assert.Equal(48, connection.LastCommand.CommandTimeout);
+    }
+
+    // ------------------------------------------------------------------
     // Stubs. Both connection classes must be named SqliteConnection: dialect resolution keys on
     // the connection's exact Type.Name, and Type.Name ignores the enclosing type, which is why the
     // async one is nested a level deeper rather than renamed.

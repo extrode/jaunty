@@ -80,10 +80,22 @@ public interface IQueryTerminal<T> where T : new()
     List<T> SelectPartial(params string[] columns);
 
     /// <summary>
+    /// <c>SelectPartial</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    List<T> SelectPartial(CommandOptions options, params string[] columns);
+
+    /// <summary>
     /// Returns the first result with only the specified columns or throws if empty.
     /// </summary>
     /// <param name="columns">The column names to select.</param>
     T SelectPartialFirst(params string[] columns);
+
+    /// <summary>
+    /// <c>SelectPartialFirst</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    T SelectPartialFirst(CommandOptions options, params string[] columns);
 
     /// <summary>
     /// Returns the first result with only the specified columns, or default if empty.
@@ -92,16 +104,34 @@ public interface IQueryTerminal<T> where T : new()
     T? SelectPartialFirstOrDefault(params string[] columns);
 
     /// <summary>
+    /// <c>SelectPartialFirstOrDefault</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    T? SelectPartialFirstOrDefault(CommandOptions options, params string[] columns);
+
+    /// <summary>
     /// Returns the single result with only the specified columns or throws if empty or more than one.
     /// </summary>
     /// <param name="columns">The column names to select.</param>
     T SelectPartialSingle(params string[] columns);
 
     /// <summary>
+    /// <c>SelectPartialSingle</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    T SelectPartialSingle(CommandOptions options, params string[] columns);
+
+    /// <summary>
     /// Returns the single result with only the specified columns, or default if empty. Throws if more than one.
     /// </summary>
     /// <param name="columns">The column names to select.</param>
     T? SelectPartialSingleOrDefault(params string[] columns);
+
+    /// <summary>
+    /// <c>SelectPartialSingleOrDefault</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    T? SelectPartialSingleOrDefault(CommandOptions options, params string[] columns);
 
     // Partial entity selection - expression-based column specification
     /// <summary>
@@ -111,10 +141,22 @@ public interface IQueryTerminal<T> where T : new()
     List<T> SelectPartial(params Expression<Func<T, object?>>[] columns);
 
     /// <summary>
+    /// <c>SelectPartial</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    List<T> SelectPartial(CommandOptions options, params Expression<Func<T, object?>>[] columns);
+
+    /// <summary>
     /// Returns the first result with only the specified columns or throws if empty.
     /// </summary>
     /// <param name="columns">Expressions selecting the columns to return.</param>
     T SelectPartialFirst(params Expression<Func<T, object?>>[] columns);
+
+    /// <summary>
+    /// <c>SelectPartialFirst</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    T SelectPartialFirst(CommandOptions options, params Expression<Func<T, object?>>[] columns);
 
     /// <summary>
     /// Returns the first result with only the specified columns, or default if empty.
@@ -123,16 +165,34 @@ public interface IQueryTerminal<T> where T : new()
     T? SelectPartialFirstOrDefault(params Expression<Func<T, object?>>[] columns);
 
     /// <summary>
+    /// <c>SelectPartialFirstOrDefault</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    T? SelectPartialFirstOrDefault(CommandOptions options, params Expression<Func<T, object?>>[] columns);
+
+    /// <summary>
     /// Returns the single result with only the specified columns or throws if empty or more than one.
     /// </summary>
     /// <param name="columns">Expressions selecting the columns to return.</param>
     T SelectPartialSingle(params Expression<Func<T, object?>>[] columns);
 
     /// <summary>
+    /// <c>SelectPartialSingle</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    T SelectPartialSingle(CommandOptions options, params Expression<Func<T, object?>>[] columns);
+
+    /// <summary>
     /// Returns the single result with only the specified columns, or default if empty. Throws if more than one.
     /// </summary>
     /// <param name="columns">Expressions selecting the columns to return.</param>
     T? SelectPartialSingleOrDefault(params Expression<Func<T, object?>>[] columns);
+
+    /// <summary>
+    /// <c>SelectPartialSingleOrDefault</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    T? SelectPartialSingleOrDefault(CommandOptions options, params Expression<Func<T, object?>>[] columns);
 
     // Scalar aggregates - COUNT
     /// <summary>
@@ -166,10 +226,22 @@ public interface IQueryTerminal<T> where T : new()
     int Count<TResult>(Expression<Func<T, TResult>> selector);
 
     /// <summary>
+    /// <c>Count</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    int Count<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
+
+    /// <summary>
     /// Returns the count of non-null values for the specified column as long.
     /// </summary>
     /// <param name="selector">Expression selecting the column to count.</param>
     long LongCount<TResult>(Expression<Func<T, TResult>> selector);
+
+    /// <summary>
+    /// <c>LongCount</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    long LongCount<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
 
     // Scalar aggregates - SUM, AVG, MIN, MAX
     /// <summary>
@@ -179,10 +251,22 @@ public interface IQueryTerminal<T> where T : new()
     TResult Sum<TResult>(Expression<Func<T, TResult>> selector);
 
     /// <summary>
+    /// <c>Sum</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    TResult Sum<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
+
+    /// <summary>
     /// Returns the average of the specified column.
     /// </summary>
     /// <param name="selector">Expression selecting the column to average.</param>
     double Avg<TResult>(Expression<Func<T, TResult>> selector);
+
+    /// <summary>
+    /// <c>Avg</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    double Avg<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
 
     /// <summary>
     /// Returns the minimum value of the specified column.
@@ -191,10 +275,22 @@ public interface IQueryTerminal<T> where T : new()
     TResult Min<TResult>(Expression<Func<T, TResult>> selector);
 
     /// <summary>
+    /// <c>Min</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    TResult Min<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
+
+    /// <summary>
     /// Returns the maximum value of the specified column.
     /// </summary>
     /// <param name="selector">Expression selecting the column.</param>
     TResult Max<TResult>(Expression<Func<T, TResult>> selector);
+
+    /// <summary>
+    /// <c>Max</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    TResult Max<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
 
     // SelectX aliases (explicit terminal operation naming)
     /// <summary>
@@ -203,10 +299,22 @@ public interface IQueryTerminal<T> where T : new()
     int SelectCount();
 
     /// <summary>
+    /// <c>SelectCount</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    int SelectCount(CommandOptions options);
+
+    /// <summary>
     /// Returns the count of non-null values for the specified column.
     /// </summary>
     /// <param name="selector">Expression selecting the column to count.</param>
     int SelectCount<TResult>(Expression<Func<T, TResult>> selector);
+
+    /// <summary>
+    /// <c>SelectCount</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    int SelectCount<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
 
     /// <summary>
     /// Returns the sum of the specified column.
@@ -215,10 +323,22 @@ public interface IQueryTerminal<T> where T : new()
     TResult SelectSum<TResult>(Expression<Func<T, TResult>> selector);
 
     /// <summary>
+    /// <c>SelectSum</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    TResult SelectSum<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
+
+    /// <summary>
     /// Returns the average of the specified column.
     /// </summary>
     /// <param name="selector">Expression selecting the column to average.</param>
     double SelectAvg<TResult>(Expression<Func<T, TResult>> selector);
+
+    /// <summary>
+    /// <c>SelectAvg</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    double SelectAvg<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
 
     /// <summary>
     /// Returns the minimum value of the specified column.
@@ -227,10 +347,22 @@ public interface IQueryTerminal<T> where T : new()
     TResult SelectMin<TResult>(Expression<Func<T, TResult>> selector);
 
     /// <summary>
+    /// <c>SelectMin</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    TResult SelectMin<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
+
+    /// <summary>
     /// Returns the maximum value of the specified column.
     /// </summary>
     /// <param name="selector">Expression selecting the column.</param>
     TResult SelectMax<TResult>(Expression<Func<T, TResult>> selector);
+
+    /// <summary>
+    /// <c>SelectMax</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    TResult SelectMax<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options);
 
     // Async variants - full entity selection
     /// <summary>
@@ -313,11 +445,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<List<T>> SelectPartialAsync(string[] columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectPartialAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<List<T>> SelectPartialAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first result asynchronously with only the specified columns or throws if empty.
     /// </summary>
     /// <param name="columns">The column names to select.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T> SelectPartialFirstAsync(string[] columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>SelectPartialFirstAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<T> SelectPartialFirstAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result asynchronously with only the specified columns, or default if empty.
@@ -327,6 +471,12 @@ public interface IQueryTerminal<T> where T : new()
     Task<T?> SelectPartialFirstOrDefaultAsync(string[] columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectPartialFirstOrDefaultAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<T?> SelectPartialFirstOrDefaultAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously with only the specified columns or throws if empty or more than one.
     /// </summary>
     /// <param name="columns">The column names to select.</param>
@@ -334,11 +484,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<T> SelectPartialSingleAsync(string[] columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectPartialSingleAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<T> SelectPartialSingleAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously with only the specified columns, or default if empty. Throws if more than one.
     /// </summary>
     /// <param name="columns">The column names to select.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T?> SelectPartialSingleOrDefaultAsync(string[] columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>SelectPartialSingleOrDefaultAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<T?> SelectPartialSingleOrDefaultAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default);
 
     // Async variants - partial entity selection (expression-based)
     /// <summary>
@@ -349,11 +511,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<List<T>> SelectPartialAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectPartialAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<List<T>> SelectPartialAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first result asynchronously with only the specified columns or throws if empty.
     /// </summary>
     /// <param name="columns">Expressions selecting the columns to return.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T> SelectPartialFirstAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>SelectPartialFirstAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<T> SelectPartialFirstAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result asynchronously with only the specified columns, or default if empty.
@@ -363,6 +537,12 @@ public interface IQueryTerminal<T> where T : new()
     Task<T?> SelectPartialFirstOrDefaultAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectPartialFirstOrDefaultAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<T?> SelectPartialFirstOrDefaultAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously with only the specified columns or throws if empty or more than one.
     /// </summary>
     /// <param name="columns">Expressions selecting the columns to return.</param>
@@ -370,11 +550,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<T> SelectPartialSingleAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectPartialSingleAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<T> SelectPartialSingleAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously with only the specified columns, or default if empty. Throws if more than one.
     /// </summary>
     /// <param name="columns">Expressions selecting the columns to return.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T?> SelectPartialSingleOrDefaultAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>SelectPartialSingleOrDefaultAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<T?> SelectPartialSingleOrDefaultAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default);
 
     // Async aggregates - COUNT
     /// <summary>
@@ -413,11 +605,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<int> CountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>CountAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<int> CountAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of non-null values for the specified column as long asynchronously.
     /// </summary>
     /// <param name="selector">Expression selecting the column to count.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<long> LongCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>LongCountAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<long> LongCountAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     // Async aggregates - SUM, AVG, MIN, MAX
     /// <summary>
@@ -428,11 +632,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SumAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the average of the specified column asynchronously.
     /// </summary>
     /// <param name="selector">Expression selecting the column to average.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<double> AvgAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>AvgAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<double> AvgAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the minimum value of the specified column asynchronously.
@@ -442,11 +658,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>MinAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the maximum value of the specified column asynchronously.
     /// </summary>
     /// <param name="selector">Expression selecting the column.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>MaxAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     // Async SelectX aliases
     /// <summary>
@@ -456,11 +684,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<int> SelectCountAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectCountAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<int> SelectCountAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of non-null values for the specified column asynchronously.
     /// </summary>
     /// <param name="selector">Expression selecting the column to count.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<int> SelectCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>SelectCountAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<int> SelectCountAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the sum of the specified column asynchronously.
@@ -470,11 +710,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<TResult> SelectSumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectSumAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<TResult> SelectSumAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the average of the specified column asynchronously.
     /// </summary>
     /// <param name="selector">Expression selecting the column to average.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<double> SelectAvgAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>SelectAvgAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<double> SelectAvgAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the minimum value of the specified column asynchronously.
@@ -484,11 +736,23 @@ public interface IQueryTerminal<T> where T : new()
     Task<TResult> SelectMinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <c>SelectMinAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<TResult> SelectMinAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the maximum value of the specified column asynchronously.
     /// </summary>
     /// <param name="selector">Expression selecting the column.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<TResult> SelectMaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <c>SelectMaxAsync</c>, executing within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>). AUD-R38-041.
+    /// </summary>
+    Task<TResult> SelectMaxAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     // SQL introspection (for debugging/logging)
     /// <summary>
