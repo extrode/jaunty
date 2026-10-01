@@ -1,5 +1,10 @@
+using System.IO.Compression;
+
+using DuckDB.NET.Data;
+
 using Extrode.Jaunty.FlatFiles.Core;
 using Extrode.Jaunty.FlatFiles.DuckDB.Internals;
+using Extrode.Jaunty.FlatFiles.FileSources;
 using Extrode.Jaunty.FlatFiles.Interfaces;
 using Extrode.Jaunty.FlatFiles.WriteBack;
 
@@ -41,13 +46,7 @@ public sealed partial class DuckDb
                     "irreversibly, so only WriteBackMode.Overwrite is accepted here.");
         }
 
-        if (source.FilePaths.Count > 1)
-        {
-            throw new InvalidOperationException(
-                $"In-place WriteBack (WriteBackMode) is not supported for multi-file sources " +
-                $"(source '{source.TableName}' spans {source.FilePaths.Count} files). " +
-                "Use the overload that accepts an explicit output path instead.");
-        }
+        RequireInPlaceWriteBackIsLossless(source);
 
         var originalPath = source.FilePath;
         // Stryker disable once String : the fallback is reached only for a null result (root path), and "" and "." combine to the same path
@@ -139,17 +138,22 @@ public sealed partial class DuckDb
     /// just <see cref="IFileSource.FilePath"/> - a glob or explicit list source has no single
     /// original to overwrite, and clobbering any member of it is the same loss.
     /// </para>
+    /// <para>
+    /// AUD-R38-003: a glob is stored unexpanded, so <c>part*.csv</c> was compared to
+    /// <c>part1.csv</c> as a literal string and never matched. Local globs are now expanded with
+    /// DuckDB's own <c>glob()</c>, the same matcher the view reads through.
+    /// </para>
     /// </remarks>
     /// <param name="source">The source being written out.</param>
     /// <param name="fullOutputPath">The already-resolved output path.</param>
     /// <exception cref="ArgumentException">The output path is one of the source's own files.</exception>
-    private static void RequireNotTheSourceItself(IFileSource source, string fullOutputPath)
+    private void RequireNotTheSourceItself(IFileSource source, string fullOutputPath)
     {
         StringComparison comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal;
 
-        foreach (string sourcePath in source.FilePaths)
+        foreach (string sourcePath in ExpandLocalGlobs(source.FilePaths))
         {
             string fullSourcePath;
 
@@ -175,6 +179,127 @@ public sealed partial class DuckDb
                 "temporary one.",
                 "outputPath");
         }
+    }
+
+    /// <summary>
+    /// True when <paramref name="path"/> holds a DuckDB glob wildcard (<c>*</c>, <c>?</c>, <c>[</c>).
+    /// </summary>
+    private static bool IsGlobPattern(string path) => path.AsSpan().IndexOfAny('*', '?', '[') >= 0;
+
+    private static bool IsRemote(string path) => path.Contains("://", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Yields each path, with every local glob replaced by the files DuckDB's <c>glob()</c> matches.
+    /// Remote paths are passed through: they cannot collide with a local output path.
+    /// </summary>
+    private IEnumerable<string> ExpandLocalGlobs(IReadOnlyList<string> paths)
+    {
+        foreach (string path in paths)
+        {
+            if (!IsGlobPattern(path) || IsRemote(path))
+            {
+                yield return path;
+                continue;
+            }
+
+            using DuckDBCommand cmd = _connection.CreateCommand();
+            cmd.CommandText = "SELECT file FROM glob($pattern)";
+            cmd.Parameters.Add(new DuckDBParameter("pattern", path));
+            using DuckDBDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+                yield return reader.GetString(0);
+        }
+    }
+
+    /// <summary>
+    /// Rejects an in-place write-back that cannot reproduce the file it replaces.
+    /// </summary>
+    /// <remarks>
+    /// In-place <c>Save</c> rewrites the source file from only the rows and columns the source
+    /// reads, then moves the result over the original. Anything in the file the source does not
+    /// read is lost:
+    /// <list type="bullet">
+    /// <item>several files (AUD-R26-063), or one glob pattern matching several (AUD-R38-004): the
+    /// glob was a single <see cref="IFileSource.FilePaths"/> entry, so the move targeted a file
+    /// literally named <c>part*.csv</c>, and the originals were left beside a new file the glob
+    /// also matches;</item>
+    /// <item>an Excel workbook's other sheets, or the cells outside <c>Range</c> (AUD-R38-006);</item>
+    /// <item>the preamble lines a CSV/TSV <c>SkipRows</c> skips, after which the same source
+    /// configuration skips the header instead (AUD-R38-027).</item>
+    /// </list>
+    /// </remarks>
+    private static void RequireInPlaceWriteBackIsLossless(IFileSource source)
+    {
+        if (source.FilePaths.Count > 1)
+        {
+            throw new InvalidOperationException(
+                $"In-place WriteBack (WriteBackMode) is not supported for multi-file sources " +
+                $"(source '{source.TableName}' spans {source.FilePaths.Count} files). " +
+                "Use the overload that accepts an explicit output path instead.");
+        }
+
+        if (IsGlobPattern(source.FilePath))
+        {
+            throw new InvalidOperationException(
+                $"In-place WriteBack (WriteBackMode) is not supported for glob sources " +
+                $"(source '{source.TableName}' reads the pattern '{source.FilePath}', which can match several files). " +
+                "Use the overload that accepts an explicit output path instead.");
+        }
+
+        string? lost = source switch
+        {
+            CsvFileSource { SkipRows: > 0 } csv => $"the {csv.SkipRows} line(s) SkipRows skips before the header",
+            TsvFileSource { SkipRows: > 0 } tsv => $"the {tsv.SkipRows} line(s) SkipRows skips before the header",
+            ExcelFileSource { Range.Length: > 0 } excel => $"every cell outside Range '{excel.Range}'",
+            ExcelFileSource excel => DescribeOtherSheets(excel.FilePath),
+            _ => null,
+        };
+
+        if (lost is not null)
+        {
+            throw new InvalidOperationException(
+                $"In-place WriteBack (WriteBackMode) of source '{source.TableName}' would rewrite " +
+                $"'{source.FilePath}' from only the data the source reads, losing {lost}. " +
+                "Use the overload that accepts an explicit output path instead.");
+        }
+    }
+
+    /// <summary>
+    /// Returns a description of what an in-place rewrite of the workbook would lose, or
+    /// <see langword="null"/> when it holds exactly one sheet. An unreadable workbook is refused
+    /// rather than assumed safe: the operation it guards is irreversible.
+    /// </summary>
+    private static string? DescribeOtherSheets(string workbookPath)
+    {
+        int sheets;
+        try
+        {
+            sheets = CountWorkbookSheets(workbookPath);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Xml.XmlException or ArgumentException or NotSupportedException)
+        {
+            return $"any sheet other than the one it reads (the workbook's sheets could not be listed: {ex.Message})";
+        }
+
+        return sheets == 1 ? null : $"the workbook's other {sheets - 1} sheet(s)";
+    }
+
+    /// <summary>Counts the <c>&lt;sheet&gt;</c> entries in an .xlsx file's <c>xl/workbook.xml</c>.</summary>
+    internal static int CountWorkbookSheets(string workbookPath)
+    {
+        using ZipArchive archive = ZipFile.OpenRead(workbookPath);
+        ZipArchiveEntry entry = archive.GetEntry("xl/workbook.xml")
+            ?? throw new InvalidDataException("xl/workbook.xml is missing.");
+
+        using Stream stream = entry.Open();
+        using var reader = System.Xml.XmlReader.Create(stream, new System.Xml.XmlReaderSettings { DtdProcessing = System.Xml.DtdProcessing.Prohibit });
+        int count = 0;
+        while (reader.Read())
+        {
+            if (reader.NodeType == System.Xml.XmlNodeType.Element && reader.LocalName == "sheet")
+                count++;
+        }
+        return count;
     }
 
     private static string InferFormatFromExtension(string path)
