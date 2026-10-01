@@ -553,15 +553,25 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
     // overload callers reach first. Delegating also puts both halves on the same parameter binder.
     public List<IDictionary<string, object?>> SelectPartial(string columns) => _parent._parent.SelectPartial(columns);
 
+    public List<IDictionary<string, object?>> SelectPartial(string columns, CommandOptions options) => _parent._parent.SelectPartial(columns, options);
+
     // AUD-R12: same fetch-all-then-take-first/single issue as the SelectFirst/SelectSingle
     // family above - delegate to _parent._parent, which already applies GetPagingSql(0, 1)/(0, 2).
     public IDictionary<string, object?> SelectPartialFirst(string columns) => _parent._parent.SelectPartialFirst(columns);
 
+    public IDictionary<string, object?> SelectPartialFirst(string columns, CommandOptions options) => _parent._parent.SelectPartialFirst(columns, options);
+
     public IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns) => _parent._parent.SelectPartialFirstOrDefault(columns);
+
+    public IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns, CommandOptions options) => _parent._parent.SelectPartialFirstOrDefault(columns, options);
 
     public IDictionary<string, object?> SelectPartialSingle(string columns) => _parent._parent.SelectPartialSingle(columns);
 
+    public IDictionary<string, object?> SelectPartialSingle(string columns, CommandOptions options) => _parent._parent.SelectPartialSingle(columns, options);
+
     public IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns) => _parent._parent.SelectPartialSingleOrDefault(columns);
+
+    public IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns, CommandOptions options) => _parent._parent.SelectPartialSingleOrDefault(columns, options);
 
     // ==================== ASYNC ====================
 
@@ -695,19 +705,34 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
     public Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
         => _parent._parent.SelectPartialAsync(columns, cancellationToken);
 
+    public Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialAsync(columns, options, cancellationToken);
+
     // AUD-R12: same fetch-all-then-take-first issue - delegate to _parent._parent, which
     // already applies GetPagingSql(0, 1).
     public Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default)
         => _parent._parent.SelectPartialFirstAsync(columns, cancellationToken);
 
+    public Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialFirstAsync(columns, options, cancellationToken);
+
     public Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
         => _parent._parent.SelectPartialFirstOrDefaultAsync(columns, cancellationToken);
+
+    public Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialFirstOrDefaultAsync(columns, options, cancellationToken);
 
     public Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default)
         => _parent._parent.SelectPartialSingleAsync(columns, cancellationToken);
 
+    public Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialSingleAsync(columns, options, cancellationToken);
+
     public Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
         => _parent._parent.SelectPartialSingleOrDefaultAsync(columns, cancellationToken);
+
+    public Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialSingleOrDefaultAsync(columns, options, cancellationToken);
 
     // ==================== HELPERS ====================
 
