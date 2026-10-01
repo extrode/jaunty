@@ -456,6 +456,7 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
     [InlineData("SELECT * FROM products -- owner@example.com\nWHERE category_id = 2")]
     [InlineData("SELECT * FROM products /* @name */ WHERE category_id = 2")]
     [InlineData("SELECT * FROM products WHERE product_name = '@'")]
+    [InlineData("SELECT * FROM products WHERE tags @> '{a}'")]
     [InlineData("SELECT * FROM products WHERE \"weird@col\" = 1")]
     public void Union_CustomImplementationWithAnAtOutsideAPlaceholder_IsAccepted(string operand)
     {
@@ -472,6 +473,7 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
     [Theory]
     [InlineData("SELECT * FROM products WHERE product_name = '@x' AND category_id = @cat")]
     [InlineData("SELECT * FROM products WHERE category_id = @_cat")]
+    [InlineData("SELECT * FROM products WHERE tags @> '{a}' AND category_id = @cat")]
     [InlineData("SELECT * FROM products WHERE category_id = @1")]
     public void Union_CustomImplementationWithAPlaceholderAfterALiteral_StillThrows(string operand)
     {
