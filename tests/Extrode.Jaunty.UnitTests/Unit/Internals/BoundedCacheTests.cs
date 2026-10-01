@@ -241,6 +241,13 @@ public class BoundedCacheTests
         Assert.True(cache.TryGetValue("b", out _));
         Assert.True(cache.TryGetValue("c", out _));
         Assert.True(cache.TryGetValue("d", out _));
+
+        cache.TryAdd("a", "again");
+        cache.TryAdd("e", "5");
+        cache.TryAdd("f", "6");
+
+        Assert.False(cache.TryGetValue("d", out _));
+        Assert.Equal("again", cache.Get("a"));
     }
 
     [Fact]
