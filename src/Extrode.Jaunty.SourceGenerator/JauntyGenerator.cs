@@ -631,7 +631,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
             }
 
             // Support [Column] from both
-            AttributeData? columnAttr = GetRecognizedAttribute(prop, JauntyColumnAttribute, DataAnnotationsColumnAttribute);
+            // AUD-R38 generator audit: looked up one at a time, because an empty Extrode.Jaunty
+            // [Column("")] beside a DataAnnotations [Column("x")] maps to "x" under MetadataBuilder,
+            // which falls through to the DataAnnotations attribute; taking the first match fell back
+            // to the property name instead.
             // AUD-R32-006: an empty [Column("")] falls back to the property name rather than
             // generating a mapping to "". The null-coalesce alone did not catch it, and the
             // reflection MetadataBuilder carries the matching guard so both modes agree.
@@ -639,7 +642,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // other type used to be stringified into a column name, so a foreign [Column(3)]-style
             // ordinal attribute mapped the property to a column literally named "3". The reflection
             // twin requires `nameArg is string` and falls back to the property name otherwise.
-            var columnAttrName = columnAttr?.ConstructorArguments.FirstOrDefault().Value as string;
+            var columnAttrName = GetRecognizedAttribute(prop, JauntyColumnAttribute)?.ConstructorArguments.FirstOrDefault().Value as string;
+            if (string.IsNullOrEmpty(columnAttrName))
+                columnAttrName = GetRecognizedAttribute(prop, DataAnnotationsColumnAttribute)?.ConstructorArguments.FirstOrDefault().Value as string;
             var columnName = string.IsNullOrEmpty(columnAttrName) ? prop.Name : columnAttrName!;
 
             // Support [Key] from both, plus conventions
@@ -1796,11 +1801,19 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
     /// <summary>
     /// Returns <see langword="true"/> when <paramref name="attributeClass"/> is
-    /// <paramref name="fullName"/> or inherits from it.
+    /// <paramref name="fullName"/> or, for Extrode.Jaunty's own attributes, inherits from it.
     /// </summary>
+    /// <remarks>
+    /// AUD-R38 generator audit: the reflection twins match Extrode.Jaunty's attributes through
+    /// <c>GetCustomAttribute&lt;T&gt;</c>, which accepts a derived attribute, but DataAnnotations
+    /// ones by exact <c>AttributeType.FullName</c> (MetadataBuilder.HasAttribute/GetAttributeData,
+    /// and the DuckDB MappedPropertyFilter). Walking base types for both made a consumer's
+    /// <c>SnakeColumn : ColumnAttribute</c> rename the column on the generated path only.
+    /// </remarks>
     private static bool IsOrDerivesFrom(INamedTypeSymbol? attributeClass, string fullName)
     {
-        for (INamedTypeSymbol? type = attributeClass; type is not null; type = type.BaseType)
+        bool walkBaseTypes = fullName.StartsWith("Extrode.Jaunty.", StringComparison.Ordinal);
+        for (INamedTypeSymbol? type = attributeClass; type is not null; type = walkBaseTypes ? type.BaseType : null)
         {
             if (type.ToDisplayString() == fullName)
                 return true;
