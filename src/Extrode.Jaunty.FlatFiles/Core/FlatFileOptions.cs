@@ -107,19 +107,27 @@ public sealed class FlatFileOptions
     private static void ThrowIfTableNameTaken(List<IFileSource> sources, int count, IFileSource source)
     {
         for (int i = 0; i < count; i++)
-        {
-            if (!string.Equals(sources[i].TableName, source.TableName, StringComparison.OrdinalIgnoreCase))
-                continue;
+            ThrowIfSameTableName(sources[i], source);
+    }
 
-            throw new InvalidOperationException(
-                $"A file source for table '{source.TableName}' is already registered " +
-                $"(entity '{sources[i].EntityType.Name}', path '{sources[i].FilePath}'). " +
-                "Two sources cannot share a table name - the second would silently replace the " +
-                "first. To read several files as one table, pass them to the source's multi-path " +
-                "constructor instead, e.g. new CsvFileSource(tableName, new[] { pathA, pathB }, " +
-                "typeof(TEntity)). To map a second file to a different table, give its entity a " +
-                "distinct [Table(\"...\")] name.");
-        }
+    /// <summary>
+    /// Throws when <paramref name="existing"/> already holds <paramref name="source"/>'s table name
+    /// (case-insensitive). Shared with <c>DuckDb.RegisterSource</c>, which registers after construction
+    /// and so cannot rely on <see cref="EnsureSourceTableNamesAreUnique"/> (AUD-R38-018).
+    /// </summary>
+    internal static void ThrowIfSameTableName(IFileSource existing, IFileSource source)
+    {
+        if (!string.Equals(existing.TableName, source.TableName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        throw new InvalidOperationException(
+            $"A file source for table '{source.TableName}' is already registered " +
+            $"(entity '{existing.EntityType.Name}', path '{existing.FilePath}'). " +
+            "Two sources cannot share a table name - the second would silently replace the " +
+            "first. To read several files as one table, pass them to the source's multi-path " +
+            "constructor instead, e.g. new CsvFileSource(tableName, new[] { pathA, pathB }, " +
+            "typeof(TEntity)). To map a second file to a different table, give its entity a " +
+            "distinct [Table(\"...\")] name.");
     }
 
     /// <summary>

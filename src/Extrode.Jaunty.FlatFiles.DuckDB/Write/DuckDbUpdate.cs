@@ -28,7 +28,7 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(column);
 
         IFileSource source = GetSourceOrThrow<T>();
-        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
+        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect, options.Transaction);
 
         var columnName = ExpressionTranslator.ResolveColumnName(column);
 
