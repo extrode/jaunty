@@ -132,8 +132,7 @@ public class BatchInsertChunkFailureTests : IDisposable
 
     /// <summary>
     /// A null element must be rejected before anything is written, not after the rows ahead of it
-    /// have already gone in - the guard sits in the row-building loop, which runs before the
-    /// statement is issued.
+    /// have already gone in - the guard checks the whole batch before the first statement is issued.
     /// </summary>
     [Fact]
     public void ANullElementWritesNothing()
@@ -141,5 +140,31 @@ public class BatchInsertChunkFailureTests : IDisposable
         Assert.Throws<ArgumentException>(() => _db.Insert<ChunkedRow>(new List<ChunkedRow> { new(), null! }));
 
         Assert.Equal(1, RowCount());
+    }
+
+    [Fact]
+    public void ANullElementInTheSecondChunkWritesNothing()
+    {
+        List<ChunkedRow> rows = Rows(RowsPerChunk + 1);
+        rows[RowsPerChunk] = null!;
+
+        var ex = Assert.Throws<ArgumentException>(() => _db.Insert<ChunkedRow>(rows));
+
+        Assert.Contains($"index {RowsPerChunk}", ex.Message, StringComparison.Ordinal);
+        Assert.Equal(1, RowCount());
+        Assert.False(_db.IsModified<ChunkedRow>());
+    }
+
+    [Fact]
+    public async Task ANullElementInTheSecondChunkWritesNothing_Async()
+    {
+        List<ChunkedRow> rows = Rows(RowsPerChunk + 1);
+        rows[RowsPerChunk] = null!;
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await _db.InsertAsync<ChunkedRow>(rows));
+
+        Assert.Contains($"index {RowsPerChunk}", ex.Message, StringComparison.Ordinal);
+        Assert.Equal(1, RowCount());
+        Assert.False(_db.IsModified<ChunkedRow>());
     }
 }
