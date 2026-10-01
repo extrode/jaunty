@@ -55,6 +55,9 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
     /// <inheritdoc/>
     public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
+        => ReflectedCall.Unwrapped(() => CopyToServerCore(connection, schemaName, tableName, data, options));
+
+    private static int CopyToServerCore(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
     {
         if (NpgsqlConnectionType == null || NpgsqlBinaryImporterType == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter is not available. Ensure Npgsql is installed.");
@@ -139,7 +142,16 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     }
 
     /// <inheritdoc/>
-    public async ValueTask<int> CopyToServerAsync(
+    public ValueTask<int> CopyToServerAsync(
+        DbConnection connection,
+        string? schemaName,
+        string tableName,
+        IDataReader data,
+        BulkCopyOptions options,
+        CancellationToken cancellationToken)
+        => ReflectedCall.UnwrappedAsync(() => CopyToServerAsyncCore(connection, schemaName, tableName, data, options, cancellationToken));
+
+    private static async ValueTask<int> CopyToServerAsyncCore(
         DbConnection connection,
         string? schemaName,
         string tableName,
@@ -155,7 +167,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
         // If native async methods are not available, fall back to sync
         if (BeginBinaryImportAsyncMethod == null || StartRowAsyncMethod == null || WriteAsyncGenericMethod == null)
-            return CopyToServer(connection, schemaName, tableName, data, options);
+            return CopyToServerCore(connection, schemaName, tableName, data, options);
 
         MethodInfo writeAsyncGenericMethod = WriteAsyncGenericMethod;
 
