@@ -174,6 +174,39 @@ public class GroupedJoinedResultMapperOrdinalTests
         Assert.Equal(0, row.Id);
     }
 
+    [Theory]
+    [InlineData(0, "Id")]
+    [InlineData(2, "Total")]
+    public void MapResult_PropertyPath_NullIntoNonNullableValueType_ThrowsNamingColumnAndProperty(int nullOrdinal, string name)
+    {
+        var reader = new CountingReader(Aliases, rows: 1) { NullOrdinal = nullOrdinal };
+        reader.Read();
+        GroupedJoinedResultMapper.ResultMapperPlan plan =
+            GroupedJoinedResultMapper.ResultMapperPlan.Resolve<PropertyRow>(Aliases);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            GroupedJoinedResultMapper.MapResult<PropertyRow>(reader, Aliases, in plan));
+
+        Assert.Equal(
+            $"Column '{name}' is NULL but property '{name}' of 'PropertyRow' is the non-nullable value type 'Int32'. " +
+            "Make the property nullable, or use a NULL-handling function such as Sql.Coalesce so the value cannot be NULL.",
+            ex.Message);
+    }
+
+    [Fact]
+    public void MapResult_PropertyPath_NullIntoNullableValueType_IsLeftNull()
+    {
+        var reader = new CountingReader(Aliases, rows: 1) { NullOrdinal = 2 };
+        reader.Read();
+        GroupedJoinedResultMapper.ResultMapperPlan plan =
+            GroupedJoinedResultMapper.ResultMapperPlan.Resolve<NullablePropertyRow>(Aliases);
+
+        NullablePropertyRow row = GroupedJoinedResultMapper.MapResult<NullablePropertyRow>(reader, Aliases, in plan);
+
+        Assert.Null(row.Total);
+        Assert.NotNull(row.Id);
+    }
+
     /// <summary>
     /// AUD-R33-005. The constructor path left the slot <c>null</c> for a NULL column and handed it
     /// to <c>ConstructorInfo.Invoke</c>, which throws an opaque <see cref="ArgumentException"/>
@@ -281,6 +314,13 @@ public class GroupedJoinedResultMapperOrdinalTests
         public int A { get; } = a;
         public int B { get; } = b;
         public int C { get; } = c;
+    }
+
+    public class NullablePropertyRow
+    {
+        public int? Id { get; set; }
+        public string? Name { get; set; }
+        public int? Total { get; set; }
     }
 
     public class PropertyRow
