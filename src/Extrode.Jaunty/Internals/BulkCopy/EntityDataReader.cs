@@ -309,6 +309,7 @@ internal sealed class EntityDataReader<T> : IDataReader where T : new()
                 ParameterExpression param = Expression.Parameter(typeof(TEntity), "e");
                 MemberExpression access = Expression.Property(param, column.Property!);
                 UnaryExpression box = Expression.Convert(access, typeof(object));
+                // AOT-SAFE: reached only for reflection-built metadata (a source-generated column carries Getter); the delegate type is fixed, so under NativeAOT Compile() runs on the expression interpreter.
                 getters[i] = Expression.Lambda<Func<TEntity, object?>>(box, param).Compile();
             }
 

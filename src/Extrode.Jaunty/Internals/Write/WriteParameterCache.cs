@@ -350,6 +350,7 @@ internal static class WriteParameterCache<T> where T : new()
         ParameterExpression param = Expression.Parameter(typeof(T), "e");
         MemberExpression access = Expression.Property(param, column.Property!);
         UnaryExpression box = Expression.Convert(access, typeof(object));
+        // AOT-SAFE: reached only for reflection-built metadata (a source-generated column carries Getter); the delegate type is fixed, so under NativeAOT Compile() runs on the expression interpreter.
         return Expression.Lambda<Func<T, object?>>(box, param).Compile();
     }
 
@@ -413,6 +414,7 @@ internal static class WriteParameterCache<T> where T : new()
         MethodCallExpression setterCall = Expression.Call(
             Expression.Convert(target, entityInterface), idProperty.SetMethod!, Expression.ConvertChecked(value, idType));
 
+        // AOT-SAFE: Action<T, long> is fixed, so under NativeAOT Compile() runs on the expression interpreter; the Id setter is kept per the suppressions above.
         Action<T, long> setter = Expression.Lambda<Action<T, long>>(setterCall, target, value).Compile();
         return (entity, id) =>
         {

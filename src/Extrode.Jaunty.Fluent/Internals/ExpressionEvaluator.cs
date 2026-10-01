@@ -47,6 +47,7 @@ internal static class ExpressionEvaluator
         // on the reflection fast path too (AUD-R38-104).
         return TryEvaluate(expression, out object? value)
             ? value
+            // AOT-SAFE: Func<object?> is fixed at compile time, so under NativeAOT Compile() runs on the expression interpreter.
             : Expression.Lambda<Func<object?>>(Expression.Convert(expression, typeof(object))).Compile()();
     }
 
@@ -98,8 +99,10 @@ internal static class ExpressionEvaluator
                 return true;
 
             case PropertyInfo property:
+                // AOT-SAFE: the property comes from a compiler-built expression tree, which references it by token, so trimming keeps it and its getter.
                 MethodInfo? getter = property.GetGetMethod(nonPublic: true);
 
+                // AOT-SAFE: metadata read on the property resolved just above; same rooting.
                 if (getter is null || property.GetIndexParameters().Length != 0)
                     return false;
 

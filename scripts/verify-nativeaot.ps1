@@ -40,6 +40,11 @@ $ErrorPatterns = @(
     @{ Pattern = '\bMakeGenericType\(';            Description = 'Reflection: MakeGenericType' },
     @{ Pattern = '\bMakeGenericMethod\(';          Description = 'Reflection: MakeGenericMethod' },
     @{ Pattern = '\bCreateDelegate\(';             Description = 'Reflection: CreateDelegate' },
+    @{ Pattern = '\bGetCustomAttributes?(<[^>]*>)?\('; Description = 'Reflection: GetCustomAttribute' },
+    @{ Pattern = '\bGetIndexParameters\(';         Description = 'Reflection: GetIndexParameters' },
+    @{ Pattern = '\bGetGetMethod\(';               Description = 'Reflection: GetGetMethod' },
+    @{ Pattern = '\bGetSetMethod\(';               Description = 'Reflection: GetSetMethod' },
+    @{ Pattern = '\.Compile\(';                    Description = 'Dynamic code: Expression.Compile' },
     @{ Pattern = '\bRequiresUnreferencedCode\b';   Description = 'Attribute: RequiresUnreferencedCode' },
     @{ Pattern = '\bRequiresDynamicCode\b';        Description = 'Attribute: RequiresDynamicCode' }
 )

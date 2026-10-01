@@ -34,6 +34,7 @@ public sealed partial class DuckDb
 
             for (int i = 0; i < all.Length; i++)
             {
+                // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
                 if (all[i].GetIndexParameters().Length > 0 || !all[i].CanRead)
                     continue;
 
