@@ -50,13 +50,19 @@ internal static class ExpressionTranslator
     /// <summary>
     /// Resolves the column name from a property selector expression, respecting [Column] attributes.
     /// </summary>
+    /// <remarks>
+    /// AUD-R38-024: resolved through <see cref="ResolveColumnFromMember"/>, as predicates are, so a
+    /// navigation (<c>r =&gt; r.Child.City</c>) or a captured value (<c>r =&gt; other.Name</c>) is
+    /// refused rather than naming the leaf as a root column, and a lifted <c>.Value</c> names the
+    /// nullable property itself.
+    /// </remarks>
     public static string ResolveColumnName<T>(Expression<Func<T, object>> columnSelector)
     {
         MemberExpression? member = ExtractMemberExpression(columnSelector.Body);
-        if (member?.Member is not PropertyInfo prop)
+        if (member?.Member is not PropertyInfo)
             throw new ArgumentException("Column selector must be a property access expression.", nameof(columnSelector));
 
-        return GetColumnName(prop);
+        return ResolveColumnFromMember(member);
     }
 
     /// <summary>
