@@ -80,16 +80,16 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// through the mapper's signatures).
     /// </para>
     /// <para>
-    /// Warning rather than error, and generation is skipped: without a generated mapper
-    /// <c>MappedCache&lt;T&gt;</c> falls back to reflection, which handles nested entities fine. The
-    /// entity keeps working, it just loses the AOT-safe path - which is the same trade-off
-    /// JAUNTYGEN002 reports, so it gets the same severity.
+    /// Warning rather than error, and generation is skipped: without a generated mapper the
+    /// entity is only mapped when <c>UseReflectionMapping()</c> has been called, and then it loses
+    /// the AOT-safe path. Otherwise the first call that needs it throws. The warning exists so that
+    /// is known at build time.
     /// </para>
     /// </remarks>
     private static readonly DiagnosticDescriptor UnsupportedNestingDescriptor = new(
         id: "JAUNTYGEN004",
-        title: "Entity is nested in a type the mapper cannot be generated into",
-        messageFormat: "No mapper was generated for entity '{0}' because {1}. Extrode.Jaunty will map it by reflection instead, which a trimmed or NativeAOT publish can break.",
+        title: "No mapper was generated for the entity",
+        messageFormat: "No mapper was generated for entity '{0}' because {1}. Without a generated mapper it cannot be mapped at all unless reflection mapping is enabled with UseReflectionMapping(), which a trimmed or NativeAOT publish can break.",
         category: "JauntySourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
