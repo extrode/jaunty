@@ -75,13 +75,11 @@ public class MetadataCacheMutantTests : IDisposable
     }
 
     [Fact]
-    public void ANonNullableProperty_ReceivesAHandlersResultUnconverted()
+    public void ANonNullableProperty_ConvertsAHandlersCompatibleResult()
     {
         TypeHandlerRegistry.Register<int>(new TextHandler());
 
-        var ex = Assert.Throws<InvalidOperationException>(() => Read<PlainCount>("Count", 1));
-
-        Assert.Contains("failed to parse value for property 'Count'", ex.Message);
+        Assert.Equal(5, Read<PlainCount>("Count", 1).Count);
     }
 
     [Fact]

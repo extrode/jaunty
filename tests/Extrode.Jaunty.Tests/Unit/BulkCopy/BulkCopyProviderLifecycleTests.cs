@@ -215,6 +215,24 @@ public class BulkCopyProviderLifecycleTests
     }
 
     [Fact]
+    public void PostgreSqlProvider_IsSupported_RequiresEveryMemberTheSyncGuardNames()
+    {
+        MethodInfo m = typeof(BulkCopyProviderLifecycleTests).GetMethod(nameof(Resolved), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        Assert.True(PostgreSqlBulkCopyProvider.AreMembersResolved(typeof(int), typeof(int), m, m, m, m, m));
+
+        Assert.False(PostgreSqlBulkCopyProvider.AreMembersResolved(null, typeof(int), m, m, m, m, m));
+        Assert.False(PostgreSqlBulkCopyProvider.AreMembersResolved(typeof(int), null, m, m, m, m, m));
+        Assert.False(PostgreSqlBulkCopyProvider.AreMembersResolved(typeof(int), typeof(int), null, m, m, m, m));
+        Assert.False(PostgreSqlBulkCopyProvider.AreMembersResolved(typeof(int), typeof(int), m, null, m, m, m));
+        Assert.False(PostgreSqlBulkCopyProvider.AreMembersResolved(typeof(int), typeof(int), m, m, null, m, m));
+        Assert.False(PostgreSqlBulkCopyProvider.AreMembersResolved(typeof(int), typeof(int), m, m, m, null, m));
+        Assert.False(PostgreSqlBulkCopyProvider.AreMembersResolved(typeof(int), typeof(int), m, m, m, m, null));
+
+        Assert.True(new PostgreSqlBulkCopyProvider().IsSupported);
+    }
+
+    [Fact]
     public void PostgreSqlProvider_ResolvesEveryMemberItsGuardNamesIncludingBeginBinaryImport()
     {
         Assert.True(Resolved<PostgreSqlBulkCopyProvider>("BeginBinaryImportMethod"));

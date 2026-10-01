@@ -1,6 +1,7 @@
 using Extrode.Jaunty.Attributes;
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Core;
+using Extrode.Jaunty.TypeHandlers;
 
 using Xunit;
 
@@ -115,5 +116,37 @@ public class GeneratedBindingSupportTests
         {
             JauntyConfig.RemoveTypeHandler<SupportState>();
         }
+    }
+}
+
+[Collection("Type Handler Operations")]
+public class GeneratedBindingSupportHandlerConversionTests : IDisposable
+{
+    private sealed class IntReturningHandler : ITypeHandler
+    {
+        public object? Parse(object? dbValue) => 7;
+
+        public object? ToDbValue(object? value) => value;
+    }
+
+    public GeneratedBindingSupportHandlerConversionTests()
+        => TypeHandlerRegistry.Register<long>(new IntReturningHandler());
+
+    public void Dispose()
+    {
+        TypeHandlerRegistry.Remove<long>();
+        GC.SuppressFinalize(this);
+    }
+
+    [Fact]
+    public void FromDbValue_ConvertsAHandlersCompatibleResult()
+    {
+        Assert.Equal(7L, GeneratedBindingSupport.FromDbValue<long>("x"));
+    }
+
+    [Fact]
+    public void FromDbValueNullable_ConvertsAHandlersCompatibleResult()
+    {
+        Assert.Equal(7L, GeneratedBindingSupport.FromDbValueNullable<long>("x"));
     }
 }
