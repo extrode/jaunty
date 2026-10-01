@@ -94,6 +94,18 @@ public class DocumentedApiTests
     }
 
     [Fact]
+    public void NoMultiEntityReadClaimsToThrowForAnUnmatchedProperty()
+    {
+        string[] offenders = PublishedMarkdown()
+            .Where(p => p.Relative.StartsWith("src/Extrode.Jaunty/Read/QueryMultiEntity", StringComparison.Ordinal))
+            .Where(p => p.Text.Contains("has no matching column"))
+            .Select(p => p.Relative)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    [Fact]
     public void NoDocCommentCarriesTwoRemarksElements()
     {
         List<string> offences = new();
