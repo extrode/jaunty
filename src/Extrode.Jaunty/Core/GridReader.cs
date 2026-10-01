@@ -48,6 +48,11 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
 
     private bool _consumed;
 
+    // AUD-R38-050: a stream leaves the grid on its result set until the iterator finishes, so
+    // another read in the meantime mapped that set as the wrong type and the stream then read the
+    // next one. Set when a stream is handed out, cleared when its iterator ends.
+    private object? _streamClaim;
+
     /// <summary>
     /// Initializes a new <see cref="GridReader"/> over an open reader.
     /// </summary>
@@ -495,11 +500,13 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
     private IEnumerable<T> ReadStreamCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
     {
         EnsureNotConsumed();
-        return ReadStreamIterator(options, mode);
+        return ReadStreamIterator(ClaimStream(), options, mode);
     }
 
-    private IEnumerable<T> ReadStreamIterator<T>(CommandOptions<T> options, MappingMode mode) where T : new()
+    private IEnumerable<T> ReadStreamIterator<T>(object claim, CommandOptions<T> options, MappingMode mode) where T : new()
     {
+        EnsureClaimHeld(claim);
+
         // Lazy, like ReadStreamAsyncIterator - see ReadCore for why resolving before the first Read
         // makes an empty result set throw here but not on the async or First/Single paths.
         Func<IDataReader, T>? map = null;
@@ -514,8 +521,22 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
         finally
         {
+            _streamClaim = null;
             Advance();
         }
+    }
+
+    private object ClaimStream()
+    {
+        var claim = new object();
+        _streamClaim = claim;
+        return claim;
+    }
+
+    private void EnsureClaimHeld(object claim)
+    {
+        if (!ReferenceEquals(_streamClaim, claim))
+            throw new InvalidOperationException("A grid stream can be enumerated only once.");
     }
 
     private void Advance()
@@ -646,7 +667,7 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-        return ReadStreamAsyncIterator(dbReader, options, MappingMode.Strict, cancellationToken);
+        return ReadStreamAsyncIterator(dbReader, ClaimStream(), options, MappingMode.Strict, cancellationToken);
     }
 
     /// <summary>
@@ -657,15 +678,16 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-        return ReadStreamAsyncIterator(dbReader, options, MappingMode.Projection, cancellationToken);
+        return ReadStreamAsyncIterator(dbReader, ClaimStream(), options, MappingMode.Projection, cancellationToken);
     }
 
     // See ReadStreamCore for why EnsureNotConsumed/the DbDataReader check run eagerly in the two
     // public wrappers above rather than here: an async-iterator body only executes once
     // enumeration begins, so validation placed here would silently never run for a caller who
     // discards the returned IAsyncEnumerable<T> without enumerating it.
-    private async IAsyncEnumerable<T> ReadStreamAsyncIterator<T>(DbDataReader dbReader, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken) where T : new()
+    private async IAsyncEnumerable<T> ReadStreamAsyncIterator<T>(DbDataReader dbReader, object claim, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken) where T : new()
     {
+        EnsureClaimHeld(claim);
         Func<IDataReader, T>? map = null;
 
         try
@@ -678,6 +700,7 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
         finally
         {
+            _streamClaim = null;
             await AdvanceAsync(cancellationToken).ConfigureAwait(false);
         }
     }
@@ -814,6 +837,9 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
     {
         if (_consumed)
             throw new InvalidOperationException("All result sets have already been consumed.");
+        if (_streamClaim is not null)
+            throw new InvalidOperationException(
+                "The current result set is still being streamed. Enumerate the stream to the end, or dispose its enumerator after starting it, before reading the next result set.");
     }
 
     /// <summary>

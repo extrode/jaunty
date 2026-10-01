@@ -448,6 +448,55 @@ public class TypeHandlerRegistryTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Register_NullableValueType_IsKeyedOnTheUnderlyingType()
+    {
+        var handler = new NullReturningHandler();
+        TypeHandlerRegistry.Register<Guid?>(handler);
+        try
+        {
+            Assert.True(TypeHandlerRegistry.TryGetHandler(typeof(Guid), out ITypeHandler? found));
+            Assert.Same(handler, found);
+            Assert.False(TypeHandlerRegistry.TryGetHandler(typeof(Guid?), out _));
+        }
+        finally
+        {
+            Assert.True(TypeHandlerRegistry.Remove<Guid?>());
+        }
+
+        Assert.False(TypeHandlerRegistry.TryGetHandler(typeof(Guid), out _));
+    }
+
+    [Fact]
+    public void RegisterUnderlying_ThenRemoveNullable_RemovesTheSameEntry()
+    {
+        TypeHandlerRegistry.Register<Guid>(new NullReturningHandler());
+
+        Assert.True(TypeHandlerRegistry.Remove<Guid?>());
+        Assert.False(TypeHandlerRegistry.TryGetHandler(typeof(Guid), out _));
+    }
+
+    [Fact]
+    public void TryConvertToDb_NullableValueType_FindsTheHandler()
+    {
+        TypeHandlerRegistry.Register<Guid>(new FixedHandler());
+        try
+        {
+            Assert.True(TypeHandlerRegistry.TryConvertToDb<Guid?>(Guid.Empty, out object? result));
+            Assert.Equal("fixed", result);
+        }
+        finally
+        {
+            TypeHandlerRegistry.Remove<Guid>();
+        }
+    }
+
+    private sealed class FixedHandler : ITypeHandler
+    {
+        public object? Parse(object? dbValue) => null;
+        public object? ToDbValue(object? value) => "fixed";
+    }
+
     private sealed class NullReturningHandler : ITypeHandler
     {
         public object? Parse(object? dbValue) => null;

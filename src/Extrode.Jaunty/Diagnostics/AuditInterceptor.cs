@@ -166,7 +166,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             Timestamp = DateTime.UtcNow,
             CommandText = context.CommandText,
             CommandType = context.CommandType,
-            Database = context.Connection.Database,
+            Database = context.DatabaseName,
             ConnectionState = context.Connection.State,
             Phase = AuditPhase.Executing
         };
@@ -185,7 +185,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             Timestamp = DateTime.UtcNow,
             CommandText = context.CommandText,
             CommandType = context.CommandType,
-            Database = context.Connection.Database,
+            Database = context.DatabaseName,
             ConnectionState = context.Connection.State,
             ElapsedMilliseconds = context.Elapsed.TotalMilliseconds,
             Phase = AuditPhase.Executed,
@@ -205,7 +205,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             Timestamp = DateTime.UtcNow,
             CommandText = context.CommandText,
             CommandType = context.CommandType,
-            Database = context.Connection.Database,
+            Database = context.DatabaseName,
             ConnectionState = context.Connection.State,
             ElapsedMilliseconds = context.Elapsed.TotalMilliseconds,
             Phase = AuditPhase.Failed,

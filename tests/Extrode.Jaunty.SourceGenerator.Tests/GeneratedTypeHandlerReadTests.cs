@@ -102,6 +102,90 @@ public sealed class GeneratedTypeHandlerReadTests
         });
     }
 
+    private static void WithBlankAsNullMoneyHandler(Action body)
+    {
+        JauntyConfig.RegisterTypeHandler<GenMoney?>(
+            fromDb: v => v is string { Length: 0 } ? null : new GenMoney(Convert.ToDecimal(v, System.Globalization.CultureInfo.InvariantCulture)),
+            toDb: m => m?.Amount);
+
+        try
+        {
+            body();
+        }
+        finally
+        {
+            Assert.True(JauntyConfig.RemoveTypeHandler<GenMoney?>());
+        }
+    }
+
+    private static DataTableReader DbReader(object amount)
+    {
+        var table = new DataTable();
+        table.Columns.Add("id", typeof(int));
+        table.Columns.Add("amount", typeof(object));
+        table.Rows.Add(1, amount);
+        var reader = table.CreateDataReader();
+        Assert.True(reader.Read());
+        return reader;
+    }
+
+    [Fact]
+    public void NullableProperty_HandlerParsingToNull_StaysNull_OnEveryReadPath()
+    {
+        WithBlankAsNullMoneyHandler(() =>
+        {
+            Assert.Null(GenNullableHandledEntity.ReadEntity(Reader("")).Amount);
+            Assert.Null(GenNullableHandledEntity.ReadEntity(DbReader("")).Amount);
+
+            PlainRecordReader plain = Reader("");
+            Assert.Null(GenNullableHandledEntity.CreateRowMapper(plain)(plain).Amount);
+
+            DataTableReader db = DbReader("");
+            Assert.Null(GenNullableHandledEntity.CreateRowMapper(db)(db).Amount);
+        });
+    }
+
+    [Fact]
+    public void NullableProperty_HandlerParsingToAValue_IsApplied_OnEveryReadPath()
+    {
+        WithBlankAsNullMoneyHandler(() =>
+        {
+            Assert.Equal(2.5m, GenNullableHandledEntity.ReadEntity(Reader(2.5m)).Amount?.Amount);
+            Assert.Equal(2.5m, GenNullableHandledEntity.ReadEntity(DbReader(2.5m)).Amount?.Amount);
+
+            PlainRecordReader plain = Reader(2.5m);
+            Assert.Equal(2.5m, GenNullableHandledEntity.CreateRowMapper(plain)(plain).Amount?.Amount);
+
+            DataTableReader db = DbReader(2.5m);
+            Assert.Equal(2.5m, GenNullableHandledEntity.CreateRowMapper(db)(db).Amount?.Amount);
+        });
+    }
+
+    [Fact]
+    public void NullableProperty_HandlerRegisteredForTheNullableType_AppliesOnWrite()
+    {
+        WithBlankAsNullMoneyHandler(() =>
+        {
+            var command = new RecordingCommand();
+            GenNullableHandledEntity.BindInsert(command, new GenNullableHandledEntity { Id = 1, Amount = new GenMoney(8.5m) });
+
+            Assert.Contains(command.Bound, p => p.ParameterName == "@amount" && Equals(p.Value, 8.5m));
+        });
+    }
+
+    [Fact]
+    public void NullableProperty_NoHandler_ReadsTheValueAsItStands()
+    {
+        Assert.Equal(6m, GenNullableHandledEntity.ReadEntity(Reader(new GenMoney(6m))).Amount?.Amount);
+    }
+
+    [Fact]
+    public void NonNullableProperty_HandlerParsingToNull_StillGetsDefault()
+    {
+        WithBlankAsNullMoneyHandler(() =>
+            Assert.Equal(0m, GenHandledEntity.ReadEntity(Reader("")).Amount.Amount));
+    }
+
     private sealed class RecordingParameter : IDbDataParameter
     {
         public byte Precision { get; set; }

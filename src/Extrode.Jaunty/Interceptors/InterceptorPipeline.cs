@@ -148,8 +148,15 @@ public sealed class InterceptorPipeline
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed);
 
-        // Emit diagnostic event
-        _diagnosticListener?.WriteCommandExecuted(context);
+        // AUD-R38-054: guarded like the interceptors below. A throwing subscriber would otherwise
+        // turn a command that succeeded into a failure, after its write had committed.
+        try
+        {
+            _diagnosticListener?.WriteCommandExecuted(context);
+        }
+        catch
+        {
+        }
 
         for (int i = 0; i < _interceptors.Length; i++)
         {
@@ -190,8 +197,15 @@ public sealed class InterceptorPipeline
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed, exception);
 
-        // Emit diagnostic event
-        _diagnosticListener?.WriteCommandFailed(context, exception);
+        // AUD-R38-054: a throwing subscriber would otherwise replace the original exception and
+        // skip every interceptor's failure hook.
+        try
+        {
+            _diagnosticListener?.WriteCommandFailed(context, exception);
+        }
+        catch
+        {
+        }
 
         for (int i = 0; i < _interceptors.Length; i++)
         {
@@ -341,8 +355,19 @@ public sealed class InterceptorPipeline
             if (_interceptors[i] is ISyncCommandInterceptor sync)
                 sync.OnCommandExecuting(context);
             else
-                _interceptors[i].OnCommandExecutingAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+                Wait(_interceptors[i].OnCommandExecutingAsync(context, CancellationToken.None));
         }
+    }
+
+    // AUD-R38-055: GetResult on an incomplete ValueTask is only defined when a Task backs it; one
+    // backed by an IValueTaskSource (a pooled async method builder, say) throws instead of
+    // blocking. AsTask blocks correctly for either.
+    private static void Wait(ValueTask task)
+    {
+        if (task.IsCompleted)
+            task.GetAwaiter().GetResult();
+        else
+            task.AsTask().GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -368,8 +393,15 @@ public sealed class InterceptorPipeline
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed);
 
-        // Emit diagnostic event
-        _diagnosticListener?.WriteCommandExecuted(context);
+        // AUD-R38-054: guarded like the interceptors below. A throwing subscriber would otherwise
+        // turn a command that succeeded into a failure, after its write had committed.
+        try
+        {
+            _diagnosticListener?.WriteCommandExecuted(context);
+        }
+        catch
+        {
+        }
 
         for (int i = 0; i < _interceptors.Length; i++)
         {
@@ -378,7 +410,7 @@ public sealed class InterceptorPipeline
                 if (_interceptors[i] is ISyncCommandInterceptor sync)
                     sync.OnCommandExecuted(context);
                 else
-                    _interceptors[i].OnCommandExecutedAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+                    Wait(_interceptors[i].OnCommandExecutedAsync(context, CancellationToken.None));
             }
             catch
             {
@@ -413,8 +445,15 @@ public sealed class InterceptorPipeline
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed, exception);
 
-        // Emit diagnostic event
-        _diagnosticListener?.WriteCommandFailed(context, exception);
+        // AUD-R38-054: a throwing subscriber would otherwise replace the original exception and
+        // skip every interceptor's failure hook.
+        try
+        {
+            _diagnosticListener?.WriteCommandFailed(context, exception);
+        }
+        catch
+        {
+        }
 
         for (int i = 0; i < _interceptors.Length; i++)
         {
@@ -423,7 +462,7 @@ public sealed class InterceptorPipeline
                 if (_interceptors[i] is ISyncCommandInterceptor sync)
                     sync.OnCommandFailed(context, exception);
                 else
-                    _interceptors[i].OnCommandFailedAsync(context, exception, CancellationToken.None).GetAwaiter().GetResult();
+                    Wait(_interceptors[i].OnCommandFailedAsync(context, exception, CancellationToken.None));
             }
             catch
             {

@@ -80,6 +80,11 @@ internal static class ParameterBinder
         // so SQL-text parsing/validation is not applicable. Bind all provided values.
         if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
         {
+            // AUD-R38-060: reached only when an SpParameters was passed as object. Binding it as an
+            // anonymous object sends its Parameters list as one value and never reads outputs back.
+            if (parameters is SpParameters)
+                throw new ArgumentException($"An {nameof(SpParameters)} instance was passed where a plain parameters object is expected, so its inputs would not be bound and its outputs not read back. Call an overload whose parameters argument is typed {nameof(SpParameters)}.", nameof(parameters));
+
             IDictionary<string, object?>? sprocDict = AsNamedValues(parameters);
             if (sprocDict is not null)
             {
@@ -141,7 +146,7 @@ internal static class ParameterBinder
 
         // Slow path: parse and bind, then cache if no collection expansion happened
         bool backslashEscapes = UsesBackslashEscapes(command.Connection);
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql, backslashEscapes);
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql, backslashEscapes, UsesDollarSigil(command.Connection));
         // AUD-R35-116: metadata, the name lookup and the collection-typed answer are all pure
         // functions of the parameters type, so they are resolved together and cached together.
         ParameterShape shape = GetShape(type);
@@ -149,7 +154,7 @@ internal static class ParameterBinder
         Dictionary<string, ParameterMetadata> propertyLookup = shape.Lookup;
 
         // Check for collection parameters and expand SQL if needed
-        (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, HashSet<string>? expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters, command.Connection);
+        (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, HashSet<string>? expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, new ObjectValueSource(propertyLookup, parameters), command.Connection);
 
         if (expandedSql is not null)
         {
@@ -256,7 +261,7 @@ internal static class ParameterBinder
         // the parameters type merely has a collection-typed property whose value happened to be
         // null. That SQL was already parsed through SqlParameterParserCache two lines earlier and
         // the result discarded, so every such call re-tokenized the whole statement on the hot path.
-        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql, UsesBackslashEscapes(command.Connection));
+        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -430,13 +435,75 @@ internal static class ParameterBinder
     private static bool UsesBackslashEscapes(IDbConnection? connection)
         => connection is not null && SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection)) is MySqlDialect;
 
+    // AUD-R38-057: see SqlParameterParser.ExtractParameterNames's dollarSigil.
+    private static bool UsesDollarSigil(IDbConnection? connection)
+        => connection is null || UsesDollarSigil(SqlDialectFactory.GetDialect(connection));
+
+    private static bool UsesDollarSigil(ISqlDialect dialect)
+        => SqlDialectFactory.Unwrap(dialect) is not (SqlServerDialect or MySqlDialect);
+
+    /// <summary>
+    /// Where <see cref="ExpandCollectionParameters"/> reads a parameter's value from. A struct
+    /// constraint rather than a delegate, so neither binding path allocates for it.
+    /// </summary>
+    private interface IParameterValueSource
+    {
+        bool TryGetValue(string name, out object? value, out PropertyInfo? property);
+
+        IEnumerable<string> Names { get; }
+    }
+
+    private readonly struct ObjectValueSource(Dictionary<string, ParameterMetadata> lookup, object parameters) : IParameterValueSource
+    {
+        public bool TryGetValue(string name, out object? value, out PropertyInfo? property)
+        {
+            if (lookup.TryGetValue(name, out ParameterMetadata meta))
+            {
+                value = meta.Getter(parameters);
+                property = meta.Property;
+                return true;
+            }
+
+            value = null;
+            property = null;
+            return false;
+        }
+
+        public IEnumerable<string> Names => lookup.Keys;
+    }
+
+    private readonly struct DictionaryValueSource(Dictionary<string, object?> resolved) : IParameterValueSource
+    {
+        public bool TryGetValue(string name, out object? value, out PropertyInfo? property)
+        {
+            property = null;
+            return resolved.TryGetValue(name, out value);
+        }
+
+        // Every resolved key is a name the SQL uses, which ExpandCollectionParameters already
+        // reserves; any other dictionary key is rejected as unused after binding.
+        public IEnumerable<string> Names => [];
+    }
+
+    /// <summary>
+    /// Whether a registered type handler claims <paramref name="type"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-058. Registering a handler for a collection type - JSON for a <c>List&lt;string&gt;</c>
+    /// tags column - means the caller wants the value bound as one scalar, and the entity
+    /// Insert/Update paths already did that. The ad-hoc path expanded it into an IN list anyway, so
+    /// <c>SET Tags = @Tags</c> became <c>SET Tags = (@Tags0, @Tags1)</c> and the handler never ran.
+    /// </remarks>
+    private static bool HasTypeHandler(Type type)
+        => TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(type, out _);
+
     private static (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, HashSet<string>? expandedOriginalNames)
-        ExpandCollectionParameters(
+        ExpandCollectionParameters<TSource>(
             string sql,
             string[] sqlParamNames,
-            Dictionary<string, ParameterMetadata> propertyLookup,
-            object parameters,
+            TSource source,
             IDbConnection? connection)
+        where TSource : struct, IParameterValueSource
     {
         // First pass: find collection parameters (deduplicated)
         var seen = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
@@ -448,10 +515,9 @@ internal static class ParameterBinder
             if (!seen.Add(sqlName))
                 continue; // Already processed
 
-            if (!propertyLookup.TryGetValue(sqlName, out ParameterMetadata meta))
+            if (!source.TryGetValue(sqlName, out object? value, out PropertyInfo? property))
                 continue;
 
-            var value = meta.Getter(parameters);
             if (value is null)
             {
                 // AUD-R35-012. A null collection used to be skipped outright, so the placeholder
@@ -462,16 +528,16 @@ internal static class ParameterBinder
                 // They now behave identically. The declared type is what decides, since there is
                 // no value to inspect; IsCollectionType excludes string and byte[], so a null
                 // string or blob still binds as a DBNull scalar.
-                if (meta.Property is not null && IsCollectionType(meta.Property.PropertyType))
+                if (property is not null && IsCollectionType(property.PropertyType) && !HasTypeHandler(property.PropertyType))
                 {
                     expansions ??= new List<CollectionExpansion>(2);
-                    expansions.Add(new CollectionExpansion(sqlName, Array.Empty<object?>(), 0, meta.Property));
+                    expansions.Add(new CollectionExpansion(sqlName, Array.Empty<object?>(), 0, property));
                 }
             }
-            else if (IsCollection(value, out IEnumerable? items, out var count))
+            else if (!HasTypeHandler(value.GetType()) && IsCollection(value, out IEnumerable? items, out var count))
             {
                 expansions ??= new List<CollectionExpansion>(2);
-                expansions.Add(new CollectionExpansion(sqlName, items, count, meta.Property));
+                expansions.Add(new CollectionExpansion(sqlName, items, count, property));
                 totalExpandedCount += count;
             }
         }
@@ -500,7 +566,8 @@ internal static class ParameterBinder
         // Second pass: build replacements and expanded params
         // Detect parameter prefix from the SQL (@ or $)
         bool backslashEscapes = knownDialect is not null && SqlDialectFactory.Unwrap(knownDialect) is MySqlDialect;
-        var paramPrefix = DetectParameterPrefix(sql, backslashEscapes);
+        bool dollarSigil = knownDialect is null || UsesDollarSigil(knownDialect);
+        var paramPrefix = DetectParameterPrefix(sql, backslashEscapes, dollarSigil);
         var expandedParams = new Dictionary<string, ExpandedParameterValue>(CommonConstants.OrdinalIgnoreCase);
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var replacements = new Dictionary<string, string>(CommonConstants.OrdinalIgnoreCase);
@@ -512,7 +579,7 @@ internal static class ParameterBinder
         // before the property lookup. Reserve every name the SQL or the parameters object already
         // uses, and lengthen the mint prefix until it clears them all.
         var reserved = new HashSet<string>(seen, CommonConstants.OrdinalIgnoreCase);
-        foreach (string propertyName in propertyLookup.Keys)
+        foreach (string propertyName in source.Names)
             reserved.Add(propertyName);
 
         foreach (CollectionExpansion expansion in expansions)
@@ -557,7 +624,7 @@ internal static class ParameterBinder
         // Rewrite the SQL in a single literal/comment-aware pass so that @Name-looking text inside
         // string literals, quoted identifiers, or comments is never mistaken for a real placeholder
         // (unlike a naive textual find/replace, which would corrupt such SQL).
-        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements, backslashEscapes);
+        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements, backslashEscapes, dollarSigil);
 
         return (result, expandedParams, expandedOriginalNames);
     }
@@ -595,7 +662,7 @@ internal static class ParameterBinder
     // Internal rather than private so AUD-R26's sigil-position rule can be tested at this site
     // directly; the precedent is AUD-R9-011, which promoted PostgreSqlSchemaReader's SQL consts for
     // the same reason. ParameterBinder is itself internal, so this widens nothing publicly.
-    internal static string DetectParameterPrefix(string sql, bool backslashEscapes = false)
+    internal static string DetectParameterPrefix(string sql, bool backslashEscapes = false, bool dollarSigil = true)
     {
         int len = sql.Length;
         int i = 0;
@@ -653,6 +720,12 @@ internal static class ParameterBinder
 
             if (c == '$')
             {
+                if (!dollarSigil || SqlParameterParser.IsSigilInsideIdentifier(sql, i))
+                {
+                    i = SqlParameterParser.SkipDollarRun(sql.AsSpan(), i);
+                    continue;
+                }
+
                 int dollarQuoteEnd = TrySkipDollarQuotedString(sql, i, len);
                 if (dollarQuoteEnd != -1)
                 {
@@ -695,7 +768,7 @@ internal static class ParameterBinder
     // Literal/comment-aware placeholder rewrite. Walks the SQL using the same tokenization rules as
     // SqlParameterParser (skipping string literals, quoted identifiers, comments, and @@ system
     // variables) and replaces only genuine parameter placeholders whose name is in 'replacements'.
-    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements, bool backslashEscapes)
+    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements, bool backslashEscapes, bool dollarSigil)
     {
         var sb = new StringBuilder(sql.Length + 16);
         int i = 0;
@@ -772,6 +845,14 @@ internal static class ParameterBinder
             // never a bindable parameter.
             if (c == '$')
             {
+                if (!dollarSigil || SqlParameterParser.IsSigilInsideIdentifier(sql, i))
+                {
+                    int runEnd = SqlParameterParser.SkipDollarRun(sql.AsSpan(), i);
+                    sb.Append(sql, i, runEnd - i);
+                    i = runEnd;
+                    continue;
+                }
+
                 int dollarQuoteEnd = TrySkipDollarQuotedString(sql, i, len);
                 if (dollarQuoteEnd != -1)
                 {
@@ -951,7 +1032,7 @@ internal static class ParameterBinder
 
     private static void BindScalar(IDbCommand command, object value)
     {
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection));
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -1020,10 +1101,11 @@ internal static class ParameterBinder
     /// </remarks>
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
     {
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection));
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         Dictionary<string, object?>? caseInsensitive = null;
+        Dictionary<string, object?>? resolved = null;
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
@@ -1043,11 +1125,23 @@ internal static class ParameterBinder
                 }
             }
 
+            if (resolved is null && value is not null && value is not (string or byte[]) && value is IEnumerable && !HasTypeHandler(value.GetType()))
+                resolved = new Dictionary<string, object?>(CommonConstants.OrdinalIgnoreCase);
+
+            if (resolved is not null)
+            {
+                resolved[sqlName] = value;
+                continue;
+            }
+
             IDbDataParameter p = command.CreateParameter();
             p.ParameterName = sqlName;
             p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
             command.Parameters.Add(p);
         }
+
+        if (resolved is not null)
+            BindExpandedDictionary(command, sqlParamNames, bound, dictParams, caseInsensitive, resolved);
 
         // Validate unused, mirroring BuildTemplate's strictness for object-based binding: fail
         // fast on a dictionary key the SQL never references, instead of silently ignoring it.
@@ -1070,6 +1164,54 @@ internal static class ParameterBinder
             {
                 throw new ArgumentException($"Unused parameter keys in dictionary: {string.Join(", ", unused)}. SQL contains no matching parameters.", "parameters");
             }
+        }
+    }
+
+    /// <summary>
+    /// The rest of <see cref="BindFromDictionary"/> once a value turns out to be a collection.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-059. The object and dictionary forms are documented-equivalent, but only the object
+    /// form expanded <c>IN @Ids</c>; a dictionary bound the array as one value and the provider got
+    /// <c>IN @Ids</c> verbatim. The parameters bound before the first collection was found are
+    /// discarded and everything is bound again against the expanded SQL. A null dictionary value
+    /// has no declared type to say it was meant to be a collection, so it still binds as DBNull.
+    /// </remarks>
+    private static void BindExpandedDictionary(
+        IDbCommand command,
+        string[] sqlParamNames,
+        HashSet<string> bound,
+        IDictionary<string, object?> dictParams,
+        Dictionary<string, object?>? caseInsensitive,
+        Dictionary<string, object?> resolved)
+    {
+        foreach (string sqlName in bound)
+        {
+            if (!dictParams.TryGetValue(sqlName, out object? value))
+                caseInsensitive!.TryGetValue(sqlName, out value);
+
+            resolved[sqlName] = value;
+        }
+
+        (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, _) =
+            ExpandCollectionParameters(command.CommandText, sqlParamNames, new DictionaryValueSource(resolved), command.Connection);
+
+        command.Parameters.Clear();
+        command.CommandText = expandedSql!;
+
+        string[] expandedNames = SqlParameterParser.ExtractParameterNames(expandedSql!, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection));
+        var added = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
+
+        foreach (string sqlName in expandedNames)
+        {
+            if (!added.Add(sqlName)) continue;
+
+            IDbDataParameter p = command.CreateParameter();
+            p.ParameterName = sqlName;
+            p.Value = (expandedParams!.TryGetValue(sqlName, out ExpandedParameterValue item)
+                ? ApplyTypeHandlerIfNeeded(item.Value, propertyInfo: null)
+                : ApplyTypeHandlerIfNeeded(resolved[sqlName], propertyInfo: null)) ?? DBNull.Value;
+            command.Parameters.Add(p);
         }
     }
 

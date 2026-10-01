@@ -2035,6 +2035,45 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
+    // AUD-R38-053: LOAD DATA's default ESCAPED BY backslash read C:\temp as C:<TAB>emp and a bare \N as NULL.
+    [Theory]
+    [MariaDB]
+    public async Task ImportCsv_MariaDb_BackslashesAreLiteral(DialectInfo dialect)
+    {
+        var connString = TestConfiguration.MariaDbConnectionString;
+        if (connString.IndexOf("AllowLoadLocalInfile", StringComparison.OrdinalIgnoreCase) < 0)
+            connString += ";AllowLoadLocalInfile=true";
+
+        var path = WriteTempCsv(
+            "Name,Age,City,Email\n" +
+            "Alice,30,C:\\temp\\new,\\N\n" +
+            "\"Bob \"\"B\"\"\",31,\"a\\\",\\\n");
+        try
+        {
+            foreach (bool async in new[] { false, true })
+            {
+                using var connection = new MySqlConnection(connString);
+                connection.Open();
+                CreateTable(connection, DialectProvider.MariaDb);
+
+                long rows = async ? await connection.ImportCsvAsync(TableName, path) : connection.ImportCsv(TableName, path);
+
+                Assert.Equal(2L, rows);
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT Name, City, Email FROM csv_import_test ORDER BY Name";
+                using var reader = cmd.ExecuteReader();
+                Assert.True(reader.Read());
+                Assert.Equal(("Alice", @"C:\temp\new", @"\N"), (reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? "<null>" : reader.GetString(2)));
+                Assert.True(reader.Read());
+                Assert.Equal(("Bob \"B\"", @"a\", @"\"),(reader.GetString(0), reader.GetString(1), reader.GetString(2)));
+            }
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Theory]
     [SqlServer]
     public void ImportCsv_SqlServer_CustomQuote_AppliedNatively(DialectInfo dialect)

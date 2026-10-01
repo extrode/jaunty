@@ -23,15 +23,22 @@ internal static class TypeHandlerRegistry
     /// </summary>
     /// <typeparam name="T">The type to register a handler for.</typeparam>
     /// <param name="handler">The handler instance.</param>
+    /// <remarks>
+    /// AUD-R38-061: a handler for <c>Nullable&lt;X&gt;</c> is keyed on <c>X</c>, since every read and
+    /// write lookup asks for the underlying type. Registering one for <c>X</c> and one for
+    /// <c>X?</c> leaves whichever came last.
+    /// </remarks>
     internal static void Register<T>(ITypeHandler handler)
     {
-        Type key = typeof(T);
+        Type key = KeyFor<T>();
         lock (MutationSync)
         {
             Handlers.AddOrUpdate(key, handler, (_, __) => handler);
             _handlerCount = Handlers.Count;
         }
     }
+
+    private static Type KeyFor<T>() => Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
 
     /// <summary>
     /// Attempts to retrieve a registered type handler for the specified type.
@@ -80,7 +87,7 @@ internal static class TypeHandlerRegistry
     /// <returns>True if a handler was removed; otherwise false.</returns>
     internal static bool Remove<T>()
     {
-        Type key = typeof(T);
+        Type key = KeyFor<T>();
         lock (MutationSync)
         {
             bool removed = Handlers.TryRemove(key, out _);
@@ -135,7 +142,7 @@ internal static class TypeHandlerRegistry
     {
         result = default!;
 
-        if (!TryGetHandler(typeof(T), out ITypeHandler? handler) || handler is null)
+        if (!TryGetHandler(KeyFor<T>(), out ITypeHandler? handler) || handler is null)
             return false;
 
         try
@@ -172,7 +179,7 @@ internal static class TypeHandlerRegistry
     {
         dbValue = null;
 
-        if (!TryGetHandler(typeof(T), out ITypeHandler? handler) || handler is null)
+        if (!TryGetHandler(KeyFor<T>(), out ITypeHandler? handler) || handler is null)
             return false;
 
         try

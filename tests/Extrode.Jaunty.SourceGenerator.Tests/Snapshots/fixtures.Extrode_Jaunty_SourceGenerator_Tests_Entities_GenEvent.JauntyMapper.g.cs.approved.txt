@@ -111,17 +111,17 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     var dbReader = (DbDataReader)reader;
                     entity.EventId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(dbReader.GetValue(ord[0])) : dbReader.GetInt32(ord[0]));
                     if (!dbReader.IsDBNull(ord[1]))
-                        entity.OccurredAt = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.DateTime>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::System.DateTime>(dbReader.GetValue(ord[1])) : dbReader.GetDateTime(ord[1]));
+                        entity.OccurredAt = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.DateTime>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<global::System.DateTime>(dbReader.GetValue(ord[1])) : dbReader.GetDateTime(ord[1]));
                     if (!dbReader.IsDBNull(ord[2]))
-                        entity.TraceId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.Guid>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::System.Guid>(dbReader.GetValue(ord[2])) : dbReader.GetFieldValue<global::System.Guid>(ord[2]));
+                        entity.TraceId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.Guid>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<global::System.Guid>(dbReader.GetValue(ord[2])) : dbReader.GetFieldValue<global::System.Guid>(ord[2]));
                 }
                 else
                 {
                     entity.EventId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(reader.GetValue(ord[0])) : reader.GetInt32(ord[0]));
                     if (!reader.IsDBNull(ord[1]))
-                        entity.OccurredAt = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.DateTime>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::System.DateTime>(reader.GetValue(ord[1])) : reader.GetDateTime(ord[1]));
+                        entity.OccurredAt = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.DateTime>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<global::System.DateTime>(reader.GetValue(ord[1])) : reader.GetDateTime(ord[1]));
                     if (!reader.IsDBNull(ord[2]))
-                        entity.TraceId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.Guid>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::System.Guid>(reader.GetValue(ord[2])) : ReadFallback<global::System.Guid>(reader.GetValue(ord[2])));
+                        entity.TraceId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.Guid>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<global::System.Guid>(reader.GetValue(ord[2])) : ReadFallback<global::System.Guid>(reader.GetValue(ord[2])));
                 }
             }
             catch (Exception ex)
@@ -146,9 +146,9 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     {
                         entity.EventId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(rr.GetValue(ord[0])) : rr.GetInt32(ord[0]));
                         if (!rr.IsDBNull(ord[1]))
-                            entity.OccurredAt = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.DateTime>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::System.DateTime>(rr.GetValue(ord[1])) : rr.GetDateTime(ord[1]));
+                            entity.OccurredAt = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.DateTime>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<global::System.DateTime>(rr.GetValue(ord[1])) : rr.GetDateTime(ord[1]));
                         if (!rr.IsDBNull(ord[2]))
-                            entity.TraceId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.Guid>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::System.Guid>(rr.GetValue(ord[2])) : rr.GetFieldValue<global::System.Guid>(ord[2]));
+                            entity.TraceId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.Guid>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<global::System.Guid>(rr.GetValue(ord[2])) : rr.GetFieldValue<global::System.Guid>(ord[2]));
                     }
                     catch (Exception ex)
                     {
@@ -166,9 +166,9 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                 {
                     entity.EventId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(r.GetValue(ord[0])) : r.GetInt32(ord[0]));
                     if (!r.IsDBNull(ord[1]))
-                        entity.OccurredAt = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.DateTime>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::System.DateTime>(r.GetValue(ord[1])) : r.GetDateTime(ord[1]));
+                        entity.OccurredAt = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.DateTime>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<global::System.DateTime>(r.GetValue(ord[1])) : r.GetDateTime(ord[1]));
                     if (!r.IsDBNull(ord[2]))
-                        entity.TraceId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.Guid>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::System.Guid>(r.GetValue(ord[2])) : ReadFallback<global::System.Guid>(r.GetValue(ord[2])));
+                        entity.TraceId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::System.Guid>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<global::System.Guid>(r.GetValue(ord[2])) : ReadFallback<global::System.Guid>(r.GetValue(ord[2])));
                 }
                 catch (Exception ex)
                 {

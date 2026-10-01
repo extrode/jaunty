@@ -1200,7 +1200,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // DbDataReader path: direct typed getters (no generic dispatch);
             // ReadFallback<T> over GetValue for the catch-all types (TimeSpan/DateTimeOffset/
             // enums/unknown) - see the AUD-R25 note on the emitted helper above.
-            var dbValue = ReadExpression(typeInfo, typeForGetFieldValue, "dbReader", i, isDbDataReader: true, p.IsEnum);
+            var dbValue = ReadExpression(p, typeInfo, typeForGetFieldValue, "dbReader", i, isDbDataReader: true);
             AppendPropertyRead(sb, readIndent, p, typeInfo, "dbReader", i, dbValue);
         }
         sb.AppendLine($"{blockIndent}}}");
@@ -1214,7 +1214,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // and converted by ReadFallback<T>. This used to be a raw `({p.TypeName})reader.GetValue`
             // cast, which is where enums threw InvalidCastException on every provider - see the
             // AUD-R25 note on the emitted helper above.
-            var value = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "reader", i, isDbDataReader: false, p.IsEnum);
+            var value = ReadExpression(p, typeInfo, typeInfo.TypeForGetFieldValue, "reader", i, isDbDataReader: false);
 
             // Fallback IDataReader path
             AppendPropertyRead(sb, readIndent, p, typeInfo, "reader", i, value);
@@ -1260,7 +1260,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         {
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
-            var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "rr", i, isDbDataReader: true, p.IsEnum);
+            var rowValue = ReadExpression(p, typeInfo, typeInfo.TypeForGetFieldValue, "rr", i, isDbDataReader: true);
             AppendPropertyRead(sb, dbRowIndent, p, typeInfo, "rr", i, rowValue);
         }
         if (hasNonNullable)
@@ -1283,7 +1283,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         {
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
-            var rowValue = ReadExpression(typeInfo, typeInfo.TypeForGetFieldValue, "r", i, isDbDataReader: false, p.IsEnum);
+            var rowValue = ReadExpression(p, typeInfo, typeInfo.TypeForGetFieldValue, "r", i, isDbDataReader: false);
             AppendPropertyRead(sb, rowIndent, p, typeInfo, "r", i, rowValue);
         }
         if (hasNonNullable)
@@ -1982,16 +1982,19 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// shapes the shared converter behind <c>FromDbValue</c> does not, so a handler registered for
     /// one type must not divert every other property on the entity away from the fast path.
     /// </remarks>
-    private static string WrapForTypeHandler(string fastExpression, string typeArgument, string readerVariable, int ordinalIndex)
+    private static string WrapForTypeHandler(
+        string fastExpression, string typeArgument, string readerVariable, int ordinalIndex, bool isNullableValueType)
         => $"({TypeHandlerFlagLocal} && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<{typeArgument}>() " +
-           $"? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<{typeArgument}>({readerVariable}.GetValue(ord[{ordinalIndex}])) " +
+           $"? global::Extrode.Jaunty.Core.GeneratedBindingSupport.{(isNullableValueType ? "FromDbValueNullable" : "FromDbValue")}<{typeArgument}>({readerVariable}.GetValue(ord[{ordinalIndex}])) " +
            $": {fastExpression})";
 
+    // AUD-R38-048: FullyQualifiedFormat gives only Nullable<T> a "?" suffix, so the suffix alone
+    // says whether a handler's null can reach the property as null.
     private static string ReadExpression(
-        ReaderTypeInfo typeInfo, string typeArgument, string readerVariable, int ordinalIndex, bool isDbDataReader, bool isEnum)
+        PropertyMetadata property, ReaderTypeInfo typeInfo, string typeArgument, string readerVariable, int ordinalIndex, bool isDbDataReader)
         => WrapForTypeHandler(
-            FastReadExpression(typeInfo, typeArgument, readerVariable, ordinalIndex, isDbDataReader, isEnum),
-            typeArgument, readerVariable, ordinalIndex);
+            FastReadExpression(typeInfo, typeArgument, readerVariable, ordinalIndex, isDbDataReader, property.IsEnum),
+            typeArgument, readerVariable, ordinalIndex, property.TypeName.EndsWith("?", StringComparison.Ordinal));
 
     /// <summary>
     /// Builds the expression that reads one column into a property, for a given reader variable.
