@@ -150,6 +150,28 @@ public class GeneratedAccessorsEmissionTests
     }
 
     /// <summary>
+    /// AUD-R38 generator audit: the predicate took class declarations only, so a record supplying a
+    /// mapper by hand, or by convention binders alone, was never warned about.
+    /// </summary>
+    [Theory]
+    [InlineData("public record HandRolled : IMapped<HandRolled> { public static HandRolled ReadEntity(IDataReader reader) => new HandRolled(); }", "IMapped<HandRolled> by hand")]
+    [InlineData("public record class HandRolled { public static void BindInsert(IDbCommand command, HandRolled entity) { } }", "BindInsert by convention")]
+    public void AHandWrittenRecord_ReportsJAUNTYGEN002(string declaration, string supplies)
+    {
+        ImmutableArray<Diagnostic> diagnostics = RunGenerator($$"""
+            using System.Data;
+            using Extrode.Jaunty.Interfaces;
+
+            namespace AccessorProbe;
+
+            {{declaration}}
+            """).Diagnostics;
+
+        Diagnostic warning = Assert.Single(diagnostics, d => d.Id == "JAUNTYGEN002");
+        Assert.Contains(supplies, warning.GetMessage(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The message has to say what to do, not just that something is wrong - the round-26 lesson about
     /// error text that names a symptom and leaves the cause to guesswork.
     /// </summary>
