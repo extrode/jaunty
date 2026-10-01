@@ -79,6 +79,22 @@ public sealed partial class DuckDb
 
         if (entityList.Count == 0) return 0;
 
+        // AUD-R35-032: a null element used to surface as a bare NullReferenceException out of the
+        // compiled getter, naming neither the row nor the entity type. The single-entity overloads
+        // have guarded the same condition all along. AUD-R38-025: checked for the whole batch before
+        // anything runs - inside the chunk loop, earlier chunks had already been inserted and
+        // auto-committed by the time a null in a later chunk was found.
+        for (int i = 0; i < entityList.Count; i++)
+        {
+            if (entityList[i] is null)
+            {
+                throw new ArgumentException(
+                    $"The element at index {i} is null. A batch insert of " +
+                    $"{typeof(T).Name} cannot contain null entities.",
+                    nameof(entities));
+            }
+        }
+
         IFileSource source = GetSourceOrThrow<T>();
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect, options.Transaction);
 
@@ -113,17 +129,6 @@ public sealed partial class DuckDb
                 if (row > 0) sb.Append(", ");
                 sb.Append('(');
                 T entity = entityList[chunkStart + row];
-
-                // AUD-R35-032: a null element used to surface as a bare NullReferenceException out
-                // of the compiled getter, naming neither the row nor the entity type. The
-                // single-entity overloads have guarded the same condition all along.
-                if (entity is null)
-                {
-                    throw new ArgumentException(
-                        $"The element at index {chunkStart + row} is null. A batch insert of " +
-                        $"{typeof(T).Name} cannot contain null entities.",
-                        nameof(entities));
-                }
 
                 for (int col = 0; col < mappingList.Count; col++)
                 {
