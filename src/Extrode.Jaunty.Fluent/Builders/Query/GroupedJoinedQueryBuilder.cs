@@ -67,8 +67,8 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 #endif
         TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options)
     {
-        var sql = BuildSelectSql(selector);
-        return ExecuteQuery<TResult>(sql, selector, options);
+        var sql = BuildSelectSql(selector, out string[] aliases);
+        return ExecuteQuery<TResult>(sql, aliases, options);
     }
 
     public Task<List<TResult>> SelectAsync<
@@ -88,18 +88,20 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 #endif
         TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
     {
-        var sql = BuildSelectSql(selector);
-        return await ExecuteQueryAsync<TResult>(sql, selector, options, cancellationToken).ConfigureAwait(false);
+        var sql = BuildSelectSql(selector, out string[] aliases);
+        return await ExecuteQueryAsync<TResult>(sql, aliases, options, cancellationToken).ConfigureAwait(false);
     }
 
     public string ToSql<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
     {
-        return BuildSelectSql(selector);
+        return BuildSelectSql(selector, out _);
     }
 
-    private string BuildSelectSql<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
+    private string BuildSelectSql<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, out string[] aliases)
     {
-        (string[] selectColumns, string[] _) = _visitor.TranslateSelect(selector);
+        (string[] selectColumns, string[] translatedAliases) = _visitor.TranslateSelect(selector);
+        // AUD-R38-094: handed to the execute path, which used to translate the selector again.
+        aliases = translatedAliases;
 
         var sb = new StringBuilder(256);
 
@@ -140,10 +142,10 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
             DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors)]
 #endif
-        TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options)
+        TResult>(string sql, string[] aliases, CommandOptions options)
         => CommandObservation.Execute(
             sql, _parent.DescribeParameters(), _parent.Connection, FluentCommandOptions.Describe(options),
-            () => ExecuteQueryDirect(sql, selector, options));
+            () => ExecuteQueryDirect<TResult>(sql, aliases, options));
 
     private List<TResult> ExecuteQueryDirect<
 #if NET5_0_OR_GREATER
@@ -151,9 +153,8 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
             DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors)]
 #endif
-        TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options)
+        TResult>(string sql, string[] aliases, CommandOptions options)
     {
-        (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
@@ -191,10 +192,10 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
             DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors)]
 #endif
-        TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+        TResult>(string sql, string[] aliases, CommandOptions options, CancellationToken cancellationToken)
         => await CommandObservation.ExecuteAsync(
             sql, _parent.DescribeParameters(), _parent.Connection, FluentCommandOptions.Describe(options),
-            () => ExecuteQueryDirectAsync(sql, selector, options, cancellationToken), cancellationToken).ConfigureAwait(false);
+            () => ExecuteQueryDirectAsync<TResult>(sql, aliases, options, cancellationToken), cancellationToken).ConfigureAwait(false);
 
     private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<
 #if NET5_0_OR_GREATER
@@ -202,12 +203,11 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
             DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors)]
 #endif
-        TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
+        TResult>(string sql, string[] aliases, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_parent.Connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
