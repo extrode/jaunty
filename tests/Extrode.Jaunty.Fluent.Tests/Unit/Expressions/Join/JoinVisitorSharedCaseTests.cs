@@ -84,6 +84,8 @@ public class JoinVisitorSharedCaseTests
             ["NullOrderedAgainstColumn"] = (P((p, c) => noInt <= p.SupplierId), "(1 = 0)"),
             ["ConvertChecked"] = (Expression.Lambda(Expression.Equal(Expression.ConvertChecked(productId, typeof(long)), Expression.ConvertChecked(categoryId, typeof(long))), pc),
                 "(p.[product_id] = c.[category_id])"),
+            ["ConvertCheckedAgainstAValue"] = (Expression.Lambda(Expression.Equal(Expression.ConvertChecked(productId, typeof(long)), Expression.Constant(5L)), pc),
+                "(p.[product_id] = @p_product_id)"),
             ["OpaqueOverParameter"] = (P((p, c) => p.ProductName.Trim().Length == c.CategoryId),
                 "!'p.ProductName.Trim().Length' is not a translatable column reference, and it cannot be evaluated before the query because it still refers to a join parameter. Compare columns directly, or compute the value outside the predicate and capture it."),
             ["OpaqueNullCheckOverParameter"] = (P((p, c) => (int?)p.ProductName.Trim().Length == null),
