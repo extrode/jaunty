@@ -122,4 +122,37 @@ public class ExpressionTranslatorStringComparisonTests : IDisposable
 
         Assert.Equal(0, count);
     }
+
+    [Fact]
+    public void Delete_WithANullContainsTerm_ThrowsAndDeletesNothing()
+    {
+        string? term = null;
+
+        var ex = Assert.Throws<ArgumentNullException>(() => _db.Delete<InventoryItem>(i => i.ItemName.Contains(term!)));
+
+        Assert.Equal("value", ex.ParamName);
+        Assert.Contains("'Contains'", ex.Message);
+        Assert.Equal(3, _db.Delete<InventoryItem>(i => i.ItemId > 0));
+    }
+
+    [Fact]
+    public void Update_WithANullStartsWithTerm_Throws()
+    {
+        string? term = null;
+
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+            _db.Update<InventoryItem>(i => i.ItemName.StartsWith(term!), i => i.Category, "X"));
+
+        Assert.Contains("'StartsWith'", ex.Message);
+    }
+
+    [Fact]
+    public void Delete_WithANullEndsWithTerm_Throws()
+    {
+        string? term = null;
+
+        var ex = Assert.Throws<ArgumentNullException>(() => _db.Delete<InventoryItem>(i => i.ItemName.EndsWith(term!, StringComparison.OrdinalIgnoreCase)));
+
+        Assert.Contains("'EndsWith'", ex.Message);
+    }
 }

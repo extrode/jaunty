@@ -168,7 +168,10 @@ internal static class ExpressionTranslator
         if (method.Object is MemberExpression member && method.Method.DeclaringType == typeof(string))
         {
             var columnName = ResolveColumnFromMember(member);
-            var value = EvaluateExpression(method.Arguments[0]);
+            // string.Contains/StartsWith/EndsWith(null) throw in C#; an empty pattern would match every
+            // non-null row, which turns a Delete or Update into a whole-table write (AUD-R38-001).
+            var value = EvaluateExpression(method.Arguments[0])
+                ?? throw new ArgumentNullException("value", $"'{method.Method.Name}' was given a null search value, which string.{method.Method.Name} rejects.");
             var caseInsensitive = IsCaseInsensitiveComparison(method);
 
             return method.Method.Name switch
