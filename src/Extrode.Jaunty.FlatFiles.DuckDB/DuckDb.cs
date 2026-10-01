@@ -111,6 +111,7 @@ public sealed partial class DuckDb : IFlatFile
     public void RegisterSource(IFileSource source)
     {
         ArgumentNullException.ThrowIfNull(source);
+        EnsureTableNameNotTaken(source);
         EnsureExtensionsLoaded(source);
 
         // AUD-R35-026: seeded once, from the caller's own opt-in, and never written back to the
@@ -149,6 +150,7 @@ public sealed partial class DuckDb : IFlatFile
     public async ValueTask RegisterSourceAsync(IFileSource source, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
+        EnsureTableNameNotTaken(source);
         await EnsureExtensionsLoadedAsync(source, cancellationToken).ConfigureAwait(false);
 
         // Same seeding as RegisterSource; see the comment there.
@@ -176,6 +178,21 @@ public sealed partial class DuckDb : IFlatFile
             await ValidateSchemaAsync(source, cancellationToken).ConfigureAwait(false);
 
         _sources[source.EntityType] = source;
+    }
+
+    /// <summary>
+    /// AUD-R38-018: the constructor checks its sources with
+    /// <see cref="FlatFileOptions.EnsureSourceTableNamesAreUnique"/>, but a source registered later
+    /// went straight to <c>CREATE OR REPLACE VIEW</c> and silently replaced another entity's view.
+    /// Re-registering the same entity type is still a replacement by design.
+    /// </summary>
+    private void EnsureTableNameNotTaken(IFileSource source)
+    {
+        foreach (IFileSource existing in _sources.Values)
+        {
+            if (existing.EntityType != source.EntityType)
+                FlatFileOptions.ThrowIfSameTableName(existing, source);
+        }
     }
 
     /// <summary>
@@ -289,7 +306,7 @@ public sealed partial class DuckDb : IFlatFile
     /// <c>current_schema()</c>/<c>current_database()</c> rather than the literal <c>main</c>,
     /// because a caller is free to <c>USE</c> another schema before handing the connection over.
     /// </remarks>
-    private const string ExistsAsTableSql =
+    internal const string ExistsAsTableSql =
         "SELECT COUNT(*) FROM information_schema.tables " +
         "WHERE table_name = $name AND table_type = 'BASE TABLE' " +
         "AND table_schema = current_schema() AND table_catalog = current_database()";
