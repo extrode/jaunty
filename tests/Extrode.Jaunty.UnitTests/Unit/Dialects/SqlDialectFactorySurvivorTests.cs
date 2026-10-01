@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Extrode.Jaunty.Tests.Unit.Dialects;
 
-[Collection("Dialect Factory Survivors")]
+[Collection(ConfigurationGenerationCollection.Name)]
 public class SqlDialectFactorySurvivorTests
 {
     public SqlDialectFactorySurvivorTests()
