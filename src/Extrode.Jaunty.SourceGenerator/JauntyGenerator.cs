@@ -192,12 +192,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
     {
         IncrementalValuesProvider<EntityModel> jauntyTables = context.SyntaxProvider.ForAttributeWithMetadataName(
             JauntyTableAttribute,
-            predicate: static (node, _) => node is ClassDeclarationSyntax,
+            predicate: static (node, _) => node is ClassDeclarationSyntax or RecordDeclarationSyntax,
             transform: static (ctx, _) => BuildEntityModel(ctx));
 
         IncrementalValuesProvider<EntityModel> annotatedTables = context.SyntaxProvider.ForAttributeWithMetadataName(
             DataAnnotationsTableAttribute,
-            predicate: static (node, _) => node is ClassDeclarationSyntax,
+            predicate: static (node, _) => node is ClassDeclarationSyntax or RecordDeclarationSyntax,
             transform: static (ctx, _) => BuildEntityModel(ctx));
 
         IncrementalValuesProvider<EntityModel> entities = jauntyTables.Collect()
@@ -733,6 +733,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 : classSymbol.ContainingNamespace.ToDisplayString(),
             ClassName: className,
             AccessibilityKeyword: AccessibilityKeyword(classSymbol.DeclaredAccessibility),
+            IsRecord: classSymbol.IsRecord,
             HintName: GetHintName(classSymbol),
             TableName: tableName,
             SchemaName: schemaName,
@@ -777,6 +778,15 @@ public partial class JauntyGenerator : IIncrementalGenerator
         if (!IsDeclaredPartial(classSymbol))
             return "it is not declared 'partial'";
 
+        for (INamedTypeSymbol? type = classSymbol; type is not null; type = type.BaseType)
+        {
+            foreach (ISymbol member in type.GetMembers())
+            {
+                if (member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true })
+                    return $"'{member.Name}' is a required member, which the mapper interface's 'new()' constraint cannot satisfy";
+            }
+        }
+
         var hasParameterlessConstructor = false;
 
         foreach (IMethodSymbol constructor in classSymbol.InstanceConstructors)
@@ -784,6 +794,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
             if (constructor.Parameters.Length == 0
                 && constructor.DeclaredAccessibility == Accessibility.Public)
             {
+                if (IsObsoleteAsError(constructor))
+                    return "its public parameterless constructor is marked [Obsolete] as an error, so the generated mapper cannot call it";
+
                 hasParameterlessConstructor = true;
                 // Stryker disable once Statement : equivalent: removing the break lets the constructor loop visit the remaining constructors, which can only set hasParameterlessConstructor to true again, so the result is identical
                 break;
@@ -794,6 +807,21 @@ public partial class JauntyGenerator : IIncrementalGenerator
             return "it has no public parameterless constructor, which the mapper interface's 'new()' constraint requires";
 
         return null;
+    }
+
+    private static bool IsObsoleteAsError(IMethodSymbol constructor)
+    {
+        foreach (AttributeData attribute in constructor.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() == "System.ObsoleteAttribute"
+                && attribute.ConstructorArguments.Length == 2
+                && attribute.ConstructorArguments[1].Value is true)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -1001,7 +1029,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         foreach (ContainingTypeInfo containing in entity.ContainingTypes)
             sb.AppendLine($"    {containing.AccessibilityKeyword} partial {containing.Keyword} {containing.Name}").AppendLine("    {");
 
-        sb.AppendLine($"    {entity.AccessibilityKeyword} partial class {className} : IMapped<{className}>, IEntityMetadataSource, IGeneratedAccessors<{className}>");
+        sb.AppendLine($"    {entity.AccessibilityKeyword} partial {(entity.IsRecord ? "record" : "class")} {className} : IMapped<{className}>, IEntityMetadataSource, IGeneratedAccessors<{className}>");
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
         sb.AppendLine("        {");

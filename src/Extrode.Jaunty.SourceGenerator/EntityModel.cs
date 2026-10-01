@@ -37,6 +37,7 @@ internal sealed record EntityModel(
     string? Namespace,
     string ClassName,
     string AccessibilityKeyword,
+    bool IsRecord,
     string HintName,
     string TableName,
     string? SchemaName,
