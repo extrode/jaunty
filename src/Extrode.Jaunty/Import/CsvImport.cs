@@ -944,6 +944,9 @@ public static class CsvImportExtensions
             sb.Append($"INTO TABLE {escapedTable} ");
             sb.Append($"FIELDS TERMINATED BY '{options.Delimiter}' ");
             sb.Append($"OPTIONALLY ENCLOSED BY '{EscapeSqlCharLiteral(options.Quote)}' ");
+            // AUD-R38-053: the default ESCAPED BY '\\' reads backslashes in the data as escapes and
+            // a bare \N as NULL. CSV has neither.
+            sb.Append("ESCAPED BY '' ");
             sb.Append($"LINES TERMINATED BY '{MySqlLineTerminator(filePath)}' ");
             if (options.HasHeader)
                 sb.Append("IGNORE 1 LINES");
@@ -983,6 +986,9 @@ public static class CsvImportExtensions
             sb.Append($"INTO TABLE {escapedTable} ");
             sb.Append($"FIELDS TERMINATED BY '{options.Delimiter}' ");
             sb.Append($"OPTIONALLY ENCLOSED BY '{EscapeSqlCharLiteral(options.Quote)}' ");
+            // AUD-R38-053: the default ESCAPED BY '\\' reads backslashes in the data as escapes and
+            // a bare \N as NULL. CSV has neither.
+            sb.Append("ESCAPED BY '' ");
             sb.Append($"LINES TERMINATED BY '{MySqlLineTerminator(filePath)}' ");
             if (options.HasHeader)
                 sb.Append("IGNORE 1 LINES");
