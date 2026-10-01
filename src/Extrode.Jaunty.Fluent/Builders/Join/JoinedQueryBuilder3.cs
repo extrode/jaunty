@@ -104,7 +104,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
     {
         string qualified = JoinParameterName.Qualify(_parent.Dialect.ParameterPrefix, parameterName, nameof(parameterName));
 
-        if (_parent.HasParameter(qualified) && _boundParameters?.Contains(qualified) != true)
+        if (_parent.HasParameter(qualified) && _boundParameters?.Exists(n => string.Equals(n, qualified, StringComparison.OrdinalIgnoreCase)) != true)
             throw JoinParameterName.DuplicateError(qualified, nameof(parameterName));
 
         JoinedQuery3Builder<T1, T2, T3> joinedQuery = CreateJoinedQuery3(condition);
