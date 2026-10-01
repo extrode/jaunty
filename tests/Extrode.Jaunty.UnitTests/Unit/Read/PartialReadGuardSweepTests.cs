@@ -53,6 +53,8 @@ public class PartialReadGuardSweepTests
         "QueryScalarAsync",
         "QueryMultiple",
         "QueryMultipleAsync",
+        "QuerySingle",
+        "QuerySingleAsync",
         "QuerySingleOrDefault",
         "QuerySingleOrDefaultAsync",
     ];
