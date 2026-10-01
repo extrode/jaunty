@@ -115,7 +115,9 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     /// would otherwise be spliced into the middle of a combined UNION/EXCEPT/INTERSECT
     /// statement instead of applying to the combined result.
     /// </summary>
-    internal bool HasOrderingOrPaging() => _orderByColumns.Count > 0 || _take.HasValue || _skip.HasValue;
+    internal bool HasOrderingOrPaging() => _orderByColumns.Count > 0 || HasPaging();
+
+    internal bool HasPaging() => _take.HasValue || _skip.HasValue;
 
     private string[] GetAllColumnNames() => _cache.ColumnNames.ToArray();
 
@@ -1852,9 +1854,25 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         // and rebuild with just the single column
         string subquerySql;
         ParameterCollection? subqueryParams = null;
+        bool pagedOperand = false;
 
         if (subquery is QueryBuilder<TSubquery> queryBuilder)
         {
+            // AUD-R38-034: the operand's SQL is spliced in from FROM onward, so its own ORDER BY and
+            // paging land inside IN (...). Ordering alone has no meaning there and SQL Server rejects
+            // it without TOP/OFFSET (error 1033), so it is refused. Paging is meaningful - "the first
+            // three categories" - but MySQL rejects LIMIT directly inside IN (error 1235), so a paged
+            // operand is wrapped in a derived table below, which every dialect accepts.
+            if (queryBuilder.HasOrderingOrPaging() && !queryBuilder.HasPaging())
+            {
+                throw new NotSupportedException(
+                    "WhereInSubquery/WhereNotInSubquery must not be given a subquery that is ordered but " +
+                    "not paged: ordering has no meaning inside IN (...), and SQL Server rejects it there. " +
+                    "Remove the OrderBy, or add Take/Skip if the ordering selects which rows qualify.");
+            }
+
+            pagedOperand = queryBuilder.HasPaging();
+
             // Access internal method to get parameters
             subqueryParams = queryBuilder.GetParameters();
             // Get the full SQL and modify it to select only the needed column
@@ -1885,6 +1903,9 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         {
             subquerySql = $"SELECT {escapedSubqueryColumn}{subquerySql.Substring(fromIndex)}";
         }
+
+        if (pagedOperand)
+            subquerySql = $"SELECT {escapedSubqueryColumn} FROM ({subquerySql}) {_dialect.EscapeTableName(null, "jaunty_in")}";
 
         // Merge subquery parameters with prefix to avoid conflicts
         if (subqueryParams != null)
