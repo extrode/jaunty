@@ -53,7 +53,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     if (!dbReader.IsDBNull(ord[1]))
                         entity.ProductName = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(dbReader.GetValue(ord[1])) : dbReader.GetString(ord[1]));
                     if (!dbReader.IsDBNull(ord[2]))
-                        entity.UnitPrice = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(dbReader.GetValue(ord[2])) : (__real[2] ? (decimal)dbReader.GetDouble(ord[2]) : dbReader.GetDecimal(ord[2])));
+                        entity.UnitPrice = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<decimal>(dbReader.GetValue(ord[2])) : (__real[2] ? (decimal)dbReader.GetDouble(ord[2]) : dbReader.GetDecimal(ord[2])));
                     entity.Discontinued = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<bool>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<bool>(dbReader.GetValue(ord[3])) : dbReader.GetBoolean(ord[3]));
                 }
                 else
@@ -62,7 +62,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     if (!reader.IsDBNull(ord[1]))
                         entity.ProductName = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(reader.GetValue(ord[1])) : reader.GetString(ord[1]));
                     if (!reader.IsDBNull(ord[2]))
-                        entity.UnitPrice = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(reader.GetValue(ord[2])) : (__real[2] ? (decimal)reader.GetDouble(ord[2]) : reader.GetDecimal(ord[2])));
+                        entity.UnitPrice = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<decimal>(reader.GetValue(ord[2])) : (__real[2] ? (decimal)reader.GetDouble(ord[2]) : reader.GetDecimal(ord[2])));
                     entity.Discontinued = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<bool>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<bool>(reader.GetValue(ord[3])) : reader.GetBoolean(ord[3]));
                 }
             }
@@ -91,7 +91,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                         if (!rr.IsDBNull(ord[1]))
                             entity.ProductName = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(rr.GetValue(ord[1])) : rr.GetString(ord[1]));
                         if (!rr.IsDBNull(ord[2]))
-                            entity.UnitPrice = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(rr.GetValue(ord[2])) : (__real[2] ? (decimal)rr.GetDouble(ord[2]) : rr.GetDecimal(ord[2])));
+                            entity.UnitPrice = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<decimal>(rr.GetValue(ord[2])) : (__real[2] ? (decimal)rr.GetDouble(ord[2]) : rr.GetDecimal(ord[2])));
                         entity.Discontinued = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<bool>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<bool>(rr.GetValue(ord[3])) : rr.GetBoolean(ord[3]));
                     }
                     catch (Exception ex)
@@ -112,7 +112,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     if (!r.IsDBNull(ord[1]))
                         entity.ProductName = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(r.GetValue(ord[1])) : r.GetString(ord[1]));
                     if (!r.IsDBNull(ord[2]))
-                        entity.UnitPrice = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(r.GetValue(ord[2])) : (__real[2] ? (decimal)r.GetDouble(ord[2]) : r.GetDecimal(ord[2])));
+                        entity.UnitPrice = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<decimal>(r.GetValue(ord[2])) : (__real[2] ? (decimal)r.GetDouble(ord[2]) : r.GetDecimal(ord[2])));
                     entity.Discontinued = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<bool>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<bool>(r.GetValue(ord[3])) : r.GetBoolean(ord[3]));
                 }
                 catch (Exception ex)

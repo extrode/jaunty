@@ -215,6 +215,53 @@ public class AuditInterceptorTests
 
     #region OnCommandFailedAsync Tests
 
+    public static TheoryData<string> Phases => ["Executing", "Executed", "Failed"];
+
+    private static async Task<AuditRecord> RecordFor(string phase, Func<string> database)
+    {
+        var interceptor = new AuditInterceptor();
+        var exception = new InvalidOperationException("boom");
+        var context = new CommandContext(
+            "SELECT 1", null, new TestDbConnection { DatabaseSource = database }, CommandType.Text,
+            TimeSpan.FromMilliseconds(1), phase == "Failed" ? exception : null);
+
+        switch (phase)
+        {
+            case "Executing": await interceptor.OnCommandExecutingAsync(context, CancellationToken.None); break;
+            case "Executed": await interceptor.OnCommandExecutedAsync(context, CancellationToken.None); break;
+            default: await interceptor.OnCommandFailedAsync(context, exception, CancellationToken.None); break;
+        }
+
+        return Assert.Single(interceptor.GetRecentRecords());
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public async Task EveryPhase_ThrowingDatabaseGetter_StillWritesTheRecord(string phase)
+    {
+        AuditRecord record = await RecordFor(phase, () => throw new ObjectDisposedException("conn"));
+
+        Assert.Equal("(unknown)", record.Database);
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public async Task EveryPhase_EmptyDatabaseName_IsRecordedAsUnknown(string phase)
+    {
+        AuditRecord record = await RecordFor(phase, () => "");
+
+        Assert.Equal("(unknown)", record.Database);
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public async Task EveryPhase_RecordsTheDatabaseName(string phase)
+    {
+        AuditRecord record = await RecordFor(phase, () => "Shop");
+
+        Assert.Equal("Shop", record.Database);
+    }
+
     [Fact]
     public async Task OnCommandFailedAsync_CreatesFailedRecord()
     {
@@ -397,7 +444,8 @@ public class AuditInterceptorTests
     {
         public string ConnectionString { get; set; } = "Data Source=:memory:";
         public int ConnectionTimeout => 15;
-        public string Database => "TestDb";
+        public Func<string> DatabaseSource { get; set; } = () => "TestDb";
+        public string Database => DatabaseSource();
         public string DataSource => "InMemory";
         public IDbTransaction? Transaction { get; set; }
         public ConnectionState State => ConnectionState.Open;

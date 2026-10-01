@@ -52,14 +52,14 @@ namespace Snapshots.EveryType
                     entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<long>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<long>(dbReader.GetValue(ord[0])) : dbReader.GetInt64(ord[0]));
                     entity.Total = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(dbReader.GetValue(ord[1])) : (__real[1] ? (decimal)dbReader.GetDouble(ord[1]) : dbReader.GetDecimal(ord[1])));
                     if (!dbReader.IsDBNull(ord[2]))
-                        entity.Discount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(dbReader.GetValue(ord[2])) : (__real[2] ? (decimal)dbReader.GetDouble(ord[2]) : dbReader.GetDecimal(ord[2])));
+                        entity.Discount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<decimal>(dbReader.GetValue(ord[2])) : (__real[2] ? (decimal)dbReader.GetDouble(ord[2]) : dbReader.GetDecimal(ord[2])));
                 }
                 else
                 {
                     entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<long>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<long>(reader.GetValue(ord[0])) : reader.GetInt64(ord[0]));
                     entity.Total = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(reader.GetValue(ord[1])) : (__real[1] ? (decimal)reader.GetDouble(ord[1]) : reader.GetDecimal(ord[1])));
                     if (!reader.IsDBNull(ord[2]))
-                        entity.Discount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(reader.GetValue(ord[2])) : (__real[2] ? (decimal)reader.GetDouble(ord[2]) : reader.GetDecimal(ord[2])));
+                        entity.Discount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<decimal>(reader.GetValue(ord[2])) : (__real[2] ? (decimal)reader.GetDouble(ord[2]) : reader.GetDecimal(ord[2])));
                 }
             }
             catch (Exception ex)
@@ -86,7 +86,7 @@ namespace Snapshots.EveryType
                         entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<long>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<long>(rr.GetValue(ord[0])) : rr.GetInt64(ord[0]));
                         entity.Total = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(rr.GetValue(ord[1])) : (__real[1] ? (decimal)rr.GetDouble(ord[1]) : rr.GetDecimal(ord[1])));
                         if (!rr.IsDBNull(ord[2]))
-                            entity.Discount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(rr.GetValue(ord[2])) : (__real[2] ? (decimal)rr.GetDouble(ord[2]) : rr.GetDecimal(ord[2])));
+                            entity.Discount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<decimal>(rr.GetValue(ord[2])) : (__real[2] ? (decimal)rr.GetDouble(ord[2]) : rr.GetDecimal(ord[2])));
                     }
                     catch (Exception ex)
                     {
@@ -105,7 +105,7 @@ namespace Snapshots.EveryType
                     entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<long>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<long>(r.GetValue(ord[0])) : r.GetInt64(ord[0]));
                     entity.Total = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(r.GetValue(ord[1])) : (__real[1] ? (decimal)r.GetDouble(ord[1]) : r.GetDecimal(ord[1])));
                     if (!r.IsDBNull(ord[2]))
-                        entity.Discount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<decimal>(r.GetValue(ord[2])) : (__real[2] ? (decimal)r.GetDouble(ord[2]) : r.GetDecimal(ord[2])));
+                        entity.Discount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<decimal>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValueNullable<decimal>(r.GetValue(ord[2])) : (__real[2] ? (decimal)r.GetDouble(ord[2]) : r.GetDecimal(ord[2])));
                 }
                 catch (Exception ex)
                 {

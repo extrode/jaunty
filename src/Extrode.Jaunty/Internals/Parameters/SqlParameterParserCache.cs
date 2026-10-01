@@ -12,10 +12,17 @@ internal static class SqlParameterParserCache
     // exactly one of them.
     private static readonly BoundedCache<string, string[]> BackslashEscapedCache = new(StringComparer.Ordinal);
 
-    public static string[] GetOrAdd(string sql, bool backslashEscapes = false)
+    // AUD-R38-057: likewise for engines where '$' is never a sigil. MySQL/MariaDB is the only
+    // backslash-escaping engine and is also dollar-free, so it keeps its own cache unchanged.
+    private static readonly BoundedCache<string, string[]> DollarFreeCache = new(StringComparer.Ordinal);
+
+    public static string[] GetOrAdd(string sql, bool backslashEscapes = false, bool dollarSigil = true)
     {
-        return backslashEscapes
-            ? BackslashEscapedCache.GetOrAdd(sql, static s => SqlParameterParser.ExtractParameterNames(s, backslashEscapes: true))
-            : Cache.GetOrAdd(sql, static s => SqlParameterParser.ExtractParameterNames(s));
+        if (backslashEscapes)
+            return BackslashEscapedCache.GetOrAdd(sql, static s => SqlParameterParser.ExtractParameterNames(s, backslashEscapes: true, dollarSigil: false));
+
+        return dollarSigil
+            ? Cache.GetOrAdd(sql, static s => SqlParameterParser.ExtractParameterNames(s))
+            : DollarFreeCache.GetOrAdd(sql, static s => SqlParameterParser.ExtractParameterNames(s, dollarSigil: false));
     }
 }
