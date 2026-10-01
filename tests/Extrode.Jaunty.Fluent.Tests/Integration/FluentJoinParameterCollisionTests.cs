@@ -96,7 +96,7 @@ public class FluentJoinParameterCollisionTests : IClassFixture<FluentDatabaseFix
     {
         var query = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
-            .On("p.category_id = c.category_id AND c.category_id = @P_CATEGORY_ID", "P_CATEGORY_ID", 1)
+            .On("p.category_id = c.category_id AND c.category_id = @PRODUCTS_CATEGORY_ID", "PRODUCTS_CATEGORY_ID", 1)
             .Where((p, c) => p.CategoryId == 2);
 
         var names = ((JoinedQueryBuilder<Product, Category>)query).GetParameters().NamesFrom(0);
