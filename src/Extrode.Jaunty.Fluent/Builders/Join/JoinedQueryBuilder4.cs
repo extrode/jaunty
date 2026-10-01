@@ -484,10 +484,10 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
         EntityMetadata t4Metadata = FluentMetadataCache.GetMetadata<T4>();
 
-        string[] t1Columns = _parent._parent.GetPrefixedColumns(t1Metadata, _parent._parent.FromAlias);
-        string[] t2Columns = _parent._parent.GetPrefixedColumns(t2Metadata, _parent._parent.Joins[0].Alias);
-        string[] t3Columns = _parent._parent.GetPrefixedColumns(t3Metadata, _parent._parent.Joins[1].Alias);
-        string[] t4Columns = _parent._parent.GetPrefixedColumns(t4Metadata, _parent._parent.Joins[2].Alias);
+        string[] t1Columns = _parent._parent.GetPrefixedColumns<T1>(_parent._parent.FromAlias);
+        string[] t2Columns = _parent._parent.GetPrefixedColumns<T2>(_parent._parent.Joins[0].Alias);
+        string[] t3Columns = _parent._parent.GetPrefixedColumns<T3>(_parent._parent.Joins[1].Alias);
+        string[] t4Columns = _parent._parent.GetPrefixedColumns<T4>(_parent._parent.Joins[2].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).Concat(t4Columns).ToArray();
 
         string sql = _parent._parent.BuildSelectSql(allColumns);
@@ -639,10 +639,10 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
         EntityMetadata t4Metadata = FluentMetadataCache.GetMetadata<T4>();
 
-        string[] t1Columns = _parent._parent.GetPrefixedColumns(t1Metadata, _parent._parent.FromAlias);
-        string[] t2Columns = _parent._parent.GetPrefixedColumns(t2Metadata, _parent._parent.Joins[0].Alias);
-        string[] t3Columns = _parent._parent.GetPrefixedColumns(t3Metadata, _parent._parent.Joins[1].Alias);
-        string[] t4Columns = _parent._parent.GetPrefixedColumns(t4Metadata, _parent._parent.Joins[2].Alias);
+        string[] t1Columns = _parent._parent.GetPrefixedColumns<T1>(_parent._parent.FromAlias);
+        string[] t2Columns = _parent._parent.GetPrefixedColumns<T2>(_parent._parent.Joins[0].Alias);
+        string[] t3Columns = _parent._parent.GetPrefixedColumns<T3>(_parent._parent.Joins[1].Alias);
+        string[] t4Columns = _parent._parent.GetPrefixedColumns<T4>(_parent._parent.Joins[2].Alias);
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).Concat(t4Columns).ToArray();
 
         string sql = _parent._parent.BuildSelectSql(allColumns);

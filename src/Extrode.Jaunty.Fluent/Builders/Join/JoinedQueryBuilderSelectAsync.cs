@@ -16,7 +16,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 {
     public async Task<List<TFrom>> SelectAsync(CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = BuildSelectSql(columns);
 
         return _connection is DbConnection dbConn
@@ -26,7 +26,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<List<TFrom>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = BuildSelectSql(columns);
 
         return _connection is DbConnection dbConn
@@ -76,7 +76,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<TFrom> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
@@ -86,7 +86,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<TFrom> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
@@ -96,7 +96,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
@@ -106,7 +106,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<TFrom?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
@@ -186,7 +186,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         // second row exists, so two rows is all it takes to decide; reading the rest only to
         // discard it is waste, and on a large join this read the entire result set to discover it
         // should have thrown.
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
 
         return _connection is DbConnection dbConn
@@ -200,7 +200,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         // second row exists, so two rows is all it takes to decide; reading the rest only to
         // discard it is waste, and on a large join this read the entire result set to discover it
         // should have thrown.
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
 
         return _connection is DbConnection dbConn
@@ -214,7 +214,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         // second row exists, so two rows is all it takes to decide; reading the rest only to
         // discard it is waste, and on a large join this read the entire result set to discover it
         // should have thrown.
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
 
         return _connection is DbConnection dbConn
@@ -228,7 +228,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         // second row exists, so two rows is all it takes to decide; reading the rest only to
         // discard it is waste, and on a large join this read the entire result set to discover it
         // should have thrown.
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
 
         return _connection is DbConnection dbConn
@@ -274,7 +274,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     private async Task<List<TJoin>> SelectJoinedAsync(CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string[] columns = GetPrefixedColumns<TJoin>(_joins[0].Alias);
         string sql = BuildSelectSql(columns);
 
         return _connection is DbConnection dbConn
@@ -284,7 +284,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     private async Task<TJoin> SelectFirstJoinedAsync(CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string[] columns = GetPrefixedColumns<TJoin>(_joins[0].Alias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
@@ -294,7 +294,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     private async Task<TJoin?> SelectFirstOrDefaultJoinedAsync(CancellationToken cancellationToken = default)
     {
-        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string[] columns = GetPrefixedColumns<TJoin>(_joins[0].Alias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
@@ -305,8 +305,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     /// <remarks>See SelectBothInternal - AUD-R26-057 applies identically here.</remarks>
     private async Task<List<(TFrom From, TJoin Joined)>> SelectBothInternalAsync(CancellationToken cancellationToken = default, int? limit = null)
     {
-        string[] fromColumns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string[] joinColumns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string[] fromColumns = GetPrefixedColumns<TFrom>(_fromAlias);
+        string[] joinColumns = GetPrefixedColumns<TJoin>(_joins[0].Alias);
         string[] allColumns = fromColumns.Concat(joinColumns).ToArray();
 
         string sql = BuildSelectSql(allColumns);

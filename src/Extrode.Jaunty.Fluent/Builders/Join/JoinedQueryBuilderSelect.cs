@@ -16,14 +16,14 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 {
     public List<TFrom> Select()
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public List<TFrom> Select(CommandOptions options)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
@@ -65,28 +65,28 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public TFrom SelectFirst()
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public TFrom SelectFirst(CommandOptions options)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
 
     public TFrom? SelectFirstOrDefault()
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public TFrom? SelectFirstOrDefault(CommandOptions options)
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
@@ -99,7 +99,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
         // for exactly this reason, and the SelectFirst neighbours four lines above which already
         // page to 1.
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
         return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!);
     }
@@ -112,7 +112,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
         // for exactly this reason, and the SelectFirst neighbours four lines above which already
         // page to 1.
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
         return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
@@ -125,7 +125,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
         // for exactly this reason, and the SelectFirst neighbours four lines above which already
         // page to 1.
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
         return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
     }
@@ -138,7 +138,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
         // for exactly this reason, and the SelectFirst neighbours four lines above which already
         // page to 1.
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
         return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
@@ -232,27 +232,27 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public string ToSql()
     {
-        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string[] columns = GetPrefixedColumns<TFrom>(_fromAlias);
         return BuildSelectSql(columns);
     }
 
     private List<TJoin> SelectJoined()
     {
-        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string[] columns = GetPrefixedColumns<TJoin>(_joins[0].Alias);
         string sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
     private TJoin SelectFirstJoined()
     {
-        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string[] columns = GetPrefixedColumns<TJoin>(_joins[0].Alias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirst<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
     private TJoin? SelectFirstOrDefaultJoined()
     {
-        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string[] columns = GetPrefixedColumns<TJoin>(_joins[0].Alias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject()!);
     }
@@ -284,8 +284,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     /// </remarks>
     private List<(TFrom From, TJoin Joined)> SelectBothInternal(int? limit = null)
     {
-        string[] fromColumns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string[] joinColumns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string[] fromColumns = GetPrefixedColumns<TFrom>(_fromAlias);
+        string[] joinColumns = GetPrefixedColumns<TJoin>(_joins[0].Alias);
         string[] allColumns = fromColumns.Concat(joinColumns).ToArray();
 
         string sql = BuildSelectSql(allColumns);
