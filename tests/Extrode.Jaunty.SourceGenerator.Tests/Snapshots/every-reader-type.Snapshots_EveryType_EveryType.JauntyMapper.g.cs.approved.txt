@@ -13,7 +13,7 @@ namespace Snapshots.EveryType
     {
         public readonly struct ColumnInfo
         {
-            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, System.Type propertyType, System.Func<object, object?> getter, System.Action<object, object?> setter)
+            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)
             {
                 ColumnName = columnName;
                 PropertyName = propertyName;
@@ -27,9 +27,9 @@ namespace Snapshots.EveryType
             public string PropertyName { get; }
             public bool IsPrimaryKey { get; }
             public bool IsIdentity { get; }
-            public System.Type PropertyType { get; }
-            public System.Func<object, object?> Getter { get; }
-            public System.Action<object, object?> Setter { get; }
+            public global::System.Type PropertyType { get; }
+            public global::System.Func<object, object?> Getter { get; }
+            public global::System.Action<object, object?> Setter { get; }
         }
 
         /// <summary>Converts a value read via GetValue to the property's type. See AUD-R25.</summary>
@@ -38,33 +38,33 @@ namespace Snapshots.EveryType
             if (value is T typed)
                 return typed;
 
-            System.Type target = typeof(T);
+            global::System.Type target = typeof(T);
 
             if (target.IsEnum)
             {
                 return value is string enumText
-                    ? (T)System.Enum.Parse(target, enumText, true)
-                    : (T)System.Enum.ToObject(target, System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(target), System.Globalization.CultureInfo.InvariantCulture));
+                    ? (T)global::System.Enum.Parse(target, enumText, true)
+                    : (T)global::System.Enum.ToObject(target, global::System.Convert.ChangeType(value, global::System.Enum.GetUnderlyingType(target), global::System.Globalization.CultureInfo.InvariantCulture));
             }
 
             if (target == typeof(char) && value is string charText)
                 return (T)(object)(charText.Length > 0 ? charText[0] : '\0');
 
         #if NET6_0_OR_GREATER
-            if (target == typeof(System.DateOnly))
+            if (target == typeof(global::System.DateOnly))
             {
                 return (T)(object)(value is string dateText
-                    ? System.DateOnly.Parse(dateText, System.Globalization.CultureInfo.InvariantCulture)
-                    : System.DateOnly.FromDateTime(System.Convert.ToDateTime(value, System.Globalization.CultureInfo.InvariantCulture)));
+                    ? global::System.DateOnly.Parse(dateText, global::System.Globalization.CultureInfo.InvariantCulture)
+                    : global::System.DateOnly.FromDateTime(global::System.Convert.ToDateTime(value, global::System.Globalization.CultureInfo.InvariantCulture)));
             }
 
-            if (target == typeof(System.TimeOnly))
+            if (target == typeof(global::System.TimeOnly))
             {
                 if (value is string timeText)
-                    return (T)(object)System.TimeOnly.Parse(timeText, System.Globalization.CultureInfo.InvariantCulture);
-                if (value is System.TimeSpan timeSpan)
-                    return (T)(object)System.TimeOnly.FromTimeSpan(timeSpan);
-                return (T)(object)System.TimeOnly.FromDateTime(System.Convert.ToDateTime(value, System.Globalization.CultureInfo.InvariantCulture));
+                    return (T)(object)global::System.TimeOnly.Parse(timeText, global::System.Globalization.CultureInfo.InvariantCulture);
+                if (value is global::System.TimeSpan timeSpan)
+                    return (T)(object)global::System.TimeOnly.FromTimeSpan(timeSpan);
+                return (T)(object)global::System.TimeOnly.FromDateTime(global::System.Convert.ToDateTime(value, global::System.Globalization.CultureInfo.InvariantCulture));
             }
         #endif
 
@@ -72,25 +72,25 @@ namespace Snapshots.EveryType
             // from string - and a provider on the IDataReader path may well hand back text.
             if (value is string text)
             {
-                if (target == typeof(System.TimeSpan))
-                    return (T)(object)System.TimeSpan.Parse(text, System.Globalization.CultureInfo.InvariantCulture);
-                if (target == typeof(System.DateTimeOffset))
-                    return (T)(object)System.DateTimeOffset.Parse(text, System.Globalization.CultureInfo.InvariantCulture);
-                if (target == typeof(System.Guid))
-                    return (T)(object)System.Guid.Parse(text);
+                if (target == typeof(global::System.TimeSpan))
+                    return (T)(object)global::System.TimeSpan.Parse(text, global::System.Globalization.CultureInfo.InvariantCulture);
+                if (target == typeof(global::System.DateTimeOffset))
+                    return (T)(object)global::System.DateTimeOffset.Parse(text, global::System.Globalization.CultureInfo.InvariantCulture);
+                if (target == typeof(global::System.Guid))
+                    return (T)(object)global::System.Guid.Parse(text);
             }
 
-            if (target == typeof(System.DateTimeOffset) && value is System.DateTime dateTime)
-                return (T)(object)new System.DateTimeOffset(dateTime);
+            if (target == typeof(global::System.DateTimeOffset) && value is global::System.DateTime dateTime)
+                return (T)(object)new global::System.DateTimeOffset(dateTime);
 
-            if (target == typeof(System.Guid) && value is byte[])
-                throw new System.InvalidCastException(
+            if (target == typeof(global::System.Guid) && value is byte[])
+                throw new global::System.InvalidCastException(
                     $"Cannot convert a value of type '{value.GetType().FullName}' to '{target.FullName}'. " +
                     "If the provider returns this column as a byte array, map the property as byte[] and " +
                     "convert it yourself - the byte order of a binary GUID is provider-specific and Extrode.Jaunty " +
                     "will not guess it.");
 
-            return (T)System.Convert.ChangeType(value, target, System.Globalization.CultureInfo.InvariantCulture);
+            return (T)global::System.Convert.ChangeType(value, target, global::System.Globalization.CultureInfo.InvariantCulture);
         }
 
         #if NET8_0_OR_GREATER
@@ -539,7 +539,7 @@ namespace Snapshots.EveryType
             p.ParameterName = name;
             // AUD-R30: route through the same type-handler/enum-storage conversion the
             // reflection binder applies, via the public bridge in Extrode.Jaunty core.
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? DBNull.Value;
+            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? global::System.DBNull.Value;
             pc.Add(p);
         }
 
@@ -547,7 +547,7 @@ namespace Snapshots.EveryType
         {
             var p = cmd.CreateParameter();
             p.ParameterName = name;
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? DBNull.Value;
+            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? global::System.DBNull.Value;
             pc.Add(p);
         }
         private static class OrdinalMap
@@ -666,241 +666,241 @@ namespace Snapshots.EveryType
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "Id", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), "Id", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "LongValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), "LongValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "BoolValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), "BoolValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord3 = Ordinals[3];
                     if ((uint)ord3 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord3), "DecimalValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord3), "DecimalValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord4 = Ordinals[4];
                     if ((uint)ord4 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord4), "DoubleValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord4), "DoubleValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord5 = Ordinals[5];
                     if ((uint)ord5 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord5), "FloatValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord5), "FloatValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord6 = Ordinals[6];
                     if ((uint)ord6 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord6), "ShortValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord6), "ShortValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord7 = Ordinals[7];
                     if ((uint)ord7 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord7), "ByteValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord7), "ByteValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord8 = Ordinals[8];
                     if ((uint)ord8 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord8), "GuidValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord8), "GuidValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord9 = Ordinals[9];
                     if ((uint)ord9 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord9), "DateTimeValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord9), "DateTimeValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord10 = Ordinals[10];
                     if ((uint)ord10 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord10), "TimeSpanValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord10), "TimeSpanValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord11 = Ordinals[11];
                     if ((uint)ord11 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord11), "DateTimeOffsetValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord11), "DateTimeOffsetValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord12 = Ordinals[12];
                     if ((uint)ord12 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord12), "NullableInt", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord12), "NullableInt", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord13 = Ordinals[13];
                     if ((uint)ord13 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord13), "NullableLong", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord13), "NullableLong", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord14 = Ordinals[14];
                     if ((uint)ord14 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord14), "NullableBool", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord14), "NullableBool", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord15 = Ordinals[15];
                     if ((uint)ord15 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord15), "NullableDecimal", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord15), "NullableDecimal", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord16 = Ordinals[16];
                     if ((uint)ord16 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord16), "NullableDouble", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord16), "NullableDouble", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord17 = Ordinals[17];
                     if ((uint)ord17 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord17), "NullableFloat", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord17), "NullableFloat", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord18 = Ordinals[18];
                     if ((uint)ord18 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord18), "NullableShort", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord18), "NullableShort", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord19 = Ordinals[19];
                     if ((uint)ord19 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord19), "NullableByte", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord19), "NullableByte", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord20 = Ordinals[20];
                     if ((uint)ord20 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord20), "NullableGuid", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord20), "NullableGuid", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord21 = Ordinals[21];
                     if ((uint)ord21 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord21), "NullableDateTime", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord21), "NullableDateTime", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord22 = Ordinals[22];
                     if ((uint)ord22 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord22), "NullableTimeSpan", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord22), "NullableTimeSpan", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord23 = Ordinals[23];
                     if ((uint)ord23 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord23), "NullableDateTimeOffset", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord23), "NullableDateTimeOffset", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord24 = Ordinals[24];
                     if ((uint)ord24 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord24), "Text", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord24), "Text", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord25 = Ordinals[25];
                     if ((uint)ord25 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord25), "NullableText", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord25), "NullableText", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord26 = Ordinals[26];
                     if ((uint)ord26 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord26), "CharValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord26), "CharValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord27 = Ordinals[27];
                     if ((uint)ord27 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord27), "UnsignedInt", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord27), "UnsignedInt", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord28 = Ordinals[28];
                     if ((uint)ord28 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord28), "UnsignedLong", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord28), "UnsignedLong", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord29 = Ordinals[29];
                     if ((uint)ord29 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord29), "SignedByte", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord29), "SignedByte", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord30 = Ordinals[30];
                     if ((uint)ord30 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord30), "UnsignedShort", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord30), "UnsignedShort", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord31 = Ordinals[31];
                     if ((uint)ord31 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord31), "DateOnlyValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord31), "DateOnlyValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord32 = Ordinals[32];
                     if ((uint)ord32 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord32), "TimeOnlyValue", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord32), "TimeOnlyValue", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord33 = Ordinals[33];
                     if ((uint)ord33 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord33), "Bytes", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord33), "Bytes", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord34 = Ordinals[34];
                     if ((uint)ord34 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord34), "Colour", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord34), "Colour", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord35 = Ordinals[35];
                     if ((uint)ord35 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord35), "NullableColour", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord35), "NullableColour", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord36 = Ordinals[36];
                     if ((uint)ord36 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord36), "StoredAsString", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord36), "StoredAsString", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord37 = Ordinals[37];
                     if ((uint)ord37 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord37), "StoredAsNumber", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord37), "StoredAsNumber", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord38 = Ordinals[38];
                     if ((uint)ord38 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord38), "Money", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord38), "Money", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord39 = Ordinals[39];
                     if ((uint)ord39 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord39), "Anything", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord39), "Anything", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -910,12 +910,12 @@ namespace Snapshots.EveryType
 
         public static string TableName { get; } = "every_type";
         public static string? SchemaName { get; } = "dbo";
-        public static System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
             = new string[] {
             "Id",
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("LongValue", "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!),
             new ColumnInfo("BoolValue", "BoolValue", false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!),
@@ -958,7 +958,7 @@ namespace Snapshots.EveryType
             new ColumnInfo("Anything", "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("LongValue", "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!),
             new ColumnInfo("BoolValue", "BoolValue", false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!),
@@ -1001,13 +1001,13 @@ namespace Snapshots.EveryType
             new ColumnInfo("Anything", "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!),
         };
 
-        public static System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new System.Collections.Generic.Dictionary<string, ColumnInfo>(System.StringComparer.OrdinalIgnoreCase)
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
             {
             ["Id"] = new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!),
             ["LongValue"] = new ColumnInfo("LongValue", "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!),
@@ -1051,7 +1051,7 @@ namespace Snapshots.EveryType
             ["Anything"] = new ColumnInfo("Anything", "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
             = new EntityColumnInfo[] {
             new EntityColumnInfo("Id", "Id", true, true, false, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
             new EntityColumnInfo("LongValue", "LongValue", false, false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
@@ -1097,7 +1097,7 @@ namespace Snapshots.EveryType
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;
-        System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;
+        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;
 
         #if NET8_0_OR_GREATER
         Func<IDataReader, EveryType> IGeneratedAccessors<EveryType>.RowMapper => ReadEntity;

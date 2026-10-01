@@ -13,7 +13,7 @@ namespace Snapshots.EveryType
     {
         public readonly struct ColumnInfo
         {
-            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, System.Type propertyType, System.Func<object, object?> getter, System.Action<object, object?> setter)
+            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)
             {
                 ColumnName = columnName;
                 PropertyName = propertyName;
@@ -27,9 +27,9 @@ namespace Snapshots.EveryType
             public string PropertyName { get; }
             public bool IsPrimaryKey { get; }
             public bool IsIdentity { get; }
-            public System.Type PropertyType { get; }
-            public System.Func<object, object?> Getter { get; }
-            public System.Action<object, object?> Setter { get; }
+            public global::System.Type PropertyType { get; }
+            public global::System.Func<object, object?> Getter { get; }
+            public global::System.Action<object, object?> Setter { get; }
         }
 
         #if NET8_0_OR_GREATER
@@ -148,7 +148,7 @@ namespace Snapshots.EveryType
             p.ParameterName = name;
             // AUD-R30: route through the same type-handler/enum-storage conversion the
             // reflection binder applies, via the public bridge in Extrode.Jaunty core.
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? DBNull.Value;
+            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? global::System.DBNull.Value;
             pc.Add(p);
         }
 
@@ -156,7 +156,7 @@ namespace Snapshots.EveryType
         {
             var p = cmd.CreateParameter();
             p.ParameterName = name;
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? DBNull.Value;
+            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? global::System.DBNull.Value;
             pc.Add(p);
         }
         private static class OrdinalMap
@@ -238,19 +238,19 @@ namespace Snapshots.EveryType
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "Id", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), "Id", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "Total", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), "Total", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "Discount", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), "Discount", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -260,37 +260,37 @@ namespace Snapshots.EveryType
 
         public static string TableName { get; } = "plain_decimal";
         public static string? SchemaName { get; } = null;
-        public static System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
             = new string[] {
             "Id",
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("Total", "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!),
             new ColumnInfo("Discount", "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("Total", "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!),
             new ColumnInfo("Discount", "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("Id", "Id", true, true, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!),
         };
 
-        public static System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new System.Collections.Generic.Dictionary<string, ColumnInfo>(System.StringComparer.OrdinalIgnoreCase)
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
             {
             ["Id"] = new ColumnInfo("Id", "Id", true, true, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!),
             ["Total"] = new ColumnInfo("Total", "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!),
             ["Discount"] = new ColumnInfo("Discount", "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
             = new EntityColumnInfo[] {
             new EntityColumnInfo("Id", "Id", true, true, false, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
             new EntityColumnInfo("Total", "Total", false, false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
@@ -299,7 +299,7 @@ namespace Snapshots.EveryType
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;
-        System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;
+        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;
 
         #if NET8_0_OR_GREATER
         Func<IDataReader, PlainDecimal> IGeneratedAccessors<PlainDecimal>.RowMapper => ReadEntity;
