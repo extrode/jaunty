@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Configuration;
-using Extrode.Jaunty.Internals.Parameters;
 using Extrode.Jaunty.Internals.Read;
 
 namespace Extrode.Jaunty;
