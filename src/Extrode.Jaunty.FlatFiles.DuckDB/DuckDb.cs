@@ -306,16 +306,19 @@ public sealed partial class DuckDb : IFlatFile
     /// <c>current_schema()</c>/<c>current_database()</c> rather than the literal <c>main</c>,
     /// because a caller is free to <c>USE</c> another schema before handing the connection over.
     /// </remarks>
+    /// <summary>The parameter <see cref="ExistsAsTableSql"/> takes the table name in.</summary>
+    internal const string ExistsAsTableNameParameter = "name";
+
     internal const string ExistsAsTableSql =
         "SELECT COUNT(*) FROM information_schema.tables " +
-        "WHERE table_name = $name AND table_type = 'BASE TABLE' " +
+        "WHERE table_name = $" + ExistsAsTableNameParameter + " AND table_type = 'BASE TABLE' " +
         "AND table_schema = current_schema() AND table_catalog = current_database()";
 
     private bool ExistsAsTable(string tableName)
     {
         using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = ExistsAsTableSql;
-        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        cmd.Parameters.Add(new DuckDBParameter(ExistsAsTableNameParameter, tableName));
         return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
     }
 
@@ -324,7 +327,7 @@ public sealed partial class DuckDb : IFlatFile
         DuckDBCommand cmd = _connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = ExistsAsTableSql;
-        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        cmd.Parameters.Add(new DuckDBParameter(ExistsAsTableNameParameter, tableName));
         object? count = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
         return Convert.ToInt64(count, CultureInfo.InvariantCulture) > 0;
     }

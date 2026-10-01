@@ -202,21 +202,21 @@ internal static class ExpressionTranslator
         throw new NotSupportedException($"Method '{method.Method.Name}' is not supported in flat file predicates.");
     }
 
-    private static string HandleStringContains(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
+    private static string HandleStringContains(string columnName, object value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}%" });
         return $"\"{EscapeColumnName(columnName)}\" {LikeOperator(caseInsensitive)} ${paramIndex} ESCAPE '\\'";
     }
 
-    private static string HandleStringStartsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
+    private static string HandleStringStartsWith(string columnName, object value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"{EscapeLikeValue(value)}%" });
         return $"\"{EscapeColumnName(columnName)}\" {LikeOperator(caseInsensitive)} ${paramIndex} ESCAPE '\\'";
     }
 
-    private static string HandleStringEndsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
+    private static string HandleStringEndsWith(string columnName, object value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}" });
@@ -259,9 +259,13 @@ internal static class ExpressionTranslator
     /// (<c>\</c>) in a value so it matches literally rather than as a wildcard pattern, when
     /// combined with an <c>ESCAPE '\'</c> clause.
     /// </summary>
-    private static string EscapeLikeValue(object? value)
+    /// <remarks>
+    /// <paramref name="value"/> is the string or char search term, already refused when null
+    /// (AUD-R38-001), so <c>ToString</c> cannot return null here.
+    /// </remarks>
+    private static string EscapeLikeValue(object value)
     {
-        var text = value?.ToString() ?? string.Empty;
+        string text = value.ToString()!;
         return text
             .Replace("\\", "\\\\")
             .Replace("%", "\\%")

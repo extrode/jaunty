@@ -31,7 +31,9 @@ internal static class MappedPropertyFilter
     /// </summary>
     public static bool IsKey(PropertyInfo property)
     {
-        if (property.IsDefined(typeof(Extrode.Jaunty.Attributes.KeyAttribute), inherit: true))
+        // KeyAttribute is Inherited = false, so there is no inherit flag to choose; this is the
+        // same check as MetadataBuilder's GetCustomAttribute<KeyAttribute>().
+        if (Attribute.IsDefined(property, typeof(Extrode.Jaunty.Attributes.KeyAttribute)))
             return true;
 
         foreach (CustomAttributeData attribute in property.GetCustomAttributesData())

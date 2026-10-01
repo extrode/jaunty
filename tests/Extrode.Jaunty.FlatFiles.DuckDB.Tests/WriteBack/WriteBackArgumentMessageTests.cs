@@ -66,6 +66,14 @@ public class WriteBackArgumentMessageTests : IDisposable
     }
 
     [Fact]
+    public void Save_ANullOutputPath_Throws()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() => _db.Save<InventoryItem>((string)null!));
+
+        Assert.Equal("outputPath", ex.ParamName);
+    }
+
+    [Fact]
     public async Task SaveAsync_ANullOutputPath_Throws()
     {
         var ex = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
