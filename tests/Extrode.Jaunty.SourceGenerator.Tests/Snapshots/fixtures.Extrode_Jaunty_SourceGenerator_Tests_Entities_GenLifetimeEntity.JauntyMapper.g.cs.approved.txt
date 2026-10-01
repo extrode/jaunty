@@ -13,7 +13,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
     {
         public readonly struct ColumnInfo
         {
-            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, System.Type propertyType, System.Func<object, object?> getter, System.Action<object, object?> setter)
+            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)
             {
                 ColumnName = columnName;
                 PropertyName = propertyName;
@@ -27,9 +27,9 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
             public string PropertyName { get; }
             public bool IsPrimaryKey { get; }
             public bool IsIdentity { get; }
-            public System.Type PropertyType { get; }
-            public System.Func<object, object?> Getter { get; }
-            public System.Action<object, object?> Setter { get; }
+            public global::System.Type PropertyType { get; }
+            public global::System.Func<object, object?> Getter { get; }
+            public global::System.Action<object, object?> Setter { get; }
         }
 
         #if NET8_0_OR_GREATER
@@ -138,7 +138,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
             p.ParameterName = name;
             // AUD-R30: route through the same type-handler/enum-storage conversion the
             // reflection binder applies, via the public bridge in Extrode.Jaunty core.
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? DBNull.Value;
+            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? global::System.DBNull.Value;
             pc.Add(p);
         }
 
@@ -146,7 +146,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
         {
             var p = cmd.CreateParameter();
             p.ParameterName = name;
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? DBNull.Value;
+            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? global::System.DBNull.Value;
             pc.Add(p);
         }
         private static class OrdinalMap
@@ -221,13 +221,13 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "id", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), "id", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "name", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), "name", global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -237,34 +237,34 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 
         public static string TableName { get; } = "gen_lifetime";
         public static string? SchemaName { get; } = null;
-        public static System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
             = new string[] {
             "id",
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("name", "Name", false, false, typeof(string), e => (object?)((GenLifetimeEntity)e).Name, (e, v) => ((GenLifetimeEntity)e).Name = (string)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("name", "Name", false, false, typeof(string), e => (object?)((GenLifetimeEntity)e).Name, (e, v) => ((GenLifetimeEntity)e).Name = (string)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
             = new ColumnInfo[] {
             new ColumnInfo("id", "Id", true, true, typeof(int), e => (object?)((GenLifetimeEntity)e).Id, (e, v) => ((GenLifetimeEntity)e).Id = (int)v!),
         };
 
-        public static System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new System.Collections.Generic.Dictionary<string, ColumnInfo>(System.StringComparer.OrdinalIgnoreCase)
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
             {
             ["id"] = new ColumnInfo("id", "Id", true, true, typeof(int), e => (object?)((GenLifetimeEntity)e).Id, (e, v) => ((GenLifetimeEntity)e).Id = (int)v!),
             ["name"] = new ColumnInfo("name", "Name", false, false, typeof(string), e => (object?)((GenLifetimeEntity)e).Name, (e, v) => ((GenLifetimeEntity)e).Name = (string)v!),
         };
 
-        public static System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
             = new EntityColumnInfo[] {
             new EntityColumnInfo("id", "Id", true, true, false, typeof(int), e => (object?)((GenLifetimeEntity)e).Id, (e, v) => ((GenLifetimeEntity)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
             new EntityColumnInfo("name", "Name", false, false, false, typeof(string), e => (object?)((GenLifetimeEntity)e).Name, (e, v) => ((GenLifetimeEntity)e).Name = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
@@ -272,7 +272,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;
-        System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;
+        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;
 
         #if NET8_0_OR_GREATER
         Func<IDataReader, GenLifetimeEntity> IGeneratedAccessors<GenLifetimeEntity>.RowMapper => ReadEntity;

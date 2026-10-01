@@ -1063,7 +1063,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
         sb.AppendLine("        {");
-        sb.AppendLine("            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, System.Type propertyType, System.Func<object, object?> getter, System.Action<object, object?> setter)");
+        sb.AppendLine("            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)");
         sb.AppendLine("            {");
         sb.AppendLine("                ColumnName = columnName;");
         sb.AppendLine("                PropertyName = propertyName;");
@@ -1077,9 +1077,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            public string PropertyName { get; }");
         sb.AppendLine("            public bool IsPrimaryKey { get; }");
         sb.AppendLine("            public bool IsIdentity { get; }");
-        sb.AppendLine("            public System.Type PropertyType { get; }");
-        sb.AppendLine("            public System.Func<object, object?> Getter { get; }");
-        sb.AppendLine("            public System.Action<object, object?> Setter { get; }");
+        sb.AppendLine("            public global::System.Type PropertyType { get; }");
+        sb.AppendLine("            public global::System.Func<object, object?> Getter { get; }");
+        sb.AppendLine("            public global::System.Action<object, object?> Setter { get; }");
         sb.AppendLine("        }");
         sb.AppendLine();
 
@@ -1116,7 +1116,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine("            if (value is T typed)");
             sb.AppendLine("                return typed;");
             sb.AppendLine();
-            sb.AppendLine("            System.Type target = typeof(T);");
+            sb.AppendLine("            global::System.Type target = typeof(T);");
             sb.AppendLine();
             sb.AppendLine("            if (target.IsEnum)");
             sb.AppendLine("            {");
@@ -1126,8 +1126,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // SQLite storage - round-trips on the core path and threw OverflowException here.
             // Same column, same entity, two answers.
             sb.AppendLine("                return value is string enumText");
-            sb.AppendLine("                    ? (T)System.Enum.Parse(target, enumText, true)");
-            sb.AppendLine("                    : (T)System.Enum.ToObject(target, System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(target), System.Globalization.CultureInfo.InvariantCulture));");
+            sb.AppendLine("                    ? (T)global::System.Enum.Parse(target, enumText, true)");
+            sb.AppendLine("                    : (T)global::System.Enum.ToObject(target, global::System.Convert.ChangeType(value, global::System.Enum.GetUnderlyingType(target), global::System.Globalization.CultureInfo.InvariantCulture));");
             sb.AppendLine("            }");
             sb.AppendLine();
             // AUD-R35-118: char had no arm here at all, so a blank-padded CHAR(n) column - or any
@@ -1139,20 +1139,20 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine("                return (T)(object)(charText.Length > 0 ? charText[0] : '\\0');");
             sb.AppendLine();
             sb.AppendLine("        #if NET6_0_OR_GREATER");
-            sb.AppendLine("            if (target == typeof(System.DateOnly))");
+            sb.AppendLine("            if (target == typeof(global::System.DateOnly))");
             sb.AppendLine("            {");
             sb.AppendLine("                return (T)(object)(value is string dateText");
-            sb.AppendLine("                    ? System.DateOnly.Parse(dateText, System.Globalization.CultureInfo.InvariantCulture)");
-            sb.AppendLine("                    : System.DateOnly.FromDateTime(System.Convert.ToDateTime(value, System.Globalization.CultureInfo.InvariantCulture)));");
+            sb.AppendLine("                    ? global::System.DateOnly.Parse(dateText, global::System.Globalization.CultureInfo.InvariantCulture)");
+            sb.AppendLine("                    : global::System.DateOnly.FromDateTime(global::System.Convert.ToDateTime(value, global::System.Globalization.CultureInfo.InvariantCulture)));");
             sb.AppendLine("            }");
             sb.AppendLine();
-            sb.AppendLine("            if (target == typeof(System.TimeOnly))");
+            sb.AppendLine("            if (target == typeof(global::System.TimeOnly))");
             sb.AppendLine("            {");
             sb.AppendLine("                if (value is string timeText)");
-            sb.AppendLine("                    return (T)(object)System.TimeOnly.Parse(timeText, System.Globalization.CultureInfo.InvariantCulture);");
-            sb.AppendLine("                if (value is System.TimeSpan timeSpan)");
-            sb.AppendLine("                    return (T)(object)System.TimeOnly.FromTimeSpan(timeSpan);");
-            sb.AppendLine("                return (T)(object)System.TimeOnly.FromDateTime(System.Convert.ToDateTime(value, System.Globalization.CultureInfo.InvariantCulture));");
+            sb.AppendLine("                    return (T)(object)global::System.TimeOnly.Parse(timeText, global::System.Globalization.CultureInfo.InvariantCulture);");
+            sb.AppendLine("                if (value is global::System.TimeSpan timeSpan)");
+            sb.AppendLine("                    return (T)(object)global::System.TimeOnly.FromTimeSpan(timeSpan);");
+            sb.AppendLine("                return (T)(object)global::System.TimeOnly.FromDateTime(global::System.Convert.ToDateTime(value, global::System.Globalization.CultureInfo.InvariantCulture));");
             sb.AppendLine("            }");
             sb.AppendLine("        #endif");
             sb.AppendLine();
@@ -1160,16 +1160,16 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine("            // from string - and a provider on the IDataReader path may well hand back text.");
             sb.AppendLine("            if (value is string text)");
             sb.AppendLine("            {");
-            sb.AppendLine("                if (target == typeof(System.TimeSpan))");
-            sb.AppendLine("                    return (T)(object)System.TimeSpan.Parse(text, System.Globalization.CultureInfo.InvariantCulture);");
-            sb.AppendLine("                if (target == typeof(System.DateTimeOffset))");
-            sb.AppendLine("                    return (T)(object)System.DateTimeOffset.Parse(text, System.Globalization.CultureInfo.InvariantCulture);");
-            sb.AppendLine("                if (target == typeof(System.Guid))");
-            sb.AppendLine("                    return (T)(object)System.Guid.Parse(text);");
+            sb.AppendLine("                if (target == typeof(global::System.TimeSpan))");
+            sb.AppendLine("                    return (T)(object)global::System.TimeSpan.Parse(text, global::System.Globalization.CultureInfo.InvariantCulture);");
+            sb.AppendLine("                if (target == typeof(global::System.DateTimeOffset))");
+            sb.AppendLine("                    return (T)(object)global::System.DateTimeOffset.Parse(text, global::System.Globalization.CultureInfo.InvariantCulture);");
+            sb.AppendLine("                if (target == typeof(global::System.Guid))");
+            sb.AppendLine("                    return (T)(object)global::System.Guid.Parse(text);");
             sb.AppendLine("            }");
             sb.AppendLine();
-            sb.AppendLine("            if (target == typeof(System.DateTimeOffset) && value is System.DateTime dateTime)");
-            sb.AppendLine("                return (T)(object)new System.DateTimeOffset(dateTime);");
+            sb.AppendLine("            if (target == typeof(global::System.DateTimeOffset) && value is global::System.DateTime dateTime)");
+            sb.AppendLine("                return (T)(object)new global::System.DateTimeOffset(dateTime);");
             sb.AppendLine();
             // AUD-R35-049: this used to be
             //     if (target == typeof(System.Guid) && value is byte[] guidBytes)
@@ -1183,14 +1183,14 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // live and settled the other way on the generated IDataReader path - same column,
             // same entity, reflection throwing and generated returning a wrong value. The
             // generated path now refuses it with the same message the core path uses.
-            sb.AppendLine("            if (target == typeof(System.Guid) && value is byte[])");
-            sb.AppendLine("                throw new System.InvalidCastException(");
+            sb.AppendLine("            if (target == typeof(global::System.Guid) && value is byte[])");
+            sb.AppendLine("                throw new global::System.InvalidCastException(");
             sb.AppendLine("                    $\"Cannot convert a value of type '{value.GetType().FullName}' to '{target.FullName}'. \" +");
             sb.AppendLine("                    \"If the provider returns this column as a byte array, map the property as byte[] and \" +");
             sb.AppendLine("                    \"convert it yourself - the byte order of a binary GUID is provider-specific and Extrode.Jaunty \" +");
             sb.AppendLine("                    \"will not guess it.\");");
             sb.AppendLine();
-            sb.AppendLine("            return (T)System.Convert.ChangeType(value, target, System.Globalization.CultureInfo.InvariantCulture);");
+            sb.AppendLine("            return (T)global::System.Convert.ChangeType(value, target, global::System.Globalization.CultureInfo.InvariantCulture);");
             sb.AppendLine("        }");
             sb.AppendLine();
         }
@@ -1406,7 +1406,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            p.ParameterName = name;");
         sb.AppendLine("            // AUD-R30: route through the same type-handler/enum-storage conversion the");
         sb.AppendLine("            // reflection binder applies, via the public bridge in Extrode.Jaunty core.");
-        sb.AppendLine("            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? DBNull.Value;");
+        sb.AppendLine("            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? global::System.DBNull.Value;");
         sb.AppendLine("            pc.Add(p);");
         sb.AppendLine("        }");
         sb.AppendLine();
@@ -1414,7 +1414,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        {");
         sb.AppendLine("            var p = cmd.CreateParameter();");
         sb.AppendLine("            p.ParameterName = name;");
-        sb.AppendLine("            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? DBNull.Value;");
+        sb.AppendLine("            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? global::System.DBNull.Value;");
         sb.AppendLine("            pc.Add(p);");
         sb.AppendLine("        }");
 
@@ -1526,7 +1526,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"                    var ord{i} = Ordinals[{i}];");
             sb.AppendLine($"                    if ((uint)ord{i} >= (uint)reader.FieldCount)");
             sb.AppendLine("                        return false;");
-            sb.AppendLine($"                    if (!string.Equals(reader.GetName(ord{i}), \"{EscapeStringLiteral(properties[i].ColumnName)}\", StringComparison.OrdinalIgnoreCase))");
+            sb.AppendLine($"                    if (!string.Equals(reader.GetName(ord{i}), \"{EscapeStringLiteral(properties[i].ColumnName)}\", global::System.StringComparison.OrdinalIgnoreCase))");
             sb.AppendLine("                        return false;");
             sb.AppendLine();
         }
@@ -1538,7 +1538,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine($"        public static string TableName {{ get; }} = \"{EscapeStringLiteral(tableName)}\";");
         sb.AppendLine($"        public static string? SchemaName {{ get; }} = {(schemaName is null ? "null" : $"\"{EscapeStringLiteral(schemaName)}\"")};");
-        sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }");
+        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }");
         sb.AppendLine("            = new string[] {");
         foreach (var pkColumnName in primaryKeyColumnNames)
         {
@@ -1555,7 +1555,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                $"typeof({p.TypeName}), e => (object?)(({className})e).{EscapeIdentifier(p.PropertyName)}, (e, v) => (({className})e).{EscapeIdentifier(p.PropertyName)} = ({p.TypeName})v!)";
 
         sb.AppendLine();
-        sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }");
+        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }");
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < insertProps.Count; i++)
         {
@@ -1564,7 +1564,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        };");
 
         sb.AppendLine();
-        sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }");
+        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }");
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < updateProps.Count; i++)
         {
@@ -1573,7 +1573,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        };");
 
         sb.AppendLine();
-        sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }");
+        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }");
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < deleteProps.Count; i++)
         {
@@ -1582,8 +1582,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        };");
 
         sb.AppendLine();
-        sb.AppendLine("        public static System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }");
-        sb.AppendLine("            = new System.Collections.Generic.Dictionary<string, ColumnInfo>(System.StringComparer.OrdinalIgnoreCase)");
+        sb.AppendLine("        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }");
+        sb.AppendLine("            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)");
         sb.AppendLine("            {");
         for (int i = 0; i < parameterMapProperties.Count; i++)
         {
@@ -1612,7 +1612,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                };
 
         sb.AppendLine();
-        sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }");
+        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }");
         sb.AppendLine("            = new EntityColumnInfo[] {");
         for (int i = 0; i < properties.Count; i++)
         {
@@ -1622,7 +1622,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine("        string IEntityMetadataSource.TableName => TableName;");
         sb.AppendLine("        string? IEntityMetadataSource.SchemaName => SchemaName;");
-        sb.AppendLine("        System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;");
+        sb.AppendLine("        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;");
 
         // IGeneratedAccessors<T> - spec 009. Hands the members emitted above to Extrode.Jaunty as delegates
         // so MappedCache<T>/WriteParameterCache<T> reach them by interface dispatch instead of
