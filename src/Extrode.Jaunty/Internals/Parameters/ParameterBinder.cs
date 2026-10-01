@@ -141,7 +141,7 @@ internal static class ParameterBinder
 
         // Slow path: parse and bind, then cache if no collection expansion happened
         bool backslashEscapes = UsesBackslashEscapes(command.Connection);
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql, backslashEscapes);
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql, backslashEscapes, UsesDollarSigil(command.Connection));
         // AUD-R35-116: metadata, the name lookup and the collection-typed answer are all pure
         // functions of the parameters type, so they are resolved together and cached together.
         ParameterShape shape = GetShape(type);
@@ -256,7 +256,7 @@ internal static class ParameterBinder
         // the parameters type merely has a collection-typed property whose value happened to be
         // null. That SQL was already parsed through SqlParameterParserCache two lines earlier and
         // the result discarded, so every such call re-tokenized the whole statement on the hot path.
-        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql, UsesBackslashEscapes(command.Connection));
+        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -430,6 +430,13 @@ internal static class ParameterBinder
     private static bool UsesBackslashEscapes(IDbConnection? connection)
         => connection is not null && SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection)) is MySqlDialect;
 
+    // AUD-R38-057: see SqlParameterParser.ExtractParameterNames's dollarSigil.
+    private static bool UsesDollarSigil(IDbConnection? connection)
+        => connection is null || UsesDollarSigil(SqlDialectFactory.GetDialect(connection));
+
+    private static bool UsesDollarSigil(ISqlDialect dialect)
+        => SqlDialectFactory.Unwrap(dialect) is not (SqlServerDialect or MySqlDialect);
+
     private static (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, HashSet<string>? expandedOriginalNames)
         ExpandCollectionParameters(
             string sql,
@@ -500,7 +507,8 @@ internal static class ParameterBinder
         // Second pass: build replacements and expanded params
         // Detect parameter prefix from the SQL (@ or $)
         bool backslashEscapes = knownDialect is not null && SqlDialectFactory.Unwrap(knownDialect) is MySqlDialect;
-        var paramPrefix = DetectParameterPrefix(sql, backslashEscapes);
+        bool dollarSigil = knownDialect is null || UsesDollarSigil(knownDialect);
+        var paramPrefix = DetectParameterPrefix(sql, backslashEscapes, dollarSigil);
         var expandedParams = new Dictionary<string, ExpandedParameterValue>(CommonConstants.OrdinalIgnoreCase);
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var replacements = new Dictionary<string, string>(CommonConstants.OrdinalIgnoreCase);
@@ -557,7 +565,7 @@ internal static class ParameterBinder
         // Rewrite the SQL in a single literal/comment-aware pass so that @Name-looking text inside
         // string literals, quoted identifiers, or comments is never mistaken for a real placeholder
         // (unlike a naive textual find/replace, which would corrupt such SQL).
-        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements, backslashEscapes);
+        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements, backslashEscapes, dollarSigil);
 
         return (result, expandedParams, expandedOriginalNames);
     }
@@ -595,7 +603,7 @@ internal static class ParameterBinder
     // Internal rather than private so AUD-R26's sigil-position rule can be tested at this site
     // directly; the precedent is AUD-R9-011, which promoted PostgreSqlSchemaReader's SQL consts for
     // the same reason. ParameterBinder is itself internal, so this widens nothing publicly.
-    internal static string DetectParameterPrefix(string sql, bool backslashEscapes = false)
+    internal static string DetectParameterPrefix(string sql, bool backslashEscapes = false, bool dollarSigil = true)
     {
         int len = sql.Length;
         int i = 0;
@@ -653,6 +661,12 @@ internal static class ParameterBinder
 
             if (c == '$')
             {
+                if (!dollarSigil || SqlParameterParser.IsSigilInsideIdentifier(sql, i))
+                {
+                    i = SqlParameterParser.SkipDollarRun(sql.AsSpan(), i);
+                    continue;
+                }
+
                 int dollarQuoteEnd = TrySkipDollarQuotedString(sql, i, len);
                 if (dollarQuoteEnd != -1)
                 {
@@ -695,7 +709,7 @@ internal static class ParameterBinder
     // Literal/comment-aware placeholder rewrite. Walks the SQL using the same tokenization rules as
     // SqlParameterParser (skipping string literals, quoted identifiers, comments, and @@ system
     // variables) and replaces only genuine parameter placeholders whose name is in 'replacements'.
-    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements, bool backslashEscapes)
+    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements, bool backslashEscapes, bool dollarSigil)
     {
         var sb = new StringBuilder(sql.Length + 16);
         int i = 0;
@@ -772,6 +786,14 @@ internal static class ParameterBinder
             // never a bindable parameter.
             if (c == '$')
             {
+                if (!dollarSigil || SqlParameterParser.IsSigilInsideIdentifier(sql, i))
+                {
+                    int runEnd = SqlParameterParser.SkipDollarRun(sql.AsSpan(), i);
+                    sb.Append(sql, i, runEnd - i);
+                    i = runEnd;
+                    continue;
+                }
+
                 int dollarQuoteEnd = TrySkipDollarQuotedString(sql, i, len);
                 if (dollarQuoteEnd != -1)
                 {
@@ -951,7 +973,7 @@ internal static class ParameterBinder
 
     private static void BindScalar(IDbCommand command, object value)
     {
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection));
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -1020,7 +1042,7 @@ internal static class ParameterBinder
     /// </remarks>
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
     {
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection));
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         Dictionary<string, object?>? caseInsensitive = null;
