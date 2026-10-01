@@ -724,6 +724,26 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         }
     }
 
+    /// <summary>
+    /// AUD-R38-008. <see cref="IPagedClause{T}"/> fences the write terminals at compile time, but
+    /// the fence had a way round it: <c>Distinct()</c> is inherited by the paged clause, and both
+    /// <see cref="IDistinctClause{T}"/>'s <c>Where</c> family and its own <c>Take</c>/<c>Skip</c>
+    /// lead back to an un-paged <see cref="IWhereClause{T}"/>. So
+    /// <c>Take(5).Distinct().Where(...).Delete()</c> compiled, and because this one mutable builder
+    /// carries <c>_take</c> into a DELETE that never reads it, every matching row went. Any route
+    /// to a write with paging set now fails here, whatever interface it came through.
+    /// </summary>
+    private void ThrowIfPagedWrite(string statement)
+    {
+        if (_take.HasValue || _skip.HasValue)
+        {
+            throw new InvalidOperationException(
+                $"Take/Skip are not carried into {statement}, so it would affect every matching row " +
+                "rather than the paged subset. Remove the Take/Skip, or select the rows first and " +
+                $"{(statement == "DELETE" ? "delete" : "update")} them by key.");
+        }
+    }
+
     #endregion
 
     #region GROUP BY
@@ -1972,6 +1992,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     private string BuildDeleteSql()
     {
         ThrowIfAliasReferencedByWrite("DELETE");
+        ThrowIfPagedWrite("DELETE");
 
         var sb = new StringBuilder(128);
         sb.Append("DELETE FROM ");
@@ -2565,6 +2586,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     private string BuildUpdateSql()
     {
         ThrowIfAliasReferencedByWrite("UPDATE");
+        ThrowIfPagedWrite("UPDATE");
 
         var sb = new StringBuilder(256);
         sb.Append("UPDATE ");
