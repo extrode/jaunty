@@ -240,6 +240,14 @@ public sealed class InterceptorPipeline
         Func<ValueTask<T>> executeFunc,
         CancellationToken cancellationToken)
     {
+        // AUD-R38-123: checked ahead of the hooks, as the Action overload does, so a null delegate
+        // is an argument error rather than a command failure every failure hook is told about.
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(executeFunc);
+#else
+        if (executeFunc is null) throw new ArgumentNullException(nameof(executeFunc));
+#endif
+
         if (!IsObserved)
             return await executeFunc().ConfigureAwait(false);
 
@@ -292,6 +300,12 @@ public sealed class InterceptorPipeline
         Func<ValueTask> executeFunc,
         CancellationToken cancellationToken)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(executeFunc);
+#else
+        if (executeFunc is null) throw new ArgumentNullException(nameof(executeFunc));
+#endif
+
         if (!IsObserved)
         {
             await executeFunc().ConfigureAwait(false);
@@ -491,6 +505,12 @@ public sealed class InterceptorPipeline
         CommandType commandType,
         Func<T> executeFunc)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(executeFunc);
+#else
+        if (executeFunc is null) throw new ArgumentNullException(nameof(executeFunc));
+#endif
+
         if (!IsObserved)
             return executeFunc();
 
