@@ -110,7 +110,7 @@ public static class GeneratedBindingSupport
     public static T FromDbValue<T>(object dbValue)
     {
         if (TryParseWithHandler<T>(dbValue, out object? converted))
-            return converted is null ? default! : (T)converted;
+            return converted is null ? default! : AsHandledType<T>(converted);
 
         return dbValue is T typed ? typed : (T)DbValueConversion.Convert(dbValue, typeof(T));
     }
@@ -123,10 +123,15 @@ public static class GeneratedBindingSupport
     public static T? FromDbValueNullable<T>(object dbValue) where T : struct
     {
         if (TryParseWithHandler<T>(dbValue, out object? converted))
-            return converted is null ? null : (T)converted;
+            return converted is null ? null : AsHandledType<T>(converted);
 
         return FromDbValue<T>(dbValue);
     }
+
+    // AUD-R38-071: a raw ITypeHandler may hand back a compatible type (an int for a long); the
+    // reflection binder converts it, so this one does too instead of failing the unbox.
+    private static T AsHandledType<T>(object converted)
+        => converted is T typed ? typed : (T)DbValueConversion.Convert(converted, typeof(T));
 
     private static bool TryParseWithHandler<T>(object dbValue, out object? converted)
     {
