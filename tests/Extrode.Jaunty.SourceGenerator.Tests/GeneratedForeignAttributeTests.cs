@@ -93,11 +93,32 @@ public sealed class GeneratedForeignAttributeTests
     // ------------------------------------------------------------------
 
     [Fact]
-    public void AttributeSubclassing_ARecognizedColumnAttribute_StillRenamesTheColumn()
+    public void AttributeSubclassing_TheDataAnnotationsColumnAttribute_DoesNotRenameTheColumn()
     {
         IEntityMetadataSource source = new GenForeignAttributeEntity();
 
-        Assert.Equal("derived_column", Column(source, "Derived").ColumnName);
+        Assert.Equal("Derived", Column(source, "Derived").ColumnName);
+    }
+
+    [Fact]
+    public void AnEmptyJauntyColumnName_FallsThroughToTheDataAnnotationsName()
+    {
+        (System.Collections.Immutable.ImmutableArray<string> sources, _, _) = GeneratorHarness.RunAndCompile("""
+            using Extrode.Jaunty.Attributes;
+
+            namespace ParityProbe;
+
+            [Table("t")]
+            public partial class Order
+            {
+                public int Id { get; set; }
+                [Column("")][System.ComponentModel.DataAnnotations.Schema.Column("da_fallback")] public string? Name { get; set; }
+                [System.ComponentModel.DataAnnotations.Schema.Column("da_loses")][Column("jaunty_wins")] public string? Both { get; set; }
+            }
+            """);
+
+        Assert.Contains("new ColumnInfo(\"da_fallback\", \"Name\"", sources[0], StringComparison.Ordinal);
+        Assert.Contains("new ColumnInfo(\"jaunty_wins\", \"Both\"", sources[0], StringComparison.Ordinal);
     }
 
     [Fact]

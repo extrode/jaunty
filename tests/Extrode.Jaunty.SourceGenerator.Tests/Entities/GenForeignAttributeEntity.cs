@@ -33,8 +33,9 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities.ForeignAttributes
     }
 
     /// <summary>
-    /// Derives from the DataAnnotations attribute the generator recognizes, so it must be honoured -
-    /// <c>PropertyInfo.GetCustomAttribute&lt;T&gt;</c> on the reflection side matches a subclass.
+    /// Derives from the DataAnnotations attribute the generator recognizes. AUD-R38 generator audit:
+    /// it is <em>not</em> honoured, because the reflection twins match DataAnnotations attributes by
+    /// exact <c>AttributeType.FullName</c>; only Extrode.Jaunty's own attributes match a subclass.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class DerivedColumnAttribute(string name)
