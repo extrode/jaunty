@@ -46,29 +46,25 @@ internal static class MultiEntityMapperCore
         // once per joined table) are still claimed correctly by later types.
         PropertySetter<T>[] allSetters = MetadataCache<T>.GetSetters(reader, MappingMode.Projection);
 
+        // A reader column binds to exactly one property (ColumnBindsTo mirrors the single-owner
+        // lookup in BuildSetters), so two properties of this type can never meet on one ordinal,
+        // whether first-bound or rebound; only the earlier types' claims have to be skipped.
         var result = new List<PropertySetter<T>>(allSetters.Length);
-        var claimedByThisType = new HashSet<int>();
 
         for (int i = 0; i < allSetters.Length; i++)
         {
             PropertySetter<T> setter = allSetters[i];
             int ord = setter.Ordinal;
 
-            if (!alreadyClaimed.Contains(ord) && !claimedByThisType.Contains(ord))
+            if (!alreadyClaimed.Contains(ord))
             {
                 result.Add(setter);
-                // Stryker disable once Statement : a reader column binds to exactly one property (ColumnBindsTo mirrors the single-owner lookup in BuildSetters), so no other property can meet an ordinal this one claimed; the set only has to hold replacements
-                claimedByThisType.Add(ord);
                 continue;
             }
 
-            int replacement = FindNextUnclaimedOrdinal<T>(reader, setter.Context, alreadyClaimed, claimedByThisType);
+            int replacement = FindNextUnclaimedOrdinal<T>(reader, setter.Context, alreadyClaimed);
             if (replacement != -1)
-            {
                 result.Add(new PropertySetter<T>(setter.Context, replacement));
-                // Stryker disable once Statement : FindNextUnclaimedOrdinal matches the same single-owner name lookup as the first binding, so no later property can bind the ordinal this replacement took
-                claimedByThisType.Add(replacement);
-            }
             // Otherwise there is no remaining unclaimed column with this name; the
             // property is left unmapped, consistent with MappingMode.Projection.
         }
@@ -101,13 +97,12 @@ internal static class MultiEntityMapperCore
     private static int FindNextUnclaimedOrdinal<T>(
         IDataReader reader,
         in PropertyContext<T> context,
-        HashSet<int> alreadyClaimed,
-        HashSet<int> claimedByThisType)
+        HashSet<int> alreadyClaimed)
         where T : new()
     {
         for (int ord = 0; ord < reader.FieldCount; ord++)
         {
-            if (alreadyClaimed.Contains(ord) || claimedByThisType.Contains(ord))
+            if (alreadyClaimed.Contains(ord))
                 continue;
 
             string? candidateName = reader.GetName(ord);
