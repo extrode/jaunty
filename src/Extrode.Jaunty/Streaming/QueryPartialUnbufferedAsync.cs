@@ -63,7 +63,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, object, CancellationToken)"/>
@@ -123,7 +123,7 @@ public static partial class Jaunty
     /// Thrown when parameter count doesn't match the SQL.
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, CancellationToken)"/>
@@ -184,7 +184,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
@@ -248,7 +248,7 @@ public static partial class Jaunty
     /// Thrown when parameter count doesn't match the SQL.
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// Thrown when the connection is not a <see cref="DbConnection"/>
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, CancellationToken)"/>

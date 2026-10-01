@@ -94,10 +94,12 @@ public class DocumentedApiTests
     }
 
     [Fact]
-    public void NoMultiEntityReadClaimsToThrowForAnUnmatchedProperty()
+    public void NoProjectionReadClaimsToThrowForAnUnmatchedProperty()
     {
         string[] offenders = PublishedMarkdown()
-            .Where(p => p.Relative.StartsWith("src/Extrode.Jaunty/Read/QueryMultiEntity", StringComparison.Ordinal))
+            .Where(p => p.Relative.StartsWith("src/Extrode.Jaunty/Read/QueryMultiEntity", StringComparison.Ordinal)
+                || p.Relative.StartsWith("src/Extrode.Jaunty/Read/QueryPartial", StringComparison.Ordinal)
+                || p.Relative.StartsWith("src/Extrode.Jaunty/Streaming/QueryPartial", StringComparison.Ordinal))
             .Where(p => p.Text.Contains("has no matching column"))
             .Select(p => p.Relative)
             .ToArray();
