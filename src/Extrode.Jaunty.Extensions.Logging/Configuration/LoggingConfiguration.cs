@@ -13,8 +13,11 @@ public sealed class LoggingConfiguration
     /// Gets or sets the minimum log level for Extrode.Jaunty commands.
     /// </summary>
     /// <remarks>
-    /// Default is <see cref="LogLevel.Information"/>. Commands will only be logged
-    /// if their severity meets or exceeds this level.
+    /// Default is <see cref="LogLevel.Information"/>. This is the level the executing and completed
+    /// entries are written at, so the host's own filter decides whether they appear;
+    /// <see cref="LogLevel.None"/> turns them off. Failures are always written at
+    /// <see cref="LogLevel.Error"/>, and a slow query at <see cref="LogLevel.Warning"/> or at this
+    /// level, whichever is higher.
     /// </remarks>
     public LogLevel MinimumLogLevel { get; set; } = LogLevel.Information;
 
@@ -99,7 +102,9 @@ public sealed class LoggingConfiguration
     /// <c>PartitionKey</c> and <c>SortKey</c> along with the credentials you meant. Prefer specific
     /// names; where over-masking does happen, a masked column is a nuisance and a logged credential
     /// is an incident. Set this to
-    /// <see cref="Configuration.SensitiveParameterMatching.Exact"/> to restore the old behaviour.
+    /// <see cref="Configuration.SensitiveParameterMatching.Exact"/> to restore the old behaviour:
+    /// a parameter is masked only when its whole name, less any <c>@</c>, <c>:</c>, <c>?</c> or
+    /// <c>$</c> prefix, equals a configured name ignoring case.
     /// </para>
     /// </remarks>
     public SensitiveParameterMatching SensitiveParameterMatching { get; set; } = SensitiveParameterMatching.WholeWord;
@@ -114,8 +119,14 @@ public sealed class LoggingConfiguration
     /// </remarks>
     public bool IsSensitiveParameter(string? parameterName)
     {
-        if (string.IsNullOrEmpty(parameterName) || _sensitiveParameterNames.Count == 0)
+        if (string.IsNullOrEmpty(parameterName))
             return false;
+
+        // AUD-R38-010: Exact used to compare word sequences, so "apikey" (one word) never equalled
+        // the seeded "ApiKey" (two) and logged in clear, though Exact is documented as the old
+        // whole-name, case-insensitive match - which is what it is again now.
+        if (SensitiveParameterMatching == SensitiveParameterMatching.Exact)
+            return _sensitiveParameterNames.ExactNames.Contains(StripPrefix(parameterName!));
 
         List<string> candidate = SplitWords(parameterName!);
         if (candidate.Count == 0)
@@ -128,17 +139,10 @@ public sealed class LoggingConfiguration
         // logging call on another. The set now splits each name once when it changes and publishes
         // the result as an immutable snapshot; reading that snapshot is a single volatile read.
         List<string>[] needles = _sensitiveParameterNames.SplitNames;
-        bool exact = SensitiveParameterMatching == SensitiveParameterMatching.Exact;
 
         for (int i = 0; i < needles.Length; i++)
         {
-            List<string> needle = needles[i];
-
-            bool hit = exact
-                ? SequenceEqualsIgnoreCase(candidate, needle)
-                : ContainsSequence(candidate, needle);
-
-            if (hit)
+            if (ContainsSequence(candidate, needles[i]))
                 return true;
         }
 
@@ -157,6 +161,9 @@ public sealed class LoggingConfiguration
     /// keeps every real hit - <c>AccessToken</c>, <c>RefreshToken</c>, <c>TokenValue</c> - and drops
     /// that class of false positive.
     /// </remarks>
+    private static string StripPrefix(string name) =>
+        name.Length > 0 && name[0] is '@' or ':' or '?' or '$' ? name.Substring(1) : name;
+
     private static List<string> SplitWords(string name)
     {
         var words = new List<string>();
@@ -201,20 +208,6 @@ public sealed class LoggingConfiguration
 
         Flush();
         return words;
-    }
-
-    private static bool SequenceEqualsIgnoreCase(List<string> candidate, List<string> needle)
-    {
-        if (candidate.Count != needle.Count)
-            return false;
-
-        for (int i = 0; i < candidate.Count; i++)
-        {
-            if (!string.Equals(candidate[i], needle[i], StringComparison.OrdinalIgnoreCase))
-                return false;
-        }
-
-        return true;
     }
 
     /// <summary>Whether <paramref name="needle"/>'s words appear consecutively in <paramref name="candidate"/>.</summary>
@@ -328,9 +321,13 @@ public sealed class LoggingConfiguration
         private readonly HashSet<string> _names = new(StringComparer.OrdinalIgnoreCase);
         private readonly object _sync = new();
         private volatile List<string>[] _splitNames = [];
+        private volatile HashSet<string> _exactNames = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>Each configured name, split into words, as an array no one mutates in place.</summary>
         internal List<string>[] SplitNames => _splitNames;
+
+        /// <summary>The configured names as a case-insensitive set no one mutates after publishing.</summary>
+        internal HashSet<string> ExactNames => _exactNames;
 
         public int Count
         {
@@ -358,6 +355,7 @@ public sealed class LoggingConfiguration
             }
 
             _splitNames = split;
+            _exactNames = new HashSet<string>(_names, StringComparer.OrdinalIgnoreCase);
         }
 
         private bool Mutate(Func<bool> change)

@@ -277,4 +277,49 @@ public class SensitiveParameterMaskingTests
 
         Assert.Contains("hunter2", line, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("apikey")]
+    [InlineData("APIKEY")]
+    [InlineData("@privatekey")]
+    [InlineData("apisecret")]
+    [InlineData("Password")]
+    [InlineData(":password")]
+    public async Task ExactMatching_MasksAWholeNameEqualToASeededOneIgnoringCase(string name)
+    {
+        var config = new LoggingConfiguration { SensitiveParameterMatching = SensitiveParameterMatching.Exact };
+
+        string line = await LogLineFor(new Dictionary<string, object?> { [name] = "hunter2" }, config);
+
+        Assert.DoesNotContain("hunter2", line, StringComparison.Ordinal);
+        Assert.Contains(Masked, line, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Api_Key")]
+    [InlineData("UserPassword")]
+    [InlineData("Passwor")]
+    public async Task ExactMatching_LeavesANameThatIsNotWhollyASeededOne(string name)
+    {
+        var config = new LoggingConfiguration { SensitiveParameterMatching = SensitiveParameterMatching.Exact };
+
+        string line = await LogLineFor(new Dictionary<string, object?> { [name] = "hunter2" }, config);
+
+        Assert.Contains("hunter2", line, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExactMatching_SeesNamesAddedAndRemovedAfterConstruction()
+    {
+        var config = new LoggingConfiguration { SensitiveParameterMatching = SensitiveParameterMatching.Exact };
+
+        config.SensitiveParameterNames.Add("UserPassword");
+        Assert.True(config.IsSensitiveParameter("userpassword"));
+
+        config.SensitiveParameterNames.Remove("UserPassword");
+        Assert.False(config.IsSensitiveParameter("userpassword"));
+
+        config.SensitiveParameterNames.Clear();
+        Assert.False(config.IsSensitiveParameter("ApiKey"));
+    }
 }
