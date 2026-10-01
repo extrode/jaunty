@@ -195,8 +195,23 @@ public class ExpressionEvaluatorTests
 
         var ex = Assert.ThrowsAny<Exception>(() => ExpressionEvaluator.Evaluate(lambda.Body));
 
-        Assert.IsType<InvalidOperationException>(ex.InnerException ?? ex);
+        Assert.IsType<InvalidOperationException>(ex);
     }
+
+    [Fact]
+    public void Evaluate_PropertyThatThrows_SurfacesTheSameExceptionOnBothRoutes()
+    {
+        var holder = new Holder();
+        Expression<Func<int>> fastPath = () => holder.Throws;
+        Expression<Func<int>> compiledPath = () => Identity(holder).Throws;
+
+        var fast = Assert.ThrowsAny<Exception>(() => ExpressionEvaluator.Evaluate(fastPath.Body));
+        var compiled = Assert.ThrowsAny<Exception>(() => ExpressionEvaluator.Evaluate(compiledPath.Body));
+
+        Assert.Equal(compiled.GetType(), fast.GetType());
+    }
+
+    private static Holder Identity(Holder holder) => holder;
 
     // ---------------------------------------------------------------------------
     // The consolidation itself
