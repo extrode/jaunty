@@ -141,6 +141,44 @@ public class EntityDeclarationGuardTests
         Assert.Contains("'Tag' is a required member", diagnostic.GetMessage(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("public required string Name { get; set; }")]
+    [InlineData("public required string Name;")]
+    public void AnEntityWithRequiredMembersAndASetsRequiredMembersConstructor_IsGenerated(string member)
+    {
+        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, ImmutableArray<Diagnostic> compileErrors) =
+            GeneratorHarness.RunAndCompile(Entity(
+                "public partial class Order",
+                $"[System.Diagnostics.CodeAnalysis.SetsRequiredMembers] public Order() {{ Name = \"\"; }} public int Id {{ get; set; }} {member}"));
+
+        Assert.Single(sources);
+        Assert.Empty(compileErrors);
+        Assert.DoesNotContain(generatorDiagnostics, d => d.Id == "JAUNTYGEN004");
+    }
+
+    [Fact]
+    public void AnEntityWithRequiredMembersAndAPlainParameterlessConstructor_StillReportsJauntyGen004()
+    {
+        Diagnostic diagnostic = AssertSkippedWithDiagnostic(Entity(
+            "public partial class Order",
+            "[System.Obsolete(\"unrelated\")] public Order() { } public int Id { get; set; } public required string Name { get; set; }"));
+
+        Assert.Contains("'Name' is a required member", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("public partial record struct Order")]
+    public void AStructEntity_ReportsJauntyGen004AndAddsNoErrorOfItsOwn(string declaration)
+    {
+        string source = Entity(declaration, "public Order() { } public int Id { get; set; }");
+        (_, _, ImmutableArray<Diagnostic> compileErrors) = GeneratorHarness.RunAndCompile(source);
+
+        Diagnostic diagnostic = AssertSkippedWithDiagnostic(source);
+
+        Assert.Contains("is a struct", diagnostic.GetMessage(), StringComparison.Ordinal);
+        Assert.All(compileErrors, e => Assert.Equal("CS0592", e.Id));
+    }
+
     [Fact]
     public void AnEntityWhoseParameterlessConstructorIsObsoleteAsAnError_ReportsJauntyGen004AndGeneratesNothing()
     {
