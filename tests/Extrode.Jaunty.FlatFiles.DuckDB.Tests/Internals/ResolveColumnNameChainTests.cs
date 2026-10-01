@@ -22,6 +22,7 @@ public class ResolveColumnNameChainTests : IDisposable
         public string City { get; set; } = string.Empty;
         public int? Score { get; set; }
         public Address Child { get; set; } = new();
+        public int Field;
     }
 
     private readonly string _dataDir = Path.Combine(Path.GetTempPath(), $"jaunty_r38_selector_{Guid.NewGuid():N}");
@@ -81,6 +82,12 @@ public class ResolveColumnNameChainTests : IDisposable
     public void NonMemberSelector_StillThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() => Resolve(r => r.Name + "x"));
+    }
+
+    [Fact]
+    public void FieldSelector_StillThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => Resolve(r => r.Field));
     }
 
     [Fact]
