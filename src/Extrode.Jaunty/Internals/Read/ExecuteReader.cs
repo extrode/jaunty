@@ -13,18 +13,9 @@ public static partial class Jaunty
 {
     private static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, CommandOptions options, Func<IDataReader, TResult> handler)
     {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(handler);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (handler is null) throw new ArgumentNullException(nameof(handler));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-#endif
-
+        // No argument guards: every public sync entry point guards connection and sql before
+        // reaching here, and handler is always a QueryCore lambda. A second check here could
+        // never fire, so its mutants were equivalent (AUD-R38-143/144).
         // Use InterceptorPipeline if registered, otherwise execute directly
         // One resolution, one read: CommandObservation decides whether anything is watching
         // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
@@ -114,18 +105,9 @@ public static partial class Jaunty
 
     private static TResult ExecuteReader<TResult>(DbConnection connection, string sql, object? parameters, CommandOptions options, Func<DbDataReader, TResult> handler)
     {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(handler);
-        ArgumentNullException.ThrowIfNull(sql);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (handler is null) throw new ArgumentNullException(nameof(handler));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
-#endif
-
+        // No argument guards: every public sync entry point guards connection and sql before
+        // reaching here, and handler is always a QueryCore lambda. A second check here could
+        // never fire, so its mutants were equivalent (AUD-R38-143/144).
         // Use InterceptorPipeline if registered, otherwise execute directly
         // One resolution, one read: CommandObservation decides whether anything is watching
         // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
