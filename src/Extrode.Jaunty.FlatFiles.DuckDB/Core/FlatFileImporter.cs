@@ -78,11 +78,10 @@ public static class FlatFileImporter
     /// AUD-R38-079: FlatFile.Open registers every source synchronously in the DuckDb constructor,
     /// so the caller's token went unobserved through extension loading, header probes and DESCRIBE
     /// (remote round trips for an s3:// or https:// source). The sources are registered here
-    /// through RegisterSourceAsync instead, after the same uniqueness check the constructor runs.
+    /// through RegisterSourceAsync instead, which applies the constructor's table-name check per source.
     /// </summary>
     private static async ValueTask<DuckDb> OpenAsync(FlatFileOptions options, CancellationToken cancellationToken)
     {
-        options.EnsureSourceTableNamesAreUnique();
         IFileSource[] sources = [.. options.Sources];
         options.Sources.Clear();
 
