@@ -82,7 +82,7 @@ public class SqlLexerBoundaryTests
     {
         MethodInfo method = typeof(ParameterBinder).GetMethod(
             "ReplaceParametersLiteralAware", BindingFlags.NonPublic | BindingFlags.Static)!;
-        return (string)method.Invoke(null, new object[] { sql, '@', new Dictionary<string, string> { ["Ids"] = "X" }, backslashEscapes })!;
+        return (string)method.Invoke(null, new object[] { sql, '@', new Dictionary<string, string> { ["Ids"] = "X" }, backslashEscapes, true })!;
     }
 
     private static string[] Classic(string sql, bool backslashEscapes)
@@ -90,7 +90,7 @@ public class SqlLexerBoundaryTests
         MethodInfo method = typeof(SqlParameterParser).GetMethod(
             "ExtractParameterNamesClassic", BindingFlags.NonPublic | BindingFlags.Static)!;
 
-        return (string[])method.Invoke(null, new object[] { sql, backslashEscapes })!;
+        return (string[])method.Invoke(null, new object[] { sql, backslashEscapes, true })!;
     }
 
     [Theory]
@@ -164,7 +164,7 @@ public class SqlLexerBoundaryTests
         MethodInfo method = typeof(ParameterBinder).GetMethod(
             "ReplaceParametersLiteralAware", BindingFlags.NonPublic | BindingFlags.Static)!;
 
-        Assert.Equal("a @ b", (string)method.Invoke(null, new object[] { "a @ b", '@', new Dictionary<string, string> { [""] = "X" }, false })!);
+        Assert.Equal("a @ b", (string)method.Invoke(null, new object[] { "a @ b", '@', new Dictionary<string, string> { [""] = "X" }, false, true })!);
     }
 
     [Fact]

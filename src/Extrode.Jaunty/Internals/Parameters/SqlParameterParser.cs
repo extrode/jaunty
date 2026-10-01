@@ -13,20 +13,26 @@ internal static class SqlParameterParser
     /// literal ending in a backslash is complete, and applying the rule there would swallow its
     /// terminator.
     /// </param>
-    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false)
+    /// <param name="dollarSigil">
+    /// Whether <c>$</c> can open a parameter or a dollar-quoted string (AUD-R38-057). False for SQL
+    /// Server, where <c>$action</c>, <c>$IDENTITY</c>, <c>$ROWGUID</c> and <c>$PARTITION</c> are
+    /// pseudo-columns and <c>$5.00</c> is a money literal, and for MySQL/MariaDB, where <c>$</c> is
+    /// only ever an identifier character.
+    /// </param>
+    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false, bool dollarSigil = true)
     {
         if (string.IsNullOrWhiteSpace(sql))
             return [];
 
 #if NET8_0_OR_GREATER
-        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes);
+        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes, dollarSigil);
 #else
-        return ExtractParameterNamesClassic(sql, backslashEscapes);
+        return ExtractParameterNamesClassic(sql, backslashEscapes, dollarSigil);
 #endif
     }
 
 #if NET8_0_OR_GREATER
-    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes)
+    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes, bool dollarSigil)
     {
         // Deferred until the first sigil is found. Opening with a sized List cost every
         // parameterless statement a List plus its backing array - measured at 120 bytes/call by
@@ -103,6 +109,12 @@ internal static class SqlParameterParser
             // "SELECT" in "$$SELECT 1$$") is mistaken for a parameter name.
             if (c == '$')
             {
+                if (!dollarSigil || IsSigilInsideIdentifier(sql, i))
+                {
+                    i = SkipDollarRun(sql, i);
+                    continue;
+                }
+
                 int dollarQuoteEnd = TrySkipDollarQuoted(sql, i);
                 if (dollarQuoteEnd != -1)
                 {
@@ -219,7 +231,7 @@ internal static class SqlParameterParser
     }
 #endif
 
-    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes)
+    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes, bool dollarSigil)
     {
         List<string>? names = null;
         var i = 0;
@@ -275,6 +287,12 @@ internal static class SqlParameterParser
 
             if (c == '$')
             {
+                if (!dollarSigil || IsSigilInsideIdentifier(sql, i))
+                {
+                    i = SkipDollarRun(sql.AsSpan(), i);
+                    continue;
+                }
+
                 int dollarQuoteEnd = TrySkipDollarQuotedClassic(sql, i, len);
                 if (dollarQuoteEnd != -1)
                 {
@@ -409,4 +427,21 @@ internal static class SqlParameterParser
     /// <inheritdoc cref="IsSigilInsideIdentifier(string, int)"/>
     internal static bool IsSigilInsideIdentifier(ReadOnlySpan<char> sql, int sigilPos)
         => sigilPos > 0 && IsParameterChar(sql[sigilPos - 1]);
+
+    /// <summary>
+    /// Index just past a <c>$</c> that is not a sigil and the identifier characters and further
+    /// <c>$</c>s that follow it.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-056. Inside an identifier, a second <c>$</c> (<c>sales$q1$2024</c>) used to be taken
+    /// for a dollar-quote opening tag that never closed, which swallowed the rest of the statement.
+    /// PostgreSQL's own lexer never opens a dollar quote inside an identifier.
+    /// </remarks>
+    internal static int SkipDollarRun(ReadOnlySpan<char> sql, int dollarPos)
+    {
+        int i = dollarPos + 1;
+        while (i < sql.Length && (IsParameterChar(sql[i]) || sql[i] == '$'))
+            i++;
+        return i;
+    }
 }
