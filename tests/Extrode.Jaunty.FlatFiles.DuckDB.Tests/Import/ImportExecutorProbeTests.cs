@@ -83,7 +83,7 @@ public sealed class ImportExecutorProbeTests : IDisposable
     }
 
     [Fact]
-    public async Task ATargetThatIsNotOpen_IsOpenedByTheImport()
+    public async Task ATargetThatIsNotOpen_IsOpenedForTheImportAndClosedAfter()
     {
         using var target = new ProbeSqliteConnection(canBatch: false);
         Assert.Equal(System.Data.ConnectionState.Closed, target.State);
@@ -91,14 +91,14 @@ public sealed class ImportExecutorProbeTests : IDisposable
         long count = await _inventory.ImportIntoAsync<InventoryItem>(target, new ImportOptions(createTableIfMissing: true));
 
         Assert.Equal(5, count);
-        Assert.Equal(System.Data.ConnectionState.Open, target.State);
-        Assert.Equal(5, Count(target.Inner));
+        Assert.Equal(System.Data.ConnectionState.Closed, target.State);
     }
 
     [Fact]
     public async Task ABatchingTarget_ReceivesTheRowsInBatchesOfTheBatchSize()
     {
         using var target = new ProbeSqliteConnection(canBatch: true);
+        await target.OpenAsync();
         var progress = new List<(long, long?)>();
 
         long count = await _inventory.ImportIntoAsync<InventoryItem>(
@@ -140,6 +140,7 @@ public sealed class ImportExecutorProbeTests : IDisposable
     public async Task ANonBatchingTarget_ReportsProgressPerBatchAndPreparesTheInsertOnce()
     {
         using var target = new ProbeSqliteConnection(canBatch: false);
+        await target.OpenAsync();
         var progress = new List<(long, long?)>();
 
         long count = await _inventory.ImportIntoAsync<InventoryItem>(
@@ -159,6 +160,7 @@ public sealed class ImportExecutorProbeTests : IDisposable
     public async Task ANullSourceValue_IsImportedAsNull(bool canBatch)
     {
         using var target = new ProbeSqliteConnection(canBatch);
+        await target.OpenAsync();
 
         long count = await _notes.ImportIntoAsync<NoteRow>(target, new ImportOptions(createTableIfMissing: true));
 
