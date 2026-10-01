@@ -25,7 +25,7 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(predicate);
 
         IFileSource source = GetSourceOrThrow<T>();
-        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
+        TablePromoter.EnsurePromotedToTable(_connection, source, _dialect, options.Transaction);
 
         (string whereSql, List<global::DuckDB.NET.Data.DuckDBParameter> whereParams) = ExpressionTranslator.Translate<T>(predicate);
 

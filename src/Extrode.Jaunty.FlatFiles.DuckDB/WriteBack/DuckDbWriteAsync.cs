@@ -27,7 +27,7 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(entity);
 
         IFileSource source = GetSourceOrThrow<T>();
-        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, cancellationToken).ConfigureAwait(false);
+        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, cancellationToken, options.Transaction).ConfigureAwait(false);
 
         IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(T));
         var columns = new StringBuilder(mappings.Count * 20);
@@ -80,7 +80,7 @@ public sealed partial class DuckDb
         if (entityList.Count == 0) return 0;
 
         IFileSource source = GetSourceOrThrow<T>();
-        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, cancellationToken).ConfigureAwait(false);
+        await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, cancellationToken, options.Transaction).ConfigureAwait(false);
 
         IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(T));
         var mappingList = mappings.Values.ToList();
