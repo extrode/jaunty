@@ -28,6 +28,17 @@ internal static class SourceGeneratedMetadataResolver
         for (int i = 0; i < sourceColumns.Count; i++)
         {
             EntityColumnInfo c = sourceColumns[i];
+
+            // AUD-R38-124: EntityColumnInfo is a struct, so default(EntityColumnInfo), new
+            // EntityColumnInfo() or an unfilled array slot skips the constructor's null checks and
+            // would reach SQL generation as a NullReferenceException far from the mistake.
+            if (c.ColumnName is null || c.PropertyName is null || c.PropertyType is null || c.Getter is null || c.Setter is null)
+            {
+                throw new InvalidOperationException(
+                    $"{typeof(T).Name}'s IEntityMetadataSource.Columns[{i}] is an uninitialized EntityColumnInfo " +
+                    "(default or parameterless). Build every entry with the EntityColumnInfo constructor.");
+            }
+
             columns.Add(new ColumnMetadata(c.PropertyName, c.PropertyType, c.ColumnName, c.IsPrimaryKey, c.IsIdentity, c.IsComputed, c.Getter, c.Setter, c.EnumStorageOverride));
         }
 
