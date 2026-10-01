@@ -79,13 +79,41 @@ public class FluentJoinParameterCollisionTests : IClassFixture<FluentDatabaseFix
     }
 
     [Fact]
-    public void On_NamedParameter_ReservedPositionalName_Throws()
+    public void On_NamedParameter_SpelledLikeAPositionalName_IsAccepted()
     {
-        var ex = Assert.Throws<ArgumentException>(() => _fixture.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
-            .On("products.category_id = categories.category_id AND categories.category_id = @jp0", "jp0", 1));
+            .On("products.category_id = categories.category_id AND categories.category_id = @jp0", "jp0", 1)
+            .Where((p, c) => p.ProductId > 0)
+            .Select();
 
-        Assert.Contains("reserved", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
+    }
+
+    [Fact]
+    public void AMintedName_DifferingFromANamedParameterOnlyInCase_IsSuffixed()
+    {
+        var query = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On("p.category_id = c.category_id AND c.category_id = @P_CATEGORY_ID", "P_CATEGORY_ID", 1)
+            .Where((p, c) => p.CategoryId == 2);
+
+        var names = ((JoinedQueryBuilder<Product, Category>)query).GetParameters().NamesFrom(0);
+
+        Assert.Equal(2, names.Count);
+        Assert.Equal(2, names.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+
+    [Fact]
+    public void On_NamedParameter_DifferingOnlyInCaseFromOneAlreadyBound_Throws()
+    {
+        var third = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On("products.category_id = categories.category_id AND categories.category_id = @cid", "cid", 1)
+            .InnerJoin<Supplier>();
+
+        Assert.Throws<ArgumentException>(() => third.On("suppliers.supplier_id = @CID", "CID", 2));
     }
 
     [Fact]

@@ -330,7 +330,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         int self,
         Dictionary<string, string>? renames)
     {
-        if (_parameters.Contains(candidate))
+        if (_parameters.ContainsIgnoringCase(candidate))
             return true;
 
         for (int i = 0; i < minted.Count; i++)
@@ -422,7 +422,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal void AddParameter<TValue>(string name, TValue value) =>
         _parameters.Add(name, value);
 
-    internal bool HasParameter(string name) => _parameters.Contains(name);
+    internal bool HasParameter(string name) => _parameters.ContainsIgnoringCase(name);
 
     internal int ParameterCount => _parameters.Count;
 

@@ -52,6 +52,22 @@ internal sealed class ParameterCollection
     public bool Contains(string name) => _names.Contains(name);
 
     /// <summary>
+    /// Whether a parameter differing from <paramref name="name"/> only in case was added. SQL Server
+    /// under its default case-insensitive collation reads <c>@P_ID</c> and <c>@p_id</c> as one
+    /// variable, so two such names in one batch fail as a duplicate declaration (AUD-R38-105).
+    /// </summary>
+    public bool ContainsIgnoringCase(string name)
+    {
+        for (int i = 0; i < _parameters.Count; i++)
+        {
+            if (string.Equals(_parameters[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// The names added from position <paramref name="start"/> on, in the order they were added.
     /// </summary>
     public List<string> NamesFrom(int start)

@@ -127,7 +127,7 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         JoinedQueryBuilder<T1, T2> root = _parent._parent;
         string qualified = JoinParameterName.Qualify(root.Dialect.ParameterPrefix, parameterName, nameof(parameterName));
 
-        if (root.HasParameter(qualified) && _boundParameters?.Contains(qualified) != true)
+        if (root.HasParameter(qualified) && _boundParameters?.Exists(n => string.Equals(n, qualified, StringComparison.OrdinalIgnoreCase)) != true)
             throw JoinParameterName.DuplicateError(qualified, nameof(parameterName));
 
         JoinedQuery4Builder<T1, T2, T3, T4> joinedQuery = CreateJoinedQuery4(condition);
