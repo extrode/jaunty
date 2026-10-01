@@ -66,14 +66,12 @@ public abstract class TypeHandler<T>
     /// </para>
     /// <para>
     /// AUD-R35-174. The return type was the non-nullable <typeparamref name="T"/> while this very
-    /// paragraph said the result may be null and <c>TypeHandlerRegistry.TryConvertFromDb</c> has a
-    /// dedicated branch for a handler that returns one (AUD-R27-014). A <c>TypeHandler&lt;string&gt;</c>
+    /// paragraph said the result may be null and the registry's since-removed <c>TryConvertFromDb</c> had
+    /// a dedicated branch for a handler that returns one (AUD-R27-014). A <c>TypeHandler&lt;string&gt;</c>
     /// returning null for a DBNull input - the documented, registry-handled case - therefore produced
     /// CS8603 at the implementation site. The annotation is now <c>T?</c>, matching both the
     /// documented behaviour and the sibling <see cref="ToDbValue"/>, which has always taken
-    /// <c>T?</c>. This is an annotation change only: a handler that never returns null is unaffected,
-    /// and the registry still refuses to report success when a null comes back for a non-nullable
-    /// value type, because <c>default(T)</c> there is real-looking data.
+    /// <c>T?</c>. This is an annotation change only: a handler that never returns null is unaffected.
     /// </para>
     /// </remarks>
     public abstract T? Parse(object? dbValue);
