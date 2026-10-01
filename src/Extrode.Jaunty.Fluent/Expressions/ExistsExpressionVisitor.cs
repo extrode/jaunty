@@ -71,9 +71,33 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         _outerParam = predicate.Parameters[0];
         _subqueryParam = predicate.Parameters[1];
 
-        Visit(predicate.Body);
+        VisitCondition(predicate.Body);
 
         return (_sql.ToString(), _parameters);
+    }
+
+    /// <summary>
+    /// AUD-R38-037. A bool column or captured bool standing as a whole condition - the body, an
+    /// operand of <c>&amp;&amp;</c>/<c>||</c>, or of <c>!</c> - used to be emitted bare, and a bare
+    /// column is not a predicate on SQL Server. Same shape the WHERE twin emits.
+    /// </summary>
+    private void VisitCondition(Expression node)
+    {
+        Expression operand = node is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unary
+            ? unary.Operand
+            : node;
+
+        if (node.Type == typeof(bool) && operand is MemberExpression or ConstantExpression)
+        {
+            (bool IsColumn, string? Sql, object? Value) info = AnalyzeExpression(node);
+            if (info.IsColumn)
+                _sql.Append(info.Sql).Append(" = ").Append(_dialect.FormatBooleanLiteral(true));
+            else
+                _sql.Append(info.Value is true ? "1 = 1" : "1 = 0");
+            return;
+        }
+
+        Visit(node);
     }
 
     private string GetParameterName(string baseName)
@@ -98,9 +122,9 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         // Handle logical operators (&&, ||)
         if (node.NodeType is ExpressionType.AndAlso or ExpressionType.OrElse)
         {
-            Visit(node.Left);
+            VisitCondition(node.Left);
             _sql.Append(node.NodeType == ExpressionType.AndAlso ? " AND " : " OR ");
-            Visit(node.Right);
+            VisitCondition(node.Right);
             _sql.Append(')');
             return node;
         }
@@ -112,6 +136,24 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         // Handle null comparisons: emit IS NULL / IS NOT NULL instead of binding a NULL
         // parameter, since SQL's three-valued logic means "col = @p" with @p bound to NULL
         // never matches (same fix pattern as WhereExpressionVisitor.IsNullConstant).
+        bool leftIsNull = !leftInfo.IsColumn && leftInfo.Value is null;
+        bool rightIsNull = !rightInfo.IsColumn && rightInfo.Value is null;
+
+        // Both sides null, or a relational comparison against null: fold to the constant C#'s lifted
+        // operators produce. Binding NULL parameters made the comparison UNKNOWN, which a
+        // surrounding NOT keeps UNKNOWN instead of flipping to true.
+        if (leftIsNull && rightIsNull && node.NodeType is ExpressionType.Equal)
+        {
+            _sql.Append("1 = 1)");
+            return node;
+        }
+
+        if ((leftIsNull && rightIsNull) || (node.NodeType is not (ExpressionType.Equal or ExpressionType.NotEqual) && (leftIsNull || rightIsNull)))
+        {
+            _sql.Append("1 = 0)");
+            return node;
+        }
+
         if (node.NodeType is ExpressionType.Equal or ExpressionType.NotEqual)
         {
             if (leftInfo.IsColumn && !rightInfo.IsColumn && rightInfo.Value is null)
@@ -197,7 +239,7 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         if (node.NodeType == ExpressionType.Not)
         {
             _sql.Append("NOT (");
-            Visit(node.Operand);
+            VisitCondition(node.Operand);
             _sql.Append(')');
             return node;
         }
@@ -365,35 +407,13 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     /// </summary>
     private void RequireNoCorrelationParameter(Expression expression)
     {
-        if (!CorrelationParameterFinder.Contains(expression, _outerParam!, _subqueryParam!))
+        if (!ParameterReferenceFinder.Mentions(expression, [_outerParam!, _subqueryParam!]))
             return;
 
         throw new NotSupportedException(
             $"'{expression}' is not a translatable column reference, and it cannot be evaluated " +
             "before the query because it still refers to a correlation parameter. Compare columns " +
             "directly, or compute the value outside the predicate and capture it.");
-    }
-
-    private sealed class CorrelationParameterFinder : ExpressionVisitor
-    {
-        private ParameterExpression _first = null!;
-        private ParameterExpression _second = null!;
-        private bool _found;
-
-        public static bool Contains(Expression expression, ParameterExpression first, ParameterExpression second)
-        {
-            var finder = new CorrelationParameterFinder { _first = first, _second = second };
-            finder.Visit(expression);
-            return finder._found;
-        }
-
-        protected override Expression VisitParameter(ParameterExpression node)
-        {
-            if (node == _first || node == _second)
-                _found = true;
-
-            return node;
-        }
     }
 
     private ParameterExpression? GetRootParameter(MemberExpression member)

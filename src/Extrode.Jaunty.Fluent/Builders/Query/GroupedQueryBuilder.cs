@@ -24,6 +24,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private readonly List<WhereCondition> _whereConditions;
     private readonly ParameterCollection _parameters;
     private readonly string[] _groupByColumns;
+    private readonly Dictionary<string, string> _keyMemberColumns = new(StringComparer.Ordinal);
     private readonly List<string> _havingConditions = [];
 
     internal GroupedQueryBuilder(IDbConnection connection, ISqlDialect dialect, List<WhereCondition> whereConditions,
@@ -115,7 +116,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
     private string BuildSelectSql<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
     {
-        var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
+        var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns, _keyMemberColumns);
         (string[]? selectColumns, string[] _) = visitor.TranslateSelect(selector);
 
         var sb = new StringBuilder(256);
@@ -180,7 +181,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 #endif
         TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
     {
-        var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
+        var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns, _keyMemberColumns);
         (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
@@ -235,7 +236,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
+        var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns, _keyMemberColumns);
         (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
@@ -284,8 +285,11 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             body = unary.Operand;
 
         // Single property: p => p.CategoryId
+        // AUD-R38: neither shape checked the member was a direct property of the entity, so
+        // GroupBy(p => p.OrderDate.Year) grouped by a column named [Year].
         if (body is MemberExpression member)
         {
+            ColumnReference.RequireDirectOf(member, keySelector.Parameters[0]);
             string columnName = GetColumnName(member.Member.Name);
             return [_dialect.EscapeColumnName(columnName)];
         }
@@ -301,8 +305,12 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
                 if (arg is MemberExpression memberArg)
                 {
+                    ColumnReference.RequireDirectOf(memberArg, keySelector.Parameters[0]);
                     string columnName = GetColumnName(memberArg.Member.Name);
                     columns[i] = _dialect.EscapeColumnName(columnName);
+
+                    if (newExpr.Members?[i] is { } keyMember)
+                        _keyMemberColumns[keyMember.Name] = columns[i];
                 }
                 else
                 {
@@ -403,6 +411,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         if (body is not MemberExpression member)
             return function;
 
+        ColumnReference.RequireDirectOf(member, lambda.Parameters[0]);
         string column = JoinParameterNaming.Sanitize(GetColumnName(member.Member.Name));
 
         return column.Length == 0 ? function : function + "_" + column;
@@ -489,6 +498,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
             if (body is MemberExpression memberExpr)
             {
+                ColumnReference.RequireDirectOf(memberExpr, lambda.Parameters[0]);
                 string columnName = GetColumnName(memberExpr.Member.Name);
                 string operand = _dialect.EscapeColumnName(columnName);
 

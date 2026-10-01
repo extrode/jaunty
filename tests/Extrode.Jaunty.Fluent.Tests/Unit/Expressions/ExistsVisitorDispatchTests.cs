@@ -59,15 +59,14 @@ public class ExistsVisitorDispatchTests
     }
 
     [Fact]
-    public void ACapturedBoolAsALogicalOperand_IsBoundRatherThanEmitted()
+    public void ACapturedBoolAsALogicalOperand_FoldsToATruthValue()
     {
         var box = new { Flag = true };
 
         var (sql, parameters) = Translate((c, p) => c.CategoryId == p.CategoryId && box.Flag);
 
-        Assert.Contains("@p_exists", sql);
-        var parameter = Assert.Single(parameters);
-        Assert.Equal(true, parameter.Value);
+        Assert.Equal("((c.[category_id] = p.[category_id]) AND 1 = 1)", sql);
+        Assert.Empty(parameters);
     }
 
     // ------------------------------------------------------------------
@@ -75,13 +74,12 @@ public class ExistsVisitorDispatchTests
     // ------------------------------------------------------------------
 
     [Fact]
-    public void ABoolConstantAsALogicalOperand_IsBound()
+    public void ABoolConstantAsALogicalOperand_FoldsToATruthValue()
     {
-        var (sql, parameters) = Translate((c, p) => c.CategoryId == p.CategoryId && true);
+        var (sql, parameters) = Translate((c, p) => c.CategoryId == p.CategoryId && false);
 
-        Assert.Contains("@p_exists", sql);
-        var parameter = Assert.Single(parameters);
-        Assert.Equal(true, parameter.Value);
+        Assert.Equal("((c.[category_id] = p.[category_id]) AND 1 = 0)", sql);
+        Assert.Empty(parameters);
     }
 
     [Fact]
