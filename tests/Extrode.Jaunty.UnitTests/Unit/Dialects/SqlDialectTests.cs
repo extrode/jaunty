@@ -175,6 +175,7 @@ public class SqlDialectTests
     [Theory]
     [InlineData("select", "\"select\"")]
     [InlineData("ORDER", "\"ORDER\"")]
+    [InlineData("system_user", "\"system_user\"")]
     public void Postgres_EscapeColumnName_Keyword_Escaped(string columnName, string expected)
     {
         Assert.Equal(expected, _postgres.EscapeColumnName(columnName));
@@ -258,6 +259,24 @@ public class SqlDialectTests
     public void MySql_ReservedWordsMissingBeforeR38_AreEscaped(string column)
     {
         Assert.Equal($"`{column}`", _mySql.EscapeColumnName(column));
+    }
+
+    [Theory]
+    [InlineData("1e3")]
+    [InlineData("0x1F")]
+    [InlineData("0b101")]
+    [InlineData("1st_column")]
+    public void MySql_ALeadingDigitIdentifier_IsEscaped(string name)
+    {
+        Assert.Equal($"`{name}`", _mySql.EscapeColumnName(name));
+        Assert.Equal($"`{name}`", _mySql.EscapeTableName(null, name));
+        Assert.Equal($"`{name}`.t", _mySql.EscapeTableName(name, "t"));
+    }
+
+    [Fact]
+    public void MySql_ANonLeadingDigit_IsNotEscaped()
+    {
+        Assert.Equal("col1e3", _mySql.EscapeColumnName("col1e3"));
     }
 
     [Theory]
@@ -591,7 +610,7 @@ public class SqlDialectTests
     [Fact]
     public void SqlServer_GenerateLength_ReturnsLen()
     {
-        Assert.Equal("LEN(col)", _sqlServer.GenerateLength("col"));
+        Assert.Equal("LEN(REPLACE(col, ' ', '.'))", _sqlServer.GenerateLength("col"));
     }
 
     [Fact]

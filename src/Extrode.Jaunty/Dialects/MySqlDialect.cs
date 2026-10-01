@@ -8,7 +8,7 @@ namespace Extrode.Jaunty.Dialects;
 /// Default schema: the empty string (MySQL uses databases, not schemas). AUD-R35-159: this
 /// said "null" for as long as GetDefaultSchema has returned string.Empty.
 /// </summary>
-internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
+internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect, IFractionalAverageDialect
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -72,21 +72,28 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
     public string EscapeTableName(string? schemaName, string tableName)
     {
         SqlIdentifierValidator.Validate(tableName, nameof(tableName), SqlIdentifierFlavor.MySql);
-        var escapedTable = IsKeyword(tableName) ? $"`{tableName}`" : tableName;
+        var escapedTable = Quote(tableName);
 
         if (string.IsNullOrWhiteSpace(schemaName))
             return escapedTable;
 
         SqlIdentifierValidator.Validate(schemaName!, nameof(schemaName), SqlIdentifierFlavor.MySql);
-        var escapedSchema = IsKeyword(schemaName!) ? $"`{schemaName}`" : schemaName;
+        var escapedSchema = Quote(schemaName!);
         return $"{escapedSchema}.{escapedTable}";
     }
 
     public string EscapeColumnName(string columnName)
     {
         SqlIdentifierValidator.Validate(columnName, nameof(columnName), SqlIdentifierFlavor.MySql);
-        return IsKeyword(columnName) ? $"`{columnName}`" : columnName;
+        return Quote(columnName);
     }
+
+    // AUD-R38-120: a keyword, or an identifier with a leading digit. MySQL accepts the second
+    // unquoted, but reads 1e3, 0x1F and 0b101 as numeric literals, so [Column("1e3")] selected the
+    // constant 1000 for every row. Quoting every leading-digit name covers those without having to
+    // enumerate MySQL's literal grammar.
+    private string Quote(string identifier) =>
+        IsKeyword(identifier) || char.IsDigit(identifier[0]) ? $"`{identifier}`" : identifier;
 
     public string EscapeStringLiteral(string value)
     {
@@ -192,6 +199,14 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
     public string GenerateLower(string expression) => $"LOWER({expression})";
     public string GenerateTrim(string expression) => $"TRIM({expression})";
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression}, {start}, {length})";
+
+    /// <summary>
+    /// AUD-R38-121: MySQL and MariaDB do not truncate an integer AVG, but they return DECIMAL with
+    /// <c>div_precision_increment</c> (default 4) digits of scale, so AVG over {1, 1, 2} was 1.3333
+    /// where every other dialect returned 1.3333333333333333. Adding a floating-point zero makes
+    /// the operand DOUBLE, on every MySQL and MariaDB version; CAST AS DOUBLE needs MySQL 8.0.17.
+    /// </summary>
+    public string GenerateFractionalAverage(string operand) => $"AVG({operand} + 0E0)";
 
     /// <summary>MySQL's two-argument SUBSTRING returns the remainder, and needs no sentinel length.</summary>
     public string GenerateSubstringToEnd(string expression, string start)
