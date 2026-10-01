@@ -126,18 +126,18 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.Contains("public partial class Product", content);
 
         // Check table attribute
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"products\")]", content);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"products\")]", content);
 
         // Check key attribute on primary key
-        Assert.Contains("[Extrode.Jaunty.Attributes.Key]", content);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Key]", content);
 
         // Check database generated attribute on identity column
-        Assert.Contains("[Extrode.Jaunty.Attributes.DatabaseGenerated(Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", content);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.DatabaseGenerated(global::Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", content);
 
         // Check column attributes for snake_case columns
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"product_id\")]", content);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"product_name\")]", content);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"unit_price\")]", content);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"product_id\")]", content);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"product_name\")]", content);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"unit_price\")]", content);
 
         // Check nullable type for nullable column
         Assert.Contains("public double? UnitPrice", content);
