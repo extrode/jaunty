@@ -316,7 +316,14 @@ public sealed class Scaffolder
             HasSqliteFileExtension(dataSource))
             return DatabaseProvider.SQLite;
 
-        if (hasDataSource && !hasInitialCatalog && !hasDatabase)
+        // AUD-R38-047: SQL Server falls back to the login's default database, so "Data Source=srv;
+        // Integrated Security=True" has no catalog either. Microsoft.Data.Sqlite rejects every one
+        // of these credential keys, so their presence rules SQLite out.
+        var hasSqlServerCredentials = hasUserId || keys.ContainsKey("uid") ||
+                                      keys.ContainsKey("integrated security") ||
+                                      keys.ContainsKey("trusted_connection");
+
+        if (hasDataSource && !hasInitialCatalog && !hasDatabase && !hasSqlServerCredentials)
             return DatabaseProvider.SQLite;
 
         // PostgreSQL detection - checked before SQL Server because Npgsql accepts "Server="

@@ -56,12 +56,19 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     /// <c>system_type_id &lt;&gt; user_type_id</c>, because the CLR types differ that way too and
     /// must keep their own names.
     /// </para>
+    /// <para>
+    /// AUD-R38-045. A user-defined CLR type is <c>is_user_defined = 1</c> as well, with
+    /// <c>system_type_id</c> 240, and <c>TYPE_NAME(240)</c> is NULL, so the first arm handed
+    /// <c>ReadColumnsAsync</c> a NULL type name and one such column failed the whole scaffold. The
+    /// arm is for alias types only; an assembly type keeps its own name, which the mapper scaffolds
+    /// as <c>object</c>.
+    /// </para>
     /// </remarks>
     private const string ColumnsSql = @"
         SELECT
             c.name AS ColumnName,
             CASE
-                WHEN ty.is_user_defined = 1 THEN TYPE_NAME(ty.system_type_id)
+                WHEN ty.is_user_defined = 1 AND ty.is_assembly_type = 0 THEN TYPE_NAME(ty.system_type_id)
                 WHEN ty.name = 'sysname' THEN 'nvarchar'
                 ELSE ty.name
             END AS DataType,

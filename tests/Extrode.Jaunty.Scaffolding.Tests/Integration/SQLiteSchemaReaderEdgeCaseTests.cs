@@ -317,6 +317,53 @@ public sealed class SQLiteSchemaReaderEdgeCaseTests : IDisposable
         Assert.False(SQLiteSchemaReader.IsWithoutRowId("CREATE TABLE t (a INT) WITHOUT FOO ROWID"));
     }
 
+    [Fact]
+    public async Task TablesNamedLikeTheReservedPrefix_AreRead_WhileTheReservedOnesAreNot()
+    {
+        Exec("CREATE TABLE SqliteLog (id INTEGER PRIMARY KEY)");
+        Exec("CREATE TABLE sqlitesettings (id INTEGER PRIMARY KEY)");
+        Exec("CREATE TABLE counters (id INTEGER PRIMARY KEY AUTOINCREMENT)");
+        Exec("INSERT INTO counters DEFAULT VALUES");
+
+        DatabaseSchema schema = await ReadAsync(new SchemaReaderOptions());
+
+        Assert.Equal(["SqliteLog", "counters", "sqlitesettings"], schema.Tables.Select(t => t.TableName).Order(StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("main", 1)]
+    [InlineData("MAIN", 1)]
+    [InlineData("", 1)]
+    [InlineData("other", 0)]
+    public async Task IncludeSchemas_AcceptsOrRejectsMain(string schemaName, int expected)
+    {
+        Exec("CREATE TABLE widgets (id INTEGER PRIMARY KEY)");
+
+        DatabaseSchema schema = await ReadAsync(new SchemaReaderOptions { IncludeSchemas = [schemaName] });
+
+        Assert.Equal(expected, schema.Tables.Count);
+    }
+
+    [Fact]
+    public async Task IncludeSchemas_Empty_IsNoFilter()
+    {
+        Exec("CREATE TABLE widgets (id INTEGER PRIMARY KEY)");
+
+        DatabaseSchema schema = await ReadAsync(new SchemaReaderOptions { IncludeSchemas = [] });
+
+        Assert.Single(schema.Tables);
+    }
+
+    [Fact]
+    public async Task IncludeSchemas_ListingMainAmongOthers_ReadsMain()
+    {
+        Exec("CREATE TABLE widgets (id INTEGER PRIMARY KEY)");
+
+        DatabaseSchema schema = await ReadAsync(new SchemaReaderOptions { IncludeSchemas = ["dbo", "main"] });
+
+        Assert.Single(schema.Tables);
+    }
+
     private async Task<DatabaseSchema> ReadAsync(SchemaReaderOptions options)
         => await new SQLiteSchemaReader().ReadSchemaAsync(_connectionString, options, TestContext.Current.CancellationToken);
 }
