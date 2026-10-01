@@ -212,7 +212,12 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 
         var results = new List<TResult>();
 
+#if NET8_0_OR_GREATER
+        DbCommand command = dbConn.CreateCommand();
+        await using var commandDisposer = command.ConfigureAwait(false);
+#else
         using DbCommand command = dbConn.CreateCommand();
+#endif
         command.CommandText = sql;
         FluentCommandOptions.Apply(command, _parent.Connection, options);
         _parent.BindParameters(command);
@@ -224,7 +229,12 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 
         try
         {
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
@@ -234,7 +244,12 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
         }
         finally
         {
-            if (wasClosed) dbConn.Close();
+            if (wasClosed)
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                await Task.Run(() => dbConn.Close()).ConfigureAwait(false);
+#endif
         }
 
         return results;

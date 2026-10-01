@@ -301,7 +301,12 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 if (wasClosed)
                     await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+                DbCommand command = dbConnection.CreateCommand();
+                await using var commandDisposer = command.ConfigureAwait(false);
+#else
                 using DbCommand command = dbConnection.CreateCommand();
+#endif
                 _parameters.BindTo(command);
                 command.CommandText = commandText;
                 FluentCommandOptions.Apply(command, dbConnection, options);
