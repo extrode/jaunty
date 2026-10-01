@@ -538,6 +538,10 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     [InlineData("SELECT category_id FROM categories -- filter on @name later")]
     [InlineData("SELECT category_id FROM categories /* @name is not bound here */")]
     [InlineData("SELECT category_id FROM categories WHERE description = '@'")]
+    [InlineData("SELECT category_id FROM categories WHERE \"owner@domain\" = 1")]
+    [InlineData("SELECT category_id FROM categories WHERE \"say \"\"@hi\"\"\" = 1")]
+    [InlineData("SELECT category_id FROM categories WHERE `owner@domain` = 1")]
+    [InlineData("SELECT category_id FROM categories WHERE `a``@b` = 1")]
     public void WhereInSubquery_CustomImplementationWithALiteralAt_IsAccepted(string subquerySql)
     {
         var subquery = new StubQueryTerminal<Category>(subquerySql);
@@ -556,6 +560,10 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     [InlineData("SELECT category_id FROM categories WHERE category_name = @name")]
     [InlineData("SELECT category_id FROM categories WHERE description LIKE '%safe%' AND id = @p0")]
     [InlineData("SELECT category_id FROM categories -- a comment\r\nWHERE id = @p_1")]
+    [InlineData("SELECT category_id FROM categories WHERE \"name\" = @name")]
+    [InlineData("SELECT category_id FROM categories WHERE \"a\"\"b\" = @name")]
+    [InlineData("SELECT category_id FROM categories WHERE `name` = @name")]
+    [InlineData("SELECT category_id FROM categories WHERE 'x' = @name")]
     public void WhereInSubquery_CustomImplementationWithARealPlaceholder_StillThrows(string subquerySql)
     {
         var subquery = new StubQueryTerminal<Category>(subquerySql);
