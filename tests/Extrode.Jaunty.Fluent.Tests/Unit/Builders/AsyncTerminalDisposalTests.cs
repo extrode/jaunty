@@ -71,6 +71,15 @@ public class AsyncTerminalDisposalTests : IDisposable
     }
 
     [Fact]
+    public async Task CoreQueryPartialListAsync_ReleasesAsynchronously()
+    {
+        var rows = await Connection.QueryPartialListAsync("SELECT * FROM categories", TestContext.Current.CancellationToken);
+
+        Assert.NotEmpty(rows);
+        AssertReleasedAsynchronously();
+    }
+
+    [Fact]
     public async Task ThreeTableSelectAllAsync_ReleasesAsynchronously()
     {
         var rows = await Connection.From<Product>()
