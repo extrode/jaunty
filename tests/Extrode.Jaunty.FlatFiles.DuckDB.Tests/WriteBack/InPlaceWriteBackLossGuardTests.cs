@@ -84,6 +84,7 @@ public class InPlaceWriteBackLossGuardTests : IDisposable
         var ex = Assert.Throws<InvalidOperationException>(() => db.Save<InventoryItem>(WriteBackMode.Overwrite));
 
         Assert.Contains("not supported for glob sources", ex.Message);
+        Assert.Contains($"(source 'inventory' reads the pattern '{Path.Combine(_dataDir, "part*.csv")}', which can match several files). ", ex.Message);
         Assert.Equal(["part1.csv", "part2.csv"], Directory.GetFiles(_dataDir).Select(Path.GetFileName).Order().ToArray());
     }
 
@@ -111,7 +112,7 @@ public class InPlaceWriteBackLossGuardTests : IDisposable
 
         var ex = Assert.Throws<InvalidOperationException>(() => db.Save<InventoryItem>(WriteBackMode.Overwrite));
 
-        Assert.Contains("losing the 1 line(s) SkipRows skips before the header", ex.Message);
+        Assert.StartsWith($"In-place WriteBack (WriteBackMode) of source 'inventory' would rewrite '{path}' from only the data the source reads, losing the 1 line(s) SkipRows skips before the header.", ex.Message);
         Assert.Equal(before, File.ReadAllText(path));
     }
 
@@ -189,6 +190,40 @@ public class InPlaceWriteBackLossGuardTests : IDisposable
         reopened.AddExcel<InventoryItem>(path, xl => xl.SheetName = "Data");
         using var check = new DuckDb(reopened);
         Assert.Single(check.Query<InventoryItem>("SELECT * FROM inventory"));
+    }
+
+    [Fact]
+    public void SaveInPlace_OfAnExcelSourceWhoseFileIsNotAWorkbook_Throws()
+    {
+        string path = Path.Combine(_dataDir, "replaced.xlsx");
+        Copy(path, "FORMAT XLSX, SHEET 'Data', HEADER true", loadExcel: true);
+        var options = new FlatFileOptions();
+        options.AddExcel<InventoryItem>(path, xl => xl.SheetName = "Data");
+        using var db = new DuckDb(options);
+        File.WriteAllText(path, "plain text");
+
+        var ex = Assert.Throws<InvalidOperationException>(() => db.Save<InventoryItem>(WriteBackMode.Overwrite));
+
+        Assert.Contains("losing any sheet other than the one it reads (the workbook's sheets could not be listed: ", ex.Message);
+        Assert.Equal("plain text", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void SaveInPlace_OfAnExcelSourceWithMalformedWorkbookXml_Throws()
+    {
+        string path = Path.Combine(_dataDir, "malformed.xlsx");
+        Copy(path, "FORMAT XLSX, SHEET 'Data', HEADER true", loadExcel: true);
+        var options = new FlatFileOptions();
+        options.AddExcel<InventoryItem>(path, xl => xl.SheetName = "Data");
+        using var db = new DuckDb(options);
+        File.Delete(path);
+        using (ZipArchive zip = ZipFile.Open(path, ZipArchiveMode.Create))
+        using (var writer = new StreamWriter(zip.CreateEntry("xl/workbook.xml").Open()))
+            writer.Write("<workbook><sheets><sheet");
+
+        var ex = Assert.Throws<InvalidOperationException>(() => db.Save<InventoryItem>(WriteBackMode.Overwrite));
+
+        Assert.Contains("the workbook's sheets could not be listed", ex.Message);
     }
 
     [Fact]
