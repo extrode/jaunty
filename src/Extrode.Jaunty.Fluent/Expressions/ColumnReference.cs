@@ -36,13 +36,45 @@ internal static class ColumnReference
     /// is a member of a column rather than a column.</exception>
     public static void RequireDirect(MemberExpression member)
     {
-        if (member.Expression is null or ParameterExpression)
+        if (member.Expression is ParameterExpression)
             return;
+
+        // AUD-R38-101: a static member has no receiver at all, and used to be let through, so
+        // OrderBy(p => DateTime.Now) ordered by a column named [Now].
+        if (member.Expression is null)
+            throw new NotSupportedException(
+                $"'{member}' is a static member, not a column of the entity. Compute the value " +
+                "before the query, or name a property of the lambda parameter.");
 
         string leaf = member.Member.Name;
         throw new NotSupportedException(
             $"'{member}' is a member of a column, not a column. Extrode.Jaunty does not translate " +
             $"'{leaf}' into SQL - use the Sql.* helpers for the supported spellings " +
             "(Sql.Year, Sql.Month, Sql.Day, Sql.Length, ...), or compute the value in memory.");
+    }
+
+    /// <summary>
+    /// Throws unless <paramref name="member"/> reads a member directly off <paramref name="parameter"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-038. For selectors that are only ever a column - a GROUP BY key, an aggregate's
+    /// operand - a captured local (<c>g.Sum(p =&gt; factor)</c>) is as wrong as a nested member:
+    /// both were emitted as a column named after the leaf.
+    /// </remarks>
+    public static void RequireDirectOf(MemberExpression member, ParameterExpression parameter)
+    {
+        if (member.Expression == parameter)
+            return;
+
+        Expression? root = member;
+        while (root is MemberExpression me)
+            root = me.Expression;
+
+        if (root == parameter)
+            RequireDirect(member);
+
+        throw new NotSupportedException(
+            $"'{member}' is not a property of '{parameter.Name}'. Only a property of the lambda " +
+            "parameter can be translated to a column here.");
     }
 }
