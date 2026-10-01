@@ -44,22 +44,15 @@ internal sealed class ListTablesCommand : Command
                 var scaffolder = new Scaffolder();
                 // AUD-R35-079: push --schemas down to the reader so the unwanted schemas' tables
                 // are never read, rather than reading every table in the database and discarding
-                // them here. The client-side pass below is still needed: SQLite ignores
-                // IncludeSchemas (its reader lists main only) and MySQL treats it as an accept/reject on the
-                // attached database name, so neither narrows a multi-schema listing on its own.
+                // them here. AUD-R38-043: the readers are the only filter. A second pass here
+                // compared against each table's Schema, which MySQL and SQLite report as empty, so
+                // it dropped every table the MySQL reader had accepted for its database name and
+                // disagreed with scaffold, which has no such pass.
                 IReadOnlyList<(string Schema, string Table)> tables = await scaffolder.ListTablesAsync(
                     connection,
                     provider,
                     schemas.Length > 0 ? new SchemaReaderOptions { IncludeSchemas = schemas } : null,
                     cancellationToken).ConfigureAwait(false);
-
-                // Filter by schemas if specified
-                if (schemas.Length > 0)
-                {
-                    tables = [.. tables
-                        .Where(t => schemas.Contains(t.Schema, StringComparer.OrdinalIgnoreCase) ||
-                                   (string.IsNullOrEmpty(t.Schema) && schemas.Contains("", StringComparer.OrdinalIgnoreCase)))];
-                }
 
                 Console.WriteLine($"Found {tables.Count} table(s):");
                 Console.WriteLine();

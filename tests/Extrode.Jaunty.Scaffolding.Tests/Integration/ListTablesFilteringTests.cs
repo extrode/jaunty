@@ -88,16 +88,18 @@ public class ListTablesFilteringTests : IDisposable
     }
 
     [Fact]
-    public async Task IncludeSchemas_IsHarmlessOnSQLite()
+    public async Task IncludeSchemas_OnSQLite_AcceptsOrRejectsMain()
     {
-        // SQLite reports an empty schema name and its reader does not consult IncludeSchemas, so
-        // the CLI keeps its client-side pass. Pinned so that adding a naive schema filter to the
-        // SQLite reader cannot silently empty this listing.
-        IReadOnlyList<(string Schema, string Table)> tables =
+        // AUD-R38-043: SQLite reports an empty schema name and lists main only, so IncludeSchemas
+        // accepts or rejects main, as the MySQL reader does for its database.
+        IReadOnlyList<(string Schema, string Table)> main =
+            await ListAsync(new SchemaReaderOptions { IncludeSchemas = ["main"] });
+        IReadOnlyList<(string Schema, string Table)> other =
             await ListAsync(new SchemaReaderOptions { IncludeSchemas = ["dbo"] });
 
-        Assert.Equal(["categories", "orders", "products"], Names(tables));
-        Assert.All(tables, t => Assert.True(string.IsNullOrEmpty(t.Schema)));
+        Assert.Equal(["categories", "orders", "products"], Names(main));
+        Assert.All(main, t => Assert.True(string.IsNullOrEmpty(t.Schema)));
+        Assert.Empty(other);
     }
 
     [Fact]
