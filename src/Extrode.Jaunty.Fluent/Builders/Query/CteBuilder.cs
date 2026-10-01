@@ -287,13 +287,16 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     /// </summary>
     private static string BuildWhereExpression(List<WhereCondition> conditions)
     {
-        var expr = conditions[0].Sql;
+        if (conditions.Count == 1)
+            return conditions[0].Sql;
+
+        var expr = conditions[0].FoldOperand;
 
         for (var i = 1; i < conditions.Count; i++)
         {
             var condition = conditions[i];
             var op = condition.Operator == LogicalOperator.Or ? "OR" : "AND";
-            expr = $"({expr} {op} {condition.Sql})";
+            expr = $"({expr} {op} {condition.FoldOperand})";
         }
 
         return expr;
