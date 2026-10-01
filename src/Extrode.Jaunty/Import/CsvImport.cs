@@ -814,7 +814,13 @@ public static class CsvImportExtensions
                         await textWriter.WriteAsync(buffer, 0, read).ConfigureAwait(false);
                     }
 
-                    copy.Dispose();
+                    // AUD-R38-012: completing the copy flushes the tail, sends CopyDone and waits
+                    // for the server to commit - a blocking wait inside an async import when it
+                    // goes through Dispose().
+                    if (copy is IAsyncDisposable asyncCopy)
+                        await asyncCopy.DisposeAsync().ConfigureAwait(false);
+                    else
+                        copy.Dispose();
                 }
                 catch
                 {

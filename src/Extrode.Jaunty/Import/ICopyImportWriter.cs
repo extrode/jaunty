@@ -20,6 +20,11 @@ namespace Extrode.Jaunty.Import;
 /// The <c>Extrode.Jaunty.Extensions.Npgsql</c> package does this for PostgreSQL; you can register
 /// your own for any driver with an equivalent API.
 /// </para>
+/// <para>
+/// An implementation that also implements <see cref="IAsyncDisposable"/> has the asynchronous
+/// import complete the copy through <see cref="IAsyncDisposable.DisposeAsync"/>, rather than
+/// blocking on <see cref="IDisposable.Dispose"/> while the server commits.
+/// </para>
 /// </remarks>
 public interface ICopyImportWriter : IDisposable
 {
