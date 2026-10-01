@@ -9,6 +9,7 @@ using Extrode.Jaunty.Fluent.Expressions;
 using Extrode.Jaunty.Fluent.Internals;
 using Extrode.Jaunty.Internals.Entity;
 using Extrode.Jaunty.Internals.Parameters;
+using Extrode.Jaunty.Internals.Read;
 using Extrode.Jaunty.Configuration;
 using System.Globalization;
 using Extrode.Jaunty.Internals;
@@ -1637,17 +1638,11 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         if (value is null or DBNull)
             return default!;
 
-        Type targetType = typeof(TResult);
-        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-        // Handle conversion from database types to C# types, using
-        // CultureInfo.InvariantCulture, not the ambient CurrentCulture: providers routinely hand back
-        // a string where the column is TEXT/NUMERIC (SQLite in particular), and under a comma-decimal
-        // culture (de-DE, fr-FR, ...) Convert.ChangeType("1.5", typeof(decimal)) does not throw - it
-        // reads the period as a group separator and returns 15.
-        // Matches GroupedJoinedResultMapper.ConvertColumnValue and GridReader.ReadScalar.
-        var converted = Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
-        return (TResult)converted;
+        // AUD-R38-033: through DbValueConversion, as GroupedJoinedResultMapper.ConvertColumnValue is.
+        // A bare Convert.ChangeType could not reach an enum (Max over an INTEGER-backed enum came
+        // back as long) or a Guid stored as TEXT, both of which DbValueConversion handles; it also
+        // keeps the invariant-culture terminal conversion this used to do inline.
+        return (TResult)DbValueConversion.Convert(value, typeof(TResult));
     }
 
     private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
