@@ -812,6 +812,28 @@ public class LoggingInterceptorTests
     }
 
     [Fact]
+    public async Task OnCommandExecutedAsync_LogExecutionTimeFalse_WritesTheExactSlowAndOrdinaryMessages()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration
+        {
+            LogExecutionTime = false,
+            SlowQueryThreshold = TimeSpan.FromMilliseconds(100),
+        };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+
+        await interceptor.OnCommandExecutedAsync(
+            new CommandContext("SELECT 1", null, CreateMockConnection(), CommandType.Text, TimeSpan.FromMilliseconds(500)),
+            CancellationToken.None);
+        await interceptor.OnCommandExecutedAsync(
+            new CommandContext("SELECT 1", null, CreateMockConnection(), CommandType.Text, TimeSpan.FromMilliseconds(50)),
+            CancellationToken.None);
+
+        Assert.Equal("Completed SQL Text (SLOW - exceeded 100ms threshold)", provider.Logs[0].Message);
+        Assert.Equal("Completed SQL Text", provider.Logs[1].Message);
+    }
+
+    [Fact]
     public async Task OnCommandFailedAsync_LogExecutionTimeFalse_OmitsTheElapsedTime()
     {
         var provider = CreateTestProvider();
