@@ -80,6 +80,12 @@ public class ParameterBinderBracketTests
     }
 
     [Fact]
+    public void Cache_BackslashEscapes_NeverTakesADollarSigil()
+    {
+        Assert.Equal(new[] { "Id" }, SqlParameterParserCache.GetOrAdd("SELECT $backslashdollar FROM t WHERE id = @Id", backslashEscapes: true));
+    }
+
+    [Fact]
     public void Bind_PostgreSqlArraySubscript_BindsThePlaceholderInside()
     {
         using var connection = new NpgsqlConnection();
