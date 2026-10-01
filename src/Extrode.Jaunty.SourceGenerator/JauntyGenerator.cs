@@ -783,6 +783,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
         if (classSymbol.IsStatic)
             return "it is declared 'static' and a static class cannot implement the mapper interface";
 
+        // AUD-R38 generator audit: discovery accepts any RecordDeclarationSyntax, which includes a
+        // `record struct`, and the partial below is emitted as `record` or `class`, so a struct
+        // entity got CS0261 on top of the attribute-target error its own source already has.
+        if (classSymbol.TypeKind != TypeKind.Class)
+            return "it is a struct and the mapper is generated for classes only";
+
         if (classSymbol.IsAbstract)
             return "it is abstract and the generated mapper has to construct it";
 
@@ -795,12 +801,17 @@ public partial class JauntyGenerator : IIncrementalGenerator
         if (!IsDeclaredPartial(classSymbol))
             return "it is not declared 'partial'";
 
-        for (INamedTypeSymbol? type = classSymbol; type is not null; type = type.BaseType)
+        // AUD-R38 generator audit: a parameterless constructor marked [SetsRequiredMembers]
+        // satisfies new() despite required members, and the generated `new T()` compiles.
+        if (!classSymbol.InstanceConstructors.Any(c => c.Parameters.Length == 0 && SetsRequiredMembers(c)))
         {
-            foreach (ISymbol member in type.GetMembers())
+            for (INamedTypeSymbol? type = classSymbol; type is not null; type = type.BaseType)
             {
-                if (member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true })
-                    return $"'{member.Name}' is a required member, which the mapper interface's 'new()' constraint cannot satisfy";
+                foreach (ISymbol member in type.GetMembers())
+                {
+                    if (member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true })
+                        return $"'{member.Name}' is a required member, which the mapper interface's 'new()' constraint cannot satisfy";
+                }
             }
         }
 
@@ -902,6 +913,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         return false;
     }
+
+    private static bool SetsRequiredMembers(IMethodSymbol constructor)
+        => constructor.GetAttributes().Any(a =>
+            a.AttributeClass?.ToDisplayString() == "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute");
 
     private static bool IsObsoleteAsError(IMethodSymbol constructor)
     {
