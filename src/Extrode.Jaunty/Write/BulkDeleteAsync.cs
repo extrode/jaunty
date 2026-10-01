@@ -373,7 +373,9 @@ public static partial class Jaunty
                     }
 
                     if (ignoreConstraints && requiresAutocommit)
-                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, options.CommandTimeout, cancellationToken).ConfigureAwait(false);
+                        // AUD-R38-062..064: the rows are committed by now, so a cancellation here
+                        // would report a finished write as cancelled and invite a retry.
+                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, options.CommandTimeout, CancellationToken.None).ConfigureAwait(false);
 
                     return totalDeleted;
                 }
