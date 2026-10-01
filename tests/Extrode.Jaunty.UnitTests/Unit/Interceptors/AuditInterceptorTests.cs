@@ -444,7 +444,7 @@ public class AuditInterceptorTests
     {
         public string ConnectionString { get; set; } = "Data Source=:memory:";
         public int ConnectionTimeout => 15;
-        public Func<string> DatabaseSource { get; init; } = () => "TestDb";
+        public Func<string> DatabaseSource { get; set; } = () => "TestDb";
         public string Database => DatabaseSource();
         public string DataSource => "InMemory";
         public IDbTransaction? Transaction { get; set; }
