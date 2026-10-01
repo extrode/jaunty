@@ -2157,7 +2157,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // general-purpose conversion over GetValue's boxed string would get right. The exception is
         // enums, where the base DbDataReader.GetFieldValue<T> is `(T)GetValue(ordinal)` - an
         // unboxing cast that throws for every enum on every provider that doesn't special-case it.
-        if (isDbDataReader && !isEnum)
+        // Guid is the other (AUD-R38 generator audit): AUD-R34-034 routed it to GetValue so a TEXT
+        // GUID column would parse as it does under reflection, but this branch still emitted
+        // GetFieldValue<Guid>, so on a DbDataReader that does not specialise it (SqlClient over a
+        // varchar column, DataTableReader) the generated read threw where DbValueConversion parses.
+        if (isDbDataReader && !isEnum && typeArgument != "global::System.Guid")
             return $"{readerVariable}.GetFieldValue<{typeArgument}>(ord[{ordinalIndex}])";
 
         // IDataReader has no GetFieldValue<T> at all, so every catch-all type here used to be a raw
