@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 
 using Extrode.Jaunty.Dialects;
+using Extrode.Jaunty.Fluent.Expressions;
 
 namespace Extrode.Jaunty.Fluent.Internals;
 
@@ -58,4 +59,26 @@ internal static class HavingExpressionHelpers
     // now share too - this was one of eight byte-identical copies. Kept here as a forwarder for the
     // HAVING call sites that already name it.
     public static object? EvaluateExpression(Expression expression) => ExpressionEvaluator.Evaluate(expression);
+
+    /// <summary>
+    /// Evaluates a HAVING value operand before the query, refusing one that still refers to the
+    /// grouping.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-030: <c>g =&gt; g.Key &gt; 5</c> and <c>g =&gt; !(g.Count() &gt; 5)</c> reached the
+    /// evaluator, which compiled over the unbound grouping parameter and threw "variable 'g' ...
+    /// referenced from scope ''". Same guard as WHERE (AUD-R26-056) and EXISTS (AUD-R35-021).
+    /// </remarks>
+    public static object? EvaluateOperand(Expression expression, IReadOnlyCollection<ParameterExpression> havingParameters)
+    {
+        if (ParameterReferenceFinder.Mentions(expression, havingParameters))
+        {
+            throw new NotSupportedException(
+                $"'{expression}' cannot be translated in HAVING: it refers to the grouping but is not " +
+                "an aggregate comparison. Compare Count/Sum/Avg/Min/Max results directly; filter on " +
+                "the grouping key with Where before GroupBy.");
+        }
+
+        return ExpressionEvaluator.Evaluate(expression);
+    }
 }
