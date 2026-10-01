@@ -10,6 +10,7 @@ namespace Extrode.Jaunty.Tests.Unit;
 /// examples - for a class that has never existed in <c>src/</c>, and the README repeated it.
 /// Found 2026-08-31 while checking the docs before the repository went public.
 /// </summary>
+[Collection(ConfigurationGenerationCollection.Name)]
 public class DocumentedApiTests
 {
     private static readonly string[] NeverExisted =
