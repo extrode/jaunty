@@ -32,7 +32,7 @@ internal sealed class EntityDataReader<T> : IDataReader where T : new()
     public EntityDataReader(IEnumerable<T> entities, EntityMetadata metadata)
     {
         _enumerator = entities.GetEnumerator();
-        _columns = ColumnMetadataHelper.GetInsertableColumns(metadata).ToArray();
+        _columns = metadata.InsertColumns.ToArray();
 
         // Getters are cached per distinct column layout, not just per type, so a second
         // bulk-insert of the same T with a different column subset/order gets its own
