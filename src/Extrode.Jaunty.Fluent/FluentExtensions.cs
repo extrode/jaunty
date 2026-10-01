@@ -50,9 +50,10 @@ public static class FluentExtensions
     public static IFromClause<T> From<T>(this IDbConnection connection, string? alias = null) where T : new()
     {
 #if NET5_0_OR_GREATER
-        // Round-27 item 18: keeps decimal's operator methods (and the other operator types')
-        // reachable, so a predicate like p => p.UnitPrice > 20m can still be built after a trimmed or
-        // NativeAOT publish. Empty method - the JIT inlines this away. See FluentAotOperators.
+        // Round-27 item 18: keeps decimal's operator methods reachable, so a predicate like
+        // p => p.UnitPrice > 20m can still be built after a trimmed or NativeAOT publish. Only decimal
+        // is rooted; DateTime, DateTimeOffset, TimeSpan and Guid are deliberately not (AUD-R38-102).
+        // Empty method - the JIT inlines this away. See FluentAotOperators.
         FluentAotOperators.PreserveOperatorMethods();
 #endif
 
