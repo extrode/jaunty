@@ -326,8 +326,11 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         throw new NotSupportedException($"Cannot extract GROUP BY columns from expression type '{body.NodeType}'.");
     }
 
+    private IReadOnlyCollection<ParameterExpression> _havingLambdaParameters = Array.Empty<ParameterExpression>();
+
     private string TranslateHavingPredicate(Expression<Func<IGrouping<TKey, T>, bool>> predicate)
     {
+        _havingLambdaParameters = predicate.Parameters;
         return TranslateHavingExpression(predicate.Body);
     }
 
@@ -457,7 +460,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         // over a compiler-generated closure class, not a ConstantExpression. Evaluate
         // it the same way WhereExpressionVisitor/JoinExpressionVisitor/etc. already do.
         if (expr is MemberExpression or UnaryExpression)
-            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr), stem);
+            return AddHavingParameter(HavingExpressionHelpers.EvaluateOperand(expr, _havingLambdaParameters), stem);
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
     }
