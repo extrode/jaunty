@@ -2,6 +2,7 @@ using DuckDB.NET.Data;
 
 using Extrode.Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 
+using Extrode.Jaunty.FlatFiles.FileSources;
 using Extrode.Jaunty.FlatFiles.Import;
 
 using Microsoft.Data.Sqlite;
@@ -111,6 +112,38 @@ public class ImporterPathLanguageTests : IDisposable
 
         Assert.Equal("filePath", ex.ParamName);
         Assert.Contains("ftp://", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ACancelledToken_IsObservedBeforeSourceRegistration()
+    {
+        using SqliteConnection target = OpenTarget();
+        string path = Path.Combine(_dataDir, "empty.csv");
+        File.WriteAllText(path, "");
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(path, target, cancellationToken: cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(o => o.AddCsv<InventoryItem>(path), target, cancellationToken: cts.Token));
+    }
+
+    [Fact]
+    public async Task ConfiguredSources_StillGetTheUniquenessCheck()
+    {
+        using SqliteConnection target = OpenTarget();
+        string a = Path.Combine(_dataDir, "inventory_a.csv");
+        string b = Path.Combine(_dataDir, "inventory_b.csv");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await FlatFileImporter.ImportAsync<InventoryItem>(
+                o =>
+                {
+                    o.AddCsv<InventoryItem>(a);
+                    o.Sources.Add(new CsvFileSource("inventory", b, typeof(InventoryItem)));
+                },
+                target));
     }
 
     [Fact]
