@@ -309,6 +309,18 @@ internal static class GroupedJoinedResultMapper
                     object converted = ConvertColumnValue(value, underlyingType);
                     property.SetValue(instance, converted);
                 }
+                else if (property.PropertyType.IsValueType && Nullable.GetUnderlyingType(property.PropertyType) is null)
+                {
+                    // AUD-R38-042. Skipping the assignment left the member at its default, the
+                    // invented zero AUD-R35-065 and AUD-R33-005 refuse on the scalar and
+                    // constructor paths, so the same projection returned 0 or threw depending only
+                    // on whether the type had a matching constructor.
+                    throw new InvalidOperationException(
+                        $"Column '{aliases[i]}' is NULL but property '{property.Name}' of " +
+                        $"'{typeof(TResult).Name}' is the non-nullable value type " +
+                        $"'{property.PropertyType.Name}'. Make the property nullable, or use a " +
+                        $"NULL-handling function such as Sql.Coalesce so the value cannot be NULL.");
+                }
             }
         }
 
