@@ -105,7 +105,7 @@ public class EntityCodeGeneratorTests
 
         Assert.Contains("namespace Test.Entities;", code);
         Assert.Contains("public partial class Product", code);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"Products\", \"dbo\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"Products\", \"dbo\")]", code);
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Key]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Key]", code);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.DatabaseGenerated(Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.DatabaseGenerated(global::Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", code);
     }
 
     [Fact]
@@ -150,13 +150,13 @@ public class EntityCodeGeneratorTests
         var table = CreateSnakeCaseTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"order_detail_id\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"order_detail_id\")]", code);
         Assert.Contains("public int OrderDetailId { get; set; }", code);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"order_id\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"order_id\")]", code);
         Assert.Contains("public int OrderId { get; set; }", code);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"unit_price\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"unit_price\")]", code);
         Assert.Contains("public decimal? UnitPrice { get; set; }", code);
     }
 
@@ -331,8 +331,8 @@ public class EntityCodeGeneratorTests
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
         // Should have [Table("simple_table")] without schema
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"simple_table\")]", code);
-        Assert.DoesNotContain("[Extrode.Jaunty.Attributes.Table(\"simple_table\", \"\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"simple_table\")]", code);
+        Assert.DoesNotContain("[global::Extrode.Jaunty.Attributes.Table(\"simple_table\", \"\")]", code);
     }
 
     [Fact]
@@ -393,9 +393,9 @@ public class EntityCodeGeneratorTests
         Assert.Contains("using System.ComponentModel.DataAnnotations;", code);
         Assert.Contains("using System.ComponentModel.DataAnnotations.Schema;", code);
         Assert.DoesNotContain("using Extrode.Jaunty.Attributes;", code);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"Products\", \"dbo\")]", code);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Key]", code);
-        Assert.Contains("[Extrode.Jaunty.Attributes.DatabaseGenerated(Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"Products\", \"dbo\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Key]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.DatabaseGenerated(global::Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", code);
     }
 
     [Fact]
@@ -440,7 +440,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.DatabaseGenerated(Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Computed)]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.DatabaseGenerated(global::Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Computed)]", code);
     }
 
     [Fact]
@@ -481,7 +481,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"weird\\\"table\", \"dbo\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"weird\\\"table\", \"dbo\")]", code);
     }
 
     [Fact]
@@ -499,7 +499,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Table(\"weird\\\\table\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Table(\"weird\\\\table\")]", code);
     }
 
     [Fact]
@@ -518,7 +518,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"weird\\\"column\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"weird\\\"column\")]", code);
     }
 
     // ------------------------------------------------------------------
@@ -547,7 +547,7 @@ public class EntityCodeGeneratorTests
         Assert.Contains("public partial class Product", code);
         Assert.DoesNotContain("public int Product { get; set; }", code);
         Assert.Contains("public int Product1 { get; set; }", code);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"Product\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"Product\")]", code);
     }
 
     [Fact]
@@ -568,10 +568,23 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"order_id\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"order_id\")]", code);
         Assert.Contains("public int OrderId { get; set; }", code);
 
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"OrderId\")]", code);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"OrderId\")]", code);
         Assert.Contains("public int OrderId1 { get; set; }", code);
+    }
+
+    [Fact]
+    public void Constructor_NullTypeMapper_Throws() =>
+        Assert.Throws<ArgumentNullException>("typeMapper", () => new EntityCodeGenerator(null!));
+
+    [Fact]
+    public void GenerateEntity_NullArguments_Throw()
+    {
+        var table = new TableSchema { TableName = "t", Columns = [] };
+
+        Assert.Throws<ArgumentNullException>("table", () => _generator.GenerateEntity(null!, _defaultOptions));
+        Assert.Throws<ArgumentNullException>("options", () => _generator.GenerateEntity(table, null!));
     }
 }

@@ -19,12 +19,18 @@ public sealed class EntityCodeGenerator : ICodeGenerator
     /// <param name="typeMapper">The type mapper for converting database types to C# types.</param>
     public EntityCodeGenerator(ITypeMapper typeMapper)
     {
+        ArgumentNullException.ThrowIfNull(typeMapper);
         _typeMapper = typeMapper;
     }
 
     /// <inheritdoc />
     public string GenerateEntity(TableSchema table, CodeGeneratorOptions options)
     {
+        // AUD-R38-112: public API in its own right, as above, so null fails as an argument error
+        // rather than a NullReferenceException partway through.
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentNullException.ThrowIfNull(options);
+
         // AUD-R26: GenerateEntity is public API in its own right, so the namespace is checked
         // here as well as in Scaffolder.ValidateOptions - a caller using the generator directly
         // gets the same guarantee. A namespace containing a semicolon would otherwise inject
@@ -98,6 +104,9 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         // qualified (see AppendClassAttributes/AppendProperty) rather than via a
         // "using Extrode.Jaunty.Attributes;" so they never collide with the identically-named
         // System.ComponentModel.DataAnnotations(.Schema) types when AddDataAnnotations is also on.
+        // AUD-R38-110: and rooted at global::, or an "Extrode" closer than the global namespace - a
+        // class scaffolded from an "Extrodes" table, or a namespace like Acme.Extrode.Entities -
+        // captures the first segment and the file does not compile.
 
         if (options.AddDataAnnotations)
         {
@@ -137,9 +146,9 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         // Set GenerateTableAttribute = false (--no-table-attr) if the attribute really is unwanted;
         // that is an explicit choice rather than an invisible consequence of a name matching.
         if (!string.IsNullOrEmpty(table.SchemaName))
-            sb.AppendLine($"{indent}[Extrode.Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\", \"{EscapeStringLiteral(table.SchemaName)}\")]");
+            sb.AppendLine($"{indent}[global::Extrode.Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\", \"{EscapeStringLiteral(table.SchemaName)}\")]");
         else
-            sb.AppendLine($"{indent}[Extrode.Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\")]");
+            sb.AppendLine($"{indent}[global::Extrode.Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\")]");
     }
 
     private void AppendProperty(
@@ -150,15 +159,15 @@ public sealed class EntityCodeGenerator : ICodeGenerator
 
         // [Key] attribute
         if (column.IsPrimaryKey && options.GenerateKeyAttribute)
-            attrs.Add("[Extrode.Jaunty.Attributes.Key]");
+            attrs.Add("[global::Extrode.Jaunty.Attributes.Key]");
 
         // [DatabaseGenerated] attribute
         if (options.GenerateDatabaseGeneratedAttribute)
         {
             if (column.IsIdentity)
-                attrs.Add("[Extrode.Jaunty.Attributes.DatabaseGenerated(Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)]");
+                attrs.Add("[global::Extrode.Jaunty.Attributes.DatabaseGenerated(global::Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Identity)]");
             else if (column.IsComputed)
-                attrs.Add("[Extrode.Jaunty.Attributes.DatabaseGenerated(Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Computed)]");
+                attrs.Add("[global::Extrode.Jaunty.Attributes.DatabaseGenerated(global::Extrode.Jaunty.Attributes.DatabaseGeneratedOption.Computed)]");
         }
 
         // [Column] attribute (only when name differs).
@@ -177,7 +186,7 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         if ((options.GenerateColumnAttribute || wasDisambiguated) &&
             !column.ColumnName.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
         {
-            attrs.Add($"[Extrode.Jaunty.Attributes.Column(\"{EscapeStringLiteral(column.ColumnName)}\")]");
+            attrs.Add($"[global::Extrode.Jaunty.Attributes.Column(\"{EscapeStringLiteral(column.ColumnName)}\")]");
         }
 
         // Data annotations
