@@ -91,4 +91,41 @@ public class InsertIdentityWriteBackTests
         Assert.Equal(11, returned);
         Assert.Equal(11, entity.Id);
     }
+
+    [Table("negative_identity_rows")]
+    public class UnsignedIdentityRow : IEntity<uint>
+    {
+        [Key]
+        [Column("id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public uint Id { get; set; }
+
+        [Column("name")]
+        public string Name { get; set; } = string.Empty;
+    }
+
+    [Fact]
+    public void AGeneratedKeyPastTheIdTypesRange_ThrowsInsteadOfWrapping()
+    {
+        using SqliteConnection connection = SeededAt(3_000_000_000);
+        var entity = new NegativeIdentityRow { Name = "row" };
+
+        var ex = Assert.Throws<InvalidOperationException>(() => connection.Insert(entity));
+
+        Assert.Contains("3000000001", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Int32", ex.Message, StringComparison.Ordinal);
+        Assert.IsType<OverflowException>(ex.InnerException);
+        Assert.Equal(0, entity.Id);
+    }
+
+    [Fact]
+    public async Task ANegativeGeneratedKeyForAnUnsignedId_ThrowsInsteadOfWrapping()
+    {
+        using SqliteConnection connection = SeededAt(-5);
+        var entity = new UnsignedIdentityRow { Name = "row" };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await connection.InsertAsync(entity, default, TestContext.Current.CancellationToken));
+        Assert.Equal(0u, entity.Id);
+    }
 }
