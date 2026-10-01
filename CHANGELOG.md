@@ -19,6 +19,14 @@ default lives in `src/Directory.Build.props`.
   likewise for `Jaunty.Fluent`, `Jaunty.FlatFiles`, etc.). The product name ("Jaunty"), the
   `Jaunty.slnx` solution file, and the `github.com/extrode/jaunty` repository are unchanged.
 
+### Added
+
+- **An UPDATE's WHERE can now open with `In`, `Between`, `Exists` and `InSubquery`** (new
+  `ISetClause` members), not only with a plain predicate.
+- **Async stored-procedure overloads that take `SpParameters` and a `CancellationToken`.** Passing
+  an `SpParameters` where a plain parameters object is expected now throws instead of binding its
+  properties.
+
 ### Fixed
 
 - **A `[Table]` entity whose only parameterless constructor is `internal`, `protected internal` or
@@ -35,6 +43,62 @@ default lives in `src/Directory.Build.props`.
   `UseReflectionMapping()` is called; otherwise the first call that needs it throws. The
   diagnostic title and message now say so.
 
+- **DuckDB flat files:** write-back refuses glob sources, Excel sheets and ranges, and `SkipRows`
+  preambles instead of writing to the wrong place; promotion joins the caller's transaction, checks
+  the catalog, and uses a unique scratch table name; the connection string quotes a path holding
+  `;`; import DDL and conflict resolution honour DataAnnotations `[Key]`; an importer closes a
+  target connection it opened and registers sources asynchronously so cancellation is observed; a
+  null string search value or an entity-reading operand in a predicate throws
+  `NotSupportedException`; glob and extension `ArgumentException`s name `filePath`.
+- **PostgreSQL:** primary keys are read from `pg_catalog`, so SELECT-only roles see them; `TIMETZ`
+  reads into `TimeOnly`/`TimeSpan`, and an out-of-range `DateTimeOffset` read is reported instead of
+  wrapped; `system_user` is quoted as a keyword; a failed server-side `COPY FROM` names
+  PostgreSQL's own permissions and the client-side `COPY ... FROM STDIN` route.
+- **MySQL/MariaDB:** `Length` counts characters, not bytes; the keyword set covers MySQL 8.4 and
+  MariaDB reserved words; identifiers starting with a digit are quoted; CSV import reads
+  backslashes literally.
+- **SQL Server:** a connection string with credentials but no catalog is no longer mistaken for
+  SQLite; pseudo-columns such as `$action` and dollar signs inside identifiers no longer parse as
+  parameters.
+- **Parameters:** collection type handlers are honoured by IN-clause expansion, and dictionary
+  collections expand; a property declared `object` (or as an interface an array implements) that
+  is null or scalar on one call no longer stops a later array from expanding; parameters objects
+  count as dictionaries only when the binder reads them by key; a `Nullable<T>` type-handler
+  registration is honoured, and a handler's null stays null on generated reads.
+- **Fluent:** join parameter names compare case-insensitively, and `jp<n>` names are no longer
+  reserved; a redefined join clause drops its earlier parameters; insert values that sanitize
+  alike get distinct placeholders; `@` inside literals and comments is ignored when vetting a
+  set-operation operand; fragment parameters are renamed using the dialect's bracket and backslash
+  rules; async terminals release commands, readers and connections asynchronously; a getter's own
+  exception surfaces from the evaluator fast path.
+- **Multi-entity reads:** a struct entity is rejected with `NotSupportedException` at every arity
+  before the resolver check, and a custom `ReflectionMultiMapperResolver` that returns null or the
+  wrong delegate is named instead of being told to load the Reflection extension.
+- **A hand-written `IMapped<T>` struct with an instance `ReadEntity`** (netstandard2.0) maps instead
+  of throwing `TypeInitializationException`.
+- **A generated identity too large for the entity's `IEntity<TId>` key now throws
+  `InvalidOperationException`** instead of wrapping (for example 3000000001 into an `int` Id
+  becoming negative). The row has been inserted when this throws.
+- **`SpParameters.Get` and `HasValue` ignore a leading `@`**, as binding already did.
+- **SQLite foreign keys are re-enabled after commit** even when the caller's token is cancelled.
+- **A `GridReader` stream holds its result set until its iterator ends.**
+- **Diagnostics:** null sensitive names are dropped, the slow-query threshold is read live, and
+  generic dictionary parameters are logged; audit records read the guarded database name.
+- **`QueryPartialListAsync` disposes its command and reader asynchronously.**
+- **A non-`DbTransaction` on a sync call no longer says an async operation failed.**
+- **Interception wrappers throw `ArgumentNullException` for a null delegate** before any hook runs.
+- **A default or parameterless `EntityColumnInfo` in a source-generated metadata source** throws
+  `InvalidOperationException` naming the entity and index, instead of a later
+  `NullReferenceException`.
+- **Scaffolding:** generated attributes are rooted at `global::`, so an entity or namespace named
+  `Extrode` compiles; `Singularize` keeps an all-caps name all-caps (`CATEGORIES` -> `CATEGORY`);
+  every file is generated before any is written, so a generator failure leaves no partial output;
+  `ListTablesAsync` rejects a blank connection string with `ArgumentException`; `list-tables`
+  reports the cause chain; the `--force` help no longer promises a prompt.
+- **Docs:** `IEntity` is documented as driving identity write-back (typed key overloads need
+  `IEntity<TId>`); multi-entity and partial-mapping reads no longer claim to throw for an unmatched
+  property; type handlers are documented as never receiving null.
+
 ### Changed
 
 - **SQLite bundle is now SQLitePCLRaw 3.0.5 (SQLite 3.53.4); Microsoft.Data.SqlClient is 7.1.0.**
@@ -42,6 +106,12 @@ default lives in `src/Directory.Build.props`.
   can now differ past the 15th digit from Jaunty's own reads. Every Jaunty read path, generated
   and reflection, converts a `REAL` to `decimal` with 15-significant-digit rounding. Hand-written
   mappers that call `GetDecimal` may see the extra digits.
+- **SQL Server `Length` now counts trailing spaces** (`LEN(REPLACE(x, ' ', '.'))`), matching the
+  other dialects. `LEN` alone ignored them.
+- **MySQL/MariaDB `Avg` returns a fractional `double`** (`AVG(x + 0E0)`); bare `AVG` returned a
+  4-decimal `DECIMAL`.
+- **Translating a grouped projection, building joined select lists and resolving special-type
+  constructors each happen once instead of per call or per row.**
 
 ## [1.0.0-rc.2] - 2026-09-03
 
