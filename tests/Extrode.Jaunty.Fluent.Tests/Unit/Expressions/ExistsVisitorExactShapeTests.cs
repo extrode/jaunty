@@ -34,8 +34,44 @@ public class ExistsVisitorExactShapeTests
         => Assert.Equal("(p.[quantity_per_unit] IS NOT NULL)", Sql((c, p) => null != p.QuantityPerUnit));
 
     [Fact]
+    public void ABareBoolColumnBody_ComparesToTrue()
+        => Assert.Equal("p.[discontinued] = 1", Sql((c, p) => p.Discontinued));
+
+    [Fact]
+    public void ACapturedFalseBody_FoldsToFalse()
+    {
+        bool off = false;
+        Assert.Equal("1 = 0", Sql((c, p) => off));
+    }
+
+    [Fact]
+    public void ABoolColumnOperandOfOr_ComparesToTrue()
+        => Assert.Equal("((c.[category_id] = p.[category_id]) OR p.[discontinued] = 1)", Sql((c, p) => c.CategoryId == p.CategoryId || p.Discontinued));
+
+    [Fact]
+    public void AnOrderedComparisonAgainstNull_IsFalseEvenUnderNot()
+    {
+        int? none = null;
+        Assert.Equal("NOT ((1 = 0))", Sql((c, p) => !(p.SupplierId > none)));
+    }
+
+    [Fact]
+    public void NullOrderedAgainstAColumn_IsFalse()
+    {
+        int? none = null;
+        Assert.Equal("(1 = 0)", Sql((c, p) => none <= p.SupplierId));
+    }
+
+    [Fact]
+    public void NullAgainstNull_FoldsLikeCSharp()
+    {
+        string? a = null;
+        Assert.Equal("((1 = 1) OR (1 = 0))", Sql((c, p) => a == null || a != null));
+    }
+
+    [Fact]
     public void Not_WrapsItsOperand()
-        => Assert.Equal("NOT (p.[discontinued])", Sql((c, p) => !p.Discontinued));
+        => Assert.Equal("NOT (p.[discontinued] = 1)", Sql((c, p) => !p.Discontinued));
 
     [Fact]
     public void StrictOrderings_UseTheirOperators()

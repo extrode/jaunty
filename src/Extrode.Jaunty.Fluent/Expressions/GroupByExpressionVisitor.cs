@@ -17,13 +17,20 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 {
     private readonly ISqlDialect _dialect;
     private readonly string[] _groupByColumns;
+    private readonly IReadOnlyDictionary<string, string> _keyMemberColumns;
     private readonly List<string> _selectColumns = new();
     private readonly List<string> _columnAliases = new();
 
-    public GroupByExpressionVisitor(ISqlDialect dialect, string[] groupByColumns)
+    /// <param name="dialect">The SQL dialect.</param>
+    /// <param name="groupByColumns">The escaped GROUP BY columns, in key order.</param>
+    /// <param name="keyMemberColumns">Each composite key member's name mapped to its escaped
+    /// column, so <c>g.Key.Member</c> resolves through the key rather than the entity.</param>
+    public GroupByExpressionVisitor(ISqlDialect dialect, string[] groupByColumns,
+        IReadOnlyDictionary<string, string>? keyMemberColumns = null)
     {
         _dialect = dialect;
         _groupByColumns = groupByColumns;
+        _keyMemberColumns = keyMemberColumns ?? new Dictionary<string, string>();
     }
 
     /// <summary>
@@ -161,11 +168,17 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         }
 
         // g.Key.Property (for composite keys like new { p.CategoryId, p.SupplierId })
+        // AUD-R38-039: the member used to be looked up as a property of the entity, so a renamed
+        // key member (new { Cat = p.CategoryId }) selected a column named [Cat], and one renamed
+        // to another property's name selected a column that is not in GROUP BY at all. The joined
+        // twin already resolved through the key.
         if (expr is MemberExpression memberExpr && IsKeyAccess(memberExpr.Expression))
         {
             var propertyName = memberExpr.Member.Name;
-            var columnName = GetColumnName(propertyName);
-            return (_dialect.EscapeColumnName(columnName), defaultAlias);
+            if (!_keyMemberColumns.TryGetValue(propertyName, out string? column))
+                throw new NotSupportedException($"Unknown GROUP BY key property '{propertyName}'.");
+
+            return (column, defaultAlias);
         }
 
         // g.Count(), g.Sum(p => p.Col), etc.
@@ -258,6 +271,7 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
             if (body is MemberExpression memberExpr)
             {
+                ColumnReference.RequireDirectOf(memberExpr, lambda.Parameters[0]);
                 var propertyName = memberExpr.Member.Name;
                 var columnName = GetColumnName(propertyName);
                 return ApplyAggregate(aggregate, _dialect.EscapeColumnName(columnName));
