@@ -1773,9 +1773,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// <remarks>
     /// AUD-R35-070. Replaces a pair of helpers that compared <c>AttributeClass?.Name</c>, the simple
     /// class name, so any namespace's <c>[Column]</c>, <c>[NotMapped]</c>, <c>[Key]</c>,
-    /// <c>[DatabaseGenerated]</c> or <c>[EnumStorage]</c> was honoured. Base types are walked
-    /// because <c>PropertyInfo.GetCustomAttribute&lt;T&gt;</c> on the reflection side matches a
-    /// derived attribute too.
+    /// <c>[DatabaseGenerated]</c> or <c>[EnumStorage]</c> was honoured. Matching is exact - see
+    /// <see cref="IsAttribute"/>.
     /// </remarks>
     private static AttributeData? GetRecognizedAttribute(ISymbol symbol, params string[] recognizedFullNames)
     {
@@ -1784,7 +1783,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         {
             foreach (AttributeData attribute in attributes)
             {
-                if (IsOrDerivesFrom(attribute.AttributeClass, fullName))
+                if (IsAttribute(attribute.AttributeClass, fullName))
                     return attribute;
             }
         }
@@ -1800,27 +1799,19 @@ public partial class JauntyGenerator : IIncrementalGenerator
         => GetRecognizedAttribute(symbol, recognizedFullNames) is not null;
 
     /// <summary>
-    /// Returns <see langword="true"/> when <paramref name="attributeClass"/> is
-    /// <paramref name="fullName"/> or, for Extrode.Jaunty's own attributes, inherits from it.
+    /// Returns <see langword="true"/> when <paramref name="attributeClass"/> is exactly
+    /// <paramref name="fullName"/>.
     /// </summary>
     /// <remarks>
-    /// AUD-R38 generator audit: the reflection twins match Extrode.Jaunty's attributes through
-    /// <c>GetCustomAttribute&lt;T&gt;</c>, which accepts a derived attribute, but DataAnnotations
-    /// ones by exact <c>AttributeType.FullName</c> (MetadataBuilder.HasAttribute/GetAttributeData,
-    /// and the DuckDB MappedPropertyFilter). Walking base types for both made a consumer's
-    /// <c>SnakeColumn : ColumnAttribute</c> rename the column on the generated path only.
+    /// AUD-R38 generator audit: this used to walk base types, so a consumer's
+    /// <c>SnakeColumn : System.ComponentModel.DataAnnotations.Schema.ColumnAttribute</c> renamed the
+    /// column on the generated path only - the reflection twins match DataAnnotations attributes by
+    /// exact <c>AttributeType.FullName</c> (MetadataBuilder.HasAttribute/GetAttributeData, and the
+    /// DuckDB MappedPropertyFilter). Extrode.Jaunty's own attributes are all sealed, so their
+    /// <c>GetCustomAttribute&lt;T&gt;</c> matching is exact too.
     /// </remarks>
-    private static bool IsOrDerivesFrom(INamedTypeSymbol? attributeClass, string fullName)
-    {
-        bool walkBaseTypes = fullName.StartsWith("Extrode.Jaunty.", StringComparison.Ordinal);
-        for (INamedTypeSymbol? type = attributeClass; type is not null; type = walkBaseTypes ? type.BaseType : null)
-        {
-            if (type.ToDisplayString() == fullName)
-                return true;
-        }
-
-        return false;
-    }
+    private static bool IsAttribute(INamedTypeSymbol? attributeClass, string fullName)
+        => attributeClass?.ToDisplayString() == fullName;
 
     /// <summary>
     /// The <c>[Table]</c> attribute the generator recognizes - Extrode.Jaunty's or DataAnnotations' - or
