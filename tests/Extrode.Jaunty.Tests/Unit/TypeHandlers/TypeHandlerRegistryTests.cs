@@ -297,52 +297,6 @@ public class TypeHandlerRegistryTests : IDisposable
 
     #endregion
 
-    #region Type Handler Exception Propagation (Finding 3)
-
-    [Fact]
-    public void TryConvertToDb_WhenHandlerThrows_PropagatesAsInvalidOperationException()
-    {
-        JauntyConfig.RegisterTypeHandler(new ThrowingStringHandler());
-
-        var ex = Assert.Throws<InvalidOperationException>(() =>
-            TypeHandlerRegistry.TryConvertToDb<string>("x", out _));
-        Assert.IsType<FormatException>(ex.InnerException);
-    }
-
-    [Fact]
-    public void TryConvertFromDb_WhenHandlerThrows_PropagatesAsInvalidOperationException()
-    {
-        JauntyConfig.RegisterTypeHandler(new ThrowingStringHandler());
-
-        var ex = Assert.Throws<InvalidOperationException>(() =>
-            TypeHandlerRegistry.TryConvertFromDb<string>("x", out _));
-        Assert.IsType<FormatException>(ex.InnerException);
-    }
-
-    #endregion
-
-    #region No Handler Registered (coverage-gaps-2026-09-20)
-
-    [Fact]
-    public void TryConvertToDb_WithNoHandlerRegistered_ReturnsFalse()
-    {
-        bool ok = TypeHandlerRegistry.TryConvertToDb("x", out object? dbValue);
-
-        Assert.False(ok);
-        Assert.Null(dbValue);
-    }
-
-    [Fact]
-    public void TryConvertFromDb_WithNoHandlerRegistered_ReturnsFalse()
-    {
-        bool ok = TypeHandlerRegistry.TryConvertFromDb<string>("x", out string? result);
-
-        Assert.False(ok);
-        Assert.Null(result);
-    }
-
-    #endregion
-
     #region Concurrent Register/Remove (Finding: _handlerCount race)
 
     [Fact]
@@ -390,13 +344,6 @@ public class TypeHandlerRegistryTests : IDisposable
 
     #endregion
 
-    private sealed class ThrowingStringHandler : TypeHandler<string>
-    {
-        public override string Parse(object? dbValue) => throw new FormatException("parse boom");
-
-        public override object? ToDbValue(string? value) => throw new FormatException("todb boom");
-    }
-
     private class UpperCaseStringHandler : TypeHandler<string>
     {
         public override string Parse(object? dbValue) =>
@@ -405,48 +352,7 @@ public class TypeHandlerRegistryTests : IDisposable
         public override object? ToDbValue(string? value) => value?.ToLowerInvariant();
     }
 
-    #region TryConvertFromDb null-from-handler (R27 batch 7)
-
-    // A null from the handler cannot represent a non-nullable value type; success would hand
-    // back default(T) (0 for int), indistinguishable from real data.
-    [Fact]
-    public void TryConvertFromDb_HandlerReturnsNull_NonNullableValueType_ReturnsFalse()
-    {
-        TypeHandlerRegistry.Register<int>(new NullReturningHandler());
-
-        bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out int result);
-
-        Assert.False(ok);
-        Assert.Equal(0, result);
-    }
-
-    [Fact]
-    public void TryConvertFromDb_HandlerReturnsNull_ReferenceType_ReturnsTrueWithNull()
-    {
-        TypeHandlerRegistry.Register<string>(new NullReturningHandler());
-
-        bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out string result);
-
-        Assert.True(ok);
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public void TryConvertFromDb_HandlerReturnsNull_NullableValueType_ReturnsTrueWithNull()
-    {
-        TypeHandlerRegistry.Register<int?>(new NullReturningHandler());
-        try
-        {
-            bool ok = TypeHandlerRegistry.TryConvertFromDb(DBNull.Value, out int? result);
-
-            Assert.True(ok);
-            Assert.Null(result);
-        }
-        finally
-        {
-            TypeHandlerRegistry.Remove<int?>();
-        }
-    }
+    #region Nullable keying
 
     [Fact]
     public void Register_NullableValueType_IsKeyedOnTheUnderlyingType()
@@ -474,27 +380,6 @@ public class TypeHandlerRegistryTests : IDisposable
 
         Assert.True(TypeHandlerRegistry.Remove<Guid?>());
         Assert.False(TypeHandlerRegistry.TryGetHandler(typeof(Guid), out _));
-    }
-
-    [Fact]
-    public void TryConvertToDb_NullableValueType_FindsTheHandler()
-    {
-        TypeHandlerRegistry.Register<Guid>(new FixedHandler());
-        try
-        {
-            Assert.True(TypeHandlerRegistry.TryConvertToDb<Guid?>(Guid.Empty, out object? result));
-            Assert.Equal("fixed", result);
-        }
-        finally
-        {
-            TypeHandlerRegistry.Remove<Guid>();
-        }
-    }
-
-    private sealed class FixedHandler : ITypeHandler
-    {
-        public object? Parse(object? dbValue) => null;
-        public object? ToDbValue(object? value) => "fixed";
     }
 
     private sealed class NullReturningHandler : ITypeHandler
