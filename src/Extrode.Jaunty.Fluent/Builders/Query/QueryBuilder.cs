@@ -913,6 +913,39 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         return _connection.QueryPartialSingleOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
+    // AUD-R38-041: CommandOptions twins, so the call can join the caller's transaction or
+    // set a timeout. Kept as separate bodies: a default CommandOptions carries CommandType 0.
+
+    public List<T> SelectPartial(CommandOptions options, params string[] columns)
+    {
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        return _connection.QueryPartial<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    public T SelectPartialFirst(CommandOptions options, params string[] columns)
+    {
+        var sql = BuildSelectSqlTaking(1, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        return _connection.QueryPartialFirst<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    public T? SelectPartialFirstOrDefault(CommandOptions options, params string[] columns)
+    {
+        var sql = BuildSelectSqlTaking(1, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        return _connection.QueryPartialFirstOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    public T SelectPartialSingle(CommandOptions options, params string[] columns)
+    {
+        var sql = BuildSelectSqlTaking(2, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        return _connection.QueryPartialSingle<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    public T? SelectPartialSingleOrDefault(CommandOptions options, params string[] columns)
+    {
+        var sql = BuildSelectSqlTaking(2, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        return _connection.QueryPartialSingleOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     #endregion
 
     #region Terminal operations (sync) - Partial entity (expression columns)
@@ -950,6 +983,44 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
         var sql = BuildSelectSqlTaking(2, columnNames);
         return _connection.QueryPartialSingleOrDefault<T>(sql, _parameters.ToParameterObject()!);
+    }
+
+    // AUD-R38-041: CommandOptions twins, so the call can join the caller's transaction or
+    // set a timeout. Kept as separate bodies: a default CommandOptions carries CommandType 0.
+
+    public List<T> SelectPartial(CommandOptions options, params Expression<Func<T, object?>>[] columns)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSql(columnNames);
+        return _connection.QueryPartial<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    public T SelectPartialFirst(CommandOptions options, params Expression<Func<T, object?>>[] columns)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSqlTaking(1, columnNames);
+        return _connection.QueryPartialFirst<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    public T? SelectPartialFirstOrDefault(CommandOptions options, params Expression<Func<T, object?>>[] columns)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSqlTaking(1, columnNames);
+        return _connection.QueryPartialFirstOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    public T SelectPartialSingle(CommandOptions options, params Expression<Func<T, object?>>[] columns)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSqlTaking(2, columnNames);
+        return _connection.QueryPartialSingle<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
+    public T? SelectPartialSingleOrDefault(CommandOptions options, params Expression<Func<T, object?>>[] columns)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSqlTaking(2, columnNames);
+        return _connection.QueryPartialSingleOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     #endregion
@@ -1035,6 +1106,67 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     public double SelectAvg<TResult>(Expression<Func<T, TResult>> selector) => Avg(selector);
     public TResult SelectMin<TResult>(Expression<Func<T, TResult>> selector) => Min(selector);
     public TResult SelectMax<TResult>(Expression<Func<T, TResult>> selector) => Max(selector);
+
+    // AUD-R38-041: CommandOptions twins, so the call can join the caller's transaction or
+    // set a timeout. Kept as separate bodies: a default CommandOptions carries CommandType 0.
+
+    public int Count<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("COUNT", columnName);
+        // SQLite returns Int64 for COUNT
+        var result = _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options));
+        return CountConversion.ToInt32(result);
+    }
+
+    public long LongCount<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("COUNT", columnName);
+        return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options));
+    }
+
+    public TResult Sum<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("SUM", columnName);
+        return ConvertScalarResult<TResult>(_connection.QueryScalar<object>(sql, _parameters.ToParameterObject()!, ToTypedOptions<object>(options)));
+    }
+
+    public double Avg<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("AVG", columnName);
+        return _connection.QueryScalar<double>(sql, _parameters.ToParameterObject()!, ToTypedOptions<double>(options));
+    }
+
+    public TResult Min<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("MIN", columnName);
+        return ConvertScalarResult<TResult>(_connection.QueryScalar<object>(sql, _parameters.ToParameterObject()!, ToTypedOptions<object>(options)));
+    }
+
+    public TResult Max<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("MAX", columnName);
+        return ConvertScalarResult<TResult>(_connection.QueryScalar<object>(sql, _parameters.ToParameterObject()!, ToTypedOptions<object>(options)));
+    }
+
+    // SelectX aliases
+
+    public int SelectCount(CommandOptions options) => Count(options);
+
+    public int SelectCount<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options) => Count(selector, options);
+
+    public TResult SelectSum<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options) => Sum(selector, options);
+
+    public double SelectAvg<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options) => Avg(selector, options);
+
+    public TResult SelectMin<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options) => Min(selector, options);
+
+    public TResult SelectMax<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options) => Max(selector, options);
 
     #endregion
 
@@ -1164,6 +1296,49 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    // AUD-R38-041: CommandOptions twins, so the call can join the caller's transaction or
+    // set a timeout. Kept as separate bodies: a default CommandOptions carries CommandType 0.
+
+    public async Task<List<T>> SelectPartialAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectPartialFirstAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSelectSqlTaking(1, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectPartialFirstOrDefaultAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSelectSqlTaking(1, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectPartialSingleAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSelectSqlTaking(2, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectPartialSingleOrDefaultAsync(string[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSelectSqlTaking(2, columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     #endregion
 
     #region Terminal operations (async) - Partial entity (expression columns)
@@ -1211,6 +1386,54 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    // AUD-R38-041: CommandOptions twins, so the call can join the caller's transaction or
+    // set a timeout. Kept as separate bodies: a default CommandOptions carries CommandType 0.
+
+    public async Task<List<T>> SelectPartialAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSql(columnNames);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectPartialFirstAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSqlTaking(1, columnNames);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectPartialFirstOrDefaultAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSqlTaking(1, columnNames);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectPartialSingleAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSqlTaking(2, columnNames);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectPartialSingleOrDefaultAsync(Expression<Func<T, object?>>[] columns, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
+        var sql = BuildSelectSqlTaking(2, columnNames);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
@@ -1316,6 +1539,81 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     public Task<double> SelectAvgAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => AvgAsync(selector, cancellationToken);
     public Task<TResult> SelectMinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => MinAsync(selector, cancellationToken);
     public Task<TResult> SelectMaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => MaxAsync(selector, cancellationToken);
+
+    // AUD-R38-041: CommandOptions twins, so the call can join the caller's transaction or
+    // set a timeout. Kept as separate bodies: a default CommandOptions carries CommandType 0.
+
+    public async Task<int> CountAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("COUNT", columnName);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false);
+        return CountConversion.ToInt32(result);
+    }
+
+    public async Task<long> LongCountAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("COUNT", columnName);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("SUM", columnName);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, ToTypedOptions<object>(options), cancellationToken).ConfigureAwait(false);
+        return ConvertScalarResult<TResult>(result);
+    }
+
+    public async Task<double> AvgAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("AVG", columnName);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryScalarAsync<double>(sql, _parameters.ToParameterObject()!, ToTypedOptions<double>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("MIN", columnName);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, ToTypedOptions<object>(options), cancellationToken).ConfigureAwait(false);
+        return ConvertScalarResult<TResult>(result);
+    }
+
+    public async Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("MAX", columnName);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, ToTypedOptions<object>(options), cancellationToken).ConfigureAwait(false);
+        return ConvertScalarResult<TResult>(result);
+    }
+
+    // Async SelectX aliases
+
+    public Task<int> SelectCountAsync(CommandOptions options, CancellationToken cancellationToken = default) => CountAsync(options, cancellationToken);
+
+    public Task<int> SelectCountAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default) => CountAsync(selector, options, cancellationToken);
+
+    public Task<TResult> SelectSumAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default) => SumAsync(selector, options, cancellationToken);
+
+    public Task<double> SelectAvgAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default) => AvgAsync(selector, options, cancellationToken);
+
+    public Task<TResult> SelectMinAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default) => MinAsync(selector, options, cancellationToken);
+
+    public Task<TResult> SelectMaxAsync<TResult>(Expression<Func<T, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default) => MaxAsync(selector, options, cancellationToken);
 
     #endregion
 
