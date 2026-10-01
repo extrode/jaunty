@@ -79,7 +79,7 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken cancellationToken)
     {
         var isSlow = _hasSlowQueryThreshold && context.Elapsed > _config.SlowQueryThreshold;
-        var level = isSlow ? LogLevel.Warning : _config.MinimumLogLevel;
+        var level = isSlow ? SlowQueryLevel(_config.MinimumLogLevel) : _config.MinimumLogLevel;
 
         if (!IsEnabledAtLevel(level))
             return new ValueTask();
@@ -110,6 +110,16 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
 
         return new ValueTask();
     }
+
+    /// <summary>
+    /// AUD-R38-011: a slow query always went out at Warning, so with MinimumLogLevel at Error or
+    /// Critical - every ordinary completion written at that level, the host filtering below it -
+    /// the slow ones were the only completions the host dropped. A slow query is never quieter
+    /// than an ordinary one now; None still means ordinary entries are off, and slow ones still
+    /// warn.
+    /// </summary>
+    private static LogLevel SlowQueryLevel(LogLevel minimum) =>
+        minimum > LogLevel.Warning && minimum != LogLevel.None ? minimum : LogLevel.Warning;
 
     /// <inheritdoc/>
     public ValueTask OnCommandFailedAsync(CommandContext context, Exception exception, CancellationToken cancellationToken)

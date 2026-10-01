@@ -402,6 +402,55 @@ public class LoggingInterceptorTests
         Assert.Contains("SLOW", logs[0].Message);
     }
 
+    [Theory]
+    [InlineData(LogLevel.Error)]
+    [InlineData(LogLevel.Critical)]
+    public async Task OnCommandExecutedAsync_SlowQuery_IsNeverQuieterThanAnOrdinaryOne(LogLevel minimum)
+    {
+        var provider = CreateTestProvider(minimum);
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration { MinimumLogLevel = minimum, SlowQueryThreshold = TimeSpan.FromMilliseconds(100) };
+        var interceptor = new LoggingInterceptor(logger, config);
+        var context = new CommandContext(
+            "SELECT * FROM Users",
+            null,
+            CreateMockConnection(),
+            CommandType.Text,
+            TimeSpan.FromMilliseconds(500));
+
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Equal(minimum, logs[0].Level);
+        Assert.Contains("SLOW", logs[0].Message);
+    }
+
+    [Theory]
+    [InlineData(LogLevel.Trace)]
+    [InlineData(LogLevel.Information)]
+    [InlineData(LogLevel.Warning)]
+    [InlineData(LogLevel.None)]
+    public async Task OnCommandExecutedAsync_SlowQuery_WarnsWhenMinimumIsWarningOrBelowOrNone(LogLevel minimum)
+    {
+        var provider = CreateTestProvider(LogLevel.Trace);
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration { MinimumLogLevel = minimum, SlowQueryThreshold = TimeSpan.FromMilliseconds(100) };
+        var interceptor = new LoggingInterceptor(logger, config);
+        var context = new CommandContext(
+            "SELECT * FROM Users",
+            null,
+            CreateMockConnection(),
+            CommandType.Text,
+            TimeSpan.FromMilliseconds(500));
+
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Equal(LogLevel.Warning, logs[0].Level);
+    }
+
     #endregion
 
     #region OnCommandFailedAsync Tests
