@@ -44,9 +44,9 @@ public class PostgreSqlSchemaReaderScriptedTests
         new(command =>
         {
             string sql = command.CommandText;
-            if (sql.Contains("referential_constraints"))
+            if (sql.Contains("contype = 'f'"))
                 return (foreignKeys ?? (_ => ForeignKeys())).Invoke(command);
-            if (sql.Contains("'PRIMARY KEY'"))
+            if (sql.Contains("contype = 'p'"))
                 return (primaryKey ?? (_ => EmptyPrimaryKey)).Invoke(command);
             if (sql.Contains("FROM information_schema.columns"))
                 return (columns ?? (_ => Columns())).Invoke(command);

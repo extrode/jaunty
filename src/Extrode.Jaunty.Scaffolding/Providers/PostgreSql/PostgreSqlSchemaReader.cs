@@ -38,49 +38,46 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
         WHERE c.table_schema = @SchemaName AND c.table_name = @TableName
         ORDER BY c.ordinal_position";
 
+    // AUD-R38-046: information_schema.table_constraints and key_column_usage list only tables the
+    // current role owns or holds a privilege other than SELECT on, so a read-only scaffolding role
+    // got no keys at all. pg_constraint is readable by every role.
     internal const string PrimaryKeysSql = @"
         SELECT
-            tc.constraint_name AS ConstraintName,
-            kcu.column_name AS ColumnName,
-            kcu.ordinal_position AS KeyOrdinal
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-            AND tc.table_schema = kcu.table_schema
-            AND tc.table_name = kcu.table_name
-        WHERE tc.constraint_type = 'PRIMARY KEY'
-          AND tc.table_schema = @SchemaName
-          AND tc.table_name = @TableName
-        ORDER BY kcu.ordinal_position";
+            con.conname AS ConstraintName,
+            a.attname AS ColumnName,
+            k.ord::int AS KeyOrdinal
+        FROM pg_catalog.pg_constraint con
+        JOIN pg_catalog.pg_class cl ON cl.oid = con.conrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = cl.relnamespace
+        CROSS JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS k(attnum, ord)
+        JOIN pg_catalog.pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = k.attnum
+        WHERE con.contype = 'p'
+          AND n.nspname = @SchemaName
+          AND cl.relname = @TableName
+        ORDER BY k.ord";
 
-    // R27 batch 15: constraint_column_usage carries no ordinal, so joining it on constraint
-    // name alone cross-produced composite foreign keys (N columns -> N*N rows, every child
-    // column paired with every parent column). referential_constraints links the FK to its
-    // referenced unique constraint, whose key_column_usage row is matched positionally via
-    // position_in_unique_constraint - one row per child column, correctly paired.
+    // R27 batch 15: composite foreign keys must come back one row per child column, paired with the
+    // parent column at the same position. unnest over conkey and confkey together pairs them by
+    // position. AUD-R38-046: pg_catalog rather than information_schema, as for PrimaryKeysSql.
     internal const string ForeignKeysSql = @"
         SELECT
-            tc.constraint_name AS ConstraintName,
-            kcu.column_name AS ForeignKeyColumn,
-            rkcu.table_schema AS ReferencedSchema,
-            rkcu.table_name AS ReferencedTable,
-            rkcu.column_name AS ReferencedColumn
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-            AND tc.table_schema = kcu.table_schema
-            AND tc.table_name = kcu.table_name
-        JOIN information_schema.referential_constraints rc
-            ON rc.constraint_name = tc.constraint_name
-            AND rc.constraint_schema = tc.constraint_schema
-        JOIN information_schema.key_column_usage rkcu
-            ON rkcu.constraint_name = rc.unique_constraint_name
-            AND rkcu.constraint_schema = rc.unique_constraint_schema
-            AND rkcu.ordinal_position = kcu.position_in_unique_constraint
-        WHERE tc.constraint_type = 'FOREIGN KEY'
-          AND tc.table_schema = @SchemaName
-          AND tc.table_name = @TableName
-        ORDER BY kcu.ordinal_position";
+            con.conname AS ConstraintName,
+            a.attname AS ForeignKeyColumn,
+            rn.nspname AS ReferencedSchema,
+            rcl.relname AS ReferencedTable,
+            ra.attname AS ReferencedColumn
+        FROM pg_catalog.pg_constraint con
+        JOIN pg_catalog.pg_class cl ON cl.oid = con.conrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = cl.relnamespace
+        JOIN pg_catalog.pg_class rcl ON rcl.oid = con.confrelid
+        JOIN pg_catalog.pg_namespace rn ON rn.oid = rcl.relnamespace
+        CROSS JOIN LATERAL unnest(con.conkey, con.confkey) WITH ORDINALITY AS k(attnum, refattnum, ord)
+        JOIN pg_catalog.pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = k.attnum
+        JOIN pg_catalog.pg_attribute ra ON ra.attrelid = con.confrelid AND ra.attnum = k.refattnum
+        WHERE con.contype = 'f'
+          AND n.nspname = @SchemaName
+          AND cl.relname = @TableName
+        ORDER BY con.conname, k.ord";
 
     private readonly Func<string, DbConnection> _connectionFactory;
 
