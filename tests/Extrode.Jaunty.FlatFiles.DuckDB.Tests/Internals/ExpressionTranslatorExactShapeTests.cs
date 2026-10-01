@@ -176,14 +176,14 @@ public class ExpressionTranslatorExactShapeTests
     }
 
     [Fact]
-    public void StringContains_WithANullArgument_BindsAnEmptyPattern()
+    public void StringContains_WithANullArgument_Throws()
     {
         string? value = null;
         Expression<Func<SalesRecord, bool>> predicate = x => x.ProductName.Contains(value!);
 
-        var (_, parameters) = ExpressionTranslator.Translate(predicate);
+        var ex = Assert.Throws<ArgumentNullException>(() => ExpressionTranslator.Translate(predicate));
 
-        Assert.Equal("%%", Assert.Single(parameters).Value);
+        Assert.Equal("'Contains' was given a null search value, which string.Contains rejects. (Parameter 'value')", ex.Message);
     }
 
     [Fact]
