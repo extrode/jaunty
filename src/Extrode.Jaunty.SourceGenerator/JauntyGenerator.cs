@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
@@ -922,6 +923,15 @@ public partial class JauntyGenerator : IIncrementalGenerator
     };
 
     /// <summary>
+    /// A symbol name as it has to be written in C# source: <c>@</c>-prefixed when it is a reserved
+    /// keyword. <see cref="ISymbol.Name"/> drops the <c>@</c>, so an entity <c>@event</c> or a
+    /// property <c>@default</c> was emitted bare and the .g.cs did not compile. Contextual keywords
+    /// are valid identifiers where the generator emits names and need no prefix.
+    /// </summary>
+    private static string EscapeIdentifier(string name)
+        => SyntaxFacts.GetKeywordKind(name) == SyntaxKind.None ? name : "@" + name;
+
+    /// <summary>
     /// Builds a collision-resistant hint name for the generated source file from the entity's
     /// fully-qualified type name, so two <c>[Table]</c> classes with the same simple name in
     /// different namespaces don't produce a duplicate hint name (which fails the build).
@@ -941,8 +951,13 @@ public partial class JauntyGenerator : IIncrementalGenerator
         var sb = new StringBuilder(fullName.Length);
         foreach (char c in fullName)
         {
+            // '@' is a verbatim marker, not part of the name: `@class` and `class` are one
+            // identifier, so dropping it cannot merge two types, while mapping it to '_' made
+            // `Q.@class` collide with a global `Q_class`.
             if (char.IsLetterOrDigit(c))
                 sb.Append(c);
+            else if (c == '@')
+                continue;
             else if (c == '_')
                 sb.Append("__");
             else
@@ -989,7 +1004,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     {
         var namespaceName = entity.Namespace;
         var isGlobalNamespace = namespaceName is null;
-        var className = entity.ClassName;
+        var className = EscapeIdentifier(entity.ClassName);
         var tableName = entity.TableName;
         var schemaName = entity.SchemaName;
         EquatableArray<PropertyMetadata> properties = entity.Properties;
@@ -1016,7 +1031,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 reportDiagnostic(Diagnostic.Create(
                     DuplicateColumnNameDescriptor,
                     entity.DiagnosticLocation?.ToLocation() ?? Location.None,
-                    className, p.ColumnName, first.PropertyName));
+                    entity.ClassName, p.ColumnName, first.PropertyName));
                 continue;
             }
 
@@ -1042,7 +1057,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // AUD-R33-006: re-declare every enclosing type, or the partial below lands at namespace
         // scope and is a different type from the entity - see UnsupportedNestingDescriptor.
         foreach (ContainingTypeInfo containing in entity.ContainingTypes)
-            sb.AppendLine($"    {containing.AccessibilityKeyword} partial {containing.Keyword} {containing.Name}").AppendLine("    {");
+            sb.AppendLine($"    {containing.AccessibilityKeyword} partial {containing.Keyword} {EscapeIdentifier(containing.Name)}").AppendLine("    {");
 
         sb.AppendLine($"    {entity.AccessibilityKeyword} partial {(entity.IsRecord ? "record" : "class")} {className} : IMapped<{className}>, IEntityMetadataSource, IGeneratedAccessors<{className}>");
         sb.AppendLine("    {");
@@ -1341,14 +1356,14 @@ public partial class JauntyGenerator : IIncrementalGenerator
         {
             string name = $"\"@{EscapeStringLiteral(p.ColumnName)}\"";
             if (!p.IsEnum)
-                return $"AddParam(command, p, {name}, entity.{p.PropertyName});";
+                return $"AddParam(command, p, {name}, entity.{EscapeIdentifier(p.PropertyName)});";
             string storage = p.EnumStorageOverride switch
             {
                 1 => "global::Extrode.Jaunty.Attributes.EnumStorage.String",
                 0 => "global::Extrode.Jaunty.Attributes.EnumStorage.Numeric",
                 _ => "(global::Extrode.Jaunty.Attributes.EnumStorage?)null",
             };
-            return $"AddEnumParam(command, p, {name}, entity.{p.PropertyName}, {storage});";
+            return $"AddEnumParam(command, p, {name}, entity.{EscapeIdentifier(p.PropertyName)}, {storage});";
         }
 
         // 2. BindInsert
@@ -1537,7 +1552,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         string ColumnInfoCtor(PropertyMetadata p)
             => $"new ColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
-               $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!)";
+               $"typeof({p.TypeName}), e => (object?)(({className})e).{EscapeIdentifier(p.PropertyName)}, (e, v) => (({className})e).{EscapeIdentifier(p.PropertyName)} = ({p.TypeName})v!)";
 
         sb.AppendLine();
         sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }");
@@ -1588,7 +1603,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // wrote "Active" and Upsert wrote 1 into the same column.
         string EntityColumnInfoCtor(PropertyMetadata p)
             => $"new EntityColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, {p.IsComputed.ToString().ToLower()}, " +
-               $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!, " +
+               $"typeof({p.TypeName}), e => (object?)(({className})e).{EscapeIdentifier(p.PropertyName)}, (e, v) => (({className})e).{EscapeIdentifier(p.PropertyName)} = ({p.TypeName})v!, " +
                p.EnumStorageOverride switch
                {
                    1 => "global::Extrode.Jaunty.Attributes.EnumStorage.String)",
@@ -1842,7 +1857,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // per column per row on Microsoft.Data.Sqlite.
         if (property.IsNonNullableValueType)
         {
-            sb.AppendLine($"{indent}entity.{property.PropertyName} = {valueExpression};");
+            sb.AppendLine($"{indent}entity.{EscapeIdentifier(property.PropertyName)} = {valueExpression};");
             return;
         }
 
@@ -1851,11 +1866,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // AUD-R33-009: skip rather than reset, matching the reflection twin - a property with an
             // initializer keeps it when the column is NULL.
             sb.AppendLine($"{indent}if (!{readerLocal}.IsDBNull(ord[{ordinalIndex}]))");
-            sb.AppendLine($"{indent}    entity.{property.PropertyName} = {valueExpression};");
+            sb.AppendLine($"{indent}    entity.{EscapeIdentifier(property.PropertyName)} = {valueExpression};");
             return;
         }
 
-        sb.AppendLine($"{indent}entity.{property.PropertyName} = {valueExpression};");
+        sb.AppendLine($"{indent}entity.{EscapeIdentifier(property.PropertyName)} = {valueExpression};");
     }
 
     /// <summary>
