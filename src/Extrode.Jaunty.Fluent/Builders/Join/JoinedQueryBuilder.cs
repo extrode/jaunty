@@ -211,8 +211,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     /// </remarks>
     internal string[] GetSelectColumns<T>() where T : new()
     {
-        var metadata = FluentMetadataCache.GetMetadata<T>();
-        return GetPrefixedColumns(metadata, _fromAlias);
+        return GetPrefixedColumns<T>(_fromAlias);
     }
 
     public IJoinClause<TFrom, TJoin, T3> InnerJoin<T3>(string? alias = null) where T3 : new()
@@ -502,17 +501,20 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         }
     }
 
-    internal string[] GetPrefixedColumns(EntityMetadata metadata, string? alias)
+    /// <remarks>
+    /// AUD-R38-088: reads the pre-escaped names from <see cref="CachedDialectMetadata"/> rather than
+    /// escaping every column of every entity on each terminal, as AUD-R26-058 did for the other
+    /// column-reference sites.
+    /// </remarks>
+    internal string[] GetPrefixedColumns<TEntity>(string? alias) where TEntity : new()
     {
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
+        CachedDialectMetadata cached = FluentMetadataCache.GetForDialect<TEntity>(_dialect);
+        IReadOnlyList<string> columns = cached.OrderedEscapedColumns;
         var result = new string[columns.Count];
-        string prefix = alias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
+        string prefix = alias ?? cached.EscapedTableName;
 
         for (int i = 0; i < columns.Count; i++)
-        {
-            string escaped = _dialect.EscapeColumnName(columns[i].ColumnName);
-            result[i] = $"{prefix}.{escaped}";
-        }
+            result[i] = $"{prefix}.{columns[i]}";
 
         return result;
     }

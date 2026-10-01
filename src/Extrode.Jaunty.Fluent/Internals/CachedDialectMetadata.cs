@@ -6,10 +6,18 @@ internal sealed class CachedDialectMetadata(
     string escapedTableName,
     Dictionary<string, string> escapedColumns,
     Dictionary<string, string> rawColumns,
+    string[] orderedEscapedColumns,
     ISqlDialect dialect)
 {
     public string EscapedTableName { get; } = escapedTableName;
     public IReadOnlyDictionary<string, string> EscapedColumns { get; } = escapedColumns;
+
+    /// <summary>
+    /// The escaped column names in <c>EntityMetadata.Columns</c> order. The joined select lists
+    /// need that order, because the multi-entity mappers read each entity's columns by position
+    /// (AUD-R38-088).
+    /// </summary>
+    public IReadOnlyList<string> OrderedEscapedColumns { get; } = orderedEscapedColumns;
 
     /// <summary>
     /// Property name to unescaped column name. The expression visitors need this alongside the
