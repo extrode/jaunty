@@ -742,6 +742,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // types. Same rule and same reporting: emitting a partial that cannot compile is strictly
         // worse than emitting nothing, because the reflection fallback still maps the entity.
         unsupportedNesting ??= UnsupportedDeclarationReason(classSymbol);
+        unsupportedNesting ??= ReservedMemberNameReason(classSymbol, properties);
 
         return new EntityModel(
             Namespace: classSymbol.ContainingNamespace.IsGlobalNamespace
@@ -823,6 +824,83 @@ public partial class JauntyGenerator : IIncrementalGenerator
             return "it has no public parameterless constructor, which the mapper interface's 'new()' constraint requires";
 
         return null;
+    }
+
+    /// <summary>
+    /// The members <c>GenerateMapper</c> declares on the entity's partial.
+    /// </summary>
+    private static readonly string[] GeneratedMemberNames =
+    [
+        "ColumnInfo", "ReadFallback", "ReadEntity", "CreateRowMapper", "ThrowIfNonNullableColumnIsNull",
+        "BindInsert", "BindUpdate", "BindDelete", "AddParam", "AddEnumParam", "OrdinalMap",
+        "TableName", "SchemaName", "PrimaryKeyColumnNames", "InsertColumns", "UpdateColumns",
+        "DeleteColumns", "ParameterMap", "EntityColumns",
+    ];
+
+    /// <summary>
+    /// A reason the entity cannot take the generated members, or <see langword="null"/>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38 generator audit. A member of the entity named like one the generator declares gave
+    /// CS0102 inside the .g.cs, and a mapped base-class property of that name was hidden by the
+    /// generated static, so <c>entity.TableName</c> gave CS0176. An audit-log entity with a
+    /// <c>TableName</c> column is ordinary, and the reflection path maps it, so the entity falls back
+    /// to reflection with a diagnostic like every other shape the generator cannot emit.
+    /// Inherited members other than mapped properties are left alone: the generated member only
+    /// hides them, which compiles, and a base entity from another generated assembly carries the
+    /// whole generated set. A method named like one of the public generated methods is an overload
+    /// unless its parameters match, so only the exact signature conflicts; the private helpers are
+    /// reserved by name, since an overload could capture the generated calls.
+    /// </remarks>
+    private static string? ReservedMemberNameReason(INamedTypeSymbol classSymbol, List<PropertyMetadata> properties)
+    {
+        foreach (string name in GeneratedMemberNames)
+        {
+            foreach (ISymbol member in classSymbol.GetMembers(name))
+            {
+                if (member is IMethodSymbol method && IsOverloadOfGeneratedMethod(method, classSymbol))
+                    continue;
+
+                return $"it declares a member named '{name}', which the generated mapper also declares";
+            }
+        }
+
+        foreach (PropertyMetadata property in properties)
+        {
+            if (Array.IndexOf(GeneratedMemberNames, property.PropertyName) >= 0)
+                return $"its mapped property '{property.PropertyName}' is named like a member the generated mapper declares";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="method"/> can sit beside the generated method of the same name: true
+    /// for a public generated method whose parameter types differ, false for an exact match and for
+    /// the private helpers.
+    /// </summary>
+    private static bool IsOverloadOfGeneratedMethod(IMethodSymbol method, INamedTypeSymbol classSymbol)
+    {
+        string[]? generated = method.Name switch
+        {
+            "ReadEntity" or "CreateRowMapper" => ["System.Data.IDataReader"],
+            "BindInsert" or "BindUpdate" or "BindDelete" => ["System.Data.IDbCommand", classSymbol.ToDisplayString()],
+            _ => null,
+        };
+
+        if (generated is null)
+            return false;
+
+        if (method.Parameters.Length != generated.Length)
+            return true;
+
+        for (int i = 0; i < generated.Length; i++)
+        {
+            if (method.Parameters[i].Type.ToDisplayString() != generated[i])
+                return true;
+        }
+
+        return false;
     }
 
     private static bool IsObsoleteAsError(IMethodSymbol constructor)
