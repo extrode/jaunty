@@ -35,6 +35,8 @@ public class SqlServerSchemaReaderTests
     private static readonly string Orders = $"scaffold_test_orders_{Environment.ProcessId}";
     private static readonly string OrderItems = $"scaffold_test_order_items_{Environment.ProcessId}";
     private static readonly string TypeNames = $"scaffold_test_typenames_{Environment.ProcessId}";
+    private static readonly string ClrPoints = $"scaffold_test_clr_points_{Environment.ProcessId}";
+    private static readonly string ClrPointType = $"scaffold_test_point_{Environment.ProcessId}";
 
     private static SqlConnection OpenOrSkip()
     {
@@ -124,6 +126,67 @@ public class SqlServerSchemaReaderTests
             );
             """;
         cmd.ExecuteNonQuery();
+    }
+
+    private static void Execute(SqlConnection conn, string sql)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateUserClrTypeTable(SqlConnection conn)
+    {
+        Execute(conn, $"DROP TABLE IF EXISTS {ClrPoints};");
+        Execute(conn, $"""
+            DECLARE @bin varbinary(max) = CONVERT(varbinary(max), '0x{ScaffoldPointAssembly.Hex}', 1);
+            DECLARE @hash varbinary(64) = HASHBYTES('SHA2_512', @bin);
+            BEGIN TRY
+                IF NOT EXISTS (SELECT 1 FROM sys.trusted_assemblies WHERE hash = @hash)
+                    EXEC sys.sp_add_trusted_assembly @hash, N'scaffold_test_point';
+                IF NOT EXISTS (SELECT 1 FROM sys.assemblies WHERE name = 'scaffold_test_point')
+                    CREATE ASSEMBLY scaffold_test_point FROM @bin WITH PERMISSION_SET = SAFE;
+            END TRY
+            BEGIN CATCH
+                IF NOT EXISTS (SELECT 1 FROM sys.assemblies WHERE name = 'scaffold_test_point') THROW;
+            END CATCH
+            IF TYPE_ID('{ClrPointType}') IS NULL
+                CREATE TYPE {ClrPointType} EXTERNAL NAME scaffold_test_point.[ScaffoldPoint];
+            """);
+        Execute(conn, $"CREATE TABLE {ClrPoints} (id INT PRIMARY KEY, pt {ClrPointType} NULL);");
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_UserClrTypeColumn_KeepsItsOwnName()
+    {
+        using var conn = OpenOrSkip();
+        CreateUserClrTypeTable(conn);
+
+        try
+        {
+            var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
+                TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [ClrPoints] });
+
+            var column = schema.Tables.Single().Columns.Single(c => c.ColumnName == "pt");
+
+            Assert.Equal(ClrPointType, column.DataType);
+            Assert.Equal("object", new SqlServerTypeMapper().MapToCSharpType(column).TypeName);
+        }
+        finally
+        {
+            Execute(conn, $"""
+                DROP TABLE IF EXISTS {ClrPoints};
+                DROP TYPE IF EXISTS {ClrPointType};
+                BEGIN TRY
+                    DROP ASSEMBLY IF EXISTS scaffold_test_point;
+                    DECLARE @hash varbinary(64) = HASHBYTES('SHA2_512', CONVERT(varbinary(max), '0x{ScaffoldPointAssembly.Hex}', 1));
+                    IF EXISTS (SELECT 1 FROM sys.trusted_assemblies WHERE hash = @hash)
+                        EXEC sys.sp_drop_trusted_assembly @hash;
+                END TRY
+                BEGIN CATCH
+                END CATCH
+                """);
+        }
     }
 
     [Fact]

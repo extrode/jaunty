@@ -98,14 +98,20 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         SchemaReaderOptions options,
         CancellationToken cancellationToken)
     {
+        // AUD-R38-044: the underscore is escaped. Unescaped, LIKE read it as "any character", and
+        // since LIKE is also case-insensitive a user table such as SqliteLog was silently skipped.
+        // SQLite reserves only the literal sqlite_ prefix.
         const string sql = @"
             SELECT name
             FROM sqlite_master
             WHERE type = 'table'
-              AND name NOT LIKE 'sqlite_%'
+              AND name NOT LIKE 'sqlite\_%' ESCAPE '\'
             ORDER BY name";
 
         var tableNames = new List<string>();
+
+        if (ShouldSkipMain(options))
+            return tableNames;
 
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = sql;
@@ -128,6 +134,20 @@ public sealed class SQLiteSchemaReader : ISchemaReader
 
         return tableNames;
     }
+
+    /// <summary>
+    /// The reader lists the <c>main</c> database only, so IncludeSchemas can only accept or reject
+    /// it, the way the MySQL reader treats the database it is attached to. An empty name is
+    /// accepted too, since that is the SchemaName every table here reports.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R38-043: IncludeSchemas used to be ignored here, so <c>scaffold --schemas other</c>
+    /// generated every table while <c>list-tables --schemas main</c> listed none.
+    /// </remarks>
+    internal static bool ShouldSkipMain(SchemaReaderOptions options)
+        => options.IncludeSchemas?.Count > 0 &&
+           !options.IncludeSchemas.Contains("main", StringComparer.OrdinalIgnoreCase) &&
+           !options.IncludeSchemas.Contains("", StringComparer.Ordinal);
 
     private static async Task<TableSchema> ReadTableSchemaAsync(
         DbConnection connection,

@@ -213,6 +213,65 @@ public class PostgreSqlSchemaReaderTests
     }
 
     [Fact]
+    public async Task ReadSchemaAsync_SelectOnlyRole_StillReadsKeys()
+    {
+        using var conn = OpenOrSkip();
+        CreateCompositeKeyTable(conn);
+        string role = $"scaffold_test_reader_{Environment.ProcessId}";
+        const string password = "scaffold_reader_pw";
+        Execute(conn, $"""
+            CREATE TABLE {Shipments} (
+                shipment_id SERIAL PRIMARY KEY,
+                order_id INT NOT NULL,
+                line_number INT NOT NULL,
+                FOREIGN KEY (order_id, line_number)
+                    REFERENCES {OrderItems} (order_id, line_number)
+            );
+            DROP ROLE IF EXISTS {role};
+            CREATE ROLE {role} LOGIN PASSWORD '{password}';
+            GRANT SELECT ON {OrderItems}, {Shipments} TO {role};
+            """);
+        try
+        {
+            var readOnly = new NpgsqlConnectionStringBuilder(TestConfiguration.PostgreSqlConnectionString)
+            {
+                Username = role,
+                Password = password,
+                Pooling = false
+            };
+
+            var schema = await new PostgreSqlSchemaReader().ReadSchemaAsync(
+                readOnly.ConnectionString,
+                new SchemaReaderOptions { IncludeTables = [OrderItems, Shipments], IncludeForeignKeys = true });
+
+            var items = schema.Tables.Single(t => t.TableName == OrderItems);
+            Assert.NotNull(items.PrimaryKey);
+            Assert.Equal(["order_id", "line_number"], items.PrimaryKey!.Columns);
+
+            var shipments = schema.Tables.Single(t => t.TableName == Shipments);
+            Assert.Equal(["shipment_id"], shipments.PrimaryKey!.Columns);
+            Assert.Collection(shipments.ForeignKeys,
+                fk => Assert.Equal(("order_id", "public", OrderItems, "order_id"), (fk.ForeignKeyColumn, fk.ReferencedSchema, fk.ReferencedTable, fk.ReferencedColumn)),
+                fk => Assert.Equal(("line_number", "public", OrderItems, "line_number"), (fk.ForeignKeyColumn, fk.ReferencedSchema, fk.ReferencedTable, fk.ReferencedColumn)));
+        }
+        finally
+        {
+            Execute(conn, $"""
+                DROP TABLE IF EXISTS {Shipments};
+                DROP TABLE IF EXISTS {OrderItems};
+                DROP ROLE IF EXISTS {role};
+                """);
+        }
+    }
+
+    private static void Execute(NpgsqlConnection conn, string sql)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.ExecuteNonQuery();
+    }
+
+    [Fact]
     public async Task ReadSchemaAsync_WithoutForeignKeys_DoesNotReadForeignKeys()
     {
         using var conn = OpenOrSkip();
