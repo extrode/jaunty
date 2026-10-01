@@ -60,6 +60,16 @@ public class MetadataBuilderAttributeTests
         public int Plain { get; set; }
     }
 
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class DerivedColumnAttribute(string name) : DA.ColumnAttribute(name);
+
+    public class AttributeParity
+    {
+        public int Id { get; set; }
+        [DerivedColumn("derived_name")] public string? Derived { get; set; }
+        [Column("")][DA.Column("da_fallback")] public string? EmptyJauntyName { get; set; }
+    }
+
     public class Gadget
     {
         public int GadgetId { get; set; }
@@ -127,6 +137,27 @@ public class MetadataBuilderAttributeTests
         Assert.False(columns["Code"].IsIdentity);
         Assert.False(columns["Code"].IsComputed);
         Assert.False(columns["Plain"].IsIdentity);
+    }
+
+    /// <summary>
+    /// AUD-R38 generator audit parity pins: DataAnnotations attributes match by exact name, so a
+    /// subclass is not honoured, and an empty Extrode.Jaunty name falls through to the
+    /// DataAnnotations one. GeneratedForeignAttributeTests pins the generator to the same answers.
+    /// </summary>
+    [Fact]
+    public void Build_ADerivedDataAnnotationsColumn_IsNotHonoured()
+    {
+        var columns = MetadataBuilder.Build<AttributeParity>().Columns.ToDictionary(c => c.PropertyName);
+
+        Assert.Equal("Derived", columns["Derived"].ColumnName);
+    }
+
+    [Fact]
+    public void Build_AnEmptyJauntyColumnName_FallsThroughToTheDataAnnotationsName()
+    {
+        var columns = MetadataBuilder.Build<AttributeParity>().Columns.ToDictionary(c => c.PropertyName);
+
+        Assert.Equal("da_fallback", columns["EmptyJauntyName"].ColumnName);
     }
 
     [Fact]

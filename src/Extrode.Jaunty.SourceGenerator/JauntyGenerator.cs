@@ -631,7 +631,10 @@ public partial class JauntyGenerator : IIncrementalGenerator
             }
 
             // Support [Column] from both
-            AttributeData? columnAttr = GetRecognizedAttribute(prop, JauntyColumnAttribute, DataAnnotationsColumnAttribute);
+            // AUD-R38 generator audit: looked up one at a time, because an empty Extrode.Jaunty
+            // [Column("")] beside a DataAnnotations [Column("x")] maps to "x" under MetadataBuilder,
+            // which falls through to the DataAnnotations attribute; taking the first match fell back
+            // to the property name instead.
             // AUD-R32-006: an empty [Column("")] falls back to the property name rather than
             // generating a mapping to "". The null-coalesce alone did not catch it, and the
             // reflection MetadataBuilder carries the matching guard so both modes agree.
@@ -639,7 +642,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // other type used to be stringified into a column name, so a foreign [Column(3)]-style
             // ordinal attribute mapped the property to a column literally named "3". The reflection
             // twin requires `nameArg is string` and falls back to the property name otherwise.
-            var columnAttrName = columnAttr?.ConstructorArguments.FirstOrDefault().Value as string;
+            var columnAttrName = GetRecognizedAttribute(prop, JauntyColumnAttribute)?.ConstructorArguments.FirstOrDefault().Value as string;
+            if (string.IsNullOrEmpty(columnAttrName))
+                columnAttrName = GetRecognizedAttribute(prop, DataAnnotationsColumnAttribute)?.ConstructorArguments.FirstOrDefault().Value as string;
             var columnName = string.IsNullOrEmpty(columnAttrName) ? prop.Name : columnAttrName!;
 
             // Support [Key] from both, plus conventions
@@ -1768,9 +1773,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// <remarks>
     /// AUD-R35-070. Replaces a pair of helpers that compared <c>AttributeClass?.Name</c>, the simple
     /// class name, so any namespace's <c>[Column]</c>, <c>[NotMapped]</c>, <c>[Key]</c>,
-    /// <c>[DatabaseGenerated]</c> or <c>[EnumStorage]</c> was honoured. Base types are walked
-    /// because <c>PropertyInfo.GetCustomAttribute&lt;T&gt;</c> on the reflection side matches a
-    /// derived attribute too.
+    /// <c>[DatabaseGenerated]</c> or <c>[EnumStorage]</c> was honoured. Matching is exact - see
+    /// <see cref="IsAttribute"/>.
     /// </remarks>
     private static AttributeData? GetRecognizedAttribute(ISymbol symbol, params string[] recognizedFullNames)
     {
@@ -1779,7 +1783,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         {
             foreach (AttributeData attribute in attributes)
             {
-                if (IsOrDerivesFrom(attribute.AttributeClass, fullName))
+                if (IsAttribute(attribute.AttributeClass, fullName))
                     return attribute;
             }
         }
@@ -1795,19 +1799,19 @@ public partial class JauntyGenerator : IIncrementalGenerator
         => GetRecognizedAttribute(symbol, recognizedFullNames) is not null;
 
     /// <summary>
-    /// Returns <see langword="true"/> when <paramref name="attributeClass"/> is
-    /// <paramref name="fullName"/> or inherits from it.
+    /// Returns <see langword="true"/> when <paramref name="attributeClass"/> is exactly
+    /// <paramref name="fullName"/>.
     /// </summary>
-    private static bool IsOrDerivesFrom(INamedTypeSymbol? attributeClass, string fullName)
-    {
-        for (INamedTypeSymbol? type = attributeClass; type is not null; type = type.BaseType)
-        {
-            if (type.ToDisplayString() == fullName)
-                return true;
-        }
-
-        return false;
-    }
+    /// <remarks>
+    /// AUD-R38 generator audit: this used to walk base types, so a consumer's
+    /// <c>SnakeColumn : System.ComponentModel.DataAnnotations.Schema.ColumnAttribute</c> renamed the
+    /// column on the generated path only - the reflection twins match DataAnnotations attributes by
+    /// exact <c>AttributeType.FullName</c> (MetadataBuilder.HasAttribute/GetAttributeData, and the
+    /// DuckDB MappedPropertyFilter). Extrode.Jaunty's own attributes are all sealed, so their
+    /// <c>GetCustomAttribute&lt;T&gt;</c> matching is exact too.
+    /// </remarks>
+    private static bool IsAttribute(INamedTypeSymbol? attributeClass, string fullName)
+        => attributeClass?.ToDisplayString() == fullName;
 
     /// <summary>
     /// The <c>[Table]</c> attribute the generator recognizes - Extrode.Jaunty's or DataAnnotations' - or
