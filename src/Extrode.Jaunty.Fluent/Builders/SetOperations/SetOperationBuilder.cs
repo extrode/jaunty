@@ -67,7 +67,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         _metadata = FluentMetadataCache.GetMetadata<T>();
 
         // Rename first query parameters with prefix "p0_"
-        (string? renamedSql, ParameterCollection? renamedParams) = ParameterRenamer.Rename(firstQuerySql, firstQueryParameters, "p0");
+        (string? renamedSql, ParameterCollection? renamedParams) = ParameterRenamer.Rename(firstQuerySql, firstQueryParameters, "p0", dialect);
         _firstQuerySql = renamedSql;
         _firstQueryParameters = renamedParams;
     }
@@ -106,7 +106,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
         // Rename parameters with unique prefix
         var prefix = $"p{_operationCount}";
-        (string? renamedSql, ParameterCollection? renamedParams) = ParameterRenamer.Rename(sql, parameters, prefix);
+        (string? renamedSql, ParameterCollection? renamedParams) = ParameterRenamer.Rename(sql, parameters, prefix, _dialect);
 
         _operations.Add(new SetOperationComponent(operationType, renamedSql, renamedParams));
         _operationCount++;

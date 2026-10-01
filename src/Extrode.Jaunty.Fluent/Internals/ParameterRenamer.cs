@@ -1,4 +1,5 @@
 using System.Text;
+using Extrode.Jaunty.Dialects;
 
 namespace Extrode.Jaunty.Fluent.Internals;
 
@@ -12,10 +13,21 @@ namespace Extrode.Jaunty.Fluent.Internals;
 /// </summary>
 internal static class ParameterRenamer
 {
+    /// <param name="sql">The fragment whose placeholders are renamed.</param>
+    /// <param name="parameters">The fragment's parameters.</param>
+    /// <param name="prefix">The prefix spliced in after each parameter's sigil.</param>
+    /// <param name="dialect">
+    /// The dialect the fragment was written for, which decides two lexical rules (AUD-R38-106/107):
+    /// <c>[...]</c> is a quoted identifier only on SQL Server and SQLite - PostgreSQL and DuckDB
+    /// use it for array subscripts and list literals, which hold placeholders - and a backslash
+    /// escapes a quote only inside a MySQL/MariaDB string. <see langword="null"/> keeps the
+    /// dialect-blind rules: brackets are identifiers and backslashes are ordinary characters.
+    /// </param>
     public static (string Sql, ParameterCollection Parameters) Rename(
         string sql,
         ParameterCollection parameters,
-        string prefix)
+        string prefix,
+        ISqlDialect? dialect = null)
     {
         var renamedParams = new ParameterCollection();
         var replacements = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -51,7 +63,11 @@ internal static class ParameterRenamer
             renamedParams.Add(newName, value);
         }
 
-        return (replacements.Count == 0 ? sql : RewritePlaceholders(sql, replacements), renamedParams);
+        ISqlDialect? unwrapped = dialect is null ? null : SqlDialectFactory.Unwrap(dialect);
+        bool bracketIdentifiers = unwrapped is null or SqlServerDialect or SQLiteDialect;
+        bool backslashEscapes = unwrapped is MySqlDialect;
+
+        return (replacements.Count == 0 ? sql : RewritePlaceholders(sql, replacements, bracketIdentifiers, backslashEscapes), renamedParams);
     }
 
     /// <summary>
@@ -72,7 +88,11 @@ internal static class ParameterRenamer
     /// lookahead enforced - <c>@p0x</c> is not <c>@p0</c>.
     /// </para>
     /// </summary>
-    private static string RewritePlaceholders(string sql, Dictionary<string, string> replacements)
+    private static string RewritePlaceholders(
+        string sql,
+        Dictionary<string, string> replacements,
+        bool bracketIdentifiers,
+        bool backslashEscapes)
     {
         var sb = new StringBuilder(sql.Length);
         int i = 0;
@@ -83,6 +103,7 @@ internal static class ParameterRenamer
 
             if (c is '\'' or '"' or '`')
             {
+                bool escapes = backslashEscapes && c is '\'' or '"';
                 sb.Append(c);
                 i++;
 
@@ -91,6 +112,14 @@ internal static class ParameterRenamer
                     char inner = sql[i];
                     sb.Append(inner);
                     i++;
+
+                    // MySQL's 'O\'Brien': the quote after a backslash does not end the literal.
+                    if (escapes && inner == '\\' && i < sql.Length)
+                    {
+                        sb.Append(sql[i]);
+                        i++;
+                        continue;
+                    }
 
                     if (inner != c)
                         continue;
@@ -109,7 +138,7 @@ internal static class ParameterRenamer
                 continue;
             }
 
-            if (c == '[')
+            if (c == '[' && bracketIdentifiers)
             {
                 while (i < sql.Length)
                 {
