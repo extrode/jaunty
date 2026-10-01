@@ -184,7 +184,7 @@ public sealed partial class DuckDb
     /// <summary>
     /// True when <paramref name="path"/> holds a DuckDB glob wildcard (<c>*</c>, <c>?</c>, <c>[</c>).
     /// </summary>
-    private static bool IsGlobPattern(string path) => path.AsSpan().IndexOfAny('*', '?', '[') >= 0;
+    private static bool IsGlobPattern(string path) => path.AsSpan().ContainsAny('*', '?', '[');
 
     private static bool IsRemote(string path) => path.Contains("://", StringComparison.Ordinal);
 
@@ -196,18 +196,19 @@ public sealed partial class DuckDb
     {
         foreach (string path in paths)
         {
-            if (!IsGlobPattern(path) || IsRemote(path))
+            if (IsGlobPattern(path) && !IsRemote(path))
+            {
+                using DuckDBCommand cmd = _connection.CreateCommand();
+                cmd.CommandText = "SELECT file FROM glob($pattern)";
+                cmd.Parameters.Add(new DuckDBParameter("pattern", path));
+                using DuckDBDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    yield return reader.GetString(0);
+            }
+            else
             {
                 yield return path;
-                continue;
             }
-
-            using DuckDBCommand cmd = _connection.CreateCommand();
-            cmd.CommandText = "SELECT file FROM glob($pattern)";
-            cmd.Parameters.Add(new DuckDBParameter("pattern", path));
-            using DuckDBDataReader reader = cmd.ExecuteReader();
-            while (reader.Read())
-                yield return reader.GetString(0);
         }
     }
 
@@ -250,7 +251,7 @@ public sealed partial class DuckDb
         {
             CsvFileSource { SkipRows: > 0 } csv => $"the {csv.SkipRows} line(s) SkipRows skips before the header",
             TsvFileSource { SkipRows: > 0 } tsv => $"the {tsv.SkipRows} line(s) SkipRows skips before the header",
-            ExcelFileSource { Range.Length: > 0 } excel => $"every cell outside Range '{excel.Range}'",
+            ExcelFileSource { Range: not null } excel => $"every cell outside Range '{excel.Range}'",
             ExcelFileSource excel => DescribeOtherSheets(excel.FilePath),
             _ => null,
         };
@@ -292,6 +293,7 @@ public sealed partial class DuckDb
             ?? throw new InvalidDataException("xl/workbook.xml is missing.");
 
         using Stream stream = entry.Open();
+        // Stryker disable once Initializer : Prohibit is already XmlReaderSettings' default, so an empty initializer behaves the same; it is spelled out because the input is an untrusted file
         using var reader = System.Xml.XmlReader.Create(stream, new System.Xml.XmlReaderSettings { DtdProcessing = System.Xml.DtdProcessing.Prohibit });
         int count = 0;
         while (reader.Read())

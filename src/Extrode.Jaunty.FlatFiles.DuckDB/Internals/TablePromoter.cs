@@ -153,9 +153,9 @@ internal static class TablePromoter
     {
         using DuckDBCommand cmd = connection.CreateCommand();
         cmd.CommandText = DuckDb.ExistsAsTableSql;
-        if (transaction is not null)
-            ((IDbCommand)cmd).Transaction = transaction;
-        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        // Stryker disable once Statement : DuckDB.NET runs every command inside the connection's open transaction whether or not DbCommand.Transaction is set, so leaving it unset cannot be observed; it is set for ADO.NET conformance
+        ((IDbCommand)cmd).Transaction = transaction;
+        cmd.Parameters.Add(new DuckDBParameter(DuckDb.ExistsAsTableNameParameter, tableName));
         return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
     }
 
@@ -165,8 +165,8 @@ internal static class TablePromoter
 
         using DuckDBCommand cmd = connection.CreateCommand();
         cmd.CommandText = sql;
-        if (transaction is not null)
-            ((IDbCommand)cmd).Transaction = transaction;
+        // Stryker disable once Statement : DuckDB.NET runs every command inside the connection's open transaction whether or not DbCommand.Transaction is set, so leaving it unset cannot be observed; it is set for ADO.NET conformance
+        ((IDbCommand)cmd).Transaction = transaction;
         cmd.ExecuteNonQuery();
     }
 
@@ -213,16 +213,12 @@ internal static class TablePromoter
                 // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
                 await ownTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch
-            {
-                if (ownTransaction is not null)
-                {
-                    try { ownTransaction.Rollback(); } catch { }
-                }
-                throw;
-            }
             finally
             {
+                // No catch-and-rollback here, unlike EnsurePromotedToTable. There a caller's exception
+                // filter runs before this method's finally, so the aborted transaction had to be rolled
+                // back first. An async caller sees the exception only once the task faults, after this
+                // Dispose has rolled the uncommitted transaction back.
                 ownTransaction?.Dispose();
             }
 
@@ -241,9 +237,9 @@ internal static class TablePromoter
         // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
         await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = DuckDb.ExistsAsTableSql;
-        if (transaction is not null)
-            ((IDbCommand)cmd).Transaction = transaction;
-        cmd.Parameters.Add(new DuckDBParameter("name", tableName));
+        // Stryker disable once Statement : DuckDB.NET runs every command inside the connection's open transaction whether or not DbCommand.Transaction is set, so leaving it unset cannot be observed; it is set for ADO.NET conformance
+        ((IDbCommand)cmd).Transaction = transaction;
+        cmd.Parameters.Add(new DuckDBParameter(DuckDb.ExistsAsTableNameParameter, tableName));
         // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
         object? count = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
         return Convert.ToInt64(count, CultureInfo.InvariantCulture) > 0;
@@ -257,8 +253,8 @@ internal static class TablePromoter
         // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
         await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = sql;
-        if (transaction is not null)
-            ((IDbCommand)cmd).Transaction = transaction;
+        // Stryker disable once Statement : DuckDB.NET runs every command inside the connection's open transaction whether or not DbCommand.Transaction is set, so leaving it unset cannot be observed; it is set for ADO.NET conformance
+        ((IDbCommand)cmd).Transaction = transaction;
         // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
         await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
