@@ -273,7 +273,7 @@ public sealed class SpParameters
         SpParameter? param = null;
         for (int i = 0; i < _parameters.Count; i++)
         {
-            if (string.Equals(_parameters[i].Name, name, StringComparison.OrdinalIgnoreCase))
+            if (NameMatches(_parameters[i].Name, name))
             {
                 param = _parameters[i];
                 break;
@@ -392,7 +392,7 @@ public sealed class SpParameters
 #endif
         for (int i = 0; i < _parameters.Count; i++)
         {
-            if (string.Equals(_parameters[i].Name, name, StringComparison.OrdinalIgnoreCase))
+            if (NameMatches(_parameters[i].Name, name))
             {
                 SpParameter param = _parameters[i];
                 object? value = param.DbParameter?.Value ?? param.Value;
@@ -400,5 +400,15 @@ public sealed class SpParameters
             }
         }
         return false;
+    }
+
+    // AUD-R38-145: the binder adds the '@' only when it is missing, so "@Total" and "Total" name the
+    // same parameter there; the lookups have to agree, or a value bound under one spelling could not
+    // be read back under the other.
+    private static bool NameMatches(string stored, string requested)
+    {
+        string a = stored.StartsWith("@", StringComparison.Ordinal) ? stored.Substring(1) : stored;
+        string b = requested.StartsWith("@", StringComparison.Ordinal) ? requested.Substring(1) : requested;
+        return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
     }
 }
