@@ -159,8 +159,10 @@ public sealed class Scaffolder
     /// case is fixed at its source in <see cref="Internals.ReflectedConnectionFactory"/>, but a
     /// nested cause is normal enough - a connection failure whose real reason is a socket error,
     /// for instance - that the top-level message is often the least informative part of the chain.
+    /// Internal rather than private so the CLI's <c>list-tables</c> reports a failure the way
+    /// <c>scaffold</c> does (AUD-R38-108).
     /// </remarks>
-    private static string Describe(Exception ex)
+    internal static string Describe(Exception ex)
     {
         var message = ex.Message;
 

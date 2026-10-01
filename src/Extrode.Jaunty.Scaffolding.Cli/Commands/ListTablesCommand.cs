@@ -80,9 +80,10 @@ internal sealed class ListTablesCommand : Command
                 Console.Error.WriteLine("Error: Operation canceled.");
                 return 1;
             }
+            // AUD-R38-108: the same flattened cause chain scaffold reports, not the outer message alone.
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error: {ex.Message}");
+                Console.Error.WriteLine($"Error: {Scaffolder.Describe(ex)}");
                 return 1;
             }
         });

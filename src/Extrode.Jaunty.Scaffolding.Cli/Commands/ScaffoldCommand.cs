@@ -121,7 +121,7 @@ internal sealed class ScaffoldCommand : Command
         // Advanced options
         var forceOption = new Option<bool>("--force")
         {
-            Description = "Overwrite existing files without prompting"
+            Description = "Overwrite existing files (without it, a run fails if any target file exists)"
         };
 
         var dryRunOption = new Option<bool>("--dry-run")

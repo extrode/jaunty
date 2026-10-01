@@ -483,6 +483,14 @@ public class ScaffoldCommandTests : IDisposable
     }
 
     [Fact]
+    public void ForceOption_HelpText_DoesNotPromiseAPrompt()
+    {
+        Option force = new ScaffoldCommand().Options.Single(o => o.Name == "--force");
+
+        Assert.DoesNotContain("prompt", force.Description, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Invoke_ForceFlag_OverwritesExistingFile()
     {
         var command1 = new ScaffoldCommand();
