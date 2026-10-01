@@ -169,6 +169,45 @@ public class PostgreSqlBulkCopyProviderTests
         Assert.Equal(2, Count(conn, "bulkpgmixedcase"));
     }
 
+    private static IDataReader DuplicateNames(NpgsqlConnection conn, string table)
+    {
+        CreateTable(conn, table);
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $"ALTER TABLE \"{table}\" ADD CONSTRAINT \"{table}_name_key\" UNIQUE (name)";
+            cmd.ExecuteNonQuery();
+        }
+
+        DataTable data = MakeTable(0);
+        data.Rows.Add("same", 1m, 1, false);
+        data.Rows.Add("same", 2m, 2, false);
+        return data.CreateDataReader();
+    }
+
+    [Fact]
+    public void CopyToServer_ServerError_SurfacesThePostgresException()
+    {
+        using var conn = OpenOrSkip();
+        IDataReader data = DuplicateNames(conn, "bulk_pg_dup_sync");
+
+        var ex = Assert.Throws<PostgresException>(() =>
+            new PostgreSqlBulkCopyProvider().CopyToServer(conn, null, "bulk_pg_dup_sync", data, new BulkCopyOptions()));
+
+        Assert.Equal("23505", ex.SqlState);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_ServerError_SurfacesThePostgresException()
+    {
+        using var conn = OpenOrSkip();
+        IDataReader data = DuplicateNames(conn, "bulk_pg_dup_async");
+
+        var ex = await Assert.ThrowsAsync<PostgresException>(async () =>
+            await new PostgreSqlBulkCopyProvider().CopyToServerAsync(conn, null, "bulk_pg_dup_async", data, new BulkCopyOptions(), CancellationToken.None));
+
+        Assert.Equal("23505", ex.SqlState);
+    }
+
     [Fact]
     public void IsSupported_NpgsqlReferenced_IsTrue()
     {

@@ -78,6 +78,45 @@ public class SqlServerBulkCopyProviderTests
         return Convert.ToInt64(cmd.ExecuteScalar());
     }
 
+    private static IDataReader DuplicateNames(SqlConnection conn, string table)
+    {
+        CreateTable(conn, table);
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $"ALTER TABLE [{table}] ADD CONSTRAINT [UQ_{table}_name] UNIQUE (name)";
+            cmd.ExecuteNonQuery();
+        }
+
+        DataTable data = MakeTable(0);
+        data.Rows.Add("same", 1m, 1, false);
+        data.Rows.Add("same", 2m, 2, false);
+        return data.CreateDataReader();
+    }
+
+    [Fact]
+    public void CopyToServer_ServerError_SurfacesTheSqlException()
+    {
+        using var conn = OpenOrSkip();
+        IDataReader data = DuplicateNames(conn, "bulk_mssql_dup_sync");
+
+        var ex = Assert.Throws<SqlException>(() =>
+            new SqlServerBulkCopyProvider().CopyToServer(conn, null, "bulk_mssql_dup_sync", data, new BulkCopyOptions()));
+
+        Assert.Equal(2627, ex.Number);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_ServerError_SurfacesTheSqlException()
+    {
+        using var conn = OpenOrSkip();
+        IDataReader data = DuplicateNames(conn, "bulk_mssql_dup_async");
+
+        var ex = await Assert.ThrowsAsync<SqlException>(async () =>
+            await new SqlServerBulkCopyProvider().CopyToServerAsync(conn, null, "bulk_mssql_dup_async", data, new BulkCopyOptions(), CancellationToken.None));
+
+        Assert.Equal(2627, ex.Number);
+    }
+
     [Fact]
     public void CopyToServer_IdentityDestination_InsertsAllRowsAndValues()
     {
