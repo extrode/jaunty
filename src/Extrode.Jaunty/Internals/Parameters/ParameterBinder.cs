@@ -467,7 +467,7 @@ internal static class ParameterBinder
         public IEnumerable<string> Names => lookup.Keys;
     }
 
-    private readonly struct DictionaryValueSource(Dictionary<string, object?> resolved, ICollection<string> keys) : IParameterValueSource
+    private readonly struct DictionaryValueSource(Dictionary<string, object?> resolved) : IParameterValueSource
     {
         public bool TryGetValue(string name, out object? value, out PropertyInfo? property)
         {
@@ -475,7 +475,7 @@ internal static class ParameterBinder
             return resolved.TryGetValue(name, out value);
         }
 
-        public IEnumerable<string> Names => keys;
+        public IEnumerable<string> Names => resolved.Keys;
     }
 
     /// <summary>
@@ -1180,9 +1180,6 @@ internal static class ParameterBinder
     {
         foreach (string sqlName in bound)
         {
-            if (resolved.ContainsKey(sqlName))
-                continue;
-
             if (!dictParams.TryGetValue(sqlName, out object? value))
                 caseInsensitive!.TryGetValue(sqlName, out value);
 
@@ -1190,7 +1187,7 @@ internal static class ParameterBinder
         }
 
         (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, _) =
-            ExpandCollectionParameters(command.CommandText, sqlParamNames, new DictionaryValueSource(resolved, dictParams.Keys), command.Connection);
+            ExpandCollectionParameters(command.CommandText, sqlParamNames, new DictionaryValueSource(resolved), command.Connection);
 
         command.Parameters.Clear();
         command.CommandText = expandedSql!;

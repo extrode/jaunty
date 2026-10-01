@@ -152,6 +152,28 @@ public class ParameterBinderDictionaryExpansionTests
     }
 
     [Fact]
+    public void Bind_DictionaryCollection_RepeatedPlaceholdersBindOnce()
+    {
+        using var command = new SqliteCommand("SELECT 1 FROM d7 WHERE a = @K AND Id IN @Ids OR b = @K OR Id IN @Ids");
+
+        ParameterBinder.Bind(command, new Dictionary<string, object?> { ["K"] = 1, ["Ids"] = new[] { 2, 3 } });
+
+        Assert.Equal("SELECT 1 FROM d7 WHERE a = @K AND Id IN (@Ids0, @Ids1) OR b = @K OR Id IN (@Ids0, @Ids1)", command.CommandText);
+        Assert.Equal(["K", "Ids0", "Ids1"], ParameterNames(command));
+    }
+
+    [Fact]
+    public void Bind_DictionaryEnumCollection_BindsTheUnderlyingValues()
+    {
+        using var command = new SqliteCommand("SELECT 1 FROM d8 WHERE Day IN @Days");
+
+        ParameterBinder.Bind(command, new Dictionary<string, object?> { ["Days"] = new[] { DayOfWeek.Monday, DayOfWeek.Friday } });
+
+        Assert.Equal(1, command.Parameters["Days0"].Value);
+        Assert.Equal(5, command.Parameters["Days1"].Value);
+    }
+
+    [Fact]
     public void Bind_DictionaryEmptyCollection_UsesTheEmptySetRewrite()
     {
         using var command = new SqliteCommand("SELECT 1 FROM d3 WHERE Id IN @Ids");
