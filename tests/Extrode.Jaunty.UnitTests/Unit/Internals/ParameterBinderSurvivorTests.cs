@@ -210,6 +210,88 @@ public class ParameterBinderSurvivorTests
         Assert.False(ParameterBinder.TryRebind(command, parameters));
     }
 
+    public sealed class ReadOnlyNamedValues : IReadOnlyDictionary<string, object?>
+    {
+        public object? this[string key] => 1;
+        public IEnumerable<string> Keys => ["Id"];
+        public IEnumerable<object?> Values => [1];
+        public int Count => 1;
+        public bool ContainsKey(string key) => key == "Id";
+        public bool TryGetValue(string key, out object? value)
+        {
+            value = 1;
+            return true;
+        }
+
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
+        {
+            yield return new KeyValuePair<string, object?>("Id", 1);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public sealed class SetOnlyAndReadable
+    {
+        public int Id { get; set; }
+        public string WriteOnly { set { } }
+    }
+
+    [Fact]
+    public void ACollectionTypedShapeWithNothingToExpand_StillBindsEveryScalar()
+    {
+        var command = Command("x = @Id AND y IN @Tags -- " + Unique());
+
+        ParameterBinder.Bind(command, new Tagged { Id = 4, Tags = null });
+
+        var parameter = command.Parameters.Cast<FakeParameter>().Single(p => p.ParameterName == "Id");
+        Assert.Equal(4, parameter.Value);
+    }
+
+    [Fact]
+    public void ACollectionTypedShape_IsNeverCachedAsATemplate()
+    {
+        var command = Command("x = @Id AND y IN @Tags -- " + Unique());
+        ParameterBinder.Bind(command, new Tagged { Id = 1, Tags = null });
+
+        Assert.False(ParameterBinder.TryRebind(command, new Tagged { Id = 2, Tags = null }));
+    }
+
+    [Fact]
+    public void AScalarOnlyShape_IsCachedAsATemplateAndRebinds()
+    {
+        var command = Command("x = @A -- " + Unique());
+        ParameterBinder.Bind(command, new OneProp { A = 1 });
+
+        Assert.True(ParameterBinder.TryRebind(command, new OneProp { A = 2 }));
+        Assert.Equal(2, Assert.IsType<FakeParameter>(Assert.Single(command.Parameters)).Value);
+    }
+
+    [Fact]
+    public void TryRebind_AReadOnlyNamedValueDictionary_IsRefusedEvenWithACachedTemplate()
+    {
+        string sql = "x = @A -- " + Unique();
+        var command = Command(sql);
+        ParameterBinder.Bind(command, new OneProp { A = 1 });
+
+        var cache = typeof(ParameterBinder).GetField("TemplateCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
+        const System.Reflection.BindingFlags Any = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var args = new object?[] { (sql, typeof(OneProp), command.GetType()), null };
+        Assert.True((bool)cache.GetType().GetMethod("TryGetValue", Any)!.Invoke(cache, args)!);
+        cache.GetType().GetMethod("TryAdd", Any)!.Invoke(cache, [(sql, typeof(ReadOnlyNamedValues), command.GetType()), args[1]]);
+
+        Assert.False(ParameterBinder.TryRebind(command, new ReadOnlyNamedValues()));
+    }
+
+    [Fact]
+    public void ASetOnlyProperty_IsNotAParameter()
+    {
+        var cache = typeof(ParameterCache).GetField("Cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
+        ((IDictionary)cache).Clear();
+
+        Assert.Equal(["Id"], ParameterCache.Get(typeof(SetOnlyAndReadable)).Select(m => m.Name));
+    }
+
     private sealed class FakeCommand : IDbCommand
     {
         public string CommandText { get; set; } = "";

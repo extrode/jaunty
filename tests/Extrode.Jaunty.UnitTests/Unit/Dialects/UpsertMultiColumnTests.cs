@@ -33,6 +33,14 @@ public class OverClauseMultiColumnTests
     [Fact]
     public void PostgreSql_SeparatesEveryOrderColumn()
         => Assert.Equal(" OVER (PARTITION BY p, q ORDER BY a, b DESC, c)", new PostgreSqlDialect().GenerateOverClause(["p", "q"], Order));
+
+    [Fact]
+    public void MySql_AnEmptyOrderList_ContributesNothing()
+        => Assert.Equal(" OVER (PARTITION BY p)", new MySqlDialect().GenerateOverClause(["p"], []));
+
+    [Fact]
+    public void PostgreSql_AnEmptyOrderList_ContributesNothing()
+        => Assert.Equal(" OVER (PARTITION BY p)", new PostgreSqlDialect().GenerateOverClause(["p"], []));
 }
 
 public class SqliteTableNameTests
