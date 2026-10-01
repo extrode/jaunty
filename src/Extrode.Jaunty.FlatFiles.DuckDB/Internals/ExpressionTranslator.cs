@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -264,6 +265,7 @@ internal static class ExpressionTranslator
     {
         Expression collectionExpr;
         Expression itemExpr;
+        bool caseInsensitive = false;
 
         if (method.Method.DeclaringType == typeof(Enumerable) || method.Method.DeclaringType == typeof(MemoryExtensions))
         {
@@ -275,6 +277,7 @@ internal static class ExpressionTranslator
             // EvaluateExpression, so unwrap back to the original array expression first.
             collectionExpr = UnwrapSpanConversion(method.Arguments[0]);
             itemExpr = method.Arguments[1];
+            caseInsensitive = method.Arguments.Count > 2 && IsCaseInsensitiveComparer(method.Arguments[2]);
         }
         else
         {
@@ -296,7 +299,9 @@ internal static class ExpressionTranslator
         {
             if (first)
             {
-                sb.Append($"\"{EscapeColumnName(columnName)}\" IN (");
+                sb.Append(caseInsensitive
+                    ? $"lower(\"{EscapeColumnName(columnName)}\") IN ("
+                    : $"\"{EscapeColumnName(columnName)}\" IN (");
                 first = false;
             }
             else
@@ -305,8 +310,8 @@ internal static class ExpressionTranslator
             }
 
             var paramIndex = paramOffset + parameters.Count + 1;
-            parameters.Add(new DuckDBParameter { Value = item });
-            sb.Append($"${paramIndex}");
+            parameters.Add(new DuckDBParameter { Value = ToStoredForm(memberExpr, item) });
+            sb.Append(caseInsensitive ? $"lower(${paramIndex})" : $"${paramIndex}");
         }
 
         if (first)
@@ -318,6 +323,69 @@ internal static class ExpressionTranslator
 
         sb.Append(')');
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// AUD-R38-020: the comparer argument of <c>Contains(source, value, comparer)</c> used to be
+    /// dropped, so <c>StringComparer.OrdinalIgnoreCase</c> produced a case-sensitive IN. The
+    /// default string and ordinal comparers mean what IN already does and the ignore-case string comparers
+    /// map to <c>lower()</c> on both sides; any other comparer has no SQL equivalent and is rejected.
+    /// </summary>
+    private static bool IsCaseInsensitiveComparer(Expression comparerExpr)
+    {
+        object? comparer = EvaluateExpression(comparerExpr);
+
+        if (comparer is null || StringComparer.Ordinal.Equals(comparer) || ReferenceEquals(comparer, EqualityComparer<string>.Default))
+            return false;
+
+        // Equals rather than reference identity: the culture-aware properties hand out a new
+        // comparer on each read.
+        if (StringComparer.OrdinalIgnoreCase.Equals(comparer)
+            || StringComparer.InvariantCultureIgnoreCase.Equals(comparer)
+            || StringComparer.CurrentCultureIgnoreCase.Equals(comparer))
+            return true;
+
+        throw new NotSupportedException(
+            $"Contains with the comparer '{comparer.GetType().Name}' has no SQL equivalent in flat file predicates. " +
+            "Use the default or an ordinal comparer, or one of StringComparer's ignore-case comparers.");
+    }
+
+    /// <summary>
+    /// AUD-R38-019: C# promotes a char or enum operand to int, so <c>x.Grade == 'A'</c> arrives as
+    /// <c>Convert(x.Grade) == 65</c> and the integer was bound against a column that holds the
+    /// one-character string or the enum as the configured storage writes it. Bind the stored form:
+    /// a char as its one-character string, an enum as its name or underlying number per
+    /// <see cref="EnumStorageAttribute"/>/<c>JauntyConfig.DefaultEnumStorage</c>, the same rule
+    /// import DDL uses.
+    /// </summary>
+    private static object? ToStoredForm(MemberExpression member, object? value)
+    {
+        if (value is null || member.Member is not PropertyInfo property)
+            return value;
+
+        Type type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+
+        if (type == typeof(char))
+        {
+            return value switch
+            {
+                char c => c.ToString(),
+                string => value,
+                IConvertible => ((char)Convert.ToInt32(value, CultureInfo.InvariantCulture)).ToString(),
+                _ => value
+            };
+        }
+
+        if (type.IsEnum)
+        {
+            object enumValue = value.GetType() == type ? value : Enum.ToObject(type, value);
+
+            return Import.ImportTypeMapping.Normalize(type, property) == typeof(string)
+                ? enumValue.ToString()
+                : Convert.ChangeType(enumValue, Enum.GetUnderlyingType(type), CultureInfo.InvariantCulture);
+        }
+
+        return value;
     }
 
     private static Expression UnwrapSpanConversion(Expression expr)
@@ -348,14 +416,14 @@ internal static class ExpressionTranslator
         if (leftMember != null && IsEntityMember(leftMember))
         {
             var columnName = ResolveColumnFromMember(leftMember);
-            var value = EvaluateExpression(binary.Right);
+            var value = ToStoredForm(leftMember, EvaluateExpression(binary.Right));
             return (columnName, value, false);
         }
 
         if (rightMember != null && IsEntityMember(rightMember))
         {
             var columnName = ResolveColumnFromMember(rightMember);
-            var value = EvaluateExpression(binary.Left);
+            var value = ToStoredForm(rightMember, EvaluateExpression(binary.Left));
             return (columnName, value, true);
         }
 
