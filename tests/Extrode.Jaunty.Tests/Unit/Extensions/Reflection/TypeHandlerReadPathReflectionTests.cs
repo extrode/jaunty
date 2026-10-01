@@ -22,7 +22,11 @@ public class TypeHandlerReadPathReflectionTests : IDisposable
 {
     public TypeHandlerReadPathReflectionTests() => JauntyReflectionExtensions.UseReflectionMapping();
 
-    public void Dispose() => JauntyConfig.RemoveTypeHandler<Guid>();
+    public void Dispose()
+    {
+        JauntyConfig.RemoveTypeHandler<Guid>();
+        JauntyConfig.RemoveTypeHandler<Shape>();
+    }
 
     [Table("type_handler_read_widgets")]
     public class Widget
@@ -36,6 +40,24 @@ public class TypeHandlerReadPathReflectionTests : IDisposable
     {
         public override Guid Parse(object? dbValue) => Guid.Parse((string)dbValue!);
         public override object? ToDbValue(Guid value) => value.ToString();
+    }
+
+    public class Shape;
+
+    public sealed class Circle : Shape;
+
+    [Table("type_handler_read_drawings")]
+    public class Drawing
+    {
+        [Key]
+        public int Id { get; set; }
+        public Shape? Outline { get; set; }
+    }
+
+    private sealed class CircleHandler : TypeHandler<Shape>
+    {
+        public override Shape? Parse(object? dbValue) => new Circle();
+        public override object? ToDbValue(Shape? value) => "circle";
     }
 
     private sealed class ThrowingGuidHandler : TypeHandler<Guid>
@@ -59,6 +81,22 @@ public class TypeHandlerReadPathReflectionTests : IDisposable
             setter.Set(widget, reader);
 
         Assert.Equal(guid, widget.Token);
+    }
+
+    [Fact]
+    public void AHandlerReturningASubclassOfThePropertyType_AssignsItUnconverted()
+    {
+        JauntyConfig.RegisterTypeHandler(new CircleHandler());
+
+        var reader = new SingleRowReader(["Id", "Outline"], [1, "circle"]);
+
+        PropertySetter<Drawing>[] setters = MetadataCache<Drawing>.GetSetters(reader, MappingMode.Strict);
+        var drawing = new Drawing();
+        Assert.True(reader.Read());
+        foreach (PropertySetter<Drawing> setter in setters)
+            setter.Set(drawing, reader);
+
+        Assert.IsType<Circle>(drawing.Outline);
     }
 
     [Fact]
