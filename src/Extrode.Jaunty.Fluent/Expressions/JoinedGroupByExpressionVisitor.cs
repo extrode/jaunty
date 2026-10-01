@@ -33,6 +33,7 @@ internal sealed class JoinedGroupByExpressionVisitor
     private readonly List<string> _selectColumns = new();
     private readonly List<string> _columnAliases = new();
     private ParameterCollection? _havingParameters;
+    private IReadOnlyCollection<ParameterExpression> _havingLambdaParameters = Array.Empty<ParameterExpression>();
 
     /// <param name="dialect">The SQL dialect, for column escaping.</param>
     /// <param name="metadata">Entity metadata, ordered index 0 = TFrom, index 1 = TJoin, etc.</param>
@@ -76,6 +77,7 @@ internal sealed class JoinedGroupByExpressionVisitor
     public string TranslateHavingPredicate(LambdaExpression predicate, ParameterCollection parameters)
     {
         _havingParameters = parameters;
+        _havingLambdaParameters = predicate.Parameters;
         return TranslateHavingExpression(predicate.Body);
     }
 
@@ -222,7 +224,7 @@ internal sealed class JoinedGroupByExpressionVisitor
         // ConstantExpression - evaluate it (gap #14's closure-safety fix).
         if (expr is MemberExpression or UnaryExpression)
         {
-            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr), stem);
+            return AddHavingParameter(HavingExpressionHelpers.EvaluateOperand(expr, _havingLambdaParameters), stem);
         }
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
