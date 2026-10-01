@@ -77,13 +77,46 @@ internal static class ScannerTestProbe
 '@
 }
 
-Assert-Exit 'GetGetMethod( is not counted as GetMethod(' 0 {
+Assert-Exit 'a longer name ending in GetMethod( is not counted as GetMethod(' 0 {
     Set-Content $probe @'
+namespace Extrode.Jaunty;
+internal static class ScannerTestProbe
+{
+    public static object? P(object o) => LookupGetMethod(o);
+    private static object? LookupGetMethod(object o) => o;
+}
+'@
+}
+
+# Round 38: these four shapes passed unmarked because the scanner had no pattern for them.
+$unmarked = [ordered]@{
+    'GetCustomAttribute<T>(' = 'public static object? P(System.Type t) => t.GetCustomAttribute<System.ObsoleteAttribute>();'
+    'GetCustomAttributes(' = 'public static object[] P(System.Type t) => t.GetCustomAttributes(true);'
+    'GetIndexParameters(' = 'public static int P(PropertyInfo p) => p.GetIndexParameters().Length;'
+    'GetGetMethod(' = 'public static MethodInfo? P(PropertyInfo p) => p.GetGetMethod();'
+    'GetSetMethod(' = 'public static MethodInfo? P(PropertyInfo p) => p.GetSetMethod();'
+    'Expression.Compile(' = 'public static System.Func<int> P(System.Linq.Expressions.Expression<System.Func<int>> e) => e.Compile();'
+}
+foreach ($case in $unmarked.GetEnumerator()) {
+    $body = $case.Value
+    Assert-Exit "unmarked $($case.Key) fails" 1 {
+        Set-Content $probe @"
 using System.Reflection;
 namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
-    public static MethodInfo? P(PropertyInfo p) => p.GetGetMethod();
+    $body
+}
+"@
+    }
+}
+
+Assert-Exit 'RegexOptions.Compiled is not counted as Expression.Compile(' 0 {
+    Set-Content $probe @'
+namespace Extrode.Jaunty;
+internal static class ScannerTestProbe
+{
+    public static readonly System.Text.RegularExpressions.Regex R = new("a", System.Text.RegularExpressions.RegexOptions.Compiled);
 }
 '@
 }

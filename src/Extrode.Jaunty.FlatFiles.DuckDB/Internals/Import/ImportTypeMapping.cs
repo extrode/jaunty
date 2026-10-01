@@ -70,6 +70,7 @@ internal static class ImportTypeMapping
             return type;
 
         EnumStorage storage =
+            // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
             property?.GetCustomAttribute<EnumStorageAttribute>()?.Storage
             ?? JauntyConfig.DefaultEnumStorage;
 

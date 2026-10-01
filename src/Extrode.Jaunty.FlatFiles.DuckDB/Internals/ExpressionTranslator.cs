@@ -542,6 +542,7 @@ internal static class ExpressionTranslator
         // produce a new Expression instance per call but stringify identically across calls, so a
         // string-keyed cache would return a stale compiled delegate bound to an earlier call's captured value.
         var lambda = System.Linq.Expressions.Expression.Lambda<Func<object?>>(System.Linq.Expressions.Expression.Convert(expression, typeof(object)));
+        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         return lambda.Compile()();
     }
 
@@ -631,8 +632,10 @@ internal static class ExpressionTranslator
                         return true;
 
                     case PropertyInfo property:
+                        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
                         MethodInfo? getter = property.GetGetMethod(nonPublic: true);
 
+                        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
                         if (getter is null || property.GetIndexParameters().Length != 0)
                             return false;
 

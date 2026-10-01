@@ -85,6 +85,7 @@ internal static class ParameterCache
             // prop) throws ArgumentException ("Incorrect number of indexes") for these, so a
             // parameters POCO that happens to declare an indexer would fail binding with an
             // unclear exception. Dapper explicitly skips indexed properties; do the same here.
+            // AOT-SAFE: metadata read on a property from the GetProperties call above; same rooting.
             if (p.GetIndexParameters().Length > 0)
                 continue;
 
@@ -94,6 +95,7 @@ internal static class ParameterCache
             // that cannot be read cannot supply a parameter value, so it is not a parameter -
             // skipping leaves the SQL asking for it to fail as "no value found for '@Name'",
             // which at least says which one.
+            // AOT-SAFE: metadata read on a property from the GetProperties call above; same rooting.
             if (p.GetGetMethod() is null)
                 continue;
 
@@ -118,6 +120,7 @@ internal static class ParameterCache
         MemberExpression access = Expression.Property(cast, prop);
         UnaryExpression box = Expression.Convert(access, typeof(object));
 
+        // AOT-SAFE: Func<object, object?> is fixed, so under NativeAOT Compile() runs on the expression interpreter; the property is rooted as in BuildMetadata.
         return Expression.Lambda<Func<object, object?>>(box, obj).Compile();
     }
 }

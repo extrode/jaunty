@@ -20,6 +20,7 @@ internal static class TableNameResolver
     /// </summary>
     public static string Resolve(Type entityType)
     {
+        // AOT-SAFE: attributes on a kept type survive trimming, and TableAttribute is rooted by the type argument.
         TableAttribute? jauntyAttr = entityType.GetCustomAttribute<TableAttribute>();
         if (jauntyAttr is not null)
             return jauntyAttr.Name;
@@ -39,6 +40,7 @@ internal static class TableNameResolver
         // FlatFiles drifting: core's MetadataBuilder reads the Extrode.Jaunty attribute the same way, so
         // the asymmetry is the attribute's own declaration and changing it is a behaviour change
         // for every consumer, not a resolver fix. Both shapes are pinned by TableNameResolverTests.
+        // AOT-SAFE: attributes on a kept type survive trimming; the DataAnnotations TableAttribute is rooted by the typed check below.
         var attrs = entityType.GetCustomAttributes(inherit: true);
         foreach (var attr in attrs)
         {
