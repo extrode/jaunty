@@ -94,6 +94,20 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
     }
 
     [Fact]
+    public async Task Open_WritingThenDisposingAsync_CommitsTheCopiedRows()
+    {
+        using NpgsqlConnection conn = OpenOrSkip();
+        CreateTable(conn, "npgsql_copy_writer_commit_async");
+
+        ICopyImportWriter writer = NpgsqlCopyImportWriter.Open(conn, "COPY npgsql_copy_writer_commit_async (id, note) FROM STDIN")!;
+        await writer.Writer.WriteAsync("1\tfirst\n");
+        await writer.Writer.WriteAsync("2\tsecond\n");
+        await Assert.IsAssignableFrom<IAsyncDisposable>(writer).DisposeAsync();
+
+        Assert.Equal(2, Count(conn, "npgsql_copy_writer_commit_async"));
+    }
+
+    [Fact]
     public void Open_GivenANonNpgsqlConnection_ReturnsNull()
     {
         using var conn = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:");
