@@ -203,6 +203,28 @@ public class SpParametersTests
         Assert.Null(result);
     }
 
+    [Theory]
+    [InlineData("@Total", "Total")]
+    [InlineData("Total", "@Total")]
+    [InlineData("@Total", "@total")]
+    public void Get_AndHasValue_IgnoreTheAtPrefix_LikeTheBinder(string addedAs, string readAs)
+    {
+        var parameters = new SpParameters().AddOutput(addedAs, DbType.Int32);
+        parameters.Parameters[0].DbParameter = CreateMockParameter(7);
+
+        Assert.Equal(7, parameters.Get<int>(readAs));
+        Assert.True(parameters.HasValue(readAs));
+    }
+
+    [Fact]
+    public void Get_ADifferentNameAfterThePrefix_StillThrows()
+    {
+        var parameters = new SpParameters().AddOutput("@Total", DbType.Int32);
+
+        Assert.Throws<ArgumentException>(() => parameters.Get<int>("@Totals"));
+        Assert.False(parameters.HasValue("Tota"));
+    }
+
     [Fact]
     public void Get_NonExistentParameter_Throws()
     {
