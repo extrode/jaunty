@@ -107,6 +107,58 @@ public class EntityDeclarationGuardTests
         Assert.Contains("public parameterless constructor", diagnostic.GetMessage(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("public required string Name { get; set; }")]
+    [InlineData("public required string Name;")]
+    public void AnEntityWithARequiredMember_ReportsJauntyGen004AndGeneratesNothing(string member)
+    {
+        Diagnostic diagnostic = AssertSkippedWithDiagnostic(Entity(
+            "public partial class Order",
+            $"public int Id {{ get; set; }} {member}"));
+
+        Assert.Contains("'Name' is a required member", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AnEntityInheritingARequiredMember_ReportsJauntyGen004AndGeneratesNothing()
+    {
+        string source = """
+            using Extrode.Jaunty.Attributes;
+
+            namespace DeclProbe;
+
+            public class Base { public required string Tag { get; set; } }
+
+            [Table("orders")]
+            public partial class Order : Base
+            {
+                public int Id { get; set; }
+            }
+            """;
+
+        Diagnostic diagnostic = AssertSkippedWithDiagnostic(source);
+
+        Assert.Contains("'Tag' is a required member", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AnEntityWhoseParameterlessConstructorIsObsoleteAsAnError_ReportsJauntyGen004AndGeneratesNothing()
+    {
+        Diagnostic diagnostic = AssertSkippedWithDiagnostic(Entity(
+            "public partial class Order",
+            "[System.Obsolete(\"use the factory\", true)] public Order() { } public int Id { get; set; }"));
+
+        Assert.Contains("[Obsolete] as an error", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void APositionalRecordEntity_ReportsJauntyGen004AndGeneratesNothing()
+    {
+        Diagnostic diagnostic = AssertSkippedWithDiagnostic(Entity("public partial record Order(int Id, string Name);", ""));
+
+        Assert.Contains("parameterless constructor", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
     // ------------------------------------------------------------------
     // Controls: the shapes that were always fine must stay fine.
     // ------------------------------------------------------------------
@@ -142,6 +194,33 @@ public class EntityDeclarationGuardTests
             GeneratorHarness.RunAndCompile(Entity("internal partial class Order"));
 
         Assert.Single(sources);
+        Assert.Empty(generatorDiagnostics.Where(d => d.Id == "JAUNTYGEN004"));
+        Assert.Empty(compileErrors);
+    }
+
+    [Fact]
+    public void AnEntityWhoseParameterlessConstructorIsObsoleteButNotAsAnError_StillGenerates()
+    {
+        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, ImmutableArray<Diagnostic> compileErrors) =
+            GeneratorHarness.RunAndCompile(Entity(
+                "public partial class Order",
+                "[System.Obsolete(\"prefer the factory\")] public Order() { } public int Id { get; set; }"));
+
+        Assert.Single(sources);
+        Assert.Empty(generatorDiagnostics.Where(d => d.Id == "JAUNTYGEN004"));
+        Assert.Empty(compileErrors);
+    }
+
+    [Fact]
+    public void ARecordEntityWithAParameterlessConstructor_GeneratesAPartialRecord()
+    {
+        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, ImmutableArray<Diagnostic> compileErrors) =
+            GeneratorHarness.RunAndCompile(Entity(
+                "public partial record Order",
+                "public int Id { get; set; } public string Name { get; set; } = \"\";"));
+
+        string source = Assert.Single(sources);
+        Assert.Contains("partial record Order : IMapped<Order>", source, StringComparison.Ordinal);
         Assert.Empty(generatorDiagnostics.Where(d => d.Id == "JAUNTYGEN004"));
         Assert.Empty(compileErrors);
     }
