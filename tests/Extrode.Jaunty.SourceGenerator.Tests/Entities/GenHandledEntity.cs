@@ -29,3 +29,14 @@ public partial class GenHandledEntity : IMapped<GenHandledEntity>
     [Column("amount")]
     public GenMoney Amount { get; set; }
 }
+
+[Table("gen_nullable_handled")]
+public partial class GenNullableHandledEntity : IMapped<GenNullableHandledEntity>
+{
+    [Key]
+    [Column("id")]
+    public int Id { get; set; }
+
+    [Column("amount")]
+    public GenMoney? Amount { get; set; }
+}

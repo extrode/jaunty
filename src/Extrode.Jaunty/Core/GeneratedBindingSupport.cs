@@ -109,20 +109,40 @@ public static class GeneratedBindingSupport
     /// </remarks>
     public static T FromDbValue<T>(object dbValue)
     {
-        if (TypeHandlerRegistry.TryGetHandler(typeof(T), out ITypeHandler? handler) && handler is not null)
-        {
-            try
-            {
-                object? converted = handler.Parse(dbValue);
-                return converted is null ? default! : (T)converted;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException(
-                    $"Type handler '{handler.GetType().Name}' failed to parse the value read for '{typeof(T).Name}'.", ex);
-            }
-        }
+        if (TryParseWithHandler<T>(dbValue, out object? converted))
+            return converted is null ? default! : (T)converted;
 
         return dbValue is T typed ? typed : (T)DbValueConversion.Convert(dbValue, typeof(T));
+    }
+
+    /// <summary>
+    /// <see cref="FromDbValue{T}"/> for a <c>Nullable&lt;T&gt;</c> property. AUD-R38-048: a handler
+    /// that parses a value to null leaves the property null, as the reflection twin's
+    /// <c>SetValue(target, null)</c> does, rather than <c>default(T)</c>.
+    /// </summary>
+    public static T? FromDbValueNullable<T>(object dbValue) where T : struct
+    {
+        if (TryParseWithHandler<T>(dbValue, out object? converted))
+            return converted is null ? null : (T)converted;
+
+        return FromDbValue<T>(dbValue);
+    }
+
+    private static bool TryParseWithHandler<T>(object dbValue, out object? converted)
+    {
+        converted = null;
+        if (!TypeHandlerRegistry.TryGetHandler(typeof(T), out ITypeHandler? handler) || handler is null)
+            return false;
+
+        try
+        {
+            converted = handler.Parse(dbValue);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Type handler '{handler.GetType().Name}' failed to parse the value read for '{typeof(T).Name}'.", ex);
+        }
     }
 }
