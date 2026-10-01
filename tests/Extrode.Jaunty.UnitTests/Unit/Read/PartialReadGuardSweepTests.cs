@@ -38,6 +38,11 @@ namespace Extrode.Jaunty.Tests.Unit.Read;
 /// reflection instead, in the manner of <see cref="MultiEntityGuardSweepTests"/>, so a new overload
 /// added without a guard fails here.
 /// </para>
+/// <para>
+/// AUD-R38-143/144 widened it to every reader family. The sync <c>ExecuteReader</c> used to
+/// repeat the public guards, which hid the families this list did not name and made the guards'
+/// mutants equivalent; with that copy removed, this sweep is what holds the contract.
+/// </para>
 /// </summary>
 public class PartialReadGuardSweepTests
 {
@@ -57,6 +62,28 @@ public class PartialReadGuardSweepTests
         "QuerySingleAsync",
         "QuerySingleOrDefault",
         "QuerySingleOrDefaultAsync",
+        "ExecuteScalar",
+        "ExecuteScalarAsync",
+        "Query",
+        "QueryAsync",
+        "QueryFirst",
+        "QueryFirstAsync",
+        "QueryFirstOrDefault",
+        "QueryFirstOrDefaultAsync",
+        "QueryPartial",
+        "QueryPartialFirst",
+        "QueryPartialFirstAsync",
+        "QueryPartialFirstOrDefault",
+        "QueryPartialFirstOrDefaultAsync",
+        "QueryPartialList",
+        "QueryPartialListAsync",
+        "QueryPartialStream",
+        "QueryPartialStreamAsync",
+        "QueryPartialUnbuffered",
+        "QueryPartialUnbufferedAsync",
+        "QueryScalar",
+        "QueryStream",
+        "QueryStreamAsync",
     ];
 
     public sealed class Entity
@@ -189,15 +216,15 @@ public class PartialReadGuardSweepTests
 
     /// <summary>
     /// A floor rather than NotEmpty: a filter that stops matching would otherwise pass every theory
-    /// below vacuously. 46 overloads matched when this was written.
+    /// below vacuously. 46 overloads matched when this was written, 574 after AUD-R38-143/144.
     /// </summary>
     [Fact]
     public void TheSweepMatchesTheseFamilies()
     {
         List<MethodInfo> overloads = Overloads();
 
-        Assert.True(overloads.Count >= 42,
-            $"Only {overloads.Count} overloads matched; 46 did when this sweep was written.");
+        Assert.True(overloads.Count >= 560,
+            $"Only {overloads.Count} overloads matched; 574 did after AUD-R38-143/144.");
 
         foreach (string family in Families)
             Assert.Contains(overloads, m => m.Name == family);
