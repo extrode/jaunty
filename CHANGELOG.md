@@ -29,6 +29,10 @@ default lives in `src/Directory.Build.props`.
 
 ### Fixed
 
+- **Placeholders inside square brackets are now bound on PostgreSQL, DuckDB and MySQL.**
+  `ARRAY[@a, @b]`, `tags[@i]` and DuckDB's `[@a, @b]` list literal used to be skipped as if
+  they were SQL Server bracket identifiers, so their parameters were never bound or expanded.
+  SQL Server and SQLite still read `[...]` as an identifier.
 - **A `[Table]` entity whose only parameterless constructor is `internal`, `protected internal` or
   `private protected` now gets a `JAUNTYGEN004` warning instead of a CS0310 build error inside the
   generated file.** The generated mapper implements `IMapped<T>`, which requires a public
