@@ -80,6 +80,11 @@ internal static class ParameterBinder
         // so SQL-text parsing/validation is not applicable. Bind all provided values.
         if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
         {
+            // AUD-R38-060: reached only when an SpParameters was passed as object. Binding it as an
+            // anonymous object sends its Parameters list as one value and never reads outputs back.
+            if (parameters is SpParameters)
+                throw new ArgumentException($"An {nameof(SpParameters)} instance was passed where a plain parameters object is expected, so its inputs would not be bound and its outputs not read back. Call an overload whose parameters argument is typed {nameof(SpParameters)}.", nameof(parameters));
+
             IDictionary<string, object?>? sprocDict = AsNamedValues(parameters);
             if (sprocDict is not null)
             {
