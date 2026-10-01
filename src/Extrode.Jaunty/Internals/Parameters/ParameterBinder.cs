@@ -456,25 +456,28 @@ internal static class ParameterBinder
     /// </summary>
     private interface IParameterValueSource
     {
-        bool TryGetValue(string name, out object? value, out PropertyInfo? property);
+        /// <summary>
+        /// A name the source does not hold yields a null value and a null property, which the
+        /// expansion pass treats exactly like a null non-collection value: nothing to expand.
+        /// </summary>
+        void GetValue(string name, out object? value, out PropertyInfo? property);
 
         IEnumerable<string> Names { get; }
     }
 
     private readonly struct ObjectValueSource(Dictionary<string, ParameterMetadata> lookup, object parameters) : IParameterValueSource
     {
-        public bool TryGetValue(string name, out object? value, out PropertyInfo? property)
+        public void GetValue(string name, out object? value, out PropertyInfo? property)
         {
             if (lookup.TryGetValue(name, out ParameterMetadata meta))
             {
                 value = meta.Getter(parameters);
                 property = meta.Property;
-                return true;
+                return;
             }
 
             value = null;
             property = null;
-            return false;
         }
 
         public IEnumerable<string> Names => lookup.Keys;
@@ -482,10 +485,10 @@ internal static class ParameterBinder
 
     private readonly struct DictionaryValueSource(Dictionary<string, object?> resolved) : IParameterValueSource
     {
-        public bool TryGetValue(string name, out object? value, out PropertyInfo? property)
+        public void GetValue(string name, out object? value, out PropertyInfo? property)
         {
             property = null;
-            return resolved.TryGetValue(name, out value);
+            resolved.TryGetValue(name, out value);
         }
 
         // Every resolved key is a name the SQL uses, which ExpandCollectionParameters already
@@ -523,8 +526,7 @@ internal static class ParameterBinder
             if (!seen.Add(sqlName))
                 continue; // Already processed
 
-            if (!source.TryGetValue(sqlName, out object? value, out PropertyInfo? property))
-                continue;
+            source.GetValue(sqlName, out object? value, out PropertyInfo? property);
 
             if (value is null)
             {
@@ -1120,7 +1122,7 @@ internal static class ParameterBinder
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         Dictionary<string, object?>? caseInsensitive = null;
-        Dictionary<string, object?>? resolved = null;
+        bool expand = false;
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
@@ -1140,23 +1142,20 @@ internal static class ParameterBinder
                 }
             }
 
-            if (resolved is null && value is not null && value is not (string or byte[]) && value is IEnumerable && !HasTypeHandler(value.GetType()))
-                resolved = new Dictionary<string, object?>(CommonConstants.OrdinalIgnoreCase);
-
-            if (resolved is not null)
+            // Once a collection turns up, BindExpandedDictionary rebuilds every parameter from the
+            // names in bound, so the names after it only need recording there.
+            expand = expand || (value is not null && value is not (string or byte[]) && value is IEnumerable && !HasTypeHandler(value.GetType()));
+            if (!expand)
             {
-                resolved[sqlName] = value;
-                continue;
+                IDbDataParameter p = command.CreateParameter();
+                p.ParameterName = sqlName;
+                p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
+                command.Parameters.Add(p);
             }
-
-            IDbDataParameter p = command.CreateParameter();
-            p.ParameterName = sqlName;
-            p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
-            command.Parameters.Add(p);
         }
 
-        if (resolved is not null)
-            BindExpandedDictionary(command, sqlParamNames, bound, dictParams, caseInsensitive, resolved);
+        if (expand)
+            BindExpandedDictionary(command, sqlParamNames, bound, dictParams, caseInsensitive);
 
         // Validate unused, mirroring BuildTemplate's strictness for object-based binding: fail
         // fast on a dictionary key the SQL never references, instead of silently ignoring it.
@@ -1197,9 +1196,9 @@ internal static class ParameterBinder
         string[] sqlParamNames,
         HashSet<string> bound,
         IDictionary<string, object?> dictParams,
-        Dictionary<string, object?>? caseInsensitive,
-        Dictionary<string, object?> resolved)
+        Dictionary<string, object?>? caseInsensitive)
     {
+        var resolved = new Dictionary<string, object?>(CommonConstants.OrdinalIgnoreCase);
         foreach (string sqlName in bound)
         {
             if (!dictParams.TryGetValue(sqlName, out object? value))
