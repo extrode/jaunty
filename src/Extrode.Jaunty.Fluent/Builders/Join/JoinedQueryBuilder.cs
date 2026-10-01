@@ -519,22 +519,6 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         return result;
     }
 
-    internal string[] GetPrefixedColumnsWithAlias(EntityMetadata metadata, string? tableAlias, string columnPrefix)
-    {
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
-        var result = new string[columns.Count];
-        string prefix = tableAlias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
-
-        for (int i = 0; i < columns.Count; i++)
-        {
-            string colName = columns[i].ColumnName;
-            string escaped = _dialect.EscapeColumnName(colName);
-            result[i] = $"{prefix}.{escaped} AS {columnPrefix}{colName}";
-        }
-
-        return result;
-    }
-
     internal string BuildSelectSql(string[] columns)
     {
         var sb = new StringBuilder(256);

@@ -40,7 +40,7 @@ public class QueryBuilderBaseTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.CategoryId, c => c.CategoryId)
             .ToSql();
 
-        // SelectAll path emits "t1_" / "t2_" aliases via GetPrefixedColumnsWithAlias
+        // The select list carries no "t1_" / "t2_" aliases; the mappers read each entity by position
         // Basic join SQL contains column references for both tables
         Assert.Contains("category_id", sql);
         Assert.Contains("product_id", sql);
