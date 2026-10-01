@@ -1,4 +1,5 @@
 using System.Data;
+using System.Reflection;
 
 using Extrode.Jaunty.Internals.Parameters;
 
@@ -26,6 +27,13 @@ public class ParameterBinderDollarSignTests
         return names;
     }
 
+    private static string[] Classic(string sql, bool dollarSigil)
+    {
+        MethodInfo method = typeof(SqlParameterParser).GetMethod(
+            "ExtractParameterNamesClassic", BindingFlags.NonPublic | BindingFlags.Static)!;
+        return (string[])method.Invoke(null, new object[] { sql, false, dollarSigil })!;
+    }
+
     [Theory]
     [InlineData("SELECT sales$q1$2024 FROM t WHERE id = @Id")]
     [InlineData("SELECT a$$b FROM t WHERE id = @Id")]
@@ -33,6 +41,7 @@ public class ParameterBinderDollarSignTests
     public void ExtractParameterNames_DollarsInsideAnIdentifier_DoNotOpenADollarQuote(string sql)
     {
         Assert.Equal(new[] { "Id" }, SqlParameterParser.ExtractParameterNames(sql));
+        Assert.Equal(new[] { "Id" }, Classic(sql, dollarSigil: true));
     }
 
     [Fact]
@@ -54,18 +63,26 @@ public class ParameterBinderDollarSignTests
     public void ExtractParameterNames_DollarSigilOff_IgnoresDollarRuns(string sql)
     {
         Assert.Equal(new[] { "Id" }, SqlParameterParser.ExtractParameterNames(sql, dollarSigil: false));
+        Assert.Equal(new[] { "Id" }, Classic(sql, dollarSigil: false));
     }
 
     [Fact]
     public void ExtractParameterNames_DollarSigilOff_DoesNotOpenDollarQuotes()
     {
         Assert.Equal(new[] { "Fake", "Id" }, SqlParameterParser.ExtractParameterNames("SELECT $q$ @Fake $q$ FROM t WHERE id = @Id", dollarSigil: false));
+        Assert.Equal(new[] { "Fake", "Id" }, Classic("SELECT $q$ @Fake $q$ FROM t WHERE id = @Id", dollarSigil: false));
     }
 
     [Fact]
     public void DetectParameterPrefix_DollarsInsideAnIdentifier_AreNotTheSigil()
     {
         Assert.Equal("@", ParameterBinder.DetectParameterPrefix("SELECT sales$q1$2024 FROM t WHERE id IN @Ids"));
+    }
+
+    [Fact]
+    public void DetectParameterPrefix_ADollarTagPairAcrossIdentifiers_DoesNotHideTheFirstSigil()
+    {
+        Assert.Equal("@", ParameterBinder.DetectParameterPrefix("SELECT a$q$b FROM t WHERE x = @A AND c$q$d = $B"));
     }
 
     [Fact]
@@ -97,6 +114,40 @@ public class ParameterBinderDollarSignTests
 
         Assert.Equal("SELECT $IDENTITY FROM t WHERE id IN (@Ids0, @Ids1)", command.CommandText);
         Assert.Equal(2, command.Parameters.Count);
+    }
+
+    [Fact]
+    public void Bind_SqlServerDollarTagPair_IsNotADollarQuote()
+    {
+        using var connection = new SqlConnection();
+        using SqlCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT $q$ FROM t WHERE id IN @Ids AND n = $q$";
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 1, 2 } });
+
+        Assert.Equal("SELECT $q$ FROM t WHERE id IN (@Ids0, @Ids1) AND n = $q$", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_MySqlDollarTagPair_IsNotADollarQuote()
+    {
+        using var connection = new MySqlConnection();
+        using MySqlCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT $q$ FROM t WHERE id IN @Ids AND n = $q$";
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 1, 2 } });
+
+        Assert.Equal("SELECT $q$ FROM t WHERE id IN (@Ids0, @Ids1) AND n = $q$", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_CommandWithoutAConnection_KeepsDollarParameters()
+    {
+        using var command = new SqliteCommand("SELECT * FROM t WHERE n = $name");
+
+        ParameterBinder.Bind(command, new { name = "a" });
+
+        Assert.Equal(new List<string> { "name" }, ParameterNames(command));
     }
 
     [Fact]
