@@ -993,6 +993,130 @@ public class FluentCommandOptionsTests
     }
 
     // ------------------------------------------------------------------
+    // AUD-R38-031: joined SelectPartial terminals build their own command and had no options
+    // overload, so none could join the caller's transaction.
+    // ------------------------------------------------------------------
+
+    private static IJoinedQuery<Product, Category> Join2(IDbConnection connection)
+        => connection.From<Product>().InnerJoin<Category>().On(p => p.CategoryId, c => c.Id);
+
+    private static IJoinedQuery3<Product, Category, Supplier> Join3(IDbConnection connection)
+        => Join2(connection).InnerJoin<Supplier>().On(p => p.SupplierId, s => s.Id);
+
+    private static IJoinedQuery4<Product, Category, Supplier, Order> Join4(IDbConnection connection)
+        => Join3(connection).InnerJoin<Product, Category, Supplier, Order>().On("opt_products.id", "opt_orders.employee_id");
+
+    private static readonly Dictionary<string, Action<IDbConnection, CommandOptions>> SelectPartialTerminals = new()
+    {
+        ["2:SelectPartial"] = (c, o) => Join2(c).SelectPartial("opt_products.name", o),
+        ["2:SelectPartial<T>"] = (c, o) => Join2(c).SelectPartial("opt_products.name", r => 1, o),
+        ["2:SelectPartialFirst"] = (c, o) => Join2(c).SelectPartialFirst("opt_products.name", o),
+        ["2:SelectPartialFirst<T>"] = (c, o) => Join2(c).SelectPartialFirst("opt_products.name", r => 1, o),
+        ["2:SelectPartialFirstOrDefault"] = (c, o) => Join2(c).SelectPartialFirstOrDefault("opt_products.name", o),
+        ["2:SelectPartialFirstOrDefault<T>"] = (c, o) => Join2(c).SelectPartialFirstOrDefault("opt_products.name", r => 1, o),
+        ["2:SelectPartialSingle"] = (c, o) => Join2(c).SelectPartialSingle("opt_products.name", o),
+        ["2:SelectPartialSingle<T>"] = (c, o) => Join2(c).SelectPartialSingle("opt_products.name", r => 1, o),
+        ["2:SelectPartialSingleOrDefault"] = (c, o) => Join2(c).SelectPartialSingleOrDefault("opt_products.name", o),
+        ["2:SelectPartialSingleOrDefault<T>"] = (c, o) => Join2(c).SelectPartialSingleOrDefault("opt_products.name", r => 1, o),
+        ["3:SelectPartial"] = (c, o) => Join3(c).SelectPartial("opt_products.name", o),
+        ["3:SelectPartialFirst"] = (c, o) => Join3(c).SelectPartialFirst("opt_products.name", o),
+        ["3:SelectPartialFirstOrDefault"] = (c, o) => Join3(c).SelectPartialFirstOrDefault("opt_products.name", o),
+        ["3:SelectPartialSingle"] = (c, o) => Join3(c).SelectPartialSingle("opt_products.name", o),
+        ["3:SelectPartialSingleOrDefault"] = (c, o) => Join3(c).SelectPartialSingleOrDefault("opt_products.name", o),
+        ["4:SelectPartial"] = (c, o) => Join4(c).SelectPartial("opt_products.name", o),
+        ["4:SelectPartialFirst"] = (c, o) => Join4(c).SelectPartialFirst("opt_products.name", o),
+        ["4:SelectPartialFirstOrDefault"] = (c, o) => Join4(c).SelectPartialFirstOrDefault("opt_products.name", o),
+        ["4:SelectPartialSingle"] = (c, o) => Join4(c).SelectPartialSingle("opt_products.name", o),
+        ["4:SelectPartialSingleOrDefault"] = (c, o) => Join4(c).SelectPartialSingleOrDefault("opt_products.name", o),
+    };
+
+    private static readonly Dictionary<string, Func<DbConnection, CommandOptions, Task>> SelectPartialAsyncTerminals = new()
+    {
+        ["2:SelectPartialAsync"] = (c, o) => Join2(c).SelectPartialAsync("opt_products.name", o),
+        ["2:SelectPartialAsync<T>"] = (c, o) => Join2(c).SelectPartialAsync("opt_products.name", r => 1, o),
+        ["2:SelectPartialFirstAsync"] = (c, o) => Join2(c).SelectPartialFirstAsync("opt_products.name", o),
+        ["2:SelectPartialFirstAsync<T>"] = (c, o) => Join2(c).SelectPartialFirstAsync("opt_products.name", r => 1, o),
+        ["2:SelectPartialFirstOrDefaultAsync"] = (c, o) => Join2(c).SelectPartialFirstOrDefaultAsync("opt_products.name", o),
+        ["2:SelectPartialFirstOrDefaultAsync<T>"] = (c, o) => Join2(c).SelectPartialFirstOrDefaultAsync("opt_products.name", r => 1, o),
+        ["2:SelectPartialSingleAsync"] = (c, o) => Join2(c).SelectPartialSingleAsync("opt_products.name", o),
+        ["2:SelectPartialSingleAsync<T>"] = (c, o) => Join2(c).SelectPartialSingleAsync("opt_products.name", r => 1, o),
+        ["2:SelectPartialSingleOrDefaultAsync"] = (c, o) => Join2(c).SelectPartialSingleOrDefaultAsync("opt_products.name", o),
+        ["2:SelectPartialSingleOrDefaultAsync<T>"] = (c, o) => Join2(c).SelectPartialSingleOrDefaultAsync("opt_products.name", r => 1, o),
+        ["3:SelectPartialAsync"] = (c, o) => Join3(c).SelectPartialAsync("opt_products.name", o),
+        ["3:SelectPartialFirstAsync"] = (c, o) => Join3(c).SelectPartialFirstAsync("opt_products.name", o),
+        ["3:SelectPartialFirstOrDefaultAsync"] = (c, o) => Join3(c).SelectPartialFirstOrDefaultAsync("opt_products.name", o),
+        ["3:SelectPartialSingleAsync"] = (c, o) => Join3(c).SelectPartialSingleAsync("opt_products.name", o),
+        ["3:SelectPartialSingleOrDefaultAsync"] = (c, o) => Join3(c).SelectPartialSingleOrDefaultAsync("opt_products.name", o),
+        ["4:SelectPartialAsync"] = (c, o) => Join4(c).SelectPartialAsync("opt_products.name", o),
+        ["4:SelectPartialFirstAsync"] = (c, o) => Join4(c).SelectPartialFirstAsync("opt_products.name", o),
+        ["4:SelectPartialFirstOrDefaultAsync"] = (c, o) => Join4(c).SelectPartialFirstOrDefaultAsync("opt_products.name", o),
+        ["4:SelectPartialSingleAsync"] = (c, o) => Join4(c).SelectPartialSingleAsync("opt_products.name", o),
+        ["4:SelectPartialSingleOrDefaultAsync"] = (c, o) => Join4(c).SelectPartialSingleOrDefaultAsync("opt_products.name", o),
+    };
+
+    public static TheoryData<string> SelectPartialTerminalNames() => new(SelectPartialTerminals.Keys);
+
+    public static TheoryData<string> SelectPartialAsyncTerminalNames() => new(SelectPartialAsyncTerminals.Keys);
+
+    [Theory]
+    [MemberData(nameof(SelectPartialTerminalNames))]
+    public void JoinedSelectPartial_WithOptions_AppliesTheTransactionAndTimeout(string terminal)
+    {
+        var connection = new SqliteConnection();
+        var transaction = new StubTransaction();
+
+        try
+        {
+            SelectPartialTerminals[terminal](connection, new CommandOptions(transaction: transaction, commandTimeout: 37));
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+        Assert.Equal(37, connection.LastCommand.CommandTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(SelectPartialAsyncTerminalNames))]
+    public async Task JoinedSelectPartialAsync_WithOptions_AppliesTheTransactionAndTimeout(string terminal)
+    {
+        var connection = new Async.SqliteConnection();
+        DbTransaction transaction = connection.BeginTransaction();
+
+        try
+        {
+            await SelectPartialAsyncTerminals[terminal](connection, new CommandOptions(transaction: transaction, commandTimeout: 38));
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+        Assert.Equal(38, connection.LastCommand.CommandTimeout);
+    }
+
+    [Fact]
+    public void JoinedSelectPartial_WithoutOptions_LeavesTheCommandUntouched()
+    {
+        var connection = new SqliteConnection();
+
+        Join2(connection).SelectPartial("opt_products.name");
+
+        Assert.Null(connection.LastCommand!.Transaction);
+        Assert.Equal(0, connection.LastCommand.CommandTimeout);
+    }
+
+    [Fact]
+    public async Task JoinedSelectPartialAsync_WithANonDbTransaction_ThrowsJauntysOwnError()
+    {
+        var connection = new Async.SqliteConnection();
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            Join2(connection).SelectPartialAsync("opt_products.name", new CommandOptions(transaction: new StubTransaction())));
+    }
+
+    // ------------------------------------------------------------------
     // Stubs. Both connection classes must be named SqliteConnection: dialect resolution keys on
     // the connection's exact Type.Name, and Type.Name ignores the enclosing type, which is why the
     // async one is nested a level deeper rather than renamed.
