@@ -175,6 +175,42 @@ public class CsvImportPostgreSqlStdinTests : IDisposable
         Assert.IsNotType<InvalidOperationException>(thrown);
     }
 
+    [Fact]
+    public async Task ImportCsvAsync_AsyncDisposableWriter_CompletesTheCopyAsynchronously()
+    {
+        string path = WriteFile("async-complete.csv", EmbeddedLf);
+        using var connection = new NpgsqlConnection { AsyncDisposableWriter = true };
+
+        await connection.ImportCsvAsync("notes", path);
+
+        Assert.Equal(1, connection.LastWriter!.DisposeAsyncCalls);
+        Assert.Equal(0, connection.LastWriter.DisposeCalls);
+        Assert.False(connection.LastWriter.Cancelled);
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_SyncOnlyWriter_CompletesTheCopyThroughDispose()
+    {
+        string path = WriteFile("sync-complete.csv", EmbeddedLf);
+        using var connection = new NpgsqlConnection();
+
+        await connection.ImportCsvAsync("notes", path);
+
+        Assert.Equal(1, connection.LastWriter!.DisposeCalls);
+    }
+
+    [Fact]
+    public void ImportCsv_AsyncDisposableWriter_StillCompletesThroughDispose()
+    {
+        string path = WriteFile("sync-path.csv", EmbeddedLf);
+        using var connection = new NpgsqlConnection { AsyncDisposableWriter = true };
+
+        connection.ImportCsv("notes", path);
+
+        Assert.Equal(1, connection.LastWriter!.DisposeCalls);
+        Assert.Equal(0, connection.LastWriter.DisposeAsyncCalls);
+    }
+
     private static CsvImportOptions StrictUtf8Options() => new()
     {
         Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true)
@@ -196,12 +232,15 @@ public class CsvImportPostgreSqlStdinTests : IDisposable
     {
         public CopyWriter? LastWriter { get; private set; }
         public bool CancelThrows { get; set; }
+        public bool AsyncDisposableWriter { get; set; }
 
         public ICopyImportWriter OpenCopy(string copyCommand)
         {
             CopyCommand = copyCommand;
             LastWriter = new CopyWriter(CancelThrows);
-            return new FakeCopyImportWriter(LastWriter);
+            return AsyncDisposableWriter
+                ? new AsyncFakeCopyImportWriter(LastWriter)
+                : new FakeCopyImportWriter(LastWriter);
         }
 
         public string? CopyCommand { get; private set; }
@@ -229,9 +268,9 @@ public class CsvImportPostgreSqlStdinTests : IDisposable
     /// <summary>
     /// The <see cref="ICopyImportWriter"/> Extrode.Jaunty sees, over the recording writer below.
     /// </summary>
-    private sealed class FakeCopyImportWriter : ICopyImportWriter
+    private class FakeCopyImportWriter : ICopyImportWriter
     {
-        private readonly CopyWriter _writer;
+        protected readonly CopyWriter _writer;
 
         public FakeCopyImportWriter(CopyWriter writer) => _writer = writer;
 
@@ -245,7 +284,23 @@ public class CsvImportPostgreSqlStdinTests : IDisposable
             return default;
         }
 
-        public void Dispose() => _writer.Dispose();
+        public void Dispose()
+        {
+            _writer.DisposeCalls++;
+            _writer.Dispose();
+        }
+    }
+
+    private sealed class AsyncFakeCopyImportWriter : FakeCopyImportWriter, IAsyncDisposable
+    {
+        public AsyncFakeCopyImportWriter(CopyWriter writer) : base(writer) { }
+
+        public ValueTask DisposeAsync()
+        {
+            _writer.DisposeAsyncCalls++;
+            _writer.Dispose();
+            return default;
+        }
     }
 
     /// <summary>
@@ -261,6 +316,8 @@ public class CsvImportPostgreSqlStdinTests : IDisposable
 
         public string Written => _written.ToString();
         public bool Cancelled { get; private set; }
+        public int DisposeCalls { get; set; }
+        public int DisposeAsyncCalls { get; set; }
 
         public override Encoding Encoding => Encoding.UTF8;
 

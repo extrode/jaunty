@@ -8,7 +8,7 @@ namespace Extrode.Jaunty.Extensions.Npgsql;
 /// An <see cref="ICopyImportWriter"/> over Npgsql's client-side
 /// <c>COPY ... FROM STDIN</c> writer.
 /// </summary>
-internal sealed class NpgsqlCopyImportWriter : ICopyImportWriter
+internal sealed class NpgsqlCopyImportWriter : ICopyImportWriter, IAsyncDisposable
 {
     private readonly NpgsqlCopyTextWriter _writer;
 
@@ -36,4 +36,19 @@ internal sealed class NpgsqlCopyImportWriter : ICopyImportWriter
     public async ValueTask CancelAsync() => await _writer.CancelAsync().ConfigureAwait(false);
 
     public void Dispose() => _writer.Dispose();
+
+    /// <summary>
+    /// AUD-R38-012: completes the copy without blocking - the final flush, CopyDone and the wait for
+    /// the server's CommandComplete. Npgsql 8.x on netstandard2.0 has no asynchronous disposal on
+    /// the text writer, so that build completes synchronously.
+    /// </summary>
+    public ValueTask DisposeAsync()
+    {
+#if NETSTANDARD2_0
+        _writer.Dispose();
+        return default;
+#else
+        return _writer.DisposeAsync();
+#endif
+    }
 }
