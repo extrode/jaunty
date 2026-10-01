@@ -42,8 +42,10 @@ public static class FlatFileImporter
         var tableName = TableNameResolver.Resolve<T>();
 
         // Use the registry to create a source with the correct entity type
-        IFileSource source = FlatFile.CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(T));
-        IFlatFile db = FlatFile.Open(opts => opts.AddSource(source));
+        IFileSource source = FlatFile.CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(T), nameof(filePath));
+        var sourceOptions = new FlatFileOptions();
+        sourceOptions.AddSource(source);
+        DuckDb db = await OpenAsync(sourceOptions, cancellationToken).ConfigureAwait(false);
         await using var dbDisposer = db.ConfigureAwait(false);
 
         return await db.ImportIntoAsync<T>(targetConnection, options, cancellationToken).ConfigureAwait(false);
@@ -64,9 +66,37 @@ public static class FlatFileImporter
         ArgumentNullException.ThrowIfNull(configureSource);
         ArgumentNullException.ThrowIfNull(targetConnection);
 
-        IFlatFile db = FlatFile.Open(configureSource);
+        var sourceOptions = new FlatFileOptions();
+        configureSource(sourceOptions);
+        DuckDb db = await OpenAsync(sourceOptions, cancellationToken).ConfigureAwait(false);
         await using var dbDisposer = db.ConfigureAwait(false);
 
         return await db.ImportIntoAsync<T>(targetConnection, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// AUD-R38-079: FlatFile.Open registers every source synchronously in the DuckDb constructor,
+    /// so the caller's token went unobserved through extension loading, header probes and DESCRIBE
+    /// (remote round trips for an s3:// or https:// source). The sources are registered here
+    /// through RegisterSourceAsync instead, which applies the constructor's table-name check per source.
+    /// </summary>
+    private static async ValueTask<DuckDb> OpenAsync(FlatFileOptions options, CancellationToken cancellationToken)
+    {
+        IFileSource[] sources = [.. options.Sources];
+        options.Sources.Clear();
+
+        var db = new DuckDb(options);
+        try
+        {
+            foreach (IFileSource source in sources)
+                await db.RegisterSourceAsync(source, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await db.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
+        return db;
     }
 }

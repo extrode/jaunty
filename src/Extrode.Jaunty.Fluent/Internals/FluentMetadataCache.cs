@@ -59,14 +59,17 @@ internal static class FluentMetadataCache
         string escapedTable = dialect.EscapeTableName(meta.SchemaName, meta.TableName);
         var escapedCols = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var rawCols = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var orderedCols = new string[meta.Columns.Count];
 
-        foreach (ColumnMetadata col in meta.Columns)
+        for (int i = 0; i < orderedCols.Length; i++)
         {
-            escapedCols[col.PropertyName] = dialect.EscapeColumnName(col.ColumnName);
+            ColumnMetadata col = meta.Columns[i];
+            orderedCols[i] = dialect.EscapeColumnName(col.ColumnName);
+            escapedCols[col.PropertyName] = orderedCols[i];
             rawCols[col.PropertyName] = col.ColumnName;
         }
 
-        var dialectMetadata = new CachedDialectMetadata(escapedTable, escapedCols, rawCols, dialect);
+        var dialectMetadata = new CachedDialectMetadata(escapedTable, escapedCols, rawCols, orderedCols, dialect);
         _dialectCache[key] = new ConfigurationScoped<CachedDialectMetadata>(generation, dialectMetadata);
         return dialectMetadata;
     }

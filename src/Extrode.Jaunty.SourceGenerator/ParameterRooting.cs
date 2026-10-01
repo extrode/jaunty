@@ -604,22 +604,50 @@ public partial class JauntyGenerator
         // values however dictionary-shaped it is - it falls through to the property path and
         // throws, and claiming it here suppressed the JAUNTYGEN003 warning that would have said so
         // at build time.
-        if (type is INamedTypeSymbol { MetadataName: "IDictionary`2" or "Dictionary`2" or "IReadOnlyDictionary`2" } named
-            && HasStringKey(named))
+        //
+        // AUD-R38-115: and the value type, for a concrete type. The binder's
+        // AsNamedValues takes IDictionary<string, object?>, IReadOnlyDictionary<string, object?> or
+        // the non-generic IDictionary, and nothing else - a class implementing only
+        // IReadOnlyDictionary<string, int> is none of them, so it reaches the property path. An
+        // interface-typed argument is still accepted for any value type: the instance behind it is
+        // usually a BCL dictionary, which implements the non-generic interface. The interfaces are
+        // matched by namespace too, so a consumer's own IDictionary`2 is not mistaken for the BCL's.
+        if (type.TypeKind == TypeKind.Interface)
         {
-            return true;
+            if (IsStringKeyedDictionary(type))
+                return true;
+
+            foreach (INamedTypeSymbol iface in type.AllInterfaces)
+            {
+                if (IsStringKeyedDictionary(iface))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool nonGeneric = false;
+        foreach (INamedTypeSymbol iface in type.AllInterfaces)
+        {
+            if (iface.MetadataName == "IDictionary" && iface.ContainingNamespace.ToDisplayString() == "System.Collections")
+                nonGeneric = true;
         }
 
         foreach (INamedTypeSymbol iface in type.AllInterfaces)
         {
-            if (iface.MetadataName is "IDictionary`2" or "IReadOnlyDictionary`2" && HasStringKey(iface))
+            if (IsStringKeyedDictionary(iface)
+                && (nonGeneric || iface.TypeArguments[1].SpecialType == SpecialType.System_Object))
+            {
                 return true;
+            }
         }
 
         return false;
 
-        static bool HasStringKey(INamedTypeSymbol dictionary) =>
-            dictionary.TypeArguments.Length == 2
+        static bool IsStringKeyedDictionary(ITypeSymbol candidate) =>
+            candidate is INamedTypeSymbol { MetadataName: "IDictionary`2" or "IReadOnlyDictionary`2" } dictionary
+            && dictionary.ContainingNamespace.ToDisplayString() == "System.Collections.Generic"
+            && dictionary.TypeArguments.Length == 2
             && dictionary.TypeArguments[0].SpecialType == SpecialType.System_String;
     }
 

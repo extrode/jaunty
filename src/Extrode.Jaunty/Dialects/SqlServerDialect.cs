@@ -287,7 +287,12 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
     }
 
     // String functions
-    public string GenerateLength(string expression) => $"LEN({expression})";
+    // AUD-R38-118: LEN leaves trailing spaces out of the count and string.Length does not, so
+    // 'abc  ' was 3 here and 5 everywhere else. Replacing each space with a non-space character
+    // keeps them in the count without changing it. Not "LEN(x + 'x') - 1": concatenation is
+    // capped at the operand's declared length, so a full varchar(8000) would lose its last
+    // character to the cap and count one short. NULL still yields NULL.
+    public string GenerateLength(string expression) => $"LEN(REPLACE({expression}, ' ', '.'))";
     public string GenerateUpper(string expression) => $"UPPER({expression})";
     public string GenerateLower(string expression) => $"LOWER({expression})";
     public string GenerateTrim(string expression) => $"TRIM({expression})";

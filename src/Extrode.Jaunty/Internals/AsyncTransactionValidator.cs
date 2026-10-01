@@ -28,9 +28,8 @@ internal static class AsyncTransactionValidator
 
         throw new ArgumentException(
             $"The provided transaction of type '{transaction.GetType().Name}' does not derive from " +
-            $"'{nameof(DbTransaction)}'. Async Extrode.Jaunty operations require a {nameof(DbTransaction)} " +
-            "(e.g. obtained via DbConnection.BeginTransactionAsync) so it can be attached to the " +
-            "underlying async command.",
+            $"'{nameof(DbTransaction)}'. This operation runs on a {nameof(DbCommand)}, which only accepts a " +
+            $"{nameof(DbTransaction)} (e.g. one from DbConnection.BeginTransaction or BeginTransactionAsync).",
             nameof(transaction));
     }
 }

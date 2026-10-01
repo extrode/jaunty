@@ -6,12 +6,14 @@ namespace Extrode.Jaunty.Configuration;
 public enum MappingMode
 {
     /// <summary>
-    /// All public writable properties must have matching columns in the result set.
-    /// Throws <see cref="InvalidOperationException"/> if a column is missing.
+    /// Columns and public writable properties must match one to one. Throws
+    /// <see cref="InvalidOperationException"/> if a property has no matching column, or if the
+    /// result set has a column that maps to no property.
     /// </summary>
     Strict,
     /// <summary>
-    /// Only properties with matching columns are mapped. Missing columns are ignored.
+    /// Only properties with matching columns are mapped. Properties with no column, and columns
+    /// with no property, are both ignored.
     /// </summary>
     Projection
 }

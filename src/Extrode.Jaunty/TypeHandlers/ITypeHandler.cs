@@ -23,7 +23,10 @@ internal interface ITypeHandler
     /// <summary>
     /// Converts a CLR object to a database value.
     /// </summary>
-    /// <param name="value">The CLR object to convert. May be null.</param>
-    /// <returns>The database value, or null if the input was null.</returns>
+    /// <param name="value">
+    /// The CLR object to convert. Extrode.Jaunty never passes null: a null property value is bound as
+    /// <see cref="DBNull.Value"/> without calling the handler.
+    /// </param>
+    /// <returns>The database value, or null if the value should be stored as NULL.</returns>
     object? ToDbValue(object? value);
 }

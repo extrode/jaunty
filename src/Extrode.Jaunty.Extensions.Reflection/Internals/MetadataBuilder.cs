@@ -183,9 +183,6 @@ internal static class MetadataBuilder
     }
 
     /// <summary>
-    /// Checks if a member has an attribute by type name without requiring a hard reference.
-    /// </summary>
-    /// <summary>
     /// Keeps one property per name, the most derived one, preserving declaration order.
     /// </summary>
     /// <remarks>
@@ -242,6 +239,9 @@ internal static class MetadataBuilder
         return candidateType != incumbentType && incumbentType.IsAssignableFrom(candidateType);
     }
 
+    /// <summary>
+    /// Checks if a member has an attribute by type name without requiring a hard reference.
+    /// </summary>
     private static bool HasAttribute(MemberInfo member, string attributeTypeName)
     {
 

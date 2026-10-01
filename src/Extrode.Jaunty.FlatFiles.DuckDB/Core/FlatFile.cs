@@ -68,7 +68,7 @@ public static class FlatFile
         (string resolvedPath, string extension, string tableName) = ResolvePath(filePath, nameof(filePath));
 
         var options = new FlatFileOptions();
-        IFileSource source = CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(object));
+        IFileSource source = CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(object), nameof(filePath));
         options.Sources.Add(source);
 
         return new DuckDb(options);
@@ -123,7 +123,7 @@ public static class FlatFile
         {
             // Glob patterns - DuckDB resolves them, so pass through as-is
             return (filePath,
-                InferExtensionFromGlob(filePath),
+                InferExtensionFromGlob(filePath, argumentName),
                 SanitizeTableName(Path.GetFileNameWithoutExtension(filePath)));
         }
 
@@ -137,7 +137,8 @@ public static class FlatFile
             SanitizeTableName(Path.GetFileNameWithoutExtension(fullPath)));
     }
 
-    internal static IFileSource CreateSourceFromExtension(string extension, string tableName, string fullPath, Type entityType)
+    // argumentName: the public caller's parameter name, for the exception (AUD-R38-078).
+    internal static IFileSource CreateSourceFromExtension(string extension, string tableName, string fullPath, Type entityType, string argumentName)
     {
         if (_extensionRegistry.TryGetValue(extension, out Func<string, string, Type, IFileSource>? factory))
             return factory(tableName, fullPath, entityType);
@@ -146,7 +147,7 @@ public static class FlatFile
         throw new ArgumentException(
             $"Unsupported file extension '{extension}'. Supported extensions: {supported}. " +
             $"Use {nameof(FlatFile)}.RegisterExtension() to add custom file types.",
-            nameof(extension));
+            argumentName);
     }
 
     internal static bool IsRemoteUri(string path, out string scheme)
@@ -175,7 +176,7 @@ public static class FlatFile
         return lastSlash >= 0 ? pathPart[(lastSlash + 1)..] : pathPart;
     }
 
-    private static string InferExtensionFromGlob(string glob)
+    private static string InferExtensionFromGlob(string glob, string argumentName)
     {
         // Extract extension from glob (e.g. "data/*.csv" → ".csv", "logs/**/*.json" → ".json")
         // Strip glob characters to find the actual extension
@@ -184,7 +185,7 @@ public static class FlatFile
         return string.IsNullOrEmpty(ext)
             ? throw new ArgumentException(
                 $"Cannot infer file format from glob pattern '{glob}'. Use FlatFile.Open(configure) with an explicit file source instead.",
-                nameof(glob))
+                argumentName)
             : ext;
     }
 

@@ -49,6 +49,48 @@ public class QueryMultiEntityAsyncN7Tests : IClassFixture<DialectFixture>
         CROSS JOIN amultimap7_t6 t6
         CROSS JOIN amultimap7_t7 t7";
 
+    private const string FilteredSql = Sql + " WHERE t1.id = @Id";
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryAsync_SevenEntities_WithParameters_BindsThem(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var matched = await connection.QueryAsync<Ae1, Ae2, Ae3, Ae4, Ae5, Ae6, Ae7>(FilteredSql, new { Id = 1 }, TestContext.Current.CancellationToken);
+        var unmatched = await connection.QueryAsync<Ae1, Ae2, Ae3, Ae4, Ae5, Ae6, Ae7>(FilteredSql, new { Id = 2 }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(7, Assert.Single(matched).Item7.Id);
+        Assert.Empty(unmatched);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_SevenEntities_WithParameters_BindsThem(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var matched = await connection.QueryFirstOrDefaultAsync<Ae1, Ae2, Ae3, Ae4, Ae5, Ae6, Ae7>(FilteredSql, new { Id = 1 }, TestContext.Current.CancellationToken);
+        var unmatched = await connection.QueryFirstOrDefaultAsync<Ae1, Ae2, Ae3, Ae4, Ae5, Ae6, Ae7>(FilteredSql, new { Id = 2 }, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(matched);
+        Assert.Equal(1, matched.Value.Item1.Id);
+        Assert.Null(unmatched);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_SevenEntities_WithParameters_BindsThem(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var rows = new List<(Ae1, Ae2, Ae3, Ae4, Ae5, Ae6, Ae7)>();
+
+        await foreach (var row in connection.QueryStreamAsync<Ae1, Ae2, Ae3, Ae4, Ae5, Ae6, Ae7>(FilteredSql, new { Id = 1 }, TestContext.Current.CancellationToken))
+            rows.Add(row);
+
+        Assert.Equal(3, Assert.Single(rows).Item3.Id);
+    }
+
     [Theory]
     [SystemSqlite]
     public async Task QueryAsync_SevenEntities_MapsAllSevenTypes(DialectInfo _)

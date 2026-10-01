@@ -65,7 +65,7 @@ public sealed class TablePromoterObservationTests : IDisposable
 
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
 
-        Assert.Equal([_dialect.GeneratePromoteToTableSql(source)], _logged);
+        Assert.Matches("^CREATE TABLE \"promoted_view_tmp_[0-9a-f]{32}\" AS SELECT", Assert.Single(_logged));
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class TablePromoterObservationTests : IDisposable
 
         await TablePromoter.EnsurePromotedToTableAsync(_connection, source, _dialect, default);
 
-        Assert.Equal([_dialect.GeneratePromoteToTableSql(source)], _logged);
+        Assert.Matches("^CREATE TABLE \"promoted_view_tmp_[0-9a-f]{32}\" AS SELECT", Assert.Single(_logged));
     }
 
     [Fact]

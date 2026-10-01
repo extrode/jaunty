@@ -2,7 +2,6 @@
 
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Core;
-using Extrode.Jaunty.Internals.Parameters;
 using Extrode.Jaunty.Internals.Read;
 
 namespace Extrode.Jaunty;
@@ -311,7 +310,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns no results, when a property has no matching column, 
+    /// Thrown when the query returns no results
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirstOrDefault{T1, T2}(IDbConnection, string)"/>
@@ -357,7 +356,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns no results, when a property has no matching column, 
+    /// Thrown when the query returns no results
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -408,7 +407,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns no results, when a property has no matching column, 
+    /// Thrown when the query returns no results
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QueryFirst{T1, T2}(IDbConnection, string)"/>
@@ -459,7 +458,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns no results, when a property has no matching column, 
+    /// Thrown when the query returns no results
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -805,7 +804,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns zero or more than one result, when a property has no matching column, 
+    /// Thrown when the query returns zero or more than one result
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QuerySingleOrDefault{T1, T2}(IDbConnection, string)"/>
@@ -851,7 +850,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns zero or more than one result, when a property has no matching column, 
+    /// Thrown when the query returns zero or more than one result
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -903,7 +902,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns zero or more than one result, when a property has no matching column, 
+    /// Thrown when the query returns zero or more than one result
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QuerySingle{T1, T2}(IDbConnection, string)"/>
@@ -954,7 +953,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns zero or more than one result, when a property has no matching column, 
+    /// Thrown when the query returns zero or more than one result
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -1057,7 +1056,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns more than one result, when a property has no matching column, 
+    /// Thrown when the query returns more than one result
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QuerySingle{T1, T2}(IDbConnection, string)"/>
@@ -1105,7 +1104,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns more than one result, when a property has no matching column, 
+    /// Thrown when the query returns more than one result
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
@@ -1159,7 +1158,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns more than one result, when a property has no matching column, 
+    /// Thrown when the query returns more than one result
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="QuerySingleOrDefault{T1, T2}(IDbConnection, string)"/>
@@ -1212,7 +1211,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns more than one result, when a property has no matching column, 
+    /// Thrown when the query returns more than one result
     /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">

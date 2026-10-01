@@ -6,12 +6,14 @@ namespace Extrode.Jaunty.Interfaces;
 /// <remarks>
 /// <para>
 /// This interface marks an entity as having a primary key property named <c>Id</c> of type
-/// <see cref="long"/>. Extrode.Jaunty uses this interface to identify entities that can be operated
-/// on by key-based methods such as <c>DeleteAsync&lt;T&gt;</c>.
+/// <see cref="long"/>. Extrode.Jaunty uses it for identity write-back: after an insert, the
+/// database-generated identity value is assigned to <see cref="Id"/>.
 /// </para>
 /// <para>
-/// Implementing this interface enables type-safe access to the entity's identifier and allows 
-/// Extrode.Jaunty to automatically handle primary key operations.
+/// It does not enable the typed key-based overloads such as <c>DeleteAsync&lt;T, TId&gt;</c>, which
+/// require <see cref="IEntity{T}"/>. Key-based calls with a single type argument, such as
+/// <c>DeleteAsync&lt;T&gt;(object id)</c>, work on any entity whose key is discoverable, with or
+/// without this interface.
 /// </para>
 /// </remarks>
 /// <example>
@@ -25,8 +27,9 @@ namespace Extrode.Jaunty.Interfaces;
 ///     public decimal Price { get; set; }
 /// }
 /// 
-/// // Now you can use key-based operations
-/// await connection.DeleteAsync&lt;Product&gt;(1L);
+/// // The inserted row's identity value is written back to Id
+/// var product = new Product { Name = "Tea", Price = 3.50m };
+/// await connection.InsertAsync(product);
 /// </code>
 /// </example>
 /// <seealso cref="IEntity{T}"/>
@@ -50,8 +53,9 @@ public interface IEntity
 /// <remarks>
 /// <para>
 /// This generic interface marks an entity as having a primary key property named <c>Id</c> 
-/// of type <typeparamref name="T"/>. Extrode.Jaunty uses this interface to identify entities that 
-/// can be operated on by key-based methods.
+/// of type <typeparamref name="T"/>. It enables the typed key-based overloads, which take the key
+/// type as a second type argument (for example <c>DeleteAsync&lt;T, TId&gt;</c> and
+/// <c>Get&lt;T, TId&gt;</c>), and identity write-back when <typeparamref name="T"/> is numeric.
 /// </para>
 /// <para>
 /// Use this interface when your entity's primary key is not a <see cref="long"/>, such as 
@@ -85,10 +89,10 @@ public interface IEntity
 ///     public string Name { get; set; }
 /// }
 /// 
-/// // Now you can use key-based operations
-/// await connection.DeleteAsync&lt;Product&gt;(1);
-/// await connection.DeleteAsync&lt;Order&gt;(Guid.NewGuid());
-/// await connection.DeleteAsync&lt;Country&gt;("US");
+/// // Typed key-based operations name the key type
+/// await connection.DeleteAsync&lt;Product, int&gt;(1);
+/// await connection.DeleteAsync&lt;Order, Guid&gt;(orderId);
+/// await connection.DeleteAsync&lt;Country, string&gt;("US");
 /// </code>
 /// </example>
 /// <seealso cref="IEntity"/>

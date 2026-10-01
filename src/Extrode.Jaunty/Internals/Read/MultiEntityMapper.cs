@@ -89,12 +89,25 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
         // N-ary path - see MultiEntityMapperNGuard.RequireReferenceTypes.
         MultiEntityMapperNGuard.RequireReferenceTypes(new[] { typeof(T1), typeof(T2) });
 
-        if (JauntyConfig.ReflectionMultiMapperResolver?.Invoke(typeof(T1), typeof(T2)) is Action<T1, T2, IDataRecord> combined)
+        Func<Type, Type, object>? resolver = JauntyConfig.ReflectionMultiMapperResolver;
+        if (resolver is null)
+        {
+            throw new InvalidOperationException(
+                $"No multi-mapper found for types '{typeof(T1).Name}' and '{typeof(T2).Name}'. " +
+                "Ensure 'Extrode.Jaunty.Extensions.Reflection' is loaded for runtime multi-mapping.");
+        }
+
+        object? resolved = resolver(typeof(T1), typeof(T2));
+        if (resolved is Action<T1, T2, IDataRecord> combined)
             return new MultiEntityMapper<T1, T2>(combined);
 
-        throw new InvalidOperationException(
-            $"No multi-mapper found for types '{typeof(T1).Name}' and '{typeof(T2).Name}'. " +
-            "Ensure 'Extrode.Jaunty.Extensions.Reflection' is loaded for runtime multi-mapping.");
+        // AUD-R38-134: a resolver that is set but answered wrongly used to get the same "ensure the
+        // extension is loaded" text as no resolver at all, telling the author of a custom resolver
+        // to load a package that was already loaded. The N-ary guard names each case; so does this.
+        string expected = $"Action<{typeof(T1).Name}, {typeof(T2).Name}, IDataRecord>";
+        throw new InvalidOperationException(resolved is null
+            ? $"JauntyConfig.ReflectionMultiMapperResolver returned null for arity 2 ({typeof(T1).Name}, {typeof(T2).Name}). It must return an {expected}."
+            : $"JauntyConfig.ReflectionMultiMapperResolver returned a '{resolved.GetType().Name}' for arity 2 ({typeof(T1).Name}, {typeof(T2).Name}), where an {expected} was expected.");
     }
 
     /// <summary>Populates both targets from one row, in a single pass over the resolved mapper.</summary>

@@ -29,6 +29,21 @@ public class TablePromoterTests : IDisposable
     }
 
     [Fact]
+    public void EnsurePromotedToTable_ASourceNamedLikeTheOldScratchTable_DoesNotBlockPromotion()
+    {
+        using (var cmd = _connection.CreateCommand())
+        {
+            cmd.CommandText = "CREATE VIEW test_view_tmp AS SELECT 2 as id";
+            cmd.ExecuteNonQuery();
+        }
+
+        TablePromoter.EnsurePromotedToTable(_connection, new TestFileSource("test_view"), _dialect);
+
+        Assert.Equal("BASE TABLE", TableTypeOf(_connection, "test_view"));
+        Assert.Equal("VIEW", TableTypeOf(_connection, "test_view_tmp"));
+    }
+
+    [Fact]
     public void EnsurePromotedToTable_PromotesViewToTable()
     {
         // Arrange

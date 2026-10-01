@@ -81,11 +81,21 @@ public abstract class TypeHandler<T>
     /// <summary>
     /// Converts a CLR value to a database value.
     /// </summary>
-    /// <param name="value">The CLR value to convert. May be null.</param>
-    /// <returns>The database value, or null if the value is null or should be stored as NULL.</returns>
+    /// <param name="value">
+    /// The CLR value to convert. Extrode.Jaunty never passes null: a null property value is bound as
+    /// <see cref="DBNull.Value"/> without calling the handler, because the handler is found from the
+    /// value's runtime type.
+    /// </param>
+    /// <returns>The database value, or null if the value should be stored as NULL.</returns>
     /// <remarks>
+    /// <para>
     /// The implementation should return a value that can be bound as a SQL parameter (e.g., string, int, byte[], etc.),
     /// or null to represent a SQL NULL value. If null is returned, Extrode.Jaunty converts it to DBNull.Value for parameter binding.
+    /// </para>
+    /// <para>
+    /// A handler cannot change how a null property is stored; it is always SQL NULL. The parameter
+    /// stays nullable so a handler can also be called directly.
+    /// </para>
     /// </remarks>
     public abstract object? ToDbValue(T? value);
 }

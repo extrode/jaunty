@@ -109,6 +109,14 @@ internal static class ReaderValueConverter
             return true;
         }
 
+        // AUD-R38-085: DuckDB.NET reads TIMETZ as DateTimeOffset; the time of day it carries is
+        // what a TimeSpan or TimeOnly property holds, as for a TIME column.
+        if (value is DateTimeOffset timeWithZone && underlyingType == typeof(TimeSpan))
+        {
+            converted = timeWithZone.TimeOfDay;
+            return true;
+        }
+
         // R29: Convert.ChangeType has no path to DateTimeOffset from either representation a
         // DuckDB reader produces (DateTime for TIMESTAMP, string for VARCHAR), so DateTimeOffset
         // properties could not be read at all. new DateTimeOffset honors the value's Kind
@@ -118,8 +126,20 @@ internal static class ReaderValueConverter
         {
             if (value is DateTime dateTime)
             {
-                converted = new DateTimeOffset(dateTime);
-                return true;
+                // AUD-R38-084: the local offset can push a value at either end of DateTime's range
+                // out of DateTimeOffset's, and the constructor throws. A Try method reports it.
+                try
+                {
+                    converted = new DateTimeOffset(dateTime);
+                    return true;
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    converted = null;
+                    reason = $"the source produced the timestamp {dateTime.ToString("O", CultureInfo.InvariantCulture)}, " +
+                        "which is outside the range of DateTimeOffset once the local UTC offset is applied.";
+                    return false;
+                }
             }
 
             if (value is string offsetText)
@@ -229,6 +249,12 @@ internal static class ReaderValueConverter
             if (value is DateTime timeFromTimestamp)
             {
                 converted = TimeOnly.FromDateTime(timeFromTimestamp);
+                return true;
+            }
+
+            if (value is DateTimeOffset timeFromTimeTz)
+            {
+                converted = TimeOnly.FromTimeSpan(timeFromTimeTz.TimeOfDay);
                 return true;
             }
 

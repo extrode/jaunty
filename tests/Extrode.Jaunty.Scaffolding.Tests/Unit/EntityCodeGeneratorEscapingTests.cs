@@ -107,7 +107,7 @@ public class EntityCodeGeneratorEscapingTests
         var code = Generate("items", "first_name");
 
         AssertParses(code);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"first_name\")]", code, StringComparison.Ordinal);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"first_name\")]", code, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -120,6 +120,6 @@ public class EntityCodeGeneratorEscapingTests
         var code = Generate("items", "line1\nline2");
 
         AssertParses(code);
-        Assert.Contains("[Extrode.Jaunty.Attributes.Column(\"line1\\nline2\")]", code, StringComparison.Ordinal);
+        Assert.Contains("[global::Extrode.Jaunty.Attributes.Column(\"line1\\nline2\")]", code, StringComparison.Ordinal);
     }
 }

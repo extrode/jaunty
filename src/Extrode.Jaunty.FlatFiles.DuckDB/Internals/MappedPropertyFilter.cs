@@ -22,6 +22,26 @@ internal static class MappedPropertyFilter
     // not a dependency of this package, and MetadataBuilder resolves it the same way.
     private const string NotMappedAttributeTypeName = "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute";
     private const string ColumnAttributeTypeName = "System.ComponentModel.DataAnnotations.Schema.ColumnAttribute";
+    private const string DataAnnotationsKeyAttributeTypeName = "System.ComponentModel.DataAnnotations.KeyAttribute";
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="property"/> carries Jaunty's
+    /// <c>[Key]</c> or the DataAnnotations one, both of which <c>MetadataBuilder</c> and the
+    /// generator honour (AUD-R38-081).
+    /// </summary>
+    public static bool IsKey(PropertyInfo property)
+    {
+        if (property.IsDefined(typeof(Extrode.Jaunty.Attributes.KeyAttribute), inherit: true))
+            return true;
+
+        foreach (CustomAttributeData attribute in property.GetCustomAttributesData())
+        {
+            if (attribute.AttributeType.FullName == DataAnnotationsKeyAttributeTypeName)
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Returns the mapped properties of <paramref name="entityType"/>, with hidden base declarations

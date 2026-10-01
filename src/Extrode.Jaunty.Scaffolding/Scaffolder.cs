@@ -123,12 +123,21 @@ public sealed class Scaffolder
                 Directory.CreateDirectory(options.OutputDirectory);
             }
 
+            // AUD-R38-113: every file's code is generated before the first one is written. Writing
+            // as each table was generated meant a generator that threw on the second table left the
+            // first table's file on disk behind a Failed result, and the rerun then refused to
+            // overwrite it. An I/O failure or cancellation during the writes themselves can still
+            // stop partway; generation, the step a caller's own ICodeGenerator controls, cannot.
+            var outputs = new List<(string FilePath, string Code)>(schema.Tables.Count);
             foreach (TableSchema table in schema.Tables)
             {
                 var code = codeGenerator.GenerateEntity(table, codeGenOptions);
                 var className = GetClassName(table.TableName, options);
-                var filePath = Path.Combine(options.OutputDirectory, $"{className}.cs");
+                outputs.Add((Path.Combine(options.OutputDirectory, $"{className}.cs"), code));
+            }
 
+            foreach ((string filePath, string code) in outputs)
+            {
                 if (!options.DryRun)
                 {
                     await File.WriteAllTextAsync(filePath, code, cancellationToken).ConfigureAwait(false);
@@ -159,8 +168,10 @@ public sealed class Scaffolder
     /// case is fixed at its source in <see cref="Internals.ReflectedConnectionFactory"/>, but a
     /// nested cause is normal enough - a connection failure whose real reason is a socket error,
     /// for instance - that the top-level message is often the least informative part of the chain.
+    /// Internal rather than private so the CLI's <c>list-tables</c> reports a failure the way
+    /// <c>scaffold</c> does (AUD-R38-108).
     /// </remarks>
-    private static string Describe(Exception ex)
+    internal static string Describe(Exception ex)
     {
         var message = ex.Message;
 
@@ -221,6 +232,11 @@ public sealed class Scaffolder
         SchemaReaderOptions? options,
         CancellationToken cancellationToken = default)
     {
+        // AUD-R38-114: the check ScaffoldAsync's ValidateOptions makes, so a blank string fails the
+        // same way here instead of with whatever the auto-detected provider's driver throws.
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentException("Connection string is required.", nameof(connectionString));
+
         DatabaseProvider resolvedProvider = provider == DatabaseProvider.AutoDetect
             ? DetectProvider(connectionString)
             : provider;

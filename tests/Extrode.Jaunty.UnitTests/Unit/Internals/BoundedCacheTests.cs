@@ -206,4 +206,76 @@ public class BoundedCacheTests
         Assert.Equal(100, plain.Count);
         Assert.Equal(100, withComparer.Count);
     }
+
+    [Fact]
+    public void Set_ANewKey_IsAddedAndCountsTowardTheCap()
+    {
+        var cache = new BoundedCache<string, string>(maxEntries: 2);
+
+        cache.Set("a", "1");
+        cache.Set("b", "2");
+        cache.Set("c", "3");
+
+        Assert.Equal(2, cache.Count);
+        Assert.False(cache.TryGetValue("a", out _));
+        Assert.Equal("3", cache.Get("c"));
+    }
+
+    [Fact]
+    public void Set_AnExistingKey_ReplacesTheValueWithoutMovingItInTheEvictionOrder()
+    {
+        var cache = new BoundedCache<string, string>(maxEntries: 3);
+        cache.TryAdd("a", "1");
+        cache.TryAdd("b", "2");
+        cache.TryAdd("c", "3");
+
+        for (int i = 0; i < 5; i++)
+            cache.Set("a", $"a{i}");
+
+        Assert.Equal("a4", cache.Get("a"));
+        Assert.Equal(3, cache.Count);
+
+        cache.TryAdd("d", "4");
+
+        Assert.False(cache.TryGetValue("a", out _));
+        Assert.True(cache.TryGetValue("b", out _));
+        Assert.True(cache.TryGetValue("c", out _));
+        Assert.True(cache.TryGetValue("d", out _));
+
+        cache.TryAdd("a", "again");
+        cache.TryAdd("e", "5");
+        cache.TryAdd("f", "6");
+
+        Assert.False(cache.TryGetValue("d", out _));
+        Assert.Equal("again", cache.Get("a"));
+    }
+
+    [Fact]
+    public void Set_RacingEviction_NeverLeavesAnEntryOutsideTheCap()
+    {
+        const int cap = 4;
+        var cache = new BoundedCache<int, string>(maxEntries: cap);
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+        Task[] setters = Enumerable.Range(0, 4).Select(t => Task.Run(() =>
+        {
+            int i = 0;
+            while (!stop.IsCancellationRequested)
+                cache.Set(i++ % 8, "s");
+        })).ToArray();
+
+        Task adder = Task.Run(() =>
+        {
+            int k = 1000;
+            while (!stop.IsCancellationRequested)
+                cache.TryAdd(k++, "a");
+        });
+
+        Task.WaitAll([.. setters, adder], TestContext.Current.CancellationToken);
+
+        for (int k = -1; k > -100; k--)
+            cache.TryAdd(k, "flush");
+
+        Assert.True(cache.Count <= cap, $"Count {cache.Count} exceeds the cap of {cap}");
+    }
 }

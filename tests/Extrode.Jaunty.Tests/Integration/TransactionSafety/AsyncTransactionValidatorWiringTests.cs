@@ -180,6 +180,8 @@ public class AsyncTransactionValidatorWiringTests : IDisposable
             _connection.Insert(category, CommandOptions.WithTransaction(nonDbTransaction)));
 
         Assert.Contains("DbTransaction", ex.Message);
+        Assert.DoesNotContain("Async Extrode.Jaunty operations", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("BeginTransaction ", ex.Message, StringComparison.Ordinal);
         realTransaction.Rollback();
     }
 
