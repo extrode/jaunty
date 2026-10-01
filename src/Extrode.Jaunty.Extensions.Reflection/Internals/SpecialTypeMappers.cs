@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Dynamic;
 using System.Linq;
+using System.Reflection;
 
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Internals.Read;
@@ -89,21 +90,23 @@ public static class SpecialTypeMappers
     {
         Type keyType = typeArgs[0];
         Type valueType = typeArgs[1];
+        // AUD-R38-073: resolved once per mapper; Activator.CreateInstance(type, args) re-ran the
+        // constructor lookup on every row.
+        ConstructorInfo constructor = type.GetConstructor(typeArgs)!;
 
         return new Func<IDataReader, object>(r =>
         {
             object? key = r.IsDBNull(0) ? GetDefault(keyType, "Key") : ConvertValue(r.GetValue(0), keyType);
             object? value = r.IsDBNull(1) ? GetDefault(valueType, "Value") : ConvertValue(r.GetValue(1), valueType);
-            // Create KeyValuePair using reflection (it's a struct)
-            object? kvp = Activator.CreateInstance(type, key, value);
 
-            return kvp!;
+            return constructor.Invoke([key, value]);
         });
     }
 
     private static object CreateValueTupleMapper(Type type, IDataReader reader, Type[] typeArgs)
     {
         int itemCount = typeArgs.Length;
+        ConstructorInfo constructor = type.GetConstructor(typeArgs)!;
 
         return new Func<IDataReader, object>(r =>
         {
@@ -112,9 +115,7 @@ public static class SpecialTypeMappers
             for (int i = 0; i < itemCount; i++)
                 values[i] = r.IsDBNull(i) ? GetDefault(typeArgs[i], $"Item{i + 1}") : ConvertValue(r.GetValue(i), typeArgs[i]);
 
-            // Create ValueTuple using Activator
-            object? tuple = Activator.CreateInstance(type, values);
-            return tuple!;
+            return constructor.Invoke(values);
         });
     }
 
@@ -211,14 +212,14 @@ public static class SpecialTypeMappers
         }
         else
         {
-            // Dictionary<string, TValue> - convert values to TValue
-            // We need to create the properly typed dictionary using reflection
-            Type dictType = typeof(Dictionary<,>).MakeGenericType(typeof(string), valueType);
+            // Dictionary<string, TValue> - convert values to TValue. `type` is already the closed
+            // Dictionary<string, TValue>, so its (capacity, comparer) constructor is resolved once.
+            ConstructorInfo constructor = type.GetConstructor([typeof(int), typeof(IEqualityComparer<string>)])!;
+            object[] constructorArgs = [fieldCount, StringComparer.OrdinalIgnoreCase];
 
             return new Func<IDataReader, object>(r =>
             {
-                // Create Dictionary<string, TValue> with case-insensitive comparer
-                var dict = (IDictionary)Activator.CreateInstance(dictType, fieldCount, StringComparer.OrdinalIgnoreCase)!;
+                var dict = (IDictionary)constructor.Invoke(constructorArgs);
 
                 for (int i = 0; i < fieldCount; i++)
                 {
