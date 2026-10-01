@@ -72,6 +72,7 @@ public class ScaffolderTests
 
     [Theory]
     [InlineData("Data Source=.;Initial Catalog=Foo;Trusted_Connection=True;")]
+    [InlineData("Data Source=srv;Initial Catalog=Foo;")]
     [InlineData("Server=.;Database=Foo;Trusted_Connection=True;")]
     [InlineData("Data Source=.;Database=Foo;Trusted_Connection=True;")]
     [InlineData("Data Source=.;Database=Foo;User Id=sa;Password=x;")]
