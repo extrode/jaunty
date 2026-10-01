@@ -156,7 +156,7 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#directory-naming">Directory Naming</a><a class="toc-l3" href="#numbered-sections-primary-docs">Numbered Sections (Primary Docs)</a><a class="toc-l3" href="#special-purpose-directories">Special-Purpose Directories</a><a class="toc-l2" href="#file-naming">File Naming</a><a class="toc-l3" href="#examples">Examples</a><a class="toc-l2" href="#rationale">Rationale</a><a class="toc-l2" href="#exceptions-keep-as-is">Exceptions (Keep As-Is)</a><a class="toc-l3" href="#universal-standards">Universal Standards</a><a class="toc-l3" href="#archive-files-_archive">Archive Files (_archive/)</a><a class="toc-l3" href="#dates-in-filenames">Dates in Filenames</a><a class="toc-l3" href="#archive-files">Archive Files</a><a class="toc-l2" href="#migration-guide">Migration Guide</a><a class="toc-l3" href="#for-existing-files">For Existing Files</a><a class="toc-l3" href="#for-new-files">For New Files</a><a class="toc-l2" href="#enforcement">Enforcement</a><a class="toc-l3" href="#pre-commit-checks">Pre-commit Checks</a><a class="toc-l3" href="#cicd-checks">CI/CD Checks</a><a class="toc-l2" href="#quick-reference">Quick Reference</a><a class="toc-l3" href="#dos">Do's</a><a class="toc-l3" href="#donts">Don'ts</a><a class="toc-l2" href="#related-documents">Related Documents</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#directory-naming">Directory Naming</a><a class="toc-l3" href="#numbered-sections-primary-docs">Numbered Sections (Primary Docs)</a><a class="toc-l3" href="#special-purpose-directories">Special-Purpose Directories</a><a class="toc-l2" href="#file-naming">File Naming</a><a class="toc-l3" href="#examples">Examples</a><a class="toc-l2" href="#rationale">Rationale</a><a class="toc-l2" href="#exceptions-keep-as-is">Exceptions (Keep As-Is)</a><a class="toc-l3" href="#universal-standards">Universal Standards</a><a class="toc-l3" href="#archive-files-archive">Archive Files (archive/)</a><a class="toc-l3" href="#dates-in-filenames">Dates in Filenames</a><a class="toc-l3" href="#archive-files">Archive Files</a><a class="toc-l2" href="#migration-guide">Migration Guide</a><a class="toc-l3" href="#for-existing-files">For Existing Files</a><a class="toc-l3" href="#for-new-files">For New Files</a><a class="toc-l2" href="#enforcement">Enforcement</a><a class="toc-l3" href="#pre-commit-checks">Pre-commit Checks</a><a class="toc-l3" href="#cicd-checks">CI/CD Checks</a><a class="toc-l2" href="#quick-reference">Quick Reference</a><a class="toc-l3" href="#dos">Do's</a><a class="toc-l3" href="#donts">Don'ts</a><a class="toc-l2" href="#related-documents">Related Documents</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Development &#8250; File Naming Convention</nav>
         <article>
@@ -206,61 +206,61 @@
 </tbody>
 </table>
 <h3 id="special-purpose-directories">Special-Purpose Directories</h3>
-<p>An underscore prefix marks a folder that sits outside the numbered reading order: either
-docs-site infrastructure (not a page at all) or a dated, append-only record that is never
-revised in place, as opposed to the numbered folders (<code>00-</code> through <code>08-</code>), which are living
-pages maintained in place.</p>
+<p>Unnumbered folders sit outside the numbered reading order: either docs-site
+infrastructure (not a page at all) or a dated, append-only record that is never revised in
+place, as opposed to the numbered folders (<code>00-</code> through <code>08-</code>), which are living pages
+maintained in place. They carry no prefix; the missing number is what marks them.</p>
 <table>
 <thead>
 <tr>
 <th>Directory</th>
 <th>Purpose</th>
-<th>Why underscore</th>
+<th>Why unnumbered</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>_assets/</code></td>
+<td><code>assets/</code></td>
 <td>Media assets (screenshots, diagrams)</td>
 <td>Site infrastructure, not a page</td>
 </tr>
 <tr>
-<td><code>_site-design/</code></td>
+<td><code>site-design/</code></td>
 <td>Docs-site template/JS source</td>
 <td>Site infrastructure, not a page</td>
 </tr>
 <tr>
-<td><code>_archive/</code></td>
+<td><code>archive/</code></td>
 <td>Superseded/historical documents</td>
 <td>Dated, never revised in place</td>
 </tr>
 <tr>
-<td><code>_decisions/</code></td>
+<td><code>decisions/</code></td>
 <td>Dated decision records</td>
 <td>Dated, never revised in place</td>
 </tr>
 <tr>
-<td><code>_laws/</code></td>
+<td><code>laws/</code></td>
 <td>Invariants proven by a tagged test</td>
 <td>Dated, never revised in place</td>
 </tr>
 <tr>
-<td><code>_plans/</code></td>
+<td><code>plans/</code></td>
 <td>Dated implementation plans</td>
 <td>Dated, never revised in place</td>
 </tr>
 <tr>
-<td><code>_reports/</code></td>
+<td><code>reports/</code></td>
 <td>Dated point-in-time reports (benchmarks, coverage, audits)</td>
 <td>Dated, never revised in place</td>
 </tr>
 <tr>
-<td><code>_specs/</code></td>
+<td><code>specs/</code></td>
 <td>Numbered feature specifications</td>
 <td>Dated, never revised in place</td>
 </tr>
 <tr>
-<td><code>_lessons/</code></td>
+<td><code>lessons/</code></td>
 <td>Lessons for AI assistants and humans</td>
 <td>Dated, never revised in place</td>
 </tr>
@@ -335,8 +335,8 @@ pages maintained in place.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="archive-files-_archive">Archive Files (_archive/)</h3>
-<p><strong>Historical documents in <code>_archive/</code> are renamed to follow the standard convention.</strong></p>
+<h3 id="archive-files-archive">Archive Files (archive/)</h3>
+<p><strong>Historical documents in <code>archive/</code> are renamed to follow the standard convention.</strong></p>
 <p>Unlike typical archives that preserve original names, Jaunty's archive files are renamed to:</p>
 <ul>
 <li>Maintain consistency across all documentation</li>

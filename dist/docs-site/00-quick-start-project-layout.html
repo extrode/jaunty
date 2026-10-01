@@ -197,7 +197,7 @@
 │   ├── src/                             # Source code packages
 │   ├── tests/                           # Test projects
 │   ├── docs/                            # Documentation (Markdown source)
-│   │   └── _specs/                      # Specifications, NNN-slug/NNN-spec.md
+│   │   └── specs/                      # Specifications, NNN-slug/NNN-spec.md
 │   ├── work/                            # The work underway (tasklist, status, todo); untracked
 │   ├── audit/                           # The audit record; untracked
 │   │
@@ -233,10 +233,10 @@
 <tr>
 <td><code>docs/</code></td>
 <td>Documentation source</td>
-<td>Organized by topic (00-quick-start through 08-learn), plus <code>_decisions/</code>, <code>_laws/</code>, <code>_plans/</code>, <code>_reports/</code>, <code>_specs/</code>, <code>_lessons/</code>, <code>_archive/</code>, <code>_site-design/</code></td>
+<td>Organized by topic (00-quick-start through 08-learn), plus <code>decisions/</code>, <code>laws/</code>, <code>plans/</code>, <code>reports/</code>, <code>specs/</code>, <code>lessons/</code>, <code>archive/</code>, <code>site-design/</code></td>
 </tr>
 <tr>
-<td><code>docs/_specs/</code></td>
+<td><code>docs/specs/</code></td>
 <td>Specifications</td>
 <td>One <code>NNN-slug/</code> per feature, files <code>NNN-spec.md</code> etc.</td>
 </tr>
@@ -386,15 +386,15 @@
 ├── 05-quality/                    # Quality and testing guides, living pages only
 ├── 06-releases/                   # Release runbook, order templates
 ├── 08-learn/                      # Tutorials, exercises, error messages, migration guides
-├── _archive/                      # Historical, superseded documents (never revised in place)
-├── _assets/                       # Media assets (logos, charts, diagrams)
-├── _site-design/                  # Docs-site visual design source
-├── _decisions/                    # Dated decision records
-├── _laws/                         # Invariants that must hold before merge
-├── _plans/                        # Dated implementation plans
-├── _reports/                      # Dated point-in-time reports (benchmarks, coverage, audits)
-├── _specs/                        # Numbered feature specifications
-├── _lessons/                      # Lessons for AI assistants and for humans
+├── archive/                      # Historical, superseded documents (never revised in place)
+├── assets/                       # Media assets (logos, charts, diagrams)
+├── site-design/                  # Docs-site visual design source
+├── decisions/                    # Dated decision records
+├── laws/                         # Invariants that must hold before merge
+├── plans/                        # Dated implementation plans
+├── reports/                      # Dated point-in-time reports (benchmarks, coverage, audits)
+├── specs/                        # Numbered feature specifications
+├── lessons/                      # Lessons for AI assistants and for humans
 ├── constitution.md                # The binding rules for the codebase
 └── conventions.md                 # Naming, git and cleanup conventions
 </code></pre>
@@ -423,8 +423,8 @@
 </tr>
 <tr>
 <td>Special</td>
-<td><code>_prefix/</code> marks a folder outside the numbered reading order - site infrastructure or a dated, append-only record (never revised in place)</td>
-<td><code>_assets/</code>, <code>_decisions/</code>, <code>_archive/</code></td>
+<td>No number marks a folder outside the numbered reading order - site infrastructure or a dated, append-only record (never revised in place)</td>
+<td><code>assets/</code>, <code>decisions/</code>, <code>archive/</code></td>
 </tr>
 </tbody>
 </table>
@@ -528,7 +528,7 @@
 </tr>
 <tr>
 <td>Historical docs</td>
-<td><code>docs/_archive/</code></td>
+<td><code>docs/archive/</code></td>
 </tr>
 </tbody>
 </table>

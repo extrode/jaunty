@@ -163,7 +163,7 @@
 <h1 id="constitution--jaunty">Constitution — jaunty</h1>
 <p>Binding project rules. These are the WON'T-change decisions. Contributors obey them;
 changing one is a deliberate governance act, not a casual edit. This is NOT lessons-learned
-(see docs/_lessons/) and NOT mechanical conventions (see docs/conventions.md).</p>
+(see docs/lessons/) and NOT mechanical conventions (see docs/conventions.md).</p>
 <p>Status: active · Last reviewed: 2026-07-29
 Content grafted from <code>docs/constitution.md</code> (version 2026-03) when the repo moved</p>
 <h2 id="stack-constraints">Stack constraints</h2>
@@ -195,7 +195,7 @@ for validation. XML docs on every public API.</li>
   Extrode.Jaunty.Fluent/             # Fluent API
   Extrode.Jaunty.FlatFiles/          # Flat file interfaces
   Extrode.Jaunty.FlatFiles.DuckDB/   # DuckDB implementation (net8.0+)
-docs/_specs/                  # Specifications, NNN-slug/NNN-spec.md
+docs/specs/                  # Specifications, NNN-slug/NNN-spec.md
 </code></pre>
 </div>
 <h2 id="security--data">Security / data</h2>
@@ -212,7 +212,7 @@ data at rest of its own; connection strings belong to the consuming application.
 <h2 id="governance">Governance</h2>
 <ul>
 <li>Supersedes ad-hoc practices. To change a rule: record the change + date + why, right here.</li>
-<li><strong>Spec-first.</strong> No code without a spec and a plan under <code>docs/_specs/NNN-slug/</code>. Each
+<li><strong>Spec-first.</strong> No code without a spec and a plan under <code>docs/specs/NNN-slug/</code>. Each
 milestone carries entry and exit criteria; acceptance criteria are testable assertions.</li>
 <li>One commit per completed task, <code>type(component): T### — description</code>, including the test
 count. PRs verify compliance; a deviation is documented in the PR or it did not happen.</li>
