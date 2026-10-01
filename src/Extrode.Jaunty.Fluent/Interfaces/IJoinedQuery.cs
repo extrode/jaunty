@@ -472,6 +472,11 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     List<IDictionary<string, object?>> SelectPartial(string columns);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    List<IDictionary<string, object?>> SelectPartial(string columns, CommandOptions options);
+
+    /// <summary>
     /// Executes the query selecting only the specified columns with a custom mapper.
     /// </summary>
     /// <typeparam name="T">The result type.</typeparam>
@@ -480,9 +485,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     List<T> SelectPartial<T>(string columns, Func<IDataReader, T> mapper);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    List<T> SelectPartial<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options);
+
+    /// <summary>
     /// Returns the first partial result or throws if empty.
     /// </summary>
     IDictionary<string, object?> SelectPartialFirst(string columns);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialFirst(string columns, CommandOptions options);
 
     /// <summary>
     /// Returns the first partial result with a custom mapper or throws if empty.
@@ -490,9 +505,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     T SelectPartialFirst<T>(string columns, Func<IDataReader, T> mapper);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    T SelectPartialFirst<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options);
+
+    /// <summary>
     /// Returns the first partial result, or null if empty.
     /// </summary>
     IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns, CommandOptions options);
 
     /// <summary>
     /// Returns the first partial result with a custom mapper, or default if empty.
@@ -500,9 +525,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     T? SelectPartialFirstOrDefault<T>(string columns, Func<IDataReader, T> mapper);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    T? SelectPartialFirstOrDefault<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options);
+
+    /// <summary>
     /// Returns the single partial result or throws if empty or more than one.
     /// </summary>
     IDictionary<string, object?> SelectPartialSingle(string columns);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialSingle(string columns, CommandOptions options);
 
     /// <summary>
     /// Returns the single partial result with a custom mapper or throws if empty or more than one.
@@ -510,14 +545,29 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     T SelectPartialSingle<T>(string columns, Func<IDataReader, T> mapper);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    T SelectPartialSingle<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options);
+
+    /// <summary>
     /// Returns the single partial result, or null if empty. Throws if more than one.
     /// </summary>
     IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns, CommandOptions options);
+
+    /// <summary>
     /// Returns the single partial result with a custom mapper, or default if empty. Throws if more than one.
     /// </summary>
     T? SelectPartialSingleOrDefault<T>(string columns, Func<IDataReader, T> mapper);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    T? SelectPartialSingleOrDefault<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options);
 
     // --- SELECT PARTIAL Async Operations ---
 
@@ -527,9 +577,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Executes the query asynchronously selecting only the specified columns with a custom mapper.
     /// </summary>
     Task<List<T>> SelectPartialAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<List<T>> SelectPartialAsync<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first partial result asynchronously or throws if empty.
@@ -537,9 +597,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first partial result asynchronously with a custom mapper or throws if empty.
     /// </summary>
     Task<T> SelectPartialFirstAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<T> SelectPartialFirstAsync<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first partial result asynchronously, or null if empty.
@@ -547,9 +617,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first partial result asynchronously with a custom mapper, or default if empty.
     /// </summary>
     Task<T?> SelectPartialFirstOrDefaultAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<T?> SelectPartialFirstOrDefaultAsync<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the single partial result asynchronously or throws if empty or more than one.
@@ -557,9 +637,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single partial result asynchronously with a custom mapper or throws if empty or more than one.
     /// </summary>
     Task<T> SelectPartialSingleAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<T> SelectPartialSingleAsync<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the single partial result asynchronously, or null if empty. Throws if more than one.
@@ -567,9 +657,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single partial result asynchronously with a custom mapper, or default if empty. Throws if more than one.
     /// </summary>
     Task<T?> SelectPartialSingleOrDefaultAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<T?> SelectPartialSingleOrDefaultAsync<T>(string columns, Func<IDataReader, T> mapper, CommandOptions options, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -959,9 +1059,19 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     List<IDictionary<string, object?>> SelectPartial(string columns);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    List<IDictionary<string, object?>> SelectPartial(string columns, CommandOptions options);
+
+    /// <summary>
     /// Returns the first partial result or throws if empty.
     /// </summary>
     IDictionary<string, object?> SelectPartialFirst(string columns);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialFirst(string columns, CommandOptions options);
 
     /// <summary>
     /// Returns the first partial result, or null if empty.
@@ -969,14 +1079,29 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns, CommandOptions options);
+
+    /// <summary>
     /// Returns the single partial result or throws if not exactly one.
     /// </summary>
     IDictionary<string, object?> SelectPartialSingle(string columns);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialSingle(string columns, CommandOptions options);
+
+    /// <summary>
     /// Returns the single partial result, or null if empty. Throws if more than one.
     /// </summary>
     IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns, CommandOptions options);
 
     // --- Async Operations ---
 
@@ -1077,9 +1202,19 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first partial result asynchronously or throws if empty.
     /// </summary>
     Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first partial result asynchronously, or null if empty.
@@ -1087,14 +1222,29 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single partial result asynchronously or throws if not exactly one.
     /// </summary>
     Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single partial result asynchronously, or null if empty. Throws if more than one.
     /// </summary>
     Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -1338,9 +1488,19 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     List<IDictionary<string, object?>> SelectPartial(string columns);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    List<IDictionary<string, object?>> SelectPartial(string columns, CommandOptions options);
+
+    /// <summary>
     /// Returns the first partial result or throws if empty.
     /// </summary>
     IDictionary<string, object?> SelectPartialFirst(string columns);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialFirst(string columns, CommandOptions options);
 
     /// <summary>
     /// Returns the first partial result, or null if empty.
@@ -1348,14 +1508,29 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns, CommandOptions options);
+
+    /// <summary>
     /// Returns the single partial result or throws if not exactly one.
     /// </summary>
     IDictionary<string, object?> SelectPartialSingle(string columns);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialSingle(string columns, CommandOptions options);
+
+    /// <summary>
     /// Returns the single partial result, or null if empty. Throws if more than one.
     /// </summary>
     IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns, CommandOptions options);
 
     // --- Async Operations ---
 
@@ -1456,9 +1631,19 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first partial result asynchronously or throws if empty.
     /// </summary>
     Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first partial result asynchronously, or null if empty.
@@ -1466,12 +1651,27 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single partial result asynchronously or throws if not exactly one.
     /// </summary>
     Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single partial result asynchronously, or null if empty. Throws if more than one.
     /// </summary>
     Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As the overload without options, with the transaction, timeout and command type from <paramref name="options"/> applied to the command.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CommandOptions options, CancellationToken cancellationToken = default);
 }
