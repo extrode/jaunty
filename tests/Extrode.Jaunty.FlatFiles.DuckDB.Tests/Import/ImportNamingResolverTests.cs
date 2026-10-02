@@ -27,8 +27,8 @@ public sealed class ImportNamingResolverTests : IDisposable
 
     public void Dispose()
     {
-        JauntyConfig.TableNameResolver = _originalTableResolver;
-        JauntyConfig.ColumnNameResolver = _originalColumnResolver;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _originalTableResolver);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = _originalColumnResolver);
         try { Directory.Delete(_dataDir, true); } catch { }
     }
 
@@ -59,8 +59,8 @@ public sealed class ImportNamingResolverTests : IDisposable
 
     private static void UseSnakeCase()
     {
-        JauntyConfig.TableNameResolver = t => ToSnakeCase(t.Name);
-        JauntyConfig.ColumnNameResolver = ToSnakeCase;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = t => ToSnakeCase(t.Name));
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = ToSnakeCase);
     }
 
     private static PropertyInfo Property(string name) => typeof(StockItem).GetProperty(name)!;
@@ -80,7 +80,7 @@ public sealed class ImportNamingResolverTests : IDisposable
     public void AnAttributeColumnName_DoesNotCallTheResolver()
     {
         int calls = 0;
-        JauntyConfig.ColumnNameResolver = n => { calls++; return n; };
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = n => { calls++; return n; });
 
         MappedPropertyFilter.GetColumnName(Property(nameof(StockItem.Code)));
 
@@ -90,10 +90,10 @@ public sealed class ImportNamingResolverTests : IDisposable
     [Fact]
     public void TheColumnMappings_AreRebuiltAfterTheResolverChanges()
     {
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         Assert.Contains("DisplayName", ColumnMappingCache.Get(typeof(StockItem)).Keys);
 
-        JauntyConfig.ColumnNameResolver = ToSnakeCase;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = ToSnakeCase);
 
         IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(StockItem));
         Assert.Contains("display_name", mappings.Keys);

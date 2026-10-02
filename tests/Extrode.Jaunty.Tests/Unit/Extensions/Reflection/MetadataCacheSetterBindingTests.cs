@@ -14,7 +14,7 @@ public class MetadataCacheSetterBindingTests : IDisposable
 {
     public void Dispose()
     {
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         GC.SuppressFinalize(this);
     }
 
@@ -58,7 +58,7 @@ public class MetadataCacheSetterBindingTests : IDisposable
     public void AColumnAttributeName_IsTheOnlyNameItsPropertyBindsBy()
     {
         var asked = new List<string>();
-        JauntyConfig.ColumnNameResolver = name => { lock (asked) asked.Add(name); return name == nameof(Renamed.OrderId) ? "order_id" : null!; };
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => { lock (asked) asked.Add(name); return name == nameof(Renamed.OrderId) ? "order_id" : null!; });
         var reader = new MutableStubReader(["order_id", "oid", "Other"], [7, 9, 3]);
 
         PropertySetter<Renamed>[] setters = MetadataCache<Renamed>.GetSetters(reader, MappingMode.Projection);

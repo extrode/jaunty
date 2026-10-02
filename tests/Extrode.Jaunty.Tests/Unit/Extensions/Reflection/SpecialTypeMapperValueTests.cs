@@ -15,7 +15,7 @@ public class SpecialTypeMapperValueTests
 {
     private static object MapRow(Type type, IDataReader reader)
     {
-        SpecialTypeMappers.Register();
+        JauntyConfig.Reconfigure(SpecialTypeMappers.Register);
         var mapper = (Func<IDataReader, object>)JauntyConfig.SpecialTypeMapperResolver!(type, reader);
         return mapper(reader);
     }
@@ -23,7 +23,7 @@ public class SpecialTypeMapperValueTests
     [Fact]
     public void APlainStruct_IsNotMappedAsATuple()
     {
-        SpecialTypeMappers.Register();
+        JauntyConfig.Reconfigure(SpecialTypeMappers.Register);
 
         Assert.Null(JauntyConfig.SpecialTypeMapperResolver!(typeof(PlainStruct), new MutableStubReader(["a"], [1])));
     }
@@ -31,7 +31,7 @@ public class SpecialTypeMapperValueTests
     [Fact]
     public void ValueTupleWiderThanTheResultSet_NamesEveryElementType()
     {
-        SpecialTypeMappers.Register();
+        JauntyConfig.Reconfigure(SpecialTypeMappers.Register);
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
             JauntyConfig.SpecialTypeMapperResolver!(typeof(ValueTuple<int, string, int>), new MutableStubReader(["a", "b"], [1, "x"])));

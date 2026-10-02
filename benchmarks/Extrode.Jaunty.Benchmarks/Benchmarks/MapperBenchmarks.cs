@@ -4,6 +4,7 @@ using BenchmarkDotNet.Attributes;
 
 using Extrode.Jaunty.Benchmarks.Config;
 using Extrode.Jaunty.Benchmarks.Entities;
+using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Extensions.Reflection;
 
@@ -26,8 +27,8 @@ public class MapperBenchmarks
             throw new InvalidOperationException($"{Provider} is not available");
 
         // Enable reflection mapping for the reflection benchmark
-        JauntyReflectionExtensions.UseReflectionMapping();
-        SpecialTypeMappers.Register();
+        if (!JauntyConfig.IsConfigured)
+            JauntyConfig.Configure(c => c.UseReflectionMapping());
         DatabaseSetup.EnsureDatabaseExists(Provider);
 
         _connection = DatabaseSetup.CreateConnection(Provider);

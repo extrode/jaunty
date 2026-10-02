@@ -20,12 +20,12 @@ namespace Extrode.Jaunty.Tests.Unit.Extensions.Reflection;
 [Collection("Type Handler Operations")]
 public class TypeHandlerReadPathReflectionTests : IDisposable
 {
-    public TypeHandlerReadPathReflectionTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public TypeHandlerReadPathReflectionTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     public void Dispose()
     {
-        JauntyConfig.RemoveTypeHandler<Guid>();
-        JauntyConfig.RemoveTypeHandler<Shape>();
+        TypeHandlerRegistry.Remove<Guid>();
+        TypeHandlerRegistry.Remove<Shape>();
     }
 
     [Table("type_handler_read_widgets")]
@@ -69,7 +69,7 @@ public class TypeHandlerReadPathReflectionTests : IDisposable
     [Fact]
     public void NullablePropertyWithARegisteredHandler_ConvertsTheParsedValueToTheUnderlyingType()
     {
-        JauntyConfig.RegisterTypeHandler(new StringGuidHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new StringGuidHandler()));
 
         Guid guid = Guid.NewGuid();
         var reader = new SingleRowReader(["Id", "Token"], [1, guid.ToString()]);
@@ -86,7 +86,7 @@ public class TypeHandlerReadPathReflectionTests : IDisposable
     [Fact]
     public void AHandlerReturningASubclassOfThePropertyType_AssignsItUnconverted()
     {
-        JauntyConfig.RegisterTypeHandler(new CircleHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new CircleHandler()));
 
         var reader = new SingleRowReader(["Id", "Outline"], [1, "circle"]);
 
@@ -102,7 +102,7 @@ public class TypeHandlerReadPathReflectionTests : IDisposable
     [Fact]
     public void NullablePropertyWhoseHandlerThrows_WrapsTheFailureInAnInvalidOperationException()
     {
-        JauntyConfig.RegisterTypeHandler(new ThrowingGuidHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new ThrowingGuidHandler()));
 
         var reader = new SingleRowReader(["Id", "Token"], [1, "not-a-guid"]);
 

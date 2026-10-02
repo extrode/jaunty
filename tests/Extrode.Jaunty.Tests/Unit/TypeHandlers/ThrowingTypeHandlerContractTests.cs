@@ -18,15 +18,15 @@ public class ThrowingTypeHandlerContractTests : IDisposable
 {
     public ThrowingTypeHandlerContractTests()
     {
-        JauntyReflectionExtensions.UseReflectionMapping();
-        JauntyConfig.RegisterTypeHandler(new ThrowingGuidHandler());
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new ThrowingGuidHandler()));
     }
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        JauntyConfig.RemoveTypeHandler<Guid>();
-        JauntyConfig.RemoveTypeHandler<Colour>();
+        TypeHandlerRegistry.Remove<Guid>();
+        TypeHandlerRegistry.Remove<Colour>();
     }
 
     public enum Colour
@@ -108,7 +108,7 @@ public class ThrowingTypeHandlerContractTests : IDisposable
     [Fact]
     public void TheGeneratedEnumPath_WrapsAThrowingHandler()
     {
-        JauntyConfig.RegisterTypeHandler(new ThrowingColourHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new ThrowingColourHandler()));
 
         InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
             () => GeneratedBindingSupport.ToDbEnumValue(Colour.Green, EnumStorage.String));

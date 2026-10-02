@@ -32,13 +32,13 @@ public class CsvImportPostgreSqlStdinTests : IDisposable
     public CsvImportPostgreSqlStdinTests()
     {
         Directory.CreateDirectory(_dir);
-        JauntyConfig.CopyImportFactory = static (connection, copyCommand) =>
-            connection is NpgsqlConnection fake ? fake.OpenCopy(copyCommand) : null;
+        JauntyConfig.Reconfigure(jc => jc.CopyImportFactory = static (connection, copyCommand) =>
+            connection is NpgsqlConnection fake ? fake.OpenCopy(copyCommand) : null);
     }
 
     public void Dispose()
     {
-        JauntyConfig.CopyImportFactory = _previousFactory;
+        JauntyConfig.Reconfigure(jc => jc.CopyImportFactory = _previousFactory);
         try { Directory.Delete(_dir, true); } catch { }
         GC.SuppressFinalize(this);
     }

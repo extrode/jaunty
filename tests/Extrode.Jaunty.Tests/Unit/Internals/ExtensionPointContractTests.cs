@@ -69,11 +69,11 @@ public class ExtensionPointContractTests
 
         try
         {
-            JauntyConfig.ReflectionMultiMapperResolverN = (_, _) => new Action<object, IDataRecord>[]
+            JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = (_, _) => new Action<object, IDataRecord>[]
             {
                 (_, _) => { },
                 (_, _) => { },
-            };
+            });
 
             using var connection = new SqliteConnection("Data Source=:memory:");
             connection.Open();
@@ -88,7 +88,7 @@ public class ExtensionPointContractTests
         }
         finally
         {
-            JauntyConfig.ReflectionMultiMapperResolverN = original;
+            JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = original);
         }
     }
 
@@ -100,12 +100,12 @@ public class ExtensionPointContractTests
 
         try
         {
-            JauntyConfig.ReflectionMultiMapperResolverN = (_, _) => new Action<object, IDataRecord>[]
+            JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = (_, _) => new Action<object, IDataRecord>[]
             {
                 (_, _) => { },
                 null!,
                 (_, _) => { },
-            };
+            });
 
             using var connection = new SqliteConnection("Data Source=:memory:");
             connection.Open();
@@ -119,7 +119,7 @@ public class ExtensionPointContractTests
         }
         finally
         {
-            JauntyConfig.ReflectionMultiMapperResolverN = original;
+            JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = original);
         }
     }
 

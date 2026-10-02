@@ -10,7 +10,7 @@ public sealed class TableNameResolverConfigTests : IDisposable
 {
     private readonly Func<Type, string?>? _originalTableResolver = JauntyConfig.TableNameResolver;
 
-    public void Dispose() => JauntyConfig.TableNameResolver = _originalTableResolver;
+    public void Dispose() => JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _originalTableResolver);
 
     public class Unattributed
     {
@@ -38,7 +38,7 @@ public sealed class TableNameResolverConfigTests : IDisposable
     [Fact]
     public void AResolver_NamesAnUnattributedEntity()
     {
-        JauntyConfig.TableNameResolver = t => "tbl_" + t.Name;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = t => "tbl_" + t.Name);
 
         Assert.Equal("tbl_Unattributed", TableNameResolver.Resolve<Unattributed>());
     }
@@ -46,7 +46,7 @@ public sealed class TableNameResolverConfigTests : IDisposable
     [Fact]
     public void AResolver_NamesAnEntityWhoseAttributeNameIsEmpty()
     {
-        JauntyConfig.TableNameResolver = t => "tbl_" + t.Name;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = t => "tbl_" + t.Name);
 
         Assert.Equal("tbl_EmptyName", TableNameResolver.Resolve<EmptyName>());
     }
@@ -57,7 +57,7 @@ public sealed class TableNameResolverConfigTests : IDisposable
     public void AnAttributeName_WinsAndTheResolverIsNotCalled(Type entity, string expected)
     {
         int calls = 0;
-        JauntyConfig.TableNameResolver = _ => { calls++; return "resolved"; };
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => { calls++; return "resolved"; });
 
         Assert.Equal(expected, TableNameResolver.Resolve(entity));
         Assert.Equal(0, calls);
@@ -66,7 +66,7 @@ public sealed class TableNameResolverConfigTests : IDisposable
     [Fact]
     public void AResolverReturningNull_FallsBackToTheLowercasedClassName()
     {
-        JauntyConfig.TableNameResolver = _ => null;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => null);
 
         Assert.Equal("unattributed", TableNameResolver.Resolve<Unattributed>());
     }
@@ -74,7 +74,7 @@ public sealed class TableNameResolverConfigTests : IDisposable
     [Fact]
     public void TheRegisteredSourceTakesTheResolvedName()
     {
-        JauntyConfig.TableNameResolver = t => "tbl_" + t.Name;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = t => "tbl_" + t.Name);
         var options = new FlatFileOptions();
 
         options.AddCsv<Unattributed>("rows.csv");

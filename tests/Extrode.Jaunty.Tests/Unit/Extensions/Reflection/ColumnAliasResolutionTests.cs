@@ -34,7 +34,7 @@ namespace Extrode.Jaunty.Tests.Unit.Extensions.Reflection;
 [Collection("Type Handler Operations")]
 public class ColumnAliasResolutionTests
 {
-    public ColumnAliasResolutionTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public ColumnAliasResolutionTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     /// <summary>
     /// Property <c>A</c> maps to column "B"; property <c>B</c> maps to column "C". The name "B" is

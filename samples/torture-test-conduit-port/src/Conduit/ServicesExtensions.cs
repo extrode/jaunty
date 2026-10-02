@@ -23,7 +23,7 @@ public static class ServicesExtensions
     {
         // Domain entities aren't source-generated (no [Table]/partial + Extrode.Jaunty source generator
         // wiring set up for this port) - use Extrode.Jaunty's reflection-based metadata resolution instead.
-        Extrode.Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping();
+        Extrode.Jaunty.Configuration.JauntyConfig.Configure(static c => Extrode.Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping(c));
 
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly())

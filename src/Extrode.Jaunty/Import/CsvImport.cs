@@ -51,7 +51,7 @@ public static class CsvImportExtensions
     /// <item><description>
     /// <b>PostgreSQL</b> - read <b>here</b> when a client-side copy provider is registered, which
     /// streams <c>COPY ... FROM STDIN</c>. Install <c>Extrode.Jaunty.Extensions.Npgsql</c> and call
-    /// <c>JauntyNpgsql.Use()</c> to register one. Without a provider the import does not quietly
+    /// <c>UseNpgsqlCopy()</c> inside <c>JauntyConfig.Configure</c> to register one. Without a provider the import does not quietly
     /// change machines: an Npgsql connection is rejected with an error naming the missing package,
     /// because the server-side <c>COPY ... FROM '&lt;path&gt;'</c> fallback resolves the path on the
     /// <b>server</b>, and silently switching which machine opens the file is a security and
@@ -131,7 +131,7 @@ public static class CsvImportExtensions
     /// <item><description>
     /// <b>PostgreSQL</b> - read <b>here</b> when a client-side copy provider is registered, which
     /// streams <c>COPY ... FROM STDIN</c>. Install <c>Extrode.Jaunty.Extensions.Npgsql</c> and call
-    /// <c>JauntyNpgsql.Use()</c> to register one. Without a provider the import does not quietly
+    /// <c>UseNpgsqlCopy()</c> inside <c>JauntyConfig.Configure</c> to register one. Without a provider the import does not quietly
     /// change machines: an Npgsql connection is rejected with an error naming the missing package,
     /// because the server-side <c>COPY ... FROM '&lt;path&gt;'</c> fallback resolves the path on the
     /// <b>server</b>, and silently switching which machine opens the file is a security and
@@ -906,7 +906,7 @@ public static class CsvImportExtensions
         throw new InvalidOperationException(
             "CSV import over a PostgreSQL connection needs a client-side COPY provider, and none is " +
             "registered. Install the Extrode.Jaunty.Extensions.Npgsql package and call " +
-            "JauntyNpgsql.Use() once at startup. " +
+            "UseNpgsqlCopy() inside JauntyConfig.Configure at startup. " +
             "Extrode.Jaunty core declares no dependency on a database driver, so it cannot open " +
             "COPY ... FROM STDIN itself; earlier versions reached Npgsql by reflection, which broke " +
             "silently when trimmed. To use the server-side path instead - where the database server " +
@@ -1333,7 +1333,7 @@ public static class CsvImportExtensions
             filePath,
             "PostgreSQL server-side COPY FROM",
             "permission to read server files (superuser, or membership of pg_read_server_files)",
-            "COPY ... FROM STDIN, which Extrode.Jaunty.Extensions.Npgsql provides once JauntyNpgsql.Use() is called",
+            "COPY ... FROM STDIN, which Extrode.Jaunty.Extensions.Npgsql provides once UseNpgsqlCopy() is called inside JauntyConfig.Configure",
             inner);
 
     private static InvalidOperationException ServerSideImportFailure(

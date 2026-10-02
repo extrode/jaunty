@@ -28,8 +28,11 @@ static string ToSnakeCase(string name)
     return sb.ToString();
 }
 
-JauntyConfig.TableNameResolver = type => ToSnakeCase(type.Name);
-JauntyConfig.ColumnNameResolver = ToSnakeCase;
+JauntyConfig.Configure(c =>
+{
+    c.TableNameResolver = type => ToSnakeCase(type.Name);
+    c.ColumnNameResolver = ToSnakeCase;
+});
 
 using var connection = new SqliteConnection("Data Source=:memory:");
 connection.Open();

@@ -1,4 +1,5 @@
 using Extrode.Jaunty;
+using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Extensions.Reflection;
 
 using Microsoft.Data.Sqlite;
@@ -10,8 +11,7 @@ using NativeAOT.WithReflection;
 // TrimmerRootAssembly configuration to preserve reflection metadata.
 
 // Explicit initialization for NativeAOT (avoids Assembly.Load which may fail in AOT)
-JauntyReflectionExtensions.UseReflectionMapping();
-SpecialTypeMappers.Register();
+JauntyConfig.Configure(c => c.UseReflectionMapping());
 
 using var connection = new SqliteConnection("Data Source=:memory:");
 connection.Open();

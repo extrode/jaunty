@@ -18,9 +18,9 @@ public sealed class NameResolutionTests : IDisposable
 
     public void Dispose()
     {
-        JauntyConfig.TableNameResolver = null;
-        JauntyConfig.SchemaNameResolver = null;
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
     }
 
     [Theory]
@@ -31,7 +31,7 @@ public sealed class NameResolutionTests : IDisposable
     [InlineData(null, "", "")]
     public void Table_FollowsTheOrder(string? attribute, string? resolved, string expected)
     {
-        JauntyConfig.TableNameResolver = _ => resolved!;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => resolved!);
 
         Assert.Equal(expected, NameResolution.Table(typeof(Widget), attribute));
     }
@@ -44,7 +44,7 @@ public sealed class NameResolutionTests : IDisposable
     public void Table_PassesTheEntityTypeToTheResolver()
     {
         Type? seen = null;
-        JauntyConfig.TableNameResolver = t => { seen = t; return "x"; };
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = t => { seen = t; return "x"; });
 
         NameResolution.Table(typeof(Widget), null);
 
@@ -59,7 +59,7 @@ public sealed class NameResolutionTests : IDisposable
     [InlineData(null, "", "")]
     public void Schema_FollowsTheOrder(string? attribute, string? resolved, string? expected)
     {
-        JauntyConfig.SchemaNameResolver = _ => resolved!;
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => resolved!);
 
         Assert.Equal(expected, NameResolution.Schema(typeof(Widget), attribute));
     }
@@ -76,7 +76,7 @@ public sealed class NameResolutionTests : IDisposable
     [InlineData(null, "", "")]
     public void Column_FollowsTheOrder(string? attribute, string? resolved, string expected)
     {
-        JauntyConfig.ColumnNameResolver = _ => resolved!;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = _ => resolved!);
 
         Assert.Equal(expected, NameResolution.Column("DisplayName", attribute));
     }
@@ -84,7 +84,7 @@ public sealed class NameResolutionTests : IDisposable
     [Fact]
     public void Column_PassesThePropertyNameToTheResolver()
     {
-        JauntyConfig.ColumnNameResolver = name => name + "_col";
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name + "_col");
 
         Assert.Equal("DisplayName_col", NameResolution.Column("DisplayName", null));
     }
@@ -93,9 +93,9 @@ public sealed class NameResolutionTests : IDisposable
     public void AnAttributeName_IsNeverPassedToTheResolvers()
     {
         int calls = 0;
-        JauntyConfig.TableNameResolver = _ => { calls++; return "t"; };
-        JauntyConfig.SchemaNameResolver = _ => { calls++; return "s"; };
-        JauntyConfig.ColumnNameResolver = _ => { calls++; return "c"; };
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => { calls++; return "t"; });
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => { calls++; return "s"; });
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = _ => { calls++; return "c"; });
 
         NameResolution.Table(typeof(Widget), "attr");
         NameResolution.Schema(typeof(Widget), "attr");

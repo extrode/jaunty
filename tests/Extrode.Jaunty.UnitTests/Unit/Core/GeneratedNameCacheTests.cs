@@ -28,9 +28,9 @@ public sealed class GeneratedNameCacheTests : IDisposable
 
     public void Dispose()
     {
-        JauntyConfig.TableNameResolver = null;
-        JauntyConfig.SchemaNameResolver = null;
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
     }
 
     private GeneratedNameCache<State> Cache(string? table = null, string? schema = null)
@@ -50,8 +50,8 @@ public sealed class GeneratedNameCacheTests : IDisposable
     [Fact]
     public void TheAttributeTableAndSchema_WinOverTheResolvers()
     {
-        JauntyConfig.TableNameResolver = _ => "resolved";
-        JauntyConfig.SchemaNameResolver = _ => "resolved";
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => "resolved");
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => "resolved");
 
         GeneratedNames names = Cache("t", "s").Current.Names;
 
@@ -62,9 +62,9 @@ public sealed class GeneratedNameCacheTests : IDisposable
     [Fact]
     public void TheResolvers_NameWhatNoAttributeNames()
     {
-        JauntyConfig.TableNameResolver = t => t.Name + "s";
-        JauntyConfig.SchemaNameResolver = _ => "dbo";
-        JauntyConfig.ColumnNameResolver = name => name.ToLowerInvariant();
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = t => t.Name + "s");
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => "dbo");
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name.ToLowerInvariant());
 
         GeneratedNames names = Cache().Current.Names;
 
@@ -77,7 +77,7 @@ public sealed class GeneratedNameCacheTests : IDisposable
     [Fact]
     public void ParameterNames_AreTheResolvedColumnNamesWithAnAtSign()
     {
-        JauntyConfig.ColumnNameResolver = name => name.ToLowerInvariant();
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name.ToLowerInvariant());
 
         GeneratedNames names = Cache().Current.Names;
 
@@ -103,7 +103,7 @@ public sealed class GeneratedNameCacheTests : IDisposable
         GeneratedNameCache<State> cache = Cache();
         State before = cache.Current;
 
-        JauntyConfig.ColumnNameResolver = name => "c_" + name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => "c_" + name);
         State after = cache.Current;
 
         Assert.NotSame(before, after);
@@ -127,7 +127,7 @@ public sealed class GeneratedNameCacheTests : IDisposable
     [InlineData("x", "X")]
     public void AResolverMergingTwoColumns_IsRejected(string first, string second)
     {
-        JauntyConfig.ColumnNameResolver = name => name == "A" ? first : second;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name == "A" ? first : second);
         var cache = new GeneratedNameCache<State>(typeof(Widget), null, null, ["A", "B"], [null, null], n => new State(n));
 
         ArgumentException ex = Assert.Throws<ArgumentException>("columns", () => cache.Current);
@@ -139,7 +139,7 @@ public sealed class GeneratedNameCacheTests : IDisposable
     [Fact]
     public void AResolverNamingAColumnAfterAnAttributeColumn_IsRejected()
     {
-        JauntyConfig.ColumnNameResolver = _ => "fixed";
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = _ => "fixed");
         GeneratedNameCache<State> cache = Cache();
 
         Assert.Throws<ArgumentException>("columns", () => cache.Current);
@@ -151,7 +151,7 @@ public sealed class GeneratedNameCacheTests : IDisposable
     public void ACollisionAlreadyInTheAttributeNames_IsLeftToTheGenerator(bool withResolver)
     {
         if (withResolver)
-            JauntyConfig.ColumnNameResolver = name => name.ToLowerInvariant();
+            JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name.ToLowerInvariant());
         var cache = new GeneratedNameCache<State>(typeof(Widget), null, null, ["A", "B", "C"], ["dup", "DUP", null], n => new State(n));
 
         GeneratedNames names = cache.Current.Names;
