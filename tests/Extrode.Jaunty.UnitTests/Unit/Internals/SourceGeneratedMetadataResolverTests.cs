@@ -1,4 +1,5 @@
 using Extrode.Jaunty.Interfaces;
+using Extrode.Jaunty.Internals;
 using Extrode.Jaunty.Internals.Entity;
 
 namespace Extrode.Jaunty.Tests.Unit.Internals;
@@ -6,6 +7,7 @@ namespace Extrode.Jaunty.Tests.Unit.Internals;
 /// <summary>
 /// Tests SourceGeneratedMetadataResolver.TryBuild&lt;T&gt;'s IEntityMetadataSource probe.
 /// </summary>
+[Collection(ConfigurationGenerationCollection.Name)]
 public class SourceGeneratedMetadataResolverTests
 {
     private class ThrowingConstructorEntity
@@ -60,5 +62,36 @@ public class SourceGeneratedMetadataResolverTests
     public void TryBuild_AnUnfilledArraySlot_Throws()
     {
         Assert.Throws<InvalidOperationException>(SourceGeneratedMetadataResolver.TryBuild<UnfilledArrayEntity>);
+    }
+
+    private sealed class ConfigurationChangingEntity : IEntityMetadataSource
+    {
+        public static int ColumnReads;
+
+        public string TableName => "t" + ColumnReads;
+
+        public string? SchemaName => null;
+
+        public IReadOnlyList<EntityColumnInfo> Columns
+        {
+            get
+            {
+                if (++ColumnReads == 1)
+                    ConfigurationGeneration.Invalidate();
+                return [new EntityColumnInfo("c" + ColumnReads, "Id", true, true, false, typeof(int), _ => 1, (_, _) => { })];
+            }
+        }
+    }
+
+    [Fact]
+    public void TryBuild_AConfigurationChangeDuringTheBuild_RebuildsFromOneConfiguration()
+    {
+        ConfigurationChangingEntity.ColumnReads = 0;
+
+        EntityMetadata metadata = SourceGeneratedMetadataResolver.TryBuild<ConfigurationChangingEntity>()!;
+
+        Assert.Equal(2, ConfigurationChangingEntity.ColumnReads);
+        Assert.Equal("t2", metadata.TableName);
+        Assert.Equal("c2", Assert.Single(metadata.Columns).ColumnName);
     }
 }

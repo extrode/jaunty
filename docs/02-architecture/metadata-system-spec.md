@@ -275,12 +275,15 @@ sequenceDiagram
     Cache-->>Gen: names for this generation
     Gen-->>Core: metadata with resolved names
     Core->>Gen: BindInsert(command, widget)
-    Gen->>Cache: Current (same generation)
+    Gen->>Cache: Current (read again)
     Gen-->>Core: parameters '@display_name', ...
-    Note over Core,Gen: The SQL, the bound parameter names, the reader's<br/>column lookups and the generated statics<br/>all come from the same resolved names
+    Note over Core,Gen: The SQL, the bound parameter names, the reader's<br/>column lookups and the generated statics each read<br/>the names current when they run
 ```
 
-With no resolver change, a read costs one generation compare.
+With no resolver change, a read costs one generation compare, and every step of an operation
+sees the same names. A resolver set while an operation is between building its SQL and
+binding or reading can pair the old SQL with the new names and fail; set resolvers at startup,
+before commands run (see `JauntyConfig` thread safety).
 
 A resolver that maps two properties of one entity to the same column (compared
 case-insensitively) is rejected with an `ArgumentException` on both paths. Entities compiled

@@ -17,12 +17,29 @@ internal static class SourceGeneratedMetadataResolver
     /// <see cref="IEntityMetadataSource"/> (not source-generated), in which case the caller
     /// should fall back to <c>JauntyConfig.ReflectionTableMetadataResolver</c>.
     /// </summary>
+    /// <remarks>
+    /// A generated entity's <c>Columns</c>, <c>TableName</c> and <c>SchemaName</c> each read the
+    /// naming resolvers' current state separately, so a resolver set between those reads would
+    /// pair one configuration's columns with another's table. The build is repeated until the
+    /// configuration generation is the same before and after it.
+    /// </remarks>
     public static EntityMetadata? TryBuild<T>() where T : new()
     {
         if (!typeof(IEntityMetadataSource).IsAssignableFrom(typeof(T)))
             return null;
 
         var source = (IEntityMetadataSource)new T();
+        while (true)
+        {
+            int generation = ConfigurationGeneration.Current;
+            EntityMetadata metadata = Build<T>(source);
+            if (generation == ConfigurationGeneration.Current)
+                return metadata;
+        }
+    }
+
+    private static EntityMetadata Build<T>(IEntityMetadataSource source)
+    {
         IReadOnlyList<EntityColumnInfo> sourceColumns = source.Columns;
         var columns = new List<ColumnMetadata>(sourceColumns.Count);
         for (int i = 0; i < sourceColumns.Count; i++)

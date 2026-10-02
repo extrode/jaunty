@@ -34,6 +34,7 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         Execute("""
             CREATE TABLE resolved_name_widgets (widget_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, fixed_price NUMERIC NOT NULL);
             CREATE TABLE ResolvedNameWidget (WidgetId INTEGER PRIMARY KEY, DisplayName TEXT NOT NULL, fixed_price NUMERIC NOT NULL);
+            CREATE TABLE annotated_name_widgets (widget_id INTEGER PRIMARY KEY, label TEXT NOT NULL, unit_count INTEGER NOT NULL);
             """);
     }
 
@@ -136,6 +137,8 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         var widget = new ResolvedNameWidget { DisplayName = "Gadget", UnitPrice = 9.5m };
 
         widget.WidgetId = (int)_connection.Insert(widget);
+        Assert.Equal(1L, _connection.QueryScalar<long>("SELECT COUNT(*) FROM resolved_name_widgets"));
+        Assert.Equal(0L, _connection.QueryScalar<long>("SELECT COUNT(*) FROM ResolvedNameWidget"));
         widget.DisplayName = "Renamed";
         Assert.Equal(1, _connection.Update(widget));
 
@@ -213,6 +216,59 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         Assert.Contains("'WidgetId' and 'DisplayName'", read.Message);
         Assert.Throws<ArgumentException>(() => _connection.Insert(new ResolvedNameWidget { DisplayName = "b", UnitPrice = 1m }));
         Assert.Throws<ArgumentException>(() => ResolvedNameWidget.TableName);
+    }
+
+    [Fact]
+    public void TheSchemaResolver_QualifiesCrudAndFluentSql()
+    {
+        UseSnakeCase();
+        JauntyConfig.SchemaNameResolver = _ => "nowhere";
+
+        SqliteException insert = Assert.Throws<SqliteException>(() => _connection.Insert(new ResolvedNameWidget { DisplayName = "a", UnitPrice = 1m }));
+        Assert.Contains("nowhere", insert.Message);
+        SqliteException select = Assert.Throws<SqliteException>(() => _connection.From<ResolvedNameWidget>().Select().ToList());
+        Assert.Contains("nowhere", select.Message);
+
+        JauntyConfig.SchemaNameResolver = _ => "main";
+        _connection.Insert(new ResolvedNameWidget { DisplayName = "b", UnitPrice = 1m });
+        Assert.Equal("b", Assert.Single(_connection.From<ResolvedNameWidget>().Select()).DisplayName);
+    }
+
+    [Fact]
+    public void DataAnnotationsNames_WinOverTheResolvers()
+    {
+        UseSnakeCase();
+
+        Assert.Equal("annotated_name_widgets", AnnotatedNameWidget.TableName);
+        Assert.Equal(["widget_id", "label", "unit_count"], AnnotatedNameWidget.EntityColumns.Select(c => c.ColumnName));
+
+        var widget = new AnnotatedNameWidget { DisplayName = "Gadget", UnitCount = 3 };
+        widget.WidgetId = (int)_connection.Insert(widget);
+        AnnotatedNameWidget? fetched = _connection.Get<AnnotatedNameWidget>(widget.WidgetId);
+        Assert.NotNull(fetched);
+        Assert.Equal(("Gadget", 3), (fetched.DisplayName, fetched.UnitCount));
+    }
+
+    [Fact]
+    public void BulkInsertAndUpsert_UseTheResolvedNames()
+    {
+        UseSnakeCase();
+
+        Assert.Equal(2, _connection.BulkInsert([new ResolvedNameWidget { WidgetId = 1, DisplayName = "a", UnitPrice = 1m }, new ResolvedNameWidget { WidgetId = 2, DisplayName = "b", UnitPrice = 2m }]));
+        Assert.Equal(1, _connection.Upsert(new ResolvedNameWidget { DisplayName = "upserted", UnitPrice = 5m }));
+
+        Assert.Equal("a,b,upserted", _connection.QueryScalar<string>("SELECT group_concat(display_name) FROM (SELECT display_name FROM resolved_name_widgets ORDER BY widget_id)"));
+        Assert.Equal(0L, _connection.QueryScalar<long>("SELECT COUNT(*) FROM ResolvedNameWidget"));
+    }
+
+    [Fact]
+    public void AResolverReturningEmpty_IsUsedVerbatim()
+    {
+        JauntyConfig.TableNameResolver = _ => "";
+        JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? "" : name;
+
+        Assert.Equal("", ResolvedNameWidget.TableName);
+        Assert.Equal(["WidgetId", "", "fixed_price"], ColumnNames());
     }
 
     [Fact]

@@ -110,9 +110,10 @@ internal static class MetadataCache<T>
     /// </para>
     /// <para>
     /// This file already re-reads <c>DefaultEnumStorage</c> and <c>TypeHandlerRegistry</c> per call
-    /// for the same underlying reason, and keys <c>ReaderSignature</c> on the column-name resolver
-    /// for a narrower version of this very problem. Those handle configuration consulted at call
-    /// time; the generation handles configuration baked into what was compiled.
+    /// for the same underlying reason. Those handle configuration consulted at call time; the
+    /// generation handles configuration baked into what was compiled, the column-name resolver
+    /// included: <c>ColumnToIndex</c> already holds each column under the name the shared order
+    /// gave it, so the readers match on that alone and never call the resolver.
     /// </para>
     /// </remarks>
     internal sealed class Snapshot
@@ -134,11 +135,12 @@ internal static class MetadataCache<T>
 
         private readonly Dictionary<string, int> ColumnToIndex;
 
-        // Fable review of the R38 survivor fixes: GetSetters and ColumnBindsTo each re-read
-        // JauntyConfig.ColumnNameResolver, so a resolver swapped between the two calls let a
-        // multi-entity rebind consult a different resolver from the binding it was rebinding. The
-        // snapshot already stands for one configuration; it now answers both from that one.
-        private readonly Func<string, string>? _columnNameResolver;
+        // Fable review of the naming resolvers (2026-10-02): the readers used to build a second
+        // index, resolver(propertyName) -> property, beside ColumnToIndex. Once MetadataBuilder
+        // resolved names in the shared order that index only added aliases for attribute-named
+        // columns - a resolver called where an attribute applies, and a reflection read binding
+        // unit_price to [Column("fixed_price")] UnitPrice where the generated reader would not. It
+        // also re-read the resolver after Build had, so one snapshot could hold two resolvers.
 
         private readonly ConditionalWeakTable<IDataReader, ReaderCacheEntry> ReaderCache = new();
 
@@ -150,7 +152,6 @@ internal static class MetadataCache<T>
         {
             // Read the generation before building, never after: see ConfigurationGeneration.Current.
             Generation = ConfigurationGeneration.Current;
-            _columnNameResolver = JauntyConfig.ColumnNameResolver;
             Metadata = MetadataBuilder.Build<T>();
             ColumnMetadata[] columns = Metadata.Columns.ToArray();
             List<PropertyContext<T>> contexts = new List<PropertyContext<T>>(columns.Length);
@@ -191,12 +192,7 @@ internal static class MetadataCache<T>
         /// <inheritdoc cref="MetadataCache{T}.ColumnBindsTo"/>
         public bool ColumnBindsTo(string columnName, in PropertyContext<T> context)
         {
-            if (ColumnToIndex.TryGetValue(columnName, out int propIndex))
-                return ReferenceEquals(Properties[propIndex].Property, context.Property);
-
-            Dictionary<string, int>? resolverIndex = BuildResolverIndex(_columnNameResolver);
-            return resolverIndex is not null
-                && resolverIndex.TryGetValue(columnName, out propIndex)
+            return ColumnToIndex.TryGetValue(columnName, out int propIndex)
                 && ReferenceEquals(Properties[propIndex].Property, context.Property);
         }
 
@@ -217,16 +213,14 @@ internal static class MetadataCache<T>
             // some providers (Npgsql) recycle a single IDataReader instance across commands on the same
             // pooled physical connection, so reader identity alone can return setters built for a
             // different column layout (the AUD-R9-011 regression).
-            Func<string, string>? resolver = _columnNameResolver;
-
-            if (ReaderCache.TryGetValue(reader, out ReaderCacheEntry? entry) && entry.Matches(reader, mode, resolver))
+            if (ReaderCache.TryGetValue(reader, out ReaderCacheEntry? entry) && entry.Matches(reader, mode))
                 return entry.Setters;
 
-            var signature = new ReaderSignature(reader, mode, resolver);
+            var signature = new ReaderSignature(reader, mode);
             PropertySetter<T>[]? setters = SettersCache.Get(signature);
             if (setters is null)
             {
-                setters = BuildSetters(reader, mode, resolver);
+                setters = BuildSetters(reader, mode);
                 SettersCache.TryAdd(signature, setters);
             }
 
@@ -237,7 +231,7 @@ internal static class MetadataCache<T>
             //
             // Only the miss path reaches here. The per-row hit path is the TryGetValue above and takes
             // neither the lock nor the write, so the netstandard2.0 fallback costs nothing per row.
-            var freshEntry = new ReaderCacheEntry(reader, mode, resolver, setters);
+            var freshEntry = new ReaderCacheEntry(reader, mode, setters);
 #if NET8_0_OR_GREATER
             ReaderCache.AddOrUpdate(reader, freshEntry);
 #else
@@ -259,14 +253,12 @@ internal static class MetadataCache<T>
         private sealed class ReaderCacheEntry
         {
             private readonly MappingMode _mode;
-            private readonly Func<string, string>? _resolver;
             private readonly int _fieldCount;
             private readonly string[] _columnNames;
 
-            public ReaderCacheEntry(IDataReader reader, MappingMode mode, Func<string, string>? resolver, PropertySetter<T>[] setters)
+            public ReaderCacheEntry(IDataReader reader, MappingMode mode, PropertySetter<T>[] setters)
             {
                 _mode = mode;
-                _resolver = resolver;
                 _fieldCount = reader.FieldCount;
                 _columnNames = new string[_fieldCount];
 
@@ -278,9 +270,9 @@ internal static class MetadataCache<T>
 
             public PropertySetter<T>[] Setters { get; }
 
-            public bool Matches(IDataReader reader, MappingMode mode, Func<string, string>? resolver)
+            public bool Matches(IDataReader reader, MappingMode mode)
             {
-                if (mode != _mode || !ReferenceEquals(resolver, _resolver) || reader.FieldCount != _fieldCount)
+                if (mode != _mode || reader.FieldCount != _fieldCount)
                     return false;
 
                 for (int i = 0; i < _fieldCount; i++)
@@ -296,22 +288,12 @@ internal static class MetadataCache<T>
         private readonly struct ReaderSignature : IEquatable<ReaderSignature>
         {
             private readonly MappingMode _mode;
-            private readonly Func<string, string>? _resolver;
             private readonly string _schemaKey;
             private readonly int _hashCode;
 
-            // AUD-R26: the resolver is part of the key. BuildSetters consults
-            // JauntyConfig.ColumnNameResolver to match snake_case columns onto PascalCase properties,
-            // so the setters it produces depend on it - but the key used to be the mapping mode and the
-            // column names only, which meant registering or changing the resolver after a given shape
-            // had been mapped once returned the stale setters forever. Same mutable-process-state
-            // capture this file already re-checks per call for DefaultEnumStorage and
-            // TypeHandlerRegistry; reference equality is the right comparison because a different
-            // delegate instance is a different mapping.
-            public ReaderSignature(IDataReader reader, MappingMode mode, Func<string, string>? resolver)
+            public ReaderSignature(IDataReader reader, MappingMode mode)
             {
                 _mode = mode;
-                _resolver = resolver;
                 int fieldCount = reader.FieldCount;
 
                 // Build a stable schema key so equality is based on the actual shape,
@@ -330,7 +312,6 @@ internal static class MetadataCache<T>
             }
 
             public bool Equals(ReaderSignature other) => _mode == other._mode
-                   && ReferenceEquals(_resolver, other._resolver)
                    && StringComparer.OrdinalIgnoreCase.Equals(_schemaKey, other._schemaKey);
 
             public override bool Equals(object? obj) => obj is ReaderSignature other && Equals(other);
@@ -338,24 +319,18 @@ internal static class MetadataCache<T>
             public override int GetHashCode() => _hashCode;
         }
 
-        private PropertySetter<T>[] BuildSetters(IDataReader reader, MappingMode mode, Func<string, string>? resolver)
+        private PropertySetter<T>[] BuildSetters(IDataReader reader, MappingMode mode)
         {
             int fieldCount = reader.FieldCount;
             var settersBuffer = new PropertySetter<T>[fieldCount];
             int count = 0;
             var matchedProperties = new bool[Properties.Length];
 
-            // Build a resolver-aware index if ColumnNameResolver is configured.
-            // This maps resolver(propertyName) -> property index so that
-            // snake_case columns can match PascalCase properties at query time.
-            Dictionary<string, int>? resolverIndex = BuildResolverIndex(resolver);
-
             for (int i = 0; i < fieldCount; i++)
             {
                 string columnName = reader.GetName(i) ?? throw new InvalidOperationException($"Column {i} has no name");
 
-                if (ColumnToIndex.TryGetValue(columnName, out int propIndex)
-                    || (resolverIndex != null && resolverIndex.TryGetValue(columnName, out propIndex)))
+                if (ColumnToIndex.TryGetValue(columnName, out int propIndex))
                 {
                     if (matchedProperties[propIndex]) continue;
 
@@ -383,29 +358,6 @@ internal static class MetadataCache<T>
             var result = new PropertySetter<T>[count];
             Array.Copy(settersBuffer, result, count);
             return result;
-        }
-
-        // AUD-R26: takes the resolver rather than re-reading JauntyConfig.ColumnNameResolver. GetSetters
-        // snapshots it once and keys both caches on that reference; re-reading here meant the key and
-        // the setters it labels could come from different resolvers. A thread preempted between the
-        // snapshot and this call would build resolver-mapped setters and file them under the
-        // "no resolver" signature - in a process-lifetime cache with no eviction, so every later
-        // no-resolver query of that shape got them forever. That is the same "stale setters forever"
-        // failure the resolver-in-key change was made to fix, reintroduced as a race.
-        private Dictionary<string, int>? BuildResolverIndex(Func<string, string>? resolver)
-        {
-            if (resolver == null) return null;
-
-            var index = new Dictionary<string, int>(Properties.Length, StringComparer.OrdinalIgnoreCase);
-
-            for (int i = 0; i < Properties.Length; i++)
-            {
-                string resolved = resolver(Properties[i].Property.Name);
-                if (!string.IsNullOrEmpty(resolved))
-                    index[resolved] = i;
-            }
-
-            return index;
         }
     }
 

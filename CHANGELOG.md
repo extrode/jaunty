@@ -149,7 +149,10 @@ default lives in `src/Directory.Build.props`.
     column.
   - Entities compiled against an earlier package keep their build-time names until rebuilt.
 - **The reflection path no longer calls a naming resolver for a name an attribute already fixes.**
-  The result was discarded before; only a resolver with side effects, or one that throws, notices.
+  Metadata discarded that result, but the reflection reader also bound it as an extra column name:
+  `[Column("fixed_price")] UnitPrice` under a snake_case `ColumnNameResolver` also read a
+  `unit_price` column. It now reads `fixed_price` (or the property name) only, as the generated
+  reader does. A resolver with side effects, or one that throws, also notices.
 - **SQLite bundle is now SQLitePCLRaw 3.0.5 (SQLite 3.53.4); Microsoft.Data.SqlClient is 7.1.0.**
   SQLite 3.53 formats `REAL` with up to 17 significant digits, so `GetDecimal` on a `REAL` column
   can now differ past the 15th digit from Jaunty's own reads. Every Jaunty read path, generated
