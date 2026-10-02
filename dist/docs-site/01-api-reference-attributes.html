@@ -192,7 +192,9 @@
 </ul>
 <p><strong>Notes:</strong></p>
 <ul>
-<li>Takes precedence over <code>JauntyConfig.TableNameResolver</code></li>
+<li>A non-empty name takes precedence over <code>JauntyConfig.TableNameResolver</code>, for reflection-mapped
+and source-generated entities alike. <code>[Table(&quot;&quot;)]</code> names no table, so the resolver or the type
+name applies; see the <a href="02-architecture-metadata-system-spec.html#name-resolution-order">name resolution order</a></li>
 <li>If schema is not specified, the table name is emitted unqualified and the database resolves it:
 the login's default schema on SQL Server, <code>search_path</code> on PostgreSQL, <code>main</code> on SQLite, the
 connection's database on MySQL. Jaunty never substitutes a default of its own —
@@ -262,8 +264,9 @@ writing to.</p>
 </ul>
 <p><strong>Notes:</strong></p>
 <ul>
-<li>Takes precedence over <code>JauntyConfig.ColumnNameResolver</code></li>
-<li>Attribute takes highest priority in naming resolution</li>
+<li>A non-empty name takes precedence over <code>JauntyConfig.ColumnNameResolver</code>, on both mapping paths</li>
+<li><code>[Column(&quot;&quot;)]</code> names nothing: a DataAnnotations <code>[Column]</code> on the same property, then the
+resolver, then the property name apply</li>
 <li>Only applies to properties of entity classes</li>
 </ul>
 <h2 id="ignore-attribute">Ignore Attribute</h2>
@@ -490,10 +493,13 @@ to record that the exclusion is intended and silence the warning.</p>
 <h2 id="attribute-priority">Attribute Priority</h2>
 <p>Jaunty uses the following priority order for mapping configuration:</p>
 <ol>
-<li><strong>Attributes</strong> (<code>[Table]</code>, <code>[Column]</code>, <code>[Ignore]</code>, <code>[Key]</code>, <code>[DatabaseGenerated]</code>) - Highest priority</li>
+<li><strong>Attributes</strong> (<code>[Table]</code>, <code>[Column]</code>, <code>[Ignore]</code>, <code>[Key]</code>, <code>[DatabaseGenerated]</code>) - Highest priority. A
+<code>[Table]</code> or <code>[Column]</code> name counts only when it is non-empty</li>
 <li><strong>JauntyConfig resolvers</strong> (<code>SchemaNameResolver</code>, <code>TableNameResolver</code>, <code>ColumnNameResolver</code>) - Medium priority</li>
 <li><strong>Default behavior</strong> (property/type names) - Lowest priority</li>
 </ol>
+<p>Reflection-mapped and source-generated entities follow the same order; the
+<a href="02-architecture-metadata-system-spec.html#name-resolution-order">name resolution order</a> diagrams it.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="complete-entity-with-multiple-attributes">Complete Entity with Multiple Attributes</h3>
 <div class="code-block">
