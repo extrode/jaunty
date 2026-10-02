@@ -184,6 +184,7 @@ public class BulkValueSetterAlignmentTests
 
         Assert.Contains("ShortCollectionWidget", exception.Message, StringComparison.Ordinal);
         Assert.Contains("2 parameter", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("ColumnNameResolver", exception.Message, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -224,6 +225,7 @@ public class BulkValueSetterAlignmentTests
             () => setter!(collection, new MisnamedWidget { Id = 1, Name = "a", Quantity = 7 }));
 
         Assert.Contains("MisnamedWidget", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("ColumnNameResolver", exception.Message, StringComparison.Ordinal);
         Assert.Contains("Quantity", exception.Message, StringComparison.Ordinal);
     }
 

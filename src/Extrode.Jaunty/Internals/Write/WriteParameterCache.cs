@@ -265,7 +265,8 @@ internal static class WriteParameterCache<T> where T : new()
                     "Extrode.Jaunty binds bulk values by position, so continuing would leave the surplus parameters holding " +
                     "the previous row's values and write wrong data instead of failing. The command's parameters and " +
                     "this setter's getters were resolved from entity metadata at different times - check whether " +
-                    "JauntyConfig.ReflectionTableMetadataResolver was replaced, or returns a different shape, between " +
+                    "JauntyConfig.ReflectionTableMetadataResolver was replaced, or returns a different shape, or a naming " +
+                    "resolver (TableNameResolver, SchemaNameResolver, ColumnNameResolver) was set, between " +
                     "the two resolutions.");
 
             if (!verified.TryGetValue(pc, out _))
@@ -322,7 +323,8 @@ internal static class WriteParameterCache<T> where T : new()
                     $"position (full order: {string.Join(", ", columnNames)}). Extrode.Jaunty binds bulk values by position, " +
                     "so continuing would write each column's value into a different column. The command's parameters " +
                     "and this setter's getters were resolved from entity metadata at different times - check whether " +
-                    "JauntyConfig.ReflectionTableMetadataResolver was replaced, or returns a different shape, between " +
+                    "JauntyConfig.ReflectionTableMetadataResolver was replaced, or returns a different shape, or a naming " +
+                    "resolver (TableNameResolver, SchemaNameResolver, ColumnNameResolver) was set, between " +
                     "the two resolutions.");
         }
     }
