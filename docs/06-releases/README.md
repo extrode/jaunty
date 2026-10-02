@@ -44,8 +44,8 @@ its terms are available on request rather than published here. To ask, open a
 
 ### Version Numbering
 
-Jaunty uses **semantic versioning**. The current version is `1.0.0-rc.2`, set in
-`src/Directory.Build.props` and tagged `v1.0.0-rc.2`.
+Jaunty uses **semantic versioning**. The current version is `1.0.0-rc.3`, set in
+`src/Directory.Build.props` and tagged `v1.0.0-rc.3`.
 
 An earlier date-based scheme (`YYYY.MM.PATCH`) was documented here and never shipped.
 

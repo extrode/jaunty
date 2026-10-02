@@ -3,14 +3,14 @@
 How to ship a Jaunty release. The pipeline is fully wired: pushing a version
 tag is the release action, and everything else here is verification around
 that one step. The commands below take the version from `$VERSION`, so they
-are the same commands for every release; the worked example is `1.0.0-rc.2`,
-the version cut as of 2026-09-03.
+are the same commands for every release; the worked example is `1.0.0-rc.3`,
+the version cut as of 2026-10-02.
 
 ## How the pipeline works
 
 `.github/workflows/release.yml` triggers on any tag matching `v*`:
 
-1. Derives the package version from the tag (`v1.0.0-rc.2` -> `1.0.0-rc.2`)
+1. Derives the package version from the tag (`v1.0.0-rc.3` -> `1.0.0-rc.3`)
    and injects it via `-p:Version=...` — the `<Version>` in
    `src/Directory.Build.props` is the dev-time baseline only; the tag wins.
 2. Builds `Jaunty.slnx` in Release, runs the full test suite, packs the 9
@@ -27,7 +27,7 @@ ns2.0/net8.0 public-API divergence fails the release instead of shipping.
 ## Shipping a release
 
 ```bash
-VERSION=1.0.0-rc.2                # the version being shipped
+VERSION=1.0.0-rc.3                # the version being shipped
 
 # 0. Everything releasable is merged to dev and pushed; tree clean
 git checkout dev && git pull
@@ -88,7 +88,7 @@ The package IDs are `Extrode.`-prefixed — the unprefixed `Extrode.Jaunty` IDs 
 rc.1 names and are not the ones on the feed:
 
 ```bash
-dotnet add package Extrode.Jaunty --version 1.0.0-rc.2
+dotnet add package Extrode.Jaunty --version 1.0.0-rc.3
 ```
 
 ## If something goes wrong
