@@ -91,6 +91,22 @@ The primary key on the entity decides: a row with that key is updated, otherwise
 Jaunty emits the dialect's native form - `MERGE` on SQL Server, `INSERT ... ON CONFLICT` on
 PostgreSQL and SQLite, `INSERT ... ON DUPLICATE KEY UPDATE` on MySQL.
 
+A database-generated key (identity, auto-increment, a sequence default) is not in the INSERT, so
+those native forms could never see the conflict. For such an entity every dialect behaves like
+SQL Server's `MERGE`: a key that matches a row updates it, and any other value, including an
+unset `0`, inserts a new row whose key the database assigns. Outside SQL Server that runs as one
+command holding two statements:
+
+```sql
+UPDATE products SET name = @name, price = @price WHERE id = @id;
+INSERT INTO products (name, price) SELECT @name, @price
+    WHERE NOT EXISTS (SELECT 1 FROM products WHERE id = @id)
+```
+
+MySQL adds `FROM DUAL` before the `WHERE`. The assigned key is not written back to the entity;
+call `Insert` when you need it. Two concurrent upserts of the same new row can both insert, so
+run them in a transaction if that matters.
+
 `InvalidOperationException` is thrown when the entity has no primary key, when the dialect does
 not support upsert, or when there are no upsertable columns.
 
