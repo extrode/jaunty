@@ -33,7 +33,7 @@ are upgrading code that assigned these properties directly,
   Delegates compare equal when they refer to the same method on the same target, which holds for
   method groups and for lambdas that capture nothing; type handlers compare by their type, so
   `new GuidAsStringHandler()` on each run counts as the same. Make a call whose lambda captures a
-  value through `JauntyConfig.TryConfigure` instead. A repeated `Configure` runs your callback
+  value through `JauntyConfig.ConfigureOnce` instead. A repeated `Configure` runs your callback
   again to compare, so keep it free of side effects.
 - **Reflection mapping is switched on first** when Extrode.Jaunty.Extensions.Reflection is
   referenced, and your callback can override any hook it set. Call `c.UseReflectionMapping()`
@@ -113,7 +113,7 @@ JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // your own h
 JauntyConfig.Configure(c => c.ColumnNameResolver = propertyName => propertyName.ToLower());
 ```
 
-### TryConfigure()
+### ConfigureOnce()
 
 Applies the settings like `Configure` on the first call in a process and returns `true`; every
 later call returns `false` without running the callback. Use it where startup code can run more
@@ -122,13 +122,13 @@ read from configuration in a test host that runs `Program.cs` again, possibly on
 It still throws once an operation has read the settings.
 
 ```csharp
-JauntyConfig.TryConfigure(c => c.SchemaNameResolver = _ => schemaFromConfig);
+JauntyConfig.ConfigureOnce(c => c.SchemaNameResolver = _ => schemaFromConfig);
 ```
 
 ### IsConfigured
 
-`true` once `Configure` or `TryConfigure` has completed. Checking it and then calling `Configure`
-is not atomic; use `TryConfigure` for that.
+`true` once `Configure` or `ConfigureOnce` has completed. Checking it and then calling `Configure`
+is not atomic; use `ConfigureOnce` for that.
 
 ### Reset()
 
@@ -446,10 +446,10 @@ public class Product
 
 Integration test hosts such as `WebApplicationFactory` can run `Program.cs` more than once in one
 process. Identical settings are a no-op; settings captured from configuration are not, so use
-`TryConfigure` for them:
+`ConfigureOnce` for them:
 
 ```csharp
-JauntyConfig.TryConfigure(c => c.TableNameResolver = type => prefix + type.Name);
+JauntyConfig.ConfigureOnce(c => c.TableNameResolver = type => prefix + type.Name);
 ```
 
 ### 4. Reset Configuration for Tests

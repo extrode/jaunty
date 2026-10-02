@@ -94,11 +94,11 @@ builder.Services.AddJauntyLogging();   // runtime settings are unchanged
 var app = builder.Build();
 ```
 
-If a setting comes from configuration, read it first and use `TryConfigure` (see the rules below):
+If a setting comes from configuration, read it first and use `ConfigureOnce` (see the rules below):
 
 ```csharp
 string schema = builder.Configuration["Db:Schema"] ?? "";
-JauntyConfig.TryConfigure(c => c.SchemaNameResolver = _ => schema);
+JauntyConfig.ConfigureOnce(c => c.SchemaNameResolver = _ => schema);
 ```
 
 ### Reflection mapping
@@ -131,7 +131,7 @@ publish, or to put the hooks back after replacing one of them by hand. If you ne
    handlers compare by their type, so `c.RegisterTypeHandler(new MoneyHandler())` is the same on
    every run. That also means two handlers of one class built with different constructor
    arguments count as the same, and the second call silently keeps the first. A lambda that captures a variable is a new delegate on every call, so make that call
-   through `JauntyConfig.TryConfigure`, which applies the first call and skips the rest without
+   through `JauntyConfig.ConfigureOnce`, which applies the first call and skips the rest without
    running them. A repeated `Configure` runs your callback again to compare, so keep it free of
    side effects.
 
@@ -144,11 +144,11 @@ publish, or to put the hooks back after replacing one of them by hand. If you ne
 
 `WebApplicationFactory`, Aspire and similar hosts can run `Program.cs` several times in one test
 process. That keeps working when the settings are the same each time (rule 2). If they differ, or
-use captured values, call `TryConfigure` instead of `Configure`; it is safe when hosts start on
+use captured values, call `ConfigureOnce` instead of `Configure`; it is safe when hosts start on
 parallel threads. The first host's settings then apply to every host in that process.
 
 Rule 1 applies to the whole test process: if any test runs a query before the first host starts,
-every later `Configure` or `TryConfigure` throws, and which test runs first depends on ordering. Set
+every later `Configure` or `ConfigureOnce` throws, and which test runs first depends on ordering. Set
 the settings once for the test assembly before any test runs, for example in a module initializer,
 and let the hosts' own call become a no-op:
 
@@ -156,16 +156,16 @@ and let the hosts' own call become a no-op:
 internal static class JauntyTestSetup
 {
     [System.Runtime.CompilerServices.ModuleInitializer]
-    internal static void Init() => JauntyConfig.TryConfigure(Startup.ConfigureJaunty);
+    internal static void Init() => JauntyConfig.ConfigureOnce(Startup.ConfigureJaunty);
 }
 ```
 
 where `Startup.ConfigureJaunty` is the same method `Program.cs` passes to `Configure`. Two limits:
 
-- This works only if `Program.cs` passes that same method, or calls `TryConfigure`. If
+- This works only if `Program.cs` passes that same method, or calls `ConfigureOnce`. If
   `Program.cs` builds its settings from `builder.Configuration`, the module initializer cannot see
   them, and a plain `Configure` in `Program.cs` then throws "different settings". Use
-  `TryConfigure` in `Program.cs`, and the module initializer's settings win.
+  `ConfigureOnce` in `Program.cs`, and the module initializer's settings win.
 - `[ModuleInitializer]` needs C# 9. On net472 or netstandard2.0 declare the attribute yourself
   (`namespace System.Runtime.CompilerServices { internal sealed class ModuleInitializerAttribute : Attribute { } }`)
   or use a polyfill package.

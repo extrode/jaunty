@@ -121,7 +121,7 @@ public class JauntyConfigConfigureTests : IDisposable
             JauntyConfig.Configure(c => c.TableNameResolver = t => "other_" + t.Name));
 
         Assert.Contains("different settings", ex.Message);
-        Assert.Contains("TryConfigure", ex.Message);
+        Assert.Contains("ConfigureOnce", ex.Message);
         Assert.Equal("t_Money", JauntyConfig.TableNameResolver!(typeof(Money)));
     }
 
@@ -162,13 +162,13 @@ public class JauntyConfigConfigureTests : IDisposable
     }
 
     [Fact]
-    public void TryConfigure_FirstCallApplies_LaterCallsSkipWithoutRunningTheCallback()
+    public void ConfigureOnce_FirstCallApplies_LaterCallsSkipWithoutRunningTheCallback()
     {
         string schema = "app";
         int runs = 0;
 
-        Assert.True(JauntyConfig.TryConfigure(c => { runs++; c.SchemaNameResolver = _ => schema; }));
-        Assert.False(JauntyConfig.TryConfigure(c => { runs++; c.SchemaNameResolver = _ => schema + "2"; }));
+        Assert.True(JauntyConfig.ConfigureOnce(c => { runs++; c.SchemaNameResolver = _ => schema; }));
+        Assert.False(JauntyConfig.ConfigureOnce(c => { runs++; c.SchemaNameResolver = _ => schema + "2"; }));
 
         Assert.Equal(1, runs);
         Assert.True(JauntyConfig.IsConfigured);
@@ -176,22 +176,22 @@ public class JauntyConfigConfigureTests : IDisposable
     }
 
     [Fact]
-    public void TryConfigure_AfterARead_Throws()
+    public void ConfigureOnce_AfterARead_Throws()
     {
         _ = JauntyConfig.TableNameResolver;
 
-        Assert.Throws<InvalidOperationException>(() => JauntyConfig.TryConfigure(Startup));
+        Assert.Throws<InvalidOperationException>(() => JauntyConfig.ConfigureOnce(Startup));
         Assert.False(JauntyConfig.IsConfigured);
     }
 
     [Fact]
-    public void TryConfigure_NullCallback_Throws()
+    public void ConfigureOnce_NullCallback_Throws()
     {
-        Assert.Throws<ArgumentNullException>(() => JauntyConfig.TryConfigure(null!));
+        Assert.Throws<ArgumentNullException>(() => JauntyConfig.ConfigureOnce(null!));
     }
 
     [Fact]
-    public void ConcurrentTryConfigure_WithCapturingLambdas_ExactlyOneAppliesAndNoneThrows()
+    public void ConcurrentConfigureOnce_WithCapturingLambdas_ExactlyOneAppliesAndNoneThrows()
     {
         const int threads = 8;
         using var start = new Barrier(threads);
@@ -204,7 +204,7 @@ public class JauntyConfigConfigureTests : IDisposable
             start.SignalAndWait();
             try
             {
-                if (JauntyConfig.TryConfigure(c => c.TableNameResolver = _ => name))
+                if (JauntyConfig.ConfigureOnce(c => c.TableNameResolver = _ => name))
                     Interlocked.Increment(ref applied);
             }
             catch (Exception)

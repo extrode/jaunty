@@ -111,7 +111,7 @@ public static class JauntyConfig
     /// delegate refers to the same method on the same target - true of method groups and of lambdas
     /// that capture nothing; type handlers compare by their type only, so two instances of one
     /// handler class with different constructor arguments count as the same. A lambda that captures a value is
-    /// a new delegate each time, so make that call with <see cref="TryConfigure"/> instead.
+    /// a new delegate each time, so make that call with <see cref="ConfigureOnce"/> instead.
     /// </para>
     /// <para>
     /// A repeated call runs <paramref name="configure"/> again to compare its result, so keep the
@@ -138,7 +138,7 @@ public static class JauntyConfig
     /// <exception cref="InvalidOperationException">
     /// The settings are not configured yet and an operation has already read them.
     /// </exception>
-    public static bool TryConfigure(Action<JauntyConfigBuilder> configure)
+    public static bool ConfigureOnce(Action<JauntyConfigBuilder> configure)
         => ConfigureCore(configure, compareWhenConfigured: false);
 
     private static bool ConfigureCore(Action<JauntyConfigBuilder> configure, bool compareWhenConfigured)
@@ -167,7 +167,7 @@ public static class JauntyConfig
             throw new InvalidOperationException(
                 "Extrode.Jaunty is already configured with different settings. JauntyConfig.Configure " +
                 "sets them once per process; make a call that can repeat with different settings " +
-                "through JauntyConfig.TryConfigure(...). " +
+                "through JauntyConfig.ConfigureOnce(...). " +
                 "See docs/06-releases/upgrading-to-configure.md.");
         }
 

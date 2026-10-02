@@ -112,7 +112,7 @@ mistake caught by the compiler instead of at runtime.
   Delegates compare with `Delegate.Equals` (same method, same target): true for method groups and
   for lambdas that capture nothing. This keeps `WebApplicationFactory` and Aspire tests working,
   where `Program.cs` runs twice in one process. A callback capturing a value is a new delegate each
-  time, so `JauntyConfig.TryConfigure` is the explicit form for a call that can repeat.
+  time, so `JauntyConfig.ConfigureOnce` is the explicit form for a call that can repeat.
 - **`Configure` after first use throws.** Every frozen getter, `ConfigurationGeneration.Current`
   (which every derived cache and every generated static reads) and the type handler lookups set a
   "settings read" flag, with a check before the write so the steady state is one plain read.
@@ -131,7 +131,7 @@ mistake caught by the compiler instead of at runtime.
 
 The plan was reviewed before implementation. Its must-fix items were folded in: InternalsVisibleTo
 for the three test projects that set settings mid-suite; all three auto-reflection paths defined;
-multi-host tests (resolved by the same-settings no-op plus `TryConfigure`); and a compare-and-swap
+multi-host tests (resolved by the same-settings no-op plus `ConfigureOnce`); and a compare-and-swap
 rather than a check-then-set for once-only. Should-fix items also adopted: the read flag covers
 `DefaultEnumStorage` and type handler lookups, which bypass the generation counter; Jaunty's own
 tests never pair `Reset` with `Configure`; the upgrade guide covers type handler adapter packages;
@@ -150,7 +150,7 @@ A correctness and a consequence review of the implementation found, and the bran
   close it.
 - **`new MyHandler()` made a repeated `Configure` throw.** Type handlers now compare by type.
 - **`if (!IsConfigured) Configure(...)` is check-then-act,** so parallel test hosts raced.
-  `TryConfigure` is the atomic form: the first call applies, later calls skip without running.
+  `ConfigureOnce` is the atomic form: the first call applies, later calls skip without running.
 - **A failing `Configure` could leave reflection mapping uninstalled** when `Jaunty`'s static
   constructor ran during it; the install is now retried. `Reset` waits for a `Configure` in
   flight, and an older Extensions.Reflection package is recorded as an error rather than absent.
@@ -166,6 +166,11 @@ fixed:
   pass and then throw "already read". The state is now released last.
 - The docs understated first use (any mapping-setting getter counts) and overstated the race fix
   above; the module-initializer test setup gained its limits.
+- **`TryConfigure` was renamed `ConfigureOnce`** before release, on the owner's call. A .NET `Try`
+  method by convention returns `false` instead of throwing, and this one still throws after first
+  use. No alias: the name never shipped. Fable also proposed dropping the same-settings no-op so
+  there is one rule; the owner chose the rename alone, so an unchanged `Program.cs` calling `Configure` still works
+  under multi-host tests.
 
 Kept by design: a broken Extensions.Reflection assembly (`FileLoadException`,
 `BadImageFormatException`) makes `Configure` throw rather than record and carry on, since it is a
