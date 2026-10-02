@@ -38,7 +38,7 @@ namespace Extrode.Jaunty.Tests.Unit.Configuration;
 [Collection("Type Handler Operations")]
 public class ConfigurationGenerationTests : IDisposable
 {
-    public ConfigurationGenerationTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public ConfigurationGenerationTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     /// <summary>
     /// These tests deliberately leave configuration in a non-default state, so every one of them
@@ -173,7 +173,7 @@ public class ConfigurationGenerationTests : IDisposable
         Assert.Throws<InvalidOperationException>(
             () => connection.Insert(new ResetWritePathWidget { Id = 1, Name = "before" }));
 
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
         connection.Insert(new ResetWritePathWidget { Id = 2, Name = "after" });
 
@@ -197,7 +197,7 @@ public class ConfigurationGenerationTests : IDisposable
         Assert.ThrowsAny<Exception>(
             () => connection.Query<ResetReadPathWidget>("SELECT Id, Name FROM reset_read_path;"));
 
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
         List<ResetReadPathWidget> rows =
             connection.Query<ResetReadPathWidget>("SELECT Id, Name FROM reset_read_path;").ToList();
@@ -225,7 +225,7 @@ public class ConfigurationGenerationTests : IDisposable
 
         Assert.ThrowsAny<Exception>(() => connection.BulkInsert(rows));
 
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
         Assert.Equal(2, connection.BulkInsert(rows));
         Assert.Equal("b", ScalarText(connection, "SELECT Name FROM reset_bulk_path WHERE Id = 2;"));
@@ -260,8 +260,8 @@ public class ConfigurationGenerationTests : IDisposable
         Assert.Equal("pascal", ScalarText(connection, "SELECT WidgetName FROM resolver_rename WHERE Id = 1;"));
         Assert.Null(ScalarText(connection, "SELECT widget_name FROM resolver_rename WHERE Id = 1;"));
 
-        JauntyConfig.ColumnNameResolver = static name =>
-            name == nameof(ResolverRenameWidget.WidgetName) ? "widget_name" : name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name =>
+            name == nameof(ResolverRenameWidget.WidgetName) ? "widget_name" : name);
 
         connection.Insert(new ResolverRenameWidget { Id = 2, WidgetName = "snake" });
 
@@ -287,8 +287,8 @@ public class ConfigurationGenerationTests : IDisposable
 
         Assert.Equal("pascal", ScalarText(connection, "SELECT WidgetName FROM bulk_resolver_rename WHERE Id = 1;"));
 
-        JauntyConfig.ColumnNameResolver = static name =>
-            name == nameof(BulkRenameWidget.WidgetName) ? "widget_name" : name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name =>
+            name == nameof(BulkRenameWidget.WidgetName) ? "widget_name" : name);
 
         connection.BulkInsert(new List<BulkRenameWidget> { new() { Id = 2, WidgetName = "snake" } });
 
@@ -320,8 +320,8 @@ public class ConfigurationGenerationTests : IDisposable
 
         Assert.Contains("WidgetName", before, StringComparison.Ordinal);
 
-        JauntyConfig.ColumnNameResolver = static name =>
-            name == nameof(BulkRenameWidget.WidgetName) ? "widget_name" : name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name =>
+            name == nameof(BulkRenameWidget.WidgetName) ? "widget_name" : name);
 
         string after = global::Extrode.Jaunty.Internals.Write.MultiRowInsertCache.GetOrBuild(
             typeof(BulkRenameWidget), typeof(SqliteConnection), 2, MetadataFor<BulkRenameWidget>(), dialect);
@@ -411,7 +411,7 @@ public class ConfigurationGenerationTests : IDisposable
             global::Extrode.Jaunty.Internals.Write.WriteParameterCache<ObservedWriteWidget>.InsertBinder;
         Assert.NotNull(before);
 
-        JauntyConfig.ColumnNameResolver = static name => name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name => name);
 
         Action<IDbCommand, ObservedWriteWidget>? after =
             global::Extrode.Jaunty.Internals.Write.WriteParameterCache<ObservedWriteWidget>.InsertBinder;
@@ -444,7 +444,7 @@ public class ConfigurationGenerationTests : IDisposable
             connection.Query<MultiGenLeft, MultiGenRight>(sql).Single();
         Assert.Null(before.Left.Name);
 
-        JauntyConfig.ColumnNameResolver = static name => name == "Name" ? "FullName" : name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name => name == "Name" ? "FullName" : name);
 
         (MultiGenLeft Left, MultiGenRight Right) after =
             connection.Query<MultiGenLeft, MultiGenRight>(sql).Single();
@@ -470,7 +470,7 @@ public class ConfigurationGenerationTests : IDisposable
             connection.Query<MultiGenLeft, MultiGenRight, MultiGenThird>(sql).Single();
         Assert.Null(before.Left.Name);
 
-        JauntyConfig.ColumnNameResolver = static name => name == "Name" ? "FullName" : name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name => name == "Name" ? "FullName" : name);
 
         (MultiGenLeft Left, MultiGenRight Right, MultiGenThird Third) after =
             connection.Query<MultiGenLeft, MultiGenRight, MultiGenThird>(sql).Single();
@@ -495,7 +495,7 @@ public class ConfigurationGenerationTests : IDisposable
 
         Assert.Null(connection.Query<MultiGenLeft, MultiGenRight>(sql).First().Item1.Name);
 
-        JauntyConfig.ColumnNameResolver = static name => name == "Name" ? "FullName" : name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name => name == "Name" ? "FullName" : name);
 
         List<(MultiGenLeft, MultiGenRight)> rows =
             connection.Query<MultiGenLeft, MultiGenRight>(sql).ToList();

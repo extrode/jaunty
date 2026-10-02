@@ -19,7 +19,7 @@ namespace Extrode.Jaunty.Tests.Unit.Extensions.Reflection;
 [Collection("Type Handler Operations")]
 public class TypedBinderWrongEntityTypeTests
 {
-    public TypedBinderWrongEntityTypeTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public TypedBinderWrongEntityTypeTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     [Table("wrong_entity_widgets")]
     public class Widget

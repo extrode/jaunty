@@ -40,7 +40,7 @@ internal static class FluentMetadataCache
                         $"No metadata found for type '{typeof(T).Name}'. " +
                         "Ensure the class has [Table] and is processed by the Extrode.Jaunty source generator " +
                         "(the class must be declared 'partial'), or call " +
-                        "Extrode.Jaunty.Extensions.Reflection's UseReflectionMapping().");
+                        "UseReflectionMapping() from Extrode.Jaunty.Extensions.Reflection inside JauntyConfig.Configure.");
 
         _metadataCache[typeof(T)] = new ConfigurationScoped<EntityMetadata>(generation, metadata);
         return metadata;

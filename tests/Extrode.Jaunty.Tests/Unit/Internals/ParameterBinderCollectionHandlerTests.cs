@@ -50,7 +50,7 @@ public class ParameterBinderCollectionHandlerTests : IDisposable
     [Fact]
     public void Bind_ANullHandledValue_IsBoundAsDbNullWithoutCallingTheHandler()
     {
-        JauntyConfig.RegisterTypeHandler(new NullAwareHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new NullAwareHandler()));
         using SqliteCommand command = Command("UPDATE handled_null SET Code = @Code");
 
         ParameterBinder.Bind(command, new CodeHolder { Code = null });
@@ -78,7 +78,7 @@ public class ParameterBinderCollectionHandlerTests : IDisposable
     [Fact]
     public void Bind_HandledCollection_BindsOneScalarThroughTheHandler()
     {
-        JauntyConfig.RegisterTypeHandler(new JoinedTagsHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new JoinedTagsHandler()));
         using SqliteCommand command = Command("UPDATE handled_t SET Tags = @Tags WHERE Id = @Id");
 
         ParameterBinder.Bind(command, new TagsHolder { Tags = ["a", "b"], Id = 1 });
@@ -90,7 +90,7 @@ public class ParameterBinderCollectionHandlerTests : IDisposable
     [Fact]
     public void Bind_NullHandledCollection_BindsDbNullInsteadOfAnEmptySet()
     {
-        JauntyConfig.RegisterTypeHandler(new JoinedTagsHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new JoinedTagsHandler()));
         using SqliteCommand command = Command("UPDATE handled_null SET Tags = @Tags WHERE Id = @Id");
 
         ParameterBinder.Bind(command, new TagsHolder { Tags = null, Id = 1 });
@@ -102,7 +102,7 @@ public class ParameterBinderCollectionHandlerTests : IDisposable
     [Fact]
     public void Bind_HandledCollectionInADictionary_BindsOneScalarThroughTheHandler()
     {
-        JauntyConfig.RegisterTypeHandler(new JoinedTagsHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new JoinedTagsHandler()));
         using SqliteCommand command = Command("UPDATE handled_dict SET Tags = @Tags WHERE Id = @Id");
 
         ParameterBinder.Bind(command, new Dictionary<string, object?> { ["Tags"] = new List<string> { "a", "b" }, ["Id"] = 1 });
@@ -114,7 +114,7 @@ public class ParameterBinderCollectionHandlerTests : IDisposable
     [Fact]
     public void Bind_UnhandledCollection_StillExpands()
     {
-        JauntyConfig.RegisterTypeHandler(new JoinedTagsHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new JoinedTagsHandler()));
         using SqliteCommand command = Command("SELECT 1 FROM unhandled WHERE Id IN @Ids");
 
         ParameterBinder.Bind(command, new { Ids = new[] { 1, 2 } });
@@ -125,7 +125,7 @@ public class ParameterBinderCollectionHandlerTests : IDisposable
     [Fact]
     public void Execute_HandledCollection_RoundTripsThroughSqlite()
     {
-        JauntyConfig.RegisterTypeHandler(new JoinedTagsHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new JoinedTagsHandler()));
         using var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
         connection.Execute("CREATE TABLE tagged (Id INTEGER, Tags TEXT)");

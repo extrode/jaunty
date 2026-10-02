@@ -32,9 +32,9 @@ public sealed class NameResolutionParityTests : IDisposable
 
     public void Dispose()
     {
-        JauntyConfig.TableNameResolver = null;
-        JauntyConfig.SchemaNameResolver = null;
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
     }
 
     private static string Snake(string name)
@@ -64,8 +64,8 @@ public sealed class NameResolutionParityTests : IDisposable
     [Fact]
     public void Resolvers_RenameTheDefaultedNames_AndTheAttributeNameWins()
     {
-        JauntyConfig.TableNameResolver = type => Snake(type.Name) + "s";
-        JauntyConfig.ColumnNameResolver = Snake;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = type => Snake(type.Name) + "s");
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = Snake);
 
         EntityMetadata metadata = MetadataBuilder.Build<ResolvedNameWidget>();
 
@@ -76,8 +76,8 @@ public sealed class NameResolutionParityTests : IDisposable
     [Fact]
     public void AResolverReturningNull_FallsBackToTheCSharpName()
     {
-        JauntyConfig.TableNameResolver = _ => null!;
-        JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? null! : Snake(name);
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => null!);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name == "DisplayName" ? null! : Snake(name));
 
         EntityMetadata metadata = MetadataBuilder.Build<ResolvedNameWidget>();
 
@@ -88,7 +88,7 @@ public sealed class NameResolutionParityTests : IDisposable
     [Fact]
     public void TheSchemaResolver_SuppliesTheSchema()
     {
-        JauntyConfig.SchemaNameResolver = _ => "main";
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => "main");
 
         Assert.Equal("main", MetadataBuilder.Build<ResolvedNameWidget>().SchemaName);
     }

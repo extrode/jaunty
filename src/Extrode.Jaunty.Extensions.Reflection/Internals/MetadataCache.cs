@@ -369,8 +369,8 @@ internal static class MetadataCache<T>
 
         Action<T, IDataRecord, int> fallback = CreateFallbackSetter(property, propertyType, underlyingType);
 
-        // TypeHandlerRegistry is mutable process-wide state (RegisterTypeHandler/RemoveTypeHandler
-        // can be called at any time, e.g. multi-tenant apps swapping handlers per request, or tests).
+        // TypeHandlerRegistry is process-wide state: JauntyConfig.Configure fills it at startup, and
+        // Reset() and Extrode.Jaunty's own tests change it later.
         // This setter is compiled once inside T's static constructor and reused for the lifetime of
         // the process, so the handler must be re-resolved on every call rather than captured once -
         // otherwise a handler registered/changed after T's first read would silently never apply.

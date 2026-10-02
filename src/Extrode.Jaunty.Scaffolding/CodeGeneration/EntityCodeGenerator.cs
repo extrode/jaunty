@@ -141,7 +141,7 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         // one for two of the four providers - MySqlSchemaReader hardcodes '' AS SchemaName and
         // SQLiteSchemaReader reports an empty schema (it reads `main` only) - so a SQLite table named `Customer` scaffolded to a `Customer`
         // class with no attribute, got no generated mapper, and silently fell back to reflection
-        // (or threw, if UseReflectionMapping() was never called) with nothing to indicate why.
+        // (or threw, if reflection mapping was not switched on) with nothing to indicate why.
         //
         // Set GenerateTableAttribute = false (--no-table-attr) if the attribute really is unwanted;
         // that is an explicit choice rather than an invisible consequence of a name matching.

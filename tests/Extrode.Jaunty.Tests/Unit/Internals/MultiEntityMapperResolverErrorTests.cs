@@ -21,8 +21,8 @@ public class MultiEntityMapperResolverErrorTests : IDisposable
 
     public void Dispose()
     {
-        JauntyConfig.ReflectionMultiMapperResolver = _resolver;
-        JauntyConfig.ReflectionMultiMapperResolverN = _resolverN;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = _resolver);
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = _resolverN);
         _connection.Dispose();
         GC.SuppressFinalize(this);
     }
@@ -45,7 +45,7 @@ public class MultiEntityMapperResolverErrorTests : IDisposable
     [Fact]
     public void Arity2_NoResolver_SaysToLoadTheExtension()
     {
-        JauntyConfig.ReflectionMultiMapperResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = null);
         using IDataReader reader = Reader();
 
         var ex = Assert.Throws<InvalidOperationException>(() => CoreRead.MultiEntityMapper<Left, Right>.Build(reader));
@@ -56,7 +56,7 @@ public class MultiEntityMapperResolverErrorTests : IDisposable
     [Fact]
     public void Arity2_AResolverReturningNull_IsNamedInsteadOfBlamingTheExtension()
     {
-        JauntyConfig.ReflectionMultiMapperResolver = (_, _) => null!;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = (_, _) => null!);
         using IDataReader reader = Reader();
 
         var ex = Assert.Throws<InvalidOperationException>(() => CoreRead.MultiEntityMapper<Right, Left>.Build(reader));
@@ -69,7 +69,7 @@ public class MultiEntityMapperResolverErrorTests : IDisposable
     [Fact]
     public void Arity2_AResolverReturningTheWrongType_NamesWhatItReturned()
     {
-        JauntyConfig.ReflectionMultiMapperResolver = (_, _) => "not a delegate";
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = (_, _) => "not a delegate");
         using IDataReader reader = Reader();
 
         var ex = Assert.Throws<InvalidOperationException>(() => CoreRead.MultiEntityMapper<Left, Other>.Build(reader));
@@ -81,7 +81,7 @@ public class MultiEntityMapperResolverErrorTests : IDisposable
     [Fact]
     public void Arity2_AStructEntityWithNoResolver_IsRejectedAsAStruct()
     {
-        JauntyConfig.ReflectionMultiMapperResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = null);
         using IDataReader reader = Reader();
 
         Assert.Throws<NotSupportedException>(() => CoreRead.MultiEntityMapper<Point, Left>.Build(reader));
@@ -90,7 +90,7 @@ public class MultiEntityMapperResolverErrorTests : IDisposable
     [Fact]
     public void Arity3_AStructEntityWithNoResolver_IsRejectedAsAStruct_LikeArity2()
     {
-        JauntyConfig.ReflectionMultiMapperResolverN = null;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = null);
         using IDataReader reader = Reader();
 
         var ex = Assert.Throws<NotSupportedException>(() => CoreRead.MultiEntityMapper<Point, Left, Right>.Build(reader));
@@ -101,7 +101,7 @@ public class MultiEntityMapperResolverErrorTests : IDisposable
     [Fact]
     public void ArityFourToSeven_AStructEntityWithNoResolver_IsRejectedAsAStruct()
     {
-        JauntyConfig.ReflectionMultiMapperResolverN = null;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = null);
         using IDataReader reader = Reader();
 
         Assert.Throws<NotSupportedException>(() => CoreRead.MultiEntityMapper<Left, Point, Right, Other>.Build(reader));

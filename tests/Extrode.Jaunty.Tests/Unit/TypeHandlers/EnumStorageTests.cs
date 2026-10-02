@@ -23,7 +23,7 @@ public class EnumStorageTests : IDisposable
         // Only restore the specific state this test class mutates.
         // Do NOT call JauntyConfig.Reset() — it wipes ReflectionMapperResolver,
         // causing cross-test mapper failures when running in parallel.
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
     }
 
     #region Attribute Tests
@@ -70,7 +70,7 @@ public class EnumStorageTests : IDisposable
     public void DefaultEnumStorage_CanBeChangedToString()
     {
         // Arrange & Act
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         // Assert
         Assert.Equal(EnumStorage.String, JauntyConfig.DefaultEnumStorage);
@@ -80,10 +80,10 @@ public class EnumStorageTests : IDisposable
     public void DefaultEnumStorage_CanBeChangedBackToNumeric()
     {
         // Arrange
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         // Act
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
 
         // Assert
         Assert.Equal(EnumStorage.Numeric, JauntyConfig.DefaultEnumStorage);
@@ -93,7 +93,7 @@ public class EnumStorageTests : IDisposable
     public void DefaultEnumStorage_ResetRestores()
     {
         // Arrange
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared with
         // the "Logging Extensions" collection (running concurrently as a different xunit

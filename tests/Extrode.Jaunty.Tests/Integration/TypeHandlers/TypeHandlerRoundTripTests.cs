@@ -24,8 +24,8 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         // Only remove the specific handlers and state this class may have registered.
         // Do NOT call JauntyConfig.Reset() -- it wipes ReflectionMapperResolver,
         // causing cross-test mapper failures when running in parallel.
-        JauntyConfig.RemoveTypeHandler<string>();
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        TypeHandlerRegistry.Remove<string>();
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
     }
 
     // Must match TypeHandlerTestEntity's [Table(...)] mapping - Insert<T>/Query<T> resolve
@@ -126,7 +126,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
     [SystemSqlite]
     public void GlobalEnumStorage_String_RoundTrips(DialectInfo dialect)
     {
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         using var ctx = _fixture.GetWriteContext(dialect);
         CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
@@ -152,7 +152,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
     [SystemSqlite]
     public void DelegateBasedTypeHandler_StringDelegateRoundTrip_HandlerInvoked(DialectInfo dialect)
     {
-        JauntyConfig.RegisterTypeHandler<string>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(
             fromDb: dbValue =>
             {
                 if (dbValue is null || dbValue == DBNull.Value)
@@ -168,7 +168,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
                     return value.Substring("HANDLED:".Length);
                 return value;
             }
-        );
+        ));
 
         using var ctx = _fixture.GetWriteContext(dialect);
         CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
@@ -193,7 +193,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
     public void ClassBasedTypeHandler_SubclassRoundTrip_HandlerInvoked(DialectInfo dialect)
     {
         var handler = new PrefixTypeHandler();
-        JauntyConfig.RegisterTypeHandler<string>(handler);
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(handler));
 
         using var ctx = _fixture.GetWriteContext(dialect);
         CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
@@ -352,9 +352,9 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
             $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
 
         int toDbInvocations = 0;
-        JauntyConfig.RegisterTypeHandler<long>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<long>(
             fromDb: dbValue => Convert.ToInt64(dbValue),
-            toDb: value => { toDbInvocations++; return value; });
+            toDb: value => { toDbInvocations++; return value; }));
         try
         {
             var fetched = ctx.Connection.Get<TypeHandlerTestEntity>(inserted.Id);
@@ -364,7 +364,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         }
         finally
         {
-            JauntyConfig.RemoveTypeHandler<long>();
+            TypeHandlerRegistry.Remove<long>();
         }
     }
 
@@ -381,9 +381,9 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
             $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
 
         int toDbInvocations = 0;
-        JauntyConfig.RegisterTypeHandler<long>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<long>(
             fromDb: dbValue => Convert.ToInt64(dbValue),
-            toDb: value => { toDbInvocations++; return value; });
+            toDb: value => { toDbInvocations++; return value; }));
         try
         {
             int rowsDeleted = ctx.Connection.Delete<TypeHandlerTestEntity>(inserted.Id);
@@ -393,7 +393,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         }
         finally
         {
-            JauntyConfig.RemoveTypeHandler<long>();
+            TypeHandlerRegistry.Remove<long>();
         }
     }
 
@@ -421,9 +421,9 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         using var transaction = connection.BeginTransaction();
 
         int toDbInvocations = 0;
-        JauntyConfig.RegisterTypeHandler<decimal>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<decimal>(
             fromDb: dbValue => Convert.ToDecimal(dbValue),
-            toDb: value => { toDbInvocations++; return value; });
+            toDb: value => { toDbInvocations++; return value; }));
         try
         {
             var parameters = new SpParameters()
@@ -442,7 +442,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         finally
         {
             transaction.Rollback();
-            JauntyConfig.RemoveTypeHandler<decimal>();
+            TypeHandlerRegistry.Remove<decimal>();
         }
     }
 

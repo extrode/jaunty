@@ -17,7 +17,7 @@ public class SpecialTypeMapperValidationTests
 {
     private static Func<Type, IDataReader, object> Resolver()
     {
-        SpecialTypeMappers.Register();
+        JauntyConfig.Reconfigure(SpecialTypeMappers.Register);
         return JauntyConfig.SpecialTypeMapperResolver!;
     }
 

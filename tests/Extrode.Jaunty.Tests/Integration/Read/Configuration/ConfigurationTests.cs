@@ -41,8 +41,8 @@ public class ConfigurationTests : IClassFixture<DialectFixture>, IDisposable
     public void JauntyConfig_Reset_ClearsConfiguration(DialectInfo dialect)
     {
         // Set some configuration
-        JauntyConfig.ColumnNameResolver = _ => "custom_column";
-        JauntyConfig.TableNameResolver = _ => "custom_table";
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = _ => "custom_column");
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => "custom_table");
 
         // Verify it's set
         Assert.NotNull(JauntyConfig.ColumnNameResolver);
@@ -68,7 +68,7 @@ public class ConfigurationTests : IClassFixture<DialectFixture>, IDisposable
 
         // Custom resolver maps a property with no [Column] attribute to a SQL alias the
         // default (property-name) resolution would never produce.
-        JauntyConfig.ColumnNameResolver = propertyName => $"resolved_{propertyName.ToLower()}";
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = propertyName => $"resolved_{propertyName.ToLower()}");
 
         // If the resolver isn't actually consulted by the mapping pipeline, "Value" would
         // never bind to the "resolved_value" column and this would come back as the
@@ -91,7 +91,7 @@ public class ConfigurationTests : IClassFixture<DialectFixture>, IDisposable
         // TableResolverProbe has no [Table] attribute, so without the resolver its default
         // table name ("TableResolverProbe") doesn't exist and Get<T> would throw. Redirecting
         // it to the real "categories" table proves the resolver is what determined the SQL.
-        JauntyConfig.TableNameResolver = type => type == typeof(TableResolverProbe) ? "categories" : type.Name;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = type => type == typeof(TableResolverProbe) ? "categories" : type.Name);
 
         var category = connection.Get<TableResolverProbe>(1);
 

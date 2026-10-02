@@ -34,7 +34,7 @@ namespace Extrode.Jaunty.Tests.Unit.Interceptors;
 [Collection("Extrode.Jaunty Config State")]
 public class ByIdParameterNameTests : IDisposable
 {
-    public ByIdParameterNameTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public ByIdParameterNameTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     public void Dispose()
     {

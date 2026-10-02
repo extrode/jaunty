@@ -17,11 +17,11 @@ namespace Extrode.Jaunty.Tests.Unit.Extensions.Reflection;
 [Collection("Configuration Operations")]
 public class MetadataCacheSnapshotResolverTests : IDisposable
 {
-    public MetadataCacheSnapshotResolverTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public MetadataCacheSnapshotResolverTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     public void Dispose()
     {
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         GC.SuppressFinalize(this);
     }
 
@@ -36,9 +36,9 @@ public class MetadataCacheSnapshotResolverTests : IDisposable
 
     private static MetadataCache<Row>.Snapshot SnapshotUnderOldResolverThenSwap()
     {
-        JauntyConfig.ColumnNameResolver = name => "old_" + name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => "old_" + name);
         MetadataCache<Row>.Snapshot snapshot = MetadataCache<Row>.CurrentSnapshot;
-        JauntyConfig.ColumnNameResolver = name => "new_" + name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => "new_" + name);
         return snapshot;
     }
 

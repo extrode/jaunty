@@ -42,9 +42,9 @@ public class ReflectionSetterCachingTests : IDisposable
 {
     private readonly Func<string, string>? _originalResolver = JauntyConfig.ColumnNameResolver;
 
-    public ReflectionSetterCachingTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public ReflectionSetterCachingTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
-    public void Dispose() => JauntyConfig.ColumnNameResolver = _originalResolver;
+    public void Dispose() => JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = _originalResolver);
 
     [Table("setter_caching_widgets")]
     public class Widget
@@ -157,11 +157,11 @@ public class ReflectionSetterCachingTests : IDisposable
     [Fact]
     public void ChangingTheColumnNameResolver_RebuildsSetters()
     {
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         var reader = new RecycledReader(["Id", "Name"], [1, "one"]);
         PropertySetter<Widget>[] withoutResolver = MetadataCache<Widget>.GetSetters(reader, MappingMode.Projection);
 
-        JauntyConfig.ColumnNameResolver = static name => name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name => name);
         PropertySetter<Widget>[] withResolver = MetadataCache<Widget>.GetSetters(reader, MappingMode.Projection);
 
         Assert.NotSame(withoutResolver, withResolver);
@@ -173,11 +173,11 @@ public class ReflectionSetterCachingTests : IDisposable
         // The reader memo is only the first of two caches. This one goes past it to the shared
         // SettersCache, whose key omitted the resolver entirely - so a *different* reader of the
         // same shape got the stale entry even with the memo working correctly.
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         PropertySetter<Widget>[] withoutResolver = MetadataCache<Widget>.GetSetters(
             new RecycledReader(["Id", "Name"], [1, "one"]), MappingMode.Projection);
 
-        JauntyConfig.ColumnNameResolver = static name => name.ToUpperInvariant();
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name => name.ToUpperInvariant());
         PropertySetter<Widget>[] withResolver = MetadataCache<Widget>.GetSetters(
             new RecycledReader(["Id", "Name"], [1, "one"]), MappingMode.Projection);
 
@@ -189,7 +189,7 @@ public class ReflectionSetterCachingTests : IDisposable
     {
         // Reference equality is the comparison, so a stable delegate must not defeat caching.
         Func<string, string> resolver = static name => name;
-        JauntyConfig.ColumnNameResolver = resolver;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = resolver);
 
         var reader = new RecycledReader(["Id", "Name"], [1, "one"]);
         PropertySetter<Widget>[] first = MetadataCache<Widget>.GetSetters(reader, MappingMode.Strict);

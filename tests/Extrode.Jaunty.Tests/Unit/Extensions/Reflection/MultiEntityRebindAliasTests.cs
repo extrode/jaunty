@@ -18,7 +18,7 @@ public class MultiEntityRebindAliasTests : IDisposable
 {
     public void Dispose()
     {
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         GC.SuppressFinalize(this);
     }
 
@@ -63,7 +63,7 @@ public class MultiEntityRebindAliasTests : IDisposable
         // and the old name-string search happened to find it too. Kept because the resolver index
         // in BuildSetters is a second, independent route to the same binding, and a change to
         // either side would show up here.
-        JauntyConfig.ColumnNameResolver = static name => name == nameof(Plain.OrderId) ? "order_id" : name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name => name == nameof(Plain.OrderId) ? "order_id" : name);
 
         var reader = new StubReader(["order_id", "order_id"], [7, 9]);
 

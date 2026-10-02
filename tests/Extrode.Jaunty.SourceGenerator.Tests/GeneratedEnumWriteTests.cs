@@ -45,12 +45,12 @@ public sealed class GeneratedEnumWriteTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+            JauntyConfig.Reconfigure(c => c.DefaultEnumStorage = EnumStorage.String);
             GenTicket.Jaunty.BindInsert(command, new GenTicket { StateDefault = GenTicketState.Open });
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(c => c.DefaultEnumStorage = original);
         }
 
         Assert.Contains(command.Bound, p => p.ParameterName == "@state_default" && Equals(p.Value, "Open"));
