@@ -284,7 +284,6 @@ public class VisitorColumnResolutionTests
         var visitor = new ExistsExpressionVisitor<Product, Category>(
             _dialect,
             FluentMetadataCache.GetMetadata<Product>(),
-            FluentMetadataCache.GetMetadata<Category>(),
             outerAlias: "p",
             subqueryAlias: "c");
 
@@ -303,7 +302,6 @@ public class VisitorColumnResolutionTests
 
         var visitor = new ExistsExpressionVisitor<KeywordColumnEntity, KeywordColumnEntity>(
             _dialect,
-            FluentMetadataCache.GetMetadata<KeywordColumnEntity>(),
             FluentMetadataCache.GetMetadata<KeywordColumnEntity>(),
             outerAlias: "a",
             subqueryAlias: "b");

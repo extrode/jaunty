@@ -39,7 +39,7 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
             GroupedJoinTablePrefixes.Resolve(_parent.Dialect, _parent.FromAlias, _metadata[0]),
             GroupedJoinTablePrefixes.Resolve(_parent.Dialect, _parent.Joins[0].Alias, _metadata[1]),
         ];
-        _visitor = new JoinedGroupByExpressionVisitor(_parent.Dialect, _metadata, cachedMetadata, tablePrefixes, keySelector);
+        _visitor = new JoinedGroupByExpressionVisitor(_parent.Dialect, cachedMetadata, tablePrefixes, keySelector);
     }
 
     public IGroupedJoinedQuery<TFrom, TJoin, TKey> Having(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, bool>> predicate)

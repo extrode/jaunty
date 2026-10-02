@@ -2034,7 +2034,7 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         var subqueryAlias = $"{subqueryMetadata.TableName}_ex";
 
         // Use ExistsExpressionVisitor to translate the correlation predicate
-        var visitor = new ExistsExpressionVisitor<T, TSubquery>(_dialect, _metadata, subqueryMetadata, _alias, subqueryAlias, _whereParamCounts);
+        var visitor = new ExistsExpressionVisitor<T, TSubquery>(_dialect, _metadata, _alias, subqueryAlias, _whereParamCounts);
 
         // AUD-R35: the outer prefix is the alias whenever one was supplied, so from here on the
         // conditions name it and any write terminal has to declare it - which DELETE/UPDATE cannot.

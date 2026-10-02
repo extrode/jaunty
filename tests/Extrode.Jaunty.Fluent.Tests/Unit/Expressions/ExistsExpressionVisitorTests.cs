@@ -20,7 +20,6 @@ public class ExistsExpressionVisitorTests
         var visitor = new ExistsExpressionVisitor<Product, Category>(
             _dialect,
             FluentMetadataCache.GetMetadata<Product>(),
-            FluentMetadataCache.GetMetadata<Category>(),
             "p",
             "c");
 
@@ -40,7 +39,6 @@ public class ExistsExpressionVisitorTests
         var visitor = new ExistsExpressionVisitor<Product, Category>(
             _dialect,
             FluentMetadataCache.GetMetadata<Product>(),
-            FluentMetadataCache.GetMetadata<Category>(),
             "p",
             "c");
 

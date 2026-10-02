@@ -22,7 +22,6 @@ public class ExistsVisitorTranslationTests
         => new(
             dialect,
             FluentMetadataCache.GetMetadata<Category>(),
-            FluentMetadataCache.GetMetadata<Product>(),
             "c",
             "p");
 

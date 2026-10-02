@@ -176,7 +176,7 @@ internal static class ParameterBinder
         }
 
         // Standard query: build and cache template
-        template = BuildTemplate(type, sql, sqlParamNames, propertyLookup, meta);
+        template = BuildTemplate(type, sqlParamNames, propertyLookup, meta);
         TemplateCache.TryAdd((sql, type, commandType), template);
         template.Bind(command, parameters);
     }
@@ -213,7 +213,7 @@ internal static class ParameterBinder
             && template!.TryRebind(command, parameters);
     }
 
-    private static CommandTemplate BuildTemplate(Type type, string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
+    private static CommandTemplate BuildTemplate(Type type, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
     {
         var boundNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var items = new List<TemplateItem>(JauntyConfig.ParameterParsingCapacity);

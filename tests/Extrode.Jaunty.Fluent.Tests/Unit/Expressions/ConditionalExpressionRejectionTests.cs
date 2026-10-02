@@ -109,7 +109,6 @@ public class ConditionalExpressionRejectionTests
         var visitor = new ExistsExpressionVisitor<Product, Category>(
             _dialect,
             FluentMetadataCache.GetMetadata<Product>(),
-            FluentMetadataCache.GetMetadata<Category>(),
             "p",
             "c");
 
@@ -143,7 +142,6 @@ public class ConditionalExpressionRejectionTests
         var (existsSql, _) = new ExistsExpressionVisitor<Product, Category>(
             _dialect,
             FluentMetadataCache.GetMetadata<Product>(),
-            FluentMetadataCache.GetMetadata<Category>(),
             "p",
             "c").Translate(plain);
 

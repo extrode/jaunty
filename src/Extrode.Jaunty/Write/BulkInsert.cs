@@ -242,7 +242,7 @@ public static partial class Jaunty
                     // binding in Microsoft.Data.Sqlite, measured ~16x slower (PROD-120).
                     if (dialect.SupportsMultiRowInsert && entityList.Count > 1 && !IsSqliteDialect(dialect))
                     {
-                        totalInserted = BulkInsertMultiRow(connection, entityList, cached, dialect, transaction, options, valueSetter);
+                        totalInserted = BulkInsertMultiRow(connection, entityList, cached, dialect, transaction, options);
                     }
                     else
                     {
@@ -361,7 +361,7 @@ public static partial class Jaunty
     /// Multi-row INSERT path: batches entities into INSERT ... VALUES (...), (...), ... statements.
     /// Dramatically reduces round-trips compared to individual INSERTs.
     /// </summary>
-    private static int BulkInsertMultiRow<T>(IDbConnection connection, IList<T> entityList, CachedCrudSql cached, ISqlDialect dialect, IDbTransaction? transaction, CommandOptions options, Action<IDataParameterCollection, T> valueSetter) where T : new()
+    private static int BulkInsertMultiRow<T>(IDbConnection connection, IList<T> entityList, CachedCrudSql cached, ISqlDialect dialect, IDbTransaction? transaction, CommandOptions options) where T : new()
     {
         IReadOnlyList<ColumnMetadata> insertableColumns = cached.Metadata.InsertColumns;
         int colCount = insertableColumns.Count;

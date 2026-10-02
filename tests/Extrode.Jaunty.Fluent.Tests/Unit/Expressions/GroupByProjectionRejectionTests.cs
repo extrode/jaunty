@@ -37,13 +37,13 @@ public class GroupByProjectionRejectionTests
     private JoinedGroupByExpressionVisitor CompositeJoinedVisitor()
     {
         Expression<Func<Product, Category, object>> keySelector = (p, c) => new { p.CategoryId, c.CategoryName };
-        return new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
+        return new JoinedGroupByExpressionVisitor(_dialect, _cachedMetadata, new[] { "p", "c" }, keySelector);
     }
 
     private JoinedGroupByExpressionVisitor SingleKeyJoinedVisitor()
     {
         Expression<Func<Product, Category, object>> keySelector = (p, c) => p.CategoryId;
-        return new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
+        return new JoinedGroupByExpressionVisitor(_dialect, _cachedMetadata, new[] { "p", "c" }, keySelector);
     }
 
     // ------------------------------------------------------------------
@@ -240,7 +240,7 @@ public class GroupByProjectionRejectionTests
         Expression<Func<Product, Category, object>> keySelector = (p, c) => p.CategoryId + 1;
 
         var ex = Assert.Throws<NotSupportedException>(() =>
-            new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector));
+            new JoinedGroupByExpressionVisitor(_dialect, _cachedMetadata, new[] { "p", "c" }, keySelector));
 
         Assert.Equal("Cannot extract GROUP BY columns from expression type 'Add'.", ex.Message);
     }
@@ -251,7 +251,7 @@ public class GroupByProjectionRejectionTests
         Expression<Func<Product, Category, object>> keySelector = (p, c) => new { p.CategoryId, Next = p.CategoryId + 1 };
 
         var ex = Assert.Throws<NotSupportedException>(() =>
-            new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector));
+            new JoinedGroupByExpressionVisitor(_dialect, _cachedMetadata, new[] { "p", "c" }, keySelector));
 
         Assert.Equal("GROUP BY key must be property expressions.", ex.Message);
     }
