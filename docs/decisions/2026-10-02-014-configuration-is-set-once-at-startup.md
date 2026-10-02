@@ -141,15 +141,31 @@ stale error messages and remarks were reworded.
 
 A correctness and a consequence review of the implementation found, and the branch fixed:
 
-- **A first read racing `Configure` could still mix settings.** The read flag was checked only
-  before the callback ran. `Configure` now re-checks it after publishing, with a full barrier on
-  both sides, and on a hit restores the previous settings and throws.
+- **A first read racing `Configure` went undetected.** The read flag was checked only before the
+  callback ran. `Configure` now re-checks it after publishing, with a full barrier on both sides,
+  and on a hit restores the previous settings and throws. This detects the race; it does not
+  prevent it. An operation that reads three times can see old, new, then old settings across the
+  publish and the rollback, so it may fail while `Configure` throws. Both sides fail loudly, which
+  is acceptable for a user race; only a per-operation snapshot (option B) or a reader lock would
+  close it.
 - **`new MyHandler()` made a repeated `Configure` throw.** Type handlers now compare by type.
 - **`if (!IsConfigured) Configure(...)` is check-then-act,** so parallel test hosts raced.
   `TryConfigure` is the atomic form: the first call applies, later calls skip without running.
 - **A failing `Configure` could leave reflection mapping uninstalled** when `Jaunty`'s static
   constructor ran during it; the install is now retried. `Reset` waits for a `Configure` in
   flight, and an older Extensions.Reflection package is recorded as an error rather than absent.
+
+A follow-up review by Fable (same `config-f3` session) found, and `fix/configure-fable-review`
+fixed:
+
+- **The older-package check could never fire.** It compared `AssemblyName.Version`, but releases set
+  only the package version, so every assembly is 1.0.0.0 and rc.2 next to rc.3 compared equal. It
+  now compares the package version from `AssemblyInformationalVersionAttribute`, without build
+  metadata, and reports any mismatch.
+- **`Reset` released the state before clearing the read flag,** so a `Configure` waiting on it could
+  pass and then throw "already read". The state is now released last.
+- The docs understated first use (any mapping-setting getter counts) and overstated the race fix
+  above; the module-initializer test setup gained its limits.
 
 Kept by design: a broken Extensions.Reflection assembly (`FileLoadException`,
 `BadImageFormatException`) makes `Configure` throw rather than record and carry on, since it is a
