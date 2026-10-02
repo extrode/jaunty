@@ -5,7 +5,6 @@ using Extrode.Jaunty.Fluent.Expressions;
 using Extrode.Jaunty.Fluent.Internals;
 using Extrode.Jaunty.Fluent.Tests.Entities;
 using Extrode.Jaunty.Fluent.Tests.Helpers;
-using Extrode.Jaunty.Internals.Entity;
 
 using Xunit;
 
@@ -17,13 +16,7 @@ namespace Extrode.Jaunty.Fluent.Tests.Unit.Expressions;
 public class JoinedGroupByExpressionVisitorTests
 {
     private readonly TestDialect _dialect = new();
-    private readonly EntityMetadata[] _metadata =
-    {
-        FluentMetadataCache.GetMetadata<Product>(),
-        FluentMetadataCache.GetMetadata<Category>()
-    };
-
-    // AUD-R26-058: parallel to _metadata, in the same order. The visitor is non-generic - one
+    // AUD-R26-058: one entry per joined entity, in join order. The visitor is non-generic - one
     // implementation serves arities 2, 3 and 4 - so its callers supply the pre-escaped per-dialect
     // metadata rather than it resolving the cache entries itself.
     private readonly CachedDialectMetadata[] _cachedMetadata;
