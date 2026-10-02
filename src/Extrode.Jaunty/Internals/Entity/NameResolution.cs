@@ -25,12 +25,18 @@ namespace Extrode.Jaunty.Internals.Entity;
 internal static class NameResolution
 {
     /// <summary>The table name: <paramref name="attributeName"/> if non-empty, else <c>TableNameResolver</c>, else the type's name.</summary>
-    public static string Table(Type entityType, string? attributeName)
+    public static string Table(Type entityType, string? attributeName) => Table(entityType, attributeName, entityType.Name);
+
+    /// <summary>
+    /// The table name with a caller-chosen last resort. FlatFiles passes the lowercased type name,
+    /// its default since before the resolvers existed, so only that last step differs from core.
+    /// </summary>
+    public static string Table(Type entityType, string? attributeName, string defaultName)
     {
         if (!string.IsNullOrEmpty(attributeName))
             return attributeName!;
 
-        return JauntyConfig.TableNameResolver?.Invoke(entityType) ?? entityType.Name;
+        return JauntyConfig.TableNameResolver?.Invoke(entityType) ?? defaultName;
     }
 
     /// <summary>The schema name: <paramref name="attributeSchema"/> if non-empty, else <c>SchemaNameResolver</c>, else none.</summary>
