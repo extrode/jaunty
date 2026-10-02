@@ -1,3 +1,4 @@
+using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Fluent.Tests.Entities;
 using Extrode.Jaunty.Fluent.Tests.Helpers;
 
@@ -60,6 +61,37 @@ public class PagedWriteRuntimeGuardTests : IDisposable
         var query = (QueryBuilder<Product>)_db.Connection.From<Product>().Distinct().Take(1);
 
         Assert.Throws<InvalidOperationException>(() => query.ToDeleteSql());
+    }
+
+    [Fact]
+    public void TheDocumentedWorkaround_WritesOnlyThePagedRows()
+    {
+        int before = ProductCount();
+        using var tx = _db.Connection.BeginTransaction();
+        var options = CommandOptions.WithTransaction(tx);
+
+        List<int> ids = _db.Connection.From<Product>()
+            .OrderBy(p => p.ProductId)
+            .Take(2)
+            .Select(options)
+            .ConvertAll(p => p.ProductId);
+
+        int updated = _db.Connection.From<Product>()
+            .Set(p => p.ProductName, "Archived")
+            .WhereIn(p => p.ProductId, ids)
+            .Update(options);
+
+        int deleted = _db.Connection.From<Product>()
+            .WhereIn(p => p.ProductId, ids)
+            .Delete(options);
+
+        tx.Commit();
+
+        Assert.Equal(2, ids.Count);
+        Assert.Equal(2, updated);
+        Assert.Equal(2, deleted);
+        Assert.Equal(before - 2, ProductCount());
+        Assert.Equal(0, _db.Connection.From<Product>().WhereIn(p => p.ProductId, ids).Count());
     }
 
     [Fact]
