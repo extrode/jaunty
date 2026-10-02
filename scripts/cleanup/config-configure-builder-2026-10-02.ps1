@@ -34,7 +34,7 @@ Write-Host ''
 
 # --- 1. Merged branch (git branch -d) -----------------------------------------
 Write-Host '--- 1. merged branch (git branch -d)'
-foreach ($b in @('feat/config-configure-builder')) {
+foreach ($b in @('feat/config-configure-builder', 'fix/configure-fable-review', 'chore/cleanup-fable-review')) {
   git rev-parse --verify --quiet "refs/heads/$b" *> $null
   if ($LASTEXITCODE -ne 0) { Write-Host "  skip: $b no longer exists"; continue }
   if ($Execute) {
@@ -47,7 +47,7 @@ Write-Host ''
 
 # --- 2. Scratch projects in tmp/ ----------------------------------------------
 Write-Host '--- 2. scratch projects in tmp/'
-foreach ($rel in @('tmp/guide-check', 'tmp/sqlite-probe', 'tmp/aotsmoke-pub')) {
+foreach ($rel in @('tmp/guide-check', 'tmp/sqlite-probe', 'tmp/aotsmoke-pub', 'tmp/fable-check')) {
   if (-not (Test-Path $rel)) { Write-Host "  skip: $rel no longer exists"; continue }
   git ls-files --error-unmatch -- $rel *> $null
   if ($LASTEXITCODE -eq 0) {
@@ -61,6 +61,6 @@ foreach ($rel in @('tmp/guide-check', 'tmp/sqlite-probe', 'tmp/aotsmoke-pub')) {
 Write-Host ''
 
 Write-Host '--- remaining state'
-git branch --list 'feat/config-configure-builder'
-foreach ($rel in @('tmp/guide-check', 'tmp/sqlite-probe', 'tmp/aotsmoke-pub')) { if (Test-Path $rel) { Write-Host "  still present: $rel" } }
+git branch --list 'feat/config-configure-builder' 'fix/configure-fable-review' 'chore/cleanup-fable-review'
+foreach ($rel in @('tmp/guide-check', 'tmp/sqlite-probe', 'tmp/aotsmoke-pub', 'tmp/fable-check')) { if (Test-Path $rel) { Write-Host "  still present: $rel" } }
 if ($Execute -and $Failed) { exit 1 }
