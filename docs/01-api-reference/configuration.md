@@ -26,8 +26,9 @@ another. Setting them once removes that window. See
 are upgrading code that assigned these properties directly,
 [Upgrading to `JauntyConfig.Configure`](../06-releases/upgrading-to-configure.md).
 
-- **Call it before anything touches Jaunty.** A query, a Fluent query or a generated member such
-  as `Product.Jaunty.TableName` counts as first use, and `Configure` after that throws.
+- **Call it before anything touches Jaunty.** A query, a Fluent query, a generated member such
+  as `Product.Jaunty.TableName`, or reading a mapping setting such as
+  `JauntyConfig.DefaultEnumStorage` counts as first use, and `Configure` after that throws.
 - **A second call with the same settings does nothing; with different settings it throws.**
   Delegates compare equal when they refer to the same method on the same target, which holds for
   method groups and for lambdas that capture nothing; type handlers compare by their type, so
