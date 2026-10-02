@@ -23,7 +23,7 @@ public sealed class GeneratedEnumWriteTests
     {
         var command = new StubCommand();
 
-        GenTicket.BindInsert(command, new GenTicket { StateString = GenTicketState.Closed });
+        GenTicket.Jaunty.BindInsert(command, new GenTicket { StateString = GenTicketState.Closed });
 
         Assert.Contains(command.Bound, p => p.ParameterName == "@state_string" && Equals(p.Value, "Closed"));
     }
@@ -33,7 +33,7 @@ public sealed class GeneratedEnumWriteTests
     {
         var command = new StubCommand();
 
-        GenTicket.BindInsert(command, new GenTicket { StateNumeric = GenTicketState.Closed });
+        GenTicket.Jaunty.BindInsert(command, new GenTicket { StateNumeric = GenTicketState.Closed });
 
         Assert.Contains(command.Bound, p => p.ParameterName == "@state_numeric" && Equals(p.Value, (int)GenTicketState.Closed));
     }
@@ -46,7 +46,7 @@ public sealed class GeneratedEnumWriteTests
         try
         {
             JauntyConfig.DefaultEnumStorage = EnumStorage.String;
-            GenTicket.BindInsert(command, new GenTicket { StateDefault = GenTicketState.Open });
+            GenTicket.Jaunty.BindInsert(command, new GenTicket { StateDefault = GenTicketState.Open });
         }
         finally
         {
@@ -61,7 +61,7 @@ public sealed class GeneratedEnumWriteTests
     {
         var command = new StubCommand();
 
-        GenTicket.BindInsert(command, new GenTicket { StateNullable = null });
+        GenTicket.Jaunty.BindInsert(command, new GenTicket { StateNullable = null });
 
         Assert.Contains(command.Bound, p => p.ParameterName == "@state_nullable" && Equals(p.Value, DBNull.Value));
     }
@@ -72,7 +72,7 @@ public sealed class GeneratedEnumWriteTests
     [InlineData("state_nullable", EnumStorage.String)]
     public void EntityColumns_ExplicitStorage_CarriesTheOverride(string columnName, EnumStorage expected)
     {
-        EntityColumnInfo column = GenTicket.EntityColumns.Single(c => c.ColumnName == columnName);
+        EntityColumnInfo column = GenTicket.Jaunty.EntityColumns.Single(c => c.ColumnName == columnName);
 
         Assert.Equal(expected, column.EnumStorageOverride);
     }
@@ -80,7 +80,7 @@ public sealed class GeneratedEnumWriteTests
     [Fact]
     public void EntityColumns_NoAttribute_CarriesNoOverride()
     {
-        EntityColumnInfo column = GenTicket.EntityColumns.Single(c => c.ColumnName == "state_default");
+        EntityColumnInfo column = GenTicket.Jaunty.EntityColumns.Single(c => c.ColumnName == "state_default");
 
         Assert.Null(column.EnumStorageOverride);
     }
@@ -88,7 +88,7 @@ public sealed class GeneratedEnumWriteTests
     [Fact]
     public void EntityColumns_NonEnumColumn_CarriesNoOverride()
     {
-        EntityColumnInfo column = GenTicket.EntityColumns.Single(c => c.ColumnName == "ticket_id");
+        EntityColumnInfo column = GenTicket.Jaunty.EntityColumns.Single(c => c.ColumnName == "ticket_id");
 
         Assert.Null(column.EnumStorageOverride);
     }
@@ -98,7 +98,7 @@ public sealed class GeneratedEnumWriteTests
     {
         var command = new StubCommand();
 
-        GenTicket.BindInsert(command, new GenTicket { StateNullable = GenTicketState.Open });
+        GenTicket.Jaunty.BindInsert(command, new GenTicket { StateNullable = GenTicketState.Open });
 
         Assert.Contains(command.Bound, p => p.ParameterName == "@state_nullable" && Equals(p.Value, "Open"));
     }
@@ -108,7 +108,7 @@ public sealed class GeneratedEnumWriteTests
     {
         var command = new StubCommand();
 
-        GenTicket.BindUpdate(command, new GenTicket { TicketId = 7, StateString = GenTicketState.Open });
+        GenTicket.Jaunty.BindUpdate(command, new GenTicket { TicketId = 7, StateString = GenTicketState.Open });
 
         Assert.Contains(command.Bound, p => p.ParameterName == "@state_string" && Equals(p.Value, "Open"));
         Assert.Contains(command.Bound, p => p.ParameterName == "@ticket_id" && Equals(p.Value, 7));
