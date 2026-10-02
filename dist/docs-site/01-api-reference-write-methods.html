@@ -330,6 +330,24 @@ conversion from <code>CommandOptions&lt;T&gt;</code> compiles and silently drops
 <p>The primary key on the entity decides: a row with that key is updated, otherwise one is inserted.
 Jaunty emits the dialect's native form - <code>MERGE</code> on SQL Server, <code>INSERT ... ON CONFLICT</code> on
 PostgreSQL and SQLite, <code>INSERT ... ON DUPLICATE KEY UPDATE</code> on MySQL.</p>
+<p>A database-generated key (identity, auto-increment, a sequence default) is not in the INSERT, so
+those native forms could never see the conflict. For such an entity every dialect behaves like
+SQL Server's <code>MERGE</code>: a key that matches a row updates it, and any other value, including an
+unset <code>0</code>, inserts a new row whose key the database assigns. Outside SQL Server that runs as one
+command holding two statements:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">UPDATE</span> products <span class="tok-kw">SET</span> name = <span class="tok-var">@name</span>, price = <span class="tok-var">@price</span> <span class="tok-kw">WHERE</span> id = <span class="tok-var">@id</span>;
+<span class="tok-kw">INSERT</span> <span class="tok-kw">INTO</span> products (name, price) <span class="tok-kw">SELECT</span> <span class="tok-var">@name</span>, <span class="tok-var">@price</span>
+    <span class="tok-kw">WHERE</span> <span class="tok-kw">NOT</span> <span class="tok-kw">EXISTS</span> (<span class="tok-kw">SELECT</span> <span class="tok-num">1</span> <span class="tok-kw">FROM</span> products <span class="tok-kw">WHERE</span> id = <span class="tok-var">@id</span>)
+</code></pre>
+</div>
+<p>MySQL adds <code>FROM DUAL</code> before the <code>WHERE</code>. The assigned key is not written back to the entity;
+call <code>Insert</code> when you need it. Two concurrent upserts of the same new row can both insert, so
+run them in a transaction if that matters.</p>
 <p><code>InvalidOperationException</code> is thrown when the entity has no primary key, when the dialect does
 not support upsert, or when there are no upsertable columns.</p>
 <div class="code-block">
