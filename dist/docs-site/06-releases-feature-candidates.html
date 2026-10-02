@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Releases &amp; Planning — jaunty docs</title>
+<title>Feature candidates — jaunty docs</title>
 <link rel="stylesheet" href="site.css">
 <script>
 /* Inline, in the head, and before anything paints. A saved preference applied
@@ -56,7 +56,7 @@
     <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
     <div class="header-brand">
       <span class="brand-name">jaunty</span>
-      <span class="brand-crumb">Releases &#8250; Releases &amp; Planning</span>
+      <span class="brand-crumb">Releases &#8250; Feature candidates</span>
     </div>
     <div class="header-spacer"></div>
     <div class="header-tools">
@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html" class="active" aria-current="page">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html" class="active" aria-current="page">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -156,88 +156,85 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#release-runbook">Release Runbook</a><a class="toc-l2" href="#planning">Planning</a><a class="toc-l2" href="#commercial">Commercial</a><a class="toc-l2" href="#reports">Reports</a><a class="toc-l2" href="#release-process">Release Process</a><a class="toc-l3" href="#pre-release-checklist">Pre-Release Checklist</a><a class="toc-l3" href="#version-numbering">Version Numbering</a><a class="toc-l2" href="#for-contributors">For Contributors</a><a class="toc-l3" href="#planning-documents">Planning Documents</a><a class="toc-l3" href="#release-notes">Release Notes</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#paged-delete-and-update">Paged DELETE and UPDATE</a><a class="toc-l2" href="#per-connection-naming">Per-connection naming</a></nav>
       <div class="content-inner">
-        <nav class="breadcrumb" aria-label="Breadcrumb">Releases &#8250; Releases &amp; Planning</nav>
+        <nav class="breadcrumb" aria-label="Breadcrumb">Releases &#8250; Feature candidates</nav>
         <article>
-<h1 id="releases--planning">Releases &amp; Planning</h1>
-<p>Release documentation and planning documents for Jaunty. The task lists, the pricing page and
-the market-analysis papers are held in the private work repository and are not published here.</p>
-<hr />
-<h2 id="release-runbook">Release Runbook</h2>
-<ul>
-<li><a href="06-releases-release-runbook.html"><code>release-runbook.md</code></a> - Step-by-step process for cutting and shipping a release</li>
-</ul>
-<h2 id="planning">Planning</h2>
-<ul>
-<li><a href="06-releases-feature-candidates.html"><code>feature-candidates.md</code></a> - Features Jaunty may add later, what each would need, and why it is not built yet</li>
-</ul>
-<h2 id="commercial">Commercial</h2>
-<p><strong>Jaunty is free to use, including in commercial production. What is sold is support</strong>, and
-its terms are available on request rather than published here. To ask, open a
-<a href="https://github.com/extrode/jaunty/issues/new?template=support-enquiry.yml">support enquiry</a>.</p>
-<ul>
-<li><a href="06-releases-continuity-rider-template.html"><code>continuity-rider-template.md</code></a> - Escrow and continuity rider</li>
-<li><a href="06-releases-feature-gap-analysis.html"><code>feature-gap-analysis.md</code></a> - Feature gaps against competing ORMs</li>
-</ul>
-<h2 id="reports">Reports</h2>
-<ul>
-<li><code>../reports/production-readiness-2026-07-02.md</code> - Production readiness assessment</li>
-</ul>
-<hr />
-<h2 id="release-process">Release Process</h2>
-<h3 id="pre-release-checklist">Pre-Release Checklist</h3>
-<ol class="contains-task-list">
-<li class="task-list-item"><input disabled="disabled" type="checkbox" /> All tests passing</li>
-<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Code coverage targets met</li>
-<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Documentation updated</li>
-<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Performance benchmarks reviewed</li>
-<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Known limitations documented</li>
-</ol>
-<h3 id="version-numbering">Version Numbering</h3>
-<p>Jaunty uses <strong>semantic versioning</strong>. The current version is <code>1.0.0-rc.2</code>, set in
-<code>src/Directory.Build.props</code> and tagged <code>v1.0.0-rc.2</code>.</p>
-<p>An earlier date-based scheme (<code>YYYY.MM.PATCH</code>) was documented here and never shipped.</p>
-<hr />
-<h2 id="for-contributors">For Contributors</h2>
-<h3 id="planning-documents">Planning Documents</h3>
-<p>The prioritized work items live in the private work repository. When contributing, open an
-issue describing the change first, then branch and submit a PR referencing it.</p>
-<h3 id="release-notes">Release Notes</h3>
-<p>Release notes are generated from:</p>
-<ul>
-<li>Git commit messages</li>
-<li>Performance benchmark comparisons</li>
-</ul>
-<hr />
-<h2 id="see-also">See Also</h2>
+<h1 id="feature-candidates">Feature candidates</h1>
+<p>Features Jaunty may add later. Nothing here is planned or promised. An entry records what the
+feature would need and why it is not built yet, so the reasoning is not lost and a request can be
+weighed against it.</p>
+<p>To ask for one of these, or for something not listed, open an issue describing what you are
+trying to do.</p>
 <table>
 <thead>
 <tr>
-<th>Document</th>
-<th>Purpose</th>
+<th>Feature</th>
+<th>Status</th>
+<th>Asked for by</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="05-quality-readme.html"><code>../05-quality/README.md</code></a></td>
-<td>Quality standards</td>
+<td><a href="#paged-delete-and-update">Paged DELETE and UPDATE</a></td>
+<td>Not planned</td>
+<td>Nobody yet</td>
 </tr>
 <tr>
-<td><code>../../CONTRIBUTING.md</code></td>
-<td>Contribution guide</td>
+<td><a href="#per-connection-naming">Per-connection naming</a></td>
+<td>Not planned</td>
+<td>Nobody yet</td>
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="paged-delete-and-update">Paged DELETE and UPDATE</h2>
+<p><strong>What it would do:</strong> make <code>From&lt;Order&gt;().OrderBy(o =&gt; o.CreatedAt).Take(5).Delete()</code> delete
+those five rows, instead of refusing it.</p>
+<p><strong>Today:</strong> refused at compile time (CS0619), and at runtime for the one route the compiler cannot
+see. The workaround, selecting keys and then deleting by key in one transaction, is in
+<a href="01-api-reference-fluent-api.html#writes-after-take-or-skip">Writes after Take or Skip</a>.</p>
+<p><strong>What it would need:</strong></p>
+<ul>
+<li>A required <code>OrderBy</code>. Without one, &quot;the first five rows&quot; is whatever order the database happens
+to return, and the chain should not compile.</li>
+<li>A primary key on the entity, to write <code>WHERE key IN (SELECT key ... ORDER BY ... LIMIT n)</code>.</li>
+<li>Per-database SQL:
+<ul>
+<li>SQL Server: a CTE or a key subquery with <code>ORDER BY ... OFFSET ... FETCH</code>, since <code>DELETE TOP</code>
+takes no <code>ORDER BY</code>.</li>
+<li>PostgreSQL and DuckDB: a key subquery.</li>
+<li>SQLite: a key subquery, since <code>DELETE ... LIMIT</code> is a compile-time option most builds leave off.</li>
+<li>MySQL and MariaDB: <code>DELETE ... ORDER BY ... LIMIT n</code> for <code>Take</code>. <code>Skip</code> has no form, because
+there is no offset on DELETE and MySQL rejects <code>LIMIT</code> inside an <code>IN (...)</code> subquery; a derived
+table works around that but changes the locking.</li>
+</ul>
+</li>
+<li>Composite keys, which need a row-value <code>IN</code> or an <code>EXISTS</code> join and differ again per database.</li>
+<li>Tests for each database, both orders (<code>Take</code> then <code>Where</code>, <code>Where</code> then <code>Take</code>), and <code>Distinct</code>.</li>
+</ul>
+<p><strong>Why not now:</strong> it is new surface on every database for something nobody has asked for, and the
+workaround is short and portable. Blocking it costs nothing that works today.</p>
+<hr />
+<h2 id="per-connection-naming">Per-connection naming</h2>
+<p><strong>What it would do:</strong> let two connections in one process map the same entity to different table
+or column names, for example one schema per tenant.</p>
+<p><strong>Today:</strong> <code>JauntyConfig.TableNameResolver</code>, <code>SchemaNameResolver</code> and <code>ColumnNameResolver</code> are
+process-wide. Changing one affects every connection, and the caches rebuild for everyone.</p>
+<p><strong>What it would need:</strong> a naming scope carried with the connection or the call (for example in
+<code>CommandOptions</code>), cache keys that include it, and the same on the source-generated path, whose
+name cache is keyed only by the configuration generation.</p>
+<p><strong>Why not now:</strong> nobody has asked for it, and a schema per tenant is usually handled by the
+connection string or the database user's default schema, which needs nothing from Jaunty.</p>
 
         </article>
         <div class="page-nav" id="page-nav">
-          <div class="prev-next"><a class="pn-prev" href="05-quality-code-coverage.html">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-continuity-rider-template.html">
   <span class="pn-label">&#8592; prev</span>
-  <span class="pn-title">Code Coverage</span>
-</a><a class="pn-next" href="06-releases-continuity-rider-template.html">
-  <span class="pn-label">next &#8594;</span>
   <span class="pn-title">Exhibit A - Escrow and Continuity Rider (Template)</span>
+</a><a class="pn-next" href="06-releases-feature-gap-analysis.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</span>
 </a></div>
         </div>
       </div>
