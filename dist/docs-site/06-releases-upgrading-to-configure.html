@@ -256,7 +256,9 @@ decision 014.</p>
 </tr>
 </tbody>
 </table>
-<p>Reading a setting is unchanged: <code>JauntyConfig.ColumnNameResolver</code> still returns the resolver.</p>
+<p>Reading a setting still works the same way: <code>JauntyConfig.ColumnNameResolver</code> still returns the
+resolver. But a read now counts as first use (rule 1), so code that logs a setting such as
+<code>JauntyConfig.DefaultEnumStorage</code> before calling <code>Configure</code> must move after it.</p>
 <h3 id="a-console-app-or-worker">A console app or worker</h3>
 <div class="code-block">
   <div class="code-header">
@@ -318,23 +320,28 @@ publish, or to put the hooks back after replacing one of them by hand. If you ne
 <h2 id="rules-to-know">Rules to know</h2>
 <ol>
 <li><p><strong>Call <code>Configure</code> once, at startup, before anything touches Jaunty.</strong> Running a query, a Fluent
-query, or reading a generated member such as <code>Product.Jaunty.TableName</code> counts as first use.
-<code>Configure</code> after that throws:</p>
+query, reading a generated member such as <code>Product.Jaunty.TableName</code>, or reading a mapping
+setting such as <code>JauntyConfig.DefaultEnumStorage</code> counts as first use. <code>Configure</code> after that
+throws:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">text</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="text"><code class="language-text">InvalidOperationException: JauntyConfig.Configure was called after Extrode.Jaunty had already
-read its settings (a query, a generated TableName, or a Fluent query ran first).
+read its settings (a query, a generated TableName, a Fluent query, or a read of a JauntyConfig
+mapping setting ran first).
 </code></pre>
 </div>
+<p>A query running on another thread while <code>Configure</code> runs is detected the same way: <code>Configure</code>
+throws, puts the previous settings back, and that query may fail too.</p>
 </li>
 <li><p><strong>A second call with the same settings does nothing; with different settings it throws.</strong> &quot;The
 same&quot; means every delegate refers to the same method on the same target. Method groups
 (<code>c.ColumnNameResolver = Snake;</code>) and lambdas that capture nothing compare equal, and type
 handlers compare by their type, so <code>c.RegisterTypeHandler(new MoneyHandler())</code> is the same on
-every run. A lambda that captures a variable is a new delegate on every call, so make that call
+every run. That also means two handlers of one class built with different constructor
+arguments count as the same, and the second call silently keeps the first. A lambda that captures a variable is a new delegate on every call, so make that call
 through <code>JauntyConfig.TryConfigure</code>, which applies the first call and skips the rest without
 running them. A repeated <code>Configure</code> runs your callback again to compare, so keep it free of
 side effects.</p>
@@ -366,7 +373,19 @@ and let the hosts' own call become a no-op:</p>
 }
 </code></pre>
 </div>
-<p>where <code>Startup.ConfigureJaunty</code> is the same method <code>Program.cs</code> passes to <code>Configure</code>.</p>
+<p>where <code>Startup.ConfigureJaunty</code> is the same method <code>Program.cs</code> passes to <code>Configure</code>. Two limits:</p>
+<ul>
+<li>This works only if <code>Program.cs</code> passes that same method, or calls <code>TryConfigure</code>. If
+<code>Program.cs</code> builds its settings from <code>builder.Configuration</code>, the module initializer cannot see
+them, and a plain <code>Configure</code> in <code>Program.cs</code> then throws &quot;different settings&quot;. Use
+<code>TryConfigure</code> in <code>Program.cs</code>, and the module initializer's settings win.</li>
+<li><code>[ModuleInitializer]</code> needs C# 9. On net472 or netstandard2.0 declare the attribute yourself
+(<code>namespace System.Runtime.CompilerServices { internal sealed class ModuleInitializerAttribute : Attribute { } }</code>)
+or use a polyfill package.</li>
+</ul>
+<p>Fixtures in a separate shared assembly that query before the test assembly's module initializer
+runs are not supported: the order across assemblies cannot be controlled. Serialize those fixtures
+or configure from the shared assembly instead.</p>
 <h2 id="your-own-unit-tests">Your own unit tests</h2>
 <p><code>JauntyConfig.Reset()</code> restores the defaults and allows <code>Configure</code> again. It is for tests only,
 and it is not safe while another test is using Jaunty, so put tests that call <code>Reset()</code> and then
