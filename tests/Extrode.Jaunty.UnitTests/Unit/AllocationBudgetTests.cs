@@ -19,6 +19,7 @@ namespace Extrode.Jaunty.Tests.Unit;
 /// </para>
 /// </summary>
 [Trait("Category", "AllocationBudget")]
+[Collection(ConfigurationGenerationCollection.Name)]
 public class AllocationBudgetTests
 {
     private const int Iterations = 10_000;
