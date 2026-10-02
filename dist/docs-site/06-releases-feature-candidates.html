@@ -156,7 +156,7 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#paged-delete-and-update">Paged DELETE and UPDATE</a><a class="toc-l2" href="#per-connection-naming">Per-connection naming</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#paged-delete-and-update">Paged DELETE and UPDATE</a><a class="toc-l2" href="#per-connection-naming">Per-connection naming</a><a class="toc-l2" href="#schemas-for-flat-file-views-and-imports">Schemas for flat-file views and imports</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Releases &#8250; Feature candidates</nav>
         <article>
@@ -182,6 +182,11 @@ trying to do.</p>
 </tr>
 <tr>
 <td><a href="#per-connection-naming">Per-connection naming</a></td>
+<td>Not planned</td>
+<td>Nobody yet</td>
+</tr>
+<tr>
+<td><a href="#schemas-for-flat-file-views-and-imports">Schemas for flat-file views and imports</a></td>
 <td>Not planned</td>
 <td>Nobody yet</td>
 </tr>
@@ -226,6 +231,19 @@ process-wide. Changing one affects every connection, and the caches rebuild for 
 name cache is keyed only by the configuration generation.</p>
 <p><strong>Why not now:</strong> nobody has asked for it, and a schema per tenant is usually handled by the
 connection string or the database user's default schema, which needs nothing from Jaunty.</p>
+<hr />
+<h2 id="schemas-for-flat-file-views-and-imports">Schemas for flat-file views and imports</h2>
+<p><strong>What it would do:</strong> register a flat file's view in the entity's schema, and import into a
+schema-qualified table, when the entity has <code>[Table(..., Schema = ...)]</code> or a
+<code>SchemaNameResolver</code> is set.</p>
+<p><strong>Today:</strong> FlatFiles applies the table and column names in core's order but no schema. File views
+live in DuckDB's default schema, and an import writes to the unqualified table name, which the
+target database resolves through the connection's default schema.</p>
+<p><strong>What it would need:</strong> <code>CREATE SCHEMA IF NOT EXISTS</code> and a qualified view name on the DuckDB
+side; schema-qualified DDL, INSERTs and the column check in each import dialect (SQL Server,
+PostgreSQL, SQLite); and a rule for SQLite, which has attached databases rather than schemas.</p>
+<p><strong>Why not now:</strong> nobody has asked for it. An import into a non-default schema works today through
+a connection whose default schema is that one (the login's default schema on SQL Server, <code>search_path</code> on PostgreSQL).</p>
 
         </article>
         <div class="page-nav" id="page-nav">

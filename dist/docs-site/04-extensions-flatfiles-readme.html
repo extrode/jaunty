@@ -156,7 +156,7 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#documentation">Documentation</a><a class="toc-l3" href="#architecture">Architecture</a><a class="toc-l3" href="#api-reference">API Reference</a><a class="toc-l2" href="#quick-start">Quick Start</a><a class="toc-l2" href="#supported-formats">Supported Formats</a><a class="toc-l2" href="#architecture-1">Architecture</a><a class="toc-l3" href="#key-components">Key Components</a><a class="toc-l3" href="#data-flow">Data Flow</a><a class="toc-l2" href="#performance">Performance</a><a class="toc-l2" href="#for-contributors">For Contributors</a><a class="toc-l3" href="#adding-new-file-formats">Adding New File Formats</a><a class="toc-l3" href="#testing">Testing</a><a class="toc-l2" href="#see-also">See Also</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#documentation">Documentation</a><a class="toc-l3" href="#architecture">Architecture</a><a class="toc-l3" href="#api-reference">API Reference</a><a class="toc-l2" href="#quick-start">Quick Start</a><a class="toc-l2" href="#supported-formats">Supported Formats</a><a class="toc-l2" href="#table-and-column-names">Table and Column Names</a><a class="toc-l2" href="#architecture-1">Architecture</a><a class="toc-l3" href="#key-components">Key Components</a><a class="toc-l3" href="#data-flow">Data Flow</a><a class="toc-l2" href="#performance">Performance</a><a class="toc-l2" href="#for-contributors">For Contributors</a><a class="toc-l3" href="#adding-new-file-formats">Adding New File Formats</a><a class="toc-l3" href="#testing">Testing</a><a class="toc-l2" href="#see-also">See Also</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Extensions &#8250; Jaunty.FlatFiles</nav>
         <article>
@@ -278,6 +278,21 @@
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="table-and-column-names">Table and Column Names</h2>
+<p>FlatFiles names tables and columns in the same order as core: a non-empty <code>[Table]</code> or <code>[Column]</code>
+name, then <code>JauntyConfig.TableNameResolver</code> or <code>ColumnNameResolver</code>, then a default. The table
+default is the lowercased class name (<code>SalesRecord</code> becomes <code>salesrecord</code>); the column default is
+the property name. So a table you import is the table core CRUD and the fluent API read.</p>
+<p>Two things differ from core:</p>
+<ul>
+<li>No schema is applied. File views live in DuckDB's default schema, and an import writes to the
+unqualified table name.</li>
+<li>A column resolver renames the headers FlatFiles looks for in the file, since a file header and
+its database column share one name.</li>
+</ul>
+<p>The full order, with diagrams, is in
+<a href="02-architecture-metadata-system-spec.html">Name resolution</a>.</p>
 <hr />
 <h2 id="architecture-1">Architecture</h2>
 <h3 id="key-components">Key Components</h3>
