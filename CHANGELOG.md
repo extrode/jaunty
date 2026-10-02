@@ -30,6 +30,18 @@ default lives in `src/Directory.Build.props`.
   [Writes after Take or Skip](docs/01-api-reference/fluent-api.md#writes-after-take-or-skip).
   Code that recompiles without errors is unaffected; assemblies compiled against the old return
   types must be rebuilt.
+- **FlatFiles now names tables and columns through `JauntyConfig.TableNameResolver` and
+  `ColumnNameResolver`, in core's order.** It used to ignore both, so with a resolver set an import
+  created a table core could not find. Unchanged when no resolver is set, except in three cases:
+  - `[Table("")]` and `[Column("")]` now fall through to the resolver or default instead of
+    producing an empty name that DuckDB rejected.
+  - A class that inherits a DataAnnotations `[Table]` from its base now takes its own lowercased
+    class name, as core does, instead of the base's table name.
+  - With a column resolver set, FlatFiles looks for the resolved names in the file header too.
+    Give a property a `[Column]` name to fix one name for both the file and the database.
+
+  No schema is applied: file views stay in DuckDB's default schema and imports write to the
+  unqualified table name. The table default stays the lowercased class name.
 - **C# namespaces, assembly names, and project/folder names now carry the `Extrode.Jaunty.` prefix,
   matching the package IDs that have used it since rc.2.** Every `namespace Jaunty...` declaration,
   `using Jaunty...` statement, and `.csproj`/folder name under `src/`, `tests/`, `benchmarks/`, and

@@ -1,15 +1,39 @@
-﻿using System.Reflection;
+using System.Reflection;
 
 using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Internals.Entity;
 
 namespace Extrode.Jaunty.FlatFiles.Internals;
 
 /// <summary>
-/// Resolves the logical table name for an entity type by reading the <see cref="TableAttribute"/>.
-/// Falls back to the class name lowercased if no attribute is present.
+/// Resolves the logical table name for an entity type in the same order as core: a non-empty
+/// <see cref="TableAttribute"/> name, else a non-empty DataAnnotations <c>[Table]</c> name, else
+/// <c>JauntyConfig.TableNameResolver</c>, else the class name lowercased.
 /// </summary>
+/// <remarks>
+/// <para>
+/// AUD-R35-243. This used to read the attributes only, so a configured
+/// <c>JauntyConfig.TableNameResolver</c> named the table one way for core and another for
+/// FlatFiles, and the same entity was unreachable from one side. <c>[Table("")]</c> returned the
+/// empty name, which every registration and import then rejected as a zero-length identifier;
+/// core skips an empty name, and so does this now. The order lives in core's
+/// <see cref="NameResolution"/>; only the last resort differs, the lowercased class name FlatFiles
+/// has always used.
+/// </para>
+/// <para>
+/// The DataAnnotations attribute is read from the type itself, not from a base class, as core reads
+/// it. This used to look through base classes (R28), so a derived entity took its base's table name
+/// here and its own class name on core.
+/// </para>
+/// <para>
+/// A schema is not applied: file views are registered in DuckDB's default schema, and an import
+/// writes to the unqualified table name. See docs/06-releases/feature-candidates.md.
+/// </para>
+/// </remarks>
 internal static class TableNameResolver
 {
+    private const string DataAnnotationsTableAttribute = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";
+
     /// <summary>
     /// Resolves the table name for the specified entity type.
     /// </summary>
@@ -19,49 +43,22 @@ internal static class TableNameResolver
     /// Resolves the table name for the specified entity type.
     /// </summary>
     public static string Resolve(Type entityType)
+        => NameResolution.Table(entityType, AttributeName(entityType), entityType.Name.ToLowerInvariant());
+
+    private static string? AttributeName(Type entityType)
     {
         // AOT-SAFE: attributes on a kept type survive trimming, and TableAttribute is rooted by the type argument.
         TableAttribute? jauntyAttr = entityType.GetCustomAttribute<TableAttribute>();
         if (jauntyAttr is not null)
             return jauntyAttr.Name;
 
-        // Also check System.ComponentModel.DataAnnotations.Schema.TableAttribute for compatibility
-        // Avoid LINQ allocation by using for loop instead of FirstOrDefault.
-        // R28: inherit: true, because an entity inheriting the DataAnnotations [Table] from a base
-        // class used to silently fall through to the class-name default.
-        //
-        // AUD-R35-241: the R28 comment used to claim this matched the Extrode.Jaunty lookup above, "which
-        // uses GetCustomAttribute's inherit-true default". It does not, and cannot: Extrode.Jaunty's own
-        // TableAttribute is declared [AttributeUsage(..., Inherited = false)], so inherit: true
-        // never finds it on a derived type, while the DataAnnotations one carries the framework's
-        // Inherited = true default and is found. So the two paths genuinely disagree - deriving
-        // from a base marked with DataAnnotations' [Table] resolves to the base's name, deriving
-        // from a base marked with Extrode.Jaunty's falls through to the lowercased class name. That is not
-        // FlatFiles drifting: core's MetadataBuilder reads the Extrode.Jaunty attribute the same way, so
-        // the asymmetry is the attribute's own declaration and changing it is a behaviour change
-        // for every consumer, not a resolver fix. Both shapes are pinned by TableNameResolverTests.
-        // AOT-SAFE: attributes on a kept type survive trimming; the DataAnnotations TableAttribute is rooted by the typed check below.
-        var attrs = entityType.GetCustomAttributes(inherit: true);
-        foreach (var attr in attrs)
+        // AOT-SAFE: CustomAttributeData reads attribute metadata only; no member of the attribute type is accessed.
+        foreach (CustomAttributeData attribute in entityType.GetCustomAttributesData())
         {
-#if NET8_0_OR_GREATER
-            // Typed check: the attribute lives in the shared framework on net8+, so the duck-typed
-            // GetType().GetProperty("Name") read below is unnecessary there - and it is IL2075
-            // (an error under net10's stricter trim analyzer): an attribute instance's Type carries
-            // no DAM annotations, so the trimmer may remove Name. The typed access keeps it rooted.
-            if (attr is System.ComponentModel.DataAnnotations.Schema.TableAttribute schemaAttr)
-                return schemaAttr.Name;
-#else
-            Type attrType = attr.GetType();
-            if (attrType.FullName == "System.ComponentModel.DataAnnotations.Schema.TableAttribute")
-            {
-                PropertyInfo? nameProp = attrType.GetProperty("Name");
-                if (nameProp?.GetValue(attr) is string name)
-                    return name;
-            }
-#endif
+            if (attribute.AttributeType.FullName == DataAnnotationsTableAttribute)
+                return attribute.ConstructorArguments.Count > 0 ? attribute.ConstructorArguments[0].Value as string : null;
         }
 
-        return entityType.Name.ToLowerInvariant();
+        return null;
     }
 }
