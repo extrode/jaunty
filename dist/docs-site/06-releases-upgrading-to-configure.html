@@ -341,8 +341,9 @@ same&quot; means every delegate refers to the same method on the same target. Me
 (<code>c.ColumnNameResolver = Snake;</code>) and lambdas that capture nothing compare equal, and type
 handlers compare by their type, so <code>c.RegisterTypeHandler(new MoneyHandler())</code> is the same on
 every run. That also means two handlers of one class built with different constructor
-arguments count as the same, and the second call silently keeps the first. A lambda that captures a variable is a new delegate on every call, so make that call
-through <code>JauntyConfig.ConfigureOnce</code>, which applies the first call and skips the rest without
+arguments count as the same, and the second call silently keeps the first. A lambda that
+captures a variable is a new delegate on every call, so make that call through
+<code>JauntyConfig.ConfigureOnce</code>, which applies the first call and skips the rest without
 running them. A repeated <code>Configure</code> runs your callback again to compare, so keep it free of
 side effects.</p>
 </li>
