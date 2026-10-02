@@ -346,8 +346,12 @@ command holding two statements:</p>
 </code></pre>
 </div>
 <p>MySQL adds <code>FROM DUAL</code> before the <code>WHERE</code>. The assigned key is not written back to the entity;
-call <code>Insert</code> when you need it. Two concurrent upserts of the same new row can both insert, so
-run them in a transaction if that matters.</p>
+call <code>Insert</code> when you need it. A key that matches no row always inserts, so two upserts with an
+unset key create two rows.</p>
+<p>On PostgreSQL the pair is atomic without a transaction of your own: Npgsql sends a multi-statement
+command as one batch, and PostgreSQL runs a batch as one implicit transaction. The <code>UPDATE</code> holds
+its row lock until the <code>INSERT</code> finishes, so a concurrent <code>DELETE</code> of that row waits and cannot slip
+between the two statements.</p>
 <p><code>InvalidOperationException</code> is thrown when the entity has no primary key, when the dialect does
 not support upsert, or when there are no upsertable columns.</p>
 <div class="code-block">
