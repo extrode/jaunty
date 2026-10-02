@@ -316,6 +316,14 @@ public interface ISqlDialect
     /// any column a trigger maintains, fires on MySQL where it would not elsewhere. A
     /// column-level <c>ON UPDATE CURRENT_TIMESTAMP</c> does not fire, since MySQL only advances it
     /// when a value actually changes and <c>key = key</c> changes nothing.
+    /// <para>
+    /// A key column missing from <paramref name="insertColumns"/> is database-generated, so a
+    /// native upsert that detects the row through a conflict on an inserted key can never match
+    /// it. The built-in PostgreSQL, SQLite, MySQL and DuckDB dialects emit <c>UPDATE ... WHERE
+    /// key; INSERT ... SELECT ... WHERE NOT EXISTS (key)</c> for that case, which behaves like
+    /// SQL Server's MERGE: the row with the key is updated, otherwise a row is inserted and the
+    /// database assigns its key. A custom dialect should do the same.
+    /// </para>
     /// </remarks>
     string GenerateUpsertSql(
         string tableName,
