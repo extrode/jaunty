@@ -198,6 +198,40 @@ public class UpsertGeneratedKeyTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
+    [Postgres]
+    public void Postgres_RunsTheUpdateAndTheInsertInOneTransaction(DialectInfo dialect)
+    {
+        string table = UpsertGeneratedKeyEntity.TableName;
+        string log = table + "_txlog";
+        string fn = table + "_log_tx";
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            Execute(connection, $"""
+                CREATE TEMP TABLE {log} (stmt TEXT, tx BIGINT);
+                CREATE OR REPLACE FUNCTION pg_temp.{fn}() RETURNS trigger LANGUAGE plpgsql AS $f$
+                BEGIN
+                    INSERT INTO {log} VALUES (TG_OP, txid_current());
+                    RETURN NULL;
+                END $f$;
+                CREATE TRIGGER {table}_upd BEFORE UPDATE ON {table} FOR EACH STATEMENT EXECUTE FUNCTION pg_temp.{fn}();
+                CREATE TRIGGER {table}_ins BEFORE INSERT ON {table} FOR EACH STATEMENT EXECUTE FUNCTION pg_temp.{fn}();
+                """);
+            long id = IdOf(connection, "second");
+
+            Assert.Equal(1, connection.Upsert(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "renamed" }));
+
+            Assert.Equal(2, Scalar(connection, $"SELECT COUNT(*) FROM {log}"));
+            Assert.Equal(1, Scalar(connection, $"SELECT COUNT(DISTINCT tx) FROM {log}"));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+            Execute(connection, $"DROP TABLE IF EXISTS {log}");
+        }
+    }
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
