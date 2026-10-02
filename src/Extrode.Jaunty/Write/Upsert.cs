@@ -233,13 +233,9 @@ public static partial class Jaunty
             ownTransaction?.Commit();
             return affected;
         }
-        catch
-        {
-            UpsertOwnTransaction.RollBack(ownTransaction);
-            throw;
-        }
         finally
         {
+            // Disposing an uncommitted transaction rolls it back, so a failed INSERT undoes the UPDATE.
             ownTransaction?.Dispose();
 
             if (wasClosed && connection.State != ConnectionState.Closed)

@@ -229,13 +229,9 @@ public static partial class Jaunty
                 await UpsertOwnTransaction.CommitAsync(ownTransaction, cancellationToken).ConfigureAwait(false);
             return affected;
         }
-        catch
-        {
-            await UpsertOwnTransaction.RollBackAsync(ownTransaction).ConfigureAwait(false);
-            throw;
-        }
         finally
         {
+            // Disposing an uncommitted transaction rolls it back, so a failed INSERT undoes the UPDATE.
             if (ownTransaction is not null)
             {
 #if NET8_0_OR_GREATER
