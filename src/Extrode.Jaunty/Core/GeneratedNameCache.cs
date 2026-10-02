@@ -113,6 +113,8 @@ public sealed class GeneratedNameCache<TState> where TState : class
         for (int i = 0; i < columns.Length; i++)
             columns[i] = NameResolution.Column(_propertyNames[i], _attributeColumns[i]);
 
+        ThrowIfResolverMergedColumns(columns);
+
         var names = new GeneratedNames(
             NameResolution.Table(_entityType, _attributeTable),
             NameResolution.Schema(_entityType, _attributeSchema),
@@ -122,6 +124,41 @@ public sealed class GeneratedNameCache<TState> where TState : class
         Volatile.Write(ref _entry, new Entry(generation, state));
         return state;
     }
+
+    /// <summary>
+    /// Rejects a resolver that maps two properties onto one column, as reflection metadata does.
+    /// </summary>
+    /// <remarks>
+    /// The generated reader never builds <c>EntityMetadata</c>, so without this check both
+    /// properties would silently read the same column. A collision already present in the build-time
+    /// names is left alone: the generator reports it as a diagnostic, and the generated code has
+    /// always tolerated it on reads.
+    /// </remarks>
+    private void ThrowIfResolverMergedColumns(string[] columns)
+    {
+        var seen = new Dictionary<string, int>(columns.Length, StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < columns.Length; i++)
+        {
+            if (!seen.TryGetValue(columns[i], out int first))
+            {
+                seen[columns[i]] = i;
+                continue;
+            }
+
+            if (!string.Equals(BuildTimeName(first), BuildTimeName(i), StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(
+                    $"JauntyConfig.ColumnNameResolver maps more than one property of '{_entityType.Name}' to column " +
+                    $"'{columns[i]}': '{_propertyNames[first]}' and '{_propertyNames[i]}'. Column names are matched " +
+                    "case-insensitively, so two properties cannot share one. Give one of them a [Column(\"...\")] name, " +
+                    "or make the resolver return distinct names.",
+                    "columns");
+            }
+        }
+    }
+
+    private string BuildTimeName(int index) =>
+        string.IsNullOrEmpty(_attributeColumns[index]) ? _propertyNames[index] : _attributeColumns[index]!;
 
     private sealed class Entry
     {

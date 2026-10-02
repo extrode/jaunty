@@ -122,6 +122,44 @@ public sealed class GeneratedNameCacheTests : IDisposable
         Assert.Throws<ArgumentNullException>("build", () => new GeneratedNameCache<State>(typeof(Widget), null, null, [], [], null!));
     }
 
+    [Theory]
+    [InlineData("x", "x")]
+    [InlineData("x", "X")]
+    public void AResolverMergingTwoColumns_IsRejected(string first, string second)
+    {
+        JauntyConfig.ColumnNameResolver = name => name == "A" ? first : second;
+        var cache = new GeneratedNameCache<State>(typeof(Widget), null, null, ["A", "B"], [null, null], n => new State(n));
+
+        ArgumentException ex = Assert.Throws<ArgumentException>("columns", () => cache.Current);
+
+        Assert.Contains("'Widget'", ex.Message);
+        Assert.Contains("'A' and 'B'", ex.Message);
+    }
+
+    [Fact]
+    public void AResolverNamingAColumnAfterAnAttributeColumn_IsRejected()
+    {
+        JauntyConfig.ColumnNameResolver = _ => "fixed";
+        GeneratedNameCache<State> cache = Cache();
+
+        Assert.Throws<ArgumentException>("columns", () => cache.Current);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ACollisionAlreadyInTheAttributeNames_IsLeftToTheGenerator(bool withResolver)
+    {
+        if (withResolver)
+            JauntyConfig.ColumnNameResolver = name => name.ToLowerInvariant();
+        var cache = new GeneratedNameCache<State>(typeof(Widget), null, null, ["A", "B", "C"], ["dup", "DUP", null], n => new State(n));
+
+        GeneratedNames names = cache.Current.Names;
+
+        Assert.Equal("dup", names.Column(0));
+        Assert.Equal("DUP", names.Column(1));
+    }
+
     [Fact]
     public void TheConstructor_RejectsMismatchedColumnArrays()
         => Assert.Throws<ArgumentException>("attributeColumns", () => new GeneratedNameCache<State>(typeof(Widget), null, null, ["A"], [], n => new State(n)));
