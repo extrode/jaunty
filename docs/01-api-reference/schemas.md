@@ -145,8 +145,8 @@ JauntyConfig.SchemaNameResolver = t =>
         : "dbo";
 ```
 
-It is consulted on the reflection mapping path only. Source-generated entities read the `[Table]`
-attribute at compile time and ignore it. A `[Table]` schema wins over the resolver either way.
+It applies to reflection-mapped and source-generated entities alike. A non-empty `[Table]`
+schema wins over it; see the [name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order).
 
 ## `ISqlDialect.GetDefaultSchema()`
 

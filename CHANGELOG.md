@@ -134,6 +134,14 @@ default lives in `src/Directory.Build.props`.
 
 ### Changed
 
+- **`JauntyConfig.TableNameResolver`, `SchemaNameResolver` and `ColumnNameResolver` now apply to
+  source-generated entities too**, in the same order as reflection: a non-empty `[Table]` or
+  `[Column]` name, then the resolver, then the type or property name. Before, a generated entity
+  kept its build-time names in CRUD SQL, Fluent SQL, its binders and its reader, while partial
+  reads of the same entity used the resolver. With no resolver set, nothing changes. Generated
+  names follow a resolver changed at runtime, as reflection metadata already did.
+- **The reflection path no longer calls a naming resolver for a name an attribute already fixes.**
+  The result was discarded before; only a resolver with side effects, or one that throws, notices.
 - **SQLite bundle is now SQLitePCLRaw 3.0.5 (SQLite 3.53.4); Microsoft.Data.SqlClient is 7.1.0.**
   SQLite 3.53 formats `REAL` with up to 17 significant digits, so `GetDecimal` on a `REAL` column
   can now differ past the 15th digit from Jaunty's own reads. Every Jaunty read path, generated

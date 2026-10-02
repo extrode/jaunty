@@ -390,10 +390,13 @@ For identity columns, the generated value is returned by Insert operations and c
 
 ### Column Mapping
 
-Properties are mapped to columns using:
-1. `[Column]` attribute for custom column names
-2. Property name (converted using configured naming convention)
-3. Global configuration via `JauntyConfig.ColumnNameResolver`
+Properties are mapped to columns using, in order:
+1. A non-empty `[Column]` attribute name
+2. `JauntyConfig.ColumnNameResolver`, when set and returning non-null
+3. The property name
+
+Reflection-mapped and source-generated entities follow the same order; see the
+[name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order).
 
 ## Important Notes
 
