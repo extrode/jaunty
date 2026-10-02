@@ -9,6 +9,10 @@ the market-analysis papers are held in the private work repository and are not p
 
 - [`release-runbook.md`](release-runbook.md) - Step-by-step process for cutting and shipping a release
 
+## Planning
+
+- [`feature-candidates.md`](feature-candidates.md) - Features Jaunty may add later, what each would need, and why it is not built yet
+
 ## Commercial
 
 **Jaunty is free to use, including in commercial production. What is sold is support**, and

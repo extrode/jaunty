@@ -99,13 +99,13 @@ public interface IDistinctClause<T> : IQueryTerminal<T> where T : new()
     /// Limits the number of rows returned.
     /// </summary>
     /// <param name="count">The maximum number of rows.</param>
-    /// <returns>The query with the LIMIT clause applied.</returns>
-    IDistinctClause<T> Take(int count);
+    /// <returns>The query with the LIMIT clause applied; its WHERE clause cannot reach a write terminal.</returns>
+    IPagedDistinctClause<T> Take(int count);
 
     /// <summary>
     /// Skips the specified number of rows.
     /// </summary>
     /// <param name="count">The number of rows to skip.</param>
-    /// <returns>The query with the OFFSET clause applied.</returns>
-    IDistinctClause<T> Skip(int count);
+    /// <returns>The query with the OFFSET clause applied; its WHERE clause cannot reach a write terminal.</returns>
+    IPagedDistinctClause<T> Skip(int count);
 }

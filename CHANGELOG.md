@@ -19,6 +19,17 @@ default lives in `src/Directory.Build.props`.
   code, a bare `Jaunty.X` now means the nested class; write `Extrode.Jaunty.X` for the namespace.
   Extrode.Jaunty itself never called these members by name, so only code calling them directly
   changes.
+- **A DELETE after `Distinct()` and `Take`/`Skip`, in either order, no longer compiles.**
+  `From<T>().Take(5).Distinct().Where(...).Delete()` used to compile and delete every matching row,
+  because the paging is not carried into a DELETE. `IDistinctClause<T>.Take`/`Skip` and
+  `IPagedClause<T>.Distinct` now return the new `IPagedDistinctClause<T>`, whose `Where` family
+  leads to the paged WHERE clause that has no `Delete`. A paged query stored in an un-paged
+  variable (`IFromClause<T> q = ...Take(5)`) still compiles, and now throws
+  `InvalidOperationException` before any SQL runs instead of writing every matching row. The errors
+  explain why and show the fix: select the keys, then write by key in one transaction. See
+  [Writes after Take or Skip](docs/01-api-reference/fluent-api.md#writes-after-take-or-skip).
+  Code that recompiles without errors is unaffected; assemblies compiled against the old return
+  types must be rebuilt.
 - **C# namespaces, assembly names, and project/folder names now carry the `Extrode.Jaunty.` prefix,
   matching the package IDs that have used it since rc.2.** Every `namespace Jaunty...` declaration,
   `using Jaunty...` statement, and `.csproj`/folder name under `src/`, `tests/`, `benchmarks/`, and

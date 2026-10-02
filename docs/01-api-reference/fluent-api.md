@@ -437,8 +437,8 @@ IPagedClause<T> Skip(int count)
 ```
 
 `IPagedClause<T>` derives from `IFromClause<T>`, so the chain continues as before; the narrower
-type exists so a paged query cannot reach `DeleteAll` or `UpdateAll`, where the paging would have
-been silently discarded.
+type exists so a paged query cannot reach a DELETE or an UPDATE. See
+[Writes after Take or Skip](#writes-after-take-or-skip).
 
 **Example:**
 ```csharp
@@ -449,6 +449,72 @@ var products = connection.From<Product>()
     .OrderBy(p => p.ProductId)
     .Select();
 ```
+
+#### Writes after Take or Skip
+
+Take and Skip page reads only. A DELETE or UPDATE after them is refused, because the statement
+would run without the paging and touch every matching row:
+
+```csharp
+// Reads as "delete 5 rows". Would delete every order in the table.
+connection.From<Order>().Take(5).DeleteAll();                          // CS0619
+
+// Same, with a filter. Would delete every stale order, not 5 of them.
+connection.From<Order>().Take(5).Where(o => o.Status == "stale").Delete();      // CS0619
+connection.From<Order>().Distinct().Take(5).Where(o => o.Status == "stale").Delete(); // CS0619
+connection.From<Order>().Take(5).Set(o => o.Status, "archived").UpdateAll();    // CS0619
+```
+
+Each of those is a compile error that names the problem and the fix. One route gets past the
+compiler: a paged query stored in a variable of an un-paged type, such as
+`IFromClause<Order> q = ...Take(5);` or a query built up conditionally. That route throws
+`InvalidOperationException` when the SQL is built, before anything reaches the database.
+
+**Why Jaunty does not translate it.** No SQL form of "delete the first N rows" works on every
+database Jaunty supports:
+
+| Database | What it offers | Why it is not enough |
+|---|---|---|
+| SQL Server | `DELETE TOP (n)` | No `ORDER BY` and no offset, so which N rows go is up to the server |
+| PostgreSQL | No `LIMIT` on DELETE or UPDATE | Needs a subquery on the key |
+| SQLite | `DELETE ... ORDER BY ... LIMIT` | Only in builds compiled with `SQLITE_ENABLE_UPDATE_DELETE_LIMIT`; most are not |
+| MySQL / MariaDB | `DELETE ... ORDER BY ... LIMIT n` | No offset, so `Skip` cannot be expressed; MySQL also rejects `LIMIT` inside an `IN (...)` subquery |
+| DuckDB | No `LIMIT` on DELETE or UPDATE | Needs a subquery on the key |
+
+A translation would need an `OrderBy` (otherwise "the first 5" is whatever the database returns
+first), a primary key, and different SQL per database, with `Skip` impossible on MySQL. That is a
+lot of new surface for something nobody has asked for, so it is listed as a
+[feature candidate](../06-releases/feature-candidates.md) rather than built.
+
+**What to write instead.** Select the keys of the rows you want, then write by key, in one
+transaction so no other writer changes the set in between:
+
+```csharp
+using var tx = connection.BeginTransaction();
+var options = CommandOptions.WithTransaction(tx);
+
+List<int> ids = connection.From<Order>()
+    .Where(o => o.Status == "stale")
+    .OrderBy(o => o.CreatedAt)
+    .Take(5)
+    .Select(options)
+    .ConvertAll(o => o.Id);
+
+int deleted = connection.From<Order>()
+    .WhereIn(o => o.Id, ids)
+    .Delete(options);
+
+// Or update the same rows instead:
+int updated = connection.From<Order>()
+    .Set(o => o.Status, "archived")
+    .WhereIn(o => o.Id, ids)
+    .Update(options);
+
+tx.Commit();
+```
+
+This costs one extra round trip, and the SQL it sends is the same on every database. For a large
+cleanup, run it in a loop until `deleted` is 0, which also keeps each transaction short.
 
 ## Terminal Operations (Sync)
 
