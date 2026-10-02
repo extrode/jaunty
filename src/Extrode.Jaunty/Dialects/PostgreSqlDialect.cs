@@ -183,6 +183,9 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
         string[] keyColumns,
         string[] keyParams)
     {
+        if (GeneratedKeyUpsertSql.Applies(insertColumns, keyColumns))
+            return GeneratedKeyUpsertSql.Build(tableName, insertColumns, insertParams, updateColumns, updateParams, keyColumns, keyParams, string.Empty);
+
         // PostgreSQL: INSERT INTO table (...) VALUES (...) ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col
         var sb = new System.Text.StringBuilder(256);
         sb.Append("INSERT INTO ");

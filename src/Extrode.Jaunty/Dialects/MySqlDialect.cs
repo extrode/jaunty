@@ -233,6 +233,9 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect, IFract
         string[] keyColumns,
         string[] keyParams)
     {
+        if (GeneratedKeyUpsertSql.Applies(insertColumns, keyColumns))
+            return GeneratedKeyUpsertSql.Build(tableName, insertColumns, insertParams, updateColumns, updateParams, keyColumns, keyParams, " FROM DUAL");
+
         // MySQL: INSERT INTO table (...) VALUES (...) ON DUPLICATE KEY UPDATE col = VALUES(col)
         var sb = new System.Text.StringBuilder(256);
         sb.Append("INSERT INTO ");

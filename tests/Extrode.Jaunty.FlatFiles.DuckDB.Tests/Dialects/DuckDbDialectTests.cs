@@ -375,6 +375,39 @@ public class DuckDbDialectTests
         Assert.DoesNotContain("DO UPDATE SET", result);
     }
 
+    [Fact]
+    public void GenerateUpsertSql_GeneratedKey_UpdatesByTheKeyThenInsertsWhenNoRowHasIt()
+    {
+        var result = _dialect.GenerateUpsertSql("t", ["name"], ["$name"], ["name"], ["$name"], ["id"], ["$id"]);
+
+        Assert.Equal("UPDATE t SET name = $name WHERE id = $id; INSERT INTO t (name) SELECT $name WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = $id)", result);
+    }
+
+    [Theory]
+    [InlineData(2, "renamed", 2)]
+    [InlineData(99, "third", 3)]
+    public void GenerateUpsertSql_GeneratedKey_RunsOnDuckDb(int id, string name, int expectedRows)
+    {
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "CREATE SEQUENCE seq; CREATE TABLE t (id INTEGER PRIMARY KEY DEFAULT nextval('seq'), name VARCHAR); INSERT INTO t (name) VALUES ('first'), ('second');";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = _dialect.GenerateUpsertSql("t", ["name"], ["$name"], ["name"], ["$name"], ["id"], ["$id"]);
+        cmd.Parameters.Add(new DuckDBParameter("name", name));
+        cmd.Parameters.Add(new DuckDBParameter("id", id));
+        cmd.ExecuteNonQuery();
+        cmd.Parameters.Clear();
+
+        cmd.CommandText = "SELECT COUNT(*) FROM t";
+        Assert.Equal(expectedRows, Convert.ToInt32(cmd.ExecuteScalar()));
+        cmd.CommandText = $"SELECT COUNT(*) FROM t WHERE name = '{name}'";
+        Assert.Equal(1, Convert.ToInt32(cmd.ExecuteScalar()));
+        cmd.CommandText = "SELECT COUNT(*) FROM t WHERE id = 99";
+        Assert.Equal(0, Convert.ToInt32(cmd.ExecuteScalar()));
+    }
+
     // ==========================================
     // Multi-Row Insert
     // ==========================================
