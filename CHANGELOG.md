@@ -13,9 +13,10 @@ default lives in `src/Directory.Build.props`.
 
 - **`ISqlDialect` has a new member, `UpsertBatchIsAtomic`.** A custom dialect must implement it:
   return true only if the multi-statement command from `GenerateUpsertSql` runs as one transaction
-  without the caller supplying one. When it is false, `Upsert` wraps the generated-key
-  UPDATE-then-INSERT pair in a transaction of its own. The built-in dialects return true for SQL
-  Server and PostgreSQL, false for MySQL, SQLite and DuckDB.
+  without the caller supplying one. When it is false, `Upsert` wraps the command in a transaction
+  of its own whenever a key column is missing from `insertColumns` and there are update columns,
+  which is when the built-in dialects emit their UPDATE-then-INSERT pair. The built-in dialects
+  return true for SQL Server and PostgreSQL, false for MySQL, SQLite and DuckDB.
 - **The members the source generator adds to an entity moved into a nested `Jaunty` class.**
   `Product.TableName`, `Product.BindInsert(...)`, `Product.ColumnInfo` and the other generated
   statics are now `Product.Jaunty.TableName`, `Product.Jaunty.BindInsert(...)` and so on, so an
@@ -73,8 +74,7 @@ default lives in `src/Directory.Build.props`.
   entities with a single `int`/`long` key and no `[DatabaseGenerated]` count as generated.
   The pair is atomic everywhere: PostgreSQL runs it as one implicit transaction, and on
   MySQL/MariaDB, SQLite and DuckDB Jaunty begins its own transaction around it when you pass none,
-  so a concurrent DELETE cannot bring the row back under a new key, and a failed INSERT rolls the
-  UPDATE back. See [Upsert](docs/01-api-reference/write-methods.md#why-the-two-statements-always-run-as-one-unit).
+  so a concurrent DELETE cannot bring the row back under a new key. See [Upsert](docs/01-api-reference/write-methods.md#why-the-two-statements-always-run-as-one-unit).
 - **Placeholders inside square brackets are now bound on PostgreSQL, DuckDB and MySQL.**
   `ARRAY[@a, @b]`, `tags[@i]` and DuckDB's `[@a, @b]` list literal used to be skipped as if
   they were SQL Server bracket identifiers, so their parameters were never bound or expanded.

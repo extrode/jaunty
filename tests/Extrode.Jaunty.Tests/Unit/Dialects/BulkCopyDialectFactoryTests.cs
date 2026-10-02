@@ -69,6 +69,7 @@ public class BulkCopyDialectFactoryTests
         Assert.Equal(inner.ParameterPrefix, wrapper.ParameterPrefix);
         Assert.Equal(inner.SupportsForeignKeyToggle, wrapper.SupportsForeignKeyToggle);
         Assert.Equal(inner.RequiresAutocommitForForeignKeyToggle, wrapper.RequiresAutocommitForForeignKeyToggle);
+        Assert.Equal(inner.UpsertBatchIsAtomic, wrapper.UpsertBatchIsAtomic);
         Assert.Equal(inner.SupportsUpsert, wrapper.SupportsUpsert);
         Assert.Equal(inner.SupportsMultiRowInsert, wrapper.SupportsMultiRowInsert);
         Assert.Equal(inner.MaxParametersPerStatement, wrapper.MaxParametersPerStatement);

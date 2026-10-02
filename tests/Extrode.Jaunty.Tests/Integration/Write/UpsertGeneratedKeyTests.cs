@@ -367,6 +367,68 @@ public class UpsertGeneratedKeyTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void AFailedUpsertInsideAnOpenTransactionNotPassedIn_KeepsTheCallersWork(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            using (IDbTransaction transaction = connection.BeginTransaction())
+            {
+                using (IDbCommand insert = connection.CreateCommand())
+                {
+                    insert.Transaction = transaction;
+                    insert.CommandText = $"INSERT INTO {UpsertGeneratedKeyEntity.TableName} (name) VALUES ('callers')";
+                    insert.ExecuteNonQuery();
+                }
+
+                Assert.ThrowsAny<System.Data.Common.DbException>(() => connection.Upsert(new UpsertGeneratedKeyEntity { Name = null! }));
+
+                transaction.Commit();
+            }
+
+            Assert.Equal(3, Count(connection));
+            Assert.Equal(1, Scalar(connection, $"SELECT COUNT(*) FROM {UpsertGeneratedKeyEntity.TableName} WHERE name = 'callers'"));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
+    [MariaDB]
+    [SystemSqlite]
+    public async Task UpsertAsync_AFailedUpsertInsideAnOpenTransactionNotPassedIn_KeepsTheCallersWork(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            using (IDbTransaction transaction = connection.BeginTransaction())
+            {
+                using (IDbCommand insert = connection.CreateCommand())
+                {
+                    insert.Transaction = transaction;
+                    insert.CommandText = $"INSERT INTO {UpsertGeneratedKeyEntity.TableName} (name) VALUES ('callers')";
+                    insert.ExecuteNonQuery();
+                }
+
+                await Assert.ThrowsAnyAsync<System.Data.Common.DbException>(() => connection.UpsertAsync(new UpsertGeneratedKeyEntity { Name = null! }, TestContext.Current.CancellationToken).AsTask());
+
+                transaction.Commit();
+            }
+
+            Assert.Equal(3, Count(connection));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
     [Postgres]
     public void Postgres_RunsTheUpdateAndTheInsertInOneTransaction(DialectInfo dialect)
     {

@@ -117,8 +117,10 @@ delete the row in that gap:
 3. The `INSERT` checks for row 5, finds none, and adds a new row, numbered 6.
 
 The row the other connection deleted is back under a new key, and `Upsert` returns 2. Inside a
-transaction this cannot happen: the `UPDATE` locks row 5 (or, on SQLite and DuckDB, the whole
-database for writing), so the `DELETE` waits until both statements have finished.
+transaction this cannot happen. The `UPDATE` locks row 5 (on SQLite, the whole database for
+writing), so the `DELETE` waits until both statements have finished. DuckDB does not make the
+`DELETE` wait: it fails one of the two with a transaction-conflict error, which you can retry.
+Either way the row does not come back.
 
 Jaunty makes sure the pair is always atomic:
 
@@ -133,15 +135,16 @@ Jaunty makes sure the pair is always atomic:
 What that means for your code:
 
 - **You pass no transaction:** on MySQL/MariaDB, SQLite and DuckDB, Jaunty calls
-  `BeginTransaction()`, runs the pair, commits, and disposes the transaction before returning. If
-  the `INSERT` fails, the `UPDATE` is rolled back with it, the same as a failed `MERGE`. It costs a
-  `BEGIN` and a `COMMIT` per upsert, and only for an entity with a generated key.
+  `BeginTransaction()`, runs the pair, commits, and disposes the transaction before returning. It
+  costs a `BEGIN` and a `COMMIT` per upsert, and only for an entity with a generated key. If a
+  statement fails there is nothing to undo: each statement is atomic on its own, and the `INSERT`
+  only writes when the `UPDATE` matched no row.
 - **You pass a transaction** through `CommandOptions`: Jaunty runs the pair inside it and neither
   commits nor rolls back. The upsert becomes part of your unit of work.
-- **The connection has a transaction you did not pass:** Jaunty does not start a separate one;
-  the pair runs inside yours and commits or rolls back with it. Pass the transaction in rather than
-  relying on this: whether a provider accepts a command without its transaction differs between
-  providers, and some reject it.
+- **The connection has a transaction you did not pass:** the pair runs inside yours and commits or
+  rolls back with it, and a failed upsert does not end your transaction. Pass the transaction in
+  rather than relying on this: whether a provider accepts a command without its transaction differs
+  between providers, and some reject it.
 
 ```csharp
 // On its own: atomic, Jaunty manages the transaction where one is needed.

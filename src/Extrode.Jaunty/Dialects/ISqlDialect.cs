@@ -190,9 +190,13 @@ public interface ISqlDialect
     /// transaction). False for MySQL, SQLite and DuckDB, where each statement commits on its own.
     /// </summary>
     /// <remarks>
-    /// When this is false and the entity's key is database-generated, <c>Upsert</c> and
-    /// <c>UpsertAsync</c> wrap their UPDATE-then-INSERT command in a transaction of their own if the
-    /// caller passed none, so a concurrent DELETE cannot land between the two statements.
+    /// When this is false, <c>Upsert</c> and <c>UpsertAsync</c> wrap the command in a transaction of
+    /// their own if the caller passed none, so a concurrent DELETE cannot land between its
+    /// statements. Jaunty decides from the column lists, not from the SQL: it wraps whenever a key
+    /// column is missing from <c>insertColumns</c> (a database-generated key) and
+    /// <c>updateColumns</c> is not empty, which is when the built-in dialects emit an UPDATE followed
+    /// by a guarded INSERT. A custom dialect that emits several statements in other cases is not
+    /// wrapped there.
     /// </remarks>
     bool UpsertBatchIsAtomic { get; }
 
