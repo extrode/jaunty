@@ -127,20 +127,23 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
         public static void BindInsert(IDbCommand command, GenInitializedEntity entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Name", entity.Name);
-            AddParam(command, p, "@Note", entity.Note);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.Name);
+            AddParam(command, p, n.Parameter(2), entity.Note);
         }
         public static void BindUpdate(IDbCommand command, GenInitializedEntity entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Name", entity.Name);
-            AddParam(command, p, "@Note", entity.Note);
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.Name);
+            AddParam(command, p, n.Parameter(2), entity.Note);
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         public static void BindDelete(IDbCommand command, GenInitializedEntity entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
         {
@@ -170,20 +173,21 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 
             public static CacheEntry Resolve(IDataReader reader)
             {
+                var names = __jauntyNames.Current.Names;
                 var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))
+                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
 
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))
+                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
                 {
                     SetLast(cached);
                     return cached;
                 }
 
                 var ords = new int[3];
-                ords[0] = reader.GetOrdinal("Id");
-                ords[1] = reader.GetOrdinal("Name");
-                ords[2] = reader.GetOrdinal("Note");
+                ords[0] = reader.GetOrdinal(names.Column(0));
+                ords[1] = reader.GetOrdinal(names.Column(1));
+                ords[2] = reader.GetOrdinal(names.Column(2));
                 var entry = new CacheEntry(reader, ords);
 #if NET8_0_OR_GREATER
                 _cache.AddOrUpdate(reader, entry);
@@ -221,7 +225,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 
                 public int[] Ordinals { get; }
 
-                public bool Matches(IDataReader reader)
+                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
                 {
                     if (!ReferenceEquals(reader, _reader))
                         return false;
@@ -232,19 +236,19 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "Id", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "Name", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "Note", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), names.Column(2), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -252,44 +256,62 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
             }
         }
 
-        public static string TableName { get; } = "gen_initialized";
-        public static string? SchemaName { get; } = null;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            = new string[] {
-            "Id",
-        };
+        private static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> __jauntyNames = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+            typeof(GenInitializedEntity),
+            "gen_initialized",
+            null,
+            new string[] { "Id", "Name", "Note" },
+            new string?[] { null, null, null },
+            n => new __JauntyNamed(n));
 
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Name", "Name", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Name, (e, v) => ((GenInitializedEntity)e).Name = (string)v!),
-            new ColumnInfo("Note", "Note", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Note, (e, v) => ((GenInitializedEntity)e).Note = (string)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Name", "Name", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Name, (e, v) => ((GenInitializedEntity)e).Name = (string)v!),
-            new ColumnInfo("Note", "Note", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Note, (e, v) => ((GenInitializedEntity)e).Note = (string)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((GenInitializedEntity)e).Id, (e, v) => ((GenInitializedEntity)e).Id = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
+        private sealed class __JauntyNamed
+        {
+            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
             {
-            ["Id"] = new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((GenInitializedEntity)e).Id, (e, v) => ((GenInitializedEntity)e).Id = (int)v!),
-            ["Name"] = new ColumnInfo("Name", "Name", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Name, (e, v) => ((GenInitializedEntity)e).Name = (string)v!),
-            ["Note"] = new ColumnInfo("Note", "Note", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Note, (e, v) => ((GenInitializedEntity)e).Note = (string)v!),
-        };
+                Names = n;
+                PrimaryKeyColumnNames = new string[] {
+                    n.Column(0),
+                };
+                InsertColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "Name", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Name, (e, v) => ((GenInitializedEntity)e).Name = (string)v!),
+                    new ColumnInfo(n.Column(2), "Note", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Note, (e, v) => ((GenInitializedEntity)e).Note = (string)v!),
+                };
+                UpdateColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "Name", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Name, (e, v) => ((GenInitializedEntity)e).Name = (string)v!),
+                    new ColumnInfo(n.Column(2), "Note", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Note, (e, v) => ((GenInitializedEntity)e).Note = (string)v!),
+                };
+                DeleteColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((GenInitializedEntity)e).Id, (e, v) => ((GenInitializedEntity)e).Id = (int)v!),
+                };
+                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((GenInitializedEntity)e).Id, (e, v) => ((GenInitializedEntity)e).Id = (int)v!));
+                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "Name", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Name, (e, v) => ((GenInitializedEntity)e).Name = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(2))) parameterMap.Add(n.Column(2), new ColumnInfo(n.Column(2), "Note", false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Note, (e, v) => ((GenInitializedEntity)e).Note = (string)v!));
+                ParameterMap = parameterMap;
+                EntityColumns = new EntityColumnInfo[] {
+                    new EntityColumnInfo(n.Column(0), "Id", true, true, false, typeof(int), e => (object?)((GenInitializedEntity)e).Id, (e, v) => ((GenInitializedEntity)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(1), "Name", false, false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Name, (e, v) => ((GenInitializedEntity)e).Name = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(2), "Note", false, false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Note, (e, v) => ((GenInitializedEntity)e).Note = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                };
+            }
 
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
-            = new EntityColumnInfo[] {
-            new EntityColumnInfo("Id", "Id", true, true, false, typeof(int), e => (object?)((GenInitializedEntity)e).Id, (e, v) => ((GenInitializedEntity)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Name", "Name", false, false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Name, (e, v) => ((GenInitializedEntity)e).Name = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Note", "Note", false, false, false, typeof(string), e => (object?)((GenInitializedEntity)e).Note, (e, v) => ((GenInitializedEntity)e).Note = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-        };
+            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        }
+
+        public static string TableName => __jauntyNames.Current.Names.TableName;
+        public static string? SchemaName => __jauntyNames.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __jauntyNames.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __jauntyNames.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __jauntyNames.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __jauntyNames.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __jauntyNames.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __jauntyNames.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;

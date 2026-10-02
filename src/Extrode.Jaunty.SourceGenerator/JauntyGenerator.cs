@@ -710,7 +710,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 // itself a value type, so the Nullable check is what makes this mean "a NULL cannot
                 // be represented here", rather than merely "not a reference type".
                 prop.Type.IsValueType
-                    && prop.Type is not INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }));
+                    && prop.Type is not INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T },
+                ColumnNameIsExplicit: !string.IsNullOrEmpty(columnAttrName)));
         }
 
         // AUD-R25: the implicit-identity inference applies only to a single-key entity.
@@ -741,7 +742,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             }
         }
 
-        (var tableName, var schemaName) = GetTableNameAndSchema(classSymbol);
+        (var tableName, var schemaName, var tableNameIsExplicit) = GetTableNameAndSchema(classSymbol);
 
         (EquatableArray<ContainingTypeInfo> containingTypes, var unsupportedNesting) = BuildContainingTypes(classSymbol);
 
@@ -766,7 +767,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
             DiagnosticLocation: LocationInfo.From(classSymbol.Locations.FirstOrDefault()),
             ContainingTypes: containingTypes,
             UnsupportedNestingReason: unsupportedNesting,
-            DroppedProperties: new EquatableArray<DroppedPropertyInfo>(dropped.ToImmutableArray()));
+            DroppedProperties: new EquatableArray<DroppedPropertyInfo>(dropped.ToImmutableArray()),
+            TableNameIsExplicit: tableNameIsExplicit);
     }
 
     /// <summary>
@@ -852,8 +854,14 @@ public partial class JauntyGenerator : IIncrementalGenerator
         "ColumnInfo", "ReadFallback", "ReadEntity", "CreateRowMapper", "ThrowIfNonNullableColumnIsNull",
         "BindInsert", "BindUpdate", "BindDelete", "AddParam", "AddEnumParam", "OrdinalMap",
         "TableName", "SchemaName", "PrimaryKeyColumnNames", "InsertColumns", "UpdateColumns",
-        "DeleteColumns", "ParameterMap", "EntityColumns",
+        "DeleteColumns", "ParameterMap", "EntityColumns", NamedStateClass, NameCacheField,
     ];
+
+    /// <summary>The generated nested class holding every member built from the resolved names.</summary>
+    private const string NamedStateClass = "__JauntyNamed";
+
+    /// <summary>The generated static field holding the entity's <c>GeneratedNameCache</c>.</summary>
+    private const string NameCacheField = "__jauntyNames";
 
     /// <summary>
     /// A reason the entity cannot take the generated members, or <see langword="null"/>.
@@ -1109,7 +1117,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
         var schemaName = entity.SchemaName;
         EquatableArray<PropertyMetadata> properties = entity.Properties;
 
-        var primaryKeyColumnNames = properties.Where(p => p.IsPrimaryKey).Select(p => p.ColumnName).ToList();
+        var propertyIndex = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (int i = 0; i < properties.Count; i++)
+            propertyIndex[properties[i].PropertyName] = i;
 
         // ParameterMap is emitted as a Dictionary<string, ColumnInfo> collection initializer keyed
         // by column name (OrdinalIgnoreCase). A duplicate key there compiles but throws
@@ -1122,7 +1132,6 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // SQL Server rejects that at execution. The diagnostic's message says so rather than
         // reading as a ParameterMap-only truncation; the reflection path has the same duplicate
         // mapping, so this is a message/behaviour mismatch and not a divergence between the two.
-        var parameterMapProperties = new List<PropertyMetadata>();
         var seenColumnNames = new Dictionary<string, PropertyMetadata>(StringComparer.OrdinalIgnoreCase);
         foreach (PropertyMetadata p in properties)
         {
@@ -1136,7 +1145,6 @@ public partial class JauntyGenerator : IIncrementalGenerator
             }
 
             seenColumnNames.Add(p.ColumnName, p);
-            parameterMapProperties.Add(p);
         }
 
         var sb = new StringBuilder();
@@ -1454,7 +1462,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // silently changed write behaviour for the same entity.
         string BindParamCall(PropertyMetadata p)
         {
-            string name = $"\"@{EscapeStringLiteral(p.ColumnName)}\"";
+            string name = $"n.Parameter({propertyIndex[p.PropertyName]})";
             if (!p.IsEnum)
                 return $"AddParam(command, p, {name}, entity.{EscapeIdentifier(p.PropertyName)});";
             string storage = p.EnumStorageOverride switch
@@ -1470,6 +1478,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindInsert(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
+        if (properties.Any(x => !x.IsIdentity && !x.IsComputed))
+            sb.AppendLine($"            var n = {NameCacheField}.Current.Names;");
         foreach (PropertyMetadata p in properties.Where(x => !x.IsIdentity && !x.IsComputed))
         {
             sb.AppendLine($"            {BindParamCall(p)}");
@@ -1480,6 +1490,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindUpdate(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
+        if (properties.Any(x => x.IsPrimaryKey || (!x.IsIdentity && !x.IsComputed)))
+            sb.AppendLine($"            var n = {NameCacheField}.Current.Names;");
         foreach (PropertyMetadata p in properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity && !x.IsComputed))
         {
             sb.AppendLine($"            {BindParamCall(p)}");
@@ -1494,6 +1506,8 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindDelete(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
+        if (properties.Any(x => x.IsPrimaryKey))
+            sb.AppendLine($"            var n = {NameCacheField}.Current.Names;");
         foreach (PropertyMetadata p in properties.Where(x => x.IsPrimaryKey))
         {
             sb.AppendLine($"            {BindParamCall(p)}");
@@ -1542,11 +1556,12 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine($"            public static CacheEntry Resolve(IDataReader reader)");
         sb.AppendLine("            {");
+        sb.AppendLine($"                var names = {NameCacheField}.Current.Names;");
         sb.AppendLine("                var lastRef = _last;");
-        sb.AppendLine("                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))");
+        sb.AppendLine("                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))");
         sb.AppendLine("                    return last;");
         sb.AppendLine();
-        sb.AppendLine("                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))");
+        sb.AppendLine("                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))");
         sb.AppendLine("                {");
         sb.AppendLine("                    SetLast(cached);");
         sb.AppendLine("                    return cached;");
@@ -1555,7 +1570,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"                var ords = new int[{properties.Count}];");
         for (int i = 0; i < properties.Count; i++)
         {
-            sb.AppendLine($"                ords[{i}] = reader.GetOrdinal(\"{EscapeStringLiteral(properties[i].ColumnName)}\");");
+            sb.AppendLine($"                ords[{i}] = reader.GetOrdinal(names.Column({i}));");
         }
         sb.AppendLine("                var entry = new CacheEntry(reader, ords);");
         // Remove-then-Add on a ConditionalWeakTable races with itself (two threads both miss,
@@ -1613,7 +1628,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine("                public bool[] DecimalAsDouble { get; }");
         }
         sb.AppendLine();
-        sb.AppendLine("                public bool Matches(IDataReader reader)");
+        sb.AppendLine("                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)");
         sb.AppendLine("                {");
         sb.AppendLine("                    if (!ReferenceEquals(reader, _reader))");
         sb.AppendLine("                        return false;");
@@ -1626,7 +1641,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"                    var ord{i} = Ordinals[{i}];");
             sb.AppendLine($"                    if ((uint)ord{i} >= (uint)reader.FieldCount)");
             sb.AppendLine("                        return false;");
-            sb.AppendLine($"                    if (!string.Equals(reader.GetName(ord{i}), \"{EscapeStringLiteral(properties[i].ColumnName)}\", global::System.StringComparison.OrdinalIgnoreCase))");
+            sb.AppendLine($"                    if (!string.Equals(reader.GetName(ord{i}), names.Column({i}), global::System.StringComparison.OrdinalIgnoreCase))");
             sb.AppendLine("                        return false;");
             sb.AppendLine();
         }
@@ -1635,74 +1650,22 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            }");
         sb.AppendLine("        }");
 
-        sb.AppendLine();
-        sb.AppendLine($"        public static string TableName {{ get; }} = \"{EscapeStringLiteral(tableName)}\";");
-        sb.AppendLine($"        public static string? SchemaName {{ get; }} = {(schemaName is null ? "null" : $"\"{EscapeStringLiteral(schemaName)}\"")};");
-        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }");
-        sb.AppendLine("            = new string[] {");
-        foreach (var pkColumnName in primaryKeyColumnNames)
-        {
-            sb.AppendLine($"            \"{EscapeStringLiteral(pkColumnName)}\",");
-        }
-        sb.AppendLine("        };");
-
         var insertProps = properties.Where(x => !x.IsIdentity && !x.IsComputed).ToList();
         var updateProps = properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity && !x.IsComputed).ToList();
         var deleteProps = properties.Where(x => x.IsPrimaryKey).ToList();
 
         string ColumnInfoCtor(PropertyMetadata p)
-            => $"new ColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
+            => $"new ColumnInfo(n.Column({propertyIndex[p.PropertyName]}), \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
                $"typeof({p.TypeName}), e => (object?)(({className})e).{EscapeIdentifier(p.PropertyName)}, (e, v) => (({className})e).{EscapeIdentifier(p.PropertyName)} = ({p.TypeName})v!)";
 
-        sb.AppendLine();
-        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }");
-        sb.AppendLine("            = new ColumnInfo[] {");
-        for (int i = 0; i < insertProps.Count; i++)
-        {
-            sb.AppendLine($"            {ColumnInfoCtor(insertProps[i])},");
-        }
-        sb.AppendLine("        };");
-
-        sb.AppendLine();
-        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }");
-        sb.AppendLine("            = new ColumnInfo[] {");
-        for (int i = 0; i < updateProps.Count; i++)
-        {
-            sb.AppendLine($"            {ColumnInfoCtor(updateProps[i])},");
-        }
-        sb.AppendLine("        };");
-
-        sb.AppendLine();
-        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }");
-        sb.AppendLine("            = new ColumnInfo[] {");
-        for (int i = 0; i < deleteProps.Count; i++)
-        {
-            sb.AppendLine($"            {ColumnInfoCtor(deleteProps[i])},");
-        }
-        sb.AppendLine("        };");
-
-        sb.AppendLine();
-        sb.AppendLine("        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }");
-        sb.AppendLine("            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)");
-        sb.AppendLine("            {");
-        for (int i = 0; i < parameterMapProperties.Count; i++)
-        {
-            PropertyMetadata p = parameterMapProperties[i];
-            sb.AppendLine($"            [\"{EscapeStringLiteral(p.ColumnName)}\"] = {ColumnInfoCtor(p)},");
-        }
-        sb.AppendLine("        };");
-
         // IEntityMetadataSource - public, reflection-free metadata surface for Extrode.Jaunty core.
-        // Explicit interface implementation for TableName/SchemaName since the public static
-        // properties of the same name already exist above (a class cannot have both a static
-        // and an instance member sharing one name).
         // AUD-R35: the [EnumStorage] override is emitted here as well as into AddEnumParam. The
         // binders (AUD-R30) baked it in, but EntityColumnInfo did not carry it, so every core
         // caller that reaches for ColumnMetadata.Property - Upsert, Get, the bulk value setters -
         // found null on the generated path and silently fell back to DefaultEnumStorage. Insert
         // wrote "Active" and Upsert wrote 1 into the same column.
         string EntityColumnInfoCtor(PropertyMetadata p)
-            => $"new EntityColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, {p.IsComputed.ToString().ToLower()}, " +
+            => $"new EntityColumnInfo(n.Column({propertyIndex[p.PropertyName]}), \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, {p.IsComputed.ToString().ToLower()}, " +
                $"typeof({p.TypeName}), e => (object?)(({className})e).{EscapeIdentifier(p.PropertyName)}, (e, v) => (({className})e).{EscapeIdentifier(p.PropertyName)} = ({p.TypeName})v!, " +
                p.EnumStorageOverride switch
                {
@@ -1711,15 +1674,84 @@ public partial class JauntyGenerator : IIncrementalGenerator
                    _ => "(global::Extrode.Jaunty.Attributes.EnumStorage?)null)",
                };
 
+        string Literal(string? value) => value is null ? "null" : $"\"{EscapeStringLiteral(value)}\"";
+
+        // docs/plans/2026-08-29-005: only the attribute names are fixed here. The defaults go to
+        // GeneratedNameCache, which resolves every name through the core NameResolution - the
+        // order MetadataBuilder uses - so the JauntyConfig resolvers apply to this entity as they
+        // do under reflection, and are re-applied whenever the configuration generation moves.
+        // Every name-dependent member below is built from those resolved names, once per
+        // generation, so the SQL, the binders' parameter names, the reader's ordinal lookups and
+        // these public statics always agree.
         sb.AppendLine();
-        sb.AppendLine("        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }");
-        sb.AppendLine("            = new EntityColumnInfo[] {");
-        for (int i = 0; i < properties.Count; i++)
+        sb.AppendLine($"        private static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<{NamedStateClass}> {NameCacheField} = new global::Extrode.Jaunty.Core.GeneratedNameCache<{NamedStateClass}>(");
+        sb.AppendLine($"            typeof({className}),");
+        sb.AppendLine($"            {Literal(entity.TableNameIsExplicit ? tableName : null)},");
+        sb.AppendLine($"            {Literal(schemaName)},");
+        sb.AppendLine($"            new string[] {{ {string.Join(", ", properties.Select(p => Literal(p.PropertyName)))} }},");
+        sb.AppendLine($"            new string?[] {{ {string.Join(", ", properties.Select(p => Literal(p.ColumnNameIsExplicit ? p.ColumnName : null)))} }},");
+        sb.AppendLine($"            n => new {NamedStateClass}(n));");
+        sb.AppendLine();
+        sb.AppendLine($"        private sealed class {NamedStateClass}");
+        sb.AppendLine("        {");
+        sb.AppendLine($"            public {NamedStateClass}(global::Extrode.Jaunty.Core.GeneratedNames n)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                Names = n;");
+        sb.AppendLine("                PrimaryKeyColumnNames = new string[] {");
+        foreach (PropertyMetadata p in deleteProps)
         {
-            sb.AppendLine($"            {EntityColumnInfoCtor(properties[i])},");
+            sb.AppendLine($"                    n.Column({propertyIndex[p.PropertyName]}),");
         }
-        sb.AppendLine("        };");
+        sb.AppendLine("                };");
+        foreach ((string member, List<PropertyMetadata> list) in new[] { ("InsertColumns", insertProps), ("UpdateColumns", updateProps), ("DeleteColumns", deleteProps) })
+        {
+            sb.AppendLine($"                {member} = new ColumnInfo[] {{");
+            foreach (PropertyMetadata p in list)
+            {
+                sb.AppendLine($"                    {ColumnInfoCtor(p)},");
+            }
+            sb.AppendLine("                };");
+        }
+        // First occurrence wins, as the build-time collection initializer did. A resolver can now
+        // make two columns collide at runtime, which a collection initializer would turn into an
+        // ArgumentException here; EntityMetadata.ThrowIfDuplicateColumnNames rejects the mapping
+        // with a named error instead, as it does under reflection.
+        sb.AppendLine("                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);");
+        foreach (PropertyMetadata p in properties)
+        {
+            int index = propertyIndex[p.PropertyName];
+            sb.AppendLine($"                if (!parameterMap.ContainsKey(n.Column({index}))) parameterMap.Add(n.Column({index}), {ColumnInfoCtor(p)});");
+        }
+        sb.AppendLine("                ParameterMap = parameterMap;");
+        sb.AppendLine("                EntityColumns = new EntityColumnInfo[] {");
+        foreach (PropertyMetadata p in properties)
+        {
+            sb.AppendLine($"                    {EntityColumnInfoCtor(p)},");
+        }
+        sb.AppendLine("                };");
+        sb.AppendLine("            }");
         sb.AppendLine();
+        sb.AppendLine("            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }");
+        sb.AppendLine("            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }");
+        sb.AppendLine("            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }");
+        sb.AppendLine("            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }");
+        sb.AppendLine("            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }");
+        sb.AppendLine("            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }");
+        sb.AppendLine("            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine($"        public static string TableName => {NameCacheField}.Current.Names.TableName;");
+        sb.AppendLine($"        public static string? SchemaName => {NameCacheField}.Current.Names.SchemaName;");
+        sb.AppendLine($"        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => {NameCacheField}.Current.PrimaryKeyColumnNames;");
+        sb.AppendLine($"        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => {NameCacheField}.Current.InsertColumns;");
+        sb.AppendLine($"        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => {NameCacheField}.Current.UpdateColumns;");
+        sb.AppendLine($"        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => {NameCacheField}.Current.DeleteColumns;");
+        sb.AppendLine($"        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => {NameCacheField}.Current.ParameterMap;");
+        sb.AppendLine($"        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => {NameCacheField}.Current.EntityColumns;");
+        sb.AppendLine();
+        // Explicit interface implementation for TableName/SchemaName since the public static
+        // properties of the same name already exist above (a class cannot have both a static
+        // and an instance member sharing one name).
         sb.AppendLine("        string IEntityMetadataSource.TableName => TableName;");
         sb.AppendLine("        string? IEntityMetadataSource.SchemaName => SchemaName;");
         sb.AppendLine("        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;");
@@ -1891,20 +1923,24 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// style, or Extrode.Jaunty via named argument).
     /// </summary>
     /// <param name="classSymbol">The entity class symbol.</param>
-    private static (string TableName, string? SchemaName) GetTableNameAndSchema(INamedTypeSymbol classSymbol)
+    private static (string TableName, string? SchemaName, bool TableNameIsExplicit) GetTableNameAndSchema(INamedTypeSymbol classSymbol)
     {
         var tableName = classSymbol.Name;
         string? schemaName = null;
+        var tableNameIsExplicit = false;
 
         // AUD-R34-031: the recognized two by fully-qualified name, matching discovery. A simple-name
         // match could read the name and schema off a foreign TableAttribute that happened to come
         // first in source order.
         AttributeData? tableAttr = GetRecognizedTableAttribute(classSymbol);
         if (tableAttr is null)
-            return (tableName, schemaName);
+            return (tableName, schemaName, tableNameIsExplicit);
 
         if (tableAttr.ConstructorArguments.Length > 0 && tableAttr.ConstructorArguments[0].Value is string name && !string.IsNullOrEmpty(name))
+        {
             tableName = name;
+            tableNameIsExplicit = true;
+        }
 
         if (tableAttr.ConstructorArguments.Length > 1 && tableAttr.ConstructorArguments[1].Value is string ctorSchema && !string.IsNullOrEmpty(ctorSchema))
             schemaName = ctorSchema;
@@ -1915,7 +1951,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 schemaName = namedSchema;
         }
 
-        return (tableName, schemaName);
+        return (tableName, schemaName, tableNameIsExplicit);
     }
 
     /// <summary>

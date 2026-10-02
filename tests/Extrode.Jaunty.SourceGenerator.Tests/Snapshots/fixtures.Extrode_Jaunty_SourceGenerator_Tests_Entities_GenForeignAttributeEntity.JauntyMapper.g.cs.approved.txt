@@ -224,30 +224,33 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
         public static void BindInsert(IDbCommand command, GenForeignAttributeEntity entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Kept", entity.Kept);
-            AddParam(command, p, "@StillMappedDespiteNotMapped", entity.StillMappedDespiteNotMapped);
-            AddParam(command, p, "@StillMappedDespiteIgnore", entity.StillMappedDespiteIgnore);
-            AddParam(command, p, "@NotAKey", entity.NotAKey);
-            AddParam(command, p, "@NotComputed", entity.NotComputed);
-            AddEnumParam(command, p, "@Grade", entity.Grade, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
-            AddParam(command, p, "@Derived", entity.Derived);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.Kept);
+            AddParam(command, p, n.Parameter(2), entity.StillMappedDespiteNotMapped);
+            AddParam(command, p, n.Parameter(3), entity.StillMappedDespiteIgnore);
+            AddParam(command, p, n.Parameter(4), entity.NotAKey);
+            AddParam(command, p, n.Parameter(5), entity.NotComputed);
+            AddEnumParam(command, p, n.Parameter(6), entity.Grade, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
+            AddParam(command, p, n.Parameter(7), entity.Derived);
         }
         public static void BindUpdate(IDbCommand command, GenForeignAttributeEntity entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Kept", entity.Kept);
-            AddParam(command, p, "@StillMappedDespiteNotMapped", entity.StillMappedDespiteNotMapped);
-            AddParam(command, p, "@StillMappedDespiteIgnore", entity.StillMappedDespiteIgnore);
-            AddParam(command, p, "@NotAKey", entity.NotAKey);
-            AddParam(command, p, "@NotComputed", entity.NotComputed);
-            AddEnumParam(command, p, "@Grade", entity.Grade, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
-            AddParam(command, p, "@Derived", entity.Derived);
-            AddParam(command, p, "@entity_id", entity.EntityId);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.Kept);
+            AddParam(command, p, n.Parameter(2), entity.StillMappedDespiteNotMapped);
+            AddParam(command, p, n.Parameter(3), entity.StillMappedDespiteIgnore);
+            AddParam(command, p, n.Parameter(4), entity.NotAKey);
+            AddParam(command, p, n.Parameter(5), entity.NotComputed);
+            AddEnumParam(command, p, n.Parameter(6), entity.Grade, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
+            AddParam(command, p, n.Parameter(7), entity.Derived);
+            AddParam(command, p, n.Parameter(0), entity.EntityId);
         }
         public static void BindDelete(IDbCommand command, GenForeignAttributeEntity entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@entity_id", entity.EntityId);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(0), entity.EntityId);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
         {
@@ -277,25 +280,26 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 
             public static CacheEntry Resolve(IDataReader reader)
             {
+                var names = __jauntyNames.Current.Names;
                 var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))
+                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
 
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))
+                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
                 {
                     SetLast(cached);
                     return cached;
                 }
 
                 var ords = new int[8];
-                ords[0] = reader.GetOrdinal("entity_id");
-                ords[1] = reader.GetOrdinal("Kept");
-                ords[2] = reader.GetOrdinal("StillMappedDespiteNotMapped");
-                ords[3] = reader.GetOrdinal("StillMappedDespiteIgnore");
-                ords[4] = reader.GetOrdinal("NotAKey");
-                ords[5] = reader.GetOrdinal("NotComputed");
-                ords[6] = reader.GetOrdinal("Grade");
-                ords[7] = reader.GetOrdinal("Derived");
+                ords[0] = reader.GetOrdinal(names.Column(0));
+                ords[1] = reader.GetOrdinal(names.Column(1));
+                ords[2] = reader.GetOrdinal(names.Column(2));
+                ords[3] = reader.GetOrdinal(names.Column(3));
+                ords[4] = reader.GetOrdinal(names.Column(4));
+                ords[5] = reader.GetOrdinal(names.Column(5));
+                ords[6] = reader.GetOrdinal(names.Column(6));
+                ords[7] = reader.GetOrdinal(names.Column(7));
                 var entry = new CacheEntry(reader, ords);
 #if NET8_0_OR_GREATER
                 _cache.AddOrUpdate(reader, entry);
@@ -333,7 +337,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 
                 public int[] Ordinals { get; }
 
-                public bool Matches(IDataReader reader)
+                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
                 {
                     if (!ReferenceEquals(reader, _reader))
                         return false;
@@ -344,49 +348,49 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "entity_id", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "Kept", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "StillMappedDespiteNotMapped", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), names.Column(2), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord3 = Ordinals[3];
                     if ((uint)ord3 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord3), "StillMappedDespiteIgnore", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord3), names.Column(3), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord4 = Ordinals[4];
                     if ((uint)ord4 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord4), "NotAKey", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord4), names.Column(4), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord5 = Ordinals[5];
                     if ((uint)ord5 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord5), "NotComputed", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord5), names.Column(5), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord6 = Ordinals[6];
                     if ((uint)ord6 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord6), "Grade", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord6), names.Column(6), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord7 = Ordinals[7];
                     if ((uint)ord7 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord7), "Derived", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord7), names.Column(7), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -394,64 +398,82 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
             }
         }
 
-        public static string TableName { get; } = "gen_foreign_attribute_entities";
-        public static string? SchemaName { get; } = null;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            = new string[] {
-            "entity_id",
-        };
+        private static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> __jauntyNames = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+            typeof(GenForeignAttributeEntity),
+            "gen_foreign_attribute_entities",
+            null,
+            new string[] { "EntityId", "Kept", "StillMappedDespiteNotMapped", "StillMappedDespiteIgnore", "NotAKey", "NotComputed", "Grade", "Derived" },
+            new string?[] { "entity_id", null, null, null, null, null, null, null },
+            n => new __JauntyNamed(n));
 
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Kept", "Kept", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Kept, (e, v) => ((GenForeignAttributeEntity)e).Kept = (string)v!),
-            new ColumnInfo("StillMappedDespiteNotMapped", "StillMappedDespiteNotMapped", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped = (string)v!),
-            new ColumnInfo("StillMappedDespiteIgnore", "StillMappedDespiteIgnore", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteIgnore, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteIgnore = (string)v!),
-            new ColumnInfo("NotAKey", "NotAKey", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).NotAKey, (e, v) => ((GenForeignAttributeEntity)e).NotAKey = (string)v!),
-            new ColumnInfo("NotComputed", "NotComputed", false, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).NotComputed, (e, v) => ((GenForeignAttributeEntity)e).NotComputed = (int)v!),
-            new ColumnInfo("Grade", "Grade", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade), e => (object?)((GenForeignAttributeEntity)e).Grade, (e, v) => ((GenForeignAttributeEntity)e).Grade = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade)v!),
-            new ColumnInfo("Derived", "Derived", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Derived, (e, v) => ((GenForeignAttributeEntity)e).Derived = (string)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Kept", "Kept", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Kept, (e, v) => ((GenForeignAttributeEntity)e).Kept = (string)v!),
-            new ColumnInfo("StillMappedDespiteNotMapped", "StillMappedDespiteNotMapped", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped = (string)v!),
-            new ColumnInfo("StillMappedDespiteIgnore", "StillMappedDespiteIgnore", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteIgnore, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteIgnore = (string)v!),
-            new ColumnInfo("NotAKey", "NotAKey", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).NotAKey, (e, v) => ((GenForeignAttributeEntity)e).NotAKey = (string)v!),
-            new ColumnInfo("NotComputed", "NotComputed", false, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).NotComputed, (e, v) => ((GenForeignAttributeEntity)e).NotComputed = (int)v!),
-            new ColumnInfo("Grade", "Grade", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade), e => (object?)((GenForeignAttributeEntity)e).Grade, (e, v) => ((GenForeignAttributeEntity)e).Grade = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade)v!),
-            new ColumnInfo("Derived", "Derived", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Derived, (e, v) => ((GenForeignAttributeEntity)e).Derived = (string)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("entity_id", "EntityId", true, true, typeof(int), e => (object?)((GenForeignAttributeEntity)e).EntityId, (e, v) => ((GenForeignAttributeEntity)e).EntityId = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
+        private sealed class __JauntyNamed
+        {
+            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
             {
-            ["entity_id"] = new ColumnInfo("entity_id", "EntityId", true, true, typeof(int), e => (object?)((GenForeignAttributeEntity)e).EntityId, (e, v) => ((GenForeignAttributeEntity)e).EntityId = (int)v!),
-            ["Kept"] = new ColumnInfo("Kept", "Kept", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Kept, (e, v) => ((GenForeignAttributeEntity)e).Kept = (string)v!),
-            ["StillMappedDespiteNotMapped"] = new ColumnInfo("StillMappedDespiteNotMapped", "StillMappedDespiteNotMapped", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped = (string)v!),
-            ["StillMappedDespiteIgnore"] = new ColumnInfo("StillMappedDespiteIgnore", "StillMappedDespiteIgnore", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteIgnore, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteIgnore = (string)v!),
-            ["NotAKey"] = new ColumnInfo("NotAKey", "NotAKey", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).NotAKey, (e, v) => ((GenForeignAttributeEntity)e).NotAKey = (string)v!),
-            ["NotComputed"] = new ColumnInfo("NotComputed", "NotComputed", false, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).NotComputed, (e, v) => ((GenForeignAttributeEntity)e).NotComputed = (int)v!),
-            ["Grade"] = new ColumnInfo("Grade", "Grade", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade), e => (object?)((GenForeignAttributeEntity)e).Grade, (e, v) => ((GenForeignAttributeEntity)e).Grade = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade)v!),
-            ["Derived"] = new ColumnInfo("Derived", "Derived", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Derived, (e, v) => ((GenForeignAttributeEntity)e).Derived = (string)v!),
-        };
+                Names = n;
+                PrimaryKeyColumnNames = new string[] {
+                    n.Column(0),
+                };
+                InsertColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "Kept", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Kept, (e, v) => ((GenForeignAttributeEntity)e).Kept = (string)v!),
+                    new ColumnInfo(n.Column(2), "StillMappedDespiteNotMapped", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped = (string)v!),
+                    new ColumnInfo(n.Column(3), "StillMappedDespiteIgnore", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteIgnore, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteIgnore = (string)v!),
+                    new ColumnInfo(n.Column(4), "NotAKey", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).NotAKey, (e, v) => ((GenForeignAttributeEntity)e).NotAKey = (string)v!),
+                    new ColumnInfo(n.Column(5), "NotComputed", false, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).NotComputed, (e, v) => ((GenForeignAttributeEntity)e).NotComputed = (int)v!),
+                    new ColumnInfo(n.Column(6), "Grade", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade), e => (object?)((GenForeignAttributeEntity)e).Grade, (e, v) => ((GenForeignAttributeEntity)e).Grade = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade)v!),
+                    new ColumnInfo(n.Column(7), "Derived", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Derived, (e, v) => ((GenForeignAttributeEntity)e).Derived = (string)v!),
+                };
+                UpdateColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "Kept", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Kept, (e, v) => ((GenForeignAttributeEntity)e).Kept = (string)v!),
+                    new ColumnInfo(n.Column(2), "StillMappedDespiteNotMapped", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped = (string)v!),
+                    new ColumnInfo(n.Column(3), "StillMappedDespiteIgnore", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteIgnore, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteIgnore = (string)v!),
+                    new ColumnInfo(n.Column(4), "NotAKey", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).NotAKey, (e, v) => ((GenForeignAttributeEntity)e).NotAKey = (string)v!),
+                    new ColumnInfo(n.Column(5), "NotComputed", false, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).NotComputed, (e, v) => ((GenForeignAttributeEntity)e).NotComputed = (int)v!),
+                    new ColumnInfo(n.Column(6), "Grade", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade), e => (object?)((GenForeignAttributeEntity)e).Grade, (e, v) => ((GenForeignAttributeEntity)e).Grade = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade)v!),
+                    new ColumnInfo(n.Column(7), "Derived", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Derived, (e, v) => ((GenForeignAttributeEntity)e).Derived = (string)v!),
+                };
+                DeleteColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(0), "EntityId", true, true, typeof(int), e => (object?)((GenForeignAttributeEntity)e).EntityId, (e, v) => ((GenForeignAttributeEntity)e).EntityId = (int)v!),
+                };
+                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "EntityId", true, true, typeof(int), e => (object?)((GenForeignAttributeEntity)e).EntityId, (e, v) => ((GenForeignAttributeEntity)e).EntityId = (int)v!));
+                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "Kept", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Kept, (e, v) => ((GenForeignAttributeEntity)e).Kept = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(2))) parameterMap.Add(n.Column(2), new ColumnInfo(n.Column(2), "StillMappedDespiteNotMapped", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(3))) parameterMap.Add(n.Column(3), new ColumnInfo(n.Column(3), "StillMappedDespiteIgnore", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteIgnore, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteIgnore = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(4))) parameterMap.Add(n.Column(4), new ColumnInfo(n.Column(4), "NotAKey", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).NotAKey, (e, v) => ((GenForeignAttributeEntity)e).NotAKey = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(5))) parameterMap.Add(n.Column(5), new ColumnInfo(n.Column(5), "NotComputed", false, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).NotComputed, (e, v) => ((GenForeignAttributeEntity)e).NotComputed = (int)v!));
+                if (!parameterMap.ContainsKey(n.Column(6))) parameterMap.Add(n.Column(6), new ColumnInfo(n.Column(6), "Grade", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade), e => (object?)((GenForeignAttributeEntity)e).Grade, (e, v) => ((GenForeignAttributeEntity)e).Grade = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade)v!));
+                if (!parameterMap.ContainsKey(n.Column(7))) parameterMap.Add(n.Column(7), new ColumnInfo(n.Column(7), "Derived", false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Derived, (e, v) => ((GenForeignAttributeEntity)e).Derived = (string)v!));
+                ParameterMap = parameterMap;
+                EntityColumns = new EntityColumnInfo[] {
+                    new EntityColumnInfo(n.Column(0), "EntityId", true, true, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).EntityId, (e, v) => ((GenForeignAttributeEntity)e).EntityId = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(1), "Kept", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Kept, (e, v) => ((GenForeignAttributeEntity)e).Kept = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(2), "StillMappedDespiteNotMapped", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(3), "StillMappedDespiteIgnore", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteIgnore, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteIgnore = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(4), "NotAKey", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).NotAKey, (e, v) => ((GenForeignAttributeEntity)e).NotAKey = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(5), "NotComputed", false, false, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).NotComputed, (e, v) => ((GenForeignAttributeEntity)e).NotComputed = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(6), "Grade", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade), e => (object?)((GenForeignAttributeEntity)e).Grade, (e, v) => ((GenForeignAttributeEntity)e).Grade = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(7), "Derived", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Derived, (e, v) => ((GenForeignAttributeEntity)e).Derived = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                };
+            }
 
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
-            = new EntityColumnInfo[] {
-            new EntityColumnInfo("entity_id", "EntityId", true, true, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).EntityId, (e, v) => ((GenForeignAttributeEntity)e).EntityId = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Kept", "Kept", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Kept, (e, v) => ((GenForeignAttributeEntity)e).Kept = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("StillMappedDespiteNotMapped", "StillMappedDespiteNotMapped", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteNotMapped = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("StillMappedDespiteIgnore", "StillMappedDespiteIgnore", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).StillMappedDespiteIgnore, (e, v) => ((GenForeignAttributeEntity)e).StillMappedDespiteIgnore = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NotAKey", "NotAKey", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).NotAKey, (e, v) => ((GenForeignAttributeEntity)e).NotAKey = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NotComputed", "NotComputed", false, false, false, typeof(int), e => (object?)((GenForeignAttributeEntity)e).NotComputed, (e, v) => ((GenForeignAttributeEntity)e).NotComputed = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Grade", "Grade", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade), e => (object?)((GenForeignAttributeEntity)e).Grade, (e, v) => ((GenForeignAttributeEntity)e).Grade = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenForeignGrade)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Derived", "Derived", false, false, false, typeof(string), e => (object?)((GenForeignAttributeEntity)e).Derived, (e, v) => ((GenForeignAttributeEntity)e).Derived = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-        };
+            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        }
+
+        public static string TableName => __jauntyNames.Current.Names.TableName;
+        public static string? SchemaName => __jauntyNames.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __jauntyNames.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __jauntyNames.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __jauntyNames.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __jauntyNames.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __jauntyNames.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __jauntyNames.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;
