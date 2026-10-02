@@ -292,6 +292,9 @@ public sealed partial class DuckDb : IFlatFile
             : source;
     }
 
+    /// <summary>The parameter <see cref="ExistsAsTableSql"/> takes the table name in.</summary>
+    internal const string ExistsAsTableNameParameter = "name";
+
     /// <summary>
     /// Counts base tables named <c>$name</c> <b>in the schema this connection's unqualified names
     /// resolve to</b>.
@@ -306,9 +309,6 @@ public sealed partial class DuckDb : IFlatFile
     /// <c>current_schema()</c>/<c>current_database()</c> rather than the literal <c>main</c>,
     /// because a caller is free to <c>USE</c> another schema before handing the connection over.
     /// </remarks>
-    /// <summary>The parameter <see cref="ExistsAsTableSql"/> takes the table name in.</summary>
-    internal const string ExistsAsTableNameParameter = "name";
-
     internal const string ExistsAsTableSql =
         "SELECT COUNT(*) FROM information_schema.tables " +
         "WHERE table_name = $" + ExistsAsTableNameParameter + " AND table_type = 'BASE TABLE' " +

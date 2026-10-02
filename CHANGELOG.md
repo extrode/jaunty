@@ -72,8 +72,9 @@ default lives in `src/Directory.Build.props`.
   generated mapper.** It was silently skipped before, so the first call threw
   `No parameter binder found`. A positional record gets a `JAUNTYGEN004` warning.
 - **`JAUNTYGEN004` no longer says the entity will be mapped by reflection.** It is mapped only if
-  `UseReflectionMapping()` is called; otherwise the first call that needs it throws. The
-  diagnostic title and message now say so.
+  reflection mapping is on: `Extrode.Jaunty.Extensions.Reflection` is referenced (it enables
+  itself on first use) or `UseReflectionMapping()` is called. Otherwise the first call that needs
+  it throws. The diagnostic title and message now say so.
 
 - **DuckDB flat files:** write-back refuses glob sources, Excel sheets and ranges, and `SkipRows`
   preambles instead of writing to the wrong place; promotion joins the caller's transaction, checks
