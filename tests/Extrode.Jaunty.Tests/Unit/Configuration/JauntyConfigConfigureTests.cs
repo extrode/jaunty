@@ -313,35 +313,41 @@ public class JauntyConfigConfigureTests : IDisposable
         Assert.Equal(before + 1, ConfigurationGeneration.Current);
     }
 
-    [Fact]
-    public void Configure_FromInsideItsOwnCallback_Throws()
+    [Fact(Timeout = 30_000)]
+    public async Task Configure_FromInsideItsOwnCallback_Throws()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() =>
-            JauntyConfig.Configure(_ => JauntyConfig.Configure(Startup)));
+        await Task.Run(() =>
+        {
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                JauntyConfig.Configure(_ => JauntyConfig.Configure(Startup)));
 
-        Assert.Contains("inside its own callback", ex.Message);
-        Assert.False(JauntyConfig.IsConfigured);
-        JauntyConfig.Configure(Startup);
-        Assert.True(JauntyConfig.IsConfigured);
+            Assert.Contains("inside its own callback", ex.Message);
+            Assert.False(JauntyConfig.IsConfigured);
+            JauntyConfig.Configure(Startup);
+            Assert.True(JauntyConfig.IsConfigured);
+        }, TestContext.Current.CancellationToken);
     }
 
-    [Fact]
-    public void Configure_WhenTheCallbackThrows_LeavesItUnconfigured()
+    [Fact(Timeout = 30_000)]
+    public async Task Configure_WhenTheCallbackThrows_LeavesItUnconfigured()
     {
         var boom = new InvalidOperationException("boom");
 
-        Assert.Same(boom, Assert.Throws<InvalidOperationException>(() =>
-            JauntyConfig.Configure(c =>
-            {
-                c.TableNameResolver = Prefixed;
-                throw boom;
-            })));
+        await Task.Run(() =>
+        {
+            Assert.Same(boom, Assert.Throws<InvalidOperationException>(() =>
+                JauntyConfig.Configure(c =>
+                {
+                    c.TableNameResolver = Prefixed;
+                    throw boom;
+                })));
 
-        Assert.False(JauntyConfig.IsConfigured);
-        Assert.Null(JauntyConfig.TableNameResolver);
-        ConfigurationGeneration.ClearRead();
-        JauntyConfig.Configure(Startup);
-        Assert.True(JauntyConfig.IsConfigured);
+            Assert.False(JauntyConfig.IsConfigured);
+            Assert.Null(JauntyConfig.TableNameResolver);
+            ConfigurationGeneration.ClearRead();
+            JauntyConfig.Configure(Startup);
+            Assert.True(JauntyConfig.IsConfigured);
+        }, TestContext.Current.CancellationToken);
     }
 
     [Fact]
