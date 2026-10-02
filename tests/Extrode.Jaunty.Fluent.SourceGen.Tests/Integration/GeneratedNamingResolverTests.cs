@@ -219,6 +219,20 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     }
 
     [Fact]
+    public void AFirstWriteRejectedByTheResolver_DoesNotBreakLaterWrites()
+    {
+        Execute("CREATE TABLE first_write_widgets (widget_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)");
+        JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? "WIDGET_ID" : Snake(name);
+
+        Assert.Throws<ArgumentException>(() => _connection.Insert(new FirstWriteWidget { DisplayName = "a" }));
+
+        JauntyConfig.ColumnNameResolver = Snake;
+        _connection.Insert(new FirstWriteWidget { DisplayName = "b" });
+
+        Assert.Equal("b", _connection.Query<FirstWriteWidget>("SELECT * FROM first_write_widgets").Single().DisplayName);
+    }
+
+    [Fact]
     public void TheSchemaResolver_QualifiesCrudAndFluentSql()
     {
         UseSnakeCase();
