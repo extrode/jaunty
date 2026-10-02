@@ -301,13 +301,16 @@ public class JauntyConfigConfigureTests : IDisposable
             _ = JauntyConfig.DefaultEnumStorage;
             JauntyConfig.Logger = (_, _) => { };
 
+            using var spinning = new ManualResetEventSlim();
             Task configuring = Task.Run(() =>
             {
+                spinning.Set();
                 while (JauntyConfig.Logger is not null)
                     Thread.MemoryBarrier();
                 JauntyConfig.Configure(Startup);
             }, TestContext.Current.CancellationToken);
 
+            spinning.Wait(TestContext.Current.CancellationToken);
             JauntyConfig.Reset();
             await configuring;
         }
