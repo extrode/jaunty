@@ -196,6 +196,7 @@ The `DuckDbDialect` implements:
 2. **Schema inference**: DuckDB auto-detects column types from file data. Mismatches with entity types are validated at registration (if `ValidateSchema = true`).
 3. **Large file mutations**: Promoting a large file from VIEW to TABLE loads the entire file into memory. Use caution with multi-GB files.
 4. **Transaction semantics**: DuckDB supports transactions, but flat file write-back is best-effort (temp file + rename for atomicity).
+5. **Core CRUD on a raw `DuckDBConnection`**: the `Extrode.Jaunty` extension methods (`connection.Insert`, `Update`, `Delete`, `Upsert`, `Get`) write `@name` placeholders, which DuckDB reads as column references, so they fail with `Binder Error: Referenced column ... not found`. Use the `DuckDb` class's own `InsertAsync`, `UpdateAsync` and `DeleteAsync` instead. Making core CRUD honour the dialect's `$` prefix is tracked in `docs/specs/008-dialect-parameter-binding/`.
 
 ## Troubleshooting
 
