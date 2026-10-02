@@ -178,7 +178,8 @@ shippable packages (benchmarks/samples/SourceGenerator are IsPackable=false).</l
 (<code>https://nuget.pkg.github.com/extrode/index.json</code>) using the workflow's
 own <code>GITHUB_TOKEN</code> — no secrets to manage.</li>
 <li>Creates a GitHub Release with the <code>.nupkg</code> + <code>.snupkg</code> files attached
-(GitHub Packages has no symbol server; symbols ship on the Release).</li>
+(GitHub Packages has no symbol server; symbols ship on the Release). A
+version with a pre-release suffix (<code>-rc.N</code>) marks the Release pre-release.</li>
 </ol>
 <p>Package validation (<code>EnablePackageValidation</code>) runs during pack, so a
 ns2.0/net8.0 public-API divergence fails the release instead of shipping.</p>
