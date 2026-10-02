@@ -95,7 +95,8 @@ public static class JauntyConfig
     /// <exception cref="ArgumentNullException"><paramref name="configure"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">
     /// Extrode.Jaunty is already configured with different settings, or an operation has already
-    /// read the settings (any query, any generated <c>TableName</c>, any Fluent query) before this call.
+    /// read the settings (any query, any generated <c>TableName</c>, any Fluent query, or a read of a
+    /// <see cref="JauntyConfig"/> mapping setting such as <see cref="DefaultEnumStorage"/>) before this call.
     /// </exception>
     /// <remarks>
     /// <para>
@@ -108,7 +109,8 @@ public static class JauntyConfig
     /// A second call with the same settings does nothing, so a test host that runs
     /// <c>Program.cs</c> again in the same process keeps working. Settings compare equal when every
     /// delegate refers to the same method on the same target - true of method groups and of lambdas
-    /// that capture nothing; type handlers compare by their type. A lambda that captures a value is
+    /// that capture nothing; type handlers compare by their type only, so two instances of one
+    /// handler class with different constructor arguments count as the same. A lambda that captures a value is
     /// a new delegate each time, so make that call with <see cref="TryConfigure"/> instead.
     /// </para>
     /// <para>
@@ -179,8 +181,10 @@ public static class JauntyConfig
             Apply(Build(configure), clearHandlers: true);
 
             // A first read racing this call marks the flag before it loads the settings, and the
-            // barrier orders the publish above before the check below, so either that read saw only
-            // the new settings or this check sees the flag.
+            // barrier orders the publish above before the check below, so a race is always detected:
+            // either that read saw only the new settings or this check sees the flag. Detection is all
+            // it is - an operation that reads more than once may still see the new settings between
+            // this publish and the rollback below, so it can fail while this call throws.
             Interlocked.MemoryBarrier();
             if (ConfigurationGeneration.HasBeenRead)
             {
@@ -205,7 +209,8 @@ public static class JauntyConfig
 
     private static InvalidOperationException AlreadyRead() => new InvalidOperationException(
         "JauntyConfig.Configure was called after Extrode.Jaunty had already read its " +
-        "settings (a query, a generated TableName, or a Fluent query ran first). Call it " +
+        "settings (a query, a generated TableName, a Fluent query, or a read of a JauntyConfig " +
+        "mapping setting ran first). Call it " +
         "at startup, before anything else touches Extrode.Jaunty. " +
         "See docs/06-releases/upgrading-to-configure.md.");
 
@@ -397,6 +402,7 @@ public static class JauntyConfig
     }
 
     /// <summary>
+    /// Gets the interceptor pipeline for command execution hooks.
     /// </summary>
     /// <remarks>
     /// Use <see cref="AddInterceptor(ICommandInterceptor)"/> or <see cref="AddInterceptors(IEnumerable{ICommandInterceptor})"/> to register interceptors.
@@ -551,27 +557,34 @@ public static class JauntyConfig
                 break;
         }
 
-        lock (ConfigureSync)
+        try
         {
-            _settings = JauntySettings.Defaults;
-            TypeHandlerRegistry.Clear();
-            Interlocked.Exchange(ref _autoInstallSkipped, 0);
+            lock (ConfigureSync)
+            {
+                _settings = JauntySettings.Defaults;
+                TypeHandlerRegistry.Clear();
+                Interlocked.Exchange(ref _autoInstallSkipped, 0);
+            }
+
+            _logger = null;
+            lock (InterceptorSync)
+            {
+                _interceptorPipeline = null;
+            }
+            _parameterParsingCapacity = 8;
+            _queryResultCapacity = 64;
+            _csvFieldCapacity = 16;
+            BulkCopyConfiguration.Reset();
+            Dialects.SqlDialectFactory.ResetRegistrations();
+
+            ConfigurationGeneration.Invalidate();
+            ConfigurationGeneration.ClearRead();
+        }
+        finally
+        {
+            // Released last, so a Configure waiting on Reset never sees the read flag Reset is about to clear.
             Volatile.Write(ref _state, Unconfigured);
         }
-
-        _logger = null;
-        lock (InterceptorSync)
-        {
-            _interceptorPipeline = null;
-        }
-        _parameterParsingCapacity = 8;
-        _queryResultCapacity = 64;
-        _csvFieldCapacity = 16;
-        BulkCopyConfiguration.Reset();
-        Dialects.SqlDialectFactory.ResetRegistrations();
-
-        ConfigurationGeneration.Invalidate();
-        ConfigurationGeneration.ClearRead();
     }
 
     /// <summary>

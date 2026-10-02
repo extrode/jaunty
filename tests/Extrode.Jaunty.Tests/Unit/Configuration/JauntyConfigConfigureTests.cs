@@ -291,6 +291,31 @@ public class JauntyConfigConfigureTests : IDisposable
         Assert.Null(JauntyConfig.TableNameResolver);
     }
 
+    [Fact(Timeout = 60_000)]
+    public async Task Configure_RacingTheEndOfReset_NeverSeesTheOldReadRecord()
+    {
+        for (int i = 0; i < 300; i++)
+        {
+            JauntyConfig.Reset();
+            JauntyConfig.Configure(Startup);
+            _ = JauntyConfig.DefaultEnumStorage;
+            JauntyConfig.Logger = (_, _) => { };
+
+            using var spinning = new ManualResetEventSlim();
+            Task configuring = Task.Run(() =>
+            {
+                spinning.Set();
+                while (JauntyConfig.Logger is not null)
+                    Thread.MemoryBarrier();
+                JauntyConfig.Configure(Startup);
+            }, TestContext.Current.CancellationToken);
+
+            spinning.Wait(TestContext.Current.CancellationToken);
+            JauntyConfig.Reset();
+            await configuring;
+        }
+    }
+
     [Fact]
     public void RemovingAHandler_DropsItFromTheSettingsToo()
     {
@@ -302,13 +327,24 @@ public class JauntyConfigConfigureTests : IDisposable
     }
 
     [Fact]
-    public void OlderExtension_IsAnErrorOnlyWhenOlderThanTheCore()
+    public void MismatchedExtension_IsAnErrorOnlyWhenThePackageVersionsDiffer()
     {
-        Assert.NotNull(AutoReflection.OlderExtension(new Version(1, 0), new Version(1, 1)));
-        Assert.Null(AutoReflection.OlderExtension(new Version(1, 1), new Version(1, 1)));
-        Assert.Null(AutoReflection.OlderExtension(new Version(1, 2), new Version(1, 1)));
-        Assert.Null(AutoReflection.OlderExtension(null, new Version(1, 1)));
-        Assert.Null(AutoReflection.OlderExtension(new Version(1, 0), null));
+        Assert.NotNull(AutoReflection.MismatchedExtension("1.0.0-rc.2", "1.0.0-rc.3"));
+        Assert.NotNull(AutoReflection.MismatchedExtension("1.0.0", "1.1.0"));
+        Assert.Null(AutoReflection.MismatchedExtension("1.0.0-rc.3", "1.0.0-rc.3"));
+        Assert.Null(AutoReflection.MismatchedExtension(null, "1.0.0-rc.3"));
+        Assert.Null(AutoReflection.MismatchedExtension("1.0.0-rc.2", null));
+    }
+
+    [Fact]
+    public void ProductVersion_TellsReleaseCandidatesApart()
+    {
+        string? core = AutoReflection.ProductVersion(typeof(JauntyConfig).Assembly);
+        string? extension = AutoReflection.ProductVersion(typeof(Extrode.Jaunty.Extensions.Reflection.JauntyReflectionExtensions).Assembly);
+
+        Assert.NotNull(core);
+        Assert.DoesNotContain("+", core);
+        Assert.Equal(core, extension);
     }
 
     [Fact]

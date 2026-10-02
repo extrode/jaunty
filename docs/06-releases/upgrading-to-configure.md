@@ -53,7 +53,9 @@ Put every line from the left column into one `Configure` call, as in the right c
 | `JauntyNpgsql.Use();` | `c.UseNpgsqlCopy();` |
 | `JauntyConfig.RemoveTypeHandler<T>();` | No replacement: don't register it. Handlers are fixed at startup. |
 
-Reading a setting is unchanged: `JauntyConfig.ColumnNameResolver` still returns the resolver.
+Reading a setting still works the same way: `JauntyConfig.ColumnNameResolver` still returns the
+resolver. But a read now counts as first use (rule 1), so code that logs a setting such as
+`JauntyConfig.DefaultEnumStorage` before calling `Configure` must move after it.
 
 ### A console app or worker
 
@@ -110,19 +112,25 @@ publish, or to put the hooks back after replacing one of them by hand. If you ne
 ## Rules to know
 
 1. **Call `Configure` once, at startup, before anything touches Jaunty.** Running a query, a Fluent
-   query, or reading a generated member such as `Product.Jaunty.TableName` counts as first use.
-   `Configure` after that throws:
+   query, reading a generated member such as `Product.Jaunty.TableName`, or reading a mapping
+   setting such as `JauntyConfig.DefaultEnumStorage` counts as first use. `Configure` after that
+   throws:
 
    ```text
    InvalidOperationException: JauntyConfig.Configure was called after Extrode.Jaunty had already
-   read its settings (a query, a generated TableName, or a Fluent query ran first).
+   read its settings (a query, a generated TableName, a Fluent query, or a read of a JauntyConfig
+   mapping setting ran first).
    ```
+
+   A query running on another thread while `Configure` runs is detected the same way: `Configure`
+   throws, puts the previous settings back, and that query may fail too.
 
 2. **A second call with the same settings does nothing; with different settings it throws.** "The
    same" means every delegate refers to the same method on the same target. Method groups
    (`c.ColumnNameResolver = Snake;`) and lambdas that capture nothing compare equal, and type
    handlers compare by their type, so `c.RegisterTypeHandler(new MoneyHandler())` is the same on
-   every run. A lambda that captures a variable is a new delegate on every call, so make that call
+   every run. That also means two handlers of one class built with different constructor
+   arguments count as the same, and the second call silently keeps the first. A lambda that captures a variable is a new delegate on every call, so make that call
    through `JauntyConfig.TryConfigure`, which applies the first call and skips the rest without
    running them. A repeated `Configure` runs your callback again to compare, so keep it free of
    side effects.
@@ -152,7 +160,19 @@ internal static class JauntyTestSetup
 }
 ```
 
-where `Startup.ConfigureJaunty` is the same method `Program.cs` passes to `Configure`.
+where `Startup.ConfigureJaunty` is the same method `Program.cs` passes to `Configure`. Two limits:
+
+- This works only if `Program.cs` passes that same method, or calls `TryConfigure`. If
+  `Program.cs` builds its settings from `builder.Configuration`, the module initializer cannot see
+  them, and a plain `Configure` in `Program.cs` then throws "different settings". Use
+  `TryConfigure` in `Program.cs`, and the module initializer's settings win.
+- `[ModuleInitializer]` needs C# 9. On net472 or netstandard2.0 declare the attribute yourself
+  (`namespace System.Runtime.CompilerServices { internal sealed class ModuleInitializerAttribute : Attribute { } }`)
+  or use a polyfill package.
+
+Fixtures in a separate shared assembly that query before the test assembly's module initializer
+runs are not supported: the order across assemblies cannot be controlled. Serialize those fixtures
+or configure from the shared assembly instead.
 
 ## Your own unit tests
 
