@@ -140,6 +140,14 @@ default lives in `src/Directory.Build.props`.
   kept its build-time names in CRUD SQL, Fluent SQL, its binders and its reader, while partial
   reads of the same entity used the resolver. With no resolver set, nothing changes. Generated
   names follow a resolver changed at runtime, as reflection metadata already did.
+  - The generated statics (`TableName`, `SchemaName`, `PrimaryKeyColumnNames`, the `*Columns`
+    lists, `ParameterMap`, `EntityColumns`) now return the names under the current resolvers.
+    Any `JauntyConfig` change hands out new instances, so read them when needed rather than
+    caching them, and do not modify the `ParameterMap` dictionary.
+  - A resolver that maps two properties of a generated entity to one column is now rejected with
+    an `ArgumentException` on reads too, as reflection does; before, both properties read the same
+    column.
+  - Entities compiled against an earlier package keep their build-time names until rebuilt.
 - **The reflection path no longer calls a naming resolver for a name an attribute already fixes.**
   The result was discarded before; only a resolver with side effects, or one that throws, notices.
 - **SQLite bundle is now SQLitePCLRaw 3.0.5 (SQLite 3.53.4); Microsoft.Data.SqlClient is 7.1.0.**
