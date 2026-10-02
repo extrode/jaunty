@@ -60,6 +60,12 @@ default lives in `src/Directory.Build.props`.
 
 ### Fixed
 
+- **`Upsert` of an entity with a database-generated key now updates the matching row.** The key
+  is left out of the INSERT, so on PostgreSQL, SQLite, MySQL/MariaDB and DuckDB the
+  `ON CONFLICT` / `ON DUPLICATE KEY` form never conflicted and every call inserted a new row.
+  Those dialects now emit an UPDATE followed by a guarded INSERT, matching SQL Server's MERGE: a
+  matching key updates, any other key inserts and the database assigns it. Source-generated
+  entities with a single `int`/`long` key and no `[DatabaseGenerated]` count as generated.
 - **Placeholders inside square brackets are now bound on PostgreSQL, DuckDB and MySQL.**
   `ARRAY[@a, @b]`, `tags[@i]` and DuckDB's `[@a, @b]` list literal used to be skipped as if
   they were SQL Server bracket identifiers, so their parameters were never bound or expanded.

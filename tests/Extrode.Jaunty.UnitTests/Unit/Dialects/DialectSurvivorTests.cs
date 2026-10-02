@@ -51,6 +51,6 @@ public class DialectSurvivorTests
     [Fact]
     public void MySql_UpsertAssignsEveryUpdateColumnSeparatedByCommas()
         => Assert.Equal(
-            "INSERT INTO t (a, b) VALUES (@a, @b) ON DUPLICATE KEY UPDATE a = VALUES(a), b = VALUES(b)",
-            new MySqlDialect().GenerateUpsertSql("t", ["a", "b"], ["@a", "@b"], ["a", "b"], ["@a", "@b"], ["id"], ["@id"]));
+            "INSERT INTO t (id, a, b) VALUES (@id, @a, @b) ON DUPLICATE KEY UPDATE a = VALUES(a), b = VALUES(b)",
+            new MySqlDialect().GenerateUpsertSql("t", ["id", "a", "b"], ["@id", "@a", "@b"], ["a", "b"], ["@a", "@b"], ["id"], ["@id"]));
 }
