@@ -47,9 +47,9 @@ public static partial class Jaunty
     /// <strong>Database-generated keys:</strong> when the key is an identity or otherwise
     /// database-generated column, a key that matches a row updates it, and any other key value
     /// (including an unset <c>0</c>) inserts a new row whose key the database assigns. The new key
-    /// is not written back to the entity; use <c>Insert</c> when you need it. On dialects without
-    /// MERGE this runs as an UPDATE followed by a guarded INSERT in one command, so wrap concurrent
-    /// upserts of the same new row in a transaction.
+    /// is not written back to the entity; use <c>Insert</c> when you need it. A key that matches no
+    /// row always inserts, so two calls with an unset key create two rows. On dialects without
+    /// MERGE this runs as an UPDATE followed by a guarded INSERT in one command.
     /// </para>
     /// </remarks>
     /// <example>

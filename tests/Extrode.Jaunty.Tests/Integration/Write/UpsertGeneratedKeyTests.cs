@@ -48,7 +48,7 @@ public class UpsertGeneratedKeyTests : IClassFixture<DialectFixture>
             DialectProvider.MariaDb => "id INT AUTO_INCREMENT PRIMARY KEY",
             _ => "id INTEGER PRIMARY KEY AUTOINCREMENT",
         };
-        return $"CREATE TABLE {UpsertGeneratedKeyEntity.TableName} ({id}, name VARCHAR(50) NOT NULL);";
+        return $"CREATE TABLE {UpsertGeneratedKeyEntity.TableName} ({id}, name VARCHAR(50) NOT NULL, score INT NULL, note VARCHAR(50) NULL);";
     }
 
     private IDbConnection Seeded(DialectInfo dialect)
@@ -66,6 +66,15 @@ public class UpsertGeneratedKeyTests : IClassFixture<DialectFixture>
 
     private static long Count(IDbConnection connection)
         => Scalar(connection, $"SELECT COUNT(*) FROM {UpsertGeneratedKeyEntity.TableName}");
+
+    private static (object Score, object Note) Nullables(IDbConnection connection, long id)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = $"SELECT score, note FROM {UpsertGeneratedKeyEntity.TableName} WHERE id = {id}";
+        using IDataReader reader = cmd.ExecuteReader();
+        Assert.True(reader.Read());
+        return (reader.GetValue(0), reader.GetValue(1));
+    }
 
     [Theory]
     [SqlServer]
@@ -187,6 +196,36 @@ public class UpsertGeneratedKeyTests : IClassFixture<DialectFixture>
             Execute(connection, Drop(dialect));
         }
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void NullAndIntegerValues_InsertThenUpdate(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            Assert.Equal(1, connection.Upsert(new UpsertGeneratedKeyEntity { Name = "nulls", Score = null, Note = null }));
+            long id = IdOf(connection, "nulls");
+            Assert.Equal((DBNull.Value, DBNull.Value), Nullables(connection, id));
+
+            Assert.Equal(1, connection.Upsert(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "nulls", Score = 7, Note = "set" }));
+            (object score, object note) = Nullables(connection, id);
+            Assert.Equal(7L, Convert.ToInt64(score));
+            Assert.Equal("set", note);
+
+            Assert.Equal(1, connection.Upsert(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "nulls", Score = null, Note = null }));
+            Assert.Equal((DBNull.Value, DBNull.Value), Nullables(connection, id));
+            Assert.Equal(3, Count(connection));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
 }
 
 [Table(TableName)]
@@ -207,4 +246,10 @@ public class UpsertGeneratedKeyEntity
 
     [Column("name")]
     public string Name { get; set; } = string.Empty;
+
+    [Column("score")]
+    public int? Score { get; set; }
+
+    [Column("note")]
+    public string? Note { get; set; }
 }
