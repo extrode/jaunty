@@ -56,10 +56,10 @@ public class GeneratedAccessorsEmissionTests
     /// </summary>
     [Theory]
     [InlineData("Func<IDataReader, Product> IGeneratedAccessors<Product>.RowMapper")]
-    [InlineData("Func<IDataReader, Func<IDataReader, Product>> IGeneratedAccessors<Product>.RowMapperFactory => CreateRowMapper;")]
-    [InlineData("Action<IDbCommand, Product> IGeneratedAccessors<Product>.InsertBinder => BindInsert;")]
-    [InlineData("Action<IDbCommand, Product> IGeneratedAccessors<Product>.UpdateBinder => BindUpdate;")]
-    [InlineData("Action<IDbCommand, Product> IGeneratedAccessors<Product>.DeleteBinder => BindDelete;")]
+    [InlineData("Func<IDataReader, Func<IDataReader, Product>> IGeneratedAccessors<Product>.RowMapperFactory => Jaunty.CreateRowMapper;")]
+    [InlineData("Action<IDbCommand, Product> IGeneratedAccessors<Product>.InsertBinder => Jaunty.BindInsert;")]
+    [InlineData("Action<IDbCommand, Product> IGeneratedAccessors<Product>.UpdateBinder => Jaunty.BindUpdate;")]
+    [InlineData("Action<IDbCommand, Product> IGeneratedAccessors<Product>.DeleteBinder => Jaunty.BindDelete;")]
     public void EachAccessor_IsEmittedAsAnExplicitImplementation(string expected)
     {
         var generated = RunGenerator(EntitySource).Source;
@@ -71,47 +71,33 @@ public class GeneratedAccessorsEmissionTests
     /// The whole mechanism is that the delegate names the generated method directly. If an accessor
     /// were emitted as a lambda that resolved the method some other way, the static reference - and
     /// with it the preservation - would be gone while these tests still passed on the member names.
+    /// The nested <c>ReadEntity</c> is static on every target, so one method group serves both.
     /// </summary>
     [Fact]
-    public void TheNet8RowMapper_IsTheReadEntityMethodGroupItself()
+    public void TheRowMapper_IsTheNestedReadEntityMethodGroupItself()
     {
         var generated = RunGenerator(EntitySource).Source;
 
         Assert.Contains(
-            "Func<IDataReader, Product> IGeneratedAccessors<Product>.RowMapper => ReadEntity;",
+            "Func<IDataReader, Product> IGeneratedAccessors<Product>.RowMapper => Jaunty.ReadEntity;",
             generated,
             StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// Below net8.0 <c>ReadEntity</c> is an instance member (see <c>IMapped&lt;T&gt;</c>), so the
-    /// accessor has to construct one - and it must do so <em>per row</em>, because the reflection
-    /// fallback it replaces did <c>r =&gt; openDelegate(new T(), r)</c>. Hoisting the instance out of
-    /// the lambda would change behaviour for any <c>ReadEntity</c> that touches <c>this</c>, and would
-    /// do it silently on exactly the targets least likely to be exercised.
+    /// <c>IMapped&lt;T&gt;.ReadEntity</c> is static from net8.0 and an instance member below it, and
+    /// the generated file is compiled under whichever target the consumer picked, so the entity's
+    /// forwarder carries both shapes.
     /// </summary>
     [Fact]
-    public void ThePreNet8RowMapper_ConstructsAFreshEntityPerRow()
+    public void TheEntityReadEntity_ForwardsToTheNestedClassOnBothTargets()
     {
         var generated = RunGenerator(EntitySource).Source;
 
         Assert.Contains(
-            "Func<IDataReader, Product> IGeneratedAccessors<Product>.RowMapper => r => new Product().ReadEntity(r);",
-            generated,
+            "#if NET8_0_OR_GREATER\n        public static Product ReadEntity(IDataReader reader) => Jaunty.ReadEntity(reader);\n        #else\n        public Product ReadEntity(IDataReader reader) => Jaunty.ReadEntity(reader);\n        #endif",
+            generated.Replace("\r\n", "\n"),
             StringComparison.Ordinal);
-    }
-
-    /// <summary>
-    /// Both branches must be present, guarded - the generated file is compiled by the consumer under
-    /// whichever target they picked.
-    /// </summary>
-    [Fact]
-    public void BothRowMapperBranches_AreGuardedByTheTargetCheck()
-    {
-        var generated = RunGenerator(EntitySource).Source;
-
-        Assert.Contains("#if NET8_0_OR_GREATER", generated, StringComparison.Ordinal);
-        Assert.Contains("#else", generated, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------------

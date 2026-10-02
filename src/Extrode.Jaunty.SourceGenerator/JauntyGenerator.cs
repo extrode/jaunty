@@ -768,7 +768,9 @@ public partial class JauntyGenerator : IIncrementalGenerator
             ContainingTypes: containingTypes,
             UnsupportedNestingReason: unsupportedNesting,
             DroppedProperties: new EquatableArray<DroppedPropertyInfo>(dropped.ToImmutableArray()),
-            TableNameIsExplicit: tableNameIsExplicit);
+            TableNameIsExplicit: tableNameIsExplicit,
+            HidesInheritedJaunty: InheritsMember(classSymbol, NestedClassName),
+            HidesInheritedReadEntity: InheritsMember(classSymbol, "ReadEntity"));
     }
 
     /// <summary>
@@ -846,61 +848,71 @@ public partial class JauntyGenerator : IIncrementalGenerator
         return null;
     }
 
-    /// <summary>
-    /// The members <c>GenerateMapper</c> declares on the entity's partial.
-    /// </summary>
-    private static readonly string[] GeneratedMemberNames =
-    [
-        "ColumnInfo", "ReadFallback", "ReadEntity", "CreateRowMapper", "ThrowIfNonNullableColumnIsNull",
-        "BindInsert", "BindUpdate", "BindDelete", "AddParam", "AddEnumParam", "OrdinalMap",
-        "TableName", "SchemaName", "PrimaryKeyColumnNames", "InsertColumns", "UpdateColumns",
-        "DeleteColumns", "ParameterMap", "EntityColumns", NamedStateClass, NameCacheHolderClass,
-    ];
-
-    /// <summary>The generated nested class holding every member built from the resolved names.</summary>
-    private const string NamedStateClass = "__JauntyNamed";
-
-    /// <summary>The generated nested static class holding the entity's <c>GeneratedNameCache</c>.</summary>
-    private const string NameCacheHolderClass = "__JauntyNameHolder";
+    /// <summary>The nested class <c>GenerateMapper</c> declares on the entity to hold the mapper.</summary>
+    private const string NestedClassName = "Jaunty";
 
     /// <summary>The expression the generated members read the <c>GeneratedNameCache</c> through.</summary>
-    private const string NameCacheField = NameCacheHolderClass + ".Cache";
+    private const string NameCacheField = "NameHolder.Cache";
 
     /// <summary>
     /// A reason the entity cannot take the generated members, or <see langword="null"/>.
     /// </summary>
     /// <remarks>
-    /// AUD-R38 generator audit. A member of the entity named like one the generator declares gave
-    /// CS0102 inside the .g.cs, and a mapped base-class property of that name was hidden by the
-    /// generated static, so <c>entity.TableName</c> gave CS0176. An audit-log entity with a
-    /// <c>TableName</c> column is ordinary, and the reflection path maps it, so the entity falls back
-    /// to reflection with a diagnostic like every other shape the generator cannot emit.
-    /// Inherited members other than mapped properties are left alone: the generated member only
-    /// hides them, which compiles, and a base entity from another generated assembly carries the
-    /// whole generated set. A method named like one of the public generated methods is an overload
-    /// unless its parameters match, so only the exact signature conflicts; the private helpers are
-    /// reserved by name, since an overload could capture the generated calls.
+    /// Every generated member lives in the nested <c>Jaunty</c> class, so an entity member can clash
+    /// only with that class or with <c>ReadEntity</c>, which <c>IMapped&lt;T&gt;</c> requires on the
+    /// entity itself. A mapped base-class property of either name would be hidden from the generated
+    /// reader. An exact-signature <c>BindInsert</c>, <c>BindUpdate</c>, <c>BindDelete</c> or
+    /// <c>CreateRowMapper</c> no longer clashes, but the generated mapper would silently replace it,
+    /// so that entity keeps the reflection mapper, which uses the entity's own method.
     /// </remarks>
     private static string? ReservedMemberNameReason(INamedTypeSymbol classSymbol, List<PropertyMetadata> properties)
     {
-        foreach (string name in GeneratedMemberNames)
+        if (classSymbol.Name == NestedClassName)
+            return $"it is named '{NestedClassName}', the name of the nested class that holds the generated mapper";
+
+        foreach (ISymbol member in classSymbol.GetMembers(NestedClassName))
+            return $"it declares a member named '{member.Name}', the name of the nested class that holds the generated mapper";
+
+        foreach (ISymbol member in classSymbol.GetMembers("ReadEntity"))
+        {
+            if (member is IMethodSymbol method && IsOverloadOfGeneratedMethod(method, classSymbol))
+                continue;
+
+            return "it declares a member named 'ReadEntity', which the generated mapper also declares";
+        }
+
+        foreach (string name in new[] { "BindInsert", "BindUpdate", "BindDelete", "CreateRowMapper" })
         {
             foreach (ISymbol member in classSymbol.GetMembers(name))
             {
-                if (member is IMethodSymbol method && IsOverloadOfGeneratedMethod(method, classSymbol))
-                    continue;
-
-                return $"it declares a member named '{name}', which the generated mapper also declares";
+                if (member is IMethodSymbol method && !IsOverloadOfGeneratedMethod(method, classSymbol))
+                    return $"it declares its own '{name}', which the generated mapper would replace";
             }
         }
 
         foreach (PropertyMetadata property in properties)
         {
-            if (Array.IndexOf(GeneratedMemberNames, property.PropertyName) >= 0)
+            if (property.PropertyName is NestedClassName or "ReadEntity")
                 return $"its mapped property '{property.PropertyName}' is named like a member the generated mapper declares";
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Whether a base type of <paramref name="classSymbol"/> already has a member named
+    /// <paramref name="name"/>, or is a <c>[Table]</c> entity whose generated partial will declare
+    /// one. The generated member then hides it and is emitted with <c>new</c>.
+    /// </summary>
+    private static bool InheritsMember(INamedTypeSymbol classSymbol, string name)
+    {
+        for (INamedTypeSymbol? type = classSymbol.BaseType; type is not null && type.SpecialType != SpecialType.System_Object; type = type.BaseType)
+        {
+            if (!type.GetMembers(name).IsEmpty || HasRecognizedAttribute(type, JauntyTableAttribute, DataAnnotationsTableAttribute))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -1172,6 +1184,21 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         sb.AppendLine($"    {entity.AccessibilityKeyword} partial {(entity.IsRecord ? "record" : "class")} {className} : IMapped<{className}>, IEntityMetadataSource, IGeneratedAccessors<{className}>");
         sb.AppendLine("    {");
+
+        // IMapped<T> requires ReadEntity on the entity itself; it is the one generated member there.
+        string hidesReadEntity = entity.HidesInheritedReadEntity ? "new " : "";
+        sb.AppendLine("        #if NET8_0_OR_GREATER");
+        sb.AppendLine($"        public {hidesReadEntity}static {className} ReadEntity(IDataReader reader) => {NestedClassName}.ReadEntity(reader);");
+        sb.AppendLine("        #else");
+        sb.AppendLine($"        public {hidesReadEntity}{className} ReadEntity(IDataReader reader) => {NestedClassName}.ReadEntity(reader);");
+        sb.AppendLine("        #endif");
+        sb.AppendLine();
+
+        // Every other generated member lives in one nested class, so the entity's own members, a
+        // TableName column property for one, cannot clash with them.
+        sb.AppendLine($"        public {(entity.HidesInheritedJaunty ? "new " : "")}static class {NestedClassName}");
+        sb.AppendLine("        {");
+        int nestedStart = sb.Length;
         sb.AppendLine("        public readonly struct ColumnInfo");
         sb.AppendLine("        {");
         sb.AppendLine("            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)");
@@ -1308,11 +1335,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
 
         // 1. ReadEntity - dual path for DbDataReader (fast) vs IDataReader (fallback)
         // Cache the reader type once to avoid per-row type check overhead
-        sb.AppendLine("        #if NET8_0_OR_GREATER");
         sb.AppendLine($"        public static {className} ReadEntity(IDataReader reader)");
-        sb.AppendLine("        #else");
-        sb.AppendLine($"        public {className} ReadEntity(IDataReader reader)");
-        sb.AppendLine("        #endif");
         sb.AppendLine("        {");
         sb.AppendLine("            var entry = OrdinalMap.Resolve(reader);");
         sb.AppendLine("            var ord = entry.Ordinals;");
@@ -1690,20 +1713,20 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // order the partial files' static initializers run in: a user initializer reading
         // TableName must not find it still null.
         sb.AppendLine();
-        sb.AppendLine($"        private static class {NameCacheHolderClass}");
+        sb.AppendLine("        private static class NameHolder");
         sb.AppendLine("        {");
-        sb.AppendLine($"            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<{NamedStateClass}> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<{NamedStateClass}>(");
+        sb.AppendLine("            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<Named> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<Named>(");
         sb.AppendLine($"                typeof({className}),");
         sb.AppendLine($"                {Literal(entity.TableNameIsExplicit ? tableName : null)},");
         sb.AppendLine($"                {Literal(schemaName)},");
         sb.AppendLine($"                new string[] {{ {string.Join(", ", properties.Select(p => Literal(p.PropertyName)))} }},");
         sb.AppendLine($"                new string?[] {{ {string.Join(", ", properties.Select(p => Literal(p.ColumnNameIsExplicit ? p.ColumnName : null)))} }},");
-        sb.AppendLine($"                n => new {NamedStateClass}(n));");
+        sb.AppendLine("                n => new Named(n));");
         sb.AppendLine("        }");
         sb.AppendLine();
-        sb.AppendLine($"        private sealed class {NamedStateClass}");
+        sb.AppendLine("        private sealed class Named");
         sb.AppendLine("        {");
-        sb.AppendLine($"            public {NamedStateClass}(global::Extrode.Jaunty.Core.GeneratedNames n)");
+        sb.AppendLine("            public Named(global::Extrode.Jaunty.Core.GeneratedNames n)");
         sb.AppendLine("            {");
         sb.AppendLine("                Names = n;");
         sb.AppendLine("                PrimaryKeyColumnNames = new string[] {");
@@ -1757,13 +1780,20 @@ public partial class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => {NameCacheField}.Current.DeleteColumns;");
         sb.AppendLine($"        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => {NameCacheField}.Current.ParameterMap;");
         sb.AppendLine($"        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => {NameCacheField}.Current.EntityColumns;");
+
+        string nested = sb.ToString(nestedStart, sb.Length - nestedStart);
+        sb.Length = nestedStart;
+        string[] nestedLines = nested.Split('\n');
+        for (int i = 0; i < nestedLines.Length - 1; i++)
+        {
+            string line = nestedLines[i].TrimEnd('\r');
+            sb.AppendLine(line.Length == 0 ? "" : "    " + line);
+        }
+        sb.AppendLine("        }");
         sb.AppendLine();
-        // Explicit interface implementation for TableName/SchemaName since the public static
-        // properties of the same name already exist above (a class cannot have both a static
-        // and an instance member sharing one name).
-        sb.AppendLine("        string IEntityMetadataSource.TableName => TableName;");
-        sb.AppendLine("        string? IEntityMetadataSource.SchemaName => SchemaName;");
-        sb.AppendLine("        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;");
+        sb.AppendLine($"        string IEntityMetadataSource.TableName => {NestedClassName}.TableName;");
+        sb.AppendLine($"        string? IEntityMetadataSource.SchemaName => {NestedClassName}.SchemaName;");
+        sb.AppendLine($"        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => {NestedClassName}.EntityColumns;");
 
         // IGeneratedAccessors<T> - spec 009. Hands the members emitted above to Extrode.Jaunty as delegates
         // so MappedCache<T>/WriteParameterCache<T> reach them by interface dispatch instead of
@@ -1776,19 +1806,11 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // Explicit implementations: these are the consumer's own entity classes, so the accessors
         // stay off their public surface, exactly as IEntityMetadataSource.Columns does above.
         sb.AppendLine();
-        sb.AppendLine("        #if NET8_0_OR_GREATER");
-        sb.AppendLine($"        Func<IDataReader, {className}> IGeneratedAccessors<{className}>.RowMapper => ReadEntity;");
-        sb.AppendLine("        #else");
-        // Below net8.0 ReadEntity is an instance member (see IMapped<T>), so the delegate has to
-        // construct one. Per row, not once: the reflection fallback this replaces did
-        // `r => openDelegate(new T(), r)`, and reusing a single instance across rows would change
-        // behaviour for any ReadEntity that touches `this`.
-        sb.AppendLine($"        Func<IDataReader, {className}> IGeneratedAccessors<{className}>.RowMapper => r => new {className}().ReadEntity(r);");
-        sb.AppendLine("        #endif");
-        sb.AppendLine($"        Func<IDataReader, Func<IDataReader, {className}>> IGeneratedAccessors<{className}>.RowMapperFactory => CreateRowMapper;");
-        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.InsertBinder => BindInsert;");
-        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.UpdateBinder => BindUpdate;");
-        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.DeleteBinder => BindDelete;");
+        sb.AppendLine($"        Func<IDataReader, {className}> IGeneratedAccessors<{className}>.RowMapper => {NestedClassName}.ReadEntity;");
+        sb.AppendLine($"        Func<IDataReader, Func<IDataReader, {className}>> IGeneratedAccessors<{className}>.RowMapperFactory => {NestedClassName}.CreateRowMapper;");
+        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.InsertBinder => {NestedClassName}.BindInsert;");
+        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.UpdateBinder => {NestedClassName}.BindUpdate;");
+        sb.AppendLine($"        Action<IDbCommand, {className}> IGeneratedAccessors<{className}>.DeleteBinder => {NestedClassName}.BindDelete;");
 
         sb.AppendLine("    }");
 

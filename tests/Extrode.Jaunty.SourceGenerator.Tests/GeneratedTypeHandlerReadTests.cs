@@ -57,7 +57,7 @@ public sealed class GeneratedTypeHandlerReadTests
         WithMoneyHandler(() =>
         {
             PlainRecordReader reader = Reader(99.25m);
-            Func<IDataReader, GenHandledEntity> map = GenHandledEntity.CreateRowMapper(reader);
+            Func<IDataReader, GenHandledEntity> map = GenHandledEntity.Jaunty.CreateRowMapper(reader);
 
             Assert.Equal(99.25m, map(reader).Amount.Amount);
         });
@@ -95,7 +95,7 @@ public sealed class GeneratedTypeHandlerReadTests
         WithMoneyHandler(() =>
         {
             var command = new RecordingCommand();
-            GenHandledEntity.BindInsert(command, new GenHandledEntity { Id = 1, Amount = new GenMoney(4.5m) });
+            GenHandledEntity.Jaunty.BindInsert(command, new GenHandledEntity { Id = 1, Amount = new GenMoney(4.5m) });
 
             Assert.Contains(command.Bound, p => p.ParameterName == "@amount" && Equals(p.Value, 4.5m));
             Assert.Equal(4.5m, GenHandledEntity.ReadEntity(Reader(4.5m)).Amount.Amount);
@@ -138,10 +138,10 @@ public sealed class GeneratedTypeHandlerReadTests
             Assert.Null(GenNullableHandledEntity.ReadEntity(DbReader("")).Amount);
 
             PlainRecordReader plain = Reader("");
-            Assert.Null(GenNullableHandledEntity.CreateRowMapper(plain)(plain).Amount);
+            Assert.Null(GenNullableHandledEntity.Jaunty.CreateRowMapper(plain)(plain).Amount);
 
             DataTableReader db = DbReader("");
-            Assert.Null(GenNullableHandledEntity.CreateRowMapper(db)(db).Amount);
+            Assert.Null(GenNullableHandledEntity.Jaunty.CreateRowMapper(db)(db).Amount);
         });
     }
 
@@ -154,10 +154,10 @@ public sealed class GeneratedTypeHandlerReadTests
             Assert.Equal(2.5m, GenNullableHandledEntity.ReadEntity(DbReader(2.5m)).Amount?.Amount);
 
             PlainRecordReader plain = Reader(2.5m);
-            Assert.Equal(2.5m, GenNullableHandledEntity.CreateRowMapper(plain)(plain).Amount?.Amount);
+            Assert.Equal(2.5m, GenNullableHandledEntity.Jaunty.CreateRowMapper(plain)(plain).Amount?.Amount);
 
             DataTableReader db = DbReader(2.5m);
-            Assert.Equal(2.5m, GenNullableHandledEntity.CreateRowMapper(db)(db).Amount?.Amount);
+            Assert.Equal(2.5m, GenNullableHandledEntity.Jaunty.CreateRowMapper(db)(db).Amount?.Amount);
         });
     }
 
@@ -167,7 +167,7 @@ public sealed class GeneratedTypeHandlerReadTests
         WithBlankAsNullMoneyHandler(() =>
         {
             var command = new RecordingCommand();
-            GenNullableHandledEntity.BindInsert(command, new GenNullableHandledEntity { Id = 1, Amount = new GenMoney(8.5m) });
+            GenNullableHandledEntity.Jaunty.BindInsert(command, new GenNullableHandledEntity { Id = 1, Amount = new GenMoney(8.5m) });
 
             Assert.Contains(command.Bound, p => p.ParameterName == "@amount" && Equals(p.Value, 8.5m));
         });

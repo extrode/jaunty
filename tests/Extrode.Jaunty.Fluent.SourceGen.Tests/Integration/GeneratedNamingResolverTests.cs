@@ -71,13 +71,13 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         cmd.ExecuteNonQuery();
     }
 
-    private static string[] ColumnNames() => ResolvedNameWidget.EntityColumns.Select(c => c.ColumnName).ToArray();
+    private static string[] ColumnNames() => ResolvedNameWidget.Jaunty.EntityColumns.Select(c => c.ColumnName).ToArray();
 
     [Fact]
     public void WithoutResolvers_TheGeneratedNamesAreTheAttributeOrCSharpNames()
     {
-        Assert.Equal("ResolvedNameWidget", ResolvedNameWidget.TableName);
-        Assert.Null(ResolvedNameWidget.SchemaName);
+        Assert.Equal("ResolvedNameWidget", ResolvedNameWidget.Jaunty.TableName);
+        Assert.Null(ResolvedNameWidget.Jaunty.SchemaName);
         Assert.Equal(["WidgetId", "DisplayName", "fixed_price"], ColumnNames());
     }
 
@@ -86,14 +86,14 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     {
         UseSnakeCase();
 
-        Assert.Equal("resolved_name_widgets", ResolvedNameWidget.TableName);
+        Assert.Equal("resolved_name_widgets", ResolvedNameWidget.Jaunty.TableName);
         Assert.Equal(["widget_id", "display_name", "fixed_price"], ColumnNames());
-        Assert.Equal(["widget_id"], ResolvedNameWidget.PrimaryKeyColumnNames);
-        Assert.Equal(["display_name", "fixed_price"], ResolvedNameWidget.InsertColumns.Select(c => c.ColumnName));
-        Assert.Equal(["display_name", "fixed_price"], ResolvedNameWidget.UpdateColumns.Select(c => c.ColumnName));
-        Assert.Equal(["widget_id"], ResolvedNameWidget.DeleteColumns.Select(c => c.ColumnName));
-        Assert.True(ResolvedNameWidget.ParameterMap.ContainsKey("display_name"));
-        Assert.False(ResolvedNameWidget.ParameterMap.ContainsKey("DisplayName"));
+        Assert.Equal(["widget_id"], ResolvedNameWidget.Jaunty.PrimaryKeyColumnNames);
+        Assert.Equal(["display_name", "fixed_price"], ResolvedNameWidget.Jaunty.InsertColumns.Select(c => c.ColumnName));
+        Assert.Equal(["display_name", "fixed_price"], ResolvedNameWidget.Jaunty.UpdateColumns.Select(c => c.ColumnName));
+        Assert.Equal(["widget_id"], ResolvedNameWidget.Jaunty.DeleteColumns.Select(c => c.ColumnName));
+        Assert.True(ResolvedNameWidget.Jaunty.ParameterMap.ContainsKey("display_name"));
+        Assert.False(ResolvedNameWidget.Jaunty.ParameterMap.ContainsKey("DisplayName"));
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         JauntyConfig.TableNameResolver = _ => null!;
         JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? null! : Snake(name);
 
-        Assert.Equal("ResolvedNameWidget", ResolvedNameWidget.TableName);
+        Assert.Equal("ResolvedNameWidget", ResolvedNameWidget.Jaunty.TableName);
         Assert.Equal(["widget_id", "DisplayName", "fixed_price"], ColumnNames());
     }
 
@@ -111,7 +111,7 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     {
         JauntyConfig.SchemaNameResolver = _ => "main";
 
-        Assert.Equal("main", ResolvedNameWidget.SchemaName);
+        Assert.Equal("main", ResolvedNameWidget.Jaunty.SchemaName);
         Assert.Equal("main", FluentMetadataCache.GetMetadata<ResolvedNameWidget>().SchemaName);
     }
 
@@ -123,8 +123,8 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         using IDbCommand update = _connection.CreateCommand();
         var widget = new ResolvedNameWidget { WidgetId = 4, DisplayName = "a", UnitPrice = 1m };
 
-        ResolvedNameWidget.BindInsert(insert, widget);
-        ResolvedNameWidget.BindUpdate(update, widget);
+        ResolvedNameWidget.Jaunty.BindInsert(insert, widget);
+        ResolvedNameWidget.Jaunty.BindUpdate(update, widget);
 
         Assert.Equal(["@display_name", "@fixed_price"], insert.Parameters.Cast<IDataParameter>().Select(p => p.ParameterName));
         Assert.Equal(["@display_name", "@fixed_price", "@widget_id"], update.Parameters.Cast<IDataParameter>().Select(p => p.ParameterName));
@@ -215,7 +215,7 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         ArgumentException read = Assert.Throws<ArgumentException>(() => _connection.Query<ResolvedNameWidget>("SELECT * FROM ResolvedNameWidget").ToList());
         Assert.Contains("'WidgetId' and 'DisplayName'", read.Message);
         Assert.Throws<ArgumentException>(() => _connection.Insert(new ResolvedNameWidget { DisplayName = "b", UnitPrice = 1m }));
-        Assert.Throws<ArgumentException>(() => ResolvedNameWidget.TableName);
+        Assert.Throws<ArgumentException>(() => ResolvedNameWidget.Jaunty.TableName);
     }
 
     [Fact]
@@ -239,8 +239,8 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     {
         UseSnakeCase();
 
-        Assert.Equal("annotated_name_widgets", AnnotatedNameWidget.TableName);
-        Assert.Equal(["widget_id", "label", "unit_count"], AnnotatedNameWidget.EntityColumns.Select(c => c.ColumnName));
+        Assert.Equal("annotated_name_widgets", AnnotatedNameWidget.Jaunty.TableName);
+        Assert.Equal(["widget_id", "label", "unit_count"], AnnotatedNameWidget.Jaunty.EntityColumns.Select(c => c.ColumnName));
 
         var widget = new AnnotatedNameWidget { DisplayName = "Gadget", UnitCount = 3 };
         widget.WidgetId = (int)_connection.Insert(widget);
@@ -267,7 +267,7 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         JauntyConfig.TableNameResolver = _ => "";
         JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? "" : name;
 
-        Assert.Equal("", ResolvedNameWidget.TableName);
+        Assert.Equal("", ResolvedNameWidget.Jaunty.TableName);
         Assert.Equal(["WidgetId", "", "fixed_price"], ColumnNames());
     }
 

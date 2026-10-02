@@ -85,7 +85,7 @@ public sealed class GeneratedNonNullableNullTests
     public void ANullColumn_ThroughTheRowMapper_ThrowsTheSameNamedError(string column, string propertyName)
     {
         NullableReader reader = ReaderWithNull(column);
-        Func<IDataReader, GenFallbackEntity> mapper = GenFallbackEntity.CreateRowMapper(reader);
+        Func<IDataReader, GenFallbackEntity> mapper = GenFallbackEntity.Jaunty.CreateRowMapper(reader);
 
         var ex = Assert.Throws<InvalidOperationException>(() => mapper(reader));
 
@@ -131,7 +131,7 @@ public sealed class GeneratedNonNullableNullTests
         var reader = new NullableReader(["Id", "Name", "Note"], [1, DBNull.Value, DBNull.Value]);
         Assert.True(reader.Read());
 
-        GenInitializedEntity entity = GenInitializedEntity.CreateRowMapper(reader)(reader);
+        GenInitializedEntity entity = GenInitializedEntity.Jaunty.CreateRowMapper(reader)(reader);
 
         Assert.Equal("unset", entity.Name);
     }

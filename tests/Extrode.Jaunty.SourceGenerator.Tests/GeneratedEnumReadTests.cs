@@ -156,7 +156,7 @@ public sealed class GeneratedEnumReadTests
         var reader = new StubReader(["event_id", "severity", "duration", "occurred_at"],
             [5, 2, TimeSpan.Zero, DateTimeOffset.UnixEpoch]);
 
-        Func<IDataReader, GenEventLog> map = GenEventLog.CreateRowMapper(reader);
+        Func<IDataReader, GenEventLog> map = GenEventLog.Jaunty.CreateRowMapper(reader);
         Assert.True(reader.Read());
         GenEventLog entity = map(reader);
 

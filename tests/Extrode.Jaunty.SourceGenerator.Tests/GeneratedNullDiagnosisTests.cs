@@ -32,7 +32,7 @@ public sealed class GeneratedNullDiagnosisTests
     public void ACleanRow_ThroughTheRowMapper_ChecksIsDBNull_OnlyForNullableAndReferenceProperties()
     {
         var reader = new CountingReader(Columns, [1, "Chai", 10.25m, false]);
-        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> mapper = GenProduct.Jaunty.CreateRowMapper(reader);
         Assert.True(reader.Read());
         reader.IsDBNullColumns.Clear();
 
@@ -45,7 +45,7 @@ public sealed class GeneratedNullDiagnosisTests
     public void ARow_ThroughTheRowMapper_DoesNotReadFieldCount()
     {
         var reader = new CountingReader(Columns, [1, "Chai", 10.25m, false]);
-        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> mapper = GenProduct.Jaunty.CreateRowMapper(reader);
         Assert.True(reader.Read());
         int resolved = reader.FieldCountCalls;
 
@@ -69,7 +69,7 @@ public sealed class GeneratedNullDiagnosisTests
     public void AGetterFailure_ThatIsNotANull_PropagatesUnchanged_ThroughTheRowMapper()
     {
         var reader = new CountingReader(Columns, [1, "Chai", 10.25m, false], failOn: "discontinued");
-        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> mapper = GenProduct.Jaunty.CreateRowMapper(reader);
         Assert.True(reader.Read());
 
         var ex = Assert.Throws<FormatException>(() => mapper(reader));
