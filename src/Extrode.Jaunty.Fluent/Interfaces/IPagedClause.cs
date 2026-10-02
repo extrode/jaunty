@@ -30,11 +30,12 @@ namespace Extrode.Jaunty.Fluent;
 /// <c>Take(5).Where(...)</c> stays paged and cannot reach a write terminal either.
 /// </para>
 /// <para>
-/// The compile-time fence is not complete and cannot be: <c>Take(5).Distinct().Where(...)</c>
-/// leads back to an un-paged interface, and an upcast (<c>IFromClause&lt;T&gt; q = ...Take(5)</c>)
-/// reaches <c>DeleteAll</c> directly. So the builder also refuses, at runtime, any DELETE or UPDATE
-/// built with paging set (<c>QueryBuilder.ThrowIfPagedWrite</c>, AUD-R38-008). The fence reports
-/// the common mistake early; the runtime check is the guarantee.
+/// <c>Distinct</c> stays paged too, through <see cref="IPagedDistinctClause{T}"/>. The compile-time
+/// fence still cannot be complete: C# checks a variable's declared type, so an upcast
+/// (<c>IFromClause&lt;T&gt; q = ...Take(5)</c>, or a query built conditionally) reaches
+/// <c>DeleteAll</c> directly. So the builder also refuses, at runtime, any DELETE or UPDATE built
+/// with paging set (<c>QueryBuilder.ThrowIfPagedWrite</c>, AUD-R38-008). The fence reports the
+/// common mistake early; the runtime check is the guarantee.
 /// </para>
 /// </remarks>
 public interface IPagedClause<T> : IFromClause<T> where T : new()
@@ -75,45 +76,48 @@ public interface IPagedClause<T> : IFromClause<T> where T : new()
     /// <inheritdoc cref="IFromClause{T}"/>
     new IPagedWhereClause<T> WhereNotInSubquery<TValue, TSubquery>(Expression<Func<T, TValue>> selector, Expression<Func<TSubquery, TValue>> subquerySelector, IQueryTerminal<TSubquery> subquery) where TSubquery : new();
 
+    /// <inheritdoc cref="IFromClause{T}.Distinct"/>
+    new IPagedDistinctClause<T> Distinct();
+
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into DELETE - BuildDeleteSql reads only the table and the WHERE conditions, so this would delete every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.",
+        "Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so this would delete every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new int DeleteAll();
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into DELETE - BuildDeleteSql reads only the table and the WHERE conditions, so this would delete every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.",
+        "Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so this would delete every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new int DeleteAll(CommandOptions options);
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into DELETE - BuildDeleteSql reads only the table and the WHERE conditions, so this would delete every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.",
+        "Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so this would delete every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new Task<int> DeleteAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into DELETE - BuildDeleteSql reads only the table and the WHERE conditions, so this would delete every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.",
+        "Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so this would delete every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new Task<int> DeleteAllAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into UPDATE - BuildUpdateSql reads only the table, the SET columns and the WHERE conditions, so this would update every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and update them by key.",
+        "Take/Skip are not carried into UPDATE: SQL has no portable UPDATE ... LIMIT, so this would update every matching row rather than the paged subset. Select the keys of the rows you want, then update them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new ISetClause<T> Set<TValue>(Expression<Func<T, TValue>> selector, TValue value);
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into UPDATE - BuildUpdateSql reads only the table, the SET columns and the WHERE conditions, so this would update every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and update them by key.",
+        "Take/Skip are not carried into UPDATE: SQL has no portable UPDATE ... LIMIT, so this would update every matching row rather than the paged subset. Select the keys of the rows you want, then update them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new ISetClause<T> Set(string column, object? value);
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into UPDATE - BuildUpdateSql reads only the table, the SET columns and the WHERE conditions, so this would update every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and update them by key.",
+        "Take/Skip are not carried into UPDATE: SQL has no portable UPDATE ... LIMIT, so this would update every matching row rather than the paged subset. Select the keys of the rows you want, then update them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new ISetClause<T> Set(object values);
 }
