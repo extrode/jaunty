@@ -5,7 +5,6 @@ using Extrode.Jaunty.Fluent.Expressions;
 using Extrode.Jaunty.Fluent.Internals;
 using Extrode.Jaunty.Fluent.Tests.Entities;
 using Extrode.Jaunty.Fluent.Tests.Helpers;
-using Extrode.Jaunty.Internals.Entity;
 
 using Xunit;
 
@@ -17,12 +16,6 @@ namespace Extrode.Jaunty.Fluent.Tests.Unit.Expressions;
 public class GroupByProjectionRejectionTests
 {
     private readonly TestDialect _dialect = new();
-    private readonly EntityMetadata[] _metadata =
-    {
-        FluentMetadataCache.GetMetadata<Product>(),
-        FluentMetadataCache.GetMetadata<Category>()
-    };
-
     private readonly CachedDialectMetadata[] _cachedMetadata;
 
     public GroupByProjectionRejectionTests()

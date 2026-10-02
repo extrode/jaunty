@@ -397,7 +397,7 @@ public class DuckDbDialectTests
         cmd.CommandText = _dialect.GenerateUpsertSql("t", ["name"], ["$name"], ["name"], ["$name"], ["id"], ["$id"]);
         cmd.Parameters.Add(new DuckDBParameter("name", name));
         cmd.Parameters.Add(new DuckDBParameter("id", id));
-        cmd.ExecuteNonQuery();
+        Assert.Equal(1, cmd.ExecuteNonQuery());
         cmd.Parameters.Clear();
 
         cmd.CommandText = "SELECT COUNT(*) FROM t";
