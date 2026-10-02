@@ -7,7 +7,7 @@ namespace Extrode.Jaunty.Tests.Unit.Extensions.Reflection;
 
 /// <summary>
 /// <c>MetadataCache&lt;T&gt;.GetSetters</c>: the per-reader memo under a reshaped reader, strict-mode
-/// and nameless-column failures, and the resolver index that binds past a <c>[Column]</c> rename.
+/// and nameless-column failures, and a <c>[Column]</c> name the resolver does not alias.
 /// </summary>
 [Collection("Type Handler Operations")]
 public class MetadataCacheSetterBindingTests : IDisposable
@@ -55,16 +55,16 @@ public class MetadataCacheSetterBindingTests : IDisposable
     }
 
     [Fact]
-    public void TheResolverIndex_BindsAPropertyRenamedByColumnAttribute()
+    public void AColumnAttributeName_IsTheOnlyNameItsPropertyBindsBy()
     {
-        // The resolver returns null for Other: a null key must be skipped, not indexed.
-        JauntyConfig.ColumnNameResolver = static name => name == nameof(Renamed.OrderId) ? "order_id" : null!;
-        var reader = new MutableStubReader(["order_id"], [7]);
+        var asked = new List<string>();
+        JauntyConfig.ColumnNameResolver = name => { lock (asked) asked.Add(name); return name == nameof(Renamed.OrderId) ? "order_id" : null!; };
+        var reader = new MutableStubReader(["order_id", "oid", "Other"], [7, 9, 3]);
 
         PropertySetter<Renamed>[] setters = MetadataCache<Renamed>.GetSetters(reader, MappingMode.Projection);
 
-        Assert.Single(setters);
-        Assert.Equal(nameof(Renamed.OrderId), setters[0].Context.PropertyName);
+        Assert.Equal([(nameof(Renamed.OrderId), 1), (nameof(Renamed.Other), 2)], setters.Select(s => (s.Context.PropertyName, s.Ordinal)));
+        Assert.DoesNotContain(nameof(Renamed.OrderId), asked);
     }
 
     private sealed class Grown

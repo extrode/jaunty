@@ -62,15 +62,16 @@ public class MetadataCacheMutantTests : IDisposable
     }
 
     [Fact]
-    public void ColumnBindsTo_FallsBackToTheConfiguredResolver()
+    public void ColumnBindsTo_UsesTheResolvedName_OnlyWhereNoAttributeNamesTheColumn()
     {
         PropertyContext<BindsTo> first = ContextFor(nameof(BindsTo.FirstName));
         PropertyContext<BindsTo> last = ContextFor(nameof(BindsTo.LastName));
         JauntyConfig.ColumnNameResolver = name => "x_" + name.ToLowerInvariant();
 
-        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("x_firstname", first));
-        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("x_firstname", last));
+        Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("first_name", first));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("x_firstname", first));
         Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("x_lastname", last));
+        Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("x_lastname", first));
         Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("unmapped", first));
     }
 
@@ -136,27 +137,24 @@ public class MetadataCacheMutantTests : IDisposable
         Assert.DoesNotContain("Cannot convert value", ex!.Message);
     }
 
-    private static object NewSignature(Type entity, IDataReader reader, MappingMode mode, Func<string, string>? resolver)
+    private static object NewSignature(Type entity, IDataReader reader, MappingMode mode)
     {
         Type snapshot = typeof(MetadataCache<>).GetNestedType("Snapshot", BindingFlags.NonPublic)!;
         Type signature = snapshot.GetNestedType("ReaderSignature", BindingFlags.NonPublic)!.MakeGenericType(entity);
-        return Activator.CreateInstance(signature, reader, mode, resolver)!;
+        return Activator.CreateInstance(signature, reader, mode)!;
     }
 
     [Fact]
-    public void TwoReaderSignatures_AreEqualOnlyWhenModeShapeAndResolverAllMatch()
+    public void TwoReaderSignatures_AreEqualOnlyWhenModeAndShapeMatch()
     {
-        Func<string, string> resolver = name => name;
-        Func<string, string> other = name => name;
         var reader = new MutableStubReader(["Id"], [1]);
 
-        object baseline = NewSignature(typeof(PlainCount), reader, MappingMode.Projection, resolver);
+        object baseline = NewSignature(typeof(PlainCount), reader, MappingMode.Projection);
 
-        Assert.Equal(baseline, NewSignature(typeof(PlainCount), reader, MappingMode.Projection, resolver));
-        Assert.NotEqual(baseline, NewSignature(typeof(PlainCount), reader, MappingMode.Projection, other));
-        Assert.NotEqual(baseline, NewSignature(typeof(PlainCount), reader, MappingMode.Projection, null));
-        Assert.NotEqual(baseline, NewSignature(typeof(PlainCount), reader, MappingMode.Strict, resolver));
-        Assert.NotEqual(baseline, NewSignature(typeof(PlainCount), new MutableStubReader(["Other"], [1]), MappingMode.Projection, resolver));
+        Assert.Equal(baseline, NewSignature(typeof(PlainCount), new MutableStubReader(["ID"], [2]), MappingMode.Projection));
+        Assert.NotEqual(baseline, NewSignature(typeof(PlainCount), reader, MappingMode.Strict));
+        Assert.NotEqual(baseline, NewSignature(typeof(PlainCount), new MutableStubReader(["Other"], [1]), MappingMode.Projection));
+        Assert.NotEqual(baseline, NewSignature(typeof(PlainCount), new MutableStubReader(["Id", "Other"], [1, 2]), MappingMode.Projection));
     }
 
     [Fact]

@@ -31,7 +31,6 @@ public class MetadataCacheSnapshotResolverTests : IDisposable
         [Key]
         public int Id { get; set; }
 
-        [Column("col_a")]
         public string? A { get; set; }
     }
 
