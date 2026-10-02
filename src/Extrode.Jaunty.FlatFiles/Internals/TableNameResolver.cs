@@ -52,7 +52,7 @@ internal static class TableNameResolver
         if (jauntyAttr is not null)
             return jauntyAttr.Name;
 
-        // AOT-SAFE: CustomAttributeData reads attribute metadata only; no member of the attribute type is accessed.
+        // CustomAttributeData reads attribute metadata only; no member of the attribute type is accessed.
         foreach (CustomAttributeData attribute in entityType.GetCustomAttributesData())
         {
             if (attribute.AttributeType.FullName == DataAnnotationsTableAttribute)
