@@ -854,14 +854,17 @@ public partial class JauntyGenerator : IIncrementalGenerator
         "ColumnInfo", "ReadFallback", "ReadEntity", "CreateRowMapper", "ThrowIfNonNullableColumnIsNull",
         "BindInsert", "BindUpdate", "BindDelete", "AddParam", "AddEnumParam", "OrdinalMap",
         "TableName", "SchemaName", "PrimaryKeyColumnNames", "InsertColumns", "UpdateColumns",
-        "DeleteColumns", "ParameterMap", "EntityColumns", NamedStateClass, NameCacheField,
+        "DeleteColumns", "ParameterMap", "EntityColumns", NamedStateClass, NameCacheHolderClass,
     ];
 
     /// <summary>The generated nested class holding every member built from the resolved names.</summary>
     private const string NamedStateClass = "__JauntyNamed";
 
-    /// <summary>The generated static field holding the entity's <c>GeneratedNameCache</c>.</summary>
-    private const string NameCacheField = "__jauntyNames";
+    /// <summary>The generated nested static class holding the entity's <c>GeneratedNameCache</c>.</summary>
+    private const string NameCacheHolderClass = "__JauntyNameHolder";
+
+    /// <summary>The expression the generated members read the <c>GeneratedNameCache</c> through.</summary>
+    private const string NameCacheField = NameCacheHolderClass + ".Cache";
 
     /// <summary>
     /// A reason the entity cannot take the generated members, or <see langword="null"/>.
@@ -1683,14 +1686,20 @@ public partial class JauntyGenerator : IIncrementalGenerator
         // Every name-dependent member below is built from those resolved names, once per
         // generation, so the SQL, the binders' parameter names, the reader's ordinal lookups and
         // these public statics always agree.
+        // The cache lives in its own nested class so it is initialized on first use, whatever
+        // order the partial files' static initializers run in: a user initializer reading
+        // TableName must not find it still null.
         sb.AppendLine();
-        sb.AppendLine($"        private static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<{NamedStateClass}> {NameCacheField} = new global::Extrode.Jaunty.Core.GeneratedNameCache<{NamedStateClass}>(");
-        sb.AppendLine($"            typeof({className}),");
-        sb.AppendLine($"            {Literal(entity.TableNameIsExplicit ? tableName : null)},");
-        sb.AppendLine($"            {Literal(schemaName)},");
-        sb.AppendLine($"            new string[] {{ {string.Join(", ", properties.Select(p => Literal(p.PropertyName)))} }},");
-        sb.AppendLine($"            new string?[] {{ {string.Join(", ", properties.Select(p => Literal(p.ColumnNameIsExplicit ? p.ColumnName : null)))} }},");
-        sb.AppendLine($"            n => new {NamedStateClass}(n));");
+        sb.AppendLine($"        private static class {NameCacheHolderClass}");
+        sb.AppendLine("        {");
+        sb.AppendLine($"            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<{NamedStateClass}> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<{NamedStateClass}>(");
+        sb.AppendLine($"                typeof({className}),");
+        sb.AppendLine($"                {Literal(entity.TableNameIsExplicit ? tableName : null)},");
+        sb.AppendLine($"                {Literal(schemaName)},");
+        sb.AppendLine($"                new string[] {{ {string.Join(", ", properties.Select(p => Literal(p.PropertyName)))} }},");
+        sb.AppendLine($"                new string?[] {{ {string.Join(", ", properties.Select(p => Literal(p.ColumnNameIsExplicit ? p.ColumnName : null)))} }},");
+        sb.AppendLine($"                n => new {NamedStateClass}(n));");
+        sb.AppendLine("        }");
         sb.AppendLine();
         sb.AppendLine($"        private sealed class {NamedStateClass}");
         sb.AppendLine("        {");

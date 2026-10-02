@@ -186,4 +186,36 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         Assert.Equal("Pascal", pascal.DisplayName);
         Assert.Equal(1L, _connection.QueryScalar<long>("SELECT COUNT(*) FROM resolved_name_widgets"));
     }
+
+    [Fact]
+    public void ChangingTheResolvers_MidRead_ResolvesTheReaderAgainstTheNewNames()
+    {
+        using IDbCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT 1 AS WidgetId, 'pascal' AS DisplayName, 1.5 AS fixed_price, 2 AS widget_id, 'snake' AS display_name";
+        using IDataReader reader = cmd.ExecuteReader();
+        Assert.True(reader.Read());
+
+        ResolvedNameWidget before = ResolvedNameWidget.ReadEntity(reader);
+        UseSnakeCase();
+        ResolvedNameWidget after = ResolvedNameWidget.ReadEntity(reader);
+
+        Assert.Equal((1, "pascal"), (before.WidgetId, before.DisplayName));
+        Assert.Equal((2, "snake"), (after.WidgetId, after.DisplayName));
+    }
+
+    [Fact]
+    public void AResolverMappingTwoPropertiesToOneColumn_IsRejectedOnEveryPath()
+    {
+        JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? "WIDGET_ID" : Snake(name);
+        Execute("INSERT INTO ResolvedNameWidget VALUES (1, 'a', 1)");
+
+        ArgumentException read = Assert.Throws<ArgumentException>(() => _connection.Query<ResolvedNameWidget>("SELECT * FROM ResolvedNameWidget").ToList());
+        Assert.Contains("'WidgetId' and 'DisplayName'", read.Message);
+        Assert.Throws<ArgumentException>(() => _connection.Insert(new ResolvedNameWidget { DisplayName = "b", UnitPrice = 1m }));
+        Assert.Throws<ArgumentException>(() => ResolvedNameWidget.TableName);
+    }
+
+    [Fact]
+    public void AUserStaticInitializer_CanReadTheGeneratedTableName()
+        => Assert.Equal("SELECT * FROM static_init_widgets", StaticInitWidget.SelectAll);
 }

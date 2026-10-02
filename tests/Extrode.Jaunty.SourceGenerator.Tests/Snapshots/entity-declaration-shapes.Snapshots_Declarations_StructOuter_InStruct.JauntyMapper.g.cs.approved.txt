@@ -117,13 +117,13 @@ namespace Snapshots.Declarations
         public static void BindUpdate(IDbCommand command, InStruct entity)
         {
             var p = command.Parameters;
-            var n = __jauntyNames.Current.Names;
+            var n = __JauntyNameHolder.Cache.Current.Names;
             AddParam(command, p, n.Parameter(0), entity.Id);
         }
         public static void BindDelete(IDbCommand command, InStruct entity)
         {
             var p = command.Parameters;
-            var n = __jauntyNames.Current.Names;
+            var n = __JauntyNameHolder.Cache.Current.Names;
             AddParam(command, p, n.Parameter(0), entity.Id);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
@@ -154,7 +154,7 @@ namespace Snapshots.Declarations
 
             public static CacheEntry Resolve(IDataReader reader)
             {
-                var names = __jauntyNames.Current.Names;
+                var names = __JauntyNameHolder.Cache.Current.Names;
                 var lastRef = _last;
                 if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
@@ -223,13 +223,16 @@ namespace Snapshots.Declarations
             }
         }
 
-        private static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> __jauntyNames = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
-            typeof(InStruct),
-            "struct_outer",
-            null,
-            new string[] { "Id" },
-            new string?[] { null },
-            n => new __JauntyNamed(n));
+        private static class __JauntyNameHolder
+        {
+            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+                typeof(InStruct),
+                "struct_outer",
+                null,
+                new string[] { "Id" },
+                new string?[] { null },
+                n => new __JauntyNamed(n));
+        }
 
         private sealed class __JauntyNamed
         {
@@ -263,14 +266,14 @@ namespace Snapshots.Declarations
             public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
         }
 
-        public static string TableName => __jauntyNames.Current.Names.TableName;
-        public static string? SchemaName => __jauntyNames.Current.Names.SchemaName;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __jauntyNames.Current.PrimaryKeyColumnNames;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __jauntyNames.Current.InsertColumns;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __jauntyNames.Current.UpdateColumns;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __jauntyNames.Current.DeleteColumns;
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __jauntyNames.Current.ParameterMap;
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __jauntyNames.Current.EntityColumns;
+        public static string TableName => __JauntyNameHolder.Cache.Current.Names.TableName;
+        public static string? SchemaName => __JauntyNameHolder.Cache.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __JauntyNameHolder.Cache.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __JauntyNameHolder.Cache.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __JauntyNameHolder.Cache.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __JauntyNameHolder.Cache.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __JauntyNameHolder.Cache.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __JauntyNameHolder.Cache.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;
