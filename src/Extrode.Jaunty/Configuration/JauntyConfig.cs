@@ -91,9 +91,9 @@ public static class JauntyConfig
     /// connection in the process and its return value is emitted verbatim on every engine. A
     /// constant such as <c>_ => "dbo"</c> therefore produces "dbo.products" on SQLite and
     /// PostgreSQL too. Scope it by type, or return <see cref="string.Empty"/> to leave an entity
-    /// unqualified, which is Extrode.Jaunty's default. Consulted on the reflection mapping path only -
-    /// source-generated entities use the compile-time [Table] attribute. A [Table] schema wins
-    /// over this resolver either way.
+    /// unqualified, which is Extrode.Jaunty's default. A non-empty [Table] schema wins over this
+    /// resolver, and the resolver is then not called; a <see langword="null"/> result means no
+    /// schema. Applies to reflection-mapped and source-generated entities alike.
     /// </remarks>
     public static Func<Type, string>? SchemaNameResolver
     {
@@ -104,6 +104,11 @@ public static class JauntyConfig
     /// <summary>
     /// Gets or sets a custom resolver for table names.
     /// </summary>
+    /// <remarks>
+    /// Consulted only when no [Table] attribute gives a non-empty name. A <see langword="null"/>
+    /// result falls back to the type name; any other result, <see cref="string.Empty"/> included,
+    /// is used as given. Applies to reflection-mapped and source-generated entities alike.
+    /// </remarks>
     public static Func<Type, string>? TableNameResolver
     {
         get => _tableNameResolver;
@@ -113,6 +118,11 @@ public static class JauntyConfig
     /// <summary>
     /// Gets or sets a custom resolver for column names.
     /// </summary>
+    /// <remarks>
+    /// Receives the property name, and is consulted only when no [Column] attribute gives a
+    /// non-empty name. A <see langword="null"/> result falls back to the property name; any other
+    /// result is used as given. Applies to reflection-mapped and source-generated entities alike.
+    /// </remarks>
     public static Func<string, string>? ColumnNameResolver
     {
         get => _columnNameResolver;
