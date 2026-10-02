@@ -107,10 +107,55 @@ MySQL adds `FROM DUAL` before the `WHERE`. The assigned key is not written back 
 call `Insert` when you need it. A key that matches no row always inserts, so two upserts with an
 unset key create two rows.
 
-On PostgreSQL the pair is atomic without a transaction of your own: Npgsql sends a multi-statement
-command as one batch, and PostgreSQL runs a batch as one implicit transaction. The `UPDATE` holds
-its row lock until the `INSERT` finishes, so a concurrent `DELETE` of that row waits and cannot slip
-between the two statements.
+### Why the two statements always run as one unit
+
+Two statements leave a gap between them. If they committed separately, another connection could
+delete the row in that gap:
+
+1. The `UPDATE` renames row 5 and commits.
+2. Another connection deletes row 5.
+3. The `INSERT` checks for row 5, finds none, and adds a new row, numbered 6.
+
+The row the other connection deleted is back under a new key, and `Upsert` returns 2. Inside a
+transaction this cannot happen. The `UPDATE` locks row 5 (on SQLite, the whole database for
+writing), so the `DELETE` waits until both statements have finished. DuckDB does not make the
+`DELETE` wait: it fails one of the two with a transaction-conflict error, which you can retry.
+Either way the row does not come back.
+
+Jaunty makes sure the pair is always atomic:
+
+| Database | How the pair stays atomic |
+|---|---|
+| SQL Server | `MERGE` is a single statement. |
+| PostgreSQL | Npgsql sends the command as one batch, and PostgreSQL runs a batch as one implicit transaction. Nothing extra is needed. |
+| MySQL / MariaDB | Each statement would commit on its own, so Jaunty begins a transaction around the pair. |
+| SQLite | Same as MySQL. |
+| DuckDB | Same as MySQL. |
+
+What that means for your code:
+
+- **You pass no transaction:** on MySQL/MariaDB, SQLite and DuckDB, Jaunty calls
+  `BeginTransaction()`, runs the pair, commits, and disposes the transaction before returning. It
+  costs a `BEGIN` and a `COMMIT` per upsert, and only for an entity with a generated key. If a
+  statement fails there is nothing to undo: each statement is atomic on its own, and the `INSERT`
+  only writes when the `UPDATE` matched no row.
+- **You pass a transaction** through `CommandOptions`: Jaunty runs the pair inside it and neither
+  commits nor rolls back. The upsert becomes part of your unit of work.
+- **The connection has a transaction you did not pass:** the pair runs inside yours and commits or
+  rolls back with it, and a failed upsert does not end your transaction. Pass the transaction in
+  rather than relying on this: whether a provider accepts a command without its transaction differs
+  between providers, and some reject it.
+
+```csharp
+// On its own: atomic, Jaunty manages the transaction where one is needed.
+connection.Upsert(product);
+
+// Part of a larger unit of work: Jaunty uses your transaction.
+using var transaction = connection.BeginTransaction();
+connection.Upsert(product, new CommandOptions(transaction: transaction));
+connection.Insert(auditEntry, new CommandOptions(transaction: transaction));
+transaction.Commit();
+```
 
 `InvalidOperationException` is thrown when the entity has no primary key, when the dialect does
 not support upsert, or when there are no upsertable columns.

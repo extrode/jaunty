@@ -192,6 +192,9 @@ public sealed class DuckDbDialect : IFlatFileDialect, ISubstringToEndDialect
     public bool RequiresAutocommitForForeignKeyToggle => false;
 
     /// <inheritdoc />
+    public bool UpsertBatchIsAtomic => false;
+
+    /// <inheritdoc />
     public string GenerateCoalesce(params string[] expressions)
     {
         return $"COALESCE({string.Join(", ", expressions)})";

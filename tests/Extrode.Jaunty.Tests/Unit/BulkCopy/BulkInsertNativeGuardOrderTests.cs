@@ -173,6 +173,7 @@ internal sealed class NativeOnlyDialect : ISqlDialect
 
     public bool SupportsForeignKeyToggle => false;
     public bool RequiresAutocommitForForeignKeyToggle => _inner.RequiresAutocommitForForeignKeyToggle;
+    public bool UpsertBatchIsAtomic => _inner.UpsertBatchIsAtomic;
     public bool SupportsNativeBulkCopy => true;
     public IBulkCopyProvider? CreateBulkCopyProvider() => _provider;
 

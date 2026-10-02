@@ -176,6 +176,7 @@ public class ExtensionPointContractTests
         public IBulkCopyProvider? CreateBulkCopyProvider() => throw new NotSupportedException();
         public string ParameterPrefix => throw new NotSupportedException();
         public bool RequiresAutocommitForForeignKeyToggle => throw new NotSupportedException();
+        public bool UpsertBatchIsAtomic => throw new NotSupportedException();
         public bool SupportsUpsert => throw new NotSupportedException();
         public bool SupportsMultiRowInsert => throw new NotSupportedException();
         public int MaxParametersPerStatement => throw new NotSupportedException();

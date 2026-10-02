@@ -184,6 +184,23 @@ public interface ISqlDialect
     bool RequiresAutocommitForForeignKeyToggle { get; }
 
     /// <summary>
+    /// Indicates whether a multi-statement command from <see cref="GenerateUpsertSql"/> runs as one
+    /// transaction without the caller supplying one. True for SQL Server (a single MERGE) and
+    /// PostgreSQL (Npgsql sends the statements as one batch, which the server runs as one implicit
+    /// transaction). False for MySQL, SQLite and DuckDB, where each statement commits on its own.
+    /// </summary>
+    /// <remarks>
+    /// When this is false, <c>Upsert</c> and <c>UpsertAsync</c> wrap the command in a transaction of
+    /// their own if the caller passed none, so a concurrent DELETE cannot land between its
+    /// statements. Jaunty decides from the column lists, not from the SQL: it wraps whenever a key
+    /// column is missing from <c>insertColumns</c> (a database-generated key) and
+    /// <c>updateColumns</c> is not empty, which is when the built-in dialects emit an UPDATE followed
+    /// by a guarded INSERT. A custom dialect that emits several statements in other cases is not
+    /// wrapped there.
+    /// </remarks>
+    bool UpsertBatchIsAtomic { get; }
+
+    /// <summary>
     /// Generates SQL for COALESCE function.
     /// Returns the first non-null value among the arguments.
     /// </summary>

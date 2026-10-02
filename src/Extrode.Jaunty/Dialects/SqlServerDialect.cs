@@ -269,6 +269,7 @@ internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect, IF
     public bool SupportsForeignKeyToggle => false;
 
     public bool RequiresAutocommitForForeignKeyToggle => false;
+    public bool UpsertBatchIsAtomic => true;
 
     public string GenerateCoalesce(params string[] expressions)
     {
