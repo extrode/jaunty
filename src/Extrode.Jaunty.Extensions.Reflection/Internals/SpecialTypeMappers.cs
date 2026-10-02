@@ -58,7 +58,7 @@ public static class SpecialTypeMappers
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
         {
             return reader.FieldCount >= 2
-                ? CreateKeyValuePairMapper(type, reader, type.GetGenericArguments())
+                ? CreateKeyValuePairMapper(type, type.GetGenericArguments())
                 : throw new InvalidOperationException(
                     $"Type '{type.Name}' requires at least 2 columns, but query returned {reader.FieldCount}.");
         }
@@ -77,7 +77,7 @@ public static class SpecialTypeMappers
                     $"ValueTuple types with 8 or more elements (nested 'Rest' tuples) are not supported for query mapping; got '{type.Name}'.");
 
             return reader.FieldCount >= typeArgs.Length
-                ? CreateValueTupleMapper(type, reader, typeArgs)
+                ? CreateValueTupleMapper(type, typeArgs)
                 : throw new InvalidOperationException(
                     $"Type 'ValueTuple<{string.Join(", ", typeArgs.Select(t => t.Name))}>' requires {typeArgs.Length} columns, but query returned {reader.FieldCount}.");
         }
@@ -86,7 +86,7 @@ public static class SpecialTypeMappers
         return type == typeof(object) ? CreateExpandoMapper(reader) : null!;
     }
 
-    private static object CreateKeyValuePairMapper(Type type, IDataReader reader, Type[] typeArgs)
+    private static object CreateKeyValuePairMapper(Type type, Type[] typeArgs)
     {
         Type keyType = typeArgs[0];
         Type valueType = typeArgs[1];
@@ -103,7 +103,7 @@ public static class SpecialTypeMappers
         });
     }
 
-    private static object CreateValueTupleMapper(Type type, IDataReader reader, Type[] typeArgs)
+    private static object CreateValueTupleMapper(Type type, Type[] typeArgs)
     {
         int itemCount = typeArgs.Length;
         ConstructorInfo constructor = type.GetConstructor(typeArgs)!;

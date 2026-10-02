@@ -24,7 +24,6 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     private readonly List<WhereCondition> _conditions = [];
     private readonly List<OrderByColumn> _orderByColumns = [];
     private readonly ParameterCollection _parameters = new();
-    private int _paramSeq;
     private readonly EntityMetadata _fromMetadata;
     private readonly EntityMetadata _joinMetadata;
 
@@ -305,7 +304,6 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
                 }
 
                 _parameters.Add(finalName, value);
-                _paramSeq++;
             }
 
             if (renames is not null)
@@ -393,7 +391,6 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         for (int i = 0; i < parameters.Count; i++)
         {
             _parameters.Add(parameters[i].Name, parameters[i].Value);
-            _paramSeq++;
         }
     }
 

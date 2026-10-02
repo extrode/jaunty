@@ -17,10 +17,9 @@ public class JoinedGroupByHavingGuardTests
     public void BindingAHavingOperandOutsideTranslation_NamesTheRequiredContext()
     {
         var dialect = new TestDialect();
-        EntityMetadata[] metadata = { FluentMetadataCache.GetMetadata<Product>(), FluentMetadataCache.GetMetadata<Category>() };
         CachedDialectMetadata[] cached = { FluentMetadataCache.GetForDialect<Product>(dialect), FluentMetadataCache.GetForDialect<Category>(dialect) };
         Expression<Func<Product, Category, object>> keySelector = (p, c) => p.CategoryId;
-        var visitor = new JoinedGroupByExpressionVisitor(dialect, metadata, cached, new[] { "p", "c" }, keySelector);
+        var visitor = new JoinedGroupByExpressionVisitor(dialect, cached, new[] { "p", "c" }, keySelector);
         MethodInfo add = typeof(JoinedGroupByExpressionVisitor).GetMethod("AddHavingParameter", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         var ex = Assert.Throws<TargetInvocationException>(() => add.Invoke(visitor, new object?[] { 1, null }));

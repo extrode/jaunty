@@ -20,12 +20,10 @@ namespace Extrode.Jaunty.Fluent.Expressions;
 internal sealed class JoinedGroupByExpressionVisitor
 {
     private readonly ISqlDialect _dialect;
-    private readonly EntityMetadata[] _metadata;
-
-    // AUD-R26-058: parallel to _metadata, same indices. This class is non-generic by design - one
+    // AUD-R26-058: per-dialect metadata, index 0 = TFrom, index 1 = TJoin, etc. This class is non-generic by design - one
     // implementation serves arities 2, 3 and 4 - so it cannot call FluentMetadataCache.GetForDialect<T>
     // itself the way the other converted sites do. Its three callers are all generic on their entity
-    // types and already build the _metadata array, so they build this one alongside it.
+    // types, so they build it.
     private readonly CachedDialectMetadata[] _cachedMetadata;
     private readonly string[] _tablePrefixes;
     private readonly string[] _groupByColumns;
@@ -36,23 +34,21 @@ internal sealed class JoinedGroupByExpressionVisitor
     private IReadOnlyCollection<ParameterExpression> _havingLambdaParameters = Array.Empty<ParameterExpression>();
 
     /// <param name="dialect">The SQL dialect, for column escaping.</param>
-    /// <param name="metadata">Entity metadata, ordered index 0 = TFrom, index 1 = TJoin, etc.</param>
     /// <param name="cachedMetadata">
-    /// Pre-escaped per-dialect metadata, parallel to <paramref name="metadata"/> and in the same
-    /// order. Supplied by the caller because this class is non-generic - one implementation serves
+    /// Pre-escaped per-dialect metadata, ordered index 0 = TFrom, index 1 = TJoin, etc. Supplied by
+    /// the caller because this class is non-generic - one implementation serves
     /// arities 2, 3 and 4 - so it cannot resolve the cache entries itself, while all three callers
-    /// are generic on their entity types and already build the metadata array (AUD-R26-058).
+    /// are generic on their entity types (AUD-R26-058).
     /// </param>
     /// <param name="tablePrefixes">Table alias (or table name, if unaliased) per joined
-    /// entity, same order as <paramref name="metadata"/> - every generated column reference
+    /// entity, same order as <paramref name="cachedMetadata"/> - every generated column reference
     /// is qualified with it, since two joined tables can share a column name (e.g. both
     /// having an "id" or shared FK column) and an unqualified GROUP BY/SELECT reference to it
     /// is ambiguous and fails at execution, unlike the single-entity case where it can't be.</param>
     /// <param name="keySelector">The GROUP BY key selector.</param>
-    public JoinedGroupByExpressionVisitor(ISqlDialect dialect, EntityMetadata[] metadata, CachedDialectMetadata[] cachedMetadata, string[] tablePrefixes, LambdaExpression keySelector)
+    public JoinedGroupByExpressionVisitor(ISqlDialect dialect, CachedDialectMetadata[] cachedMetadata, string[] tablePrefixes, LambdaExpression keySelector)
     {
         _dialect = dialect;
-        _metadata = metadata;
         _cachedMetadata = cachedMetadata;
         _tablePrefixes = tablePrefixes;
         (_groupByColumns, _keyPropertyToColumn) = ExtractGroupByColumns(keySelector);

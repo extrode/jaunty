@@ -48,7 +48,7 @@ public class JoinedGroupByExpressionVisitorTests
         // case: a bare `g.Key` access has no expression tree describing the composite type's
         // real property names.
         Expression<Func<Product, Category, object>> keySelector = (p, c) => new { p.CategoryId, c.CategoryName };
-        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
+        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _cachedMetadata, new[] { "p", "c" }, keySelector);
 
         Expression<Func<IGroupingJoined<object, Product, Category>, object>> selectExpr = g => g.Key;
         var (columns, aliases) = visitor.TranslateSelect(selectExpr);
@@ -67,7 +67,7 @@ public class JoinedGroupByExpressionVisitorTests
     public void TranslateSelect_SingleExpression_EmitsTheAliasItReports()
     {
         Expression<Func<Product, Category, object>> keySelector = (p, c) => c.CategoryName;
-        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
+        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _cachedMetadata, new[] { "p", "c" }, keySelector);
 
         Expression<Func<IGroupingJoined<object, Product, Category>, object>> selectExpr = g => g.Count();
         var (columns, aliases) = visitor.TranslateSelect(selectExpr);
@@ -85,7 +85,7 @@ public class JoinedGroupByExpressionVisitorTests
         // falling through to TranslateHavingOperand, unlike the single-entity
         // GroupedQueryBuilder.TranslateHavingExpression it's meant to mirror.
         Expression<Func<Product, Category, object>> keySelector = (p, c) => new { p.CategoryId };
-        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, _cachedMetadata, new[] { "p", "c" }, keySelector);
+        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _cachedMetadata, new[] { "p", "c" }, keySelector);
 
         Expression<Func<IGroupingJoined<object, Product, Category>, int>> havingExpr = g => g.Count();
         var parameters = new ParameterCollection();
