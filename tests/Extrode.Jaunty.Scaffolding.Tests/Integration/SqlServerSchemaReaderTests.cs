@@ -160,10 +160,16 @@ public class SqlServerSchemaReaderTests
     public async Task ReadSchemaAsync_UserClrTypeColumn_KeepsItsOwnName()
     {
         using var conn = OpenOrSkip();
-        CreateUserClrTypeTable(conn);
+        Execute(conn, """
+            DECLARE @lock int;
+            EXEC @lock = sp_getapplock @Resource = N'scaffold_test_point', @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 120000;
+            IF @lock < 0 THROW 50000, 'Timed out waiting for the scaffold_test_point lock.', 1;
+            """);
 
         try
         {
+            CreateUserClrTypeTable(conn);
+
             var schema = await new SqlServerSchemaReader().ReadSchemaAsync(
                 TestConfiguration.SqlServerConnectionString, new SchemaReaderOptions { IncludeTables = [ClrPoints] });
 
@@ -185,6 +191,7 @@ public class SqlServerSchemaReaderTests
                 END TRY
                 BEGIN CATCH
                 END CATCH
+                EXEC sp_releaseapplock @Resource = N'scaffold_test_point', @LockOwner = 'Session';
                 """);
         }
     }
