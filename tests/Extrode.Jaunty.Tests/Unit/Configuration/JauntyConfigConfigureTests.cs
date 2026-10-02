@@ -35,6 +35,12 @@ public class JauntyConfigConfigureTests : IDisposable
         public override object? ToDbValue(Money? value) => value?.Amount;
     }
 
+    private sealed class OtherMoneyHandler : TypeHandler<Money>
+    {
+        public override Money? Parse(object? value) => null;
+        public override object? ToDbValue(Money? value) => null;
+    }
+
     private static readonly MoneyHandler SharedHandler = new();
 
     private static string Prefixed(Type type) => "t_" + type.Name;
@@ -115,13 +121,13 @@ public class JauntyConfigConfigureTests : IDisposable
             JauntyConfig.Configure(c => c.TableNameResolver = t => "other_" + t.Name));
 
         Assert.Contains("different settings", ex.Message);
-        Assert.Contains("IsConfigured", ex.Message);
+        Assert.Contains("TryConfigure", ex.Message);
         Assert.Equal("t_Money", JauntyConfig.TableNameResolver!(typeof(Money)));
     }
 
     public static TheoryData<string> Differences() => new()
     {
-        "schema", "enum", "copy", "handler-instance", "extra-handler", "column",
+        "schema", "enum", "copy", "handler-type", "extra-handler", "column",
     };
 
     [Theory]
@@ -138,11 +144,171 @@ public class JauntyConfigConfigureTests : IDisposable
                 case "schema": c.SchemaNameResolver = Schema; break;
                 case "enum": c.DefaultEnumStorage = EnumStorage.String; break;
                 case "copy": c.CopyImportFactory = NoCopy; break;
-                case "handler-instance": c.RegisterTypeHandler(new MoneyHandler()); break;
+                case "handler-type": c.RegisterTypeHandler(new OtherMoneyHandler()); break;
                 case "extra-handler": c.RegisterTypeHandler<Guid>(v => Guid.Empty, v => v); break;
                 case "column": c.ColumnNameResolver = null; break;
             }
         }));
+    }
+
+    [Fact]
+    public void SecondCall_WithANewInstanceOfTheSameHandler_IsANoOp()
+    {
+        JauntyConfig.Configure(c => c.RegisterTypeHandler(new MoneyHandler()));
+
+        JauntyConfig.Configure(c => c.RegisterTypeHandler(new MoneyHandler()));
+
+        Assert.True(JauntyConfig.IsConfigured);
+    }
+
+    [Fact]
+    public void TryConfigure_FirstCallApplies_LaterCallsSkipWithoutRunningTheCallback()
+    {
+        string schema = "app";
+        int runs = 0;
+
+        Assert.True(JauntyConfig.TryConfigure(c => { runs++; c.SchemaNameResolver = _ => schema; }));
+        Assert.False(JauntyConfig.TryConfigure(c => { runs++; c.SchemaNameResolver = _ => schema + "2"; }));
+
+        Assert.Equal(1, runs);
+        Assert.True(JauntyConfig.IsConfigured);
+        Assert.Equal("app", JauntyConfig.SchemaNameResolver!(typeof(Money)));
+    }
+
+    [Fact]
+    public void TryConfigure_AfterARead_Throws()
+    {
+        _ = JauntyConfig.TableNameResolver;
+
+        Assert.Throws<InvalidOperationException>(() => JauntyConfig.TryConfigure(Startup));
+        Assert.False(JauntyConfig.IsConfigured);
+    }
+
+    [Fact]
+    public void TryConfigure_NullCallback_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => JauntyConfig.TryConfigure(null!));
+    }
+
+    [Fact]
+    public void ConcurrentTryConfigure_WithCapturingLambdas_ExactlyOneAppliesAndNoneThrows()
+    {
+        const int threads = 8;
+        using var start = new Barrier(threads);
+        int applied = 0;
+        int failures = 0;
+
+        Thread[] workers = Enumerable.Range(0, threads).Select(i => new Thread(() =>
+        {
+            string name = "host_" + i;
+            start.SignalAndWait();
+            try
+            {
+                if (JauntyConfig.TryConfigure(c => c.TableNameResolver = _ => name))
+                    Interlocked.Increment(ref applied);
+            }
+            catch (Exception)
+            {
+                Interlocked.Increment(ref failures);
+            }
+        })).ToArray();
+
+        foreach (Thread t in workers) t.Start();
+        foreach (Thread t in workers) t.Join();
+
+        Assert.Equal(1, applied);
+        Assert.Equal(0, failures);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task Configure_WhenAReadLandsWhileItRuns_ThrowsAndRestoresThePreviousSettings()
+    {
+        await Task.Run(() =>
+        {
+            var ex = Assert.Throws<InvalidOperationException>(() => JauntyConfig.Configure(c =>
+            {
+                Startup(c);
+                ConfigurationGeneration.MarkRead();
+            }));
+
+            Assert.Contains("already read", ex.Message);
+            Assert.False(JauntyConfig.IsConfigured);
+            Assert.Null(JauntyConfig.TableNameResolver);
+            Assert.False(TypeHandlerRegistry.HasHandlers);
+        }, TestContext.Current.CancellationToken);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task StaticConstructorPath_SkippedDuringAFailingConfigure_IsRetried()
+    {
+        await Task.Run(() =>
+        {
+            Assert.Throws<NotSupportedException>(() => JauntyConfig.Configure(c =>
+            {
+                Assert.Null(Jaunty.TryEnableReflectionMapping(Assembly.Load));
+                throw new NotSupportedException();
+            }));
+
+            Assert.False(JauntyConfig.IsConfigured);
+            Assert.NotNull(JauntyConfig.ReflectionMapperResolver);
+        }, TestContext.Current.CancellationToken);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task Reset_FromInsideAConfigureCallback_Throws()
+    {
+        await Task.Run(() =>
+        {
+            var ex = Assert.Throws<InvalidOperationException>(() => JauntyConfig.Configure(_ => JauntyConfig.Reset()));
+
+            Assert.Contains("inside a Configure callback", ex.Message);
+            Assert.False(JauntyConfig.IsConfigured);
+        }, TestContext.Current.CancellationToken);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task Reset_WaitsForAConfigureInFlight()
+    {
+        using var inCallback = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+
+        Task configuring = Task.Run(() => JauntyConfig.Configure(c =>
+        {
+            Startup(c);
+            inCallback.Set();
+            release.Wait();
+        }), TestContext.Current.CancellationToken);
+
+        inCallback.Wait(TestContext.Current.CancellationToken);
+        Task resetting = Task.Run(JauntyConfig.Reset, TestContext.Current.CancellationToken);
+
+        Assert.False(resetting.Wait(200, TestContext.Current.CancellationToken));
+        release.Set();
+        await configuring;
+        await resetting;
+
+        Assert.False(JauntyConfig.IsConfigured);
+        Assert.Null(JauntyConfig.TableNameResolver);
+    }
+
+    [Fact]
+    public void RemovingAHandler_DropsItFromTheSettingsToo()
+    {
+        JauntyConfig.Configure(c => c.RegisterTypeHandler(SharedHandler));
+
+        Assert.True(TypeHandlerRegistry.Remove<Money>());
+
+        JauntyConfig.Configure(_ => { });
+    }
+
+    [Fact]
+    public void OlderExtension_IsAnErrorOnlyWhenOlderThanTheCore()
+    {
+        Assert.NotNull(AutoReflection.OlderExtension(new Version(1, 0), new Version(1, 1)));
+        Assert.Null(AutoReflection.OlderExtension(new Version(1, 1), new Version(1, 1)));
+        Assert.Null(AutoReflection.OlderExtension(new Version(1, 2), new Version(1, 1)));
+        Assert.Null(AutoReflection.OlderExtension(null, new Version(1, 1)));
+        Assert.Null(AutoReflection.OlderExtension(new Version(1, 0), null));
     }
 
     [Fact]

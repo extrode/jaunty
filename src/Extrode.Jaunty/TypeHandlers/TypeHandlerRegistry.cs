@@ -104,13 +104,13 @@ internal static class TypeHandlerRegistry
         Type key = KeyFor<T>();
         lock (MutationSync)
         {
-            bool removed = Handlers.TryRemove(key, out _);
-            if (removed)
-            {
-                _handlerCount = Handlers.Count;
-            }
-            return removed;
+            if (!Handlers.TryRemove(key, out _))
+                return false;
+            _handlerCount = Handlers.Count;
         }
+
+        Configuration.JauntyConfig.ForgetTypeHandler(key);
+        return true;
     }
 
     /// <summary>

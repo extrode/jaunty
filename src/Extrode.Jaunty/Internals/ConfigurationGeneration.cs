@@ -85,7 +85,10 @@ internal static class ConfigurationGeneration
     public static void MarkRead()
     {
         if (!_read)
+        {
             _read = true;
+            Interlocked.MemoryBarrier();
+        }
     }
 
     /// <summary>Clears <see cref="HasBeenRead"/>. Only <c>JauntyConfig.Reset()</c> calls this.</summary>

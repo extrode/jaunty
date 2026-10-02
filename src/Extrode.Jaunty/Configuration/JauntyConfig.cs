@@ -42,6 +42,7 @@ public static class JauntyConfig
     private static volatile JauntySettings _settings = JauntySettings.Defaults;
     private static int _state = Unconfigured;
     private static volatile int _configuringThread;
+    private static int _autoInstallSkipped;
 
     private static volatile Action<string, object?>? _logger;
     private static volatile InterceptorPipeline? _interceptorPipeline;
@@ -107,11 +108,38 @@ public static class JauntyConfig
     /// A second call with the same settings does nothing, so a test host that runs
     /// <c>Program.cs</c> again in the same process keeps working. Settings compare equal when every
     /// delegate refers to the same method on the same target - true of method groups and of lambdas
-    /// that capture nothing. A lambda that captures a value is a new delegate each time, so guard
-    /// that call with <see cref="IsConfigured"/>.
+    /// that capture nothing; type handlers compare by their type. A lambda that captures a value is
+    /// a new delegate each time, so make that call with <see cref="TryConfigure"/> instead.
+    /// </para>
+    /// <para>
+    /// A repeated call runs <paramref name="configure"/> again to compare its result, so keep the
+    /// callback free of side effects.
     /// </para>
     /// </remarks>
     public static void Configure(Action<JauntyConfigBuilder> configure)
+        => ConfigureCore(configure, compareWhenConfigured: true);
+
+    /// <summary>
+    /// Sets the mapping settings unless they are already set. The first call in a process applies
+    /// <paramref name="configure"/> exactly as <see cref="Configure"/> does and returns
+    /// <see langword="true"/>; every later call returns <see langword="false"/> without running it.
+    /// </summary>
+    /// <remarks>
+    /// Use it where the same startup code can run more than once in one process with settings that
+    /// compare unequal, such as test hosts started in parallel whose resolver captures a value read
+    /// from configuration. A call racing another thread's <see cref="Configure"/> waits for it to
+    /// finish. Like <see cref="Configure"/>, it throws once an operation has read the settings.
+    /// </remarks>
+    /// <param name="configure">Sets the frozen settings on the builder.</param>
+    /// <returns>Whether this call applied the settings.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="configure"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The settings are not configured yet and an operation has already read them.
+    /// </exception>
+    public static bool TryConfigure(Action<JauntyConfigBuilder> configure)
+        => ConfigureCore(configure, compareWhenConfigured: false);
+
+    private static bool ConfigureCore(Action<JauntyConfigBuilder> configure, bool compareWhenConfigured)
     {
         if (configure is null)
             throw new ArgumentNullException(nameof(configure));
@@ -131,13 +159,13 @@ public static class JauntyConfig
                 continue;
             }
 
-            if (Build(configure).SameAs(_settings))
-                return;
+            if (!compareWhenConfigured || Build(configure).SameAs(_settings))
+                return false;
 
             throw new InvalidOperationException(
                 "Extrode.Jaunty is already configured with different settings. JauntyConfig.Configure " +
-                "sets them once per process; guard a repeated call with " +
-                "'if (!JauntyConfig.IsConfigured) JauntyConfig.Configure(...)'. " +
+                "sets them once per process; make a call that can repeat with different settings " +
+                "through JauntyConfig.TryConfigure(...). " +
                 "See docs/06-releases/upgrading-to-configure.md.");
         }
 
@@ -145,24 +173,41 @@ public static class JauntyConfig
         try
         {
             if (ConfigurationGeneration.HasBeenRead)
-                throw new InvalidOperationException(
-                    "JauntyConfig.Configure was called after Extrode.Jaunty had already read its " +
-                    "settings (a query, a generated TableName, or a Fluent query ran first). Call it " +
-                    "at startup, before anything else touches Extrode.Jaunty. " +
-                    "See docs/06-releases/upgrading-to-configure.md.");
+                throw AlreadyRead();
 
-            JauntySettings settings = Build(configure);
-            Apply(settings, clearHandlers: true);
+            JauntySettings previous = _settings;
+            Apply(Build(configure), clearHandlers: true);
+
+            // A first read racing this call marks the flag before it loads the settings, and the
+            // barrier orders the publish above before the check below, so either that read saw only
+            // the new settings or this check sees the flag.
+            Interlocked.MemoryBarrier();
+            if (ConfigurationGeneration.HasBeenRead)
+            {
+                Apply(previous, clearHandlers: true);
+                throw AlreadyRead();
+            }
+
             _configuringThread = 0;
+            Interlocked.Exchange(ref _autoInstallSkipped, 0);
             Volatile.Write(ref _state, Configured);
+            return true;
         }
         catch
         {
             _configuringThread = 0;
             Volatile.Write(ref _state, Unconfigured);
+            if (Interlocked.Exchange(ref _autoInstallSkipped, 0) == 1)
+                Jaunty.TryEnableReflectionMapping();
             throw;
         }
     }
+
+    private static InvalidOperationException AlreadyRead() => new InvalidOperationException(
+        "JauntyConfig.Configure was called after Extrode.Jaunty had already read its " +
+        "settings (a query, a generated TableName, or a Fluent query ran first). Call it " +
+        "at startup, before anything else touches Extrode.Jaunty. " +
+        "See docs/06-releases/upgrading-to-configure.md.");
 
     /// <summary>
     /// Whether <see cref="Configure"/> has completed. Use it to guard a call that can run more than
@@ -170,6 +215,20 @@ public static class JauntyConfig
     /// read from configuration.
     /// </summary>
     public static bool IsConfigured => Volatile.Read(ref _state) == Configured;
+
+    /// <summary>
+    /// Drops a type handler from the current settings after <c>TypeHandlerRegistry.Remove</c> took
+    /// it out of the registry, so the two stay in step.
+    /// </summary>
+    internal static void ForgetTypeHandler(Type key)
+    {
+        lock (ConfigureSync)
+        {
+            var builder = new JauntyConfigBuilder(_settings);
+            builder.RemoveTypeHandlers(key);
+            _settings = new JauntySettings(builder);
+        }
+    }
 
     private static JauntySettings Build(Action<JauntyConfigBuilder> configure)
     {
@@ -224,25 +283,34 @@ public static class JauntyConfig
     /// <returns>The unexpected exception the probe swallowed, or <see langword="null"/>.</returns>
     internal static Exception? InstallAutoReflectionIfUnconfigured(Func<System.Reflection.AssemblyName, System.Reflection.Assembly> load)
     {
-        if (Interlocked.CompareExchange(ref _state, Configuring, Unconfigured) != Unconfigured)
+        int prior = Interlocked.CompareExchange(ref _state, Configuring, Unconfigured);
+        if (prior != Unconfigured)
+        {
+            // A Configure in flight installs reflection itself; if it fails instead, its catch
+            // sees this flag and retries the install.
+            if (prior == Configuring)
+                Interlocked.Exchange(ref _autoInstallSkipped, 1);
             return null;
+        }
 
         try
         {
             var probed = new JauntyConfigBuilder();
             Exception? failure = AutoReflection.TryApply(probed, load);
 
-            JauntySettings current = _settings;
-            var merged = new JauntyConfigBuilder(current);
-            merged.ReflectionMapperResolver ??= probed.ReflectionMapperResolver;
-            merged.ReflectionInsertBinderResolver ??= probed.ReflectionInsertBinderResolver;
-            merged.ReflectionUpdateBinderResolver ??= probed.ReflectionUpdateBinderResolver;
-            merged.ReflectionDeleteBinderResolver ??= probed.ReflectionDeleteBinderResolver;
-            merged.ReflectionTableMetadataResolver ??= probed.ReflectionTableMetadataResolver;
-            merged.ReflectionMultiMapperResolver ??= probed.ReflectionMultiMapperResolver;
-            merged.ReflectionMultiMapperResolverN ??= probed.ReflectionMultiMapperResolverN;
-            merged.SpecialTypeMapperResolver ??= probed.SpecialTypeMapperResolver;
-            Apply(new JauntySettings(merged), clearHandlers: false, firstNewHandler: merged.AddedTypeHandlersFrom);
+            lock (ConfigureSync)
+            {
+                var merged = new JauntyConfigBuilder(_settings);
+                merged.ReflectionMapperResolver ??= probed.ReflectionMapperResolver;
+                merged.ReflectionInsertBinderResolver ??= probed.ReflectionInsertBinderResolver;
+                merged.ReflectionUpdateBinderResolver ??= probed.ReflectionUpdateBinderResolver;
+                merged.ReflectionDeleteBinderResolver ??= probed.ReflectionDeleteBinderResolver;
+                merged.ReflectionTableMetadataResolver ??= probed.ReflectionTableMetadataResolver;
+                merged.ReflectionMultiMapperResolver ??= probed.ReflectionMultiMapperResolver;
+                merged.ReflectionMultiMapperResolverN ??= probed.ReflectionMultiMapperResolverN;
+                merged.SpecialTypeMapperResolver ??= probed.SpecialTypeMapperResolver;
+                Apply(new JauntySettings(merged), clearHandlers: false, firstNewHandler: merged.AddedTypeHandlersFrom);
+            }
             return failure;
         }
         finally
@@ -468,10 +536,26 @@ public static class JauntyConfig
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public static void Reset()
     {
+        SpinWait spin = default;
+        while (true)
+        {
+            int state = Volatile.Read(ref _state);
+            if (state == Configuring)
+            {
+                if (_configuringThread == Environment.CurrentManagedThreadId)
+                    throw new InvalidOperationException("JauntyConfig.Reset was called from inside a Configure callback.");
+                spin.SpinOnce();
+                continue;
+            }
+            if (Interlocked.CompareExchange(ref _state, Configuring, state) == state)
+                break;
+        }
+
         lock (ConfigureSync)
         {
             _settings = JauntySettings.Defaults;
             TypeHandlerRegistry.Clear();
+            Interlocked.Exchange(ref _autoInstallSkipped, 0);
             Volatile.Write(ref _state, Unconfigured);
         }
 
