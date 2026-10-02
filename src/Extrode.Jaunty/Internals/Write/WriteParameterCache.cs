@@ -34,13 +34,17 @@ internal static class WriteParameterCache<T> where T : new()
     /// <remarks>
     /// Spec 009. Resolved once per closed generic - not once per binder, and not once per
     /// <see cref="Bindings"/> rebuild - so the <c>new T()</c> the cast needs is paid a single time.
-    /// Declared above <see cref="_bindings"/> deliberately: static initialisers run in textual order
-    /// and <see cref="Bindings.Build"/> reads this field.
     /// </remarks>
     private static readonly IGeneratedAccessors<T>? Accessors =
         typeof(IGeneratedAccessors<T>).IsAssignableFrom(typeof(T)) ? (IGeneratedAccessors<T>)new T() : null;
 
-    private static volatile Bindings _bindings = Bindings.Build();
+    /// <summary>
+    /// Built on first use by <see cref="Current"/>, not by a static initialiser: a build that throws
+    /// (a resolver mapping two properties to one column, say) must fail only that call. Thrown from a
+    /// static initialiser it would poison the type, and every later write of <typeparamref name="T"/>
+    /// would get a <see cref="TypeInitializationException"/> even after the configuration was fixed.
+    /// </summary>
+    private static volatile Bindings? _bindings;
 
     public static Action<IDbCommand, T>? InsertBinder => Current().InsertBinder;
     public static Action<IDbCommand, T>? UpdateBinder => Current().UpdateBinder;
@@ -126,8 +130,8 @@ internal static class WriteParameterCache<T> where T : new()
     /// </remarks>
     private static Bindings Current()
     {
-        Bindings current = _bindings;
-        if (current.Generation == ConfigurationGeneration.Current)
+        Bindings? current = _bindings;
+        if (current is not null && current.Generation == ConfigurationGeneration.Current)
             return current;
 
         Bindings rebuilt = Bindings.Build();
