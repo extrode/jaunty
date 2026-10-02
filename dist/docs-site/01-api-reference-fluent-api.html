@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -716,8 +716,8 @@ qualifier to use is visible before the query runs.</p>
 </code></pre>
 </div>
 <p><code>IPagedClause&lt;T&gt;</code> derives from <code>IFromClause&lt;T&gt;</code>, so the chain continues as before; the narrower
-type exists so a paged query cannot reach <code>DeleteAll</code> or <code>UpdateAll</code>, where the paging would have
-been silently discarded.</p>
+type exists so a paged query cannot reach a DELETE or an UPDATE. See
+<a href="#writes-after-take-or-skip">Writes after Take or Skip</a>.</p>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
@@ -732,6 +732,101 @@ been silently discarded.</p>
     .<span class="tok-fn">Select</span>();
 </code></pre>
 </div>
+<h4 id="writes-after-take-or-skip">Writes after Take or Skip</h4>
+<p>Take and Skip page reads only. A DELETE or UPDATE after them is refused, because the statement
+would run without the paging and touch every matching row:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Reads as &quot;delete 5 rows&quot;. Would delete every order in the table.</span>
+connection.<span class="tok-fn">From</span>&lt;<span class="tok-type">Order</span>&gt;().<span class="tok-fn">Take</span>(<span class="tok-num">5</span>).<span class="tok-fn">DeleteAll</span>();                          <span class="tok-com">// CS0619</span>
+
+<span class="tok-com">// Same, with a filter. Would delete every stale order, not 5 of them.</span>
+connection.<span class="tok-fn">From</span>&lt;<span class="tok-type">Order</span>&gt;().<span class="tok-fn">Take</span>(<span class="tok-num">5</span>).<span class="tok-fn">Where</span>(o =&gt; o.<span class="tok-var">Status</span> == <span class="tok-str">&quot;stale&quot;</span>).<span class="tok-fn">Delete</span>();      <span class="tok-com">// CS0619</span>
+connection.<span class="tok-fn">From</span>&lt;<span class="tok-type">Order</span>&gt;().<span class="tok-fn">Distinct</span>().<span class="tok-fn">Take</span>(<span class="tok-num">5</span>).<span class="tok-fn">Where</span>(o =&gt; o.<span class="tok-var">Status</span> == <span class="tok-str">&quot;stale&quot;</span>).<span class="tok-fn">Delete</span>(); <span class="tok-com">// CS0619</span>
+connection.<span class="tok-fn">From</span>&lt;<span class="tok-type">Order</span>&gt;().<span class="tok-fn">Take</span>(<span class="tok-num">5</span>).<span class="tok-fn">Set</span>(o =&gt; o.<span class="tok-var">Status</span>, <span class="tok-str">&quot;archived&quot;</span>).<span class="tok-fn">UpdateAll</span>();    <span class="tok-com">// CS0619</span>
+</code></pre>
+</div>
+<p>Each of those is a compile error that names the problem and the fix. One route gets past the
+compiler: a paged query stored in a variable of an un-paged type, such as
+<code>IFromClause&lt;Order&gt; q = ...Take(5);</code> or a query built up conditionally. That route throws
+<code>InvalidOperationException</code> when the SQL is built, before anything reaches the database.</p>
+<p><strong>Why Jaunty does not translate it.</strong> No SQL form of &quot;delete the first N rows&quot; works on every
+database Jaunty supports:</p>
+<table>
+<thead>
+<tr>
+<th>Database</th>
+<th>What it offers</th>
+<th>Why it is not enough</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL Server</td>
+<td><code>DELETE TOP (n)</code></td>
+<td>No <code>ORDER BY</code> and no offset, so which N rows go is up to the server</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>No <code>LIMIT</code> on DELETE or UPDATE</td>
+<td>Needs a subquery on the key</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td><code>DELETE ... ORDER BY ... LIMIT</code></td>
+<td>Only in builds compiled with <code>SQLITE_ENABLE_UPDATE_DELETE_LIMIT</code>; most are not</td>
+</tr>
+<tr>
+<td>MySQL / MariaDB</td>
+<td><code>DELETE ... ORDER BY ... LIMIT n</code></td>
+<td>No offset, so <code>Skip</code> cannot be expressed; MySQL also rejects <code>LIMIT</code> inside an <code>IN (...)</code> subquery</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>No <code>LIMIT</code> on DELETE or UPDATE</td>
+<td>Needs a subquery on the key</td>
+</tr>
+</tbody>
+</table>
+<p>A translation would need an <code>OrderBy</code> (otherwise &quot;the first 5&quot; is whatever the database returns
+first), a primary key, and different SQL per database, with <code>Skip</code> impossible on MySQL. That is a
+lot of new surface for something nobody has asked for, so it is listed as a
+<a href="06-releases-feature-candidates.html">feature candidate</a> rather than built.</p>
+<p><strong>What to write instead.</strong> Select the keys of the rows you want, then write by key, in one
+transaction so no other writer changes the set in between:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> tx = connection.<span class="tok-fn">BeginTransaction</span>();
+<span class="tok-kw">var</span> options = <span class="tok-type">CommandOptions</span>.<span class="tok-fn">WithTransaction</span>(tx);
+
+<span class="tok-type">List</span>&lt;<span class="tok-kw">int</span>&gt; ids = connection.<span class="tok-fn">From</span>&lt;<span class="tok-type">Order</span>&gt;()
+    .<span class="tok-fn">Where</span>(o =&gt; o.<span class="tok-var">Status</span> == <span class="tok-str">&quot;stale&quot;</span>)
+    .<span class="tok-fn">OrderBy</span>(o =&gt; o.<span class="tok-var">CreatedAt</span>)
+    .<span class="tok-fn">Take</span>(<span class="tok-num">5</span>)
+    .<span class="tok-fn">Select</span>(options)
+    .<span class="tok-fn">ConvertAll</span>(o =&gt; o.<span class="tok-var">Id</span>);
+
+<span class="tok-kw">int</span> deleted = connection.<span class="tok-fn">From</span>&lt;<span class="tok-type">Order</span>&gt;()
+    .<span class="tok-fn">WhereIn</span>(o =&gt; o.<span class="tok-var">Id</span>, ids)
+    .<span class="tok-fn">Delete</span>(options);
+
+<span class="tok-com">// Or update the same rows instead:</span>
+<span class="tok-kw">int</span> updated = connection.<span class="tok-fn">From</span>&lt;<span class="tok-type">Order</span>&gt;()
+    .<span class="tok-fn">Set</span>(o =&gt; o.<span class="tok-var">Status</span>, <span class="tok-str">&quot;archived&quot;</span>)
+    .<span class="tok-fn">WhereIn</span>(o =&gt; o.<span class="tok-var">Id</span>, ids)
+    .<span class="tok-fn">Update</span>(options);
+
+tx.<span class="tok-fn">Commit</span>();
+</code></pre>
+</div>
+<p>This costs one extra round trip, and the SQL it sends is the same on every database. For a large
+cleanup, run it in a loop until <code>deleted</code> is 0, which also keeps each transaction short.</p>
 <h2 id="terminal-operations-sync">Terminal Operations (Sync)</h2>
 <h3 id="select-methods">Select Methods</h3>
 <h4 id="select">Select()</h4>

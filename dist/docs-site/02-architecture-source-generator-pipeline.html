@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -156,7 +156,7 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#the-four-lanes">The four lanes</a><a class="toc-l2" href="#what-the-shape-is-defending-against">What the shape is defending against</a><a class="toc-l2" href="#which-table-wins">Which [Table] wins</a><a class="toc-l2" href="#why-the-parameter-lane-reads-call-sites">Why the parameter lane reads call sites</a><a class="toc-l2" href="#diagnostics">Diagnostics</a><a class="toc-l2" href="#see-also">See also</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#the-four-lanes">The four lanes</a><a class="toc-l2" href="#what-the-shape-is-defending-against">What the shape is defending against</a><a class="toc-l2" href="#which-table-wins">Which [Table] wins</a><a class="toc-l2" href="#why-the-parameter-lane-reads-call-sites">Why the parameter lane reads call sites</a><a class="toc-l2" href="#what-the-generator-adds-to-an-entity">What the generator adds to an entity</a><a class="toc-l2" href="#diagnostics">Diagnostics</a><a class="toc-l2" href="#see-also">See also</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Architecture &#8250; Source Generator Pipeline</nav>
         <article>
@@ -244,6 +244,43 @@ need a name and an anonymous type has none.</li>
 <p>The limit is unavoidable: this sees static types at call sites. A parameters object held in an
 <code>object</code>-typed variable, or built by reflection, cannot be rooted from here, and <code>JAUNTYGEN003</code> says
 so at the call site rather than letting it fail after publish.</p>
+<h2 id="what-the-generator-adds-to-an-entity">What the generator adds to an entity</h2>
+<p>Everything the generator writes sits in one nested class, <code>Jaunty</code>, so it cannot clash with the
+entity's own members. An audit table with a <code>TableName</code> column is an ordinary entity:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-attr">[Table(&quot;audit_log&quot;)]</span>
+<span class="tok-kw">public</span> <span class="tok-kw">partial</span> <span class="tok-kw">class</span> <span class="tok-type">AuditEntry</span>
+{
+    <span class="tok-attr">[Key]</span> <span class="tok-kw">public</span> <span class="tok-kw">int</span> <span class="tok-type">Id</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> <span class="tok-kw">string</span> <span class="tok-type">TableName</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-str">&quot;&quot;</span>;   <span class="tok-com">// your column</span>
+}
+
+<span class="tok-type">AuditEntry</span>.<span class="tok-var">Jaunty</span>.<span class="tok-var">TableName</span>      <span class="tok-com">// &quot;audit_log&quot;, under the current naming resolvers</span>
+auditEntry.<span class="tok-var">TableName</span>             <span class="tok-com">// your property</span>
+</code></pre>
+</div>
+<p><code>AuditEntry.Jaunty</code> holds <code>TableName</code>, <code>SchemaName</code>, <code>PrimaryKeyColumnNames</code>, <code>InsertColumns</code>,
+<code>UpdateColumns</code>, <code>DeleteColumns</code>, <code>ParameterMap</code>, <code>EntityColumns</code>, <code>ColumnInfo</code>, <code>ReadEntity</code>,
+<code>CreateRowMapper</code>, <code>BindInsert</code>, <code>BindUpdate</code> and <code>BindDelete</code>. Extrode.Jaunty itself reaches them
+through the explicit <code>IEntityMetadataSource</code> and <code>IGeneratedAccessors&lt;T&gt;</code> implementations, never by
+name.</p>
+<p>Two names stay on the entity: the <code>Jaunty</code> class itself, and <code>ReadEntity</code>, which <code>IMapped&lt;T&gt;</code>
+requires there and which forwards to <code>Jaunty.ReadEntity</code>. The generator reports <code>JAUNTYGEN004</code> and
+writes no mapper when the entity:</p>
+<ul>
+<li>is itself named <code>Jaunty</code>, or declares any member named <code>Jaunty</code></li>
+<li>declares a <code>ReadEntity</code> member other than an overload with different parameters</li>
+<li>maps a property, its own or inherited, named <code>Jaunty</code> or <code>ReadEntity</code></li>
+<li>declares its own <code>BindInsert</code>, <code>BindUpdate</code> or <code>BindDelete(IDbCommand, T)</code>, or
+<code>CreateRowMapper(IDataReader)</code>. These no longer clash, but the generated mapper would silently
+replace them, so the reflection mapper keeps using the entity's own method.</li>
+</ul>
+<p>Inside the entity's own code, a bare <code>Jaunty.X</code> now means the nested class. Write
+<code>Extrode.Jaunty.X</code> to reach the namespace.</p>
 <h2 id="diagnostics">Diagnostics</h2>
 <table>
 <thead>
@@ -272,7 +309,7 @@ so at the call site rather than letting it fail after publish.</p>
 <tr>
 <td><code>JAUNTYGEN004</code></td>
 <td>warning</td>
-<td>no mapper was generated for the entity (not partial, abstract, generic, no usable constructor, or nested in such a type); it is mapped only by reflection: <code>Extrode.Jaunty.Extensions.Reflection</code> referenced (it enables itself) or <code>UseReflectionMapping()</code> called</td>
+<td>no mapper was generated for the entity (not partial, abstract, generic, no usable constructor, nested in such a type, or a <a href="#what-the-generator-adds-to-an-entity">reserved name</a>); it is mapped only by reflection: <code>Extrode.Jaunty.Extensions.Reflection</code> referenced (it enables itself) or <code>UseReflectionMapping()</code> called</td>
 </tr>
 <tr>
 <td><code>JAUNTYGEN005</code></td>
