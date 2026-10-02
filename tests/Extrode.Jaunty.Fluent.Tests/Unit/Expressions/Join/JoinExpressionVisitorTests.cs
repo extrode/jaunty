@@ -1,0 +1,133 @@
+using System.Linq.Expressions;
+
+using Extrode.Jaunty.Fluent.Expressions;
+using Extrode.Jaunty.Fluent.Tests.Entities;
+using Extrode.Jaunty.Fluent.Tests.Helpers;
+
+namespace Extrode.Jaunty.Fluent.Tests.Unit.Expressions;
+
+/// <summary>
+/// Unit tests for JoinExpressionVisitor.
+/// Tests SQL ON clause generation from lambda expressions.
+/// </summary>
+public class JoinExpressionVisitorTests
+{
+    private readonly TestDialect _dialect = new();
+
+    #region Simple Join Conditions
+
+    [Fact]
+    public void Visit_EqualityJoin_GeneratesOnClause()
+    {
+        Expression<Func<Product, Category, bool>> expr = (p, c) => p.CategoryId == c.CategoryId;
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("[category_id]", sql);
+        Assert.Contains("=", sql);
+    }
+
+    [Fact]
+    public void Visit_AndAlso_CombinesWithAnd()
+    {
+        Expression<Func<Product, Category, bool>> expr = (p, c) => p.CategoryId == c.CategoryId && c.CategoryName == "Beverages";
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Contains("AND", sql);
+        Assert.Contains("p.[category_id] = c.[category_id]", sql);
+        Assert.Contains(parameters, p => Equals(p.Value, "Beverages"));
+    }
+
+    [Fact]
+    public void Visit_OrElse_CombinesWithOr()
+    {
+        Expression<Func<Product, Category, bool>> expr = (p, c) => p.CategoryId == c.CategoryId || p.ProductId == c.CategoryId;
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("OR", sql);
+    }
+
+    #endregion
+
+    #region Column Name Escaping
+
+    [Fact]
+    public void Visit_WithColumnAttributes_GeneratesEscapedNames()
+    {
+        Expression<Func<Product, Category, bool>> expr = (p, c) => p.ProductId == c.CategoryId;
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "prod", "cat");
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("[product_id]", sql);
+        Assert.Contains("[category_id]", sql);
+    }
+
+    #endregion
+
+    #region Complex Join Conditions
+
+    [Fact]
+    public void Visit_ComplexJoinCondition_GeneratesCorrectSql()
+    {
+        Expression<Func<Product, Category, bool>> expr = (p, c) =>
+            p.CategoryId == c.CategoryId &&
+            p.Discontinued == false;
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("AND", sql);
+        Assert.Contains("[category_id]", sql);
+    }
+
+    #endregion
+
+    #region Inequality Joins
+
+    [Fact]
+    public void Visit_InequalityJoin_GeneratesNotEqual()
+    {
+        Expression<Func<Product, Category, bool>> expr = (p, c) => p.ProductId != c.CategoryId;
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("<>", sql);
+    }
+
+    #endregion
+
+    #region Null Alias Fallback
+
+    [Fact]
+    public void Visit_NullAlias_UsesEscapedTableNameNotRawTableName()
+    {
+        // Regression test: TryGetColumnExpression's alias-less fallback used to be
+        // `alias ?? metadata.TableName` (raw, unescaped, schema-dropping). It must
+        // instead call _dialect.EscapeTableName so the prefix is properly escaped.
+        Expression<Func<Product, Category, bool>> expr = (p, c) => p.CategoryId == c.CategoryId;
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, null, null);
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("[products].[category_id]", sql);
+        Assert.DoesNotContain("products.[category_id]", sql);
+    }
+
+    #endregion
+
+    #region Unsupported Method Calls
+
+    [Fact]
+    public void Visit_MethodCall_ThrowsNotSupportedInsteadOfEmittingGarbageSql()
+    {
+        // Regression test: VisitMethodCall used to be unoverridden, so ExpressionVisitor's
+        // base implementation silently produced malformed, operator-less SQL for method
+        // calls (e.g. string.Contains) instead of failing loudly.
+        Expression<Func<Product, Category, bool>> expr = (p, c) => c.CategoryName.Contains("x");
+        var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
+
+        Assert.Throws<NotSupportedException>(() => visitor.Translate(expr));
+    }
+
+    #endregion
+}

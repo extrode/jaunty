@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate data/sqlserver/create-northwind.sql from data/sqlite/Northwind.db.
 
-The Jaunty test suite targets the classic PascalCase Northwind schema on SQL
+The Extrode.Jaunty test suite targets the classic PascalCase Northwind schema on SQL
 Server (Categories.CategoryId, Products.ProductId, ...). Snake_case access
 (stored procedures, entity [Column] attributes) is bridged at test time by
 DialectFixture, which adds computed snake_case columns to the PascalCase

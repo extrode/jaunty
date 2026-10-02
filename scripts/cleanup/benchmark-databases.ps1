@@ -1,6 +1,6 @@
 # Cleanup for the 2026-07-29 pre-GA benchmark run.
 #
-# benchmarks/Jaunty.Benchmarks creates its own database per provider (DatabaseSetup.
+# benchmarks/Extrode.Jaunty.Benchmarks creates its own database per provider (DatabaseSetup.
 # EnsureDatabaseExists) and fills it with a benchmark_products table. The run was pointed at a
 # dedicated jauntybench / JauntyBench so the Northwind test databases were never touched — these
 # are the leftovers of that choice.
@@ -84,7 +84,7 @@ else {
 # --- 3. BenchmarkDotNet artifacts ------------------------------------------------------------
 # benchmarks/results/ is tracked in git and is the record of past runs. Not touched here.
 Write-Host "`n== 3. BenchmarkDotNet scratch"
-$artifacts = Join-Path $repo 'benchmarks/Jaunty.Benchmarks/BenchmarkDotNet.Artifacts'
+$artifacts = Join-Path $repo 'benchmarks/Extrode.Jaunty.Benchmarks/BenchmarkDotNet.Artifacts'
 if (Test-Path $artifacts) {
     Write-Host "   remove $artifacts"
     if ($Execute) { Remove-Item -LiteralPath $artifacts -Recurse -Force }

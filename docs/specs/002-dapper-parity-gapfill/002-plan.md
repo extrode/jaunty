@@ -62,7 +62,7 @@ docs/specs/002-dapper-parity-gapfill/
 
 ```
 src/
-├── Jaunty/
+├── Extrode.Jaunty/
 │   ├── TypeHandlers/
 │   │   ├── ITypeHandler.cs
 │   │   └── TypeHandler.cs (abstract base)
@@ -91,14 +91,14 @@ src/
 
 9. **Dynamic row API**: IDynamicRow or ExpandoObject-like wrapper.
 
-10. **Parameter bag**: New Jaunty API vs. existing DynamicParameters compat.
+10. **Parameter bag**: New Extrode.Jaunty API vs. existing DynamicParameters compat.
 
 11. **API documentation**: Hand-authored HTML pages in docs/ folder (index.html, styles.css, area pages like docs/execute.html, docs/get.html, docs/querymulti.html, docs/type-handlers.html, etc.); single shared stylesheet; semantic HTML5 only (no React, Tailwind, no JS frameworks).
 
     └── RegistryEmitter.cs (emit handler registry check)
 
 tests/
-└── Jaunty.Tests/
+└── Extrode.Jaunty.Tests/
     ├── Execute/
     │   ├── ExecuteTests.cs
     │   ├── ExecuteBatchTests.cs

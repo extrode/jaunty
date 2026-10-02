@@ -1,0 +1,143 @@
+using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Interfaces;
+
+[Table("global_entities")]
+public partial class GlobalEntity : IMapped<GlobalEntity>
+{
+    [Key] public int Id { get; set; }
+    public string? Name { get; set; }
+}
+
+namespace Snapshots.Declarations
+{
+    [Table("static_entities")]
+    public static partial class StaticEntity { public static int Id { get; set; } }
+
+    [Table("abstract_entities")]
+    public abstract partial class AbstractEntity { [Key] public int Id { get; set; } }
+
+    [Table("generic_entities")]
+    public partial class GenericEntity<T> { [Key] public int Id { get; set; } }
+
+    [Table("not_partial_entities")]
+    public class NotPartialEntity { [Key] public int Id { get; set; } }
+
+    [Table("argument_ctor_entities")]
+    public partial class ArgumentCtorEntity
+    {
+        public ArgumentCtorEntity(int seed) { }
+        [Key] public int Id { get; set; }
+    }
+
+    [Table("private_ctor_entities")]
+    public partial class PrivateCtorEntity
+    {
+        private PrivateCtorEntity() { }
+        [Key] public int Id { get; set; }
+    }
+
+    [Table("protected_ctor_entities")]
+    public partial class ProtectedCtorEntity
+    {
+        protected ProtectedCtorEntity() { }
+        [Key] public int Id { get; set; }
+    }
+
+    [Table("mixed_ctor_entities")]
+    public partial class MixedCtorEntity
+    {
+        private MixedCtorEntity(string a) { }
+        protected MixedCtorEntity(int a, int b) { }
+        public MixedCtorEntity() { }
+        [Key] public int Id { get; set; }
+    }
+
+    [Table("ordered_ctor_entities")]
+    public partial class OrderedCtorEntity
+    {
+        public OrderedCtorEntity(string a) { }
+        private OrderedCtorEntity() { }
+        internal OrderedCtorEntity(int a, int b) { }
+        [Key] public int Id { get; set; }
+    }
+
+    public class NonPartialOuter
+    {
+        [Table("in_non_partial")]
+        public partial class InNonPartial { [Key] public int Id { get; set; } }
+    }
+
+    public partial class GenericOuter<T>
+    {
+        [Table("in_generic")]
+        public partial class InGeneric { [Key] public int Id { get; set; } }
+    }
+
+    public partial class PartialOuterOfNonPartialMiddle
+    {
+        public class Middle
+        {
+            [Table("deep_in_non_partial")]
+            public partial class Deep { [Key] public int Id { get; set; } }
+        }
+    }
+
+    public partial class ClassOuter
+    {
+        [Table("class_outer_public")] public partial class NestedPublic { [Key] public int Id { get; set; } }
+        [Table("class_outer_internal")] internal partial class NestedInternal { [Key] public int Id { get; set; } }
+        [Table("class_outer_protected")] protected partial class NestedProtected { [Key] public int Id { get; set; } }
+        [Table("class_outer_protected_internal")] protected internal partial class NestedProtectedInternal { [Key] public int Id { get; set; } }
+        [Table("class_outer_private_protected")] private protected partial class NestedPrivateProtected { [Key] public int Id { get; set; } }
+        [Table("class_outer_private")] private partial class NestedPrivate { [Key] public int Id { get; set; } }
+    }
+
+    public partial record RecordOuter
+    {
+        [Table("record_outer")] public partial class InRecord { [Key] public int Id { get; set; } }
+    }
+
+    public partial struct StructOuter
+    {
+        [Table("struct_outer")] public partial class InStruct { [Key] public int Id { get; set; } }
+    }
+
+    public partial record struct RecordStructOuter
+    {
+        [Table("record_struct_outer")] public partial class InRecordStruct { [Key] public int Id { get; set; } }
+    }
+
+    public partial interface IInterfaceOuter
+    {
+        [Table("interface_outer")] public partial class InInterface { [Key] public int Id { get; set; } }
+    }
+
+    public partial class Level1
+    {
+        public partial class Level2
+        {
+            public partial struct Level3
+            {
+                [Table("three_levels")] public partial class Deepest { [Key] public int Id { get; set; } }
+            }
+        }
+    }
+}
+
+namespace Snapshots.Under_score.Nested_Name
+{
+    [Table("snake_case")]
+    public partial class Snake_Case { [Key] public int Id { get; set; } }
+}
+
+namespace Snapshots.Collide.Foo
+{
+    [Table("bar_baz")]
+    public partial class Bar_Baz { [Key] public int Id { get; set; } }
+}
+
+namespace Snapshots.Collide.Foo.Bar
+{
+    [Table("baz")]
+    public partial class Baz { [Key] public int Id { get; set; } }
+}

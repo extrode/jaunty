@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Conduit.IntegrationTests;
 
 /// <summary>
-/// Jaunty-based replacement for the former EF Core InMemory-backed fixture. Jaunty has no
+/// Extrode.Jaunty-based replacement for the former EF Core InMemory-backed fixture. Extrode.Jaunty has no
 /// in-memory provider, so this points at a real, disposable per-test SQLite file - the same
 /// substitution the eShopOnWeb torture-test port used for its own EF-InMemory test fixture.
 /// </summary>

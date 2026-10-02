@@ -223,7 +223,7 @@ stateDiagram-v2
     LeaveOpen --> [*]
     
     note right of CheckState
-        Jaunty respects connection state:
+        Extrode.Jaunty respects connection state:
         - Opens if closed
         - Closes if it opened
         - Leaves open if already open
@@ -370,8 +370,8 @@ flowchart TB
     Modern --> Build8["Build net8.0"]
     Compat --> BuildStd["Build netstandard2.0"]
     
-    Build8 --> Pkg8["Jaunty.dll (net8.0)"]
-    BuildStd --> PkgStd["Jaunty.dll (netstandard2.0)"]
+    Build8 --> Pkg8["Extrode.Jaunty.dll (net8.0)"]
+    BuildStd --> PkgStd["Extrode.Jaunty.dll (netstandard2.0)"]
     
     Pkg8 --> NuGet["Extrode.Jaunty NuGet package"]
     PkgStd --> NuGet

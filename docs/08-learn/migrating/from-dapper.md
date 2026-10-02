@@ -14,7 +14,7 @@ and no ownership of the connection. **You can run both in the same method agains
 connection**, which is what makes an incremental port possible.
 
 One caveat on mixing them: both libraries define `Query<T>` as an extension on `IDbConnection`, so a
-file with `using Dapper;` and `using Jaunty;` together gets ambiguous-call errors. **Port file by
+file with `using Dapper;` and `using Extrode.Jaunty;` together gets ambiguous-call errors. **Port file by
 file, not line by line** - swap the `using` and convert that whole file. Different files in the same
 project, and different methods on the same connection, are fine.
 
@@ -60,7 +60,7 @@ Contrib's CRUD helpers have direct equivalents built into Jaunty core - no extra
 Jaunty adds `Upsert`, and `BulkInsert` / `BulkUpdate` / `BulkDelete`.
 
 **Attributes.** `[Table]`, `[Key]`, `[Column]`, `[Ignore]` and `[DatabaseGenerated]` live in
-`Jaunty.Attributes`. `[NotMapped]` from `System.ComponentModel.DataAnnotations.Schema` is also
+`Extrode.Jaunty.Attributes`. `[NotMapped]` from `System.ComponentModel.DataAnnotations.Schema` is also
 honoured, so entities annotated for EF Core mostly work as they are.
 
 ## Coming from Dapper Plus
@@ -100,7 +100,7 @@ wrong while you are still learning the strict/partial distinction.
 ## A suggested order
 
 1. Pick the smallest repository or data-access class you have
-2. Replace `using Dapper;` with `using Jaunty;` and switch every call to the `QueryPartial` family -
+2. Replace `using Dapper;` with `using Extrode.Jaunty;` and switch every call to the `QueryPartial` family -
    behaviour is now identical
 3. Run your tests. Anything failing here is a genuine port issue, not a mapping-strictness issue
 4. Promote full-entity and per-query-DTO calls to the strict family, one file at a time

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 namespace Conduit.Domain;
 

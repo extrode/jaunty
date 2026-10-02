@@ -48,7 +48,7 @@ text, because a source-text sweep is exactly the thing that missed 15 sites in A
 
 | | |
 |---|---|
-| public static methods on `Jaunty` | 711 |
+| public static methods on `Extrode.Jaunty` | 711 |
 | generic method definitions | 672 |
 | **with a `new()`-constrained type parameter** | **645, across 60 distinct method names** |
 
@@ -137,9 +137,9 @@ stated justification was false, corrected rather than papered over.
 
 **Out of scope**
 
-- `Jaunty.Extensions.Reflection`. It is reflection by name and by design; it is not
+- `Extrode.Jaunty.Extensions.Reflection`. It is reflection by name and by design; it is not
   AOT-compatible and should say so rather than be annotated.
-- The other `[UnconditionalSuppressMessage]` sites in `src/` (`Jaunty.Init`, `CsvImport`,
+- The other `[UnconditionalSuppressMessage]` sites in `src/` (`Extrode.Jaunty.Init`, `CsvImport`,
   `JauntyDiagnosticListener`). They are a separate audit; only the known-false ones are in scope.
 
 **Scope amendment, 2026-07-30 (from spec 010).** Retargeting to `net10.0` surfaced four ILLink
@@ -163,10 +163,10 @@ unsatisfiable annotation on `ParameterCache.Get`, which dissolved both `Paramete
 diagnostics outright, and moved preservation to generated call-site rooting
 (`JauntyAot.PreserveParameters<T>()`, with `JAUNTYGEN003` where the generator cannot see the type).
 The three sites this table claimed for 009 are therefore all closed; measured on the merged tree,
-`src/Jaunty` builds for `net10.0` with **0 warnings**. What remains 009's is unchanged and is the
+`src/Extrode.Jaunty` builds for `net10.0` with **0 warnings**. What remains 009's is unchanged and is the
 harder half: `MappedCache<T>` and `WriteParameterCache<T>`, whose reflection is by *method name* on
 `T` rather than by property on a runtime `Type`, so 011's call-site rooting does not reach it.
-- Making `Jaunty.Extensions.Reflection`'s consumers AOT-safe.
+- Making `Extrode.Jaunty.Extensions.Reflection`'s consumers AOT-safe.
 - Trim-size optimisation. This is about correctness, not footprint.
 
 ## 7. Current State
@@ -218,7 +218,7 @@ These block `/plan`, not this spec.
 ## 10. Related
 
 - `audit/round26/03-findings.md` → `MappedCache.cs, WriteParameterCache.cs` (OPEN)
-- `src/Jaunty/Internals/Read/MappedCache.cs`, `src/Jaunty/Internals/Write/WriteParameterCache.cs`
+- `src/Extrode.Jaunty/Internals/Read/MappedCache.cs`, `src/Extrode.Jaunty/Internals/Write/WriteParameterCache.cs`
   — the three corrected justifications
 - `src/Directory.Build.props` — `IsTrimmable` / `IsAotCompatible`, per question 4
 - `samples/NativeAOT-Basic` — the reproduction

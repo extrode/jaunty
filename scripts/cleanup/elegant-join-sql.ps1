@@ -80,7 +80,7 @@ Write-Host ''
 Write-Host '== 2. NativeAOT publish output (needs -DeleteScratch) =='
 
 # Produced by `dotnet publish samples/NativeAOT-FluentQuery -c Release -r win-x64 -f net10.0`
-# to confirm the alias-inference change publishes with no Jaunty-assembly trim warnings. It is
+# to confirm the alias-inference change publishes with no Extrode.Jaunty-assembly trim warnings. It is
 # gitignored build output and an input to nothing; CI publishes its own.
 $scratch = @(
     'samples/NativeAOT-FluentQuery/bin/Release/net10.0/win-x64'

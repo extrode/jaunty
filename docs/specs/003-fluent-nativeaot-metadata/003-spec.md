@@ -8,28 +8,28 @@
 
 ## Context / Problem Statement
 
-Torture-test gap #11 (`docs/jaunty-torture-test-gaps-log.md`): every `Jaunty.Fluent` query
-(`.From<T>()`, joins, GroupBy, fluent CRUD) throws unless `Jaunty.Extensions.Reflection`'s
+Torture-test gap #11 (`docs/jaunty-torture-test-gaps-log.md`): every `Extrode.Jaunty.Fluent` query
+(`.From<T>()`, joins, GroupBy, fluent CRUD) throws unless `Extrode.Jaunty.Extensions.Reflection`'s
 `UseReflectionMapping()` has been called, because `FluentMetadataCache.GetMetadata<T>()`
-(`src/Jaunty.Fluent/Internals/FluentMetadataCache.cs`) has exactly one metadata source:
+(`src/Extrode.Jaunty.Fluent/Internals/FluentMetadataCache.cs`) has exactly one metadata source:
 `JauntyConfig.ReflectionTableMetadataResolver` (`Func<Type, object>?`), populated only by that
 reflection package. This contradicts the constitution's "no runtime reflection in core"
 principle for Jaunty's primary, most-advertised API surface.
 
-The gap is avoidable, not fundamental: the source generator (`src/Jaunty.SourceGenerator`)
+The gap is avoidable, not fundamental: the source generator (`src/Extrode.Jaunty.SourceGenerator`)
 already emits, per entity implementing `IMapped<T>`, static `ColumnInfo[]` collections
 (`InsertColumns`, `UpdateColumns`, `DeleteColumns`, `ParameterMap`) with column name, PK, and
 identity flags — all reflection-free, compile-time data. It does not currently emit
 `TableName`/`SchemaName` as static members. The plain non-fluent read path (`Query<T>`,
 `ReadEntity`) already consumes `IMapped<T>` reflection-free via `MappedCache<T>`
-(`src/Jaunty/Internals/Read/MappedCache.cs`). The fluent write path has the same gap and even
+(`src/Extrode.Jaunty/Internals/Read/MappedCache.cs`). The fluent write path has the same gap and even
 an existing acknowledging comment: `CrudSqlCache.TryResolveMetadata<T>()`
-(`src/Jaunty/Internals/Write/CrudSqlCache.cs`, ~line 138) only checks
+(`src/Extrode.Jaunty/Internals/Write/CrudSqlCache.cs`, ~line 138) only checks
 `ReflectionTableMetadataResolver`, with a comment noting `IMapped<T>` could supply metadata
 "but for now we'll rely on the extension hook."
 
 **Goal**: fluent queries and fluent CRUD against source-generated entities work with zero
-runtime reflection and zero dependency on `Jaunty.Extensions.Reflection`, while leaving that
+runtime reflection and zero dependency on `Extrode.Jaunty.Extensions.Reflection`, while leaving that
 package's behavior unchanged for hand-written POCOs that don't use the source generator.
 
 ---
@@ -40,15 +40,15 @@ package's behavior unchanged for hand-written POCOs that don't use the source ge
 
 **Priority**: `P1` (MVP)
 
-**Description**: A developer using only the source generator (no `Jaunty.Extensions.Reflection`
+**Description**: A developer using only the source generator (no `Extrode.Jaunty.Extensions.Reflection`
 reference, no `UseReflectionMapping()` call anywhere) writes a fluent query against a
 `partial` entity class and it works.
 
 **Why This Priority**: This is the core of gap #11 — the fluent API's primary use case is
 currently broken for the NativeAOT-safe path the rest of the library promises.
 
-**Independent Test**: Build a minimal console project referencing only `Jaunty` +
-`Jaunty.Fluent` + `Jaunty.SourceGenerator` (as Analyzer), no `Jaunty.Extensions.Reflection`;
+**Independent Test**: Build a minimal console project referencing only `Extrode.Jaunty` +
+`Extrode.Jaunty.Fluent` + `Extrode.Jaunty.SourceGenerator` (as Analyzer), no `Extrode.Jaunty.Extensions.Reflection`;
 run `connection.From<T>().Where(...).Select()`; assert it succeeds under `PublishAot=true`.
 
 **Acceptance Scenarios**:
@@ -87,7 +87,7 @@ Then it succeeds without UseReflectionMapping()
 **Priority**: `P1` (MVP)
 
 **Description**: Entities that are hand-written POCOs — not `partial`, not source-generator
-processed, no `IMapped<T>` — continue to require `Jaunty.Extensions.Reflection` and
+processed, no `IMapped<T>` — continue to require `Extrode.Jaunty.Extensions.Reflection` and
 `UseReflectionMapping()` exactly as today. This story exists to make explicit that Story 1/2
 must not regress the existing reflection path.
 
@@ -111,8 +111,8 @@ registered reflection resolver, the resulting exception explains both remedies.
 Scenario: Clear error when no metadata source is available
 Given a type with no IMapped<T> implementation and no ReflectionTableMetadataResolver set
 When a fluent query against that type is attempted
-Then an InvalidOperationException is thrown naming both remedies: use the Jaunty source
-  generator, or call Jaunty.Extensions.Reflection's UseReflectionMapping()
+Then an InvalidOperationException is thrown naming both remedies: use the Extrode.Jaunty source
+  generator, or call Extrode.Jaunty.Extensions.Reflection's UseReflectionMapping()
 ```
 
 ### Edge Cases
@@ -138,14 +138,14 @@ Then an InvalidOperationException is thrown naming both remedies: use the Jaunty
 - `FR-003`: `CrudSqlCache.TryResolveMetadata<T>()` gains the identical source-gen-first lookup,
   resolving the existing acknowledging code comment.
 - `FR-004`: Zero behavior change for entities without source-generated metadata — the
-  reflection resolver remains the fallback; `Jaunty.Extensions.Reflection` itself is untouched.
+  reflection resolver remains the fallback; `Extrode.Jaunty.Extensions.Reflection` itself is untouched.
 - `FR-005`: A new or updated NativeAOT sample project (alongside `NativeAOT-Basic`,
   `NativeAOT-CustomMapper`, `NativeAOT-WithReflection`) demonstrates a fluent query — not just
   `Query<T>` — compiling and running under `PublishAot=true` with no reference to
-  `Jaunty.Extensions.Reflection`.
+  `Extrode.Jaunty.Extensions.Reflection`.
 - `FR-006`: The failure path in User Story 4 produces a specific, actionable message (not the
   current generic throw).
-- `FR-007`: Existing `Jaunty.Fluent.Tests` / `Jaunty.Tests` integration suites remain green,
+- `FR-007`: Existing `Extrode.Jaunty.Fluent.Tests` / `Extrode.Jaunty.Tests` integration suites remain green,
   unmodified in expected behavior — this is a metadata-resolution mechanism change, not a
   SQL-generation change, across all 4 dialects.
 
@@ -163,12 +163,12 @@ Then an InvalidOperationException is thrown naming both remedies: use the Jaunty
 
 - `SC-1`: A fluent query against a source-generated entity succeeds under
   `dotnet publish -p:PublishAot=true`, with no reflection-related AOT warnings and no
-  reference to `Jaunty.Extensions.Reflection` in the consuming project.
-- `SC-2`: Existing `Jaunty.Fluent.Tests` and `Jaunty.Tests` suites remain 100% green.
+  reference to `Extrode.Jaunty.Extensions.Reflection` in the consuming project.
+- `SC-2`: Existing `Extrode.Jaunty.Fluent.Tests` and `Extrode.Jaunty.Tests` suites remain 100% green.
 - `SC-3`: `CrudSqlCache`'s existing reflection-only gap (see comment referenced above) is
   closed — fluent `Create`/`Update`/`Delete`/`Upsert` work reflection-free for
   source-generated entities.
-- `SC-4`: `samples/torture-test-sakila-queries/` can drop its `Jaunty.Extensions.Reflection`
+- `SC-4`: `samples/torture-test-sakila-queries/` can drop its `Extrode.Jaunty.Extensions.Reflection`
   reference and `UseReflectionMapping()` call and still pass all 15 queries against all 5
   dialects — this closes gap #11 concretely, not only in the abstract.
 
@@ -176,7 +176,7 @@ Then an InvalidOperationException is thrown naming both remedies: use the Jaunty
 
 ## 4. Non-Goals / Out of Scope
 
-- Redesigning or removing `Jaunty.Extensions.Reflection` — still required and unchanged for
+- Redesigning or removing `Extrode.Jaunty.Extensions.Reflection` — still required and unchanged for
   non-source-generated POCOs.
 - Any change to SQL generation, dialect translation, or query semantics — this is purely about
   *how* metadata is resolved, not what queries produce.
@@ -193,7 +193,7 @@ Then an InvalidOperationException is thrown naming both remedies: use the Jaunty
    `IMapped<T>` consumer and can be adopted incrementally. Needs an explicit decision in
    `plan.md`.
 2. **The `ColumnMetadata.Property` problem**: `EntityMetadata`/`ColumnMetadata`
-   (`src/Jaunty/Internals/Entity/ColumnMetadata.cs`) currently carries a `PropertyInfo` per
+   (`src/Extrode.Jaunty/Internals/Entity/ColumnMetadata.cs`) currently carries a `PropertyInfo` per
    column — itself something reflection normally supplies. If the goal is *actually* zero
    reflection on the source-gen path (not just zero calls to `UseReflectionMapping()`), this is
    the trickiest point and must be resolved explicitly in `plan.md`, not glossed over: either

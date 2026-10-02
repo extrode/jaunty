@@ -58,6 +58,6 @@ path honours it: `QueryCore`, `GridReader.ReadCore`/`ReadAsyncCore`, `GetAllCore
 
 ## Where the code is
 
-`src/Jaunty/Configuration/JauntyConfig.cs`, `QueryResultCapacity`, whose doc comment points here.
+`src/Extrode.Jaunty/Configuration/JauntyConfig.cs`, `QueryResultCapacity`, whose doc comment points here.
 The full-run log is `tmp/bench-full-2026-09-02.log` and the probe log
 `tmp/bench-pg-capacity-probe.log` in the private tree; the numbers above are copied from them.

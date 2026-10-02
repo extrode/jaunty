@@ -16,17 +16,17 @@ sites on this page execute**.
 | 1 | `MappedCache` (5 sites) | You hand-write `IMapped<T>` instead of using `[Table]` | `No mapper found for type 'T'` | Build warning **JAUNTYGEN002**; add `[Table]`, implement `IGeneratedAccessors<T>`, or `[DynamicDependency]` |
 | 2 | `WriteParameterCache` (2 sites) | You supply `BindInsert`/`BindUpdate`/`BindDelete` by convention | The command binds nothing | Build warning **JAUNTYGEN002**, same three fixes |
 | 3 | `ParameterCache` (1 site) | Every query with a parameters object | Parameters silently missing | Generator emits `JauntyAot.PreserveParameters<T>()`; **JAUNTYGEN003** where it cannot. Two shapes stay uncovered — see below |
-| 4 | `Jaunty.Init` (1 site) | Auto-discovery of `Jaunty.Extensions.Reflection` | Extension not enabled | Call `JauntyReflectionExtensions.UseReflectionMapping()` yourself, or don't use the package |
+| 4 | `Extrode.Jaunty.Init` (1 site) | Auto-discovery of `Extrode.Jaunty.Extensions.Reflection` | Extension not enabled | Call `c.UseReflectionMapping()` inside `JauntyConfig.Configure` yourself, or don't use the package |
 | 5 | `SqlDialectFactory` (2 sites) | A wrapped connection, or auto-discovery of the bulk-copy extension | Falls back to the undecorated behaviour | Nothing; degrades, never misbehaves |
 | 6 | `GroupedJoinedResultMapper` (1 site) | Fluent `GroupBy(...).Select(...)` projections | Rooted, so nothing | Nothing — see the caveat on expression trees below |
-| 7 | `Jaunty.FlatFiles.DuckDB` (2 sites) | The DuckDB flat-file provider | Columns silently unmapped | Root your DTOs, or don't publish this package trimmed |
-| 8 | `Jaunty.Scaffolding` (1 site) | The scaffolding CLI, at design time | n/a | Nothing — a build-time tool, never published AOT |
+| 7 | `Extrode.Jaunty.FlatFiles.DuckDB` (2 sites) | The DuckDB flat-file provider | Columns silently unmapped | Root your DTOs, or don't publish this package trimmed |
+| 8 | `Extrode.Jaunty.Scaffolding` (1 site) | The scaffolding CLI, at design time | n/a | Nothing — a build-time tool, never published AOT |
 
-`Jaunty.Extensions.Reflection` is not on this list. Reflection is its stated purpose: referencing
-it is how you opt **out** of the AOT guarantee. `Jaunty.SourceGenerator` is not either — it runs
+`Extrode.Jaunty.Extensions.Reflection` is not on this list. Reflection is its stated purpose: referencing
+it is how you opt **out** of the AOT guarantee. `Extrode.Jaunty.SourceGenerator` is not either — it runs
 inside the compiler and is never published.
 
-The count is enforced. `scripts/Verify-NativeAOT.ps1` fails the build if any reflection site in a
+The count is enforced. `scripts/verify-nativeaot.ps1` fails the build if any reflection site in a
 publishable assembly lacks a reviewed justification next to it, and `-Verbose` prints the whole
 inventory. There are **15** at the time of writing.
 
@@ -48,7 +48,7 @@ at build time instead. **JAUNTYGEN002** names the type, says which members are a
 the three ways out:
 
 ```csharp
-// The fix Jaunty prefers: let the generator emit the members.
+// The fix Extrode.Jaunty prefers: let the generator emit the members.
 [Table("products")]
 public partial class Product { ... }
 
@@ -89,7 +89,7 @@ JauntyAot.PreserveParameters<MyParams>();
 
 ## 4. Optional extension auto-discovery
 
-`Jaunty.Init` probes for `Jaunty.Extensions.Reflection` and calls its `UseReflectionMapping` if it
+`Extrode.Jaunty.Init` probes for `Extrode.Jaunty.Extensions.Reflection` and calls its `UseReflectionMapping` if it
 is there. Under trimming the probe finds nothing and the extension is simply not enabled.
 
 This one is inherently reflective and cannot be replaced by having the extension register itself:
@@ -98,7 +98,7 @@ under AOT), so self-registration would change behaviour for every JIT consumer. 
 trimmed and want the extension, call it explicitly:
 
 ```csharp
-JauntyReflectionExtensions.UseReflectionMapping();
+JauntyConfig.Configure(c => c.UseReflectionMapping());
 ```
 
 `SqlDialectFactory`'s bulk-copy probe (site 5) is the same pattern with the same reasoning.
@@ -145,7 +145,7 @@ silence it is to suppress it at your call site or use a non-expression overload.
 
 ## 7. DuckDB flat files
 
-`Jaunty.FlatFiles.DuckDB` maps result columns onto your DTO by enumerating its public properties.
+`Extrode.Jaunty.FlatFiles.DuckDB` maps result columns onto your DTO by enumerating its public properties.
 This package has no source-generated path, so unlike the core sites there is no non-reflective
 alternative to fall back to: under trimming, columns go silently unmapped.
 
@@ -161,13 +161,13 @@ tool that generates source; it is never part of your published application.
 
 ## What the verifier does and does not prove
 
-`scripts/Verify-NativeAOT.ps1` checks that a justification **exists** next to each reflection
+`scripts/verify-nativeaot.ps1` checks that a justification **exists** next to each reflection
 site. It does not check that the justification is **true**, and it cannot trace a call graph.
 Treat a PASS as "every site has been reviewed", not as a proof of AOT safety.
 
 It also matches a fixed pattern list, which is not exhaustive. `GetConstructors(` is not scanned,
-and `GetGetMethod(` sites — `ParameterCache.cs`, `Jaunty.Fluent/ExpressionEvaluator.cs`,
-`Jaunty.FlatFiles.DuckDB/ExpressionTranslator.cs` — are not counted separately from the
+and `GetGetMethod(` sites — `ParameterCache.cs`, `Extrode.Jaunty.Fluent/ExpressionEvaluator.cs`,
+`Extrode.Jaunty.FlatFiles.DuckDB/ExpressionTranslator.cs` — are not counted separately from the
 `GetProperties` call that produced the `PropertyInfo`.
 
 Separately: "no Jaunty assembly produces a trim or AOT warning" is accurate about build output and

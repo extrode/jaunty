@@ -11,7 +11,7 @@ Why this exists. SQLitePCLRaw.bundle_e_sqlite3 carries e_sqlite3 compiled for al
 identifiers it knows about, and PackAsTool cannot infer where the tool will be installed, so
 every one of them was packed into 1.0.0-rc.2: 83,487,302 bytes compressed and 171.53 MB
 unpacked, of which roughly 70 MB was iOS, Android, wasm and Mac Catalyst native code that
-`dotnet tool install` can never load. TrimToolRuntimeAssets in Jaunty.Scaffolding.Cli.csproj
+`dotnet tool install` can never load. TrimToolRuntimeAssets in Extrode.Jaunty.Scaffolding.Cli.csproj
 filters that down to the desktop and CI identifiers.
 
 That filter is an MSBuild target keyed on an SDK item name, RuntimeTargetsCopyLocalItems, which
@@ -34,7 +34,7 @@ from pathlib import Path
 # provider adding native assets under an identifier that is already allowed.
 SIZE_CEILING_BYTES = 35 * 1024 * 1024
 
-CSPROJ = Path('src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj')
+CSPROJ = Path('src/Extrode.Jaunty.Scaffolding.Cli/Extrode.Jaunty.Scaffolding.Cli.csproj')
 
 RID_IN_PATH = re.compile(r'^tools/[^/]+/[^/]+/runtimes/([^/]+)/')
 

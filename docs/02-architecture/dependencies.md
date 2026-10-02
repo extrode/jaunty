@@ -61,7 +61,7 @@ reference unifies to the in-box assembly rather than loading a second copy.
 `Microsoft.Extensions.Logging.Abstractions` and `Microsoft.Extensions.DependencyInjection.Abstractions`
 were referenced by core on **every** target framework until the split described below.
 
-A comment in `Jaunty.csproj` claimed they were "built in on net8.0+" and referenced only "for
+A comment in `Extrode.Jaunty.csproj` claimed they were "built in on net8.0+" and referenced only "for
 compatibility". **That was wrong.** Those two packages ship in the **ASP.NET Core** shared
 framework, which a class library never gets — only `Microsoft.NETCore.App` is available to one.
 They were real dependencies on every target, and they are gone now.
@@ -81,11 +81,11 @@ Install it if you use any of:
 
 | Type or member | Namespace |
 |---|---|
-| `AddJauntyLogging(...)` | `Jaunty` |
-| `AddJauntyInterceptor<T>(...)` | `Jaunty` |
-| `ApplyJauntyInterceptors(...)` | `Jaunty` |
-| `LoggingInterceptor` | `Jaunty.Interceptors` |
-| `LoggingConfiguration` | `Jaunty.Configuration` |
+| `AddJauntyLogging(...)` | `Extrode.Jaunty` |
+| `AddJauntyInterceptor<T>(...)` | `Extrode.Jaunty` |
+| `ApplyJauntyInterceptors(...)` | `Extrode.Jaunty` |
+| `LoggingInterceptor` | `Extrode.Jaunty.Interceptors` |
+| `LoggingConfiguration` | `Extrode.Jaunty.Configuration` |
 
 **Namespaces are unchanged**, so migrating is a package reference and nothing else — no `using`
 edits, no renames, no code changes.
@@ -116,10 +116,10 @@ packages that references a database driver.
 | `net8.0`, `net10.0` | `Npgsql` 10.0.1 |
 | `netstandard2.0` | `Npgsql` 8.0.7 — 10.x no longer targets it |
 
-Install it and call `JauntyNpgsql.Use()` once at startup if you import CSV into PostgreSQL:
+Install it and call `c.UseNpgsqlCopy()` inside `JauntyConfig.Configure` if you import CSV into PostgreSQL:
 
 ```csharp
-JauntyNpgsql.Use();
+JauntyConfig.Configure(c => c.UseNpgsqlCopy());
 connection.ImportCsv("products", "products.csv");
 ```
 
@@ -133,7 +133,7 @@ direct, compile-time calls.
 
 **Without a provider, an Npgsql connection is rejected by name** rather than falling back quietly.
 To use the server-side path deliberately — where the database server opens the file, not your
-process — set `JauntyConfig.CopyImportFactory` to a factory that returns `null`. You can also
+process — set `c.CopyImportFactory` inside `JauntyConfig.Configure` to a factory that returns `null`. You can also
 register your own implementation for any driver with an equivalent API.
 
 Every other engine is unaffected: SQLite, MySQL/MariaDB and SQL Server never consult the factory.
@@ -181,13 +181,13 @@ warning. Verified after the split, 2026-08-29:
 
 | Check | Result |
 |---|---|
-| `scripts/Verify-NativeAOT.ps1` | PASS — 21 reflection sites, all carrying a reviewed `AOT-SAFE` justification |
+| `scripts/verify-nativeaot.ps1` | PASS — 21 reflection sites, all carrying a reviewed `AOT-SAFE` justification |
 | NativeAOT publish, `net8.0` win-x64 (control) | binary produced, 36.98 MB |
 | NativeAOT publish, `net10.0` win-x64 | binary produced and runs, 34.63 MB |
 | Trim/AOT warnings from any **Jaunty** assembly | **none** |
 
 Every `IL2104`/`IL3053` warning in that publish names a third-party driver or a BCL serialization
-assembly reached through `Jaunty.Scaffolding.Cli` — `Microsoft.Data.SqlClient`, `MySqlConnector`,
+assembly reached through `Extrode.Jaunty.Scaffolding.Cli` — `Microsoft.Data.SqlClient`, `MySqlConnector`,
 `Microsoft.IdentityModel.Tokens`, `System.Data.Common`, `System.Private.Xml`. **None of these is
 referenced by Jaunty core**, so they cannot reach a consumer who does not install the CLI tool.
 
@@ -195,7 +195,7 @@ referenced by Jaunty core**, so they cannot reach a consumer who does not instal
 `src/Directory.Build.props`, and `TreatWarningsAsErrors` is on, so an AOT regression in Jaunty's own
 code fails the build rather than being reported.
 
-`Jaunty.Extensions.Reflection` is excluded from the AOT scan by design — reflection is its purpose,
+`Extrode.Jaunty.Extensions.Reflection` is excluded from the AOT scan by design — reflection is its purpose,
 and referencing it is how a consumer opts out of the guarantee.
 
 ---
@@ -205,7 +205,7 @@ and referencing it is how a consumer opts out of the guarantee.
 Adding a `PackageReference` to a csproj succeeds silently; the only symptom is a dependency group in
 a `.nuspec` that nobody reads. So it is asserted in tests rather than left to review:
 
-`tests/Jaunty.UnitTests/Unit/PackageDependencyTests.cs`
+`tests/Extrode.Jaunty.UnitTests/Unit/PackageDependencyTests.cs`
 
 | Fact | What it stops |
 |---|---|
@@ -217,7 +217,7 @@ a `.nuspec` that nobody reads. So it is asserted in tests rather than left to re
 To check the shipped artifact directly rather than the build files:
 
 ```bash
-dotnet pack src/Jaunty/Jaunty.csproj -c Release -o tmp/packtest
+dotnet pack src/Extrode.Jaunty/Extrode.Jaunty.csproj -c Release -o tmp/packtest
 unzip -o -q tmp/packtest/Extrode.Jaunty.*.nupkg Extrode.Jaunty.nuspec -d tmp/packtest/nuspec-out
 ```
 

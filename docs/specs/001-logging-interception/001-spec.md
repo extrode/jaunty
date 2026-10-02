@@ -21,7 +21,7 @@
 
 **Acceptance Scenarios**:
 ```gherkin
-Given Jaunty is configured with an ILoggerFactory
+Given Extrode.Jaunty is configured with an ILoggerFactory
 When a query is executed via Query<T>
 Then the SQL command text is logged at Information level
 And parameter values are logged (with sensitive data handling)
@@ -76,11 +76,11 @@ Then OnCommandFailed is called with the exception details
 
 **Acceptance Scenarios**:
 ```gherkin
-Given an application subscribes to Jaunty's DiagnosticSource
+Given an application subscribes to Extrode.Jaunty's DiagnosticSource
 When a command is executed
-Then "Jaunty.Command.Executing" event is emitted before execution
-And "Jaunty.Command.Executed" event is emitted after execution
-And "Jaunty.Command.Failed" event is emitted on failure
+Then "Extrode.Jaunty.Command.Executing" event is emitted before execution
+And "Extrode.Jaunty.Command.Executed" event is emitted after execution
+And "Extrode.Jaunty.Command.Failed" event is emitted on failure
 And each event includes command text, parameters, duration, and connection info
 ```
 

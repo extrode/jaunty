@@ -1,5 +1,5 @@
-using Jaunty.Attributes;
-using Jaunty.Interfaces;
+using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Interfaces;
 
 namespace SakilaQueries;
 

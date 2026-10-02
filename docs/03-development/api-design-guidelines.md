@@ -221,14 +221,14 @@ Group extension methods by functionality:
 
 ```csharp
 // Read operations
-public static partial class Jaunty
+public static partial class Extrode.Jaunty
 {
     public static List<T> Query<T>(...) { }
     public static T QueryFirst<T>(...) { }
 }
 
 // Write operations
-public static partial class Jaunty
+public static partial class Extrode.Jaunty
 {
     public static long Insert<T>(...) { }
     public static int Update<T>(...) { }
@@ -407,8 +407,8 @@ Consider adding tests that verify API surface:
 [Fact]
 public void QueryAsync_HasCancellationTokenParameter()
 {
-    var method = typeof(Jaunty).GetMethod(
-        nameof(Jaunty.QueryAsync), 
+    var method = typeof(Extrode.Jaunty).GetMethod(
+        nameof(Extrode.Jaunty.QueryAsync), 
         new[] { typeof(IDbConnection), typeof(string), typeof(CancellationToken) });
     
     Assert.NotNull(method);

@@ -38,9 +38,9 @@
 Solution: Jaunty.sln
 │
 ├── src/
-│   ├── Jaunty/                          # Existing core (unchanged)
-│   ├── Jaunty.FlatFiles/                # NEW — abstractions, interfaces, config
-│   │   ├── Jaunty.FlatFiles.csproj      # Targets: netstandard2.0;net10.0
+│   ├── Extrode.Jaunty/                          # Existing core (unchanged)
+│   ├── Extrode.Jaunty.FlatFiles/                # NEW — abstractions, interfaces, config
+│   │   ├── Extrode.Jaunty.FlatFiles.csproj      # Targets: netstandard2.0;net10.0
 │   │   ├── IFlatFileDatabase.cs
 │   │   ├── IFileSource.cs
 │   │   ├── IFlatFileDialect.cs
@@ -61,8 +61,8 @@ Solution: Jaunty.sln
 │   │       ├── WriteBackMode.cs         # Destructive / NonDestructive
 │   │       └── ExportFormat.cs
 │   │
-│   └── Jaunty.FlatFiles.DuckDB/         # NEW — DuckDB engine implementation
-│       ├── Jaunty.FlatFiles.DuckDB.csproj # Targets: net8.0;net10.0
+│   └── Extrode.Jaunty.FlatFiles.DuckDB/         # NEW — DuckDB engine implementation
+│       ├── Extrode.Jaunty.FlatFiles.DuckDB.csproj # Targets: net8.0;net10.0
 │       ├── DuckDbFlatFileDatabase.cs     # Implements IFlatFileDatabase
 │       ├── DuckDbDialect.cs             # Implements IDialect + IFlatFileDialect
 │       ├── DuckDbFileSourceFactory.cs
@@ -81,8 +81,8 @@ Solution: Jaunty.sln
 │           └── CopyToExporter.cs
 │
 └── tests/
-    ├── Jaunty.FlatFiles.Tests/          # Unit tests for abstractions
-    └── Jaunty.FlatFiles.DuckDB.Tests/   # Integration tests with real DuckDB
+    ├── Extrode.Jaunty.FlatFiles.Tests/          # Unit tests for abstractions
+    └── Extrode.Jaunty.FlatFiles.DuckDB.Tests/   # Integration tests with real DuckDB
         ├── Fixtures/
         │   ├── sales.csv
         │   ├── sales.tsv
@@ -270,7 +270,7 @@ Source File (CSV/Parquet/JSON)
 DuckDB (read_csv_auto / read_parquet / read_json_auto)
     │
     ▼
-Jaunty Entity Mapping (validate schema, map columns)
+Extrode.Jaunty Entity Mapping (validate schema, map columns)
     │
     ├── SQLite target → Batched INSERT via DbCommand (SQLite has no bulk API)
     ├── PostgreSQL target → Npgsql COPY binary protocol
@@ -310,4 +310,4 @@ The pipeline reads from DuckDB in configurable batches, maps through Jaunty's en
 - **Cross-source JOINs**: Fluent API support for joining across file sources
 - **Streaming/append**: Watch directories for new files and auto-ingest
 - **ATTACH**: DuckDB can ATTACH SQLite/PostgreSQL directly for zero-copy import
-- **Alternative engines**: `Jaunty.FlatFiles.Sqlite` using SQLite's CSV virtual table
+- **Alternative engines**: `Extrode.Jaunty.FlatFiles.Sqlite` using SQLite's CSV virtual table

@@ -53,7 +53,7 @@ also does not apply. It does not happen automatically even for a named type the 
 
 ## 4. Non-Goals
 
-- Making `Jaunty.Fluent` predicates over `decimal` work under AOT. That failure happens in the
+- Making `Extrode.Jaunty.Fluent` predicates over `decimal` work under AOT. That failure happens in the
   consumer's own expression-tree construction, before Jaunty is called at all (round-27
   carry-forward item 18).
 - Threading a generic parameter type through the library's 170 `object? parameters` signatures. That

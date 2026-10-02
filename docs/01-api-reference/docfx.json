@@ -4,10 +4,10 @@
       "src": [
         {
           "files": [
-            "src/Jaunty/Jaunty.csproj",
-            "src/Jaunty.Fluent/Jaunty.Fluent.csproj",
-            "src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj",
-            "src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj"
+            "src/Extrode.Jaunty/Extrode.Jaunty.csproj",
+            "src/Extrode.Jaunty.Fluent/Extrode.Jaunty.Fluent.csproj",
+            "src/Extrode.Jaunty.FlatFiles/Extrode.Jaunty.FlatFiles.csproj",
+            "src/Extrode.Jaunty.FlatFiles.DuckDB/Extrode.Jaunty.FlatFiles.DuckDB.csproj"
           ],
           "src": ".."
         }
@@ -38,8 +38,8 @@
     "fileMetadataFiles": [],
     "template": ["default", "modern"],
     "globalMetadata": {
-      "_appTitle": "Jaunty API Documentation",
-      "_appFooter": "Jaunty — A high-performance .NET micro-ORM",
+      "_appTitle": "Extrode.Jaunty API Documentation",
+      "_appFooter": "Extrode.Jaunty — A high-performance .NET micro-ORM",
       "_enableSearch": true
     },
     "postProcessors": ["ExtractSearchIndex"]

@@ -22,7 +22,7 @@
 - **T001**: Source generator (`JauntyGenerator.cs`) emits `TableName` (string), `SchemaName`
   (string?), `PrimaryKeyColumnNames` (string[]) as public static properties on generated
   entities, alongside existing `ColumnInfo` collections. Add/update
-  `Jaunty.SourceGenerator.Tests` snapshot or emission test.
+  `Extrode.Jaunty.SourceGenerator.Tests` snapshot or emission test.
 - **T002** (done 2026-07-07): Audited every consumer of `ColumnMetadata.Property`
   (`PropertyInfo`) codebase-wide (broader than the two folders originally scoped —
   `EntityDataReader.cs` under `BulkCopy/` was also a consumer). Found 4 usage categories (A:
@@ -56,12 +56,12 @@ finalized for the reflection-free path.
 
 **Implementation**:
 - **T004** [US1] Add source-gen-first lookup tier to `FluentMetadataCache.GetMetadata<T>()`
-  (`src/Jaunty.Fluent/Internals/FluentMetadataCache.cs`): reflect for the T001 static members
+  (`src/Extrode.Jaunty.Fluent/Internals/FluentMetadataCache.cs`): reflect for the T001 static members
   once per type, synthesize `EntityMetadata`, cache; fall through to
   `ReflectionTableMetadataResolver` if not found.
 - **T005** [P] [US1] Unit tests: `FluentMetadataCache` resolves a source-generated entity with
   no `ReflectionTableMetadataResolver` registered.
-- **T006** [P] [US1] Integration test (`Jaunty.Fluent.Tests`): full fluent query
+- **T006** [P] [US1] Integration test (`Extrode.Jaunty.Fluent.Tests`): full fluent query
   (`.From<T>().Where().Select()`, a 2-way join, a `GroupBy`) against a source-generated entity,
   asserting success with no `UseReflectionMapping()` call anywhere in the test process.
 
@@ -76,7 +76,7 @@ with zero calls to `UseReflectionMapping()`.
 
 **Implementation**:
 - **T007** [US2] Add the identical source-gen-first lookup tier to
-  `CrudSqlCache.TryResolveMetadata<T>()` (`src/Jaunty/Internals/Write/CrudSqlCache.cs`),
+  `CrudSqlCache.TryResolveMetadata<T>()` (`src/Extrode.Jaunty/Internals/Write/CrudSqlCache.cs`),
   resolving the existing acknowledging code comment there.
 - **T008** [P] [US2] Unit tests: `CrudSqlCache` resolves a source-generated entity with no
   `ReflectionTableMetadataResolver` registered.
@@ -93,7 +93,7 @@ with zero calls to `UseReflectionMapping()`.
 `UseReflectionMapping()`.
 
 **Implementation**:
-- **T010** [US3] Re-run full existing `Jaunty.Fluent.Tests` and `Jaunty.Tests` suites
+- **T010** [US3] Re-run full existing `Extrode.Jaunty.Fluent.Tests` and `Extrode.Jaunty.Tests` suites
   unmodified; confirm 100% pass, no SQL-output diffs, across all 4 real dialects + SQLite.
 
 **Checkpoint**: US3 complete — no regression confirmed.
@@ -113,9 +113,9 @@ with zero calls to `UseReflectionMapping()`.
 ## Phase 6: NativeAOT Proof & Torture-Test Closure
 
 - **T013**: New sample `samples/NativeAOT-FluentQuery/` — fluent query (not `Query<T>`)
-  compiling and running under `PublishAot=true`, no `Jaunty.Extensions.Reflection` reference.
+  compiling and running under `PublishAot=true`, no `Extrode.Jaunty.Extensions.Reflection` reference.
   `dotnet publish -p:PublishAot=true`, confirm no reflection-related AOT warnings (SC-1).
-- **T014**: Update `samples/torture-test-sakila-queries/` — drop `Jaunty.Extensions.Reflection`
+- **T014**: Update `samples/torture-test-sakila-queries/` — drop `Extrode.Jaunty.Extensions.Reflection`
   project reference and `UseReflectionMapping()` call; re-run all 15 queries against all 5
   dialects, confirm identical results to the Part 2 baseline (SC-4).
 - **T015**: Update `docs/jaunty-torture-test-gaps-log.md` gap #11 status to "fixed", pointing

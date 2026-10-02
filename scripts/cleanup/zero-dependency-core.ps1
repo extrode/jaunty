@@ -3,8 +3,8 @@
     Cleanup for the zero-dependency-core work (public release T7/T8/T9), 2026-08-29.
 
 .DESCRIPTION
-    Written by the task that moved the ILogger and DI integration out of src/Jaunty into
-    src/Jaunty.Extensions.Logging. Removes only what that task created and nothing it shipped.
+    Written by the task that moved the ILogger and DI integration out of src/Extrode.Jaunty into
+    src/Extrode.Jaunty.Extensions.Logging. Removes only what that task created and nothing it shipped.
 
     Bare invocation is the dry run. -Execute is the only way to act. -DeleteScratch is the second
     flag required for the irreversible part (deleting untracked pack output under tmp/).
@@ -134,7 +134,7 @@ Write-Host '       it entirely, remove that checkout on the audit machine by han
 
 Write-Host ''
 Write-Host '== 5. build output this task rebuilt (NOT removed) =='
-Write-Host 'note:  bin/ and obj/ under src/Jaunty.Extensions.Logging are ordinary build output.'
+Write-Host 'note:  bin/ and obj/ under src/Extrode.Jaunty.Extensions.Logging are ordinary build output.'
 Write-Host '       They are gitignored and are rebuilt on demand; this script leaves them alone.'
 
 Write-Host ''

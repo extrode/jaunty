@@ -8,8 +8,8 @@ using Conduit.Infrastructure.Errors;
 
 using FluentValidation;
 
-using Jaunty;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Fluent;
 
 using MediatR;
 

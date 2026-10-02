@@ -23,30 +23,30 @@ They decompose as:
 
 | Group | Count | Detail |
 |---|---|---|
-| In `Jaunty.slnx`, need `net10.0` | **19** | every solution project except `src/Jaunty.SourceGenerator` |
-| In `Jaunty.slnx`, stays put | 1 | `src/Jaunty.SourceGenerator` — `netstandard2.0` only, a Roslyn analyzer must stay there |
-| Tracked, **not** in the solution, mention `net8.0` | **4** | `samples/NativeAOT-FluentQuery`, `tests/Jaunty.Fluent.SourceGen.Tests`, `samples/torture-test-sakila-queries/SakilaQueries.csproj`, `tools/native/…/MangleMap.csproj` |
+| In `Jaunty.slnx`, need `net10.0` | **19** | every solution project except `src/Extrode.Jaunty.SourceGenerator` |
+| In `Jaunty.slnx`, stays put | 1 | `src/Extrode.Jaunty.SourceGenerator` — `netstandard2.0` only, a Roslyn analyzer must stay there |
+| Tracked, **not** in the solution, mention `net8.0` | **4** | `samples/NativeAOT-FluentQuery`, `tests/Extrode.Jaunty.Fluent.SourceGen.Tests`, `samples/torture-test-sakila-queries/SakilaQueries.csproj`, `tools/native/…/MangleMap.csproj` |
 | Tracked, no TFM declared at all | 3 | the torture ports — see T0 |
 
 19 + 4 = 23 . Tag forms: **19** files use singular `<TargetFramework>`, **6** use plural
-`<TargetFrameworks>`; `src/Jaunty/Jaunty.csproj:5` also holds a *commented-out* singular tag, so a
+`<TargetFrameworks>`; `src/Extrode.Jaunty/Extrode.Jaunty.csproj:5` also holds a *commented-out* singular tag, so a
 naive grep over-counts.
 
 Pins, per file, `SetTargetFramework="TargetFramework=net8.0"` → **21 across 11 files**
-(`Jaunty.Benchmarks` 2, `Jaunty.FlatFiles.Benchmarks` 2, `Jaunty.Extensions.Reflection` 1,
-`Jaunty.FlatFiles.DuckDB` 3, `Jaunty.FlatFiles` 2, `Jaunty.FlatFiles.DuckDB.Tests` 4,
-`Jaunty.FlatFiles.Tests` 1, `Jaunty.Fluent.SourceGen.Tests` 2, `Jaunty.Scaffolding.Tests` 1,
-`Jaunty.SourceGenerator.Tests` 1, `Jaunty.Tests` 2). The **10 `netstandard2.0` pins across 8
+(`Extrode.Jaunty.Benchmarks` 2, `Extrode.Jaunty.FlatFiles.Benchmarks` 2, `Extrode.Jaunty.Extensions.Reflection` 1,
+`Extrode.Jaunty.FlatFiles.DuckDB` 3, `Extrode.Jaunty.FlatFiles` 2, `Extrode.Jaunty.FlatFiles.DuckDB.Tests` 4,
+`Extrode.Jaunty.FlatFiles.Tests` 1, `Extrode.Jaunty.Fluent.SourceGen.Tests` 2, `Extrode.Jaunty.Scaffolding.Tests` 1,
+`Extrode.Jaunty.SourceGenerator.Tests` 1, `Extrode.Jaunty.Tests` 2). The **10 `netstandard2.0` pins across 8
 files** are untouched.
 
 ## PR1 — green clean net10 build, still net8-only
 
 - [x] **T1** `LoggingInterceptor` — remove the decorative `[DynamicallyAccessedMembers]`, rewrite
   the false `:194` justification, replace the stale `:202` `AOT-SAFE` marker — files:
-  `src/Jaunty/Interceptors/LoggingInterceptor.cs` — covers: §3.3, AC2, AC8-adjacent — done when:
+  `src/Extrode.Jaunty/Interceptors/LoggingInterceptor.cs` — covers: §3.3, AC2, AC8-adjacent — done when:
   clean net10 build drops the `IL2111` with no suppression added.
   **DONE 2026-07-30, merged `237b1493`.** Measured 3 → 2 in the measurement worktree via
-  `dotnet build src/Jaunty/Jaunty.csproj -f net10.0 --no-incremental`. net8 clean build 0/0. Unit
+  `dotnet build src/Extrode.Jaunty/Extrode.Jaunty.csproj -f net10.0 --no-incremental`. net8 clean build 0/0. Unit
   suite 2913 passed / 0 failed. Perturbation-checked: gutting the method fails exactly 2 tests.
 - [x] **T2** 009 scope amendment — files: `docs/specs/009-aot-annotation-pass/009-spec.md` —
   covers: §3.3 — done when: `ParameterBinder:81/:920` and `ParameterCache`'s `IL2070` are in 009's
@@ -60,7 +60,7 @@ files** are untouched.
 - [x] **T4** `ParameterCache.cs:40` — `Cache.GetOrAdd(type, _ => BuildMetadata(type))`, closing over
   the DAM-annotated `type` rather than passing a method group, plus a `TryGetValue` fast path so the
   closure is not allocated on the hit path — files:
-  `src/Jaunty/Internals/Parameters/ParameterCache.cs` — covers: §3.3, AC2 — done when: clean net10
+  `src/Extrode.Jaunty/Internals/Parameters/ParameterCache.cs` — covers: §3.3, AC2 — done when: clean net10
   build shows one fewer `IL2111` and nothing new.
   **DONE UPSTREAM 2026-07-30, `eb8e5436` (spec 011), merged here as `100200c7`.** It went further
   than this task asked and was right to: rather than keep the annotation and close over it, spec 011
@@ -74,9 +74,9 @@ files** are untouched.
   it in T4 removed the requirement the two call sites were failing, so `ParameterBinder.cs:81` and
   `:918` now compile clean with no `#pragma` and no justification text to maintain. **AC2's "two
   IL2072 deliberately left standing, deferred to spec 009 by name" is void** — nothing stands.
-  Amending AC2 is T21's, and no diagnostic is now silenced anywhere in `src/Jaunty`.
+  Amending AC2 is T21's, and no diagnostic is now silenced anywhere in `src/Extrode.Jaunty`.
 - [x] **T6** `TypedKeyGuard` control — **Option 1 (escaping box)**, chosen over fencing — files:
-  `tests/Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:74-83` — covers: §3.4, AC8 — done when: a
+  `tests/Extrode.Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:74-83` — covers: §3.4, AC8 — done when: a
   control asserts `> 0` on **both** net8 and net10, and the class XML-doc records that .NET 10
   elides the `ThrowIfNull` box so the original comparison is true on net8/net472 and moot on net10.
   - **DONE 2026-07-30.** The gate was measured, not assumed, through a copy of `Measure()` on both
@@ -101,18 +101,18 @@ files** are untouched.
     quote any figure not produced by `Measure()`; the plan's first-draft numbers were withdrawn for
     exactly that (239,952 = 24 × 9,998 was a ~10k run reported against a 100k harness).
 - [ ] **T7** Verify PR1 whole — files: none — covers: AC2 — done when:
-  `dotnet build src/Jaunty/Jaunty.csproj -f net10.0 --no-incremental -nodeReuse:false` in the probe
+  `dotnet build src/Extrode.Jaunty/Extrode.Jaunty.csproj -f net10.0 --no-incremental -nodeReuse:false` in the probe
   worktree reports **0 errors**, and the same clean build on `dev` for net8/net472/netstandard2.0 is
   unchanged. Expected residue after T4+T5: zero.
-  **DONE 2026-07-30 for `src/Jaunty`.** `dotnet build src/Jaunty/Jaunty.csproj --no-incremental -c
+  **DONE 2026-07-30 for `src/Extrode.Jaunty`.** `dotnet build src/Jaunty/Jaunty.csproj --no-incremental -c
   Release -f net10.0` in the measurement worktree (rebased onto the merge at `76eb2948`): **0
   warnings, 0 errors** — the residue is zero and no suppression was added for it, which is a better
   outcome than AC2 asked for. The same command for net8 on the main tree: 0/0.
   Proved non-vacuous rather than assumed: commenting out `ParameterCache`'s `IL2070` suppression and
   rebuilding clean produced exactly `2 IL2070`, so ILLink analysis is running on the run that
   reported zero. File restored via `git checkout --`; probe tree clean.
-  **Still open for T14:** this covers `src/Jaunty` only. The other eight `src/` projects have not
-  been net10-measured, and three of them (`Jaunty.Fluent`, both `FlatFiles`) gained reflection this
+  **Still open for T14:** this covers `src/Extrode.Jaunty` only. The other eight `src/` projects have not
+  been net10-measured, and three of them (`Extrode.Jaunty.Fluent`, both `FlatFiles`) gained reflection this
   merge.
 
 ## PR2 — the retarget
@@ -133,48 +133,48 @@ files** are untouched.
   lands with T14. **Still owed: the `ASYNC_ENUMERABLE_SUPPORT`-member presence test on the net10
   build — lands with T13's loader assertion, same new test file.**)*
   Widen the **5 net8.0-conditioned `PropertyGroup`s** — files:
-  `src/Jaunty/Jaunty.csproj:41-45`, `src/Jaunty.FlatFiles/…:24-28`, `src/Jaunty.Fluent/…:23-25`,
-  `tests/Jaunty.Tests/…:16-22`, `tests/Jaunty.Tests/…:40` — covers: §3.2, AC2, AC3 — done when:
+  `src/Extrode.Jaunty/Extrode.Jaunty.csproj:41-45`, `src/Extrode.Jaunty.FlatFiles/…:24-28`, `src/Extrode.Jaunty.Fluent/…:23-25`,
+  `tests/Extrode.Jaunty.Tests/…:16-22`, `tests/Extrode.Jaunty.Tests/…:40` — covers: §3.2, AC2, AC3 — done when:
   each condition uses
   `$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))` (the idiom already at
   `src/Directory.Build.props:11-12`).
   **This is the most dangerous task in the spec and the one both plan drafts missed.** None of
   these fail loudly: a lost `DefineConstants` compiles `ASYNC_ENUMERABLE_SUPPORT` out, so net10
-  `Jaunty.dll` would ship **without the `IAsyncEnumerable` streaming API**; a lost
+  `Extrode.Jaunty.dll` would ship **without the `IAsyncEnumerable` streaming API**; a lost
   `EnableTrimAnalyzer` reports zero trim warnings, which reads as success and silently voids PR1.
-  `tests/Jaunty.Tests/…:40` is conditioned on `Configuration` **and** TFM — widen both halves.
+  `tests/Extrode.Jaunty.Tests/…:40` is conditioned on `Configuration` **and** TFM — widen both halves.
   Done when additionally: a test asserts an `ASYNC_ENUMERABLE_SUPPORT`-gated member is present in
   the net10 build, and `IsAotCompatible`/`EnableTrimAnalyzer` are confirmed set on the net10 inner
   build via `dotnet msbuild -getProperty:`.
 - [x] **T10** *(done 2026-07-30 — 19 files, exactly one tag change each, scripted with a
-  1-replacement assertion per file and a lookbehind guard so `src/Jaunty:5`'s commented tag stayed
-  commented. No target dropped: 3 × `ns2.0;net8.0;net10.0`, `Jaunty.Tests` `net8.0;net10.0;net472`,
+  1-replacement assertion per file and a lookbehind guard so `src/Extrode.Jaunty:5`'s commented tag stayed
+  commented. No target dropped: 3 × `ns2.0;net8.0;net10.0`, `Extrode.Jaunty.Tests` `net8.0;net10.0;net472`,
   `Scaffolding`'s plural-single caught, 13 singular tags renamed to plural. Verified by
   `-getProperty:TargetFrameworks` evaluation; compile proof is T14's.)*
   Add `net10.0` to the **19** solution projects — files: the 19 enumerated above —
   covers: §3.2, AC1, AC4 — done when: every one targets `net8.0;net10.0` (or `netstandard2.0;net8.0;net10.0`),
-  no existing target is dropped, and `src/Jaunty.SourceGenerator` is untouched. Traps: `<TargetFramework>`
+  no existing target is dropped, and `src/Extrode.Jaunty.SourceGenerator` is untouched. Traps: `<TargetFramework>`
   → `<TargetFrameworks>` requires the **tag rename**, not just a value edit;
-  `src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj:4` already uses the **plural** tag with a single
-  value so a singular-tag sweep misses it; `src/Jaunty/Jaunty.csproj:5`'s commented-out tag must
+  `src/Extrode.Jaunty.Scaffolding/Extrode.Jaunty.Scaffolding.csproj:4` already uses the **plural** tag with a single
+  value so a singular-tag sweep misses it; `src/Extrode.Jaunty/Extrode.Jaunty.csproj:5`'s commented-out tag must
   stay commented.
 - [x] **T11** 2026-07-30. All 21 pins duplicated per the idiom; verified by
   `-getItem:ProjectReference -p:TargetFramework=net10.0` on all 11 files — zero net8
   `SetTargetFramework` values leak into the net10 evaluation. The first net10 leg compiles exposed
-  two latent defects, both fixed on this branch: `src/Jaunty/Jaunty.csproj:38`'s
+  two latent defects, both fixed on this branch: `src/Extrode.Jaunty/Extrode.Jaunty.csproj:38`'s
   Microsoft.Extensions package group was `== 'net8.0'` (CS0234 on every M.E. using — widened to
   `IsTargetFrameworkCompatible`), and `ExpressionEvaluator.cs`'s compile fallback hit net10-only
   IL3050 (non-generic `Expression.Lambda` is `[RequiresDynamicCode]` in net10 ref assemblies —
   rewritten to generic `Lambda<Func<object?>>` + `Expression.Convert`; exceptions now surface
   unwrapped, which the tests already tolerate via `InnerException ?? ex`; 1267/1267 Fluent tests
-  green on net8.0 AND net10.0). Third find: `Jaunty.Extensions.Reflection`'s NoWarn gained
+  green on net8.0 AND net10.0). Third find: `Extrode.Jaunty.Extensions.Reflection`'s NoWarn gained
   IL2060;IL2075 — net10's trim analyzer flags MakeGenericMethod/PropertyType.GetMethod sites
   net8's did not, and `src/Directory.Build.props` makes them errors.
   Original task text follows.
   Duplicate the **21 net8.0 pins** for net10.0 across the **11** files enumerated above
   — covers: §3.2, AC1 — done when: each net8-pinned `ProjectReference` has a net10 sibling in an
   `ItemGroup Condition="'$(TargetFramework)' == 'net10.0'"`, per the existing idiom at
-  `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj:30-45`.
+  `src/Extrode.Jaunty.FlatFiles/Extrode.Jaunty.FlatFiles.csproj:30-45`.
   **No centralisation.** A `JauntyPinnedTfm` property in root `Directory.Build.props` was designed,
   probed and **falsified**: root props import before the csproj body, so `$(TargetFramework)` is
   visible there only as a *global* property, i.e. only in multi-targeting inner builds.
@@ -188,7 +188,7 @@ files** are untouched.
   with pins split per TFM; `SakilaQueries` and `MangleMap` stay net8.0 as recorded.
   Original task text follows.
   Decide the **4 tracked non-solution projects** — files: `samples/NativeAOT-FluentQuery`,
-  `tests/Jaunty.Fluent.SourceGen.Tests`, `samples/torture-test-sakila-queries/SakilaQueries.csproj`,
+  `tests/Extrode.Jaunty.Fluent.SourceGen.Tests`, `samples/torture-test-sakila-queries/SakilaQueries.csproj`,
   `tools/native/…/MangleMap.csproj` — covers: §3.2, AC5 — done when: each is retargeted or
   explicitly recorded as staying on net8.0 with a reason.
   **`NativeAOT-FluentQuery` is not in `Jaunty.slnx`**, so no solution build and no CI step has ever
@@ -200,7 +200,7 @@ files** are untouched.
     and full src references like its three in-solution siblings — no structural reason to differ.
     **It has never been built by any CI step, so it must be built locally before the slnx edit
     lands, not discovered broken by CI.**
-  - `tests/Jaunty.Fluent.SourceGen.Tests` — **retargeted, pins duplicated with T11's.** It is the
+  - `tests/Extrode.Jaunty.Fluent.SourceGen.Tests` — **retargeted, pins duplicated with T11's.** It is the
     only test coverage of Fluent source-gen; leaving it net8-only would silently exclude that
     surface from net10 the way `NativeAOT-FluentQuery` was excluded from AC5. *(Correction at
     implementation time: its 2 net8 pins were already inside T11's 21 — the enumeration counted
@@ -211,21 +211,21 @@ files** are untouched.
     and proves nothing 010 claims.
   - `MangleMap` — **stays net8.0.** A standalone osx-arm64 developer utility for sqlite interop
     symbol mangling; runs on a Mac outside this repo's build, test and publish paths entirely.
-- [x] **T13** 2026-07-30. `tests/Jaunty.Tests/Unit/LoadedAssemblyTargetTests.cs`: loader
+- [x] **T13** 2026-07-30. `tests/Extrode.Jaunty.Tests/Unit/LoadedAssemblyTargetTests.cs`: loader
   assertion per leg (net10 → v10.0, net8 → v8.0, net472 → .NETStandard v2.0) plus T9's owed
   `ASYNC_ENUMERABLE_SUPPORT` presence test (`QueryStreamAsync` on the loaded build, all legs).
   2/2 green on all three TFMs; perturbation run: with the net10 Jaunty pin deliberately reverted
   to net8, the loader assertion failed (Assert.Equal strings differ) and passed again on restore —
   the test is not vacuous. Original task text follows.
-  Loader assertion — files: new test under `tests/Jaunty.Tests/` — covers: §3.2, AC1 —
-  done when: each net10 test leg asserts the `Jaunty.dll` it loaded was *compiled* as net10:
+  Loader assertion — files: new test under `tests/Extrode.Jaunty.Tests/` — covers: §3.2, AC1 —
+  done when: each net10 test leg asserts the `Extrode.Jaunty.dll` it loaded was *compiled* as net10:
   ```csharp
-  var tfm = typeof(Jaunty.Jaunty).Assembly
+  var tfm = typeof(Extrode.Jaunty.Jaunty).Assembly
       .GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>()!
       .FrameworkName;                                   // ".NETCoreApp,Version=v10.0"
   Assert.Equal(".NETCoreApp,Version=v10.0", tfm);
   ```
-  **Do not use `Assembly.Location`.** A referenced `Jaunty.dll` is copied into the *consuming*
+  **Do not use `Assembly.Location`.** A referenced `Extrode.Jaunty.dll` is copied into the *consuming*
   project's output directory, so on a net10 test leg the path contains `net10.0` whether the net8 or
   net10 build was copied — green in exactly the failure case it exists to catch. It is also empty
   under single-file and NativeAOT, so it could not serve AC5's samples.
@@ -261,7 +261,7 @@ files** are untouched.
   spec's list plus `System.Configuration.ConfigurationManager` (IL2104) — all named in the
   comment. All flow as warnings; publish completes. Original task text follows.
   `WarningsNotAsErrors` for the third-party `ilc` diagnostics — files:
-  `src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj` — covers: §3.6, AC6 — done when:
+  `src/Extrode.Jaunty.Scaffolding.Cli/Extrode.Jaunty.Scaffolding.Cli.csproj` — covers: §3.6, AC6 — done when:
   `<WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>` is conditioned on net10.0 with a
   comment naming the six offending assemblies so it can be retired one dependency at a time.
   De-fatalising a *third-party publish* diagnostic is not an AC2 suppression: AC2 governs
@@ -275,7 +275,7 @@ files** are untouched.
   IL2057 with a pre-existing `#pragma` ("trusted source" — the wrong rationale; availability, not
   trust, is the issue) — noted in the maintainer's tracker. Original task text follows.
   `SQLiteSchemaReader.cs:65` `IL2057` — **confirm or clear on a clean publish** — files:
-  `src/Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs` — covers: §3.3, AC2 — done when:
+  `src/Extrode.Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs` — covers: §3.3, AC2 — done when:
   a clean publish either reproduces it (then fix it properly) or shows it gone (then record that).
   It is **first-party**, so `010-spec.md:252-256` explicitly forbids sweeping it into T15's
   `WarningsNotAsErrors`. It appeared once and vanished under incremental analysis — the plan's own
@@ -318,7 +318,7 @@ files** are untouched.
 - [x] **T20** Benchmark delta — files: `benchmarks/BENCHMARK-RESULTS.md` — covers: §3.7, AC7 — done
   when: net10 is measured against T8's baseline and the delta recorded. Depends on T8.
   DONE 2026-07-30: `dotnet run -c Release -f net10.0 --no-build -- --filter "*" --join` from
-  `benchmarks/Jaunty.Benchmarks`, 48:58 wall, 672/692 completed (same 20 comparison-lib failures
+  `benchmarks/Extrode.Jaunty.Benchmarks`, 48:58 wall, 672/692 completed (same 20 comparison-lib failures
   as the net8 baseline, none Jaunty). Median per-case delta −2.1% all / −3.4% Jaunty-only; per
   provider Sqlite −5.1%, SqlServer −3.1%, MariaDb −1.7%, PostgreSql +2.2%. The PostgreSql
   small-row tail (up to +875%) is environmental, proven by identical deltas in hand-coded ADO.NET

@@ -7,8 +7,8 @@ This document describes the architecture of the Jaunty.FlatFiles extension, incl
 ```
 Jaunty.sln
 ├── src/
-│   ├── Jaunty/                          # Core micro-ORM (unchanged)
-│   ├── Jaunty.FlatFiles/                # Abstractions package
+│   ├── Extrode.Jaunty/                          # Core micro-ORM (unchanged)
+│   ├── Extrode.Jaunty.FlatFiles/                # Abstractions package
 │   │   ├── IFlatFileDatabase.cs         # Main database interface
 │   │   ├── IFileSource.cs               # File source abstraction
 │   │   ├── IFlatFileDialect.cs          # SQL dialect extension
@@ -25,7 +25,7 @@ Jaunty.sln
 │   │   │   └── ConflictStrategy.cs      # Conflict resolution enum
 │   │   └── WriteBackMode.cs             # Write-back mode enum
 │   │
-│   └── Jaunty.FlatFiles.DuckDB/         # DuckDB engine implementation
+│   └── Extrode.Jaunty.FlatFiles.DuckDB/         # DuckDB engine implementation
 │       ├── DuckDbFlatFileDatabase.cs    # Main database implementation
 │       ├── DuckDbDialect.cs             # DuckDB SQL dialect
 │       ├── FlatFileDatabase.cs          # Static factory
@@ -40,8 +40,8 @@ Jaunty.sln
 │           └── SqlServerImportDialect.cs # SQL Server import dialect
 │
 └── tests/
-    ├── Jaunty.FlatFiles.Tests/          # Unit tests (abstractions)
-    └── Jaunty.FlatFiles.DuckDB.Tests/   # Integration tests (DuckDB)
+    ├── Extrode.Jaunty.FlatFiles.Tests/          # Unit tests (abstractions)
+    └── Extrode.Jaunty.FlatFiles.DuckDB.Tests/   # Integration tests (DuckDB)
 ```
 
 ## Package Responsibilities
@@ -86,7 +86,7 @@ This package implements:
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Jaunty.Fluent (Core)                                           │
+│  Extrode.Jaunty.Fluent (Core)                                           │
 │  Builds expression tree for WHERE clause                        │
 └────────────────────┬────────────────────────────────────────────┘
                      │
@@ -106,7 +106,7 @@ This package implements:
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Jaunty Materializer (Core)                                     │
+│  Extrode.Jaunty Materializer (Core)                                     │
 │  DbDataReader → C# entity mapping                               │
 │  Handles type conversion, nullables, [Column] attributes        │
 └────────────────────┬────────────────────────────────────────────┘
@@ -237,12 +237,12 @@ This package implements:
 
 ### 1. Two-Package Architecture
 
-**Decision:** Split into `Jaunty.FlatFiles` (abstractions) and `Jaunty.FlatFiles.DuckDB` (engine).
+**Decision:** Split into `Extrode.Jaunty.FlatFiles` (abstractions) and `Extrode.Jaunty.FlatFiles.DuckDB` (engine).
 
 **Rationale:**
 - Abstractions package has zero DuckDB dependencies → NativeAOT compatible
 - Engine package can evolve independently
-- Future engines possible (e.g., `Jaunty.FlatFiles.Sqlite` using CSV virtual tables)
+- Future engines possible (e.g., `Extrode.Jaunty.FlatFiles.Sqlite` using CSV virtual tables)
 
 ### 2. VIEW → TABLE Promotion
 
@@ -326,7 +326,7 @@ await db.Query<SalesRecord>()
 2. **Glob Patterns:** `read_csv_auto('data/*.csv')` for multi-file sources
 3. **Cross-Source JOINs:** Fluent API support for joining across file sources
 4. **Streaming Import:** Row-by-row import for very large files
-5. **Alternative Engines:** `Jaunty.FlatFiles.Sqlite` using SQLite's CSV virtual table
+5. **Alternative Engines:** `Extrode.Jaunty.FlatFiles.Sqlite` using SQLite's CSV virtual table
 
 ### Not Planned (v1)
 

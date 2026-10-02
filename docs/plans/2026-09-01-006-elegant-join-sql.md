@@ -140,13 +140,13 @@ an alias and a column rather than free text.
 
 ## Files
 
-- `src/Jaunty.Fluent/Builders/Join/` — `JoinClauseBuilder.cs`, `JoinedQueryBuilder.cs`,
+- `src/Extrode.Jaunty.Fluent/Builders/Join/` — `JoinClauseBuilder.cs`, `JoinedQueryBuilder.cs`,
   `JoinedQueryBuilderSelect{,Async}.cs`, `JoinedQueryBuilder3.cs`, `JoinedQueryBuilder4.cs`
-- `src/Jaunty.Fluent/Builders/Query/QueryBuilder.cs` — from-alias settable before the first join
-- `src/Jaunty.Fluent/Expressions/Join/JoinExpressionVisitor{,3,4}.cs`,
+- `src/Extrode.Jaunty.Fluent/Builders/Query/QueryBuilder.cs` — from-alias settable before the first join
+- `src/Extrode.Jaunty.Fluent/Expressions/Join/JoinExpressionVisitor{,3,4}.cs`,
   `JoinedGroupByExpressionVisitor.cs` — parameter naming
-- New: `src/Jaunty.Fluent/Internals/AliasInference.cs`
-- `tests/Jaunty.Fluent.Tests/` — 8 files assert join SQL; new `Unit/Builders/Join/AliasInferenceTests.cs`
+- New: `src/Extrode.Jaunty.Fluent/Internals/AliasInference.cs`
+- `tests/Extrode.Jaunty.Fluent.Tests/` — 8 files assert join SQL; new `Unit/Builders/Join/AliasInferenceTests.cs`
 - `README.md`
 
 ---

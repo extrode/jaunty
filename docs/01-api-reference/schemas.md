@@ -132,21 +132,21 @@ The resolver is **global and dialect-blind**. It receives a `Type` and nothing e
 resolver serves every connection in the process:
 
 ```csharp
-JauntyConfig.SchemaNameResolver = _ => "dbo";     // applies to SQLite too
+JauntyConfig.Configure(c => c.SchemaNameResolver = _ => "dbo");     // applies to SQLite too
 ```
 
 That emits `dbo.products` on SQLite and PostgreSQL as well as SQL Server. Scope it by type, and
 return `string.Empty` for entities that should stay unqualified:
 
 ```csharp
-JauntyConfig.SchemaNameResolver = t =>
+JauntyConfig.Configure(c => c.SchemaNameResolver = t =>
     t.Namespace?.StartsWith("App.Sqlite", StringComparison.Ordinal) == true
         ? string.Empty
-        : "dbo";
+        : "dbo");
 ```
 
-It is consulted on the reflection mapping path only. Source-generated entities read the `[Table]`
-attribute at compile time and ignore it. A `[Table]` schema wins over the resolver either way.
+It applies to reflection-mapped and source-generated entities alike. A non-empty `[Table]`
+schema wins over it; see the [name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order).
 
 ## `ISqlDialect.GetDefaultSchema()`
 
@@ -169,7 +169,7 @@ unqualified case too, because a bare name is where the two disagree most quietly
 connection.Execute("CREATE TEMP TABLE people (id INTEGER, name TEXT)");
 
 // "people" is temp.people to this connection, and would be a new main.people to the CLI.
-// Jaunty takes the prepared-statement path, and the rows land in temp.people.
+// Extrode.Jaunty takes the prepared-statement path, and the rows land in temp.people.
 connection.ImportCsv("people", "people.csv");
 ```
 

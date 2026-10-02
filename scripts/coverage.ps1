@@ -2,7 +2,7 @@
 # cross-reference in docs/plans/2026-08-27-003-testing-strategy-implementation.md.
 #
 #   pwsh -NoProfile -File scripts/coverage.ps1              # all suites
-#   pwsh -NoProfile -File scripts/coverage.ps1 -Suite Jaunty.Tests
+#   pwsh -NoProfile -File scripts/coverage.ps1 -Suite Extrode.Jaunty.Tests
 #
 # Reports land in tmp/coverage/<suite>/ (gitignored). Nothing is deleted; re-runs overwrite.
 #
@@ -59,11 +59,15 @@ foreach ($name in $suites) {
     # assembly filters and the GeneratedCodeAttribute-only exclusion documented in that file have
     # no drop-in replacement here; the report below covers every assembly reached by the run,
     # test assembly included, until a replacement config is written for the new extension.
+    # --nologo breaks Microsoft.Testing.Platform's --coverage path outright: with it present,
+    # dotnet test reports "Zero tests ran" (exit 5) even though the same command without it runs
+    # the full suite and emits a cobertura report. Confirmed by isolating each flag; -v q alone
+    # is fine.
     dotnet test --project $project `
         -c $Configuration -f $Framework `
         --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml `
         --results-directory $target `
-        -v q --nologo
+        -v q
 
     if ($LASTEXITCODE -ne 0) { $failed += $name }
 }

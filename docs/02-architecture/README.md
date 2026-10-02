@@ -75,10 +75,10 @@ flowchart TB
 **Purpose**: User-facing extension methods on `IDbConnection`
 
 **Key Files**:
-- `src/Jaunty/Read/Query.cs`, `QueryAsync.cs`
-- `src/Jaunty/Read/QueryPartial.cs`, `QueryPartialAsync.cs`
-- `src/Jaunty/Write/Insert.cs`, `Update.cs`, `Delete.cs`
-- `src/Jaunty/Multiple/QueryMultiple.cs`
+- `src/Extrode.Jaunty/Read/Query.cs`, `QueryAsync.cs`
+- `src/Extrode.Jaunty/Read/QueryPartial.cs`, `QueryPartialAsync.cs`
+- `src/Extrode.Jaunty/Write/Insert.cs`, `Update.cs`, `Delete.cs`
+- `src/Extrode.Jaunty/Multiple/QueryMultiple.cs`
 
 **See**: [`architecture-specification.md#1-public-api-layer`](architecture-specification.md#1-public-api-layer)
 
@@ -89,9 +89,9 @@ flowchart TB
 **Purpose**: Central query execution, connection management, mapper resolution
 
 **Key Files**:
-- `src/Jaunty/Internals/QueryCore.cs`, `QueryCoreAsync.cs`
-- `src/Jaunty/Internals/ExecuteReader.cs`, `ExecuteReaderAsync.cs`
-- `src/Jaunty/Internals/DrDispatcher.cs`
+- `src/Extrode.Jaunty/Internals/QueryCore.cs`, `QueryCoreAsync.cs`
+- `src/Extrode.Jaunty/Internals/ExecuteReader.cs`, `ExecuteReaderAsync.cs`
+- `src/Extrode.Jaunty/Internals/DrDispatcher.cs`
 
 **See**: [`architecture-specification.md#2-core-execution-layer`](architecture-specification.md#2-core-execution-layer)
 
@@ -102,10 +102,10 @@ flowchart TB
 **Purpose**: Build and cache entity metadata, compile expression trees
 
 **Key Files**:
-- `src/Jaunty/Internals/Entity/MetadataCache.cs`
-- `src/Jaunty/Internals/Entity/MetadataBuilder.cs`
-- `src/Jaunty/Internals/Entity/EntityMetadata.cs`
-- `src/Jaunty/Internals/MappedCache.cs`
+- `src/Extrode.Jaunty/Internals/Entity/MetadataCache.cs`
+- `src/Extrode.Jaunty/Internals/Entity/MetadataBuilder.cs`
+- `src/Extrode.Jaunty/Internals/Entity/EntityMetadata.cs`
+- `src/Extrode.Jaunty/Internals/MappedCache.cs`
 
 **See**: [`metadata-system-spec.md`](metadata-system-spec.md)
 
@@ -116,9 +116,9 @@ flowchart TB
 **Purpose**: Extract parameter names from SQL, bind object properties
 
 **Key Files**:
-- `src/Jaunty/Internals/Parameters/SqlParameterParser.cs`
-- `src/Jaunty/Internals/Parameters/ParameterBinder.cs`
-- `src/Jaunty/Internals/Parameters/ParameterCache.cs`
+- `src/Extrode.Jaunty/Internals/Parameters/SqlParameterParser.cs`
+- `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs`
+- `src/Extrode.Jaunty/Internals/Parameters/ParameterCache.cs`
 
 **See**: [`parameter-binding-spec.md`](parameter-binding-spec.md)
 
@@ -129,9 +129,9 @@ flowchart TB
 **Purpose**: Generate and cache CRUD SQL, handle database dialects
 
 **Key Files**:
-- `src/Jaunty/Internals/CrudSqlCache.cs`
-- `src/Jaunty/Internals/CachedCrudSql.cs`
-- `src/Jaunty/Internals/Dialects/ISqlDialect.cs`
+- `src/Extrode.Jaunty/Internals/CrudSqlCache.cs`
+- `src/Extrode.Jaunty/Internals/CachedCrudSql.cs`
+- `src/Extrode.Jaunty/Internals/Dialects/ISqlDialect.cs`
 
 **See**: [`architecture-specification.md#5-sql-generation-layer`](architecture-specification.md#5-sql-generation-layer)
 

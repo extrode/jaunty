@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Conduit.Domain;
 using Conduit.Features.Users;
 using Conduit.Infrastructure.Security;
-using Jaunty;
+using Extrode.Jaunty;
 using Xunit;
 
 namespace Conduit.IntegrationTests.Features.Users;

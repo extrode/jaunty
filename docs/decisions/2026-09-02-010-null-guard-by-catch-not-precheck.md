@@ -65,15 +65,15 @@ on that provider, not a return to pre-checking everywhere.
 
 ## Pinned by
 
-- `tests/Jaunty.SourceGenerator.Tests/GeneratedNonNullableNullTests.cs`: the guarantee
+- `tests/Extrode.Jaunty.SourceGenerator.Tests/GeneratedNonNullableNullTests.cs`: the guarantee
   AUD-R35-069 introduced, unchanged.
-- `tests/Jaunty.SourceGenerator.Tests/GeneratedNullDiagnosisTests.cs`: no `IsDBNull` on a
+- `tests/Extrode.Jaunty.SourceGenerator.Tests/GeneratedNullDiagnosisTests.cs`: no `IsDBNull` on a
   non-nullable column of a clean row; a non-NULL getter failure propagates unchanged; the named
   error carries the provider exception as its cause. Restoring the pre-check turns 3 of these red.
 
 ## Where the code is
 
-`src/Jaunty.SourceGenerator/JauntyGenerator.cs`: `AppendNullDiagnosisCatch`, the
+`src/Extrode.Jaunty.SourceGenerator/JauntyGenerator.cs`: `AppendNullDiagnosisCatch`, the
 `ThrowIfNonNullableColumnIsNull` emission, and the non-nullable arm of `AppendPropertyRead`.
 The emitted shape and the numbers behind it are in
 [How Jaunty got fast](../08-learn/how-jaunty-got-fast.md).

@@ -7,6 +7,234 @@ and versioning follows [SemVer 2.0](https://semver.org). Package versions are
 set at release time from the git tag (`vMAJOR.MINOR.PATCH`); the local/dev
 default lives in `src/Directory.Build.props`.
 
+## [Unreleased]
+
+### Breaking changes
+
+- **Warning: this breaks the build of any app that sets a Jaunty mapping setting. Mapping
+  settings are now set once, at startup, through `JauntyConfig.Configure`, and their setters are
+  gone.** `TableNameResolver`, `SchemaNameResolver`, `ColumnNameResolver`, `DefaultEnumStorage`,
+  `CopyImportFactory`, the `Reflection*Resolver` hooks and `SpecialTypeMapperResolver` are
+  read-only on `JauntyConfig` and set on the builder:
+  `JauntyConfig.Configure(c => { c.ColumnNameResolver = Snake; c.RegisterTypeHandler(new MoneyHandler()); })`.
+  `JauntyConfig.RegisterTypeHandler` moved onto the builder and `RemoveTypeHandler` was removed.
+  `JauntyReflectionExtensions.UseReflectionMapping()` is now `c.UseReflectionMapping()`,
+  `SpecialTypeMappers.Register()` takes the builder, and `JauntyNpgsql.Use()` is now
+  `c.UseNpgsqlCopy()`. One operation read these settings several times, so a change from another
+  thread could pair SQL built from one setting with parameters built from another. `Configure`
+  runs once: a repeat with the same settings does nothing, one with different settings throws
+  (use the new `JauntyConfig.ConfigureOnce` for a call that can repeat), and a call after the first
+  query, or after any read of a mapping setting, throws.
+  `Logger`, the capacities, interceptors, `BulkCopyConfiguration` and dialect registration are
+  unchanged. Generated code is unaffected. See
+  [Upgrading to JauntyConfig.Configure](docs/06-releases/upgrading-to-configure.md) and
+  [decision 014](docs/decisions/2026-10-02-014-configuration-is-set-once-at-startup.md).
+- **`ISqlDialect` has a new member, `UpsertBatchIsAtomic`.** A custom dialect must implement it:
+  return true only if the multi-statement command from `GenerateUpsertSql` runs as one transaction
+  without the caller supplying one. When it is false, `Upsert` wraps the command in a transaction
+  of its own whenever a key column is missing from `insertColumns` and there are update columns,
+  which is when the built-in dialects emit their UPDATE-then-INSERT pair. The built-in dialects
+  return true for SQL Server and PostgreSQL, false for MySQL, SQLite and DuckDB.
+- **The members the source generator adds to an entity moved into a nested `Jaunty` class.**
+  `Product.TableName`, `Product.BindInsert(...)`, `Product.ColumnInfo` and the other generated
+  statics are now `Product.Jaunty.TableName`, `Product.Jaunty.BindInsert(...)` and so on, so an
+  entity can have its own `TableName`, `SchemaName` or `ParameterMap` column without falling back to
+  reflection. `ReadEntity` stays on the entity, as `IMapped<T>` requires. Inside an entity's own
+  code, a bare `Jaunty.X` now means the nested class; write `Extrode.Jaunty.X` for the namespace.
+  Extrode.Jaunty itself never called these members by name, so only code calling them directly
+  changes.
+- **A DELETE after `Distinct()` and `Take`/`Skip`, in either order, no longer compiles.**
+  `From<T>().Take(5).Distinct().Where(...).Delete()` used to compile and delete every matching row,
+  because the paging is not carried into a DELETE. `IDistinctClause<T>.Take`/`Skip` and
+  `IPagedClause<T>.Distinct` now return the new `IPagedDistinctClause<T>`, whose `Where` family
+  leads to the paged WHERE clause that has no `Delete`. A paged query stored in an un-paged
+  variable (`IFromClause<T> q = ...Take(5)`) still compiles, and now throws
+  `InvalidOperationException` before any SQL runs instead of writing every matching row. The errors
+  explain why and show the fix: select the keys, then write by key in one transaction. See
+  [Writes after Take or Skip](docs/01-api-reference/fluent-api.md#writes-after-take-or-skip).
+  Code that recompiles without errors is unaffected; assemblies compiled against the old return
+  types must be rebuilt.
+- **FlatFiles now names tables and columns through `JauntyConfig.TableNameResolver` and
+  `ColumnNameResolver`, in core's order.** It used to ignore both, so with a resolver set an import
+  created a table core could not find. Unchanged when no resolver is set, except in three cases:
+  - `[Table("")]` and `[Column("")]` now fall through to the resolver or default instead of
+    producing an empty name that DuckDB rejected.
+  - A class that inherits a DataAnnotations `[Table]` from its base now takes its own lowercased
+    class name, as core does, instead of the base's table name.
+  - With a column resolver set, FlatFiles looks for the resolved names in the file header too.
+    Give a property a `[Column]` name to fix one name for both the file and the database.
+
+  No schema is applied: file views stay in DuckDB's default schema and imports write to the
+  unqualified table name. The table default stays the lowercased class name.
+- **C# namespaces, assembly names, and project/folder names now carry the `Extrode.Jaunty.` prefix,
+  matching the package IDs that have used it since rc.2.** Every `namespace Jaunty...` declaration,
+  `using Jaunty...` statement, and `.csproj`/folder name under `src/`, `tests/`, `benchmarks/`, and
+  `tools/` moved to `Extrode.Jaunty...`. A consumer on rc.2 or earlier who recompiles against a new
+  package will see `using Jaunty;` fail to resolve; change it to `using Extrode.Jaunty;` (and
+  likewise for `Jaunty.Fluent`, `Jaunty.FlatFiles`, etc.). The product name ("Jaunty"), the
+  `Jaunty.slnx` solution file, and the `github.com/extrode/jaunty` repository are unchanged.
+
+### Added
+
+- **An UPDATE's WHERE can now open with `In`, `Between`, `Exists` and `InSubquery`** (new
+  `ISetClause` members), not only with a plain predicate.
+- **Async stored-procedure overloads that take `SpParameters` and a `CancellationToken`.** Passing
+  an `SpParameters` where a plain parameters object is expected now throws instead of binding its
+  properties.
+
+### Fixed
+
+- **A first write rejected by the configuration no longer breaks every later write of that type.**
+  If the first `Insert`, `Update`, `Delete` or bulk write of an entity type ran while its mapping
+  could not be built (for example a `ColumnNameResolver` mapping two properties to one column),
+  every later write of that type threw `TypeInitializationException` for the rest of the process,
+  even after the resolver was fixed. Now only that call fails, with the original exception.
+
+- **`Upsert` of an entity with a database-generated key now updates the matching row.** The key
+  is left out of the INSERT, so on PostgreSQL, SQLite, MySQL/MariaDB and DuckDB the
+  `ON CONFLICT` / `ON DUPLICATE KEY` form never conflicted and every call inserted a new row.
+  Those dialects now emit an UPDATE followed by a guarded INSERT, matching SQL Server's MERGE: a
+  matching key updates, any other key inserts and the database assigns it. Source-generated
+  entities with a single `int`/`long` key and no `[DatabaseGenerated]` count as generated.
+  The pair is atomic everywhere: PostgreSQL runs it as one implicit transaction, and on
+  MySQL/MariaDB, SQLite and DuckDB Jaunty begins its own transaction around it when you pass none,
+  so a concurrent DELETE cannot bring the row back under a new key. See [Upsert](docs/01-api-reference/write-methods.md#why-the-two-statements-always-run-as-one-unit).
+- **Placeholders inside square brackets are now bound on PostgreSQL, DuckDB and MySQL.**
+  `ARRAY[@a, @b]`, `tags[@i]` and DuckDB's `[@a, @b]` list literal used to be skipped as if
+  they were SQL Server bracket identifiers, so their parameters were never bound or expanded.
+  SQL Server and SQLite still read `[...]` as an identifier.
+- **`WhereInSubquery` no longer rejects a custom `IQueryTerminal` whose SQL has an `@` inside a
+  double-quoted or backticked identifier** such as `"owner@domain"`. Only single-quoted literals
+  and comments were skipped before.
+- **A `[Table]` entity whose only parameterless constructor is `internal`, `protected internal` or
+  `private protected` now gets a `JAUNTYGEN004` warning instead of a CS0310 build error inside the
+  generated file.** The generated mapper implements `IMapped<T>`, which requires a public
+  parameterless constructor. Make the constructor `public` to get a generated mapper.
+- **A `[Table]` entity with a `required` member, or whose public parameterless constructor is
+  `[Obsolete(..., error: true)]`, now gets a `JAUNTYGEN004` warning** instead of CS9040, CS9035 or
+  CS0619 build errors inside the generated file.
+  A parameterless constructor marked `[SetsRequiredMembers]` satisfies the constraint, so such an
+  entity now gets a generated mapper.
+- **The source generator no longer emits a generated file that fails to compile** for these entity
+  shapes:
+  - A write-only property, or an inherited one whose getter is `private`. It is left out of the
+    generated mapper and reported as `JAUNTYGEN005`, like an inaccessible setter.
+  - A C# keyword used as a name, such as `@event` or `@default`, for the entity, an enclosing type,
+    or a property. The column name stays the bare word.
+  - An entity property named `System`, `DBNull` or `StringComparison`.
+  - An entity with a member named `Jaunty` or `ReadEntity`, or its own exact-signature
+    `BindInsert`/`BindUpdate`/`BindDelete`/`CreateRowMapper`. It now gets `JAUNTYGEN004` and falls
+    back to reflection. Overloads with different parameters are still allowed.
+  - A `[Table] record struct`. It now gets `JAUNTYGEN004`.
+- **A generated `Guid` read on a `DbDataReader` now parses a text GUID**, as the reflection path
+  does. It used `GetFieldValue<Guid>`, which throws on providers that do not specialise it.
+- **Generated and reflection mapping now agree on two attribute edge cases.**
+  - A subclass of a DataAnnotations attribute, such as `MyColumn : ColumnAttribute`, is no longer
+    honoured on the generated path. Reflection never honoured it.
+  - An empty Jaunty `[Column("")]` beside a DataAnnotations `[Column("x")]` now maps to `x` on
+    both paths.
+- **`JAUNTYGEN002` now also warns about a record** that implements `IMapped<T>` by hand or
+  supplies convention binders.
+- **Two `[Table]` types whose names differ only by a verbatim `@`**, such as `Q.@class` and a
+  global `Q_class`, no longer get the same generated file name.
+- **A `[Table]` record (non-positional, with a public parameterless constructor) now gets a
+  generated mapper.** It was silently skipped before, so the first call threw
+  `No parameter binder found`. A positional record gets a `JAUNTYGEN004` warning.
+- **`JAUNTYGEN004` no longer says the entity will be mapped by reflection.** It is mapped only if
+  reflection mapping is on: `Extrode.Jaunty.Extensions.Reflection` is referenced (it enables
+  itself on first use) or `UseReflectionMapping()` is called. Otherwise the first call that needs
+  it throws. The diagnostic title and message now say so.
+
+- **DuckDB flat files:** write-back refuses glob sources, Excel sheets and ranges, and `SkipRows`
+  preambles instead of writing to the wrong place; promotion joins the caller's transaction, checks
+  the catalog, and uses a unique scratch table name; the connection string quotes a path holding
+  `;`; import DDL and conflict resolution honour DataAnnotations `[Key]`; an importer closes a
+  target connection it opened and registers sources asynchronously so cancellation is observed; a
+  null string search value or an entity-reading operand in a predicate throws
+  `NotSupportedException`; glob and extension `ArgumentException`s name `filePath`.
+- **PostgreSQL:** primary keys are read from `pg_catalog`, so SELECT-only roles see them; `TIMETZ`
+  reads into `TimeOnly`/`TimeSpan`, and an out-of-range `DateTimeOffset` read is reported instead of
+  wrapped; `system_user` is quoted as a keyword; a failed server-side `COPY FROM` names
+  PostgreSQL's own permissions and the client-side `COPY ... FROM STDIN` route.
+- **MySQL/MariaDB:** `Length` counts characters, not bytes; the keyword set covers MySQL 8.4 and
+  MariaDB reserved words; identifiers starting with a digit are quoted; CSV import reads
+  backslashes literally.
+- **SQL Server:** a connection string with credentials but no catalog is no longer mistaken for
+  SQLite; pseudo-columns such as `$action` and dollar signs inside identifiers no longer parse as
+  parameters.
+- **Parameters:** collection type handlers are honoured by IN-clause expansion, and dictionary
+  collections expand; a property declared `object` (or as an interface an array implements) that
+  is null or scalar on one call no longer stops a later array from expanding; parameters objects
+  count as dictionaries only when the binder reads them by key; a `Nullable<T>` type-handler
+  registration is honoured, and a handler's null stays null on generated reads.
+- **Fluent:** join parameter names compare case-insensitively, and `jp<n>` names are no longer
+  reserved; a redefined join clause drops its earlier parameters; insert values that sanitize
+  alike get distinct placeholders; `@` inside literals and comments is ignored when vetting a
+  set-operation operand; fragment parameters are renamed using the dialect's bracket and backslash
+  rules; async terminals release commands, readers and connections asynchronously; a getter's own
+  exception surfaces from the evaluator fast path.
+- **Multi-entity reads:** a struct entity is rejected with `NotSupportedException` at every arity
+  before the resolver check, and a custom `ReflectionMultiMapperResolver` that returns null or the
+  wrong delegate is named instead of being told to load the Reflection extension.
+- **A hand-written `IMapped<T>` struct with an instance `ReadEntity`** (netstandard2.0) maps instead
+  of throwing `TypeInitializationException`.
+- **A generated identity too large for the entity's `IEntity<TId>` key now throws
+  `InvalidOperationException`** instead of wrapping (for example 3000000001 into an `int` Id
+  becoming negative). The row has been inserted when this throws.
+- **`SpParameters.Get` and `HasValue` ignore a leading `@`**, as binding already did.
+- **SQLite foreign keys are re-enabled after commit** even when the caller's token is cancelled.
+- **A `GridReader` stream holds its result set until its iterator ends.**
+- **Diagnostics:** null sensitive names are dropped, the slow-query threshold is read live, and
+  generic dictionary parameters are logged; audit records read the guarded database name.
+- **`QueryPartialListAsync` disposes its command and reader asynchronously.**
+- **A non-`DbTransaction` on a sync call no longer says an async operation failed.**
+- **Interception wrappers throw `ArgumentNullException` for a null delegate** before any hook runs.
+- **A default or parameterless `EntityColumnInfo` in a source-generated metadata source** throws
+  `InvalidOperationException` naming the entity and index, instead of a later
+  `NullReferenceException`.
+- **Scaffolding:** generated attributes are rooted at `global::`, so an entity or namespace named
+  `Extrode` compiles; `Singularize` keeps an all-caps name all-caps (`CATEGORIES` -> `CATEGORY`);
+  every file is generated before any is written, so a generator failure leaves no partial output;
+  `ListTablesAsync` rejects a blank connection string with `ArgumentException`; `list-tables`
+  reports the cause chain; the `--force` help no longer promises a prompt.
+- **Docs:** `IEntity` is documented as driving identity write-back (typed key overloads need
+  `IEntity<TId>`); multi-entity and partial-mapping reads no longer claim to throw for an unmatched
+  property; type handlers are documented as never receiving null.
+
+### Changed
+
+- **`JauntyConfig.TableNameResolver`, `SchemaNameResolver` and `ColumnNameResolver` now apply to
+  source-generated entities too**, in the same order as reflection: a non-empty `[Table]` or
+  `[Column]` name, then the resolver, then the type or property name. Before, a generated entity
+  kept its build-time names in CRUD SQL, Fluent SQL, its binders and its reader, while partial
+  reads of the same entity used the resolver. With no resolver set, nothing changes. Generated
+  names follow a resolver changed at runtime, as reflection metadata already did.
+  - The generated `Jaunty` members (`TableName`, `SchemaName`, `PrimaryKeyColumnNames`, the
+    `*Columns` lists, `ParameterMap`, `EntityColumns`) now return the names under the current resolvers.
+    Any `JauntyConfig` change hands out new instances, so read them when needed rather than
+    caching them, and do not modify the `ParameterMap` dictionary.
+  - A resolver that maps two properties of a generated entity to one column is now rejected with
+    an `ArgumentException` on reads too, as reflection does; before, both properties read the same
+    column.
+  - Entities compiled against an earlier package keep their build-time names until rebuilt.
+- **The reflection path no longer calls a naming resolver for a name an attribute already fixes.**
+  Metadata discarded that result, but the reflection reader also bound it as an extra column name:
+  `[Column("fixed_price")] UnitPrice` under a snake_case `ColumnNameResolver` also read a
+  `unit_price` column. It now reads `fixed_price` (or the property name) only, as the generated
+  reader does. A resolver with side effects, or one that throws, also notices.
+- **SQLite bundle is now SQLitePCLRaw 3.0.5 (SQLite 3.53.4); Microsoft.Data.SqlClient is 7.1.0.**
+  SQLite 3.53 formats `REAL` with up to 17 significant digits, so `GetDecimal` on a `REAL` column
+  can now differ past the 15th digit from Jaunty's own reads. Every Jaunty read path, generated
+  and reflection, converts a `REAL` to `decimal` with 15-significant-digit rounding. Hand-written
+  mappers that call `GetDecimal` may see the extra digits.
+- **`Extrode.Jaunty.FlatFiles.DuckDB` now depends on DuckDB.NET.Data.Full 1.5.6** (was 1.5.5).
+- **SQL Server `Length` now counts trailing spaces** (`LEN(REPLACE(x, ' ', '.'))`), matching the
+  other dialects. `LEN` alone ignored them.
+- **MySQL/MariaDB `Avg` returns a fractional `double`** (`AVG(x + 0E0)`); bare `AVG` returned a
+  4-decimal `DECIMAL`.
+- **Translating a grouped projection, building joined select lists and resolving special-type
+  constructors each happen once instead of per call or per row.**
+
 ## [1.0.0-rc.2] - 2026-09-03
 
 ### Breaking changes since 1.0.0-rc.1
@@ -129,7 +357,7 @@ Every item here was reachable from caller-supplied input.
   rather than pre-checking, and the audit record lists it under fixes that were later reworked.
 - `QueryBenchmarks`: two custom-mapper cases that read the SQLite `REAL` price through
   `GetDouble`, with and without `WithExpectedRowCount`, beside the two `GetDecimal` cases.
-- `docs/05-quality/reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
+- `docs/reports/benchmarks-2026-09-02.md`: full four-provider run on a corrected
   harness. The hand-coded baseline reads each column as its reported type (it paid a text
   round-trip on SQLite `REAL` before, which is why two libraries measured faster than ADO.NET
   in July), RepoDb's SQLite bool workaround is registered for SQLite only, and the warm job
@@ -520,7 +748,7 @@ Every item here was reachable from caller-supplied input.
   built-in `GITHUB_TOKEN`; the `NUGET_API_KEY` secret is no longer required.
 - Source generator: per-result-set `CreateRowMapper` + direct typed getters;
   10k-row SQLite reads went from 1.80x to 1.03x vs hand-coded ADO.NET
-  (Dapper parity). See docs/05-quality/reports/BENCHMARKS-2026-07-04.md.
+  (Dapper parity). See docs/reports/benchmarks-2026-07-04.md.
 
 ### Fixed
 

@@ -1,8 +1,8 @@
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 namespace Microsoft.eShopWeb.Infrastructure.Data.Persistence;
 
-// Flat "Row" POCOs consumed directly by Jaunty (public parameterless ctor + public settable
+// Flat "Row" POCOs consumed directly by Extrode.Jaunty (public parameterless ctor + public settable
 // properties). Column names / table names mirror the shapes previously produced by the EF Core
 // IEntityTypeConfiguration classes under Data/Config so the hand-written SQLite DDL in
 // SqliteSchema and the seed data continue to match the domain expectations.
@@ -78,7 +78,7 @@ public sealed class OrderRow
     public string BuyerId { get; set; } = string.Empty;
 
     // Stored as an ISO-8601 round-trip string. SQLite has no native DateTimeOffset type and
-    // Jaunty's reflection value-converter cannot coerce a TEXT column into DateTimeOffset
+    // Extrode.Jaunty's reflection value-converter cannot coerce a TEXT column into DateTimeOffset
     // (DateTimeOffset is not IConvertible), so the mapping is done explicitly in AggregateMappers.
     public string OrderDate { get; set; } = string.Empty;
 

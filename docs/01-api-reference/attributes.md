@@ -29,7 +29,9 @@ public partial class Product
 - `Schema`: Gets the optional schema name
 
 **Notes:**
-- Takes precedence over `JauntyConfig.TableNameResolver`
+- A non-empty name takes precedence over `JauntyConfig.TableNameResolver`, for reflection-mapped
+  and source-generated entities alike. `[Table("")]` names no table, so the resolver or the type
+  name applies; see the [name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order)
 - If schema is not specified, the table name is emitted unqualified and the database resolves it:
   the login's default schema on SQL Server, `search_path` on PostgreSQL, `main` on SQLite, the
   connection's database on MySQL. Jaunty never substitutes a default of its own —
@@ -88,8 +90,9 @@ public partial class Product
 - `Name`: Gets the column name
 
 **Notes:**
-- Takes precedence over `JauntyConfig.ColumnNameResolver`
-- Attribute takes highest priority in naming resolution
+- A non-empty name takes precedence over `JauntyConfig.ColumnNameResolver`, on both mapping paths
+- `[Column("")]` names nothing: a DataAnnotations `[Column]` on the same property, then the
+  resolver, then the property name apply
 - Only applies to properties of entity classes
 
 ## Ignore Attribute
@@ -180,11 +183,11 @@ column appears in the generated `INSERT`:
 
 | Mapping path | Single `int`/`long` key, no `[DatabaseGenerated]` |
 |---|---|
-| `Jaunty.SourceGenerator` | Treated as an identity column — **omitted** from the `INSERT` |
-| `Jaunty.Extensions.Reflection` | Not an identity column — **included** in the `INSERT` |
+| `Extrode.Jaunty.SourceGenerator` | Treated as an identity column — **omitted** from the `INSERT` |
+| `Extrode.Jaunty.Extensions.Reflection` | Not an identity column — **included** in the `INSERT` |
 
 The source-generated mapper is preferred whenever one exists, so *adding or removing the
-`Jaunty.SourceGenerator` package reference changes the SQL* for such an entity — dropping a
+`Extrode.Jaunty.SourceGenerator` package reference changes the SQL* for such an entity — dropping a
 client-assigned key on one side, or overriding a real sequence on the other.
 
 Adding `[DatabaseGenerated(...)]` removes the ambiguity: both paths then honour exactly what you
@@ -221,7 +224,7 @@ write an `init`-only setter, nor a setter declared on a base class that the enti
 reach (`private set` on a base, or an `internal set` across an assembly boundary). The reflection
 mapper writes both without difficulty — `PropertyInfo.SetValue` is not bound by either rule.
 
-| Setter | `Jaunty.SourceGenerator` | `Jaunty.Extensions.Reflection` |
+| Setter | `Extrode.Jaunty.SourceGenerator` | `Extrode.Jaunty.Extensions.Reflection` |
 |---|---|---|
 | `set` | Mapped | Mapped |
 | `init` | **Not mapped** | Mapped |
@@ -272,9 +275,13 @@ public enum OrderPriority { Low = 0, High = 1 }
 
 Jaunty uses the following priority order for mapping configuration:
 
-1. **Attributes** (`[Table]`, `[Column]`, `[Ignore]`, `[Key]`, `[DatabaseGenerated]`) - Highest priority
+1. **Attributes** (`[Table]`, `[Column]`, `[Ignore]`, `[Key]`, `[DatabaseGenerated]`) - Highest priority. A
+   `[Table]` or `[Column]` name counts only when it is non-empty
 2. **JauntyConfig resolvers** (`SchemaNameResolver`, `TableNameResolver`, `ColumnNameResolver`) - Medium priority
 3. **Default behavior** (property/type names) - Lowest priority
+
+Reflection-mapped and source-generated entities follow the same order; the
+[name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order) diagrams it.
 
 ## Examples
 
@@ -325,7 +332,7 @@ public partial class ProductCategoryMapping
 
 ```csharp
 // Global configuration
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // a helper you write; Extrode.Jaunty ships none
 
 // Entity with attribute override
 public partial class Product
@@ -360,7 +367,7 @@ Use attributes for exceptions and global configuration for general conventions:
 
 ```csharp
 // Global configuration for snake_case
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Jaunty ships none
+JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // a helper you write; Extrode.Jaunty ships none
 
 // Specific override for this property
 public partial class Product

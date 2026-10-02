@@ -5,7 +5,7 @@
 // External links (http, mailto, tel) and anchor fragments are not checked.
 //
 // Fenced code blocks are skipped. They used to be scanned, which made an illustrative path in a
-// ```markdown fence report as broken - docs/_assets/README.md carries one on purpose, showing a
+// ```markdown fence report as broken - docs/assets/README.md carries one on purpose, showing a
 // reader how to embed an image. One permanent false positive means the exit code can never be
 // zero, and a gate that is always red is not a gate.
 

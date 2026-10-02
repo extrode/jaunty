@@ -79,7 +79,7 @@ What each row settled:
 
 ## Step 1 — `JauntyAot` (public, additive)
 
-`src/Jaunty/JauntyAot.cs`. Three methods, all no-ops; the annotation on the type parameter is the
+`src/Extrode.Jaunty/JauntyAot.cs`. Three methods, all no-ops; the annotation on the type parameter is the
 entire payload.
 
 | Member | For |
@@ -94,7 +94,7 @@ then compiles unchanged everywhere.
 
 ## Step 2 — The generator emits the rooting
 
-`src/Jaunty.SourceGenerator/ParameterRooting.cs`, a partial of `JauntyGenerator`. A second pipeline,
+`src/Extrode.Jaunty.SourceGenerator/ParameterRooting.cs`, a partial of `JauntyGenerator`. A second pipeline,
 and the first one in this generator that reads **call sites** rather than type declarations.
 
 - **Predicate** (syntax only, runs on every keystroke): an invocation named `Query…`/`Execute…` with
@@ -137,11 +137,11 @@ claim unexamined — the same error one layer in.
 
 ## Step 4 — Verification
 
-1. **Generator tests** — `tests/Jaunty.SourceGenerator.Tests/ParameterRootingEmissionTests.cs`, 23
+1. **Generator tests** — `tests/Extrode.Jaunty.SourceGenerator.Tests/ParameterRootingEmissionTests.cs`, 23
    cases: what is rooted, what is deliberately not, `JAUNTYGEN003` firing and not firing, and — the
    one a published binary cannot substitute for — that **the emitted rooting compiles**, over seven
    shapes including nested anonymous, generic, record and nullable.
-2. **Drift test** — `tests/Jaunty.Tests/Unit/AotPreservationTests.cs`, asserted against compiled
+2. **Drift test** — `tests/Extrode.Jaunty.Tests/Unit/AotPreservationTests.cs`, asserted against compiled
    metadata: every type parameter on `JauntyAot` carries `PublicProperties`. Delete the attribute and
    everything still compiles, every test still passes, and the binary silently breaks. There is no
    other signal.
@@ -201,7 +201,7 @@ attribute is the whole difference between working and broken, which is why step 
   `x => x.UnitPrice > 20m`, before any Jaunty code runs.
   > **Superseded the same day** by AUD-R26-072, a separate change: one `[DynamicDependency]` on
   > `decimal` reached from the three Fluent entry points. All four samples now pass. The scope line
-  > above was still the right call — that fix belonged in `Jaunty.Fluent`, on its own measurements,
+  > above was still the right call — that fix belonged in `Extrode.Jaunty.Fluent`, on its own measurements,
   > not folded into this spec's parameter-binding work.
 - **The forwarding gap is not closed.** Closing it means inter-procedural analysis of the consumer's
   own call graph. Documented on `JauntyAot` with the two one-line fixes instead.

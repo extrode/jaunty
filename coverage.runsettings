@@ -5,7 +5,7 @@
 
   ExcludeByAttribute is set explicitly rather than left to coverlet's default, and the difference
   is the whole point of this file. Adding CompilerGeneratedAttribute to the list - as coverlet's
-  own default does - hides lambda and closure bodies. Measured on Jaunty.FlatFiles.Tests with
+  own default does - hides lambda and closure bodies. Measured on Extrode.Jaunty.FlatFiles.Tests with
   coverlet.collector 10.0.1, the same run reports:
 
       kept      583 classes, 38,130 lines
@@ -25,8 +25,8 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
-          <Include>[Jaunty]*,[Jaunty.*]*</Include>
-          <Exclude>[*.Tests]*,[*.Tests.*]*,[Jaunty.Tests.Helpers]*</Exclude>
+          <Include>[Extrode.Jaunty]*,[Extrode.Jaunty.*]*</Include>
+          <Exclude>[*.Tests]*,[*.Tests.*]*,[Extrode.Jaunty.Tests.Helpers]*</Exclude>
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute</ExcludeByAttribute>
           <IncludeTestAssembly>false</IncludeTestAssembly>
           <SingleHit>false</SingleHit>

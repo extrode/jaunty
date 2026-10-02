@@ -132,7 +132,7 @@ if ($SkipLocal) {
         Write-Host "   local instance not available - skipped" -ForegroundColor DarkGray
     } else {
         # The vendored script hardcodes the database name; rewrite it to the
-        # Jaunty-owned copy so the user's own Northwind is never the target.
+        # Extrode.Jaunty-owned copy so the user's own Northwind is never the target.
         $tmp = Join-Path ([IO.Path]::GetTempPath()) 'jaunty-reset-northwindjaunty.sql'
         Would "seed NorthwindJaunty from data/sqlserver/create-northwind.sql"
         if ($Execute) {

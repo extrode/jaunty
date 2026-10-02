@@ -3,10 +3,10 @@
 The smallest complete Jaunty program that publishes NativeAOT: `Query<T>`, `QueryFirst<T>`
 and `QueryScalar<T>` against an in-memory SQLite database, with **no reflection anywhere**.
 
-Mapping is done by `Jaunty.SourceGenerator`, referenced as an analyzer:
+Mapping is done by `Extrode.Jaunty.SourceGenerator`, referenced as an analyzer:
 
 ```xml
-<ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+<ProjectReference Include="..\..\src\Extrode.Jaunty.SourceGenerator\Extrode.Jaunty.SourceGenerator.csproj"
                   OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 ```
 
@@ -36,7 +36,7 @@ dotnet publish samples/NativeAOT-Basic -c Release -f net10.0 -r linux-x64
 ```
 
 Substitute your own RID (`win-x64`, `osx-arm64`, …). A clean publish with no `IL2xxx` or
-`IL3xxx` warnings is the result being demonstrated. `scripts/Verify-NativeAOT.ps1` is a
+`IL3xxx` warnings is the result being demonstrated. `scripts/verify-nativeaot.ps1` is a
 faster text-level gate over the whole tree, but it is a gate, not a proof — see the note at
 the top of that script.
 

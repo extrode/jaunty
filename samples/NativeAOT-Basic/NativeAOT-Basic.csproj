@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" />
-    <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+    <ProjectReference Include="..\..\src\Extrode.Jaunty\Extrode.Jaunty.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Jaunty.SourceGenerator\Extrode.Jaunty.SourceGenerator.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 

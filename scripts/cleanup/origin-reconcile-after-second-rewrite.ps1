@@ -49,8 +49,8 @@ $BackupTags = @(
 # Remote branch -> the sha it had when PRs #4 and #5 were closed. A different sha means
 # Dependabot has reused the name on the new history, and the branch is not ours to delete.
 $StaleRemoteBranches = @{
-    'dependabot/nuget/src/Jaunty.Extensions.Logging/dev/microsoft-extensions-3a33789cdb' = 'bafd6eb042c9b840d2785163a2af579a7a02b5fe'
-    'dependabot/nuget/src/Jaunty.Extensions.Logging/dev/microsoft-extensions-695e6c4d38' = 'c5d72336524c23be6b863bb7c868c3e0a4fa4b15'
+    'dependabot/nuget/src/Extrode.Jaunty.Extensions.Logging/dev/microsoft-extensions-3a33789cdb' = 'bafd6eb042c9b840d2785163a2af579a7a02b5fe'
+    'dependabot/nuget/src/Extrode.Jaunty.Extensions.Logging/dev/microsoft-extensions-695e6c4d38' = 'c5d72336524c23be6b863bb7c868c3e0a4fa4b15'
 }
 
 $Scratch = @(

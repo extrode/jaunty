@@ -12,7 +12,7 @@
 **Primary Requirement**: Add comprehensive logging and command interception support to Jaunty ORM, including Microsoft.Extensions.Logging integration, configurable interceptors for command execution lifecycle hooks, and DiagnosticSource event emission.
 
 **Technical Approach**:
-1. Create new `Interceptors` folder in `src/Jaunty/Internals/` for interceptor infrastructure
+1. Create new `Interceptors` folder in `src/Extrode.Jaunty/Internals/` for interceptor infrastructure
 2. Define `ICommandInterceptor` interface and `CommandContext` record in core
 3. Implement `InterceptorPipeline` to orchestrate multiple interceptors
 4. Add `DiagnosticSource` integration via `JauntyDiagnosticListener`
@@ -65,7 +65,7 @@ docs/specs/001-logging-interception/
 
 ```
 src/
-├── Jaunty/
+├── Extrode.Jaunty/
 │   ├── Interceptors/
 │   │   ├── ICommandInterceptor.cs
 │   │   ├── CommandContext.cs
@@ -78,12 +78,12 @@ src/
 │   └── Internals/
 │       └── Read/QueryCore.cs (modified)
 │       └── Write/ExecuteNonQueryCore.cs (modified)
-└── Jaunty.Extensions.Logging/
+└── Extrode.Jaunty.Extensions.Logging/
     ├── JauntyLoggingExtensions.cs
     └── JauntyLoggerProvider.cs
 
 tests/
-└── Jaunty.Tests/
+└── Extrode.Jaunty.Tests/
     ├── Interceptors/
     │   ├── InterceptorPipelineTests.cs
     │   ├── CommandContextTests.cs

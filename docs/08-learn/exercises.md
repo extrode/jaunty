@@ -26,7 +26,7 @@ using (var cmd = connection.CreateCommand())
     cmd.ExecuteNonQuery();
 }
 
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 // TODO: add [Table("categories")] to this class
 public partial class Category
@@ -62,7 +62,7 @@ var category = new Category { Name = "Beverages", Description = "Soft drinks, co
 <summary>Solution</summary>
 
 ```csharp
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 [Table("categories")]
 public partial class Category
@@ -211,9 +211,9 @@ up when you query.
 
 ```csharp
 using System.Data;
-using Jaunty.Core;
-using Jaunty.Configuration;
-using Jaunty.Interceptors;
+using Extrode.Jaunty.Core;
+using Extrode.Jaunty.Configuration;
+using Extrode.Jaunty.Interceptors;
 
 public class ProductRow
 {
@@ -258,9 +258,9 @@ var rows = connection.Query<ProductRow>(
 
 ```csharp
 using System.Data;
-using Jaunty.Core;
-using Jaunty.Configuration;
-using Jaunty.Interceptors;
+using Extrode.Jaunty.Core;
+using Extrode.Jaunty.Configuration;
+using Extrode.Jaunty.Interceptors;
 
 public class ProductRow
 {
@@ -324,7 +324,7 @@ one `BulkInsert` call for the whole batch inside a transaction — and compare e
 
 ```csharp
 using System.Diagnostics;
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 [Table("products")]
 public partial class BenchProduct
@@ -368,7 +368,7 @@ var bulkBatch = Enumerable.Range(1, 500)
 
 ```csharp
 using System.Diagnostics;
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 [Table("products")]
 public partial class BenchProduct
@@ -457,7 +457,7 @@ using (var cmd = connection.CreateCommand())
 // ProductEntity and Category both need the `partial` keyword here, as they have had since
 // Step 8 and Exercise 1 — the Fluent builder reads the same generated metadata Insert does.
 
-using Jaunty.Fluent;
+using Extrode.Jaunty.Fluent;
 
 // TODO: this throws. Predict the message before you run it.
 var rows = connection.From<ProductEntity>()

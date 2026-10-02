@@ -13,7 +13,7 @@ This document explores design options for full Dependency Injection integration 
 ---
 
 > **Updated 2026-08-29.** These extensions no longer live in the core assembly. They moved to
-> `src/Jaunty.Extensions.Logging` (`Extrode.Jaunty.Extensions.Logging`) so that `src/Jaunty` can
+> `src/Extrode.Jaunty.Extensions.Logging` (`Extrode.Jaunty.Extensions.Logging`) so that `src/Extrode.Jaunty` can
 > declare **no package dependencies** on `net8.0`/`net10.0` — `Microsoft.Extensions.DependencyInjection.Abstractions`
 > was one of only two references standing in the way, and it was consumed by exactly one file.
 > Namespaces are unchanged. **Any design in this document that adds DI surface must add it to the
@@ -22,7 +22,7 @@ This document explores design options for full Dependency Injection integration 
 
 ## Current State
 
-Existing DI extensions (in `JauntyLoggingExtensions.cs`, now in `Jaunty.Extensions.Logging`):
+Existing DI extensions (in `JauntyLoggingExtensions.cs`, now in `Extrode.Jaunty.Extensions.Logging`):
 
 ```csharp
 // Registers LoggingInterceptor

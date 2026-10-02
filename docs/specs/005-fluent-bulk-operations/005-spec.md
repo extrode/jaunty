@@ -15,7 +15,7 @@ Design fluent API for bulk operations (BulkInsert, BulkUpdate, BulkDelete) match
 ## Core Jaunty Reference
 
 ```csharp
-// Core Jaunty API
+// Core Extrode.Jaunty API
 connection.BulkInsert(entities);
 connection.BulkInsertAsync(entities, cancellationToken);
 connection.BulkUpdate(entities);
@@ -208,7 +208,7 @@ public interface IBulkDeleteFromClause<T, TKey> where T : new()
 ## Implementation Structure
 
 ```
-src/Jaunty.Fluent/Builders/Bulk/
+src/Extrode.Jaunty.Fluent/Builders/Bulk/
 ├── BulkInsertBuilder.cs
 ├── BulkUpdateBuilder.cs
 ├── BulkDeleteBuilder.cs

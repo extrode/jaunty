@@ -2,7 +2,7 @@ namespace Conduit.Infrastructure;
 
 /// <summary>
 /// Hand-written idempotent SQLite schema, replacing EF Core's <c>Database.EnsureCreated()</c>
-/// (model-driven schema generation). Jaunty has no migrations/schema-from-entity tooling, so the
+/// (model-driven schema generation). Extrode.Jaunty has no migrations/schema-from-entity tooling, so the
 /// schema is authored directly. Column names match the domain entities' C# property names 1:1
 /// since none of them carry a <c>[Column]</c> override.
 /// </summary>

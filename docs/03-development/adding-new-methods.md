@@ -2,7 +2,7 @@
 
 How a new public method gets from an idea to a merged, tested, documented part of Jaunty's API
 surface. The shape below is not a style preference; it is what the 680 existing `IDbConnection` extension
-methods in `src/Jaunty` already do, and a method that departs from it reads as an exception
+methods in `src/Extrode.Jaunty` already do, and a method that departs from it reads as an exception
 forever.
 
 Before starting, read [`api-design-guidelines.md`](api-design-guidelines.md). The constitution
@@ -13,18 +13,18 @@ before implementation.
 
 ## 1. Decide whether it belongs in core
 
-`src/Jaunty` has **no package references on net8.0 or net10.0** - not one, nothing transitive -
+`src/Extrode.Jaunty` has **no package references on net8.0 or net10.0** - not one, nothing transitive -
 and `PackageDependencyTests` asserts it. On netstandard2.0 it carries exactly two backports of
 types that are in-box on modern .NET. If your method needs a dependency, it belongs in an
 extension package, not in core:
 
 | Package | For |
 |---|---|
-| `Jaunty.Extensions.Reflection` | anything that reflects at runtime |
-| `Jaunty.Extensions.Logging` | `ILogger`, DI registration |
-| `Jaunty.Extensions.Npgsql` | PostgreSQL-specific surface |
-| `Jaunty.Fluent` | the expression-tree query builder |
-| `Jaunty.FlatFiles` | CSV, Parquet, DuckDB |
+| `Extrode.Jaunty.Extensions.Reflection` | anything that reflects at runtime |
+| `Extrode.Jaunty.Extensions.Logging` | `ILogger`, DI registration |
+| `Extrode.Jaunty.Extensions.Npgsql` | PostgreSQL-specific surface |
+| `Extrode.Jaunty.Fluent` | the expression-tree query builder |
+| `Extrode.Jaunty.FlatFiles` | CSV, Parquet, DuckDB |
 
 Core stays AOT- and trim-clean. `IsTrimmable` and `IsAotCompatible` are set for every net8.0+
 target in `src/Directory.Build.props`, so a new reflection call in core is a build warning before
@@ -35,13 +35,13 @@ it is a review comment.
 One file per method family, named for the method:
 
 ```
-src/Jaunty/Read/     Query.cs  QueryAsync.cs  QueryPartialFirst.cs  QueryScalar.cs  ...
-src/Jaunty/Write/    Insert.cs  BulkInsertAsync.cs  Upsert.cs  ...
-src/Jaunty/Execute/  Multiple/  Streaming/  StoredProcedure/
+src/Extrode.Jaunty/Read/     Query.cs  QueryAsync.cs  QueryPartialFirst.cs  QueryScalar.cs  ...
+src/Extrode.Jaunty/Write/    Insert.cs  BulkInsertAsync.cs  Upsert.cs  ...
+src/Extrode.Jaunty/Execute/  Multiple/  Streaming/  StoredProcedure/
 ```
 
-Every one of these files is `public static partial class Jaunty`, so the whole surface is one
-class spread across files. A new `QuerySomething` goes in `src/Jaunty/Read/QuerySomething.cs`, and
+Every one of these files is `public static partial class Extrode.Jaunty`, so the whole surface is one
+class spread across files. A new `QuerySomething` goes in `src/Extrode.Jaunty/Read/QuerySomething.cs`, and
 its async twin in `QuerySomethingAsync.cs` - never both in one file.
 
 ## 3. Keep the public method a thin wrapper
@@ -64,7 +64,7 @@ public static List<T> QueryPartial<T>(this IDbConnection connection, string sql)
 }
 ```
 
-The work lives in `src/Jaunty/Internals/`, in a `*Core` method that every overload of the family
+The work lives in `src/Extrode.Jaunty/Internals/`, in a `*Core` method that every overload of the family
 funnels into. That is what makes the overload count affordable: `QueryPartial<T>` has four
 synchronous arities and all four are four lines each.
 
@@ -96,8 +96,8 @@ Rules that fall out of this:
 
 | Suite | Scope | Frameworks |
 |---|---|---|
-| `tests/Jaunty.UnitTests` | isolated internals, no database | net8.0, net10.0, net472 |
-| `tests/Jaunty.Tests` | observable API behaviour, live engines | net8.0, net10.0, net472 |
+| `tests/Extrode.Jaunty.UnitTests` | isolated internals, no database | net8.0, net10.0, net472 |
+| `tests/Extrode.Jaunty.Tests` | observable API behaviour, live engines | net8.0, net10.0, net472 |
 
 Unit tests go under a directory mirroring the source (`Unit/Read/`, `Unit/Write/`). Integration
 tests go under `Integration/` and should be dialect-parameterized where the behaviour is
@@ -129,11 +129,11 @@ Three places, and the link checker gates the last one:
 ```bash
 dotnet build Jaunty.slnx -c Release            # 0 warnings; analyzers are errors here
 dotnet test  Jaunty.slnx -c Release            # all frameworks
-pwsh scripts/Verify-NativeAOT.ps1              # markers-only reflection scan over src/
+pwsh scripts/verify-nativeaot.ps1              # markers-only reflection scan over src/
 node scripts/check-doc-links.mjs
 ```
 
-`Verify-NativeAOT.ps1` fails on any reflection call in `src/` that is not annotated with an
+`verify-nativeaot.ps1` fails on any reflection call in `src/` that is not annotated with an
 `AOT-SAFE:` marker in the contiguous comment block immediately above it. The marker has to say
 *why* the call is safe. Putting it anywhere else is silently ignored - it reads as an ordinary
 failure with no hint that a marker was present.

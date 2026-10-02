@@ -11,7 +11,7 @@
 
 **Primary Requirement**: Fluent queries and fluent CRUD against source-generated entities must
 resolve table/column metadata with zero runtime reflection and zero dependency on
-`Jaunty.Extensions.Reflection`, while leaving that package's behavior unchanged for
+`Extrode.Jaunty.Extensions.Reflection`, while leaving that package's behavior unchanged for
 non-source-generated POCOs.
 
 **Technical Approach**: mirror the pattern already proven to work in the non-fluent read path
@@ -29,7 +29,7 @@ to `JauntyConfig.ReflectionTableMetadataResolver` only when no source-generated 
 | Field | Value |
 |-------|-------|
 | **Language** | C# (netstandard2.0, net8.0) |
-| **Dependencies** | Zero (core); `Jaunty.Extensions.Reflection` remains a separate opt-in package |
+| **Dependencies** | Zero (core); `Extrode.Jaunty.Extensions.Reflection` remains a separate opt-in package |
 | **Storage** | N/A (metadata resolution, not query execution) |
 | **Testing** | xUnit; NativeAOT publish verification (existing `samples/NativeAOT-*` pattern) |
 | **Platform** | Cross-platform (.NET), NativeAOT-compatible core |
@@ -43,7 +43,7 @@ to `JauntyConfig.ReflectionTableMetadataResolver` only when no source-generated 
 
 - [x] Performance-first upheld — single cached lookup per type, no per-query reflection
 - [x] NativeAOT-compatible — closes the gap that currently makes this the *least* AOT-compatible part of the primary API
-- [x] Zero dependencies (core) — `Jaunty.Extensions.Reflection` remains separate and untouched
+- [x] Zero dependencies (core) — `Extrode.Jaunty.Extensions.Reflection` remains separate and untouched
 - [x] Tests before implementation — see Phase 1 below; NativeAOT publish check is a first-class test, not an afterthought
 
 ---
@@ -63,15 +63,15 @@ docs/specs/003-fluent-nativeaot-metadata/
 
 ```
 src/
-├── Jaunty.SourceGenerator/
+├── Extrode.Jaunty.SourceGenerator/
 │   └── JauntyGenerator.cs          # emit TableName/SchemaName/PrimaryKeyColumnNames statics
-├── Jaunty/
+├── Extrode.Jaunty/
 │   ├── Internals/Entity/
 │   │   ├── ColumnMetadata.cs       # resolve Property/delegate question (see Key Design Decisions)
 │   │   └── EntityMetadata.cs
 │   └── Internals/Write/
 │       └── CrudSqlCache.cs         # add source-gen-first lookup tier (TryResolveMetadata<T>)
-└── Jaunty.Fluent/
+└── Extrode.Jaunty.Fluent/
     └── Internals/
         └── FluentMetadataCache.cs  # add source-gen-first lookup tier (GetMetadata<T>)
 
@@ -80,12 +80,12 @@ samples/
     └── NativeAOT-FluentQuery.csproj
 
 tests/
-├── Jaunty.SourceGenerator.Tests/
+├── Extrode.Jaunty.SourceGenerator.Tests/
 │   └── TableMetadataEmissionTests.cs    # new: verifies emitted statics
-├── Jaunty.Fluent.Tests/
+├── Extrode.Jaunty.Fluent.Tests/
 │   └── Integration/
 │       └── FluentMetadataResolutionTests.cs   # new: fluent query, no UseReflectionMapping()
-└── Jaunty.Tests/
+└── Extrode.Jaunty.Tests/
     └── Write/
         └── CrudSqlCacheSourceGenTests.cs      # new: fluent CRUD, no UseReflectionMapping()
 ```
@@ -114,11 +114,11 @@ tests/
 
    Audited every consumer of `.Property` on a `ColumnMetadata` instance across the codebase
    (not just the two folders originally scoped — `EntityDataReader.cs` under
-   `src/Jaunty/Internals/BulkCopy/` also turned out to be a consumer). Found 3 distinct usage
+   `src/Extrode.Jaunty/Internals/BulkCopy/` also turned out to be a consumer). Found 3 distinct usage
    shapes, not one:
 
    - **Category A — name-only lookup (~18 call sites, the large majority)**: every expression
-     visitor and builder in `Jaunty.Fluent` (`WhereExpressionVisitor`, `SelectExpressionVisitor`,
+     visitor and builder in `Extrode.Jaunty.Fluent` (`WhereExpressionVisitor`, `SelectExpressionVisitor`,
      `GroupByExpressionVisitor`, `ExistsExpressionVisitor`, `JoinExpressionVisitor{,3,4}`,
      `InsertBuilder`, `JoinClauseBuilder`, `QueryBuilder`, `GroupedQueryBuilder`,
      `JoinedQueryBuilder{,3,4}`, `JoinedQueryBuilderOrderBy`, `SetOperationBuilder`,
@@ -126,17 +126,17 @@ tests/
      — resolving a `MemberExpression`'s member name back to its `ColumnMetadata`. None of these
      call `GetValue`/`SetValue`/`PropertyType`. This category needs a `string`, never a
      `PropertyInfo`.
-   - **Category B — actual value read/write (4 call sites)**: `src/Jaunty/Write/Upsert.cs`
+   - **Category B — actual value read/write (4 call sites)**: `src/Extrode.Jaunty/Write/Upsert.cs`
      (`col.Property.GetValue(entity)`, per-parameter, **uncached** — a pre-existing perf gap,
-     unrelated to this spec, not fixed here) and `src/Jaunty.Fluent/Builders/Insert/InsertBuilder.cs`
+     unrelated to this spec, not fixed here) and `src/Extrode.Jaunty.Fluent/Builders/Insert/InsertBuilder.cs`
      (same uncached pattern) both call `PropertyInfo.GetValue` directly inline, every execution.
-     `src/Jaunty.Fluent/Builders/Join/JoinedQueryBuilder.cs` additionally calls
+     `src/Extrode.Jaunty.Fluent/Builders/Join/JoinedQueryBuilder.cs` additionally calls
      `col.Property.PropertyType` + `col.Property.SetValue(entity, convertedValue)` when
      materializing joined-entity values. These 3 files are Fluent's own value-binding paths,
-     structurally separate from core `Jaunty`'s cached path below.
+     structurally separate from core `Extrode.Jaunty`'s cached path below.
    - **Category C — cached compiled-getter construction (2 call sites, already the "good"
-     pattern)**: `src/Jaunty/Internals/Write/WriteParameterCache.cs` and `MultiRowInsertCache.cs`
-     (core `Jaunty`, the non-fluent CRUD path) pass `columns[i].Property` into a helper that
+     pattern)**: `src/Extrode.Jaunty/Internals/Write/WriteParameterCache.cs` and `MultiRowInsertCache.cs`
+     (core `Extrode.Jaunty`, the non-fluent CRUD path) pass `columns[i].Property` into a helper that
      builds `Expression.Property(param, prop)` once, compiles it via `.Compile()`, and **caches**
      the resulting delegate — never re-reflecting per row. **Empirically verified NativeAOT-safe**
      during this audit: a standalone scratch project doing the identical
@@ -149,7 +149,7 @@ tests/
      requires non-null metadata from `ReflectionTableMetadataResolver` — see `spec.md`'s FR-003.
      Once T003/T007 land, they become reachable for source-gen-metadata'd entities too, so they
      must also be updated to tolerate a null `Property`, same as Category B.)
-   - **Category D — type-only**: `src/Jaunty/Internals/BulkCopy/EntityDataReader.cs` reads
+   - **Category D — type-only**: `src/Extrode.Jaunty/Internals/BulkCopy/EntityDataReader.cs` reads
      `.Property.PropertyType` to answer `IDataReader.GetFieldType(i)` for bulk-copy. Needs a
      `Type`, never full reflective capability.
 
@@ -191,7 +191,7 @@ tests/
    out of scope).
 
 4. **Backward compatibility (User Story 3)**: `JauntyConfig.ReflectionTableMetadataResolver`
-   and `Jaunty.Extensions.Reflection` are not touched by this feature at all — the new lookup
+   and `Extrode.Jaunty.Extensions.Reflection` are not touched by this feature at all — the new lookup
    tier is strictly additive and runs *before* the existing one, never replacing it.
 
 ---
@@ -210,14 +210,14 @@ tests/
 - Add source-gen-first lookup tier to `FluentMetadataCache.GetMetadata<T>()` (User Story 1).
 - Add identical tier to `CrudSqlCache.TryResolveMetadata<T>()` (User Story 2), closing the
   existing acknowledging code comment there.
-- Full existing `Jaunty.Fluent.Tests`/`Jaunty.Tests` suites re-run unmodified to confirm User
+- Full existing `Extrode.Jaunty.Fluent.Tests`/`Extrode.Jaunty.Tests` suites re-run unmodified to confirm User
   Story 3 (no regression) across all 4 real dialects.
 
 ### Phase 3: User Story 4 (Actionable failure) + NativeAOT proof
 - Improve the no-metadata-found exception message to name both remedies.
 - New `samples/NativeAOT-FluentQuery/` sample: fluent query (not just `Query<T>`) compiling
-  and running under `PublishAot=true`, no `Jaunty.Extensions.Reflection` reference.
-- Update `samples/torture-test-sakila-queries/` to drop `Jaunty.Extensions.Reflection` and
+  and running under `PublishAot=true`, no `Extrode.Jaunty.Extensions.Reflection` reference.
+- Update `samples/torture-test-sakila-queries/` to drop `Extrode.Jaunty.Extensions.Reflection` and
   `UseReflectionMapping()`, re-run all 15 queries against all 5 dialects (SC-4).
 
 ### Phase 4: Verification & Polish

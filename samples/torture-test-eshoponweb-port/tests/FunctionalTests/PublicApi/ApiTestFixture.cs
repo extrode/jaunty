@@ -42,7 +42,7 @@ public class TestApiApplication : WebApplicationFactory<AuthenticateEndpoint>
                     .Options);
 
             // Replace the catalog connection registered by Infrastructure.Dependencies with a
-            // Jaunty-backed SQLite connection.
+            // Extrode.Jaunty-backed SQLite connection.
             var connectionDescriptors = services.Where(d => d.ServiceType == typeof(IDbConnection)).ToList();
             foreach (var descriptor in connectionDescriptors)
             {

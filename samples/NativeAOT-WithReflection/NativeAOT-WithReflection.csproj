@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" />
-    <ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" />
-    <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+    <ProjectReference Include="..\..\src\Extrode.Jaunty\Extrode.Jaunty.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Jaunty.Extensions.Reflection\Extrode.Jaunty.Extensions.Reflection.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Jaunty.SourceGenerator\Extrode.Jaunty.SourceGenerator.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
@@ -23,7 +23,7 @@
 
   <!-- Prevent trimming of reflection extension -->
   <ItemGroup>
-    <TrimmerRootAssembly Include="Jaunty.Extensions.Reflection" />
+    <TrimmerRootAssembly Include="Extrode.Jaunty.Extensions.Reflection" />
   </ItemGroup>
 
 </Project>

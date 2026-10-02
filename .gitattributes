@@ -72,3 +72,12 @@
 # generator emits. Binary assets are unaffected: text=auto still detects them.
 ###############################################################################
 dist/docs-site/** text=auto eol=lf
+
+###############################################################################
+# Shell scripts
+#
+# Same CRLF problem as dist/docs-site/** above: scripts/*.sh run on macOS/Linux
+# (mm1, CI), and CRLF line endings break bash 3.2's option parser (`set -eu`)
+# and any `for ... do` on a line whose trailing \r gets treated as an argument.
+###############################################################################
+*.sh text eol=lf

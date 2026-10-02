@@ -17,8 +17,8 @@ substitutes `ISqlDialect.GetDefaultSchema()` for a missing schema, on any dialec
 databases and an entity mapped `[Table("products","archive")]`:
 
 ```
-Jaunty ToSql()       -> SELECT id, name FROM products
-Jaunty returned      -> id=1 name=main-row
+Extrode.Jaunty ToSql()       -> SELECT id, name FROM products
+Extrode.Jaunty returned      -> id=1 name=main-row
 after Insert:
   main.products      -> main-row, written-by-jaunty
   archive.products   -> archive-row

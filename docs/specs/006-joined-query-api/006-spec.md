@@ -109,21 +109,21 @@ IJoinedQuery3<T1, T2, T3> Or(Expression<Func<T1, T2, T3, bool>> predicate);
 
 ### New/Modified Files
 
-1. **Interfaces** (`src/Jaunty.Fluent/Interfaces/IJoinedQuery.cs`):
+1. **Interfaces** (`src/Extrode.Jaunty.Fluent/Interfaces/IJoinedQuery.cs`):
    - Extend `IJoinedQuery3<T1, T2, T3>` interface
    - Extend `IJoinedQuery4<T1, T2, T3, T4>` interface
 
 2. **Query Builders**:
-   - `src/Jaunty.Fluent/JoinedQueryBuilder3.cs` - Implement IJoinedQuery3 methods
-   - `src/Jaunty.Fluent/JoinedQueryBuilder4.cs` - Implement IJoinedQuery4 methods
+   - `src/Extrode.Jaunty.Fluent/JoinedQueryBuilder3.cs` - Implement IJoinedQuery3 methods
+   - `src/Extrode.Jaunty.Fluent/JoinedQueryBuilder4.cs` - Implement IJoinedQuery4 methods
 
 3. **Async Extensions** (if needed):
-   - `src/Jaunty.Fluent/JoinedQueryBuilder3SelectAsync.cs`
-   - `src/Jaunty.Fluent/JoinedQueryBuilder4SelectAsync.cs`
+   - `src/Extrode.Jaunty.Fluent/JoinedQueryBuilder3SelectAsync.cs`
+   - `src/Extrode.Jaunty.Fluent/JoinedQueryBuilder4SelectAsync.cs`
 
 4. **OrderBy Support**:
-   - `src/Jaunty.Fluent/JoinedQueryBuilder3OrderBy.cs`
-   - `src/Jaunty.Fluent/JoinedQueryBuilder4OrderBy.cs`
+   - `src/Extrode.Jaunty.Fluent/JoinedQueryBuilder3OrderBy.cs`
+   - `src/Extrode.Jaunty.Fluent/JoinedQueryBuilder4OrderBy.cs`
 
 ---
 

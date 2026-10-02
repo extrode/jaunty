@@ -16,7 +16,7 @@ This file tracks currently known product limitations that impact API completenes
 - Impact: inconsistent ergonomics for consumers using interface-only abstractions.
 
 ### 3. Reflection still exists in core assembly paths
-- Runtime mapper/binder resolution and extension bootstrap still use reflection in `Jaunty` core.
+- Runtime mapper/binder resolution and extension bootstrap still use reflection in `Extrode.Jaunty` core.
 - Impact: reduces confidence in strict NativeAOT/zero-reflection claims.
 
 ## Medium Priority

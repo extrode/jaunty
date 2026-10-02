@@ -1,7 +1,7 @@
 using System.Data;
 
-using Jaunty;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Fluent;
 
 using SakilaQueries.Entities;
 

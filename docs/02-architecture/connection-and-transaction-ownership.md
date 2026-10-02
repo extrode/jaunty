@@ -8,7 +8,7 @@ bool wasClosed = connection.State == ConnectionState.Closed;
 bool ownTransaction = transaction is null;
 ```
 
-Under `src/Jaunty/Write`, `wasClosed` appears in eight files and `ownTransaction` in six: the six
+Under `src/Extrode.Jaunty/Write`, `wasClosed` appears in eight files and `ownTransaction` in six: the six
 `Bulk*` files have both, and `Upsert`/`UpsertAsync` have only `wasClosed` because they issue one
 statement and own no transaction. The acquire decisions read the booleans in the `try`; the release
 decisions read them in the `finally`.

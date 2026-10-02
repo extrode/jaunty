@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-02
 **Status:** Accepted
-**Affects:** `src/Jaunty/Read/QueryMultiEntity.cs`, `src/Jaunty/Read/QueryMultiEntityAsync.cs`
+**Affects:** `src/Extrode.Jaunty/Read/QueryMultiEntity.cs`, `src/Extrode.Jaunty/Read/QueryMultiEntityAsync.cs`
 
 ## Decision
 

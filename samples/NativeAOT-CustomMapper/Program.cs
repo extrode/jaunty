@@ -1,13 +1,13 @@
 using System.Data;
 
-using Jaunty;
-using Jaunty.Core;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Core;
 
 using Microsoft.Data.Sqlite;
 
 using NativeAOT.CustomMapper;
 
-// NativeAOT-CustomMapper: Demonstrates Jaunty with a hand-written mapper via CommandOptions<T>.
+// NativeAOT-CustomMapper: Demonstrates Extrode.Jaunty with a hand-written mapper via CommandOptions<T>.
 // No source generator or reflection needed. Full manual control over how rows become objects.
 
 using var connection = new SqliteConnection("Data Source=:memory:");
@@ -32,7 +32,7 @@ cmd.CommandText = """
     """;
 cmd.ExecuteNonQuery();
 
-Console.WriteLine("=== Jaunty NativeAOT Custom Mapper Sample ===");
+Console.WriteLine("=== Extrode.Jaunty NativeAOT Custom Mapper Sample ===");
 Console.WriteLine();
 
 // Hand-written mapper function - zero reflection, zero source generation

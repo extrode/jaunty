@@ -7,7 +7,7 @@ using MediatR;
 namespace Conduit.Infrastructure;
 
 /// <summary>
-/// Adds a transaction to the processing pipeline. Jaunty-based replacement for the former
+/// Adds a transaction to the processing pipeline. Extrode.Jaunty-based replacement for the former
 /// EF Core <c>DBContextTransactionPipelineBehavior</c>.
 /// </summary>
 public class ConduitDbTransactionPipelineBehavior<TRequest, TResponse>(ConduitDb db)

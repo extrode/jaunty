@@ -43,7 +43,7 @@ public class TestApplication : WebApplicationFactory<IBasketViewModelService>
                     .Options);
 
             // Replace the SQL Server catalog connection registered by Infrastructure.Dependencies
-            // with a Jaunty-backed SQLite connection.
+            // with a Extrode.Jaunty-backed SQLite connection.
             var connectionDescriptors = services.Where(d => d.ServiceType == typeof(IDbConnection)).ToList();
             foreach (var descriptor in connectionDescriptors)
             {

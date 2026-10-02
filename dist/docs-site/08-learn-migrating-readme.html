@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migrating to Jaunty — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
+  try {
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Learn &#8250; Migrating to Jaunty</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">General</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quick start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-readme.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Api reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-readme.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-readme.html">Architecture Documentation</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-connection-and-transaction-ownership.html">Connection and Transaction Ownership</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-dialect-resolution.html">Dialect Resolution</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  <a href="02-architecture-source-generator-pipeline.html">Source Generator Pipeline</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-readme.html">Development Guides</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-optimizations.html">Jaunty Optimization Roadmap</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-readme.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-readme.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-readme.html">Quality &amp; Testing</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-readme.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-readme.html" class="active" aria-current="page">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
+</div>
+
+      </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#before-you-start">Before you start</a><a class="toc-l2" href="#when-not-to-migrate">When not to migrate</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Learn &#8250; Migrating to Jaunty</nav>
+        <article>
+<h1 id="migrating-to-jaunty">Migrating to Jaunty</h1>
+<p>Guides for moving an existing codebase onto Jaunty. Written for people who already have a working
+data-access layer and are deciding whether the port is worth it.</p>
+<table>
+<thead>
+<tr>
+<th>Guide</th>
+<th>Read it if</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="08-learn-migrating-strict-mapping.html">Strict mapping: the one thing that will surprise you</a></td>
+<td><strong>Read this first, whatever you are coming from.</strong> It is the single largest source of first-hour friction, and it is a two-minute fix once you know the rule</td>
+</tr>
+<tr>
+<td><a href="08-learn-migrating-from-dapper.html">From Dapper</a></td>
+<td>You use Dapper, Dapper.Contrib, or Dapper Plus</td>
+</tr>
+<tr>
+<td><a href="08-learn-migrating-from-ef-core.html">From EF Core</a></td>
+<td>You use EF Core and are considering moving some or all of it</td>
+</tr>
+</tbody>
+</table>
+<h2 id="before-you-start">Before you start</h2>
+<p><strong>Do not port everything.</strong> Jaunty coexists with whatever you have: it is a set of extension methods
+on <code>IDbConnection</code>, with no context, no registration and no ownership of the connection. Dapper,
+EF Core and Jaunty can all run against the same connection in the same method. Port one query, run
+your tests, and decide from there.</p>
+<p><strong>Budget for the mapping change, not the API change.</strong> The method names are close enough to whatever
+you are using that the mechanical port is quick. What takes the time is that Jaunty's default mapping
+is strict and your current ORM's is not - which is the point of the product, and the reason for the
+first guide in the table.</p>
+<h2 id="when-not-to-migrate">When not to migrate</h2>
+<p>Stated plainly in the README. The short
+version: if you need change tracking, a unit of work, lazy loading or migrations, that is EF Core's
+job and Jaunty does not do it. If your team knows Dapper and your data layer is not causing you
+problems, &quot;it is stricter&quot; is not on its own worth a port.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="08-learn-how-jaunty-got-fast.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">How Jaunty got fast</span>
+</a><a class="pn-next" href="08-learn-migrating-from-dapper.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Migrating / Migrating from Dapper</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
+  </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

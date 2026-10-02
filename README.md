@@ -1,16 +1,17 @@
 # Jaunty
 
 <p align="center">
-  <img src="docs/_assets/logo/jaunty-mark.svg" alt="Jaunty" width="160">
+  <img src="docs/assets/logo/jaunty-mark.svg" alt="Jaunty" width="160">
 </p>
 
 The micro-ORM that respects your SQL and your time.
 
 [![CI](https://github.com/extrode/jaunty/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/extrode/jaunty/actions/workflows/ci.yml)
-[![License: ISL-R](https://img.shields.io/badge/license-ISL--R-blue)](LICENSE.md)
+[![License: ISL-R](https://img.shields.io/badge/license-ISL--R%201.2-blue)](LICENSE.md)
 [![Targets](https://img.shields.io/badge/targets-netstandard2.0%20%7C%20net8.0%20%7C%20net10.0-512BD4)](#installation)
 [![NativeAOT](https://img.shields.io/badge/NativeAOT-verified%20in%20CI-brightgreen)](#nativeaot)
 [![Dependencies](https://img.shields.io/badge/dependencies-none%20on%20net8.0%2Fnet10.0-informational)](#installation)
+[![Providers](https://img.shields.io/badge/providers-SQL%20Server%20%7C%20PostgreSQL%20%7C%20MySQL%20%2F%20MariaDB%20%7C%20SQLite-informational)](#installation)
 
 > [!IMPORTANT]
 > Jaunty is free to use, including in commercial production. No seat count, no order form, no expiry.
@@ -25,7 +26,7 @@ If you have used Dapper, you already know how Jaunty feels. It is a set of exten
 create, configure or dispose. You write the SQL, Jaunty runs it and hands back objects.
 
 ```csharp
-using Jaunty;
+using Extrode.Jaunty;
 
 var products = connection.Query<Product>(
     "SELECT * FROM products WHERE category_id = @CategoryId",
@@ -64,7 +65,7 @@ typed expressions, and the core never depends on it.
 ## Quick start
 
 ```csharp
-using Jaunty;
+using Extrode.Jaunty;
 
 // Strict mapping: every property needs a column
 var products = connection.Query<Product>(
@@ -247,7 +248,7 @@ MySQL.
 For anything past CRUD, the optional `Extrode.Jaunty.Fluent` package takes typed expressions:
 
 ```csharp
-using Jaunty.Fluent;
+using Extrode.Jaunty.Fluent;
 
 var rows = connection.From<Product>()
     .InnerJoin<Category>()
@@ -315,12 +316,12 @@ first answer:
 ```mermaid
 flowchart TD
     A["Query&lt;T&gt; needs a row mapper"] --> B{"Did you pass one in<br/>CommandOptions&lt;T&gt;.WithMapper?"}
-    B -- yes --> M1["Your mapper runs.<br/>Jaunty touches nothing."]
+    B -- yes --> M1["Your mapper runs.<br/>Extrode.Jaunty touches nothing."]
     B -- no --> C{"Strict mode, and T has a<br/>source-generated mapper?"}
     C -- yes --> M2["Generated mapper.<br/>No reflection, AOT-safe."]
     C -- no --> D{"Dictionary or dynamic?"}
     D -- yes --> M3["Special-type mapper"]
-    D -- no --> E{"Jaunty.Extensions.Reflection<br/>referenced and enabled?"}
+    D -- no --> E{"Extrode.Jaunty.Extensions.Reflection<br/>referenced and enabled?"}
     E -- yes --> M4["Reflection mapper, compiled<br/>once per type and cached"]
     E -- no --> X["InvalidOperationException:<br/>No mapper found for type 'T'"]
 ```
@@ -346,7 +347,7 @@ emits a mapper at build time: ordinals resolved once per result set, no reflecti
 warnings. This is the path to be on for NativeAOT.
 
 ```csharp
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 [Table("products")]
 public partial class Product
@@ -357,14 +358,12 @@ public partial class Product
 }
 ```
 
-**Fall back to reflection.** Reference `Extrode.Jaunty.Extensions.Reflection`, call
-`JauntyReflectionExtensions.UseReflectionMapping()` once at startup, and any plain class maps with
-setters compiled on first use. This is the Dapper experience, and it is the one thing the core
-leaves out on purpose so that the core stays AOT-clean.
+**Fall back to reflection.** Reference `Extrode.Jaunty.Extensions.Reflection`, and any plain class
+maps with setters compiled on first use; it switches itself on. Trimmed and NativeAOT publishes call
+`c.UseReflectionMapping()` inside `JauntyConfig.Configure`. This is the Dapper experience, and it is
+the one thing the core leaves out on purpose so that the core stays AOT-clean.
 
 ```csharp
-JauntyReflectionExtensions.UseReflectionMapping();
-
 var products = connection.Query<Product>("SELECT id AS Id, name AS Name, price AS Price FROM products");
 ```
 
@@ -520,13 +519,13 @@ transaction.Commit();
 
 ## Naming: attributes and conventions
 
-Attributes override names per entity. Jaunty ships its own set in `Jaunty.Attributes`, and it also
+Attributes override names per entity. Jaunty ships its own set in `Extrode.Jaunty.Attributes`, and it also
 honors the ones from `System.ComponentModel.DataAnnotations` (`[Table]`, `[Column]`, `[Key]`,
 `[NotMapped]`, `[DatabaseGenerated]`), so an entity you already annotated for EF Core works as it
 is. Both the source generator and the reflection mapper recognize both sets.
 
 ```csharp
-using Jaunty.Attributes;
+using Extrode.Jaunty.Attributes;
 
 [Table("order_items")]
 public class OrderItem
@@ -552,18 +551,22 @@ you supply the conversion, which is a line or two and keeps the core free of an 
 agrees with.
 
 ```csharp
-using Jaunty.Configuration;
+using Extrode.Jaunty.Configuration;
 
-JauntyConfig.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
-JauntyConfig.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
-JauntyConfig.SchemaNameResolver = type =>
-    type.Namespace?.EndsWith(".Archive", StringComparison.Ordinal) == true ? "archive" : string.Empty;
+JauntyConfig.Configure(c =>
+{
+    c.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
+    c.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
+    c.SchemaNameResolver = type =>
+        type.Namespace?.EndsWith(".Archive", StringComparison.Ordinal) == true ? "archive" : string.Empty;
+});
 ```
 
-Precedence is `[Column]`, then the resolver, then the property name. `SchemaNameResolver` sees only
+Precedence is a non-empty `[Table]` or `[Column]` name, then the resolver, then the type or
+property name, for reflection-mapped and source-generated entities alike. `SchemaNameResolver` sees only
 the type, so a blanket `_ => "dbo"` would qualify tables on PostgreSQL and SQLite too; return
-`string.Empty` for types that should stay unqualified. Resolvers may be changed after queries have
-run, and cached metadata is rebuilt on next use. Per-engine detail is in
+`string.Empty` for types that should stay unqualified. `Configure` runs once at startup, before the
+first query; calling it after first use throws. Per-engine detail is in
 [schemas.md](docs/01-api-reference/schemas.md).
 
 ---
@@ -577,8 +580,8 @@ the same way.
 stays out of the core:
 
 ```csharp
-using Jaunty.Interceptors;
-using Jaunty.Configuration;
+using Extrode.Jaunty.Interceptors;
+using Extrode.Jaunty.Configuration;
 
 var loggingInterceptor = new LoggingInterceptor(
     loggerFactory.CreateLogger<LoggingInterceptor>(),
@@ -598,7 +601,7 @@ JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { loggingInterc
 failure, with no parameter values captured:
 
 ```csharp
-using Jaunty.Diagnostics;
+using Extrode.Jaunty.Diagnostics;
 
 var audit = new AuditInterceptor(maxRecords: 1000);
 JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { audit });
@@ -607,7 +610,7 @@ foreach (var record in audit.GetRecentRecords(50))
     Console.WriteLine($"{record.Timestamp}: {record.Phase} - {record.CommandText}");
 ```
 
-**DiagnosticSource** events (`Jaunty.Database.Command.Executing`, `.Executed`, `.Failed`) are
+**DiagnosticSource** events (`Extrode.Jaunty.Database.Command.Executing`, `.Executed`, `.Failed`) are
 emitted for OpenTelemetry, Application Insights and friends. Subscribe through
 `JauntyDiagnosticListener.Instance`.
 
@@ -705,10 +708,10 @@ ADO.NET drivers and BCL serialization assemblies that the core does not referenc
 2026-08-29 by publishing the CLI on `net8.0` (36.98 MB) and `net10.0` (34.63 MB) for win-x64.
 
 Every reflection site in the shipped assemblies carries a reviewed `AOT-SAFE` justification, checked
-by `scripts/Verify-NativeAOT.ps1` and listed in
+by `scripts/verify-nativeaot.ps1` and listed in
 [reflection-and-trimming.md](docs/02-architecture/reflection-and-trimming.md). Two projects are
-excluded because AOT does not apply to them: `Jaunty.Extensions.Reflection`, whose purpose is
-reflection and which you reference to opt out of the guarantee, and `Jaunty.SourceGenerator`, which
+excluded because AOT does not apply to them: `Extrode.Jaunty.Extensions.Reflection`, whose purpose is
+reflection and which you reference to opt out of the guarantee, and `Extrode.Jaunty.SourceGenerator`, which
 runs inside the compiler.
 
 For AOT, use the generated mappers and register interceptors through `JauntyConfig.AddInterceptor`
@@ -716,7 +719,7 @@ rather than a DI container.
 
 ### Bulk copy
 
-With `Jaunty.Extensions.Reflection` loaded and `UseNativeBulkCopy()` called, batches of 100 rows or
+With `Extrode.Jaunty.Extensions.Reflection` loaded and `UseNativeBulkCopy()` called, batches of 100 rows or
 more use the provider's native path:
 
 | Database | Native API | Measured against a transactional loop (2026-07-04) |
@@ -729,14 +732,14 @@ more use the provider's native path:
 Thresholds, batch size and timeout are on `BulkCopyConfiguration`. Native bulk UPDATE and DELETE
 do not exist in most providers, so those run as optimized SQL inside a transaction. Read-path
 comparisons against ADO.NET, Dapper, EF Core, RepoDb and linq2db are in
-[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md): Jaunty is the
+[benchmarks-2026-07-04.md](docs/reports/benchmarks-2026-07-04.md): Jaunty is the
 lowest-allocating of the compared ORMs and competitive with Dapper on throughput.
 
 ---
 
 ## Comparison
 
-![Feature comparison: Jaunty, Dapper, EF Core](docs/_assets/benchmarks/comparison.svg)
+![Feature comparison: Jaunty, Dapper, EF Core](docs/assets/benchmarks/comparison.svg)
 
 <details>
 <summary>Text version</summary>
@@ -770,7 +773,7 @@ public API surface of EF Core 10.0.11, and the Dapper cells against Dapper 2.1.
    `System.Diagnostics.DiagnosticSource` and `Microsoft.Bcl.AsyncInterfaces`.
 2. Jaunty's `BulkInsert`, `BulkUpdate` and `BulkDelete` ship in the core package as multi-row and
    transactional SQL; the provider-native path (`SqlBulkCopy`, PostgreSQL `COPY`) needs
-   `Jaunty.Extensions.Reflection` and `UseNativeBulkCopy()`. EF Core ships no bulk insert or copy
+   `Extrode.Jaunty.Extensions.Reflection` and `UseNativeBulkCopy()`. EF Core ships no bulk insert or copy
    API, but `ExecuteUpdate` and `ExecuteDelete` are set-based and `SaveChanges` batches statements.
 3. Dapper exposes `QueryUnbufferedAsync` on `DbConnection`, returning `IAsyncEnumerable<T>`, on
    .NET 5 and later.
@@ -787,17 +790,17 @@ reports showed two libraries faster than ADO.NET. The SQLite column is from a se
 harness, repeated after the generated mapper's per-row `FieldCount` guard was removed, because the
 38-minute four-provider run drifted on that in-process column; the report shows all three.
 
-![Read path, 10,000 rows, relative to ADO.NET](docs/_assets/benchmarks/read-path-10k-rows-table.svg)
+![Read path, 10,000 rows, relative to ADO.NET](docs/assets/benchmarks/read-path-10k-rows-table.svg)
 
 The same numbers as the extra time each library spends over ADO.NET:
 
-![Read path, 10,000 rows, time over ADO.NET](docs/_assets/benchmarks/read-path-10k-rows.svg)
+![Read path, 10,000 rows, time over ADO.NET](docs/assets/benchmarks/read-path-10k-rows.svg)
 
 Allocation at 10,000 rows on SQL Server. Lower is better here too.
 
-![Allocation, 10,000 rows on SQL Server](docs/_assets/benchmarks/allocation-10k-rows-table.svg)
+![Allocation, 10,000 rows on SQL Server](docs/assets/benchmarks/allocation-10k-rows-table.svg)
 
-![Allocation, 10,000 rows on SQL Server, bytes over ADO.NET](docs/_assets/benchmarks/allocation-10k-rows.svg)
+![Allocation, 10,000 rows on SQL Server, bytes over ADO.NET](docs/assets/benchmarks/allocation-10k-rows.svg)
 
 <details>
 <summary>Text version</summary>
@@ -832,9 +835,9 @@ estimate is enough; it does not have to be exact.
 
 The full run, the machine, the 100-row tables, the harness corrections and the comparison with
 the July numbers are in
-[benchmarks-2026-09-02.md](docs/05-quality/reports/benchmarks-2026-09-02.md). The earlier reports
-are [benchmarks-2026-07-29.md](docs/05-quality/reports/benchmarks-2026-07-29.md) and
-[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md). How the read path
+[benchmarks-2026-09-02.md](docs/reports/benchmarks-2026-09-02.md). The earlier reports
+are [benchmarks-2026-07-29.md](docs/reports/benchmarks-2026-07-29.md) and
+[benchmarks-2026-07-04.md](docs/reports/benchmarks-2026-07-04.md). How the read path
 got from 1.80x slower than ADO.NET to where it is, step by step with the code, is in
 [How Jaunty got fast](docs/08-learn/how-jaunty-got-fast.md).
 
@@ -845,7 +848,7 @@ got from 1.80x slower than ADO.NET to where it is, step by step with the code, i
 - [Migrating from Dapper or EF Core](docs/08-learn/migrating/README.md), and the strict-mapping rule to read first
 - [Error messages, explained](docs/08-learn/error-messages.md): the query that produces each one, and the fix
 - [Fluent API reference](docs/01-api-reference/fluent-api.md)
-- [Architecture decisions](docs/02-architecture/ARCHITECTURE-DECISIONS.md)
+- [Architecture decisions](docs/decisions/architecture-decisions.md)
 - [Contributing](CONTRIBUTING.md)
 
 ---

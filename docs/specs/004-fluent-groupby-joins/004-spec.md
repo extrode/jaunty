@@ -9,9 +9,9 @@
 ## Context / Problem Statement
 
 Torture-test gap #13 (`docs/jaunty-torture-test-gaps-log.md`): `GroupBy<TKey>` exists only on
-the single-entity `QueryBuilder<T>` (`src/Jaunty.Fluent/Builders/Query/GroupedQueryBuilder.cs`).
+the single-entity `QueryBuilder<T>` (`src/Extrode.Jaunty.Fluent/Builders/Query/GroupedQueryBuilder.cs`).
 None of the joined-query interfaces — `IJoinedQuery<TFrom,TJoin>`, `IJoinedQuery3<T1,T2,T3>`,
-`IJoinedQuery4<T1,T2,T3,T4>` (`src/Jaunty.Fluent/Interfaces/IJoinedQuery.cs`) — expose a
+`IJoinedQuery4<T1,T2,T3,T4>` (`src/Extrode.Jaunty.Fluent/Interfaces/IJoinedQuery.cs`) — expose a
 `GroupBy` member at all. This forced 3 of the 15 Part 2 torture-test queries to raw SQL
 passthrough (`connection.Query<T>(sql, ...)`), 2 of which needed no dialect-specific SQL at
 all — purely worked around this gap, not a genuine translation-difficulty problem.
@@ -22,7 +22,7 @@ construction, assembling `SELECT ... FROM ... WHERE ... GROUP BY ... HAVING ...`
 `JoinedQueryBuilder<TFrom,TJoin>` (and its 3/4-way siblings) independently track `_joins: List<JoinInfo>`
 plus their own `_conditions`/`_orderByColumns`, assembling `SELECT ... FROM ... JOIN ... WHERE ...
 ORDER BY ...` in their own `BuildSelectSql()`. Neither pipeline currently has a seam for the
-other to plug into, and `IGrouping<TKey,T>` (`src/Jaunty.Fluent/Interfaces/IGrouping.cs`) is
+other to plug into, and `IGrouping<TKey,T>` (`src/Extrode.Jaunty.Fluent/Interfaces/IGrouping.cs`) is
 hardcoded to a single entity type `T` for its `Count`/`Sum`/`Avg`/`Min`/`Max` selectors.
 
 **Goal**: `GroupBy` works on 2-way, 3-way, and 4-way joined queries, producing correct

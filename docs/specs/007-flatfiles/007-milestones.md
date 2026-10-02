@@ -34,8 +34,8 @@
 
 | ID | Feature | Category | Priority | Acceptance Criteria |
 |---|---|---|---|---|
-| F-001 | Create `Jaunty.FlatFiles` project (netstandard2.0 + net10.0) | build | P0 | Project compiles, added to solution, NuGet metadata set |
-| F-002 | Create `Jaunty.FlatFiles.DuckDB` project (net8.0 + net10.0) | build | P0 | Project compiles, references DuckDB.NET.Data.Full |
+| F-001 | Create `Extrode.Jaunty.FlatFiles` project (netstandard2.0 + net10.0) | build | P0 | Project compiles, added to solution, NuGet metadata set |
+| F-002 | Create `Extrode.Jaunty.FlatFiles.DuckDB` project (net8.0 + net10.0) | build | P0 | Project compiles, references DuckDB.NET.Data.Full |
 | F-003 | Create test projects with xUnit + FluentAssertions | testing | P0 | `dotnet test` runs and passes on all TFMs |
 | F-004 | Define core interfaces (`IFlatFileDatabase`, `IFileSource`, `IFlatFileDialect`) | build | P0 | Interfaces compile in abstractions package |
 | F-005 | Define configuration types (`FlatFileDatabaseOptions`, per-format options) | build | P0 | All option classes with builder methods |

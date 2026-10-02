@@ -10,7 +10,7 @@ Jaunty's bulk copy functionality provides high-performance data loading for larg
 - **One package to install**, then no code changes: the same `BulkInsert` call routes itself
 - **Consistent API** across all supported databases
 
-> **The native path needs `Jaunty.Extensions.Reflection`.** All four built-in dialects report
+> **The native path needs `Extrode.Jaunty.Extensions.Reflection`.** All four built-in dialects report
 > `SupportsNativeBulkCopy => false`. That package supplies the dialect wrappers that report
 > `true` and carry the providers, and `SqlDialectFactory` picks them up by probing for the
 > assembly at resolution time. Without it every call below still works and still returns the
@@ -75,8 +75,8 @@ this reason.
 ## Quick Start
 
 ```csharp
-using Jaunty;
-using Jaunty.Configuration;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Configuration;
 
 // Optional: Configure global settings at application startup
 BulkCopyConfiguration.DefaultBatchSize = 10000;
