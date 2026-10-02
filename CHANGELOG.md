@@ -66,6 +66,12 @@ default lives in `src/Directory.Build.props`.
 
 ### Fixed
 
+- **A first write rejected by the configuration no longer breaks every later write of that type.**
+  If the first `Insert`, `Update`, `Delete` or bulk write of an entity type ran while its mapping
+  could not be built (for example a `ColumnNameResolver` mapping two properties to one column),
+  every later write of that type threw `TypeInitializationException` for the rest of the process,
+  even after the resolver was fixed. Now only that call fails, with the original exception.
+
 - **`Upsert` of an entity with a database-generated key now updates the matching row.** The key
   is left out of the INSERT, so on PostgreSQL, SQLite, MySQL/MariaDB and DuckDB the
   `ON CONFLICT` / `ON DUPLICATE KEY` form never conflicted and every call inserted a new row.
