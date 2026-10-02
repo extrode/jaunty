@@ -13,13 +13,13 @@ public sealed class AliasedTableAttributeGenerationTests
     [Fact]
     public void TableName_ResolvedThroughAliasedAttribute_MatchesAttributeArgument()
     {
-        Assert.Equal("gen_aliased_table_entities", GenAliasedTableAttributeEntity.TableName);
-        Assert.Null(GenAliasedTableAttributeEntity.SchemaName);
+        Assert.Equal("gen_aliased_table_entities", GenAliasedTableAttributeEntity.Jaunty.TableName);
+        Assert.Null(GenAliasedTableAttributeEntity.Jaunty.SchemaName);
     }
 
     [Fact]
     public void PrimaryKeyColumnNames_ResolvedThroughAliasedAttribute_ContainsKeyColumn()
     {
-        Assert.Equal(["entity_id"], GenAliasedTableAttributeEntity.PrimaryKeyColumnNames);
+        Assert.Equal(["entity_id"], GenAliasedTableAttributeEntity.Jaunty.PrimaryKeyColumnNames);
     }
 }

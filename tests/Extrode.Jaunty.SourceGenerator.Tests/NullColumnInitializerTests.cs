@@ -71,13 +71,13 @@ public class NullColumnInitializerTests
         using (IDataReader typed = Read(connection))
         {
             Assert.True(typed.Read());
-            GenInitializedEntity fromDbDataReader = GenInitializedEntity.CreateRowMapper(typed)(typed);
+            GenInitializedEntity fromDbDataReader = GenInitializedEntity.Jaunty.CreateRowMapper(typed)(typed);
             Assert.Equal("unset", fromDbDataReader.Name);
         }
 
         using IDataReader plain = new PlainDataReader(Read(connection));
         Assert.True(plain.Read());
-        GenInitializedEntity fromPlainReader = GenInitializedEntity.CreateRowMapper(plain)(plain);
+        GenInitializedEntity fromPlainReader = GenInitializedEntity.Jaunty.CreateRowMapper(plain)(plain);
         Assert.Equal("unset", fromPlainReader.Name);
     }
 

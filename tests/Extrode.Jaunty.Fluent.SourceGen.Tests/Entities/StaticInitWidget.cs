@@ -5,12 +5,12 @@ namespace Extrode.Jaunty.Fluent.SourceGen.Tests.Entities;
 
 /// <summary>
 /// A source-generated entity whose own static initializer reads the generated
-/// <see cref="TableName"/>, which runs before the generated file's initializers.
+/// <see cref="Jaunty.TableName"/>, which runs before the generated file's initializers.
 /// </summary>
 [Table("static_init_widgets")]
 public partial class StaticInitWidget : IMapped<StaticInitWidget>
 {
-    public static readonly string SelectAll = "SELECT * FROM " + TableName;
+    public static readonly string SelectAll = "SELECT * FROM " + Jaunty.TableName;
 
     [Key]
     public int Id { get; set; }

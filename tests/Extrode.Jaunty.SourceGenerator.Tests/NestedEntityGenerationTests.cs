@@ -103,7 +103,7 @@ public class NestedEntityGenerationTests
                     public string? Name { get; set; }
                 }
 
-                public string Probe() => Order.TableName;
+                public string Probe() => Order.Jaunty.TableName;
             }
             """);
 

@@ -56,7 +56,7 @@ public sealed class GeneratedIdentityInferenceTests
         // BindInsert bound neither, and the row went in with no key values.
         var command = new StubCommand();
 
-        GenCompositeKeyEntity.BindInsert(command, new GenCompositeKeyEntity { OrderId = 11, ProductId = 22, Quantity = 3 });
+        GenCompositeKeyEntity.Jaunty.BindInsert(command, new GenCompositeKeyEntity { OrderId = 11, ProductId = 22, Quantity = 3 });
 
         Assert.Contains(command.Bound, p => p.ParameterName == "@order_id" && Equals(p.Value, 11));
         Assert.Contains(command.Bound, p => p.ParameterName == "@product_id" && Equals(p.Value, 22));
@@ -65,7 +65,7 @@ public sealed class GeneratedIdentityInferenceTests
     [Fact]
     public void CompositeKey_InsertColumnsIncludesBothKeys()
     {
-        IReadOnlyList<string> insertColumns = [.. GenCompositeKeyEntity.InsertColumns.Select(c => c.ColumnName)];
+        IReadOnlyList<string> insertColumns = [.. GenCompositeKeyEntity.Jaunty.InsertColumns.Select(c => c.ColumnName)];
 
         Assert.Contains("order_id", insertColumns);
         Assert.Contains("product_id", insertColumns);
@@ -88,7 +88,7 @@ public sealed class GeneratedIdentityInferenceTests
     [Fact]
     public void SingleKey_InsertColumnsStillOmitsTheInferredIdentity()
     {
-        IReadOnlyList<string> insertColumns = [.. GenSingleKeyEntity.InsertColumns.Select(c => c.ColumnName)];
+        IReadOnlyList<string> insertColumns = [.. GenSingleKeyEntity.Jaunty.InsertColumns.Select(c => c.ColumnName)];
 
         Assert.DoesNotContain("id", insertColumns);
         Assert.Contains("name", insertColumns);
@@ -111,7 +111,7 @@ public sealed class GeneratedIdentityInferenceTests
     [Fact]
     public void CompositeKey_AnExplicitDatabaseGeneratedIsStillOmittedFromInsert()
     {
-        IReadOnlyList<string> insertColumns = [.. GenExplicitCompositeEntity.InsertColumns.Select(c => c.ColumnName)];
+        IReadOnlyList<string> insertColumns = [.. GenExplicitCompositeEntity.Jaunty.InsertColumns.Select(c => c.ColumnName)];
 
         Assert.DoesNotContain("id", insertColumns);
         Assert.Contains("tenant_id", insertColumns);
