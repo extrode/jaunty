@@ -300,9 +300,19 @@ against a package older than this order keep their build-time names until rebuil
 </table>
 <p>With no resolvers set, the same entity maps to table <code>OrderLine</code> with columns <code>OrderLineId</code>,
 <code>prod_name</code> and <code>UnitPrice</code>.</p>
-<p>FlatFiles does not use this order. It names tables through its own <code>TableNameResolver</code>: the
-<code>[Table]</code> name if the class has one, otherwise the lowercased class name, and it ignores all three
-<code>JauntyConfig</code> resolvers.</p>
+<p>FlatFiles uses the same order for tables and columns, with two differences:</p>
+<ul>
+<li><strong>The last resort for a table is the lowercased class name</strong> (<code>orderline</code>), not the class name.
+DuckDB matches unquoted names without regard to case, and PostgreSQL folds unquoted names to
+lowercase, so the default has stayed lowercase.</li>
+<li><strong>No schema is applied.</strong> File views are registered in DuckDB's default schema, and an import
+writes to the unqualified table name, whatever <code>[Table(..., Schema = ...)]</code> or
+<code>SchemaNameResolver</code> says. Schema support is listed in
+<a href="06-releases-feature-candidates.html">feature candidates</a>.</li>
+</ul>
+<p>A column resolver also renames the columns FlatFiles looks for in a file. With the resolvers
+above, a CSV for <code>OrderLine</code> needs the headers <code>order_line_id</code>, <code>prod_name</code> and <code>unit_price</code>. A file
+header and the database column always share one name; a <code>[Column]</code> name fixes it for both.</p>
 <hr />
 <h2 id="expression-tree-compilation">Expression Tree Compilation</h2>
 <h3 id="createsetter-process">CreateSetter Process</h3>
