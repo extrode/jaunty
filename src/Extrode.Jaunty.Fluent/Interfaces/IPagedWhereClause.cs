@@ -84,25 +84,25 @@ public interface IPagedWhereClause<T> : IWhereClause<T> where T : new()
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into DELETE - BuildDeleteSql reads only the table and the WHERE conditions, so this would delete every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.",
+        "Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so this would delete every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new int Delete();
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into DELETE - BuildDeleteSql reads only the table and the WHERE conditions, so this would delete every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.",
+        "Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so this would delete every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new int Delete(CommandOptions options);
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into DELETE - BuildDeleteSql reads only the table and the WHERE conditions, so this would delete every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.",
+        "Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so this would delete every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new Task<int> DeleteAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Not available after Take/Skip; see the compile error for what to write instead.</summary>
     [Obsolete(
-        "Take/Skip are not carried into DELETE - BuildDeleteSql reads only the table and the WHERE conditions, so this would delete every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.",
+        "Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so this would delete every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).",
         error: true)]
     new Task<int> DeleteAsync(CommandOptions options, CancellationToken cancellationToken = default);
 }

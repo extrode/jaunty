@@ -5,7 +5,8 @@ namespace Extrode.Jaunty.Fluent.Tests.Unit;
 
 /// <summary>
 /// AUD-R38-008: <c>Distinct()</c> led round the compile-time paged-write fence, and the DELETE or
-/// UPDATE that followed dropped the Take/Skip and touched every matching row.
+/// UPDATE that followed dropped the Take/Skip and touched every matching row. Distinct is fenced at
+/// compile time now too; an upcast still reaches the write terminals, so the runtime guard stays.
 /// </summary>
 public class PagedWriteRuntimeGuardTests : IDisposable
 {
@@ -16,24 +17,26 @@ public class PagedWriteRuntimeGuardTests : IDisposable
     private int ProductCount() => _db.Connection.From<Product>().Count();
 
     [Fact]
-    public void TakeThenDistinctThenDelete_ThrowsAndDeletesNothing()
+    public void TakeThenUpcastThenDelete_ThrowsAndDeletesNothing()
     {
         int before = ProductCount();
+        IFromClause<Product> paged = _db.Connection.From<Product>().Take(1);
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.From<Product>().Take(1).Distinct().Where(p => p.ProductId > 0).Delete());
+            paged.Where(p => p.ProductId > 0).Delete());
 
-        Assert.Equal("Take/Skip are not carried into DELETE, so it would affect every matching row rather than the paged subset. Remove the Take/Skip, or select the rows first and delete them by key.", ex.Message);
+        Assert.Equal("Take/Skip are not carried into DELETE: SQL has no portable DELETE ... LIMIT, so it would affect every matching row rather than the paged subset. Select the keys of the rows you want, then delete them by key in one transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).", ex.Message);
         Assert.Equal(before, ProductCount());
     }
 
     [Fact]
-    public async Task DistinctThenSkipThenDeleteAsync_ThrowsAndDeletesNothing()
+    public async Task DistinctThenSkipThenUpcastThenDeleteAsync_ThrowsAndDeletesNothing()
     {
         int before = ProductCount();
+        IDistinctClause<Product> distinct = _db.Connection.From<Product>().Distinct().Skip(1);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _db.Connection.From<Product>().Distinct().Skip(1).Where(p => p.ProductId > 0).DeleteAsync());
+            distinct.Where(p => p.ProductId > 0).DeleteAsync());
 
         Assert.Equal(before, ProductCount());
     }
@@ -47,7 +50,7 @@ public class PagedWriteRuntimeGuardTests : IDisposable
             paged.Set(p => p.ProductName, "Renamed").UpdateAll());
 
         Assert.StartsWith("Take/Skip are not carried into UPDATE", ex.Message);
-        Assert.EndsWith("update them by key.", ex.Message);
+        Assert.Contains("update them by key in one transaction", ex.Message);
         Assert.Equal(0, _db.Connection.From<Product>().Where(p => p.ProductName == "Renamed").Count());
     }
 

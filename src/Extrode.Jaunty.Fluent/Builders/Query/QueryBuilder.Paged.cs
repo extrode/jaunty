@@ -11,13 +11,91 @@ namespace Extrode.Jaunty.Fluent;
 /// Every member here forwards to the identical member on the un-paged interface and returns the
 /// same builder - the shape of the query is unchanged, only its static type.
 /// </summary>
-internal sealed partial class QueryBuilder<T> : IPagedClause<T>, IPagedWhereClause<T>
+internal sealed partial class QueryBuilder<T> : IPagedClause<T>, IPagedWhereClause<T>, IPagedDistinctClause<T>
     where T : new()
 {
     private static NotSupportedException PagedWrite(string member) => new(
         $"{member} is not available after Take/Skip: the paging is not carried into the statement, " +
         "so it would affect every matching row rather than the paged subset. This is a compile " +
         "error in C#; reaching it means the interface was invoked dynamically or by reflection.");
+
+    IPagedDistinctClause<T> IPagedClause<T>.Distinct()
+    {
+        Distinct();
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.Where(string column, object? value)
+    {
+        ((IFromClause<T>)this).Where(column, value);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.Where(Expression<Func<T, bool>> predicate)
+    {
+        ((IFromClause<T>)this).Where(predicate);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereRaw(string rawSql)
+    {
+        ((IFromClause<T>)this).WhereRaw(rawSql);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereRaw(string rawSql, object parameters)
+    {
+        ((IFromClause<T>)this).WhereRaw(rawSql, parameters);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        ((IFromClause<T>)this).WhereIn<TValue>(selector, values);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        ((IFromClause<T>)this).WhereNotIn<TValue>(selector, values);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        ((IFromClause<T>)this).WhereBetween<TValue>(selector, from, to);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        ((IFromClause<T>)this).WhereNotBetween<TValue>(selector, from, to);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate)
+    {
+        ((IFromClause<T>)this).WhereExists<TSubquery>(predicate);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate)
+    {
+        ((IFromClause<T>)this).WhereNotExists<TSubquery>(predicate);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereInSubquery<TValue, TSubquery>(Expression<Func<T, TValue>> selector, Expression<Func<TSubquery, TValue>> subquerySelector, IQueryTerminal<TSubquery> subquery)
+    {
+        ((IFromClause<T>)this).WhereInSubquery<TValue, TSubquery>(selector, subquerySelector, subquery);
+        return this;
+    }
+
+    IPagedWhereClause<T> IPagedDistinctClause<T>.WhereNotInSubquery<TValue, TSubquery>(Expression<Func<T, TValue>> selector, Expression<Func<TSubquery, TValue>> subquerySelector, IQueryTerminal<TSubquery> subquery)
+    {
+        ((IFromClause<T>)this).WhereNotInSubquery<TValue, TSubquery>(selector, subquerySelector, subquery);
+        return this;
+    }
 
     IPagedWhereClause<T> IPagedClause<T>.Where(string column, object? value)
     {

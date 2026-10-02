@@ -100,6 +100,27 @@ public class PagedWriteTerminalTests
         => AssertObsoleteError(body, "Delete");
 
     [Theory]
+    [InlineData("q.Take(5).Distinct().Where(r => r.Id > 0).Delete();")]
+    [InlineData("q.Skip(5).Distinct().Where(\"Id\", 1).Delete();")]
+    [InlineData("q.Distinct().Take(5).Where(r => r.Id > 0).Delete();")]
+    [InlineData("q.Distinct().Skip(5).Where(r => r.Id > 0).Delete();")]
+    [InlineData("q.Distinct().Take(5).WhereIn(r => r.Id, new[] { 1 }).Delete();")]
+    [InlineData("q.Distinct().Take(5).WhereNotIn(r => r.Id, new[] { 1 }).Delete();")]
+    [InlineData("q.Distinct().Take(5).WhereBetween(r => r.Id, 1, 2).Delete();")]
+    [InlineData("q.Distinct().Take(5).WhereNotBetween(r => r.Id, 1, 2).Delete();")]
+    [InlineData("q.Distinct().Take(5).WhereRaw(\"1 = 1\").Delete();")]
+    [InlineData("q.Distinct().Take(5).WhereRaw(\"Id = @id\", new { id = 1 }).Delete();")]
+    [InlineData("q.Distinct().Take(5).Skip(2).Where(r => r.Id > 0).Delete();")]
+    public void DistinctDoesNotLeadRoundTheFence(string body)
+        => AssertObsoleteError(body, "Delete");
+
+    [Theory]
+    [InlineData("q.Distinct().Where(r => r.Id > 0).Delete();")]
+    [InlineData("q.Distinct().WhereIn(r => r.Id, new[] { 1 }).Delete();")]
+    public void AnUnpagedDistinctStillReachesDelete(string body)
+        => Assert.Empty(Compile(body));
+
+    [Theory]
     [InlineData("q.DeleteAll();")]
     [InlineData("_ = q.DeleteAllAsync();")]
     [InlineData("q.Set(r => r.Id, 1);")]
@@ -113,6 +134,9 @@ public class PagedWriteTerminalTests
     [InlineData("_ = q.Take(5).Skip(2).Select();")]
     [InlineData("_ = q.Take(5).OrderBy(r => r.Id).Select();")]
     [InlineData("_ = q.Take(5).Distinct().Select();")]
+    [InlineData("_ = q.Take(5).Distinct().Where(r => r.Id > 0).Select();")]
+    [InlineData("_ = q.Distinct().Take(5).Skip(1).OrderBy(r => r.Id).Select();")]
+    [InlineData("_ = q.Distinct().Take(5).Where(r => r.Id > 0).ToSql();")]
     [InlineData("_ = q.Take(5).Where(r => r.Id > 0).Select();")]
     [InlineData("_ = q.Take(5).Where(r => r.Id > 0).OrderBy(r => r.Id).Select();")]
     [InlineData("_ = q.Take(5).ToSql();")]
@@ -127,6 +151,9 @@ public class PagedWriteTerminalTests
         Assert.Equal(typeof(IPagedClause<>), typeof(IFromClause<>).GetMethod("Skip")!.ReturnType.GetGenericTypeDefinition());
         Assert.Equal(typeof(IPagedWhereClause<>), typeof(IWhereClause<>).GetMethod("Take")!.ReturnType.GetGenericTypeDefinition());
         Assert.Equal(typeof(IPagedWhereClause<>), typeof(IWhereClause<>).GetMethod("Skip")!.ReturnType.GetGenericTypeDefinition());
+        Assert.Equal(typeof(IPagedDistinctClause<>), typeof(IDistinctClause<>).GetMethod("Take")!.ReturnType.GetGenericTypeDefinition());
+        Assert.Equal(typeof(IPagedDistinctClause<>), typeof(IDistinctClause<>).GetMethod("Skip")!.ReturnType.GetGenericTypeDefinition());
+        Assert.Equal(typeof(IPagedDistinctClause<>), typeof(IPagedClause<>).GetMethod("Distinct")!.ReturnType.GetGenericTypeDefinition());
     }
 
     [Fact]
