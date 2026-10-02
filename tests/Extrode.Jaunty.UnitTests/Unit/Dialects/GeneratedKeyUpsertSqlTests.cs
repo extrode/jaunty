@@ -46,6 +46,15 @@ public class GeneratedKeyUpsertSqlTests
             new SQLiteDialect().GenerateUpsertSql("t", ["id", "a"], ["@id", "@a"], ["a"], ["@a"], ["id"], ["@id"]),
             StringComparison.Ordinal);
 
+    [Fact]
+    public void UpsertBatchIsAtomic_OnlyWhereTheServerRunsTheBatchAsOneTransaction()
+    {
+        Assert.True(new SqlServerDialect().UpsertBatchIsAtomic);
+        Assert.True(new PostgreSqlDialect().UpsertBatchIsAtomic);
+        Assert.False(new MySqlDialect().UpsertBatchIsAtomic);
+        Assert.False(new SQLiteDialect().UpsertBatchIsAtomic);
+    }
+
     [Theory]
     [InlineData(new[] { "id", "a" }, new[] { "id" }, false)]
     [InlineData(new[] { "a" }, new[] { "id" }, true)]

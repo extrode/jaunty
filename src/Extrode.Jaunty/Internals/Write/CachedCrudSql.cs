@@ -23,6 +23,13 @@ internal sealed class CachedCrudSql
     public bool SupportsUpsert { get; }
 
     /// <summary>
+    /// True when <see cref="UpsertSql"/> is the UPDATE-then-INSERT pair for a database-generated key
+    /// on a dialect whose multi-statement command is not atomic, so Upsert begins its own transaction
+    /// when the caller passed none.
+    /// </summary>
+    public bool UpsertNeedsOwnTransaction { get; }
+
+    /// <summary>
     /// Pre-composed INSERT command text (INSERT + identity retrieval SQL), cached to avoid per-call string concatenation.
     /// </summary>
     public string InsertCommandText { get; }
@@ -65,7 +72,7 @@ internal sealed class CachedCrudSql
     {
     }
 
-    public CachedCrudSql(string insertSql, string updateSql, string deleteSql, string deleteByIdSql, string upsertSql, string lastInsertIdSql, string selectByIdSql, string selectAllSql, EntityMetadata metadata, bool supportsUpsert)
+    public CachedCrudSql(string insertSql, string updateSql, string deleteSql, string deleteByIdSql, string upsertSql, string lastInsertIdSql, string selectByIdSql, string selectAllSql, EntityMetadata metadata, bool supportsUpsert, bool upsertNeedsOwnTransaction = false)
     {
         InsertSql = insertSql;
         UpdateSql = updateSql;
@@ -77,6 +84,7 @@ internal sealed class CachedCrudSql
         SelectAllSql = selectAllSql;
         Metadata = metadata;
         SupportsUpsert = supportsUpsert;
+        UpsertNeedsOwnTransaction = upsertNeedsOwnTransaction;
 
         HasPrimaryKey = metadata.PrimaryKeys.Count > 0;
         HasSinglePrimaryKey = metadata.PrimaryKeys.Count == 1;

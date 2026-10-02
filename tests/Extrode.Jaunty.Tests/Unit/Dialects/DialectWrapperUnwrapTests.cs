@@ -192,6 +192,7 @@ public class DialectWrapperUnwrapTests
 
         public bool SupportsForeignKeyToggle => _d.SupportsForeignKeyToggle;
         public bool RequiresAutocommitForForeignKeyToggle => _d.RequiresAutocommitForForeignKeyToggle;
+        public bool UpsertBatchIsAtomic => _d.UpsertBatchIsAtomic;
         public bool SupportsUpsert => _d.SupportsUpsert;
         public bool SupportsMultiRowInsert => _d.SupportsMultiRowInsert;
         public bool SupportsNativeBulkCopy => _d.SupportsNativeBulkCopy;

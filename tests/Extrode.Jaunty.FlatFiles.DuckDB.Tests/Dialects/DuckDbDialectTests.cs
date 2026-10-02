@@ -383,6 +383,10 @@ public class DuckDbDialectTests
         Assert.Equal("UPDATE t SET name = $name WHERE id = $id; INSERT INTO t (name) SELECT $name WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = $id)", result);
     }
 
+    [Fact]
+    public void UpsertBatchIsAtomic_IsFalse()
+        => Assert.False(_dialect.UpsertBatchIsAtomic);
+
     [Theory]
     [InlineData(2, "renamed", 2)]
     [InlineData(99, "third", 3)]

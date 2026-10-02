@@ -134,6 +134,7 @@ internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
     public bool SupportsForeignKeyToggle => true;
 
     public bool RequiresAutocommitForForeignKeyToggle => false;
+    public bool UpsertBatchIsAtomic => true;
 
     public string GenerateCoalesce(params string[] expressions)
     {
