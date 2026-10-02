@@ -30,7 +30,7 @@ namespace Extrode.Jaunty.Tests.Unit.Internals;
 [Collection("Type Handler Operations")]
 public class CrudSqlCacheConcurrentInvalidationTests : IDisposable
 {
-    public CrudSqlCacheConcurrentInvalidationTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public CrudSqlCacheConcurrentInvalidationTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     public void Dispose()
     {

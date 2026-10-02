@@ -42,7 +42,7 @@ namespace Extrode.Jaunty.Tests.Unit.Internals;
 [Collection("Type Handler Operations")]
 public class ReflectionIdentityInferenceTests
 {
-    public ReflectionIdentityInferenceTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public ReflectionIdentityInferenceTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     [Table("reflection_attributed_key_items")]
     public class AttributedKeyItem

@@ -42,7 +42,7 @@ namespace Extrode.Jaunty.Tests.Unit.Extensions.Reflection;
 [Collection("Type Handler Operations")]
 public class ReflectionResolverCachingTests
 {
-    public ReflectionResolverCachingTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public ReflectionResolverCachingTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     [Table("resolver_caching_widgets")]
     public class Widget

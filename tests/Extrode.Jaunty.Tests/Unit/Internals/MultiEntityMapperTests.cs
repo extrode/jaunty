@@ -438,7 +438,7 @@ public class MultiEntityMapperTests : IDisposable
 
         try
         {
-            JauntyConfig.ReflectionMultiMapperResolver = (t1Type, t2Type) =>
+            JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = (t1Type, t2Type) =>
             {
                 Action<object, IDataRecord>? applyT1 = null;
                 Action<object, IDataRecord>? applyT2 = null;
@@ -461,7 +461,7 @@ public class MultiEntityMapperTests : IDisposable
                     }
                 };
                 return combined;
-            };
+            });
 
             using var cmdA = _connection.CreateCommand();
             cmdA.CommandText = "SELECT 1 AS A, 2 AS BC";
@@ -499,7 +499,7 @@ public class MultiEntityMapperTests : IDisposable
         }
         finally
         {
-            JauntyConfig.ReflectionMultiMapperResolver = originalResolver;
+            JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = originalResolver);
         }
     }
 
@@ -524,13 +524,13 @@ public class MultiEntityMapperTests : IDisposable
 
         try
         {
-            JauntyConfig.ReflectionMultiMapperResolverN = (types, reader) =>
+            JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = (types, reader) =>
             {
                 var appliers = new Action<object, IDataRecord>[types.Length];
                 for (int i = 0; i < types.Length; i++)
                     appliers[i] = BuildLiveApplier(types[i], reader);
                 return appliers;
-            };
+            });
 
             using var cmdA = _connection.CreateCommand();
             cmdA.CommandText = "SELECT 1 AS A, 2 AS BC";
@@ -572,7 +572,7 @@ public class MultiEntityMapperTests : IDisposable
         }
         finally
         {
-            JauntyConfig.ReflectionMultiMapperResolverN = originalResolver;
+            JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolverN = originalResolver);
         }
     }
 

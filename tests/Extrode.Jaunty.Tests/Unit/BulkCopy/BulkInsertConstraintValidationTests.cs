@@ -62,7 +62,7 @@ public class BulkInsertConstraintValidationTests : IDisposable
         // wrapper for the rest of the run. Doing it before the skip check meant a skipped test still
         // changed how unrelated test classes saw dialect resolution - a real defect this file
         // introduced, and one that only showed up when SQL Server was unreachable.
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
         JauntyReflectionExtensions.UseNativeBulkCopy();
         BulkCopyConfiguration.Reset();
 

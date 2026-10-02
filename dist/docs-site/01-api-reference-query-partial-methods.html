@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -285,7 +285,7 @@ succeeds under <code>QueryPartial&lt;T&gt;</code>. That is the whole distinction
 <ol>
 <li><code>options.Mapper</code>, when the caller supplied one.</li>
 <li>The source-generated <code>IMapped&lt;T&gt;</code> mapper - <strong>only when the mode is <code>Strict</code></strong>.</li>
-<li>A special-type mapper, when <code>SpecialTypeMappers.Register()</code> has been called
+<li>A special-type mapper, when <code>SpecialTypeMappers.Register(c)</code> has been called inside <code>JauntyConfig.Configure</code>
 (see <a href="01-api-reference-special-types.html"><code>special-types.md</code></a>).</li>
 <li>The reflection extension, when <code>Extrode.Jaunty.Extensions.Reflection</code> is loaded.</li>
 <li>Otherwise it throws <em>No mapper found for type 'T'</em>.</li>
@@ -296,7 +296,7 @@ projection mapper, so on a partial query the dispatcher always falls through.</p
 <p><strong>The practical consequence:</strong> in a source-generation-only build - the NativeAOT and
 zero-reflection configuration - <code>QueryPartial&lt;T&gt;</code> throws unless you either</p>
 <ul>
-<li>reference <code>Extrode.Jaunty.Extensions.Reflection</code> and call <code>UseReflectionMapping()</code>, or</li>
+<li>reference <code>Extrode.Jaunty.Extensions.Reflection</code> and call <code>UseReflectionMapping()</code> inside <code>JauntyConfig.Configure</code>, or</li>
 <li>pass your own mapper: <code>CommandOptions&lt;T&gt;.WithMapper(...)</code>.</li>
 </ul>
 <p>If neither is acceptable, the alternative is to keep strict mapping and declare a DTO whose

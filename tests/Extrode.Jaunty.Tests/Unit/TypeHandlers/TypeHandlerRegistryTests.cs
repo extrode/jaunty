@@ -24,10 +24,10 @@ public class TypeHandlerRegistryTests : IDisposable
         // Only remove the specific handlers this test class may have registered.
         // Do NOT call JauntyConfig.Reset() — it wipes ReflectionMapperResolver,
         // causing cross-test mapper failures when running in parallel.
-        JauntyConfig.RemoveTypeHandler<int>();
-        JauntyConfig.RemoveTypeHandler<string>();
-        JauntyConfig.RemoveTypeHandler<Guid>();
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        TypeHandlerRegistry.Remove<int>();
+        TypeHandlerRegistry.Remove<string>();
+        TypeHandlerRegistry.Remove<Guid>();
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
     }
 
     #region Delegate-based Registration
@@ -36,10 +36,10 @@ public class TypeHandlerRegistryTests : IDisposable
     public void RegisterTypeHandler_WithDelegates_RegistersAndRetrievesCorrectly()
     {
         // Arrange & Act
-        JauntyConfig.RegisterTypeHandler<int>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<int>(
             fromDb: dbValue => dbValue is int i ? i : 0,
             toDb: value => value.ToString()
-        );
+        ));
 
         // Assert - the delegate-based handler is retrievable and parses as registered
         bool found = TypeHandlerRegistry.TryGetHandler(typeof(int), out var handler);
@@ -53,7 +53,7 @@ public class TypeHandlerRegistryTests : IDisposable
     {
         // Arrange & Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            JauntyConfig.RegisterTypeHandler<int>(null!, x => x.ToString())
+            JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<int>(null!, x => x.ToString()))
         );
     }
 
@@ -62,7 +62,7 @@ public class TypeHandlerRegistryTests : IDisposable
     {
         // Arrange & Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            JauntyConfig.RegisterTypeHandler<int>(x => x is int i ? i : 0, null!)
+            JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<int>(x => x is int i ? i : 0, null!))
         );
     }
 
@@ -77,7 +77,7 @@ public class TypeHandlerRegistryTests : IDisposable
         var handler = new TestTypeHandler();
 
         // Act
-        JauntyConfig.RegisterTypeHandler(handler);
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(handler));
 
         // Assert - the typed handler is retrievable and parses as registered
         bool found = TypeHandlerRegistry.TryGetHandler(typeof(int), out var retrieved);
@@ -91,7 +91,7 @@ public class TypeHandlerRegistryTests : IDisposable
     {
         // Arrange & Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            JauntyConfig.RegisterTypeHandler<int>(null!)
+            JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<int>(null!))
         );
     }
 
@@ -103,13 +103,13 @@ public class TypeHandlerRegistryTests : IDisposable
     public void RemoveTypeHandler_AfterRegistration_ReturnsTrue()
     {
         // Arrange
-        JauntyConfig.RegisterTypeHandler<int>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<int>(
             fromDb: x => 0,
             toDb: x => null
-        );
+        ));
 
         // Act
-        bool removed = JauntyConfig.RemoveTypeHandler<int>();
+        bool removed = TypeHandlerRegistry.Remove<int>();
 
         // Assert
         Assert.True(removed);
@@ -119,7 +119,7 @@ public class TypeHandlerRegistryTests : IDisposable
     public void RemoveTypeHandler_WithoutPriorRegistration_ReturnsFalse()
     {
         // Act
-        bool removed = JauntyConfig.RemoveTypeHandler<Guid>();
+        bool removed = TypeHandlerRegistry.Remove<Guid>();
 
         // Assert
         Assert.False(removed);
@@ -129,14 +129,14 @@ public class TypeHandlerRegistryTests : IDisposable
     public void RemoveTypeHandler_TwiceInARow_ReturnsFalseOnSecond()
     {
         // Arrange
-        JauntyConfig.RegisterTypeHandler<int>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<int>(
             fromDb: x => 0,
             toDb: x => null
-        );
-        JauntyConfig.RemoveTypeHandler<int>();
+        ));
+        TypeHandlerRegistry.Remove<int>();
 
         // Act
-        bool removed = JauntyConfig.RemoveTypeHandler<int>();
+        bool removed = TypeHandlerRegistry.Remove<int>();
 
         // Assert
         Assert.False(removed);
@@ -150,9 +150,9 @@ public class TypeHandlerRegistryTests : IDisposable
     public void Reset_ClearsAllRegisteredHandlers()
     {
         // Arrange
-        JauntyConfig.RegisterTypeHandler<int>(fromDb: x => 0, toDb: x => null);
-        JauntyConfig.RegisterTypeHandler<string>(fromDb: x => "", toDb: x => null);
-        JauntyConfig.RegisterTypeHandler<Guid>(fromDb: x => Guid.Empty, toDb: x => null);
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<int>(fromDb: x => 0, toDb: x => null));
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(fromDb: x => "", toDb: x => null));
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<Guid>(fromDb: x => Guid.Empty, toDb: x => null));
 
         // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared with
         // the "Logging Extensions" collection (running concurrently as a different xunit
@@ -168,9 +168,9 @@ public class TypeHandlerRegistryTests : IDisposable
             JauntyConfig.AddInterceptors(interceptorsBeforeReset);
 
         // Assert - verify removal works after reset (i.e., nothing is registered)
-        Assert.False(JauntyConfig.RemoveTypeHandler<int>());
-        Assert.False(JauntyConfig.RemoveTypeHandler<string>());
-        Assert.False(JauntyConfig.RemoveTypeHandler<Guid>());
+        Assert.False(TypeHandlerRegistry.Remove<int>());
+        Assert.False(TypeHandlerRegistry.Remove<string>());
+        Assert.False(TypeHandlerRegistry.Remove<Guid>());
     }
 
     #endregion
@@ -188,7 +188,7 @@ public class TypeHandlerRegistryTests : IDisposable
     public void DefaultEnumStorage_CanBeSetToString()
     {
         // Arrange & Act
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         // Assert
         Assert.Equal(EnumStorage.String, JauntyConfig.DefaultEnumStorage);
@@ -198,7 +198,7 @@ public class TypeHandlerRegistryTests : IDisposable
     public void DefaultEnumStorage_ResetRestoresToNumeric()
     {
         // Arrange
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared with
         // the "Logging Extensions" collection (running concurrently as a different xunit
@@ -225,14 +225,14 @@ public class TypeHandlerRegistryTests : IDisposable
     public void RegisterTypeHandler_OverExisting_ReplacesHandler()
     {
         // Register first handler
-        JauntyConfig.RegisterTypeHandler<string>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(
             fromDb: v => "FIRST:" + v,
-            toDb: v => v);
+            toDb: v => v));
 
         // Register second handler for same type — should replace, not accumulate
-        JauntyConfig.RegisterTypeHandler<string>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(
             fromDb: v => "SECOND:" + v,
-            toDb: v => v);
+            toDb: v => v));
 
         // The new handler must be active
         bool found = TypeHandlerRegistry.TryGetHandler(typeof(string), out var handler);
@@ -246,11 +246,11 @@ public class TypeHandlerRegistryTests : IDisposable
     [Fact]
     public void RegisterTypeHandler_ClassBased_ThenReplaceWithDelegate_ReplacesHandler()
     {
-        JauntyConfig.RegisterTypeHandler(new UpperCaseStringHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new UpperCaseStringHandler()));
 
-        JauntyConfig.RegisterTypeHandler<string>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(
             fromDb: v => "DELEGATE:" + v,
-            toDb: v => v);
+            toDb: v => v));
 
         bool found = TypeHandlerRegistry.TryGetHandler(typeof(string), out var handler);
         Assert.True(found);
@@ -261,9 +261,9 @@ public class TypeHandlerRegistryTests : IDisposable
     [Fact]
     public void TryGetHandler_AfterRegister_FindsHandler()
     {
-        JauntyConfig.RegisterTypeHandler<string>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(
             fromDb: v => v?.ToString() ?? string.Empty,
-            toDb: v => v);
+            toDb: v => v));
 
         bool found = TypeHandlerRegistry.TryGetHandler(typeof(string), out var handler);
 
@@ -274,10 +274,10 @@ public class TypeHandlerRegistryTests : IDisposable
     [Fact]
     public void TryGetHandler_AfterRemove_DoesNotFindHandler()
     {
-        JauntyConfig.RegisterTypeHandler<Guid>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<Guid>(
             fromDb: v => Guid.Empty,
-            toDb: v => v.ToString());
-        JauntyConfig.RemoveTypeHandler<Guid>();
+            toDb: v => v.ToString()));
+        TypeHandlerRegistry.Remove<Guid>();
 
         bool found = TypeHandlerRegistry.TryGetHandler(typeof(Guid), out var handler);
 
@@ -288,9 +288,9 @@ public class TypeHandlerRegistryTests : IDisposable
     [Fact]
     public void HasHandlers_AfterRegister_ReturnsTrue()
     {
-        JauntyConfig.RegisterTypeHandler<string>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(
             fromDb: v => v?.ToString() ?? string.Empty,
-            toDb: v => v);
+            toDb: v => v));
 
         Assert.True(TypeHandlerRegistry.HasHandlers);
     }
@@ -305,7 +305,7 @@ public class TypeHandlerRegistryTests : IDisposable
         // A witness handler stays registered for the whole test — HasHandlers must never
         // read false while this is registered, even under heavy concurrent Register/Remove
         // churn on a different type (regression for the non-atomic _handlerCount race).
-        JauntyConfig.RegisterTypeHandler<Guid>(fromDb: v => Guid.Empty, toDb: v => v.ToString());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<Guid>(fromDb: v => Guid.Empty, toDb: v => v.ToString()));
         try
         {
             const int iterations = 500;
@@ -319,11 +319,11 @@ public class TypeHandlerRegistryTests : IDisposable
                 {
                     for (int i = 0; i < iterations; i++)
                     {
-                        JauntyConfig.RegisterTypeHandler<string>(fromDb: v => v?.ToString() ?? string.Empty, toDb: v => v);
+                        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<string>(fromDb: v => v?.ToString() ?? string.Empty, toDb: v => v));
                         if (!TypeHandlerRegistry.HasHandlers)
                             Interlocked.Increment(ref falseNegatives);
 
-                        JauntyConfig.RemoveTypeHandler<string>();
+                        TypeHandlerRegistry.Remove<string>();
                         if (!TypeHandlerRegistry.HasHandlers)
                             Interlocked.Increment(ref falseNegatives);
                     }
@@ -337,8 +337,8 @@ public class TypeHandlerRegistryTests : IDisposable
         }
         finally
         {
-            JauntyConfig.RemoveTypeHandler<Guid>();
-            JauntyConfig.RemoveTypeHandler<string>();
+            TypeHandlerRegistry.Remove<Guid>();
+            TypeHandlerRegistry.Remove<string>();
         }
     }
 

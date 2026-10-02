@@ -74,9 +74,9 @@ table are ambiguous SQL.
 
 Full text:
 
-> No metadata found for type 'Product'. Ensure the class has [Table] and is processed by the Jaunty
-> source generator (the class must be declared 'partial'), or call Jaunty.Extensions.Reflection's
-> UseReflectionMapping().
+> No metadata found for type 'Product'. Ensure the class has [Table] and is processed by the
+> Extrode.Jaunty source generator (the class must be declared 'partial'), or call
+> UseReflectionMapping() from Extrode.Jaunty.Extensions.Reflection inside JauntyConfig.Configure.
 
 Jaunty reads entity metadata that its source generator emits at compile time — that is what keeps
 it free of runtime reflection and NativeAOT-safe. The message means the generator produced nothing
@@ -94,8 +94,8 @@ for this type. Three causes, in the order they occur:
 3. **The type has no `[Table]` attribute** and no convention picked it up.
 
 If you want runtime reflection instead — for a prototype, or a type you cannot make `partial` —
-`UseReflectionMapping()` from `Extrode.Jaunty.Extensions.Reflection` supplies it, at the cost of the
-NativeAOT guarantee.
+`Extrode.Jaunty.Extensions.Reflection` supplies it (`c.UseReflectionMapping()` inside
+`JauntyConfig.Configure` on trimmed or NativeAOT publishes), at the cost of the NativeAOT guarantee.
 
 ## `InvalidOperationException` naming a property with no column
 

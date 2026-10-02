@@ -202,12 +202,12 @@ See [Multi-Entity Mapping](multi-entity-mapping.md) for full details.
 ## Configuration
 
 ### JauntyConfig Class
-- `SchemaNameResolver` - Global schema name resolver
-- `TableNameResolver` - Global table name resolver
-- `ColumnNameResolver` - Global column name resolver
-- `DefaultEnumStorage` - Global default enum storage strategy (numeric or string)
-- `RegisterTypeHandler<T>(fromDb, toDb)` / `RegisterTypeHandler<T>(TypeHandler<T>)` - Register a custom type handler
-- `RemoveTypeHandler<T>()` - Remove a registered type handler
+- `Configure(Action<JauntyConfigBuilder>)` - Set the options below once at startup, before the first query (see [upgrading-to-configure.md](../06-releases/upgrading-to-configure.md))
+- `SchemaNameResolver` - Global schema name resolver (set through `Configure`)
+- `TableNameResolver` - Global table name resolver (set through `Configure`)
+- `ColumnNameResolver` - Global column name resolver (set through `Configure`)
+- `DefaultEnumStorage` - Global default enum storage strategy, numeric or string (set through `Configure`)
+- `c.RegisterTypeHandler<T>(fromDb, toDb)` / `c.RegisterTypeHandler<T>(TypeHandler<T>)` - Register a custom type handler inside `Configure`
 - `Reset()` - Reset all configuration to defaults
 
 ### CommandOptions Struct

@@ -41,7 +41,7 @@ public class InterceptorObservabilityTests : IDisposable
 
     public InterceptorObservabilityTests()
     {
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
         JauntyConfig.ClearInterceptors();
         _subscription = JauntyDiagnosticListener.Instance.Subscribe(_observer);
     }

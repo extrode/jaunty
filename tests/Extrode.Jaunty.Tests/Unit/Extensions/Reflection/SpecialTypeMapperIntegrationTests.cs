@@ -1,5 +1,6 @@
 using Extrode.Jaunty.Tests.Entities;
 using Extrode.Jaunty.Tests.Helpers.Dialects;
+using Extrode.Jaunty.Configuration;
 
 namespace Extrode.Jaunty.Tests.Unit.Extensions.Reflection;
 
@@ -16,7 +17,7 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
         _fixture = fixture;
 
         // Register special type mappers
-        SpecialTypeMappers.Register();
+        JauntyConfig.Reconfigure(SpecialTypeMappers.Register);
     }
 
     #region Dictionary Tests

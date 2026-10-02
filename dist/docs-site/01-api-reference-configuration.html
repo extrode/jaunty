@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -156,31 +156,64 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#jauntyconfig-class">JauntyConfig Class</a><a class="toc-l3" href="#schemanameresolver">SchemaNameResolver</a><a class="toc-l3" href="#tablenameresolver">TableNameResolver</a><a class="toc-l3" href="#columnnameresolver">ColumnNameResolver</a><a class="toc-l3" href="#reset">Reset()</a><a class="toc-l3" href="#defaultenumstorage">DefaultEnumStorage</a><a class="toc-l3" href="#registertypehandler">RegisterTypeHandler</a><a class="toc-l3" href="#removetypehandlert">RemoveTypeHandler&lt;T&gt;()</a><a class="toc-l2" href="#naming-conventions">Naming conventions</a><a class="toc-l2" href="#commandoptions-class">CommandOptions Class</a><a class="toc-l3" href="#constructor">Constructor</a><a class="toc-l3" href="#static-factory-methods">Static Factory Methods</a><a class="toc-l2" href="#non-generic-commandoptions">Non-Generic CommandOptions</a><a class="toc-l3" href="#constructor-1">Constructor</a><a class="toc-l3" href="#static-factory-methods-1">Static Factory Methods</a><a class="toc-l2" href="#configuration-priority">Configuration Priority</a><a class="toc-l2" href="#best-practices">Best Practices</a><a class="toc-l3" href="#1-set-configuration-at-startup">1. Set Configuration at Startup</a><a class="toc-l3" href="#2-use-attributes-for-specific-overrides">2. Use Attributes for Specific Overrides</a><a class="toc-l3" href="#3-consider-thread-safety">3. Consider Thread Safety</a><a class="toc-l3" href="#4-reset-configuration-for-tests">4. Reset Configuration for Tests</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#jauntyconfig-class">JauntyConfig Class</a><a class="toc-l3" href="#schemanameresolver">SchemaNameResolver</a><a class="toc-l3" href="#tablenameresolver">TableNameResolver</a><a class="toc-l3" href="#columnnameresolver">ColumnNameResolver</a><a class="toc-l3" href="#tryconfigure">TryConfigure()</a><a class="toc-l3" href="#isconfigured">IsConfigured</a><a class="toc-l3" href="#reset">Reset()</a><a class="toc-l3" href="#defaultenumstorage">DefaultEnumStorage</a><a class="toc-l3" href="#registertypehandler">RegisterTypeHandler</a><a class="toc-l2" href="#naming-conventions">Naming conventions</a><a class="toc-l2" href="#commandoptions-class">CommandOptions Class</a><a class="toc-l3" href="#constructor">Constructor</a><a class="toc-l3" href="#static-factory-methods">Static Factory Methods</a><a class="toc-l2" href="#non-generic-commandoptions">Non-Generic CommandOptions</a><a class="toc-l3" href="#constructor-1">Constructor</a><a class="toc-l3" href="#static-factory-methods-1">Static Factory Methods</a><a class="toc-l2" href="#configuration-priority">Configuration Priority</a><a class="toc-l2" href="#best-practices">Best Practices</a><a class="toc-l3" href="#1-set-configuration-at-startup">1. Set Configuration at Startup</a><a class="toc-l3" href="#2-use-attributes-for-specific-overrides">2. Use Attributes for Specific Overrides</a><a class="toc-l3" href="#3-a-startup-path-that-can-run-twice">3. A Startup Path That Can Run Twice</a><a class="toc-l3" href="#4-reset-configuration-for-tests">4. Reset Configuration for Tests</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Api reference &#8250; Configuration</nav>
         <article>
 <h1 id="configuration">Configuration</h1>
 <h2 id="overview">Overview</h2>
 <p>Jaunty provides global configuration options through the <code>JauntyConfig</code> class to customize naming
-conventions and other behaviors. Set them at application startup, before any queries run.</p>
-<p><strong>That is advice, not a constraint.</strong> Metadata used to be cached in a static constructor and
-compiled once per type per process, so a resolver registered after a type had been read was
-silently ignored for the life of the process. It no longer is: every setter on <code>JauntyConfig</code>
-bumps a configuration generation, and metadata compiled under an older generation — along with
-the per-reader setter caches built from it — is retired and rebuilt on next use. Startup is
-still the right place, because changing configuration mid-flight throws away compiled work.</p>
-<h2 id="jauntyconfig-class">JauntyConfig Class</h2>
-<p>The <code>JauntyConfig</code> class provides static properties for configuring global behaviors:</p>
-<h3 id="schemanameresolver">SchemaNameResolver</h3>
-<p>A function that resolves schema names for entity types. Receives the entity type and returns the schema name to use.</p>
-<p><strong>Property:</strong></p>
+conventions and other behaviors.</p>
+<p><strong>Names, mapping hooks, enum storage and type handlers are set once, at startup, in one
+<code>JauntyConfig.Configure</code> call, and cannot change afterwards.</strong> Their getters stay on
+<code>JauntyConfig</code>; their setters are on the builder that <code>Configure</code> passes in:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-type">Type</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">SchemaNameResolver</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt;
+{
+    c.<span class="tok-var">TableNameResolver</span>  = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;   <span class="tok-com">// your own helper</span>
+    c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;
+    c.<span class="tok-var">DefaultEnumStorage</span> = <span class="tok-type">EnumStorage</span>.<span class="tok-var">String</span>;
+    c.<span class="tok-fn">RegisterTypeHandler</span>(<span class="tok-kw">new</span> <span class="tok-type">GuidAsStringHandler</span>());
+});
+</code></pre>
+</div>
+<p>One operation reads these settings more than once (for its SQL text, then for its parameters), so
+a change from another thread could pair SQL built from one setting with parameters built from
+another. Setting them once removes that window. See
+decision 014 and, if you
+are upgrading code that assigned these properties directly,
+<a href="06-releases-upgrading-to-configure.html">Upgrading to <code>JauntyConfig.Configure</code></a>.</p>
+<ul>
+<li><strong>Call it before anything touches Jaunty.</strong> A query, a Fluent query or a generated member such
+as <code>Product.Jaunty.TableName</code> counts as first use, and <code>Configure</code> after that throws.</li>
+<li><strong>A second call with the same settings does nothing; with different settings it throws.</strong>
+Delegates compare equal when they refer to the same method on the same target, which holds for
+method groups and for lambdas that capture nothing; type handlers compare by their type, so
+<code>new GuidAsStringHandler()</code> on each run counts as the same. Make a call whose lambda captures a
+value through <code>JauntyConfig.TryConfigure</code> instead. A repeated <code>Configure</code> runs your callback
+again to compare, so keep it free of side effects.</li>
+<li><strong>Reflection mapping is switched on first</strong> when Extrode.Jaunty.Extensions.Reflection is
+referenced, and your callback can override any hook it set. Call <code>c.UseReflectionMapping()</code>
+yourself only in a trimmed or NativeAOT publish, where the automatic step cannot load the
+assembly.</li>
+<li><strong>Still settable at runtime:</strong> <code>Logger</code>, the capacity properties, interceptors,
+<code>BulkCopyConfiguration</code> and dialect registration. Each is read once per use.</li>
+</ul>
+<h2 id="jauntyconfig-class">JauntyConfig Class</h2>
+<p>The <code>JauntyConfig</code> class provides static properties for configuring global behaviors:</p>
+<h3 id="schemanameresolver">SchemaNameResolver</h3>
+<p>A function that resolves schema names for entity types. Receives the entity type and returns the schema name to use.</p>
+<p><strong>Property</strong> (read on <code>JauntyConfig</code>, set on <code>JauntyConfigBuilder</code>):</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-type">Type</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">SchemaNameResolver</span> { <span class="tok-kw">get</span>; }
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
@@ -190,13 +223,13 @@ still the right place, because changing configuration mid-flight throws away com
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Use schema based on namespace</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">SchemaNameResolver</span> = type =&gt; type.<span class="tok-var">Namespace</span>?.<span class="tok-fn">Split</span>(<span class="tok-str">'.'</span>).<span class="tok-fn">Last</span>() ?? <span class="tok-kw">string</span>.<span class="tok-var">Empty</span>;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = type =&gt; type.<span class="tok-var">Namespace</span>?.<span class="tok-fn">Split</span>(<span class="tok-str">'.'</span>).<span class="tok-fn">Last</span>() ?? <span class="tok-kw">string</span>.<span class="tok-var">Empty</span>);
 
-<span class="tok-com">// Scoped: SQL Server entities get a schema, SQLite entities stay unqualified</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">SchemaNameResolver</span> = type =&gt;
+<span class="tok-com">// Or scoped: SQL Server entities get a schema, SQLite entities stay unqualified</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = type =&gt;
     type.<span class="tok-var">Namespace</span>?.<span class="tok-fn">StartsWith</span>(<span class="tok-str">&quot;App.Sqlite&quot;</span>, <span class="tok-type">StringComparison</span>.<span class="tok-var">Ordinal</span>) == <span class="tok-kw">true</span>
         ? <span class="tok-kw">string</span>.<span class="tok-var">Empty</span>
-        : <span class="tok-str">&quot;dbo&quot;</span>;
+        : <span class="tok-str">&quot;dbo&quot;</span>);
 </code></pre>
 </div>
 <p><strong>The resolver is global and dialect-blind.</strong> It receives a <code>Type</code> and nothing else, so one
@@ -209,13 +242,13 @@ default — see <a href="01-api-reference-schemas.html"><code>schemas.md</code><
 schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#name-resolution-order">name resolution order</a>.</p>
 <h3 id="tablenameresolver">TableNameResolver</h3>
 <p>A function that resolves table names for entity types. Receives the entity type and returns the table name to use.</p>
-<p><strong>Property:</strong></p>
+<p><strong>Property</strong> (read on <code>JauntyConfig</code>, set on <code>JauntyConfigBuilder</code>):</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-type">Type</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">TableNameResolver</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-type">Type</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">TableNameResolver</span> { <span class="tok-kw">get</span>; }
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
@@ -225,21 +258,21 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Use plural table names</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-str">$&quot;<span class="tok-punc">{</span>type.<span class="tok-var">Name</span><span class="tok-punc">}</span>s&quot;</span>;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-str">$&quot;<span class="tok-punc">{</span>type.<span class="tok-var">Name</span><span class="tok-punc">}</span>s&quot;</span>);
 
-<span class="tok-com">// Use snake_case table names</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;   <span class="tok-com">// your own helper</span>
+<span class="tok-com">// Or snake_case table names</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>);   <span class="tok-com">// your own helper</span>
 </code></pre>
 </div>
 <h3 id="columnnameresolver">ColumnNameResolver</h3>
 <p>A function that resolves column names for property names. Receives the property name and returns the column name to use.</p>
-<p><strong>Property:</strong></p>
+<p><strong>Property</strong> (read on <code>JauntyConfig</code>, set on <code>JauntyConfigBuilder</code>):</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-kw">string</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">ColumnNameResolver</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">Func</span>&lt;<span class="tok-kw">string</span>, <span class="tok-kw">string</span>&gt;? <span class="tok-type">ColumnNameResolver</span> { <span class="tok-kw">get</span>; }
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
@@ -249,14 +282,33 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Use snake_case column names</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = propertyName =&gt; <span class="tok-fn">ToSnakeCase</span>(propertyName);   <span class="tok-com">// your own helper</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>);   <span class="tok-com">// your own helper</span>
 
-<span class="tok-com">// Use lowercase column names</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = propertyName =&gt; propertyName.<span class="tok-fn">ToLower</span>();
+<span class="tok-com">// Or lowercase column names</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">ColumnNameResolver</span> = propertyName =&gt; propertyName.<span class="tok-fn">ToLower</span>());
 </code></pre>
 </div>
+<h3 id="tryconfigure">TryConfigure()</h3>
+<p>Applies the settings like <code>Configure</code> on the first call in a process and returns <code>true</code>; every
+later call returns <code>false</code> without running the callback. Use it where startup code can run more
+than once in one process with settings that compare unequal, such as a lambda capturing a value
+read from configuration in a test host that runs <code>Program.cs</code> again, possibly on parallel threads.
+It still throws once an operation has read the settings.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">TryConfigure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = _ =&gt; schemaFromConfig);
+</code></pre>
+</div>
+<h3 id="isconfigured">IsConfigured</h3>
+<p><code>true</code> once <code>Configure</code> or <code>TryConfigure</code> has completed. Checking it and then calling <code>Configure</code>
+is not atomic; use <code>TryConfigure</code> for that.</p>
 <h3 id="reset">Reset()</h3>
-<p>Resets all configuration to their default values (null).</p>
+<p>Restores every setting to its default and allows <code>Configure</code> to run again. <strong>For tests only:</strong> it
+races any operation running at the same time, so a test that calls <code>Reset()</code> and then <code>Configure</code>
+belongs in a test collection that does not run in parallel.</p>
 <p><strong>Method:</strong></p>
 <div class="code-block">
   <div class="code-header">
@@ -277,14 +329,14 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
 </code></pre>
 </div>
 <h3 id="defaultenumstorage">DefaultEnumStorage</h3>
-<p>Gets or sets the global default strategy for storing enum-typed properties. Defaults to <code>EnumStorage.Numeric</code>.</p>
-<p><strong>Property:</strong></p>
+<p>The global default strategy for storing enum-typed properties. Defaults to <code>EnumStorage.Numeric</code>.</p>
+<p><strong>Property</strong> (read on <code>JauntyConfig</code>, set on <code>JauntyConfigBuilder</code>):</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">EnumStorage</span> <span class="tok-type">DefaultEnumStorage</span> { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">EnumStorage</span> <span class="tok-type">DefaultEnumStorage</span> { <span class="tok-kw">get</span>; }
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
@@ -294,19 +346,19 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Store all enums as their string name instead of the numeric value</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">DefaultEnumStorage</span> = <span class="tok-type">EnumStorage</span>.<span class="tok-var">String</span>;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">DefaultEnumStorage</span> = <span class="tok-type">EnumStorage</span>.<span class="tok-var">String</span>);
 </code></pre>
 </div>
 <p>Use the <code>[EnumStorage(...)]</code> attribute (see <a href="01-api-reference-attributes.html">Attributes</a>) to override this global default on individual properties.</p>
 <h3 id="registertypehandler">RegisterTypeHandler</h3>
-<p>Registers a custom type handler for a CLR type, so Jaunty knows how to convert it to and from a database value. Jaunty is delegate-first: the simplest way to register a handler is with two conversion functions, but a <code>TypeHandler&lt;T&gt;</code> subclass can be used instead when the conversion needs shared state or more structure.</p>
+<p>Registers a custom type handler for a CLR type, so Jaunty knows how to convert it to and from a database value. It is a method on <code>JauntyConfigBuilder</code>, called inside <code>Configure</code>, and returns the builder so calls chain. Jaunty is delegate-first: the simplest way to register a handler is with two conversion functions, but a <code>TypeHandler&lt;T&gt;</code> subclass can be used instead when the conversion needs shared state or more structure.</p>
 <p><strong>Delegate-based registration:</strong></p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">Func</span>&lt;<span class="tok-kw">object</span>?, <span class="tok-type">T</span>&gt; fromDb, <span class="tok-type">Func</span>&lt;<span class="tok-type">T</span>?, <span class="tok-kw">object</span>?&gt; toDb)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-type">JauntyConfigBuilder</span> <span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">Func</span>&lt;<span class="tok-kw">object</span>?, <span class="tok-type">T</span>&gt; fromDb, <span class="tok-type">Func</span>&lt;<span class="tok-type">T</span>?, <span class="tok-kw">object</span>?&gt; toDb)
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
@@ -316,9 +368,9 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Store Guid values as strings</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">Guid</span>&gt;(
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">Guid</span>&gt;(
     fromDb: <span class="tok-type">dbValue</span> =&gt; dbValue <span class="tok-kw">is</span> <span class="tok-kw">string</span> s ? <span class="tok-type">Guid</span>.<span class="tok-fn">Parse</span>(s) : <span class="tok-type">Guid</span>.<span class="tok-var">Empty</span>,
-    toDb: <span class="tok-type">value</span> =&gt; value == <span class="tok-type">Guid</span>.<span class="tok-var">Empty</span> ? <span class="tok-kw">null</span> : <span class="tok-type">value</span>.<span class="tok-var">Value</span>.<span class="tok-fn">ToString</span>(<span class="tok-str">&quot;D&quot;</span>));
+    toDb: <span class="tok-type">value</span> =&gt; value == <span class="tok-type">Guid</span>.<span class="tok-var">Empty</span> ? <span class="tok-kw">null</span> : <span class="tok-type">value</span>.<span class="tok-var">Value</span>.<span class="tok-fn">ToString</span>(<span class="tok-str">&quot;D&quot;</span>)));
 </code></pre>
 </div>
 <p><strong>Class-based registration:</strong></p>
@@ -327,7 +379,7 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">TypeHandler</span>&lt;<span class="tok-type">T</span>&gt; handler)
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-type">JauntyConfigBuilder</span> <span class="tok-fn">RegisterTypeHandler</span>&lt;<span class="tok-type">T</span>&gt;(<span class="tok-type">TypeHandler</span>&lt;<span class="tok-type">T</span>&gt; handler)
 </code></pre>
 </div>
 <p><strong>Example:</strong></p>
@@ -345,30 +397,11 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
         value <span class="tok-kw">is</span> <span class="tok-kw">null</span> || value == <span class="tok-type">Guid</span>.<span class="tok-var">Empty</span> ? <span class="tok-kw">null</span> : <span class="tok-type">value</span>.<span class="tok-var">Value</span>.<span class="tok-fn">ToString</span>(<span class="tok-str">&quot;D&quot;</span>);
 }
 
-<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">RegisterTypeHandler</span>(<span class="tok-kw">new</span> <span class="tok-type">GuidAsStringHandler</span>());
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-fn">RegisterTypeHandler</span>(<span class="tok-kw">new</span> <span class="tok-type">GuidAsStringHandler</span>()));
 </code></pre>
 </div>
-<h3 id="removetypehandlert">RemoveTypeHandler&lt;T&gt;()</h3>
-<p>Removes the registered type handler for a type, if one exists.</p>
-<p><strong>Method:</strong></p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">C#</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">bool</span> <span class="tok-fn">RemoveTypeHandler</span>&lt;<span class="tok-type">T</span>&gt;()
-</code></pre>
-</div>
-<p><strong>Returns:</strong> <code>true</code> if a handler was registered and removed; <code>false</code> if no handler was registered for <code>T</code>.</p>
-<p><strong>Example:</strong></p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">C#</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">RemoveTypeHandler</span>&lt;<span class="tok-type">Guid</span>&gt;();
-</code></pre>
-</div>
+<p>Handlers are fixed at startup: there is no way to remove one later. <code>RemoveTypeHandler</code> was
+removed with the move to <code>Configure</code>; a test that needs a clean slate calls <code>JauntyConfig.Reset()</code>.</p>
 <h2 id="naming-conventions">Naming conventions</h2>
 <blockquote>
 <p><strong>This page previously documented a <code>NamingConvention</code> class with <code>ToSnakeCase</code>, <code>ToLowerCase</code>,
@@ -377,7 +410,7 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
 Corrected 2026-08-31.</p>
 </blockquote>
 <p>Jaunty ships no naming-convention helpers. You supply the conversion yourself through the three
-resolver delegates on <code>JauntyConfig</code>:</p>
+resolver delegates, set inside <code>JauntyConfig.Configure</code>:</p>
 <table>
 <thead>
 <tr>
@@ -430,14 +463,13 @@ pluralisation is language- and schema-specific and a wrong guess is worse than n
     <span class="tok-ctl">return</span> sb.<span class="tok-fn">ToString</span>();
 }
 
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span>  = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;   <span class="tok-com">// your pluralisation</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt;
+{
+    c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;
+    c.<span class="tok-var">TableNameResolver</span>  = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;   <span class="tok-com">// your pluralisation</span>
+});
 </code></pre>
 </div>
-<p>Setting any resolver bumps a configuration generation, so metadata already compiled for a type is
-retired and rebuilt rather than going stale. Startup is still the sensible place to configure
-them, because a mid-flight change discards compiled mappers, but it is not a correctness
-requirement.</p>
 <h2 id="commandoptions-class">CommandOptions Class</h2>
 <p>The <code>CommandOptions</code> class provides per-operation configuration options:</p>
 <h3 id="constructor">Constructor</h3>
@@ -611,7 +643,7 @@ an attribute already fixes.</li>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// If you have this configuration:</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;   <span class="tok-com">// a helper you write; Extrode.Jaunty ships none</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>);   <span class="tok-com">// a helper you write; Extrode.Jaunty ships none</span>
 
 <span class="tok-com">// And this entity:</span>
 <span class="tok-kw">public</span> <span class="tok-kw">class</span> <span class="tok-type">Product</span>
@@ -625,7 +657,7 @@ an attribute already fixes.</li>
 </div>
 <h2 id="best-practices">Best Practices</h2>
 <h3 id="1-set-configuration-at-startup">1. Set Configuration at Startup</h3>
-<p>Configuration should be set once at application startup before any queries are executed:</p>
+<p><code>Configure</code> runs once, at application startup, before any queries are executed:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
@@ -634,8 +666,11 @@ an attribute already fixes.</li>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">void</span> <span class="tok-fn">ConfigureServices</span>(<span class="tok-type">IServiceCollection</span> services)
 {
     <span class="tok-com">// Set Extrode.Jaunty configuration at startup</span>
-    <span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;   <span class="tok-com">// a helper you write; Extrode.Jaunty ships none</span>
-    <span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;
+    <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt;
+    {
+        c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;   <span class="tok-com">// a helper you write; Extrode.Jaunty ships none</span>
+        c.<span class="tok-var">TableNameResolver</span> = type =&gt; <span class="tok-fn">ToSnakeCase</span>(type.<span class="tok-var">Name</span>) + <span class="tok-str">&quot;s&quot;</span>;
+    });
     
     <span class="tok-com">// Register your database connection</span>
     services.<span class="tok-fn">AddScoped</span>&lt;<span class="tok-type">IDbConnection</span>&gt;(provider =&gt; 
@@ -663,23 +698,21 @@ an attribute already fixes.</li>
 }
 </code></pre>
 </div>
-<h3 id="3-consider-thread-safety">3. Consider Thread Safety</h3>
-<p>Since configuration is global and static, ensure thread safety when setting configuration:</p>
+<h3 id="3-a-startup-path-that-can-run-twice">3. A Startup Path That Can Run Twice</h3>
+<p>Integration test hosts such as <code>WebApplicationFactory</code> can run <code>Program.cs</code> more than once in one
+process. Identical settings are a no-op; settings captured from configuration are not, so use
+<code>TryConfigure</code> for them:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Set configuration before any threads start using Extrode.Jaunty</span>
-<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">InitializeJaunty</span>()
-{
-    <span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;   <span class="tok-com">// a helper you write; Extrode.Jaunty ships none</span>
-    <span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = type =&gt; type.<span class="tok-var">Name</span> + <span class="tok-str">&quot;s&quot;</span>;
-}
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">TryConfigure</span>(c =&gt; c.<span class="tok-var">TableNameResolver</span> = type =&gt; prefix + type.<span class="tok-var">Name</span>);
 </code></pre>
 </div>
 <h3 id="4-reset-configuration-for-tests">4. Reset Configuration for Tests</h3>
-<p>For testing purposes, you might want to reset configuration between test runs:</p>
+<p><code>Reset()</code> restores the defaults and allows <code>Configure</code> again. Run tests that use it in a
+collection that does not run in parallel with other tests using Jaunty:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
@@ -694,13 +727,12 @@ an attribute already fixes.</li>
 <h2 id="important-notes">Important Notes</h2>
 <div class="callout callout-warn"><ul>
 <li><strong>Global Configuration</strong>: Settings in <code>JauntyConfig</code> affect all queries globally</li>
-<li><strong>Caching</strong>: Metadata is cached per type, and every <code>JauntyConfig</code> setter bumps a configuration generation that retires the cached metadata compiled under an older one, so a resolver registered mid-flight is picked up</li>
-<li><strong>Startup Timing</strong>: Startup is still the right place to configure, because changing configuration mid-flight discards compiled work</li>
-<li><strong>Thread Safety</strong>: The configuration properties are static and shared across all threads</li>
+<li><strong>Set Once</strong>: <code>Configure</code> runs once per process, before first use; the mapping settings cannot change afterwards</li>
+<li><strong>Thread Safety</strong>: The settings are one immutable snapshot shared across all threads, so no operation can see two versions of them</li>
 <li><strong>Performance</strong>: Once configured, the resolvers are cached and have minimal performance impact</li>
 <li><strong>Fallback Behavior</strong>: When resolvers return null, Jaunty falls back to default behavior</li>
 <li><strong>Attribute Override</strong>: a non-empty <code>[Table]</code> or <code>[Column]</code> name, and <code>[Ignore]</code>, take precedence over configuration, on both mapping paths</li>
-<li><strong>Reset Capability</strong>: Use <code>JauntyConfig.Reset()</code> to clear all configuration and return to defaults</li>
+<li><strong>Reset Capability</strong>: Use <code>JauntyConfig.Reset()</code> in tests to clear all configuration, return to defaults and allow <code>Configure</code> again</li>
 <li><strong>IMapped Behavior</strong>: <code>IMapped&lt;T&gt;.ReadEntity</code> is strict/full-shape mapping; for <code>QueryPartial*</code> projections, prefer <code>CommandOptions&lt;T&gt;.WithMapper(...)</code> if your query may omit columns</li>
 </ul></div>
 

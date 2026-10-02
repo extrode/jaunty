@@ -58,17 +58,17 @@ public class ImportTypeMappingMemberTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
 
             Assert.Equal(typeof(string), ImportTypeMapping.Normalize(typeof(Priority), Prop("AsString")));
 
-            JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
             Assert.Equal(typeof(int), ImportTypeMapping.Normalize(typeof(Priority), Prop("AsNumeric")));
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = original);
         }
     }
 
@@ -78,13 +78,13 @@ public class ImportTypeMappingMemberTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
             Assert.Equal(typeof(byte), ImportTypeMapping.Normalize(typeof(ByteBacked), Prop("NarrowNumeric")));
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = original);
         }
     }
 
@@ -100,15 +100,15 @@ public class ImportTypeMappingMemberTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
             Assert.Equal(typeof(string), ImportTypeMapping.Normalize(typeof(Priority), Prop("NoAttribute")));
 
-            JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
             Assert.Equal(typeof(int), ImportTypeMapping.Normalize(typeof(Priority), Prop("NoAttribute")));
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = original);
         }
     }
 
@@ -118,12 +118,12 @@ public class ImportTypeMappingMemberTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
             Assert.Equal(typeof(string), ImportTypeMapping.Normalize(typeof(Priority), null));
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = original);
         }
     }
 

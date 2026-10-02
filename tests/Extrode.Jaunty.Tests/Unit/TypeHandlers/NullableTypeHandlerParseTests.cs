@@ -35,7 +35,7 @@ public class NullableTypeHandlerParseTests : IDisposable
     [Fact]
     public void AReferenceHandlerMayReturnNullForADatabaseNull()
     {
-        JauntyConfig.RegisterTypeHandler(new NullReturningStringHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new NullReturningStringHandler()));
 
         Assert.True(TypeHandlerRegistry.TryGetHandler(typeof(string), out ITypeHandler? handler));
         Assert.Null(handler!.Parse(DBNull.Value));

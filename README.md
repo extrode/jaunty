@@ -358,14 +358,12 @@ public partial class Product
 }
 ```
 
-**Fall back to reflection.** Reference `Extrode.Jaunty.Extensions.Reflection`, call
-`JauntyReflectionExtensions.UseReflectionMapping()` once at startup, and any plain class maps with
-setters compiled on first use. This is the Dapper experience, and it is the one thing the core
-leaves out on purpose so that the core stays AOT-clean.
+**Fall back to reflection.** Reference `Extrode.Jaunty.Extensions.Reflection`, and any plain class
+maps with setters compiled on first use; it switches itself on. Trimmed and NativeAOT publishes call
+`c.UseReflectionMapping()` inside `JauntyConfig.Configure`. This is the Dapper experience, and it is
+the one thing the core leaves out on purpose so that the core stays AOT-clean.
 
 ```csharp
-JauntyReflectionExtensions.UseReflectionMapping();
-
 var products = connection.Query<Product>("SELECT id AS Id, name AS Name, price AS Price FROM products");
 ```
 
@@ -555,17 +553,20 @@ agrees with.
 ```csharp
 using Extrode.Jaunty.Configuration;
 
-JauntyConfig.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
-JauntyConfig.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
-JauntyConfig.SchemaNameResolver = type =>
-    type.Namespace?.EndsWith(".Archive", StringComparison.Ordinal) == true ? "archive" : string.Empty;
+JauntyConfig.Configure(c =>
+{
+    c.TableNameResolver  = type => $"tbl_{type.Name.ToLowerInvariant()}";
+    c.ColumnNameResolver = name => $"col_{name.ToLowerInvariant()}";
+    c.SchemaNameResolver = type =>
+        type.Namespace?.EndsWith(".Archive", StringComparison.Ordinal) == true ? "archive" : string.Empty;
+});
 ```
 
 Precedence is a non-empty `[Table]` or `[Column]` name, then the resolver, then the type or
 property name, for reflection-mapped and source-generated entities alike. `SchemaNameResolver` sees only
 the type, so a blanket `_ => "dbo"` would qualify tables on PostgreSQL and SQLite too; return
-`string.Empty` for types that should stay unqualified. Resolvers may be changed after queries have
-run, and cached metadata is rebuilt on next use. Per-engine detail is in
+`string.Empty` for types that should stay unqualified. `Configure` runs once at startup, before the
+first query; calling it after first use throws. Per-engine detail is in
 [schemas.md](docs/01-api-reference/schemas.md).
 
 ---

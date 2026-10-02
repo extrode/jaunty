@@ -326,8 +326,8 @@ public partial class ProductEntity
 for this class into a second file at build time, which is what keeps the library free of runtime
 reflection. Leave `partial` off and the generator reports `JAUNTYGEN004` as a warning and emits
 nothing, and the first call using the entity throws `No parameter binder found for type
-'ProductEntity'`. If you cannot make a class partial, `UseReflectionMapping()` from
-`Extrode.Jaunty.Extensions.Reflection` is the deliberate opt-out.
+'ProductEntity'`. If you cannot make a class partial, `c.UseReflectionMapping()` inside
+`JauntyConfig.Configure`, from `Extrode.Jaunty.Extensions.Reflection`, is the deliberate opt-out.
 
 `[Table]` overrides the table name Jaunty infers from the class name. `[Column]` does the same
 for a property's column. `[Key]` marks the primary key, and

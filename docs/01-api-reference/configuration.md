@@ -3,14 +3,43 @@
 ## Overview
 
 Jaunty provides global configuration options through the `JauntyConfig` class to customize naming
-conventions and other behaviors. Set them at application startup, before any queries run.
+conventions and other behaviors.
 
-**That is advice, not a constraint.** Metadata used to be cached in a static constructor and
-compiled once per type per process, so a resolver registered after a type had been read was
-silently ignored for the life of the process. It no longer is: every setter on `JauntyConfig`
-bumps a configuration generation, and metadata compiled under an older generation — along with
-the per-reader setter caches built from it — is retired and rebuilt on next use. Startup is
-still the right place, because changing configuration mid-flight throws away compiled work.
+**Names, mapping hooks, enum storage and type handlers are set once, at startup, in one
+`JauntyConfig.Configure` call, and cannot change afterwards.** Their getters stay on
+`JauntyConfig`; their setters are on the builder that `Configure` passes in:
+
+```csharp
+JauntyConfig.Configure(c =>
+{
+    c.TableNameResolver  = type => ToSnakeCase(type.Name) + "s";   // your own helper
+    c.ColumnNameResolver = ToSnakeCase;
+    c.DefaultEnumStorage = EnumStorage.String;
+    c.RegisterTypeHandler(new GuidAsStringHandler());
+});
+```
+
+One operation reads these settings more than once (for its SQL text, then for its parameters), so
+a change from another thread could pair SQL built from one setting with parameters built from
+another. Setting them once removes that window. See
+[decision 014](../decisions/2026-10-02-014-configuration-is-set-once-at-startup.md) and, if you
+are upgrading code that assigned these properties directly,
+[Upgrading to `JauntyConfig.Configure`](../06-releases/upgrading-to-configure.md).
+
+- **Call it before anything touches Jaunty.** A query, a Fluent query or a generated member such
+  as `Product.Jaunty.TableName` counts as first use, and `Configure` after that throws.
+- **A second call with the same settings does nothing; with different settings it throws.**
+  Delegates compare equal when they refer to the same method on the same target, which holds for
+  method groups and for lambdas that capture nothing; type handlers compare by their type, so
+  `new GuidAsStringHandler()` on each run counts as the same. Make a call whose lambda captures a
+  value through `JauntyConfig.TryConfigure` instead. A repeated `Configure` runs your callback
+  again to compare, so keep it free of side effects.
+- **Reflection mapping is switched on first** when Extrode.Jaunty.Extensions.Reflection is
+  referenced, and your callback can override any hook it set. Call `c.UseReflectionMapping()`
+  yourself only in a trimmed or NativeAOT publish, where the automatic step cannot load the
+  assembly.
+- **Still settable at runtime:** `Logger`, the capacity properties, interceptors,
+  `BulkCopyConfiguration` and dialect registration. Each is read once per use.
 
 ## JauntyConfig Class
 
@@ -20,21 +49,21 @@ The `JauntyConfig` class provides static properties for configuring global behav
 
 A function that resolves schema names for entity types. Receives the entity type and returns the schema name to use.
 
-**Property:**
+**Property** (read on `JauntyConfig`, set on `JauntyConfigBuilder`):
 ```csharp
-public static Func<Type, string>? SchemaNameResolver { get; set; }
+public static Func<Type, string>? SchemaNameResolver { get; }
 ```
 
 **Example:**
 ```csharp
 // Use schema based on namespace
-JauntyConfig.SchemaNameResolver = type => type.Namespace?.Split('.').Last() ?? string.Empty;
+JauntyConfig.Configure(c => c.SchemaNameResolver = type => type.Namespace?.Split('.').Last() ?? string.Empty);
 
-// Scoped: SQL Server entities get a schema, SQLite entities stay unqualified
-JauntyConfig.SchemaNameResolver = type =>
+// Or scoped: SQL Server entities get a schema, SQLite entities stay unqualified
+JauntyConfig.Configure(c => c.SchemaNameResolver = type =>
     type.Namespace?.StartsWith("App.Sqlite", StringComparison.Ordinal) == true
         ? string.Empty
-        : "dbo";
+        : "dbo");
 ```
 
 **The resolver is global and dialect-blind.** It receives a `Type` and nothing else, so one
@@ -51,41 +80,60 @@ schema wins over it; see the [name resolution order](../02-architecture/metadata
 
 A function that resolves table names for entity types. Receives the entity type and returns the table name to use.
 
-**Property:**
+**Property** (read on `JauntyConfig`, set on `JauntyConfigBuilder`):
 ```csharp
-public static Func<Type, string>? TableNameResolver { get; set; }
+public static Func<Type, string>? TableNameResolver { get; }
 ```
 
 **Example:**
 ```csharp
 // Use plural table names
-JauntyConfig.TableNameResolver = type => $"{type.Name}s";
+JauntyConfig.Configure(c => c.TableNameResolver = type => $"{type.Name}s");
 
-// Use snake_case table names
-JauntyConfig.TableNameResolver = type => ToSnakeCase(type.Name) + "s";   // your own helper
+// Or snake_case table names
+JauntyConfig.Configure(c => c.TableNameResolver = type => ToSnakeCase(type.Name) + "s");   // your own helper
 ```
 
 ### ColumnNameResolver
 
 A function that resolves column names for property names. Receives the property name and returns the column name to use.
 
-**Property:**
+**Property** (read on `JauntyConfig`, set on `JauntyConfigBuilder`):
 ```csharp
-public static Func<string, string>? ColumnNameResolver { get; set; }
+public static Func<string, string>? ColumnNameResolver { get; }
 ```
 
 **Example:**
 ```csharp
 // Use snake_case column names
-JauntyConfig.ColumnNameResolver = propertyName => ToSnakeCase(propertyName);   // your own helper
+JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // your own helper
 
-// Use lowercase column names
-JauntyConfig.ColumnNameResolver = propertyName => propertyName.ToLower();
+// Or lowercase column names
+JauntyConfig.Configure(c => c.ColumnNameResolver = propertyName => propertyName.ToLower());
 ```
+
+### TryConfigure()
+
+Applies the settings like `Configure` on the first call in a process and returns `true`; every
+later call returns `false` without running the callback. Use it where startup code can run more
+than once in one process with settings that compare unequal, such as a lambda capturing a value
+read from configuration in a test host that runs `Program.cs` again, possibly on parallel threads.
+It still throws once an operation has read the settings.
+
+```csharp
+JauntyConfig.TryConfigure(c => c.SchemaNameResolver = _ => schemaFromConfig);
+```
+
+### IsConfigured
+
+`true` once `Configure` or `TryConfigure` has completed. Checking it and then calling `Configure`
+is not atomic; use `TryConfigure` for that.
 
 ### Reset()
 
-Resets all configuration to their default values (null).
+Restores every setting to its default and allows `Configure` to run again. **For tests only:** it
+races any operation running at the same time, so a test that calls `Reset()` and then `Configure`
+belongs in a test collection that does not run in parallel.
 
 **Method:**
 ```csharp
@@ -100,41 +148,41 @@ JauntyConfig.Reset();
 
 ### DefaultEnumStorage
 
-Gets or sets the global default strategy for storing enum-typed properties. Defaults to `EnumStorage.Numeric`.
+The global default strategy for storing enum-typed properties. Defaults to `EnumStorage.Numeric`.
 
-**Property:**
+**Property** (read on `JauntyConfig`, set on `JauntyConfigBuilder`):
 ```csharp
-public static EnumStorage DefaultEnumStorage { get; set; }
+public static EnumStorage DefaultEnumStorage { get; }
 ```
 
 **Example:**
 ```csharp
 // Store all enums as their string name instead of the numeric value
-JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+JauntyConfig.Configure(c => c.DefaultEnumStorage = EnumStorage.String);
 ```
 
 Use the `[EnumStorage(...)]` attribute (see [Attributes](attributes.md)) to override this global default on individual properties.
 
 ### RegisterTypeHandler
 
-Registers a custom type handler for a CLR type, so Jaunty knows how to convert it to and from a database value. Jaunty is delegate-first: the simplest way to register a handler is with two conversion functions, but a `TypeHandler<T>` subclass can be used instead when the conversion needs shared state or more structure.
+Registers a custom type handler for a CLR type, so Jaunty knows how to convert it to and from a database value. It is a method on `JauntyConfigBuilder`, called inside `Configure`, and returns the builder so calls chain. Jaunty is delegate-first: the simplest way to register a handler is with two conversion functions, but a `TypeHandler<T>` subclass can be used instead when the conversion needs shared state or more structure.
 
 **Delegate-based registration:**
 ```csharp
-public static void RegisterTypeHandler<T>(Func<object?, T> fromDb, Func<T?, object?> toDb)
+public JauntyConfigBuilder RegisterTypeHandler<T>(Func<object?, T> fromDb, Func<T?, object?> toDb)
 ```
 
 **Example:**
 ```csharp
 // Store Guid values as strings
-JauntyConfig.RegisterTypeHandler<Guid>(
+JauntyConfig.Configure(c => c.RegisterTypeHandler<Guid>(
     fromDb: dbValue => dbValue is string s ? Guid.Parse(s) : Guid.Empty,
-    toDb: value => value == Guid.Empty ? null : value.Value.ToString("D"));
+    toDb: value => value == Guid.Empty ? null : value.Value.ToString("D")));
 ```
 
 **Class-based registration:**
 ```csharp
-public static void RegisterTypeHandler<T>(TypeHandler<T> handler)
+public JauntyConfigBuilder RegisterTypeHandler<T>(TypeHandler<T> handler)
 ```
 
 **Example:**
@@ -148,24 +196,11 @@ public class GuidAsStringHandler : TypeHandler<Guid>
         value is null || value == Guid.Empty ? null : value.Value.ToString("D");
 }
 
-JauntyConfig.RegisterTypeHandler(new GuidAsStringHandler());
+JauntyConfig.Configure(c => c.RegisterTypeHandler(new GuidAsStringHandler()));
 ```
 
-### RemoveTypeHandler&lt;T&gt;()
-
-Removes the registered type handler for a type, if one exists.
-
-**Method:**
-```csharp
-public static bool RemoveTypeHandler<T>()
-```
-
-**Returns:** `true` if a handler was registered and removed; `false` if no handler was registered for `T`.
-
-**Example:**
-```csharp
-JauntyConfig.RemoveTypeHandler<Guid>();
-```
+Handlers are fixed at startup: there is no way to remove one later. `RemoveTypeHandler` was
+removed with the move to `Configure`; a test that needs a clean slate calls `JauntyConfig.Reset()`.
 
 ## Naming conventions
 
@@ -175,7 +210,7 @@ JauntyConfig.RemoveTypeHandler<Guid>();
 > Corrected 2026-08-31.
 
 Jaunty ships no naming-convention helpers. You supply the conversion yourself through the three
-resolver delegates on `JauntyConfig`:
+resolver delegates, set inside `JauntyConfig.Configure`:
 
 | Delegate | Signature | Applied to |
 |---|---|---|
@@ -207,14 +242,12 @@ static string ToSnakeCase(string name)
     return sb.ToString();
 }
 
-JauntyConfig.ColumnNameResolver = ToSnakeCase;
-JauntyConfig.TableNameResolver  = type => ToSnakeCase(type.Name) + "s";   // your pluralisation
+JauntyConfig.Configure(c =>
+{
+    c.ColumnNameResolver = ToSnakeCase;
+    c.TableNameResolver  = type => ToSnakeCase(type.Name) + "s";   // your pluralisation
+});
 ```
-
-Setting any resolver bumps a configuration generation, so metadata already compiled for a type is
-retired and rebuilt rather than going stale. Startup is still the sensible place to configure
-them, because a mid-flight change discards compiled mappers, but it is not a correctness
-requirement.
 
 ## CommandOptions Class
 
@@ -356,7 +389,7 @@ The [name resolution order](../02-architecture/metadata-system-spec.md#name-reso
 **Example:**
 ```csharp
 // If you have this configuration:
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
+JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // a helper you write; Extrode.Jaunty ships none
 
 // And this entity:
 public class Product
@@ -372,14 +405,17 @@ public class Product
 
 ### 1. Set Configuration at Startup
 
-Configuration should be set once at application startup before any queries are executed:
+`Configure` runs once, at application startup, before any queries are executed:
 
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {
     // Set Extrode.Jaunty configuration at startup
-    JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
-    JauntyConfig.TableNameResolver = type => ToSnakeCase(type.Name) + "s";
+    JauntyConfig.Configure(c =>
+    {
+        c.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
+        c.TableNameResolver = type => ToSnakeCase(type.Name) + "s";
+    });
     
     // Register your database connection
     services.AddScoped<IDbConnection>(provider => 
@@ -405,22 +441,20 @@ public class Product
 }
 ```
 
-### 3. Consider Thread Safety
+### 3. A Startup Path That Can Run Twice
 
-Since configuration is global and static, ensure thread safety when setting configuration:
+Integration test hosts such as `WebApplicationFactory` can run `Program.cs` more than once in one
+process. Identical settings are a no-op; settings captured from configuration are not, so use
+`TryConfigure` for them:
 
 ```csharp
-// Set configuration before any threads start using Extrode.Jaunty
-public static void InitializeJaunty()
-{
-    JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
-    JauntyConfig.TableNameResolver = type => type.Name + "s";
-}
+JauntyConfig.TryConfigure(c => c.TableNameResolver = type => prefix + type.Name);
 ```
 
 ### 4. Reset Configuration for Tests
 
-For testing purposes, you might want to reset configuration between test runs:
+`Reset()` restores the defaults and allows `Configure` again. Run tests that use it in a
+collection that does not run in parallel with other tests using Jaunty:
 
 ```csharp
 public void Cleanup()
@@ -432,11 +466,10 @@ public void Cleanup()
 ## Important Notes
 
 - **Global Configuration**: Settings in `JauntyConfig` affect all queries globally
-- **Caching**: Metadata is cached per type, and every `JauntyConfig` setter bumps a configuration generation that retires the cached metadata compiled under an older one, so a resolver registered mid-flight is picked up
-- **Startup Timing**: Startup is still the right place to configure, because changing configuration mid-flight discards compiled work
-- **Thread Safety**: The configuration properties are static and shared across all threads
+- **Set Once**: `Configure` runs once per process, before first use; the mapping settings cannot change afterwards
+- **Thread Safety**: The settings are one immutable snapshot shared across all threads, so no operation can see two versions of them
 - **Performance**: Once configured, the resolvers are cached and have minimal performance impact
 - **Fallback Behavior**: When resolvers return null, Jaunty falls back to default behavior
 - **Attribute Override**: a non-empty `[Table]` or `[Column]` name, and `[Ignore]`, take precedence over configuration, on both mapping paths
-- **Reset Capability**: Use `JauntyConfig.Reset()` to clear all configuration and return to defaults
+- **Reset Capability**: Use `JauntyConfig.Reset()` in tests to clear all configuration, return to defaults and allow `Configure` again
 - **IMapped Behavior**: `IMapped<T>.ReadEntity` is strict/full-shape mapping; for `QueryPartial*` projections, prefer `CommandOptions<T>.WithMapper(...)` if your query may omit columns

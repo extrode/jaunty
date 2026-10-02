@@ -18,7 +18,7 @@ namespace Extrode.Jaunty.Tests.Unit.Write;
 [Collection("Type Handler Operations")]
 public class InsertCoreGuardTests : IDisposable
 {
-    public InsertCoreGuardTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public InsertCoreGuardTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     public void Dispose()
     {

@@ -21,7 +21,7 @@ public class MetadataCacheMutantTests : IDisposable
     public void Dispose()
     {
         TypeHandlerRegistry.Remove<int>();
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         GC.SuppressFinalize(this);
     }
 
@@ -66,7 +66,7 @@ public class MetadataCacheMutantTests : IDisposable
     {
         PropertyContext<BindsTo> first = ContextFor(nameof(BindsTo.FirstName));
         PropertyContext<BindsTo> last = ContextFor(nameof(BindsTo.LastName));
-        JauntyConfig.ColumnNameResolver = name => "x_" + name.ToLowerInvariant();
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => "x_" + name.ToLowerInvariant());
 
         Assert.True(MetadataCache<BindsTo>.ColumnBindsTo("first_name", first));
         Assert.False(MetadataCache<BindsTo>.ColumnBindsTo("x_firstname", first));
@@ -164,15 +164,15 @@ public class MetadataCacheMutantTests : IDisposable
         Func<Type, IDataReader, object> custom = (_, _) => new object();
         try
         {
-            JauntyConfig.SpecialTypeMapperResolver = custom;
+            JauntyConfig.Reconfigure(jc => jc.SpecialTypeMapperResolver = custom);
 
-            SpecialTypeMappers.Register();
+            JauntyConfig.Reconfigure(SpecialTypeMappers.Register);
 
             Assert.Same(custom, JauntyConfig.SpecialTypeMapperResolver);
         }
         finally
         {
-            JauntyConfig.SpecialTypeMapperResolver = previous;
+            JauntyConfig.Reconfigure(jc => jc.SpecialTypeMapperResolver = previous);
         }
     }
 

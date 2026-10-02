@@ -54,7 +54,7 @@ public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
         using var connection = _fixture.GetConnection(dialect);
 
         // Configure snake_case column resolver
-        JauntyConfig.ColumnNameResolver = ToSnakeCase;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = ToSnakeCase);
 
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = @Id"
@@ -78,7 +78,7 @@ public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
         using var connection = _fixture.GetConnection(dialect);
 
         // Configure a resolver that would give wrong names
-        JauntyConfig.ColumnNameResolver = name => "wrong_" + name.ToLower();
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => "wrong_" + name.ToLower());
 
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT ProductId, ProductName, UnitPrice FROM Products WHERE ProductId = @Id"

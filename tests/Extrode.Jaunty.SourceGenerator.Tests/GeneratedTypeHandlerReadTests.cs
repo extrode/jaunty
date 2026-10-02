@@ -2,6 +2,7 @@ using System.Data;
 
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.SourceGenerator.Tests.Entities;
+using Extrode.Jaunty.TypeHandlers;
 
 namespace Extrode.Jaunty.SourceGenerator.Tests;
 
@@ -26,9 +27,9 @@ public sealed class GeneratedTypeHandlerReadTests
 
     private static void WithMoneyHandler(Action body)
     {
-        JauntyConfig.RegisterTypeHandler<GenMoney>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<GenMoney>(
             fromDb: v => new GenMoney(Convert.ToDecimal(v, System.Globalization.CultureInfo.InvariantCulture)),
-            toDb: m => m.Amount);
+            toDb: m => m.Amount));
 
         try
         {
@@ -36,7 +37,7 @@ public sealed class GeneratedTypeHandlerReadTests
         }
         finally
         {
-            JauntyConfig.RemoveTypeHandler<GenMoney>();
+            TypeHandlerRegistry.Remove<GenMoney>();
         }
     }
 
@@ -66,7 +67,7 @@ public sealed class GeneratedTypeHandlerReadTests
     [Fact]
     public void ReadEntity_HandlerRegisteredForAnotherType_LeavesThisPropertyAlone()
     {
-        JauntyConfig.RegisterTypeHandler<Uri>(fromDb: v => new Uri((string)v!), toDb: u => u?.ToString());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<Uri>(fromDb: v => new Uri((string)v!), toDb: u => u?.ToString()));
 
         try
         {
@@ -76,7 +77,7 @@ public sealed class GeneratedTypeHandlerReadTests
         }
         finally
         {
-            JauntyConfig.RemoveTypeHandler<Uri>();
+            TypeHandlerRegistry.Remove<Uri>();
         }
     }
 
@@ -104,9 +105,9 @@ public sealed class GeneratedTypeHandlerReadTests
 
     private static void WithBlankAsNullMoneyHandler(Action body)
     {
-        JauntyConfig.RegisterTypeHandler<GenMoney?>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<GenMoney?>(
             fromDb: v => v is string { Length: 0 } ? null : new GenMoney(Convert.ToDecimal(v, System.Globalization.CultureInfo.InvariantCulture)),
-            toDb: m => m?.Amount);
+            toDb: m => m?.Amount));
 
         try
         {
@@ -114,7 +115,7 @@ public sealed class GeneratedTypeHandlerReadTests
         }
         finally
         {
-            Assert.True(JauntyConfig.RemoveTypeHandler<GenMoney?>());
+            Assert.True(TypeHandlerRegistry.Remove<GenMoney?>());
         }
     }
 

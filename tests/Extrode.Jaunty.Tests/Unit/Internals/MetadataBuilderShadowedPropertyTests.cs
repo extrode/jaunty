@@ -133,14 +133,14 @@ public class MetadataBuilderShadowedPropertyTests
     public void Build_AnEmptySchemaAttribute_KeepsTheConfiguredResolverValue()
     {
         var previous = JauntyConfig.SchemaNameResolver;
-        JauntyConfig.SchemaNameResolver = _ => "resolved";
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => "resolved");
         try
         {
             Assert.Equal("resolved", MetadataBuilder.Build<EmptySchemaEntity>().SchemaName);
         }
         finally
         {
-            JauntyConfig.SchemaNameResolver = previous;
+            JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = previous);
         }
     }
 
@@ -148,14 +148,14 @@ public class MetadataBuilderShadowedPropertyTests
     public void Build_ADeclaredSchemaAttribute_StillOverridesTheResolver()
     {
         var previous = JauntyConfig.SchemaNameResolver;
-        JauntyConfig.SchemaNameResolver = _ => "resolved";
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => "resolved");
         try
         {
             Assert.Equal("declared", MetadataBuilder.Build<DeclaredSchemaEntity>().SchemaName);
         }
         finally
         {
-            JauntyConfig.SchemaNameResolver = previous;
+            JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = previous);
         }
     }
 }

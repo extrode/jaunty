@@ -13,7 +13,7 @@ public class ReaderMemoAndSchemaKeyTests : IDisposable
 {
     public void Dispose()
     {
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         GC.SuppressFinalize(this);
     }
 

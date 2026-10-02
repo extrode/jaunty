@@ -11,6 +11,24 @@ default lives in `src/Directory.Build.props`.
 
 ### Breaking changes
 
+- **Warning: this breaks the build of any app that sets a Jaunty mapping setting. Mapping
+  settings are now set once, at startup, through `JauntyConfig.Configure`, and their setters are
+  gone.** `TableNameResolver`, `SchemaNameResolver`, `ColumnNameResolver`, `DefaultEnumStorage`,
+  `CopyImportFactory`, the `Reflection*Resolver` hooks and `SpecialTypeMapperResolver` are
+  read-only on `JauntyConfig` and set on the builder:
+  `JauntyConfig.Configure(c => { c.ColumnNameResolver = Snake; c.RegisterTypeHandler(new MoneyHandler()); })`.
+  `JauntyConfig.RegisterTypeHandler` moved onto the builder and `RemoveTypeHandler` was removed.
+  `JauntyReflectionExtensions.UseReflectionMapping()` is now `c.UseReflectionMapping()`,
+  `SpecialTypeMappers.Register()` takes the builder, and `JauntyNpgsql.Use()` is now
+  `c.UseNpgsqlCopy()`. One operation read these settings several times, so a change from another
+  thread could pair SQL built from one setting with parameters built from another. `Configure`
+  runs once: a repeat with the same settings does nothing, one with different settings throws
+  (use the new `JauntyConfig.TryConfigure` for a call that can repeat), and a call after the first
+  query throws.
+  `Logger`, the capacities, interceptors, `BulkCopyConfiguration` and dialect registration are
+  unchanged. Generated code is unaffected. See
+  [Upgrading to JauntyConfig.Configure](docs/06-releases/upgrading-to-configure.md) and
+  [decision 014](docs/decisions/2026-10-02-014-configuration-is-set-once-at-startup.md).
 - **`ISqlDialect` has a new member, `UpsertBatchIsAtomic`.** A custom dialect must implement it:
   return true only if the multi-statement command from `GenerateUpsertSql` runs as one transaction
   without the caller supplying one. When it is false, `Upsert` wraps the command in a transaction
