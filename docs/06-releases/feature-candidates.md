@@ -11,6 +11,7 @@ trying to do.
 |---|---|---|
 | [Paged DELETE and UPDATE](#paged-delete-and-update) | Not planned | Nobody yet |
 | [Per-connection naming](#per-connection-naming) | Not planned | Nobody yet |
+| [Schemas for flat-file views and imports](#schemas-for-flat-file-views-and-imports) | Not planned | Nobody yet |
 
 ---
 
@@ -57,3 +58,22 @@ name cache is keyed only by the configuration generation.
 
 **Why not now:** nobody has asked for it, and a schema per tenant is usually handled by the
 connection string or the database user's default schema, which needs nothing from Jaunty.
+
+---
+
+## Schemas for flat-file views and imports
+
+**What it would do:** register a flat file's view in the entity's schema, and import into a
+schema-qualified table, when the entity has `[Table(..., Schema = ...)]` or a
+`SchemaNameResolver` is set.
+
+**Today:** FlatFiles applies the table and column names in core's order but no schema. File views
+live in DuckDB's default schema, and an import writes to the unqualified table name, which the
+target database resolves through the connection's default schema.
+
+**What it would need:** `CREATE SCHEMA IF NOT EXISTS` and a qualified view name on the DuckDB
+side; schema-qualified DDL, INSERTs and the column check in each import dialect (SQL Server,
+PostgreSQL, SQLite); and a rule for SQLite, which has attached databases rather than schemas.
+
+**Why not now:** nobody has asked for it. An import into a non-default schema works today through
+a connection whose default schema is that one (the login's default schema on SQL Server, `search_path` on PostgreSQL).
