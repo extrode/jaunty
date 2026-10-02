@@ -209,6 +209,7 @@ default lives in `src/Directory.Build.props`.
   can now differ past the 15th digit from Jaunty's own reads. Every Jaunty read path, generated
   and reflection, converts a `REAL` to `decimal` with 15-significant-digit rounding. Hand-written
   mappers that call `GetDecimal` may see the extra digits.
+- **`Extrode.Jaunty.FlatFiles.DuckDB` now depends on DuckDB.NET.Data.Full 1.5.6** (was 1.5.5).
 - **SQL Server `Length` now counts trailing spaces** (`LEN(REPLACE(x, ' ', '.'))`), matching the
   other dialects. `LEN` alone ignored them.
 - **MySQL/MariaDB `Avg` returns a fractional `double`** (`AVG(x + 0E0)`); bare `AVG` returned a
