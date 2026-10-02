@@ -345,6 +345,28 @@ public class UpsertGeneratedKeyTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
+    [MariaDB]
+    [MicrosoftSqlite]
+    public async Task AFailedInsert_LeavesNoTransactionOpen(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            Assert.ThrowsAny<System.Data.Common.DbException>(() => connection.Upsert(new UpsertGeneratedKeyEntity { Name = null! }));
+            await Assert.ThrowsAnyAsync<System.Data.Common.DbException>(() => connection.UpsertAsync(new UpsertGeneratedKeyEntity { Name = null! }, TestContext.Current.CancellationToken).AsTask());
+
+            using (IDbTransaction transaction = connection.BeginTransaction())
+                transaction.Rollback();
+
+            Assert.Equal(2, Count(connection));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
     [Postgres]
     public void Postgres_RunsTheUpdateAndTheInsertInOneTransaction(DialectInfo dialect)
     {

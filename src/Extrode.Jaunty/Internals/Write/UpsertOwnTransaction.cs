@@ -61,43 +61,4 @@ internal static class UpsertOwnTransaction
         transaction.Commit();
 #endif
     }
-
-    /// <summary>
-    /// Rolls back after a failure. Best effort: the exception that caused it is the one the caller sees.
-    /// </summary>
-    internal static void RollBack(IDbTransaction? transaction)
-    {
-        if (transaction is null)
-            return;
-
-        try
-        {
-            transaction.Rollback();
-        }
-        catch
-        {
-            // Best effort: the original exception is rethrown by the caller.
-        }
-    }
-
-    /// <inheritdoc cref="RollBack"/>
-    internal static async ValueTask RollBackAsync(DbTransaction? transaction)
-    {
-        if (transaction is null)
-            return;
-
-        try
-        {
-#if NET8_0_OR_GREATER
-            await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-#else
-            await Task.CompletedTask.ConfigureAwait(false);
-            transaction.Rollback();
-#endif
-        }
-        catch
-        {
-            // Best effort: the original exception is rethrown by the caller.
-        }
-    }
 }
