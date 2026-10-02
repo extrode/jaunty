@@ -249,7 +249,7 @@ flowchart TD
 Reflection mapping resolves names when it builds an entity's metadata. Source-generated mapping
 resolves them at runtime too, not at build time. The generator bakes in only the attribute names,
 and leaves the rest to `GeneratedNameCache`, which keeps one set of resolved names per
-configuration generation. Setting any `JauntyConfig` resolver starts a new generation, so the next
+configuration generation. `JauntyConfig.Configure` setting a resolver starts a new generation, so the next
 query on either path picks up the new names.
 
 ```mermaid
@@ -261,7 +261,7 @@ sequenceDiagram
     participant NR as NameResolution
     participant Core as CRUD / Fluent SQL caches
 
-    App->>Cfg: ColumnNameResolver = ToSnakeCase
+    App->>Cfg: Configure(c => c.ColumnNameResolver = ToSnakeCase)
     Cfg->>Cfg: bump configuration generation
     App->>Core: connection.Insert(widget)
     Core->>Gen: IEntityMetadataSource.TableName / Columns
@@ -304,8 +304,11 @@ public partial class OrderLine
     public decimal UnitPrice { get; set; }
 }
 
-JauntyConfig.TableNameResolver = type => ToSnakeCase(type.Name) + "s";   // your own helper
-JauntyConfig.ColumnNameResolver = ToSnakeCase;
+JauntyConfig.Configure(c =>
+{
+    c.TableNameResolver = type => ToSnakeCase(type.Name) + "s";   // your own helper
+    c.ColumnNameResolver = ToSnakeCase;
+});
 ```
 
 | Member | Name, reflection or source-generated |

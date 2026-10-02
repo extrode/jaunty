@@ -16,7 +16,7 @@ sites on this page execute**.
 | 1 | `MappedCache` (5 sites) | You hand-write `IMapped<T>` instead of using `[Table]` | `No mapper found for type 'T'` | Build warning **JAUNTYGEN002**; add `[Table]`, implement `IGeneratedAccessors<T>`, or `[DynamicDependency]` |
 | 2 | `WriteParameterCache` (2 sites) | You supply `BindInsert`/`BindUpdate`/`BindDelete` by convention | The command binds nothing | Build warning **JAUNTYGEN002**, same three fixes |
 | 3 | `ParameterCache` (1 site) | Every query with a parameters object | Parameters silently missing | Generator emits `JauntyAot.PreserveParameters<T>()`; **JAUNTYGEN003** where it cannot. Two shapes stay uncovered — see below |
-| 4 | `Extrode.Jaunty.Init` (1 site) | Auto-discovery of `Extrode.Jaunty.Extensions.Reflection` | Extension not enabled | Call `JauntyReflectionExtensions.UseReflectionMapping()` yourself, or don't use the package |
+| 4 | `Extrode.Jaunty.Init` (1 site) | Auto-discovery of `Extrode.Jaunty.Extensions.Reflection` | Extension not enabled | Call `c.UseReflectionMapping()` inside `JauntyConfig.Configure` yourself, or don't use the package |
 | 5 | `SqlDialectFactory` (2 sites) | A wrapped connection, or auto-discovery of the bulk-copy extension | Falls back to the undecorated behaviour | Nothing; degrades, never misbehaves |
 | 6 | `GroupedJoinedResultMapper` (1 site) | Fluent `GroupBy(...).Select(...)` projections | Rooted, so nothing | Nothing — see the caveat on expression trees below |
 | 7 | `Extrode.Jaunty.FlatFiles.DuckDB` (2 sites) | The DuckDB flat-file provider | Columns silently unmapped | Root your DTOs, or don't publish this package trimmed |
@@ -98,7 +98,7 @@ under AOT), so self-registration would change behaviour for every JIT consumer. 
 trimmed and want the extension, call it explicitly:
 
 ```csharp
-JauntyReflectionExtensions.UseReflectionMapping();
+JauntyConfig.Configure(c => c.UseReflectionMapping());
 ```
 
 `SqlDialectFactory`'s bulk-copy probe (site 5) is the same pattern with the same reasoning.

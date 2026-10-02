@@ -22,8 +22,7 @@ Two things, both visible in this project:
    the extension is wired up by hand at start-up:
 
    ```csharp
-   JauntyReflectionExtensions.UseReflectionMapping();
-   SpecialTypeMappers.Register();
+   JauntyConfig.Configure(c => c.UseReflectionMapping());
    ```
 
 2. **A trimmer root.** The `.csproj` has to keep the whole extension assembly, because the
