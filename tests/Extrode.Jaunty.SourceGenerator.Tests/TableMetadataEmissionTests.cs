@@ -13,33 +13,33 @@ public sealed class TableMetadataEmissionTests
     [Fact]
     public void TableName_NoSchemaSpecified_ResolvesFromTableAttribute()
     {
-        Assert.Equal("gen_products", GenProduct.TableName);
-        Assert.Null(GenProduct.SchemaName);
+        Assert.Equal("gen_products", GenProduct.Jaunty.TableName);
+        Assert.Null(GenProduct.Jaunty.SchemaName);
     }
 
     [Fact]
     public void SchemaName_NamedArgument_Resolves()
     {
-        Assert.Equal("gen_order_lines", GenOrderLine.TableName);
-        Assert.Equal("sales", GenOrderLine.SchemaName);
+        Assert.Equal("gen_order_lines", GenOrderLine.Jaunty.TableName);
+        Assert.Equal("sales", GenOrderLine.Jaunty.SchemaName);
     }
 
     [Fact]
     public void SchemaName_PositionalConstructorArgument_Resolves()
     {
-        Assert.Equal("gen_widgets", GenWidget.TableName);
-        Assert.Equal("dbo", GenWidget.SchemaName);
+        Assert.Equal("gen_widgets", GenWidget.Jaunty.TableName);
+        Assert.Equal("dbo", GenWidget.Jaunty.SchemaName);
     }
 
     [Fact]
     public void PrimaryKeyColumnNames_SingleKey_ContainsColumnName()
     {
-        Assert.Equal(["product_id"], GenProduct.PrimaryKeyColumnNames);
+        Assert.Equal(["product_id"], GenProduct.Jaunty.PrimaryKeyColumnNames);
     }
 
     [Fact]
     public void PrimaryKeyColumnNames_CompositeKey_ContainsAllColumnNamesInDeclaredOrder()
     {
-        Assert.Equal(["order_id", "line_number"], GenOrderLine.PrimaryKeyColumnNames);
+        Assert.Equal(["order_id", "line_number"], GenOrderLine.Jaunty.PrimaryKeyColumnNames);
     }
 }

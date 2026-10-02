@@ -11,361 +11,362 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 {
     public partial class GenHandledEntity : IMapped<GenHandledEntity>, IEntityMetadataSource, IGeneratedAccessors<GenHandledEntity>
     {
-        public readonly struct ColumnInfo
-        {
-            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)
-            {
-                ColumnName = columnName;
-                PropertyName = propertyName;
-                IsPrimaryKey = isPrimaryKey;
-                IsIdentity = isIdentity;
-                PropertyType = propertyType;
-                Getter = getter;
-                Setter = setter;
-            }
-            public string ColumnName { get; }
-            public string PropertyName { get; }
-            public bool IsPrimaryKey { get; }
-            public bool IsIdentity { get; }
-            public global::System.Type PropertyType { get; }
-            public global::System.Func<object, object?> Getter { get; }
-            public global::System.Action<object, object?> Setter { get; }
-        }
-
-        /// <summary>Converts a value read via GetValue to the property's type. See AUD-R25.</summary>
-        private static T ReadFallback<T>(object value)
-        {
-            if (value is T typed)
-                return typed;
-
-            global::System.Type target = typeof(T);
-
-            if (target.IsEnum)
-            {
-                return value is string enumText
-                    ? (T)global::System.Enum.Parse(target, enumText, true)
-                    : (T)global::System.Enum.ToObject(target, global::System.Convert.ChangeType(value, global::System.Enum.GetUnderlyingType(target), global::System.Globalization.CultureInfo.InvariantCulture));
-            }
-
-            if (target == typeof(char) && value is string charText)
-                return (T)(object)(charText.Length > 0 ? charText[0] : '\0');
-
-        #if NET6_0_OR_GREATER
-            if (target == typeof(global::System.DateOnly))
-            {
-                return (T)(object)(value is string dateText
-                    ? global::System.DateOnly.Parse(dateText, global::System.Globalization.CultureInfo.InvariantCulture)
-                    : global::System.DateOnly.FromDateTime(global::System.Convert.ToDateTime(value, global::System.Globalization.CultureInfo.InvariantCulture)));
-            }
-
-            if (target == typeof(global::System.TimeOnly))
-            {
-                if (value is string timeText)
-                    return (T)(object)global::System.TimeOnly.Parse(timeText, global::System.Globalization.CultureInfo.InvariantCulture);
-                if (value is global::System.TimeSpan timeSpan)
-                    return (T)(object)global::System.TimeOnly.FromTimeSpan(timeSpan);
-                return (T)(object)global::System.TimeOnly.FromDateTime(global::System.Convert.ToDateTime(value, global::System.Globalization.CultureInfo.InvariantCulture));
-            }
-        #endif
-
-            // Convert.ChangeType cannot reach these - none of them is IConvertible-convertible
-            // from string - and a provider on the IDataReader path may well hand back text.
-            if (value is string text)
-            {
-                if (target == typeof(global::System.TimeSpan))
-                    return (T)(object)global::System.TimeSpan.Parse(text, global::System.Globalization.CultureInfo.InvariantCulture);
-                if (target == typeof(global::System.DateTimeOffset))
-                    return (T)(object)global::System.DateTimeOffset.Parse(text, global::System.Globalization.CultureInfo.InvariantCulture);
-                if (target == typeof(global::System.Guid))
-                    return (T)(object)global::System.Guid.Parse(text);
-            }
-
-            if (target == typeof(global::System.DateTimeOffset) && value is global::System.DateTime dateTime)
-                return (T)(object)new global::System.DateTimeOffset(dateTime);
-
-            if (target == typeof(global::System.Guid) && value is byte[])
-                throw new global::System.InvalidCastException(
-                    $"Cannot convert a value of type '{value.GetType().FullName}' to '{target.FullName}'. " +
-                    "If the provider returns this column as a byte array, map the property as byte[] and " +
-                    "convert it yourself - the byte order of a binary GUID is provider-specific and Extrode.Jaunty " +
-                    "will not guess it.");
-
-            return (T)global::System.Convert.ChangeType(value, target, global::System.Globalization.CultureInfo.InvariantCulture);
-        }
-
         #if NET8_0_OR_GREATER
-        public static GenHandledEntity ReadEntity(IDataReader reader)
+        public static GenHandledEntity ReadEntity(IDataReader reader) => Jaunty.ReadEntity(reader);
         #else
-        public GenHandledEntity ReadEntity(IDataReader reader)
+        public GenHandledEntity ReadEntity(IDataReader reader) => Jaunty.ReadEntity(reader);
         #endif
+
+        public static class Jaunty
         {
-            var entry = OrdinalMap.Resolve(reader);
-            var ord = entry.Ordinals;
-            var entity = new GenHandledEntity();
-            bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
-            bool isDbReader = reader is DbDataReader;
-            try
+            public readonly struct ColumnInfo
             {
-                if (isDbReader)
+                public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)
                 {
-                    var dbReader = (DbDataReader)reader;
-                    entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(dbReader.GetValue(ord[0])) : dbReader.GetInt32(ord[0]));
-                    entity.Amount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(dbReader.GetValue(ord[1])) : dbReader.GetFieldValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(ord[1]));
+                    ColumnName = columnName;
+                    PropertyName = propertyName;
+                    IsPrimaryKey = isPrimaryKey;
+                    IsIdentity = isIdentity;
+                    PropertyType = propertyType;
+                    Getter = getter;
+                    Setter = setter;
                 }
-                else
+                public string ColumnName { get; }
+                public string PropertyName { get; }
+                public bool IsPrimaryKey { get; }
+                public bool IsIdentity { get; }
+                public global::System.Type PropertyType { get; }
+                public global::System.Func<object, object?> Getter { get; }
+                public global::System.Action<object, object?> Setter { get; }
+            }
+
+            /// <summary>Converts a value read via GetValue to the property's type. See AUD-R25.</summary>
+            private static T ReadFallback<T>(object value)
+            {
+                if (value is T typed)
+                    return typed;
+
+                global::System.Type target = typeof(T);
+
+                if (target.IsEnum)
                 {
-                    entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(reader.GetValue(ord[0])) : reader.GetInt32(ord[0]));
-                    entity.Amount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(reader.GetValue(ord[1])) : ReadFallback<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(reader.GetValue(ord[1])));
+                    return value is string enumText
+                        ? (T)global::System.Enum.Parse(target, enumText, true)
+                        : (T)global::System.Enum.ToObject(target, global::System.Convert.ChangeType(value, global::System.Enum.GetUnderlyingType(target), global::System.Globalization.CultureInfo.InvariantCulture));
                 }
+
+                if (target == typeof(char) && value is string charText)
+                    return (T)(object)(charText.Length > 0 ? charText[0] : '\0');
+
+            #if NET6_0_OR_GREATER
+                if (target == typeof(global::System.DateOnly))
+                {
+                    return (T)(object)(value is string dateText
+                        ? global::System.DateOnly.Parse(dateText, global::System.Globalization.CultureInfo.InvariantCulture)
+                        : global::System.DateOnly.FromDateTime(global::System.Convert.ToDateTime(value, global::System.Globalization.CultureInfo.InvariantCulture)));
+                }
+
+                if (target == typeof(global::System.TimeOnly))
+                {
+                    if (value is string timeText)
+                        return (T)(object)global::System.TimeOnly.Parse(timeText, global::System.Globalization.CultureInfo.InvariantCulture);
+                    if (value is global::System.TimeSpan timeSpan)
+                        return (T)(object)global::System.TimeOnly.FromTimeSpan(timeSpan);
+                    return (T)(object)global::System.TimeOnly.FromDateTime(global::System.Convert.ToDateTime(value, global::System.Globalization.CultureInfo.InvariantCulture));
+                }
+            #endif
+
+                // Convert.ChangeType cannot reach these - none of them is IConvertible-convertible
+                // from string - and a provider on the IDataReader path may well hand back text.
+                if (value is string text)
+                {
+                    if (target == typeof(global::System.TimeSpan))
+                        return (T)(object)global::System.TimeSpan.Parse(text, global::System.Globalization.CultureInfo.InvariantCulture);
+                    if (target == typeof(global::System.DateTimeOffset))
+                        return (T)(object)global::System.DateTimeOffset.Parse(text, global::System.Globalization.CultureInfo.InvariantCulture);
+                    if (target == typeof(global::System.Guid))
+                        return (T)(object)global::System.Guid.Parse(text);
+                }
+
+                if (target == typeof(global::System.DateTimeOffset) && value is global::System.DateTime dateTime)
+                    return (T)(object)new global::System.DateTimeOffset(dateTime);
+
+                if (target == typeof(global::System.Guid) && value is byte[])
+                    throw new global::System.InvalidCastException(
+                        $"Cannot convert a value of type '{value.GetType().FullName}' to '{target.FullName}'. " +
+                        "If the provider returns this column as a byte array, map the property as byte[] and " +
+                        "convert it yourself - the byte order of a binary GUID is provider-specific and Extrode.Jaunty " +
+                        "will not guess it.");
+
+                return (T)global::System.Convert.ChangeType(value, target, global::System.Globalization.CultureInfo.InvariantCulture);
             }
-            catch (Exception ex)
+
+            public static GenHandledEntity ReadEntity(IDataReader reader)
             {
-                ThrowIfNonNullableColumnIsNull(reader, ord, ex);
-                throw;
+                var entry = OrdinalMap.Resolve(reader);
+                var ord = entry.Ordinals;
+                var entity = new GenHandledEntity();
+                bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
+                bool isDbReader = reader is DbDataReader;
+                try
+                {
+                    if (isDbReader)
+                    {
+                        var dbReader = (DbDataReader)reader;
+                        entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(dbReader.GetValue(ord[0])) : dbReader.GetInt32(ord[0]));
+                        entity.Amount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(dbReader.GetValue(ord[1])) : dbReader.GetFieldValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(ord[1]));
+                    }
+                    else
+                    {
+                        entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(reader.GetValue(ord[0])) : reader.GetInt32(ord[0]));
+                        entity.Amount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(reader.GetValue(ord[1])) : ReadFallback<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(reader.GetValue(ord[1])));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ThrowIfNonNullableColumnIsNull(reader, ord, ex);
+                    throw;
+                }
+                return entity;
             }
-            return entity;
-        }
-        public static Func<IDataReader, GenHandledEntity> CreateRowMapper(IDataReader reader)
-        {
-            var entry = OrdinalMap.Resolve(reader);
-            var ord = entry.Ordinals;
-            if (reader is DbDataReader)
+            public static Func<IDataReader, GenHandledEntity> CreateRowMapper(IDataReader reader)
             {
+                var entry = OrdinalMap.Resolve(reader);
+                var ord = entry.Ordinals;
+                if (reader is DbDataReader)
+                {
+                    return r =>
+                    {
+                        var rr = (DbDataReader)r;
+                        var entity = new GenHandledEntity();
+                        bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
+                        try
+                        {
+                            entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(rr.GetValue(ord[0])) : rr.GetInt32(ord[0]));
+                            entity.Amount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(rr.GetValue(ord[1])) : rr.GetFieldValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(ord[1]));
+                        }
+                        catch (Exception ex)
+                        {
+                            ThrowIfNonNullableColumnIsNull(rr, ord, ex);
+                            throw;
+                        }
+                        return entity;
+                    };
+                }
                 return r =>
                 {
-                    var rr = (DbDataReader)r;
                     var entity = new GenHandledEntity();
                     bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
                     try
                     {
-                        entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(rr.GetValue(ord[0])) : rr.GetInt32(ord[0]));
-                        entity.Amount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(rr.GetValue(ord[1])) : rr.GetFieldValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(ord[1]));
+                        entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(r.GetValue(ord[0])) : r.GetInt32(ord[0]));
+                        entity.Amount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(r.GetValue(ord[1])) : ReadFallback<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(r.GetValue(ord[1])));
                     }
                     catch (Exception ex)
                     {
-                        ThrowIfNonNullableColumnIsNull(rr, ord, ex);
+                        ThrowIfNonNullableColumnIsNull(r, ord, ex);
                         throw;
                     }
                     return entity;
                 };
             }
-            return r =>
+
+            private static void ThrowIfNonNullableColumnIsNull(IDataReader reader, int[] ord, Exception inner)
             {
-                var entity = new GenHandledEntity();
-                bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
-                try
-                {
-                    entity.Id = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(r.GetValue(ord[0])) : r.GetInt32(ord[0]));
-                    entity.Amount = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(r.GetValue(ord[1])) : ReadFallback<global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney>(r.GetValue(ord[1])));
-                }
-                catch (Exception ex)
-                {
-                    ThrowIfNonNullableColumnIsNull(r, ord, ex);
-                    throw;
-                }
-                return entity;
-            };
-        }
-
-        private static void ThrowIfNonNullableColumnIsNull(IDataReader reader, int[] ord, Exception inner)
-        {
-            if (reader.IsDBNull(ord[0]))
-                throw new global::System.InvalidOperationException("Cannot assign NULL to non-nullable property 'Id'.", inner);
-            if (reader.IsDBNull(ord[1]))
-                throw new global::System.InvalidOperationException("Cannot assign NULL to non-nullable property 'Amount'.", inner);
-        }
-
-        public static void BindInsert(IDbCommand command, GenHandledEntity entity)
-        {
-            var p = command.Parameters;
-            var n = __JauntyNameHolder.Cache.Current.Names;
-            AddParam(command, p, n.Parameter(1), entity.Amount);
-        }
-        public static void BindUpdate(IDbCommand command, GenHandledEntity entity)
-        {
-            var p = command.Parameters;
-            var n = __JauntyNameHolder.Cache.Current.Names;
-            AddParam(command, p, n.Parameter(1), entity.Amount);
-            AddParam(command, p, n.Parameter(0), entity.Id);
-        }
-        public static void BindDelete(IDbCommand command, GenHandledEntity entity)
-        {
-            var p = command.Parameters;
-            var n = __JauntyNameHolder.Cache.Current.Names;
-            AddParam(command, p, n.Parameter(0), entity.Id);
-        }
-        private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
-        {
-            var p = cmd.CreateParameter();
-            p.ParameterName = name;
-            // AUD-R30: route through the same type-handler/enum-storage conversion the
-            // reflection binder applies, via the public bridge in Extrode.Jaunty core.
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? global::System.DBNull.Value;
-            pc.Add(p);
-        }
-
-        private static void AddEnumParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value, global::Extrode.Jaunty.Attributes.EnumStorage? storage)
-        {
-            var p = cmd.CreateParameter();
-            p.ParameterName = name;
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? global::System.DBNull.Value;
-            pc.Add(p);
-        }
-        private static class OrdinalMap
-        {
-            private static readonly ConditionalWeakTable<IDataReader, CacheEntry> _cache = new();
-#if !NET8_0_OR_GREATER
-            private static readonly object _cacheWriteLock = new();
-#endif
-            [ThreadStatic]
-            private static WeakReference<CacheEntry>? _last;
-
-            public static CacheEntry Resolve(IDataReader reader)
-            {
-                var names = __JauntyNameHolder.Cache.Current.Names;
-                var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
-                    return last;
-
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
-                {
-                    SetLast(cached);
-                    return cached;
-                }
-
-                var ords = new int[2];
-                ords[0] = reader.GetOrdinal(names.Column(0));
-                ords[1] = reader.GetOrdinal(names.Column(1));
-                var entry = new CacheEntry(reader, ords);
-#if NET8_0_OR_GREATER
-                _cache.AddOrUpdate(reader, entry);
-#else
-                lock (_cacheWriteLock)
-                {
-                    _cache.Remove(reader);
-                    _cache.Add(reader, entry);
-                }
-#endif
-                SetLast(entry);
-                return entry;
+                if (reader.IsDBNull(ord[0]))
+                    throw new global::System.InvalidOperationException("Cannot assign NULL to non-nullable property 'Id'.", inner);
+                if (reader.IsDBNull(ord[1]))
+                    throw new global::System.InvalidOperationException("Cannot assign NULL to non-nullable property 'Amount'.", inner);
             }
 
-            private static void SetLast(CacheEntry entry)
+            public static void BindInsert(IDbCommand command, GenHandledEntity entity)
             {
-                var lastRef = _last;
-                if (lastRef is null)
-                    _last = new WeakReference<CacheEntry>(entry);
-                else
-                    lastRef.SetTarget(entry);
+                var p = command.Parameters;
+                var n = NameHolder.Cache.Current.Names;
+                AddParam(command, p, n.Parameter(1), entity.Amount);
+            }
+            public static void BindUpdate(IDbCommand command, GenHandledEntity entity)
+            {
+                var p = command.Parameters;
+                var n = NameHolder.Cache.Current.Names;
+                AddParam(command, p, n.Parameter(1), entity.Amount);
+                AddParam(command, p, n.Parameter(0), entity.Id);
+            }
+            public static void BindDelete(IDbCommand command, GenHandledEntity entity)
+            {
+                var p = command.Parameters;
+                var n = NameHolder.Cache.Current.Names;
+                AddParam(command, p, n.Parameter(0), entity.Id);
+            }
+            private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
+            {
+                var p = cmd.CreateParameter();
+                p.ParameterName = name;
+                // AUD-R30: route through the same type-handler/enum-storage conversion the
+                // reflection binder applies, via the public bridge in Extrode.Jaunty core.
+                p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? global::System.DBNull.Value;
+                pc.Add(p);
             }
 
-            public sealed class CacheEntry
+            private static void AddEnumParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value, global::Extrode.Jaunty.Attributes.EnumStorage? storage)
             {
-                private readonly IDataReader _reader;
-                private readonly int _fieldCount;
+                var p = cmd.CreateParameter();
+                p.ParameterName = name;
+                p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? global::System.DBNull.Value;
+                pc.Add(p);
+            }
+            private static class OrdinalMap
+            {
+                private static readonly ConditionalWeakTable<IDataReader, CacheEntry> _cache = new();
+    #if !NET8_0_OR_GREATER
+                private static readonly object _cacheWriteLock = new();
+    #endif
+                [ThreadStatic]
+                private static WeakReference<CacheEntry>? _last;
 
-                public CacheEntry(IDataReader reader, int[] ordinals)
+                public static CacheEntry Resolve(IDataReader reader)
                 {
-                    _reader = reader;
-                    _fieldCount = reader.FieldCount;
-                    Ordinals = ordinals;
+                    var names = NameHolder.Cache.Current.Names;
+                    var lastRef = _last;
+                    if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
+                        return last;
+
+                    if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
+                    {
+                        SetLast(cached);
+                        return cached;
+                    }
+
+                    var ords = new int[2];
+                    ords[0] = reader.GetOrdinal(names.Column(0));
+                    ords[1] = reader.GetOrdinal(names.Column(1));
+                    var entry = new CacheEntry(reader, ords);
+    #if NET8_0_OR_GREATER
+                    _cache.AddOrUpdate(reader, entry);
+    #else
+                    lock (_cacheWriteLock)
+                    {
+                        _cache.Remove(reader);
+                        _cache.Add(reader, entry);
+                    }
+    #endif
+                    SetLast(entry);
+                    return entry;
                 }
 
-                public int[] Ordinals { get; }
-
-                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
+                private static void SetLast(CacheEntry entry)
                 {
-                    if (!ReferenceEquals(reader, _reader))
-                        return false;
+                    var lastRef = _last;
+                    if (lastRef is null)
+                        _last = new WeakReference<CacheEntry>(entry);
+                    else
+                        lastRef.SetTarget(entry);
+                }
 
-                    if (reader.FieldCount != _fieldCount)
-                        return false;
+                public sealed class CacheEntry
+                {
+                    private readonly IDataReader _reader;
+                    private readonly int _fieldCount;
 
-                    var ord0 = Ordinals[0];
-                    if ((uint)ord0 >= (uint)reader.FieldCount)
-                        return false;
-                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
-                        return false;
+                    public CacheEntry(IDataReader reader, int[] ordinals)
+                    {
+                        _reader = reader;
+                        _fieldCount = reader.FieldCount;
+                        Ordinals = ordinals;
+                    }
 
-                    var ord1 = Ordinals[1];
-                    if ((uint)ord1 >= (uint)reader.FieldCount)
-                        return false;
-                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
-                        return false;
+                    public int[] Ordinals { get; }
 
-                    return true;
+                    public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
+                    {
+                        if (!ReferenceEquals(reader, _reader))
+                            return false;
+
+                        if (reader.FieldCount != _fieldCount)
+                            return false;
+
+                        var ord0 = Ordinals[0];
+                        if ((uint)ord0 >= (uint)reader.FieldCount)
+                            return false;
+                        if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        var ord1 = Ordinals[1];
+                        if ((uint)ord1 >= (uint)reader.FieldCount)
+                            return false;
+                        if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        return true;
+                    }
                 }
             }
-        }
 
-        private static class __JauntyNameHolder
-        {
-            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
-                typeof(GenHandledEntity),
-                "gen_handled",
-                null,
-                new string[] { "Id", "Amount" },
-                new string?[] { "id", "amount" },
-                n => new __JauntyNamed(n));
-        }
-
-        private sealed class __JauntyNamed
-        {
-            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
+            private static class NameHolder
             {
-                Names = n;
-                PrimaryKeyColumnNames = new string[] {
-                    n.Column(0),
-                };
-                InsertColumns = new ColumnInfo[] {
-                    new ColumnInfo(n.Column(1), "Amount", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney), e => (object?)((GenHandledEntity)e).Amount, (e, v) => ((GenHandledEntity)e).Amount = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney)v!),
-                };
-                UpdateColumns = new ColumnInfo[] {
-                    new ColumnInfo(n.Column(1), "Amount", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney), e => (object?)((GenHandledEntity)e).Amount, (e, v) => ((GenHandledEntity)e).Amount = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney)v!),
-                };
-                DeleteColumns = new ColumnInfo[] {
-                    new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((GenHandledEntity)e).Id, (e, v) => ((GenHandledEntity)e).Id = (int)v!),
-                };
-                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
-                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((GenHandledEntity)e).Id, (e, v) => ((GenHandledEntity)e).Id = (int)v!));
-                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "Amount", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney), e => (object?)((GenHandledEntity)e).Amount, (e, v) => ((GenHandledEntity)e).Amount = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney)v!));
-                ParameterMap = parameterMap;
-                EntityColumns = new EntityColumnInfo[] {
-                    new EntityColumnInfo(n.Column(0), "Id", true, true, false, typeof(int), e => (object?)((GenHandledEntity)e).Id, (e, v) => ((GenHandledEntity)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-                    new EntityColumnInfo(n.Column(1), "Amount", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney), e => (object?)((GenHandledEntity)e).Amount, (e, v) => ((GenHandledEntity)e).Amount = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-                };
+                internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<Named> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<Named>(
+                    typeof(GenHandledEntity),
+                    "gen_handled",
+                    null,
+                    new string[] { "Id", "Amount" },
+                    new string?[] { "id", "amount" },
+                    n => new Named(n));
             }
 
-            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
-            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+            private sealed class Named
+            {
+                public Named(global::Extrode.Jaunty.Core.GeneratedNames n)
+                {
+                    Names = n;
+                    PrimaryKeyColumnNames = new string[] {
+                        n.Column(0),
+                    };
+                    InsertColumns = new ColumnInfo[] {
+                        new ColumnInfo(n.Column(1), "Amount", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney), e => (object?)((GenHandledEntity)e).Amount, (e, v) => ((GenHandledEntity)e).Amount = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney)v!),
+                    };
+                    UpdateColumns = new ColumnInfo[] {
+                        new ColumnInfo(n.Column(1), "Amount", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney), e => (object?)((GenHandledEntity)e).Amount, (e, v) => ((GenHandledEntity)e).Amount = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney)v!),
+                    };
+                    DeleteColumns = new ColumnInfo[] {
+                        new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((GenHandledEntity)e).Id, (e, v) => ((GenHandledEntity)e).Id = (int)v!),
+                    };
+                    var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                    if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((GenHandledEntity)e).Id, (e, v) => ((GenHandledEntity)e).Id = (int)v!));
+                    if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "Amount", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney), e => (object?)((GenHandledEntity)e).Amount, (e, v) => ((GenHandledEntity)e).Amount = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney)v!));
+                    ParameterMap = parameterMap;
+                    EntityColumns = new EntityColumnInfo[] {
+                        new EntityColumnInfo(n.Column(0), "Id", true, true, false, typeof(int), e => (object?)((GenHandledEntity)e).Id, (e, v) => ((GenHandledEntity)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                        new EntityColumnInfo(n.Column(1), "Amount", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney), e => (object?)((GenHandledEntity)e).Amount, (e, v) => ((GenHandledEntity)e).Amount = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenMoney)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    };
+                }
+
+                public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+                public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+                public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+                public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+                public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+                public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+                public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+            }
+
+            public static string TableName => NameHolder.Cache.Current.Names.TableName;
+            public static string? SchemaName => NameHolder.Cache.Current.Names.SchemaName;
+            public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => NameHolder.Cache.Current.PrimaryKeyColumnNames;
+            public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => NameHolder.Cache.Current.InsertColumns;
+            public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => NameHolder.Cache.Current.UpdateColumns;
+            public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => NameHolder.Cache.Current.DeleteColumns;
+            public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => NameHolder.Cache.Current.ParameterMap;
+            public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => NameHolder.Cache.Current.EntityColumns;
         }
 
-        public static string TableName => __JauntyNameHolder.Cache.Current.Names.TableName;
-        public static string? SchemaName => __JauntyNameHolder.Cache.Current.Names.SchemaName;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __JauntyNameHolder.Cache.Current.PrimaryKeyColumnNames;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __JauntyNameHolder.Cache.Current.InsertColumns;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __JauntyNameHolder.Cache.Current.UpdateColumns;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __JauntyNameHolder.Cache.Current.DeleteColumns;
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __JauntyNameHolder.Cache.Current.ParameterMap;
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __JauntyNameHolder.Cache.Current.EntityColumns;
+        string IEntityMetadataSource.TableName => Jaunty.TableName;
+        string? IEntityMetadataSource.SchemaName => Jaunty.SchemaName;
+        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => Jaunty.EntityColumns;
 
-        string IEntityMetadataSource.TableName => TableName;
-        string? IEntityMetadataSource.SchemaName => SchemaName;
-        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;
-
-        #if NET8_0_OR_GREATER
-        Func<IDataReader, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.RowMapper => ReadEntity;
-        #else
-        Func<IDataReader, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.RowMapper => r => new GenHandledEntity().ReadEntity(r);
-        #endif
-        Func<IDataReader, Func<IDataReader, GenHandledEntity>> IGeneratedAccessors<GenHandledEntity>.RowMapperFactory => CreateRowMapper;
-        Action<IDbCommand, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.InsertBinder => BindInsert;
-        Action<IDbCommand, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.UpdateBinder => BindUpdate;
-        Action<IDbCommand, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.DeleteBinder => BindDelete;
+        Func<IDataReader, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.RowMapper => Jaunty.ReadEntity;
+        Func<IDataReader, Func<IDataReader, GenHandledEntity>> IGeneratedAccessors<GenHandledEntity>.RowMapperFactory => Jaunty.CreateRowMapper;
+        Action<IDbCommand, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.InsertBinder => Jaunty.BindInsert;
+        Action<IDbCommand, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.UpdateBinder => Jaunty.BindUpdate;
+        Action<IDbCommand, GenHandledEntity> IGeneratedAccessors<GenHandledEntity>.DeleteBinder => Jaunty.BindDelete;
     }
 }

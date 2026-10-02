@@ -139,7 +139,7 @@ public sealed class SqliteGeneratedMapperShapeTests : IDisposable
         cmd.CommandText = "SELECT product_id, product_name, unit_price, discontinued FROM gen_products ORDER BY product_id";
 
         using SqliteDataReader reader = cmd.ExecuteReader();
-        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> mapper = GenProduct.Jaunty.CreateRowMapper(reader);
 
         var rows = new List<GenProduct>();
         while (reader.Read())
@@ -164,7 +164,7 @@ public sealed class SqliteGeneratedMapperShapeTests : IDisposable
         using SqliteDataReader reader = cmd.ExecuteReader();
 
         Assert.True(reader.Read());
-        Func<IDataReader, GenProduct> firstMapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> firstMapper = GenProduct.Jaunty.CreateRowMapper(reader);
         GenProduct first = firstMapper(reader);
         Assert.Equal(1, first.ProductId);
         Assert.Equal("Chai", first.ProductName);
@@ -175,7 +175,7 @@ public sealed class SqliteGeneratedMapperShapeTests : IDisposable
         // (decision 011): the per-row FieldCount guard that used to rescue a delegate reused
         // across NextResult() is gone, so the contract is a fresh CreateRowMapper per result set,
         // which is what DrDispatcher.Resolve and GridReader already do.
-        Func<IDataReader, GenProduct> secondMapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> secondMapper = GenProduct.Jaunty.CreateRowMapper(reader);
         GenProduct second = secondMapper(reader);
         Assert.Equal(2, second.ProductId);
         Assert.Equal("Chang", second.ProductName);
@@ -196,7 +196,7 @@ public sealed class SqliteGeneratedMapperShapeTests : IDisposable
         // 281-306, using reader.IsDBNull/GetXxx directly) instead of the DbDataReader fast
         // path (GetFieldValue<T>) exercised by every other CreateRowMapper test in this file.
         IDataReader reader = new PlainDataReader(sqliteReader);
-        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> mapper = GenProduct.Jaunty.CreateRowMapper(reader);
 
         var rows = new List<GenProduct>();
         while (reader.Read())
