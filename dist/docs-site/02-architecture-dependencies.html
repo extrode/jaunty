@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -333,13 +333,13 @@ packages that references a database driver.</p>
 </tr>
 </tbody>
 </table>
-<p>Install it and call <code>JauntyNpgsql.Use()</code> once at startup if you import CSV into PostgreSQL:</p>
+<p>Install it and call <code>c.UseNpgsqlCopy()</code> inside <code>JauntyConfig.Configure</code> if you import CSV into PostgreSQL:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyNpgsql</span>.<span class="tok-fn">Use</span>();
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-fn">UseNpgsqlCopy</span>());
 connection.<span class="tok-fn">ImportCsv</span>(<span class="tok-str">&quot;products&quot;</span>, <span class="tok-str">&quot;products.csv&quot;</span>);
 </code></pre>
 </div>
@@ -352,7 +352,7 @@ failure while the caller saw an exception saying the import had failed. Core now
 direct, compile-time calls.</p>
 <p><strong>Without a provider, an Npgsql connection is rejected by name</strong> rather than falling back quietly.
 To use the server-side path deliberately — where the database server opens the file, not your
-process — set <code>JauntyConfig.CopyImportFactory</code> to a factory that returns <code>null</code>. You can also
+process — set <code>c.CopyImportFactory</code> inside <code>JauntyConfig.Configure</code> to a factory that returns <code>null</code>. You can also
 register your own implementation for any driver with an equivalent API.</p>
 <p>Every other engine is unaffected: SQLite, MySQL/MariaDB and SQL Server never consult the factory.</p>
 <hr />

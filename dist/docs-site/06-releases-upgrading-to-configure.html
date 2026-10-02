@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upgrading to `JauntyConfig.Configure` — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
+  try {
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Releases &#8250; Upgrading to `JauntyConfig.Configure`</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">General</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quick start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-readme.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Api reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-readme.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-readme.html">Architecture Documentation</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-connection-and-transaction-ownership.html">Connection and Transaction Ownership</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-dialect-resolution.html">Dialect Resolution</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  <a href="02-architecture-source-generator-pipeline.html">Source Generator Pipeline</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-readme.html">Development Guides</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-optimizations.html">Jaunty Optimization Roadmap</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-readme.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-readme.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-readme.html">Quality &amp; Testing</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html" class="active" aria-current="page">Upgrading to JauntyConfig.Configure</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-readme.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-readme.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
+</div>
+
+      </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#what-you-will-see">What you will see</a><a class="toc-l2" href="#why">Why</a><a class="toc-l2" href="#what-to-change">What to change</a><a class="toc-l3" href="#a-console-app-or-worker">A console app or worker</a><a class="toc-l3" href="#aspnet-core">ASP.NET Core</a><a class="toc-l3" href="#reflection-mapping">Reflection mapping</a><a class="toc-l2" href="#rules-to-know">Rules to know</a><a class="toc-l2" href="#integration-tests-that-start-the-app-more-than-once">Integration tests that start the app more than once</a><a class="toc-l2" href="#your-own-unit-tests">Your own unit tests</a><a class="toc-l2" href="#packages-that-configure-jaunty">Packages that configure Jaunty</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Releases &#8250; Upgrading to `JauntyConfig.Configure`</nav>
+        <article>
+<h1 id="upgrading-to-jauntyconfigconfigure">Upgrading to <code>JauntyConfig.Configure</code></h1>
+<blockquote>
+<p><strong>Warning</strong>
+<strong>This release breaks your build if your code sets any Jaunty mapping setting.</strong> Assigning
+<code>JauntyConfig.TableNameResolver</code>, <code>ColumnNameResolver</code>, <code>SchemaNameResolver</code>,
+<code>DefaultEnumStorage</code>, <code>CopyImportFactory</code> or any <code>Reflection*Resolver</code>, or calling
+<code>JauntyConfig.RegisterTypeHandler</code>, <code>JauntyConfig.RemoveTypeHandler</code>,
+<code>JauntyReflectionExtensions.UseReflectionMapping()</code>, <code>SpecialTypeMappers.Register()</code> or
+<code>JauntyNpgsql.Use()</code>, no longer compiles. Move those lines into one <code>JauntyConfig.Configure</code>
+call at startup, as shown below.</p>
+</blockquote>
+<p>Code that only runs queries, or only sets <code>Logger</code>, the capacities, interceptors,
+<code>BulkCopyConfiguration</code> or dialect registrations, is not affected. Code the source generator wrote
+for your entities is not affected either; you do not need to rebuild for it.</p>
+<h2 id="what-you-will-see">What you will see</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">text</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="text"><code class="language-text">error CS0200: Property or indexer 'JauntyConfig.ColumnNameResolver' cannot be assigned to -- it is read only
+error CS0117: 'JauntyConfig' does not contain a definition for 'RegisterTypeHandler'
+error CS0117: 'JauntyNpgsql' does not contain a definition for 'Use'
+error CS7036: There is no argument given that corresponds to the required parameter 'config' of 'JauntyReflectionExtensions.UseReflectionMapping(JauntyConfigBuilder)'
+error CS7036: There is no argument given that corresponds to the required parameter 'config' of 'SpecialTypeMappers.Register(JauntyConfigBuilder)'
+</code></pre>
+</div>
+<h2 id="why">Why</h2>
+<p>One Jaunty operation reads these settings more than once: an <code>Insert</code> reads the column names for
+its parameter values, then again for its SQL text. If another thread changed a setting between
+those reads, the SQL and the parameters were built from different settings, and the call failed
+with a confusing database error such as &quot;Must add values for the following parameters&quot;. Setting
+everything once, before the first query, removes that window, and removing the setters makes a
+late change a compile error rather than a rare runtime failure. The full reasoning, the options
+compared and the measurements are in
+decision 014.</p>
+<h2 id="what-to-change">What to change</h2>
+<p>Put every line from the left column into one <code>Configure</code> call, as in the right column.</p>
+<table>
+<thead>
+<tr>
+<th>Before</th>
+<th>After, inside <code>JauntyConfig.Configure(c =&gt; { ... })</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>JauntyConfig.TableNameResolver = f;</code></td>
+<td><code>c.TableNameResolver = f;</code></td>
+</tr>
+<tr>
+<td><code>JauntyConfig.SchemaNameResolver = f;</code></td>
+<td><code>c.SchemaNameResolver = f;</code></td>
+</tr>
+<tr>
+<td><code>JauntyConfig.ColumnNameResolver = f;</code></td>
+<td><code>c.ColumnNameResolver = f;</code></td>
+</tr>
+<tr>
+<td><code>JauntyConfig.DefaultEnumStorage = s;</code></td>
+<td><code>c.DefaultEnumStorage = s;</code></td>
+</tr>
+<tr>
+<td><code>JauntyConfig.CopyImportFactory = f;</code></td>
+<td><code>c.CopyImportFactory = f;</code></td>
+</tr>
+<tr>
+<td><code>JauntyConfig.ReflectionMapperResolver = f;</code> (and the other 6 <code>Reflection*Resolver</code>s, <code>SpecialTypeMapperResolver</code>)</td>
+<td><code>c.ReflectionMapperResolver = f;</code></td>
+</tr>
+<tr>
+<td><code>JauntyConfig.RegisterTypeHandler&lt;T&gt;(fromDb, toDb);</code></td>
+<td><code>c.RegisterTypeHandler&lt;T&gt;(fromDb, toDb);</code></td>
+</tr>
+<tr>
+<td><code>JauntyConfig.RegisterTypeHandler(new MyHandler());</code></td>
+<td><code>c.RegisterTypeHandler(new MyHandler());</code></td>
+</tr>
+<tr>
+<td><code>JauntyReflectionExtensions.UseReflectionMapping();</code></td>
+<td><code>c.UseReflectionMapping();</code> (usually not needed, see below)</td>
+</tr>
+<tr>
+<td><code>SpecialTypeMappers.Register();</code></td>
+<td><code>SpecialTypeMappers.Register(c);</code> (<code>UseReflectionMapping</code> already does this)</td>
+</tr>
+<tr>
+<td><code>JauntyNpgsql.Use();</code></td>
+<td><code>c.UseNpgsqlCopy();</code></td>
+</tr>
+<tr>
+<td><code>JauntyConfig.RemoveTypeHandler&lt;T&gt;();</code></td>
+<td>No replacement: don't register it. Handlers are fixed at startup.</td>
+</tr>
+</tbody>
+</table>
+<p>Reading a setting is unchanged: <code>JauntyConfig.ColumnNameResolver</code> still returns the resolver.</p>
+<h3 id="a-console-app-or-worker">A console app or worker</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Before</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">TableNameResolver</span> = t =&gt; <span class="tok-fn">Snake</span>(t.<span class="tok-var">Name</span>);
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">Snake</span>;
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">RegisterTypeHandler</span>(<span class="tok-kw">new</span> <span class="tok-type">MoneyHandler</span>());
+<span class="tok-type">JauntyNpgsql</span>.<span class="tok-fn">Use</span>();
+
+<span class="tok-com">// After</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt;
+{
+    c.<span class="tok-var">TableNameResolver</span> = t =&gt; <span class="tok-fn">Snake</span>(t.<span class="tok-var">Name</span>);
+    c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">Snake</span>;
+    c.<span class="tok-fn">RegisterTypeHandler</span>(<span class="tok-kw">new</span> <span class="tok-type">MoneyHandler</span>());
+    c.<span class="tok-fn">UseNpgsqlCopy</span>();
+});
+</code></pre>
+</div>
+<h3 id="aspnet-core">ASP.NET Core</h3>
+<p>Call it in <code>Program.cs</code> before <code>builder.Build()</code> runs anything that queries, and before any hosted
+service starts:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> builder = <span class="tok-type">WebApplication</span>.<span class="tok-fn">CreateBuilder</span>(args);
+
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt;
+{
+    c.<span class="tok-var">TableNameResolver</span> = t =&gt; <span class="tok-fn">Snake</span>(t.<span class="tok-var">Name</span>);
+    c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">Snake</span>;
+});
+
+builder.<span class="tok-var">Services</span>.<span class="tok-fn">AddJauntyLogging</span>();   <span class="tok-com">// runtime settings are unchanged</span>
+<span class="tok-kw">var</span> app = builder.<span class="tok-fn">Build</span>();
+</code></pre>
+</div>
+<p>If a setting comes from configuration, read it first and guard the call (see the next section):</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">string</span> schema = builder.<span class="tok-var">Configuration</span>[<span class="tok-str">&quot;Db:Schema&quot;</span>] ?? <span class="tok-str">&quot;&quot;</span>;
+<span class="tok-ctl">if</span> (!<span class="tok-type">JauntyConfig</span>.<span class="tok-var">IsConfigured</span>)
+    <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = _ =&gt; schema);
+</code></pre>
+</div>
+<h3 id="reflection-mapping">Reflection mapping</h3>
+<p>If your project references Extrode.Jaunty.Extensions.Reflection, <code>Configure</code> switches reflection
+mapping on before your callback runs, exactly as Jaunty did on its own before. You only need
+<code>c.UseReflectionMapping()</code> where that automatic step cannot run, which is a trimmed or NativeAOT
+publish, or to put the hooks back after replacing one of them by hand. If you never call
+<code>Configure</code>, Jaunty still switches reflection mapping on by itself on first use.</p>
+<h2 id="rules-to-know">Rules to know</h2>
+<ol>
+<li><p><strong>Call <code>Configure</code> once, at startup, before anything touches Jaunty.</strong> Running a query, a Fluent
+query, or reading a generated member such as <code>Product.Jaunty.TableName</code> counts as first use.
+<code>Configure</code> after that throws:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">text</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="text"><code class="language-text">InvalidOperationException: JauntyConfig.Configure was called after Extrode.Jaunty had already
+read its settings (a query, a generated TableName, or a Fluent query ran first).
+</code></pre>
+</div>
+</li>
+<li><p><strong>A second call with the same settings does nothing; with different settings it throws.</strong> &quot;The
+same&quot; means every delegate refers to the same method on the same target. Method groups
+(<code>c.ColumnNameResolver = Snake;</code>) and lambdas that capture nothing compare equal. A lambda that
+captures a variable is a new delegate on every call, so guard it with
+<code>if (!JauntyConfig.IsConfigured)</code>.</p>
+</li>
+<li><p><strong>Settings cannot change while the app runs.</strong> Per-tenant or per-request table names are not
+supported: they would need settings scoped to a connection, which Jaunty does not have. If you
+switched a resolver at runtime, the usual replacement is one resolver that handles every case,
+or separate schemas chosen by the connection string.</p>
+</li>
+</ol>
+<h2 id="integration-tests-that-start-the-app-more-than-once">Integration tests that start the app more than once</h2>
+<p><code>WebApplicationFactory</code>, Aspire and similar hosts can run <code>Program.cs</code> several times in one test
+process. That keeps working when the settings are the same each time (rule 2). If they differ, or
+use captured values, guard the call with <code>IsConfigured</code>. The first host's settings then apply to
+every host in that process.</p>
+<h2 id="your-own-unit-tests">Your own unit tests</h2>
+<p><code>JauntyConfig.Reset()</code> restores the defaults and allows <code>Configure</code> again. It is for tests only,
+and it is not safe while another test is using Jaunty, so put tests that call <code>Reset()</code> and then
+<code>Configure</code> in a collection that does not run in parallel (xUnit:
+<code>[CollectionDefinition(&quot;Jaunty config&quot;, DisableParallelization = true)]</code>).</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-attr">[Collection(&quot;Jaunty config&quot;)]</span>
+<span class="tok-kw">public</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> <span class="tok-type">SnakeCaseNamingTests</span> : <span class="tok-type">IDisposable</span>
+{
+    <span class="tok-kw">public</span> <span class="tok-fn">SnakeCaseNamingTests</span>()
+    {
+        <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Reset</span>();
+        <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">Snake</span>);
+    }
+
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> <span class="tok-fn">Dispose</span>() =&gt; <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Reset</span>();
+}
+</code></pre>
+</div>
+<p>A test that used <code>RemoveTypeHandler</code> to undo its own registration now gets the same effect from
+<code>Reset()</code> in its cleanup.</p>
+<h2 id="packages-that-configure-jaunty">Packages that configure Jaunty</h2>
+<p>A library that set Jaunty settings in its own startup method, such as a type handler package with
+a <code>MyHandlers.Use()</code> that called <code>JauntyConfig.RegisterTypeHandler</code>, has to become a builder
+extension, and its users call it inside <code>Configure</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Before, in the package</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">Use</span>() =&gt; <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">RegisterTypeHandler</span>(<span class="tok-kw">new</span> <span class="tok-type">MoneyHandler</span>());
+
+<span class="tok-com">// After, in the package</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-type">JauntyConfigBuilder</span> <span class="tok-fn">UseMoneyHandlers</span>(<span class="tok-kw">this</span> <span class="tok-type">JauntyConfigBuilder</span> c)
+    =&gt; c.<span class="tok-fn">RegisterTypeHandler</span>(<span class="tok-kw">new</span> <span class="tok-type">MoneyHandler</span>());
+
+<span class="tok-com">// After, in the app</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-fn">UseMoneyHandlers</span>());
+</code></pre>
+</div>
+<p><code>Extrode.Jaunty.Extensions.Npgsql</code> and <code>Extrode.Jaunty.Extensions.Reflection</code> made this change
+themselves: <code>JauntyNpgsql.Use()</code> is now <code>c.UseNpgsqlCopy()</code>, and
+<code>JauntyReflectionExtensions.UseReflectionMapping()</code> is now <code>c.UseReflectionMapping()</code>.
+<code>UseNativeBulkCopy()</code> is unchanged, because bulk copy settings stay settable at runtime.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-release-runbook.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Release Runbook</span>
+</a><a class="pn-next" href="08-learn-readme.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Your First Hour with Jaunty</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
+  </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

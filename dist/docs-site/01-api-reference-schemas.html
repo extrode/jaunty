@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -353,7 +353,7 @@ resolver serves every connection in the process:</p>
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-var">SchemaNameResolver</span> = _ =&gt; <span class="tok-str">&quot;dbo&quot;</span>;     <span class="tok-com">// applies to SQLite too</span>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = _ =&gt; <span class="tok-str">&quot;dbo&quot;</span>);     <span class="tok-com">// applies to SQLite too</span>
 </code></pre>
 </div>
 <p>That emits <code>dbo.products</code> on SQLite and PostgreSQL as well as SQL Server. Scope it by type, and
@@ -363,10 +363,10 @@ return <code>string.Empty</code> for entities that should stay unqualified:</p>
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-var">SchemaNameResolver</span> = t =&gt;
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = t =&gt;
     t.<span class="tok-var">Namespace</span>?.<span class="tok-fn">StartsWith</span>(<span class="tok-str">&quot;App.Sqlite&quot;</span>, <span class="tok-type">StringComparison</span>.<span class="tok-var">Ordinal</span>) == <span class="tok-kw">true</span>
         ? <span class="tok-kw">string</span>.<span class="tok-var">Empty</span>
-        : <span class="tok-str">&quot;dbo&quot;</span>;
+        : <span class="tok-str">&quot;dbo&quot;</span>);
 </code></pre>
 </div>
 <p>It applies to reflection-mapped and source-generated entities alike. A non-empty <code>[Table]</code>

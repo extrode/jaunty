@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -208,7 +208,8 @@ resolver rather than by the source generator or the ordinary reflection mapper:<
 <hr />
 <h2 id="registration-is-required">Registration is required</h2>
 <p>Special-type mapping lives in <code>Extrode.Jaunty.Extensions.Reflection</code>, not in the core package. Nothing is
-wired up until you register it:</p>
+wired up until you register it. Referencing the package does this automatically; trimmed and
+NativeAOT publishes register it explicitly:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
@@ -216,10 +217,10 @@ wired up until you register it:</p>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-type">Extrode</span>.<span class="tok-var">Jaunty</span>.<span class="tok-var">Extensions</span>.<span class="tok-var">Reflection</span>;
 
-<span class="tok-type">JauntyReflectionExtensions</span>.<span class="tok-fn">UseReflectionMapping</span>();   <span class="tok-com">// registers special types as well</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-fn">UseReflectionMapping</span>());   <span class="tok-com">// registers special types as well</span>
 </code></pre>
 </div>
-<p><code>UseReflectionMapping()</code> calls <code>SpecialTypeMappers.Register()</code> for you, because
+<p><code>UseReflectionMapping()</code> calls <code>SpecialTypeMappers.Register(c)</code> for you, because
 <code>DrDispatcher</code> has to resolve these types through the special-type hook before it ever reaches the
 property-based reflection mapper - and these types have no mappable properties, so reaching that
 mapper would fail. If you want the special-type hook and nothing else:</p>
@@ -228,10 +229,10 @@ mapper would fail. If you want the special-type hook and nothing else:</p>
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">SpecialTypeMappers</span>.<span class="tok-fn">Register</span>();
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; <span class="tok-type">SpecialTypeMappers</span>.<span class="tok-fn">Register</span>(c));
 </code></pre>
 </div>
-<p><code>Register()</code> is idempotent and non-clobbering: it assigns <code>JauntyConfig.SpecialTypeMapperResolver</code>
+<p><code>Register(c)</code> is idempotent and non-clobbering: it assigns <code>JauntyConfig.SpecialTypeMapperResolver</code>
 only when that property is still null, so a custom resolver you installed yourself survives a
 later call.</p>
 <p>Without registration, <code>Query&lt;Dictionary&lt;string, object&gt;&gt;</code> throws
