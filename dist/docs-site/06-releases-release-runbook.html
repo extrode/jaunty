@@ -164,12 +164,12 @@
 <p>How to ship a Jaunty release. The pipeline is fully wired: pushing a version
 tag is the release action, and everything else here is verification around
 that one step. The commands below take the version from <code>$VERSION</code>, so they
-are the same commands for every release; the worked example is <code>1.0.0-rc.2</code>,
-the version cut as of 2026-09-03.</p>
+are the same commands for every release; the worked example is <code>1.0.0-rc.3</code>,
+the version cut as of 2026-10-02.</p>
 <h2 id="how-the-pipeline-works">How the pipeline works</h2>
 <p><code>.github/workflows/release.yml</code> triggers on any tag matching <code>v*</code>:</p>
 <ol>
-<li>Derives the package version from the tag (<code>v1.0.0-rc.2</code> -&gt; <code>1.0.0-rc.2</code>)
+<li>Derives the package version from the tag (<code>v1.0.0-rc.3</code> -&gt; <code>1.0.0-rc.3</code>)
 and injects it via <code>-p:Version=...</code> — the <code>&lt;Version&gt;</code> in
 <code>src/Directory.Build.props</code> is the dev-time baseline only; the tag wins.</li>
 <li>Builds <code>Jaunty.slnx</code> in Release, runs the full test suite, packs the 9
@@ -188,7 +188,7 @@ ns2.0/net8.0 public-API divergence fails the release instead of shipping.</p>
     <span class="code-lang">bash</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">VERSION</span>=<span class="tok-num">1</span>.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">2</span>                <span class="tok-com"># the version being shipped</span>
+  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">VERSION</span>=<span class="tok-num">1</span>.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">3</span>                <span class="tok-com"># the version being shipped</span>
 
 <span class="tok-com"># 0. Everything releasable is merged to dev and pushed; tree clean</span>
 <span class="tok-fn">git</span> checkout dev &amp;&amp; <span class="tok-fn">git</span> pull
@@ -252,7 +252,7 @@ rc.1 names and are not the ones on the feed:</p>
     <span class="code-lang">bash</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">dotnet</span> add package Extrode.Jaunty <span class="tok-attr">--version</span> <span class="tok-num">1</span>.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">2</span>
+  <pre data-lang="bash"><code class="language-bash"><span class="tok-fn">dotnet</span> add package Extrode.Jaunty <span class="tok-attr">--version</span> <span class="tok-num">1</span>.<span class="tok-num">0</span>.<span class="tok-num">0</span>-rc.<span class="tok-num">3</span>
 </code></pre>
 </div>
 <h2 id="if-something-goes-wrong">If something goes wrong</h2>
