@@ -9,6 +9,8 @@ default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
 
+## [1.0.0-rc.3] - 2026-10-02
+
 ### Breaking changes
 
 - **Warning: this breaks the build of any app that sets a Jaunty mapping setting. Mapping
