@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -411,19 +411,18 @@ Good: &quot;Strict mapping failed: property 'Price' on type 'Product' has no mat
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// At application startup</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>;   <span class="tok-com">// a helper you write; Extrode.Jaunty ships none</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-type">ToSnakeCase</span>);   <span class="tok-com">// a helper you write; Extrode.Jaunty ships none</span>
 
 <span class="tok-com">// First query triggers caching</span>
 <span class="tok-kw">var</span> product = connection.<span class="tok-fn">Query</span>&lt;<span class="tok-type">Product</span>&gt;(sql);
 <span class="tok-com">// MetadataCache&lt;Product&gt; is now initialized</span>
 
-<span class="tok-com">// Changing config later is picked up, at the cost of rebuilding the cache</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-kw">null</span>;  <span class="tok-com">// bumps the configuration generation</span>
+<span class="tok-com">// Calling Configure after first use throws</span>
 </code></pre>
 </div>
-<p><strong>Why</strong>: Static generic caching is faster than per-call resolution. Every <code>JauntyConfig</code> setter
-bumps a configuration generation, and caches built under an older one are rebuilt on next use, so
-a late change is correct but discards compiled work.</p>
+<p><strong>Why</strong>: Static generic caching is faster than per-call resolution. <code>Configure</code> runs once, before
+the first query, so a cache is never built under settings that later change. See
+<a href="06-releases-upgrading-to-configure.html">upgrading-to-configure.md</a>.</p>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="02-architecture-performance-spec.html"><code>performance.md</code></a> - Performance optimizations</li>

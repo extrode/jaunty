@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -509,8 +509,8 @@ names while pointing at whatever the database actually calls things:</p>
 <p><strong>The <code>partial</code> keyword is required, not stylistic.</strong> Jaunty's source generator writes the mapper
 for this class into a second file at build time, which is what keeps the library free of runtime
 reflection. Leave <code>partial</code> off and the generator reports <code>JAUNTYGEN004</code> as a warning and emits
-nothing, and the first call using the entity throws <code>No parameter binder found for type 'ProductEntity'</code>. If you cannot make a class partial, <code>UseReflectionMapping()</code> from
-<code>Extrode.Jaunty.Extensions.Reflection</code> is the deliberate opt-out.</p>
+nothing, and the first call using the entity throws <code>No parameter binder found for type 'ProductEntity'</code>. If you cannot make a class partial, <code>c.UseReflectionMapping()</code> inside
+<code>JauntyConfig.Configure</code>, from <code>Extrode.Jaunty.Extensions.Reflection</code>, is the deliberate opt-out.</p>
 <p><code>[Table]</code> overrides the table name Jaunty infers from the class name. <code>[Column]</code> does the same
 for a property's column. <code>[Key]</code> marks the primary key, and
 <code>[DatabaseGenerated(DatabaseGeneratedOption.Identity)]</code> tells Jaunty the database assigns this
@@ -608,9 +608,9 @@ from that story.</li>
 
         </article>
         <div class="page-nav" id="page-nav">
-          <div class="prev-next"><a class="pn-prev" href="06-releases-release-runbook.html">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-upgrading-to-configure.html">
   <span class="pn-label">&#8592; prev</span>
-  <span class="pn-title">Release Runbook</span>
+  <span class="pn-title">Upgrading to JauntyConfig.Configure</span>
 </a><a class="pn-next" href="08-learn-error-messages.html">
   <span class="pn-label">next &#8594;</span>
   <span class="pn-title">Error Messages, Explained</span>
