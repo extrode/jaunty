@@ -17,7 +17,6 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
 {
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata _outerMetadata;
-    private readonly EntityMetadata _subqueryMetadata;
     private readonly string? _outerAlias;
     private readonly string _subqueryAlias;
     private readonly StringBuilder _sql = new();
@@ -33,7 +32,6 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     /// </summary>
     /// <param name="dialect">The SQL dialect used to escape identifiers.</param>
     /// <param name="outerMetadata">Entity metadata for the outer query's entity type.</param>
-    /// <param name="subqueryMetadata">Entity metadata for the correlated subquery's entity type.</param>
     /// <param name="outerAlias">
     /// The alias the outer query's FROM clause was created with (e.g. via <c>db.From&lt;T&gt;("c")</c>),
     /// or <c>null</c> to fall back to the escaped table name. Outer column references must use this
@@ -52,11 +50,10 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     /// an identically-named "@p_exists" parameter for their captured/constant operands. Omit
     /// (or pass null) for a standalone translation.
     /// </param>
-    public ExistsExpressionVisitor(ISqlDialect dialect, EntityMetadata outerMetadata, EntityMetadata subqueryMetadata, string? outerAlias, string subqueryAlias, Dictionary<string, int>? parameterCounts = null)
+    public ExistsExpressionVisitor(ISqlDialect dialect, EntityMetadata outerMetadata, string? outerAlias, string subqueryAlias, Dictionary<string, int>? parameterCounts = null)
     {
         _dialect = dialect;
         _outerMetadata = outerMetadata;
-        _subqueryMetadata = subqueryMetadata;
         _outerAlias = outerAlias;
         _subqueryAlias = subqueryAlias;
         _parameterCounts = parameterCounts ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);

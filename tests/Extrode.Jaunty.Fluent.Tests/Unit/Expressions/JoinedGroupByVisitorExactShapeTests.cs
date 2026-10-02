@@ -26,7 +26,6 @@ public class JoinedGroupByVisitorExactShapeTests
     private JoinedGroupByExpressionVisitor Visitor(LambdaExpression keySelector)
         => new(
             _dialect,
-            [FluentMetadataCache.GetMetadata<Product>(), FluentMetadataCache.GetMetadata<Category>()],
             [FluentMetadataCache.GetForDialect<Product>(_dialect), FluentMetadataCache.GetForDialect<Category>(_dialect)],
             ["p", "c"],
             keySelector);
@@ -282,7 +281,6 @@ public class JoinedGroupByVisitorExactShapeTests
     {
         var visitor = new JoinedGroupByExpressionVisitor(
             _dialect,
-            [FluentMetadataCache.GetMetadata<Symbolic>(), FluentMetadataCache.GetMetadata<Category>()],
             [FluentMetadataCache.GetForDialect<Symbolic>(_dialect), FluentMetadataCache.GetForDialect<Category>(_dialect)],
             ["", "c"],
             (Expression<Func<Symbolic, Category, int>>)((s, c) => s.Weird));

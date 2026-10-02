@@ -15,7 +15,7 @@ public class ExistsVisitorExactShapeTests
     private readonly TestDialect _dialect = new();
 
     private ExistsExpressionVisitor<Category, Product> Visitor(Dictionary<string, int>? counts = null)
-        => new(_dialect, FluentMetadataCache.GetMetadata<Category>(), FluentMetadataCache.GetMetadata<Product>(), "c", "p", counts);
+        => new(_dialect, FluentMetadataCache.GetMetadata<Category>(), "c", "p", counts);
 
     private string Sql(Expression<Func<Category, Product, bool>> expr) => Visitor().Translate(expr).Sql;
 

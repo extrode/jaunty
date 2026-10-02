@@ -81,12 +81,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
-            if (connection is DbConnection dbConnection)
+            if (connection is DbConnection)
             {
-                return ExecuteReaderForGet(dbConnection, command, options);
+                return ExecuteReaderForGet(command, options);
             }
 
-            return ExecuteReaderForGetNonAsync(connection, command, options);
+            return ExecuteReaderForGetNonAsync(command, options);
         }
         finally
         {
@@ -157,12 +157,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
-            if (connection is DbConnection dbConnection)
+            if (connection is DbConnection)
             {
-                return ExecuteReaderForGet(dbConnection, command, options);
+                return ExecuteReaderForGet(command, options);
             }
 
-            return ExecuteReaderForGetNonAsync(connection, command, options);
+            return ExecuteReaderForGetNonAsync(command, options);
         }
         finally
         {
@@ -170,7 +170,7 @@ public static partial class Jaunty
         }
     }
 
-    private static T? ExecuteReaderForGet<T>(DbConnection dbConnection, IDbCommand command, CommandOptions<T> options) where T : new()
+    private static T? ExecuteReaderForGet<T>(IDbCommand command, CommandOptions<T> options) where T : new()
     {
         using (DbDataReader reader = ((DbCommand)command).ExecuteReader())
         {
@@ -182,7 +182,7 @@ public static partial class Jaunty
         }
     }
 
-    private static T? ExecuteReaderForGetNonAsync<T>(IDbConnection connection, IDbCommand command, CommandOptions<T> options) where T : new()
+    private static T? ExecuteReaderForGetNonAsync<T>(IDbCommand command, CommandOptions<T> options) where T : new()
     {
         using (IDataReader reader = command.ExecuteReader())
         {
