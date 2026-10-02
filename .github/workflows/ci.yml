@@ -555,3 +555,14 @@ jobs:
             fi
           done
           exit $fail
+
+      # The smoke app is a source-generated entity named by JauntyConfig resolvers, run through
+      # CRUD and the fluent API. Its csproj turns every trim/AOT warning into an error, and the
+      # binary exits non-zero on a wrong result, so this proves the naming path is reflection-free.
+      - name: NativeAOT smoke app (net8 and net10)
+        run: |
+          for tfm in net8.0 net10.0; do
+            dotnet publish tests/Extrode.Jaunty.AotSmoke/Extrode.Jaunty.AotSmoke.csproj \
+              -c Release -f "$tfm" -r linux-x64 --self-contained -o "./aot-smoke-$tfm"
+            "./aot-smoke-$tfm/Extrode.Jaunty.AotSmoke"
+          done
