@@ -107,6 +107,11 @@ MySQL adds `FROM DUAL` before the `WHERE`. The assigned key is not written back 
 call `Insert` when you need it. A key that matches no row always inserts, so two upserts with an
 unset key create two rows.
 
+On PostgreSQL the pair is atomic without a transaction of your own: Npgsql sends a multi-statement
+command as one batch, and PostgreSQL runs a batch as one implicit transaction. The `UPDATE` holds
+its row lock until the `INSERT` finishes, so a concurrent `DELETE` of that row waits and cannot slip
+between the two statements.
+
 `InvalidOperationException` is thrown when the entity has no primary key, when the dialect does
 not support upsert, or when there are no upsertable columns.
 
