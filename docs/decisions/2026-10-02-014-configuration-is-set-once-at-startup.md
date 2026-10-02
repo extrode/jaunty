@@ -153,7 +153,7 @@ A correctness and a consequence review of the implementation found, and the bran
   `ConfigureOnce` is the atomic form: the first call applies, later calls skip without running.
 - **A failing `Configure` could leave reflection mapping uninstalled** when `Jaunty`'s static
   constructor ran during it; the install is now retried. `Reset` waits for a `Configure` in
-  flight, and an older Extensions.Reflection package is recorded as an error rather than absent.
+  flight, and a mismatched Extensions.Reflection package is recorded as an error rather than absent.
 
 A follow-up review by Fable (same `config-f3` session) found, and `fix/configure-fable-review`
 fixed:

@@ -130,8 +130,9 @@ publish, or to put the hooks back after replacing one of them by hand. If you ne
    (`c.ColumnNameResolver = Snake;`) and lambdas that capture nothing compare equal, and type
    handlers compare by their type, so `c.RegisterTypeHandler(new MoneyHandler())` is the same on
    every run. That also means two handlers of one class built with different constructor
-   arguments count as the same, and the second call silently keeps the first. A lambda that captures a variable is a new delegate on every call, so make that call
-   through `JauntyConfig.ConfigureOnce`, which applies the first call and skips the rest without
+   arguments count as the same, and the second call silently keeps the first. A lambda that
+   captures a variable is a new delegate on every call, so make that call through
+   `JauntyConfig.ConfigureOnce`, which applies the first call and skips the rest without
    running them. A repeated `Configure` runs your callback again to compare, so keep it free of
    side effects.
 
