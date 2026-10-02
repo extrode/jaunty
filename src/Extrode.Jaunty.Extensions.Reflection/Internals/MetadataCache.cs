@@ -60,6 +60,13 @@ internal static class MetadataCache<T>
         Current().ColumnBindsTo(columnName, context);
 
     /// <summary>
+    /// The snapshot for the configuration as it stands, for a caller that has to ask
+    /// <see cref="Snapshot.GetSetters"/> and <see cref="Snapshot.ColumnBindsTo"/> about the same
+    /// configuration even if it changes between the two calls.
+    /// </summary>
+    public static Snapshot CurrentSnapshot => Current();
+
+    /// <summary>
     /// The metadata for the configuration as it stands, rebuilt if it has moved since this was
     /// built.
     /// </summary>
@@ -108,7 +115,7 @@ internal static class MetadataCache<T>
     /// time; the generation handles configuration baked into what was compiled.
     /// </para>
     /// </remarks>
-    private sealed class Snapshot
+    internal sealed class Snapshot
     {
         public int Generation { get; }
 
@@ -127,6 +134,12 @@ internal static class MetadataCache<T>
 
         private readonly Dictionary<string, int> ColumnToIndex;
 
+        // Fable review of the R38 survivor fixes: GetSetters and ColumnBindsTo each re-read
+        // JauntyConfig.ColumnNameResolver, so a resolver swapped between the two calls let a
+        // multi-entity rebind consult a different resolver from the binding it was rebinding. The
+        // snapshot already stands for one configuration; it now answers both from that one.
+        private readonly Func<string, string>? _columnNameResolver;
+
         private readonly ConditionalWeakTable<IDataReader, ReaderCacheEntry> ReaderCache = new();
 
 #if !NET8_0_OR_GREATER
@@ -137,6 +150,7 @@ internal static class MetadataCache<T>
         {
             // Read the generation before building, never after: see ConfigurationGeneration.Current.
             Generation = ConfigurationGeneration.Current;
+            _columnNameResolver = JauntyConfig.ColumnNameResolver;
             Metadata = MetadataBuilder.Build<T>();
             ColumnMetadata[] columns = Metadata.Columns.ToArray();
             List<PropertyContext<T>> contexts = new List<PropertyContext<T>>(columns.Length);
@@ -180,7 +194,7 @@ internal static class MetadataCache<T>
             if (ColumnToIndex.TryGetValue(columnName, out int propIndex))
                 return ReferenceEquals(Properties[propIndex].Property, context.Property);
 
-            Dictionary<string, int>? resolverIndex = BuildResolverIndex(JauntyConfig.ColumnNameResolver);
+            Dictionary<string, int>? resolverIndex = BuildResolverIndex(_columnNameResolver);
             return resolverIndex is not null
                 && resolverIndex.TryGetValue(columnName, out propIndex)
                 && ReferenceEquals(Properties[propIndex].Property, context.Property);
@@ -203,7 +217,7 @@ internal static class MetadataCache<T>
             // some providers (Npgsql) recycle a single IDataReader instance across commands on the same
             // pooled physical connection, so reader identity alone can return setters built for a
             // different column layout (the AUD-R9-011 regression).
-            Func<string, string>? resolver = JauntyConfig.ColumnNameResolver;
+            Func<string, string>? resolver = _columnNameResolver;
 
             if (ReaderCache.TryGetValue(reader, out ReaderCacheEntry? entry) && entry.Matches(reader, mode, resolver))
                 return entry.Setters;
