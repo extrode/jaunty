@@ -23,7 +23,7 @@ default lives in `src/Directory.Build.props`.
   `c.UseNpgsqlCopy()`. One operation read these settings several times, so a change from another
   thread could pair SQL built from one setting with parameters built from another. `Configure`
   runs once: a repeat with the same settings does nothing, one with different settings throws
-  (use the new `JauntyConfig.TryConfigure` for a call that can repeat), and a call after the first
+  (use the new `JauntyConfig.ConfigureOnce` for a call that can repeat), and a call after the first
   query, or after any read of a mapping setting, throws.
   `Logger`, the capacities, interceptors, `BulkCopyConfiguration` and dialect registration are
   unchanged. Generated code is unaffected. See
