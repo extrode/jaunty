@@ -104,8 +104,8 @@ INSERT INTO products (name, price) SELECT @name, @price
 ```
 
 MySQL adds `FROM DUAL` before the `WHERE`. The assigned key is not written back to the entity;
-call `Insert` when you need it. Two concurrent upserts of the same new row can both insert, so
-run them in a transaction if that matters.
+call `Insert` when you need it. A key that matches no row always inserts, so two upserts with an
+unset key create two rows.
 
 `InvalidOperationException` is thrown when the entity has no primary key, when the dialect does
 not support upsert, or when there are no upsertable columns.
