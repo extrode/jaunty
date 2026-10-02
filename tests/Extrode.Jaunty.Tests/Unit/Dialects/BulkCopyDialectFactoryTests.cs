@@ -132,6 +132,7 @@ public class BulkCopyDialectFactoryTests
         public IBulkCopyProvider? CreateBulkCopyProvider() => null;
         public bool SupportsForeignKeyToggle => _inner.SupportsForeignKeyToggle;
         public bool RequiresAutocommitForForeignKeyToggle => _inner.RequiresAutocommitForForeignKeyToggle;
+        public bool UpsertBatchIsAtomic => _inner.UpsertBatchIsAtomic;
         public bool SupportsUpsert => _inner.SupportsUpsert;
         public bool SupportsMultiRowInsert => _inner.SupportsMultiRowInsert;
         public int MaxParametersPerStatement => _inner.MaxParametersPerStatement;

@@ -173,6 +173,7 @@ internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDeci
     public bool SupportsForeignKeyToggle => true;
 
     public bool RequiresAutocommitForForeignKeyToggle => true;
+    public bool UpsertBatchIsAtomic => false;
 
     public string GenerateCoalesce(params string[] expressions)
     {

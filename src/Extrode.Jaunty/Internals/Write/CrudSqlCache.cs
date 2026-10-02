@@ -67,7 +67,8 @@ internal static class CrudSqlCache
         string deleteByIdSql = BuildDeleteByIdSql(metadata, dialect, escapedTableName);
         string selectByIdSql = BuildSelectByIdSql(metadata, dialect, escapedTableName);
         string selectAllSql = BuildSelectAllSql(metadata, dialect, escapedTableName);
-        string upsertSql = dialect.SupportsUpsert ? BuildUpsertSql(metadata, dialect, escapedTableName) : string.Empty;
+        bool upsertNeedsOwnTransaction = false;
+        string upsertSql = dialect.SupportsUpsert ? BuildUpsertSql(metadata, dialect, escapedTableName, out upsertNeedsOwnTransaction) : string.Empty;
 
         // Extract identity column names without LINQ (zero allocation)
         var identityColumnNames = new string[metadata.PrimaryKeys.Count];
@@ -94,7 +95,7 @@ internal static class CrudSqlCache
             lastInsertIdSql = dialect.GetLastInsertIdSql(System.Array.Empty<string>());
         }
 
-        return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, selectByIdSql, selectAllSql, metadata, dialect.SupportsUpsert);
+        return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, selectByIdSql, selectAllSql, metadata, dialect.SupportsUpsert, upsertNeedsOwnTransaction);
     }
 
     private static EntityMetadata? TryResolveMetadata<T>() where T : new()
@@ -210,8 +211,9 @@ internal static class CrudSqlCache
         return sb.ToString();
     }
 
-    private static string BuildUpsertSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
+    private static string BuildUpsertSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName, out bool needsOwnTransaction)
     {
+        needsOwnTransaction = false;
         IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
         if (primaryKeys.Count == 0)
             return string.Empty;
@@ -245,6 +247,10 @@ internal static class CrudSqlCache
             keyColumns[i] = dialect.EscapeColumnName(primaryKeys[i].ColumnName);
             keyParams[i] = "@" + primaryKeys[i].ColumnName;
         }
+
+        needsOwnTransaction = updateColNames.Length > 0
+            && !dialect.UpsertBatchIsAtomic
+            && Dialects.GeneratedKeyUpsertSql.Applies(insertColNames, keyColumns);
 
         return dialect.GenerateUpsertSql(
             escapedTableName,
