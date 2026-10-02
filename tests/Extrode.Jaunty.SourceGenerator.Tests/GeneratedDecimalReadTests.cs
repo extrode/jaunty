@@ -50,7 +50,7 @@ public sealed class GeneratedDecimalReadTests
     public void ADoubleColumn_IsReadThroughGetDouble_OnTheRowMapper()
     {
         var reader = new TypedReader(Columns, [1, "Chai", 10.25, false], unitPriceType: typeof(double));
-        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> mapper = GenProduct.Jaunty.CreateRowMapper(reader);
         Assert.True(reader.Read());
 
         GenProduct entity = mapper(reader);
@@ -64,7 +64,7 @@ public sealed class GeneratedDecimalReadTests
     public void ADecimalColumn_KeepsGetDecimal_OnTheRowMapper()
     {
         var reader = new TypedReader(Columns, [1, "Chai", 10.25m, false], unitPriceType: typeof(decimal));
-        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> mapper = GenProduct.Jaunty.CreateRowMapper(reader);
         Assert.True(reader.Read());
 
         GenProduct entity = mapper(reader);
@@ -108,7 +108,7 @@ public sealed class GeneratedDecimalReadTests
         select.CommandText = "SELECT product_id, product_name, unit_price, discontinued FROM gen_products";
         using DbDataReader reader = select.ExecuteReader();
 
-        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+        Func<IDataReader, GenProduct> mapper = GenProduct.Jaunty.CreateRowMapper(reader);
         Assert.True(reader.Read());
         GenProduct viaRowMapper = mapper(reader);
         GenProduct viaReadEntity = GenProduct.ReadEntity(reader);

@@ -14,10 +14,10 @@ public sealed class DuplicateColumnNameTests
     [Fact]
     public void ParameterMap_DuplicateColumn_KeepsOnlyFirstOccurrence()
     {
-        Assert.Equal(2, GenDuplicateColumnEntity.ParameterMap.Count);
-        Assert.True(GenDuplicateColumnEntity.ParameterMap.ContainsKey("entity_id"));
-        Assert.True(GenDuplicateColumnEntity.ParameterMap.ContainsKey("code"));
-        Assert.Equal("Code", GenDuplicateColumnEntity.ParameterMap["code"].PropertyName);
+        Assert.Equal(2, GenDuplicateColumnEntity.Jaunty.ParameterMap.Count);
+        Assert.True(GenDuplicateColumnEntity.Jaunty.ParameterMap.ContainsKey("entity_id"));
+        Assert.True(GenDuplicateColumnEntity.Jaunty.ParameterMap.ContainsKey("code"));
+        Assert.Equal("Code", GenDuplicateColumnEntity.Jaunty.ParameterMap["code"].PropertyName);
     }
 
     [Fact]
@@ -25,8 +25,8 @@ public sealed class DuplicateColumnNameTests
     {
         // EntityColumns is array-based (not keyed by column name), so it isn't affected by the
         // ParameterMap collision - both properties are still present.
-        Assert.Equal(3, GenDuplicateColumnEntity.EntityColumns.Count);
-        Assert.Contains(GenDuplicateColumnEntity.EntityColumns, c => c.PropertyName == "Code");
-        Assert.Contains(GenDuplicateColumnEntity.EntityColumns, c => c.PropertyName == "LegacyCode");
+        Assert.Equal(3, GenDuplicateColumnEntity.Jaunty.EntityColumns.Count);
+        Assert.Contains(GenDuplicateColumnEntity.Jaunty.EntityColumns, c => c.PropertyName == "Code");
+        Assert.Contains(GenDuplicateColumnEntity.Jaunty.EntityColumns, c => c.PropertyName == "LegacyCode");
     }
 }

@@ -55,7 +55,7 @@ public sealed class GeneratedDeclarationShapeTests
     [Fact]
     public void InternalEntity_ExposesItsTableName()
     {
-        Assert.Equal("gen_internal_entities", GenInternalEntity.TableName);
+        Assert.Equal("gen_internal_entities", GenInternalEntity.Jaunty.TableName);
     }
 
     // ------------------------------------------------------------------
@@ -93,7 +93,7 @@ public sealed class GeneratedDeclarationShapeTests
     [Fact]
     public void SplitEntity_ExposesItsTableName()
     {
-        Assert.Equal("gen_split_entities", GenSplitEntity.TableName);
+        Assert.Equal("gen_split_entities", GenSplitEntity.Jaunty.TableName);
     }
 
     // ------------------------------------------------------------------
@@ -104,7 +104,7 @@ public sealed class GeneratedDeclarationShapeTests
     public void IndexerEntity_DoesNotTreatTheIndexerAsAColumn()
     {
         // "Item" is the name an indexer surfaces under; it must not appear as a mapped column.
-        IReadOnlyList<string> columns = [.. GenIndexerEntity.EntityColumns.Select(c => c.PropertyName)];
+        IReadOnlyList<string> columns = [.. GenIndexerEntity.Jaunty.EntityColumns.Select(c => c.PropertyName)];
 
         Assert.DoesNotContain("Item", columns);
         Assert.Contains("Id", columns);
@@ -131,7 +131,7 @@ public sealed class GeneratedDeclarationShapeTests
     [Fact]
     public void IndexerEntity_ExposesItsTableName()
     {
-        Assert.Equal("gen_indexer_entities", GenIndexerEntity.TableName);
+        Assert.Equal("gen_indexer_entities", GenIndexerEntity.Jaunty.TableName);
     }
 
     // ------------------------------------------------------------------

@@ -17,7 +17,7 @@ public sealed class HintNameCollisionTests
     [Fact]
     public void CollidingFullyQualifiedNames_BothGenerateDistinctMappers()
     {
-        Assert.Equal("gen_hint_collision_widget_alpha", Widget_Alpha.TableName);
-        Assert.Equal("gen_hint_collision_alpha", Alpha.TableName);
+        Assert.Equal("gen_hint_collision_widget_alpha", Widget_Alpha.Jaunty.TableName);
+        Assert.Equal("gen_hint_collision_alpha", Alpha.Jaunty.TableName);
     }
 }

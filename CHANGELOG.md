@@ -11,6 +11,14 @@ default lives in `src/Directory.Build.props`.
 
 ### Breaking changes
 
+- **The members the source generator adds to an entity moved into a nested `Jaunty` class.**
+  `Product.TableName`, `Product.BindInsert(...)`, `Product.ColumnInfo` and the other generated
+  statics are now `Product.Jaunty.TableName`, `Product.Jaunty.BindInsert(...)` and so on, so an
+  entity can have its own `TableName`, `SchemaName` or `ParameterMap` column without falling back to
+  reflection. `ReadEntity` stays on the entity, as `IMapped<T>` requires. Inside an entity's own
+  code, a bare `Jaunty.X` now means the nested class; write `Extrode.Jaunty.X` for the namespace.
+  Extrode.Jaunty itself never called these members by name, so only code calling them directly
+  changes.
 - **C# namespaces, assembly names, and project/folder names now carry the `Extrode.Jaunty.` prefix,
   matching the package IDs that have used it since rc.2.** Every `namespace Jaunty...` declaration,
   `using Jaunty...` statement, and `.csproj`/folder name under `src/`, `tests/`, `benchmarks/`, and
@@ -52,10 +60,9 @@ default lives in `src/Directory.Build.props`.
   - A C# keyword used as a name, such as `@event` or `@default`, for the entity, an enclosing type,
     or a property. The column name stays the bare word.
   - An entity property named `System`, `DBNull` or `StringComparison`.
-  - An entity that declares a member the generator also emits, such as a `TableName` or
-    `SchemaName` column property. It now gets `JAUNTYGEN004` and falls back to reflection.
-    Overloads of `BindInsert`/`BindUpdate`/`BindDelete`/`ReadEntity`/`CreateRowMapper` with
-    different parameters are still allowed.
+  - An entity with a member named `Jaunty` or `ReadEntity`, or its own exact-signature
+    `BindInsert`/`BindUpdate`/`BindDelete`/`CreateRowMapper`. It now gets `JAUNTYGEN004` and falls
+    back to reflection. Overloads with different parameters are still allowed.
   - A `[Table] record struct`. It now gets `JAUNTYGEN004`.
 - **A generated `Guid` read on a `DbDataReader` now parses a text GUID**, as the reflection path
   does. It used `GetFieldValue<Guid>`, which throws on providers that do not specialise it.
@@ -140,8 +147,8 @@ default lives in `src/Directory.Build.props`.
   kept its build-time names in CRUD SQL, Fluent SQL, its binders and its reader, while partial
   reads of the same entity used the resolver. With no resolver set, nothing changes. Generated
   names follow a resolver changed at runtime, as reflection metadata already did.
-  - The generated statics (`TableName`, `SchemaName`, `PrimaryKeyColumnNames`, the `*Columns`
-    lists, `ParameterMap`, `EntityColumns`) now return the names under the current resolvers.
+  - The generated `Jaunty` members (`TableName`, `SchemaName`, `PrimaryKeyColumnNames`, the
+    `*Columns` lists, `ParameterMap`, `EntityColumns`) now return the names under the current resolvers.
     Any `JauntyConfig` change hands out new instances, so read them when needed rather than
     caching them, and do not modify the `ParameterMap` dictionary.
   - A resolver that maps two properties of a generated entity to one column is now rejected with

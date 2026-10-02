@@ -277,7 +277,7 @@ sequenceDiagram
     Core->>Gen: BindInsert(command, widget)
     Gen->>Cache: Current (read again)
     Gen-->>Core: parameters '@display_name', ...
-    Note over Core,Gen: The SQL, the bound parameter names, the reader's<br/>column lookups and the generated statics each read<br/>the names current when they run
+    Note over Core,Gen: The SQL, the bound parameter names, the reader's<br/>column lookups and the generated Jaunty members each read<br/>the names current when they run
 ```
 
 With no resolver change, a read costs one generation compare, and every step of an operation
