@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 
+using Extrode.Jaunty.Internals;
+
 namespace Extrode.Jaunty.TypeHandlers;
 
 /// <summary>
@@ -16,7 +18,14 @@ internal static class TypeHandlerRegistry
     /// Gets a value indicating whether any type handlers have been registered.
     /// Used to fast-path queries and parameter binding when no custom handlers are needed.
     /// </summary>
-    internal static bool HasHandlers => _handlerCount > 0;
+    internal static bool HasHandlers
+    {
+        get
+        {
+            ConfigurationGeneration.MarkRead();
+            return _handlerCount > 0;
+        }
+    }
 
     /// <summary>
     /// Registers a type handler for the specified type.
@@ -28,9 +37,13 @@ internal static class TypeHandlerRegistry
     /// write lookup asks for the underlying type. Registering one for <c>X</c> and one for
     /// <c>X?</c> leaves whichever came last.
     /// </remarks>
-    internal static void Register<T>(ITypeHandler handler)
+    internal static void Register<T>(ITypeHandler handler) => Register(KeyFor<T>(), handler);
+
+    /// <summary>
+    /// Registers <paramref name="handler"/> under a key already produced by <see cref="KeyFor{T}"/>.
+    /// </summary>
+    internal static void Register(Type key, ITypeHandler handler)
     {
-        Type key = KeyFor<T>();
         lock (MutationSync)
         {
             Handlers.AddOrUpdate(key, handler, (_, __) => handler);
@@ -38,7 +51,7 @@ internal static class TypeHandlerRegistry
         }
     }
 
-    private static Type KeyFor<T>() => Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+    internal static Type KeyFor<T>() => Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
 
     /// <summary>
     /// Attempts to retrieve a registered type handler for the specified type.
@@ -48,6 +61,7 @@ internal static class TypeHandlerRegistry
     /// <returns>True if a handler was found; otherwise false.</returns>
     internal static bool TryGetHandler(Type type, out ITypeHandler? handler)
     {
+        ConfigurationGeneration.MarkRead();
         return Handlers.TryGetValue(type, out handler);
     }
 

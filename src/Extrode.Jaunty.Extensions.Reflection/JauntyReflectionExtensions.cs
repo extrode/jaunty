@@ -26,29 +26,44 @@ namespace Extrode.Jaunty.Extensions.Reflection;
 public static class JauntyReflectionExtensions
 {
     /// <summary>
-    /// Enables reflection-based mapping fallback.
+    /// Enables reflection-based mapping fallback. Call it inside <c>JauntyConfig.Configure</c>.
     /// </summary>
+    /// <param name="config">The builder passed to <c>JauntyConfig.Configure</c>.</param>
+    /// <returns><paramref name="config"/>, for chaining.</returns>
     /// <remarks>
-    /// This method enables runtime reflection-based mapping which is not trim-safe.
-    /// For NativeAOT scenarios, use the source generator instead.
+    /// Runtime reflection mapping is not trim-safe; for NativeAOT, use the source generator. When
+    /// this assembly is referenced, <c>Configure</c> already switches reflection mapping on, so the
+    /// explicit call is only needed where the automatic probe cannot run (NativeAOT, trimming) or
+    /// to restore the hooks after setting one of them by hand.
     /// </remarks>
-    public static void UseReflectionMapping()
+    public static JauntyConfigBuilder UseReflectionMapping(this JauntyConfigBuilder config)
     {
-        JauntyConfig.ReflectionMapperResolver = ResolveMapper;
-        JauntyConfig.ReflectionInsertBinderResolver = ResolveInsertBinder;
-        JauntyConfig.ReflectionUpdateBinderResolver = ResolveUpdateBinder;
-        JauntyConfig.ReflectionDeleteBinderResolver = ResolveDeleteBinder;
-        JauntyConfig.ReflectionTableMetadataResolver = ResolveTableMetadata;
-        JauntyConfig.ReflectionMultiMapperResolver = ResolveMultiMapper;
-        JauntyConfig.ReflectionMultiMapperResolverN = ResolveMultiMapperN;
+        if (config is null)
+            throw new ArgumentNullException(nameof(config));
+
+        config.ReflectionMapperResolver = ResolveMapper;
+        config.ReflectionInsertBinderResolver = ResolveInsertBinder;
+        config.ReflectionUpdateBinderResolver = ResolveUpdateBinder;
+        config.ReflectionDeleteBinderResolver = ResolveDeleteBinder;
+        config.ReflectionTableMetadataResolver = ResolveTableMetadata;
+        config.ReflectionMultiMapperResolver = ResolveMultiMapper;
+        config.ReflectionMultiMapperResolverN = ResolveMultiMapperN;
 
         // Dictionary/KeyValuePair/ValueTuple/dynamic have no mappable properties, so
         // DrDispatcher must resolve them via SpecialTypeMapperResolver before ever
         // falling back to ReflectionMapperResolver's MetadataCache<T>-based mapper.
         // Registering it here (idempotent via SpecialTypeMappers.Register's ??=)
         // means callers don't need to know to call it separately.
-        SpecialTypeMappers.Register();
+        SpecialTypeMappers.Register(config);
+        return config;
     }
+
+    /// <summary>
+    /// The hook Extrode.Jaunty core calls by name to switch on reflection mapping when this assembly
+    /// is present. Not for direct use: call <see cref="UseReflectionMapping"/> instead.
+    /// </summary>
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public static void ApplyAutoReflection(JauntyConfigBuilder config) => UseReflectionMapping(config);
 
     /// <summary>
     /// Enables native bulk copy support for supported database providers.
@@ -56,8 +71,8 @@ public static class JauntyReflectionExtensions
     /// (SqlBulkCopy, NpgsqlBinaryImporter, MySqlBulkLoader) for improved performance.
     /// </summary>
     /// <remarks>
-    /// Call this method after <see cref="UseReflectionMapping"/> to enable both
-    /// reflection-based mapping and native bulk copy support.
+    /// Bulk copy settings stay settable at runtime, so this is called on its own, not inside
+    /// <c>JauntyConfig.Configure</c>.
     /// <para>
     /// Supported providers:
     /// - SQL Server: Microsoft.Data.SqlClient or System.Data.SqlClient
