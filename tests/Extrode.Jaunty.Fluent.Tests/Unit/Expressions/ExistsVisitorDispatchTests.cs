@@ -34,7 +34,6 @@ public class ExistsVisitorDispatchTests
         => new(
             _dialect,
             FluentMetadataCache.GetMetadata<Category>(),
-            FluentMetadataCache.GetMetadata<Product>(),
             "c",
             "p");
 
