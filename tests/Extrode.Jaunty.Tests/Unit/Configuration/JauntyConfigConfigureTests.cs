@@ -337,8 +337,13 @@ public class JauntyConfigConfigureTests : IDisposable
     }
 
     [Fact]
-    public void ProductVersion_TellsReleaseCandidatesApart()
+    public void ProductVersion_DropsBuildMetadataAndMatchesAcrossOneBuild()
     {
+        string? raw = System.Reflection.CustomAttributeExtensions
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(JauntyConfig).Assembly)?.InformationalVersion;
+        if (raw is null || !raw.Contains('+'))
+            Assert.Skip("Built without source revision metadata, so there is no suffix to strip.");
+
         string? core = AutoReflection.ProductVersion(typeof(JauntyConfig).Assembly);
         string? extension = AutoReflection.ProductVersion(typeof(Extrode.Jaunty.Extensions.Reflection.JauntyReflectionExtensions).Assembly);
 
