@@ -55,9 +55,9 @@ public static partial class Jaunty
     /// statements and bring it back under a new key. SQL Server's MERGE is one statement, and
     /// PostgreSQL runs the command as one implicit transaction. On MySQL/MariaDB, SQLite and DuckDB,
     /// where each statement would commit on its own, Jaunty begins a transaction around the pair
-    /// when you pass none, and commits it before returning; if the INSERT fails, the UPDATE is
-    /// rolled back. Pass a transaction through <see cref="CommandOptions"/> to make the upsert part
-    /// of a larger unit of work; Jaunty then uses yours and neither commits nor rolls it back.
+    /// when you pass none, and commits it before returning. Pass a transaction through
+    /// <see cref="CommandOptions"/> to make the upsert part of a larger unit of work; Jaunty then
+    /// uses yours and neither commits nor rolls it back.
     /// </para>
     /// </remarks>
     /// <example>
@@ -233,9 +233,13 @@ public static partial class Jaunty
             ownTransaction?.Commit();
             return affected;
         }
+        catch
+        {
+            UpsertOwnTransaction.CommitAfterFailure(ownTransaction);
+            throw;
+        }
         finally
         {
-            // Disposing an uncommitted transaction rolls it back, so a failed INSERT undoes the UPDATE.
             ownTransaction?.Dispose();
 
             if (wasClosed && connection.State != ConnectionState.Closed)
