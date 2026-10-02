@@ -357,8 +357,10 @@ delete the row in that gap:</p>
 <li>The <code>INSERT</code> checks for row 5, finds none, and adds a new row, numbered 6.</li>
 </ol>
 <p>The row the other connection deleted is back under a new key, and <code>Upsert</code> returns 2. Inside a
-transaction this cannot happen: the <code>UPDATE</code> locks row 5 (or, on SQLite and DuckDB, the whole
-database for writing), so the <code>DELETE</code> waits until both statements have finished.</p>
+transaction this cannot happen. The <code>UPDATE</code> locks row 5 (on SQLite, the whole database for
+writing), so the <code>DELETE</code> waits until both statements have finished. DuckDB does not make the
+<code>DELETE</code> wait: it fails one of the two with a transaction-conflict error, which you can retry.
+Either way the row does not come back.</p>
 <p>Jaunty makes sure the pair is always atomic:</p>
 <table>
 <thead>
@@ -393,15 +395,16 @@ database for writing), so the <code>DELETE</code> waits until both statements ha
 <p>What that means for your code:</p>
 <ul>
 <li><strong>You pass no transaction:</strong> on MySQL/MariaDB, SQLite and DuckDB, Jaunty calls
-<code>BeginTransaction()</code>, runs the pair, commits, and disposes the transaction before returning. If
-the <code>INSERT</code> fails, the <code>UPDATE</code> is rolled back with it, the same as a failed <code>MERGE</code>. It costs a
-<code>BEGIN</code> and a <code>COMMIT</code> per upsert, and only for an entity with a generated key.</li>
+<code>BeginTransaction()</code>, runs the pair, commits, and disposes the transaction before returning. It
+costs a <code>BEGIN</code> and a <code>COMMIT</code> per upsert, and only for an entity with a generated key. If a
+statement fails there is nothing to undo: each statement is atomic on its own, and the <code>INSERT</code>
+only writes when the <code>UPDATE</code> matched no row.</li>
 <li><strong>You pass a transaction</strong> through <code>CommandOptions</code>: Jaunty runs the pair inside it and neither
 commits nor rolls back. The upsert becomes part of your unit of work.</li>
-<li><strong>The connection has a transaction you did not pass:</strong> Jaunty does not start a separate one;
-the pair runs inside yours and commits or rolls back with it. Pass the transaction in rather than
-relying on this: whether a provider accepts a command without its transaction differs between
-providers, and some reject it.</li>
+<li><strong>The connection has a transaction you did not pass:</strong> the pair runs inside yours and commits or
+rolls back with it, and a failed upsert does not end your transaction. Pass the transaction in
+rather than relying on this: whether a provider accepts a command without its transaction differs
+between providers, and some reject it.</li>
 </ul>
 <div class="code-block">
   <div class="code-header">
