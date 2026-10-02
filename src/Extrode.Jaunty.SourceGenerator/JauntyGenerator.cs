@@ -90,7 +90,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor UnsupportedNestingDescriptor = new(
         id: "JAUNTYGEN004",
         title: "No mapper was generated for the entity",
-        messageFormat: "No mapper was generated for entity '{0}' because {1}. Without a generated mapper it cannot be mapped at all unless reflection mapping is enabled with UseReflectionMapping(), which a trimmed or NativeAOT publish can break.",
+        messageFormat: "No mapper was generated for entity '{0}' because {1}. Without a generated mapper it is mapped only by reflection, which needs Extrode.Jaunty.Extensions.Reflection referenced (it then enables itself) or UseReflectionMapping() called, and which a trimmed or NativeAOT publish can break.",
         category: "JauntySourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);

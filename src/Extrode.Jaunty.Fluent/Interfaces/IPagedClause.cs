@@ -29,6 +29,13 @@ namespace Extrode.Jaunty.Fluent;
 /// joins and <c>GroupBy</c> are all inherited; only the <c>Where</c> family is re-declared, so that
 /// <c>Take(5).Where(...)</c> stays paged and cannot reach a write terminal either.
 /// </para>
+/// <para>
+/// The compile-time fence is not complete and cannot be: <c>Take(5).Distinct().Where(...)</c>
+/// leads back to an un-paged interface, and an upcast (<c>IFromClause&lt;T&gt; q = ...Take(5)</c>)
+/// reaches <c>DeleteAll</c> directly. So the builder also refuses, at runtime, any DELETE or UPDATE
+/// built with paging set (<c>QueryBuilder.ThrowIfPagedWrite</c>, AUD-R38-008). The fence reports
+/// the common mistake early; the runtime check is the guarantee.
+/// </para>
 /// </remarks>
 public interface IPagedClause<T> : IFromClause<T> where T : new()
 {

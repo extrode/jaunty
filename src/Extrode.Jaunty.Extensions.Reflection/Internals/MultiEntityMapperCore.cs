@@ -44,7 +44,8 @@ internal static class MultiEntityMapperCore
         // still-unclaimed column with the same name (the documented left-to-right
         // ordinal-claiming behavior), so duplicate column names (e.g. "id" appearing
         // once per joined table) are still claimed correctly by later types.
-        PropertySetter<T>[] allSetters = MetadataCache<T>.GetSetters(reader, MappingMode.Projection);
+        MetadataCache<T>.Snapshot metadata = MetadataCache<T>.CurrentSnapshot;
+        PropertySetter<T>[] allSetters = metadata.GetSetters(reader, MappingMode.Projection);
 
         // A reader column binds to exactly one property (ColumnBindsTo mirrors the single-owner
         // lookup in BuildSetters), so two properties of this type can never meet on one ordinal,
@@ -62,7 +63,7 @@ internal static class MultiEntityMapperCore
                 continue;
             }
 
-            int replacement = FindNextUnclaimedOrdinal<T>(reader, setter.Context, alreadyClaimed);
+            int replacement = FindNextUnclaimedOrdinal(metadata, reader, setter.Context, alreadyClaimed);
             if (replacement != -1)
                 result.Add(new PropertySetter<T>(setter.Context, replacement));
             // Otherwise there is no remaining unclaimed column with this name; the
@@ -95,6 +96,7 @@ internal static class MultiEntityMapperCore
     /// cannot drift from it.
     /// </remarks>
     private static int FindNextUnclaimedOrdinal<T>(
+        MetadataCache<T>.Snapshot metadata,
         IDataReader reader,
         in PropertyContext<T> context,
         HashSet<int> alreadyClaimed)
@@ -106,7 +108,7 @@ internal static class MultiEntityMapperCore
                 continue;
 
             string? candidateName = reader.GetName(ord);
-            if (candidateName is not null && MetadataCache<T>.ColumnBindsTo(candidateName, context))
+            if (candidateName is not null && metadata.ColumnBindsTo(candidateName, context))
                 return ord;
         }
 
