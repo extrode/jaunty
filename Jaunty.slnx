@@ -22,6 +22,7 @@
     <Project Path="tests/Extrode.Jaunty.FlatFiles.Tests/Extrode.Jaunty.FlatFiles.Tests.csproj" />
     <Project Path="tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests.csproj" />
     <Project Path="tests/Extrode.Jaunty.SourceGenerator.Tests/Extrode.Jaunty.SourceGenerator.Tests.csproj" />
+    <Project Path="tests/Extrode.Jaunty.AotSmoke/Extrode.Jaunty.AotSmoke.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Extrode.Jaunty.Benchmarks/Extrode.Jaunty.Benchmarks.csproj" />
