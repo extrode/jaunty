@@ -318,9 +318,19 @@ JauntyConfig.ColumnNameResolver = ToSnakeCase;
 With no resolvers set, the same entity maps to table `OrderLine` with columns `OrderLineId`,
 `prod_name` and `UnitPrice`.
 
-FlatFiles does not use this order. It names tables through its own `TableNameResolver`: the
-`[Table]` name if the class has one, otherwise the lowercased class name, and it ignores all three
-`JauntyConfig` resolvers.
+FlatFiles uses the same order for tables and columns, with two differences:
+
+- **The last resort for a table is the lowercased class name** (`orderline`), not the class name.
+  DuckDB matches unquoted names without regard to case, and PostgreSQL folds unquoted names to
+  lowercase, so the default has stayed lowercase.
+- **No schema is applied.** File views are registered in DuckDB's default schema, and an import
+  writes to the unqualified table name, whatever `[Table(..., Schema = ...)]` or
+  `SchemaNameResolver` says. Schema support is listed in
+  [feature candidates](../06-releases/feature-candidates.md).
+
+A column resolver also renames the columns FlatFiles looks for in a file. With the resolvers
+above, a CSV for `OrderLine` needs the headers `order_line_id`, `prod_name` and `unit_price`. A file
+header and the database column always share one name; a `[Column]` name fixes it for both.
 
 ---
 

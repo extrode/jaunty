@@ -73,6 +73,25 @@ var records = await db.QueryAsync<SalesRecord>(
 
 ---
 
+## Table and Column Names
+
+FlatFiles names tables and columns in the same order as core: a non-empty `[Table]` or `[Column]`
+name, then `JauntyConfig.TableNameResolver` or `ColumnNameResolver`, then a default. The table
+default is the lowercased class name (`SalesRecord` becomes `salesrecord`); the column default is
+the property name. So a table you import is the table core CRUD and the fluent API read.
+
+Two things differ from core:
+
+- No schema is applied. File views live in DuckDB's default schema, and an import writes to the
+  unqualified table name.
+- A column resolver renames the headers FlatFiles looks for in the file, since a file header and
+  its database column share one name.
+
+The full order, with diagrams, is in
+[Name resolution](../../02-architecture/metadata-system-spec.md).
+
+---
+
 ## Architecture
 
 ### Key Components
