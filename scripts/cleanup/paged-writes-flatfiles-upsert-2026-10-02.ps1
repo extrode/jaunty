@@ -78,7 +78,9 @@ Remove-MergedBranches $repo @(
   'fix/upsert-identity-key',
   'docs/duckdb-core-crud-limitation',
   'test/allocation-budget-serial',
-  'chore/cleanup-paged-writes-upsert'
+  'chore/cleanup-paged-writes-upsert',
+  'fix/review-upsert-followups',
+  'chore/cleanup-review-followups'
 )
 Write-Host ''
 
@@ -114,5 +116,5 @@ Write-Host ''
 
 Write-Host '--- remaining state'
 git worktree list
-git branch --list 'docs/paged-writes-blocked' 'feat/generated-members-nested-class' 'test/interceptor-elapsed-margin' 'feat/paged-write-fence' 'docs/rebuild-site-paged-writes' 'feat/flatfiles-core-naming' 'refactor/dead-code-sweep' 'fix/flatfiles-stray-aot-marker' 'test/serialize-clr-type-test' 'fix/upsert-identity-key' 'docs/duckdb-core-crud-limitation' 'test/allocation-budget-serial' 'chore/cleanup-paged-writes-upsert'
+git branch --list 'docs/paged-writes-blocked' 'feat/generated-members-nested-class' 'test/interceptor-elapsed-margin' 'feat/paged-write-fence' 'docs/rebuild-site-paged-writes' 'feat/flatfiles-core-naming' 'refactor/dead-code-sweep' 'fix/flatfiles-stray-aot-marker' 'test/serialize-clr-type-test' 'fix/upsert-identity-key' 'docs/duckdb-core-crud-limitation' 'test/allocation-budget-serial' 'chore/cleanup-paged-writes-upsert' 'fix/review-upsert-followups' 'chore/cleanup-review-followups'
 if ($Execute -and $Failed) { exit 1 }
