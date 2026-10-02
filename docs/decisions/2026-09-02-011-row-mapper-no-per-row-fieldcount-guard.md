@@ -32,7 +32,7 @@ commits:
 ## Measured
 
 SQLite, 10,000 rows, warm job, 15 iterations, the same harness as
-[benchmarks-2026-09-02.md](../05-quality/reports/benchmarks-2026-09-02.md), run alone before
+[benchmarks-2026-09-02.md](../reports/benchmarks-2026-09-02.md), run alone before
 and after the change on the same machine the same evening:
 
 | Case | With the guard | Without | Change |
@@ -74,7 +74,7 @@ result-set-level check belongs.
 
 ## Pinned by
 
-- `tests/Jaunty.SourceGenerator.Tests/SqliteGeneratedMapperShapeTests.cs`,
+- `tests/Extrode.Jaunty.SourceGenerator.Tests/SqliteGeneratedMapperShapeTests.cs`,
   `CreateRowMapper_ResolvedPerResultSet_MapsAReorderedSecondSet`: a fresh closure per result
   set maps a reordered, wider second set; reusing the first closure across `NextResult()` fails
   it, verified by making that change and watching it go red.
@@ -82,6 +82,6 @@ result-set-level check belongs.
 
 ## Where the code is
 
-`src/Jaunty.SourceGenerator/JauntyGenerator.cs`, the `CreateRowMapper` emission (search for
+`src/Extrode.Jaunty.SourceGenerator/JauntyGenerator.cs`, the `CreateRowMapper` emission (search for
 "1b. CreateRowMapper"). The history of the read path, including the step that introduced the
 factory, is in [How Jaunty got fast](../08-learn/how-jaunty-got-fast.md).

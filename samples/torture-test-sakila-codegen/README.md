@@ -1,6 +1,6 @@
 # Sakila/Pagila codegen diff (Part 2 torture test)
 
-Output of `dotnet-jaunty scaffold` (`src/Jaunty.Scaffolding.Cli`) run against the same
+Output of `dotnet-jaunty scaffold` (`src/Extrode.Jaunty.Scaffolding.Cli`) run against the same
 logical Sakila/Pagila schema on all 5 targets, per the private torture-test handoff
 Part 2 step 2 ("diff generated models across DBs for the same logical schema").
 
@@ -10,7 +10,7 @@ Generated with:
 dotnet-jaunty scaffold --connection <conn> --provider <p> --output <dir> --namespace Sakila.Entities --force
 ```
 
-against the databases documented in `seed/sakila/README.md`.
+against the databases documented in [Sakila/Pagila source data setup](#sakilapagila-source-data-setup) below.
 
 ## Table counts
 
@@ -37,7 +37,7 @@ differently per dialect:
 - `[Table]` attribute presence: emitted (schema-qualified) for SQL Server/Postgres, omitted
   for MySQL/MariaDB/SQLite. This is `EntityCodeGenerator`'s existing "only emit `[Table]`
   when the table name differs from the class name or a schema is present" optimization
-  (`src/Jaunty.Scaffolding/CodeGeneration/EntityCodeGenerator.cs`) working as designed —
+  (`src/Extrode.Jaunty.Scaffolding/CodeGeneration/EntityCodeGenerator.cs`) working as designed —
   MySQL/SQLite have no schema concept, so the attribute is correctly skipped.
 - `actor_id` etc.: `int` on SQL Server/Postgres/MySQL/MariaDB, `long` on SQLite. SQLite has
   no fixed-width integer storage (`INTEGER` affinity is always 64-bit), so `long` is the
@@ -70,3 +70,39 @@ which was fixed directly):
 Pagila's `film` table has a `fulltext tsvector` full-text-search column. It scaffolds as
 `public object Fulltext { get; set; } = null!;` — exactly the "raw-SQL-passthrough, not an
 expression-tree target" boundary the handoff doc predicted in advance. Not a bug.
+
+## Sakila/Pagila source data setup
+
+Schema+data for Part 2 (the private torture-test handoff) come from two external,
+gitignored clones under `torture-test/` (not vendored into this repo — multi-MB data files):
+
+- `torture-test/sakila/` — `jOOQ/sakila` (BSD-2-Clause), used for MySQL, MariaDB, SQL Server,
+  and SQLite. Each has a `<dialect>-sakila-db/` folder with a `*-schema.sql` and
+  `*-insert-data.sql`.
+- `torture-test/pagila/` — `devrimgunduz/pagila`, used for Postgres specifically (has the
+  views/triggers/`tsvector` full-text search that MySQL's Sakila doesn't, needed for the
+  Postgres-boundary stress test called out in the handoff doc).
+
+### Databases created
+
+| Target | Container/file | Database name | Loaded from |
+|---|---|---|---|
+| SQL Server | `torture-mssql` (localhost:1433) | `sakila` | `sql-server-sakila-db/sql-server-sakila-{schema,insert-data}.sql` |
+| Postgres | `torture-postgres` (localhost:5433) | `pagila` | `pagila-schema.sql`, `pagila-insert-data.sql` |
+| MySQL | `torture-mysql` (localhost:3308) | `sakila` | `mysql-sakila-db/mysql-sakila-{schema,insert-data}.sql` |
+| MariaDB | `torture-mariadb` (localhost:3307) | `sakila` | same MySQL-sakila files (MariaDB is MySQL-compatible) |
+| SQLite | `data/sqlite/sakila.db` | n/a (file) | `sqlite-sakila-db/sqlite-sakila-{schema,insert-data}.sql` |
+
+Row counts verified identical across all 5 (actor 200, film 1000, customer 599, rental 16044,
+payment 16049) after load.
+
+### Reproducing
+
+```
+git clone --depth 1 https://github.com/jOOQ/sakila.git torture-test/sakila
+git clone --depth 1 https://github.com/devrimgunduz/pagila.git torture-test/pagila
+```
+
+Then run each dialect's `*-schema.sql` followed by `*-insert-data.sql` against a freshly
+created database of the name in the table above, using each engine's own CLI
+(`sqlcmd`/`mysql`/`psql`/`sqlite3`).

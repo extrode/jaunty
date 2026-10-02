@@ -47,12 +47,12 @@
 
   <!-- Pack README.md, the licence and the redistribution exception into NuGet packages.
        The exception is packed alongside ISL-R because without it the no-distribution
-       clause would make shipping an application that references Jaunty impossible - a
+       clause would make shipping an application that references Extrode.Jaunty impossible - a
        consumer reading only LICENSE.md would reach the wrong conclusion. -->
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE-DISTRIBUTION-EXCEPTION.md" Pack="true" PackagePath="\" />
-    <None Include="$(MSBuildThisFileDirectory)..\docs\_assets\icon.png" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\docs\assets\icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>

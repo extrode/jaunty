@@ -26,7 +26,7 @@ PR1 makes a clean net10 build green **while the repo is still net8-only**, PR2 f
 PR3 wires CI. At no point is `dev` left red.
 
 **On probe greenness, stated honestly:** the probe was *not* uniformly green. It ran 185/185
-FlatFiles and 582/583 DuckDB, but also 1 `Jaunty.Tests` failure and 4 `Jaunty.Fluent` failures
+FlatFiles and 582/583 DuckDB, but also 1 `Extrode.Jaunty.Tests` failure and 4 `Extrode.Jaunty.Fluent` failures
 (010-spec.md:76-83). The Fluent four were fixed on `fix/csharp14-span-contains`; the one is the
 `TypedKeyGuard` control this plan rewrites; the DuckDB one is a pre-existing load-sensitive flake.
 So the residue is accounted for, but the first draft's "185/185 and 582/583 pass" was a selective
@@ -36,11 +36,11 @@ quotation and is corrected here.
 atomicity was compelled by `SkipGetTargetFrameworkProperties="true"` making partial states silently
 wrong. Two problems with that argument. First, the premise is not universal: 4 of the 31 pins carry
 no `Skip` attribute, though **only one of those four is a `net8.0` pin**
-(`tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj:46`) — the other three are
+(`tests/Extrode.Jaunty.Scaffolding.Tests/Extrode.Jaunty.Scaffolding.Tests.csproj:46`) — the other three are
 `netstandard2.0` pins and irrelevant to a net8→net10 partial state. The premise fails by one
 migration-relevant pin, not four; an earlier revision of this paragraph inflated that. Second, this plan's
 own risk mitigation — a verification step asserting each net10 test assembly loaded the net10
-`Jaunty.dll` — closes the silent window, and once it is closed a per-area retarget is safe too.
+`Extrode.Jaunty.dll` — closes the silent window, and once it is closed a per-area retarget is safe too.
 
 The asymmetry is nonetheless real (forget a pin → the net8 assembly loads happily on net10;
 set one too early → a loud restore failure), and one commit means one verification instead of
@@ -72,7 +72,7 @@ framework, not the language version.
 ### PR1 — green clean net10 build, still net8-only
 
 Baseline, measured 2026-07-30 with
-`dotnet build src/Jaunty/Jaunty.csproj -f net10.0 --no-incremental -p:TreatWarningsAsErrors=false`
+`dotnet build src/Extrode.Jaunty/Extrode.Jaunty.csproj -f net10.0 --no-incremental -p:TreatWarningsAsErrors=false`
 in the net10 worktree — exactly four, and note the codes, which the first draft got wrong:
 
 ```
@@ -84,12 +84,12 @@ ParameterCache.cs(40)       IL2111    <- method group, NOT IL2072
 
 | Path | Change | Req |
 |---|---|---|
-| `src/Jaunty/Internals/Parameters/ParameterCache.cs:40` | `Cache.GetOrAdd(type, _ => BuildMetadata(type))` — close over the DAM-annotated `type` from the enclosing signature rather than passing the `BuildMetadata` method group. **Measured: 4 warnings → 3, nothing new.** Add a `TryGetValue` fast path so the closure is not allocated per call. No suppression. | §3.3 |
-| `src/Jaunty/Internals/Parameters/ParameterBinder.cs:81`, `:920` | `#pragma warning disable IL2072` naming spec 009. Unannotatable — `object.GetType()` cannot carry DAM. | §3.3 |
-| `src/Jaunty/Interceptors/LoggingInterceptor.cs:196-200` | **Remove the `[DynamicallyAccessedMembers]` annotation** from `GetPublicProperties`' parameter. **Measured 2026-07-30: clears exactly the one `IL2111`, 3 diagnostics → 2** in the probe worktree with the `ParameterCache` closure fix already in place; 4 → 2 for the two fixes together. An earlier draft credited the whole 4 → 2 to this change alone, which was wrong. Note also that suppressing `IL2111` instead would clear the same one diagnostic — **the count is not what separates the two options; the AC2 amendment is.** No pragma, no AC2 amendment. | §3.3 |
-| `src/Jaunty/Interceptors/LoggingInterceptor.cs:194` | **Rewrite the suppression justification**, which `010-spec.md:67` records as false. Use the honest template already at `ParameterCache.cs:49` — *suppressed pending a source-generated binding path; POCOs must be otherwise rooted*. This is the half that makes the annotation removal safe rather than merely quiet. | §3.3 |
-| `src/Jaunty/Interceptors/LoggingInterceptor.cs:202` | Delete the `// AOT-SAFE:` marker along with the annotation it describes. | §3.3 |
-| `tests/Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:79-83` | Rewrite the dead control — see Data/interfaces. | §3.4 |
+| `src/Extrode.Jaunty/Internals/Parameters/ParameterCache.cs:40` | `Cache.GetOrAdd(type, _ => BuildMetadata(type))` — close over the DAM-annotated `type` from the enclosing signature rather than passing the `BuildMetadata` method group. **Measured: 4 warnings → 3, nothing new.** Add a `TryGetValue` fast path so the closure is not allocated per call. No suppression. | §3.3 |
+| `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs:81`, `:920` | `#pragma warning disable IL2072` naming spec 009. Unannotatable — `object.GetType()` cannot carry DAM. | §3.3 |
+| `src/Extrode.Jaunty/Interceptors/LoggingInterceptor.cs:196-200` | **Remove the `[DynamicallyAccessedMembers]` annotation** from `GetPublicProperties`' parameter. **Measured 2026-07-30: clears exactly the one `IL2111`, 3 diagnostics → 2** in the probe worktree with the `ParameterCache` closure fix already in place; 4 → 2 for the two fixes together. An earlier draft credited the whole 4 → 2 to this change alone, which was wrong. Note also that suppressing `IL2111` instead would clear the same one diagnostic — **the count is not what separates the two options; the AC2 amendment is.** No pragma, no AC2 amendment. | §3.3 |
+| `src/Extrode.Jaunty/Interceptors/LoggingInterceptor.cs:194` | **Rewrite the suppression justification**, which `010-spec.md:67` records as false. Use the honest template already at `ParameterCache.cs:49` — *suppressed pending a source-generated binding path; POCOs must be otherwise rooted*. This is the half that makes the annotation removal safe rather than merely quiet. | §3.3 |
+| `src/Extrode.Jaunty/Interceptors/LoggingInterceptor.cs:202` | Delete the `// AOT-SAFE:` marker along with the annotation it describes. | §3.3 |
+| `tests/Extrode.Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:79-83` | Rewrite the dead control — see Data/interfaces. | §3.4 |
 | `docs/specs/009-aot-annotation-pass/009-spec.md:141-144` | Scope amendment — see below. | §3.3 |
 
 **Decision, taken 2026-07-30 in the user's absence, then reversed the same day after review.**
@@ -138,15 +138,15 @@ Also rejected: rewriting `:174` as a lambda. **Measured — it trades IL2111 for
 | `*.csproj` | `net8.0` → `net8.0;net10.0`. **Exact file list to be enumerated in `/tasks`.** `git ls-files '*.csproj' \| xargs grep -l 'net8\.0'` gives **23** — the tracked, worktree-free, gitignore-respecting count, and the number `/tasks` should start from. An earlier revision said 26 by sweeping untracked files as well; the first draft said 23 by coincidence and the spec says 22. Only an enumeration that distinguishes `<TargetFramework>` from `<TargetFrameworks>` from a pin is worth acting on. |
 | 21 net8.0 pins across 11 csproj | Duplicate the existing exact-TFM ItemGroup idiom for net10.0 — see Data/interfaces. The 10 `netstandard2.0` pins are untouched. |
 | **5 net8.0-conditioned `PropertyGroup`s** | Widen to include net10.0. **This is the largest thing both earlier drafts missed, and it is worse than the pins.** See below. | §3.2 |
-| single-TFM projects | **19 tracked csproj carry a singular `<TargetFramework>`** (an earlier revision said 13, which was a `Jaunty.slnx`-scoped count quoted as a repo-wide one). Decide per project whether it multi-targets or moves to net10. Two traps: `src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj:4` uses the **plural** `<TargetFrameworks>` tag with a single value, so a `<TargetFramework>` sweep misses it; and **`NativeAOT-FluentQuery` and `Jaunty.Fluent.SourceGen.Tests` are not in `Jaunty.slnx` at all** — the solution holds 3 of the 4 AOT samples, so no solution-level build or CI step has ever touched the fourth. AC5 says four. | §3.2 |
+| single-TFM projects | **19 tracked csproj carry a singular `<TargetFramework>`** (an earlier revision said 13, which was a `Jaunty.slnx`-scoped count quoted as a repo-wide one). Decide per project whether it multi-targets or moves to net10. Two traps: `src/Extrode.Jaunty.Scaffolding/Extrode.Jaunty.Scaffolding.csproj:4` uses the **plural** `<TargetFrameworks>` tag with a single value, so a `<TargetFramework>` sweep misses it; and **`NativeAOT-FluentQuery` and `Extrode.Jaunty.Fluent.SourceGen.Tests` are not in `Jaunty.slnx` at all** — the solution holds 3 of the 4 AOT samples, so no solution-level build or CI step has ever touched the fourth. AC5 says four. | §3.2 |
 | `benchmarks/BENCHMARK-RESULTS.md` | net8 baseline captured on the commit **before** this one. | §3.7 |
 
 ### PR3 — CI, release, AOT
 
 | Path | Change | Req |
 |---|---|---|
-| `src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj` | `<WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>`, conditioned on net10.0, with a comment naming the six offending assemblies so it can be retired one dependency at a time. **Measured to work.** | §3.6 |
-| `src/Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs:65` | **Confirm or clear the IL2057** recorded at `010-spec.md:252-256`. It appeared once and vanished under incremental analysis; it is first-party and `010-spec.md` explicitly forbids sweeping it into `WarningsNotAsErrors`. The first draft dropped this to the very trap its own first risk bullet describes. | §3.3 |
+| `src/Extrode.Jaunty.Scaffolding.Cli/Extrode.Jaunty.Scaffolding.Cli.csproj` | `<WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>`, conditioned on net10.0, with a comment naming the six offending assemblies so it can be retired one dependency at a time. **Measured to work.** | §3.6 |
+| `src/Extrode.Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs:65` | **Confirm or clear the IL2057** recorded at `010-spec.md:252-256`. It appeared once and vanished under incremental analysis; it is first-party and `010-spec.md` explicitly forbids sweeping it into `WarningsNotAsErrors`. The first draft dropped this to the very trap its own first risk bullet describes. | §3.3 |
 | `.github/workflows/ci.yml:73` | `--no-incremental` on the build step. | §3.1 |
 | `.github/workflows/ci.yml:75-121` | Five test steps gain a net10 leg, plus the loader assertion below. Duplicated steps rather than a job matrix — the runner is self-hosted and a matrix re-spins the SQL Server service container per leg. | §3.5 |
 | `.github/workflows/ci.yml:182-189` | Keep the net8 publish as control, add `-f net10.0`, keep the size check. | §3.6 |
@@ -162,7 +162,7 @@ The first draft proposed a `JauntyPinnedTfm` property in root `Directory.Build.p
 | Project | Actual TFM | `$(TargetFramework)` as seen in `Directory.Build.props` | `JauntyPinnedTfm` |
 |---|---|---|---|
 | `samples/NativeAOT-Basic` (single-TFM) | net10.0 | `[]` — **empty** | **net8.0** |
-| `src/Jaunty` (multi-TFM inner build) | net10.0 | `[net10.0]` | net10.0 |
+| `src/Extrode.Jaunty` (multi-TFM inner build) | net10.0 | `[net10.0]` | net10.0 |
 
 Root `Directory.Build.props` is imported **before** the csproj body, so `$(TargetFramework)` is
 visible there only when it arrives as a *global* property — i.e. in the inner builds of a
@@ -171,19 +171,19 @@ paragraph said 13 in an earlier revision, the same `Jaunty.slnx`-scoped figure c
 condition evaluates against an empty string and every reference pins net8.0 while the project itself
 builds net10.0. They include both benchmark projects (AC7's evidence) and all four `NativeAOT-*`
 samples (AC5's proof):
-the mechanism would have silently benchmarked and AOT-published the **net8** build of `Jaunty.dll`.
+the mechanism would have silently benchmarked and AOT-published the **net8** build of `Extrode.Jaunty.dll`.
 
 A second defect in the same proposal: it claimed the pins' enclosing `ItemGroup Condition` widens
 from `'$(TargetFramework)' == 'net8.0'`. Only **4** ItemGroups carry such a condition
-(`src/Jaunty`, `src/Jaunty.Extensions.Reflection`, `src/Jaunty.FlatFiles`, `tests/Jaunty.Tests`);
+(`src/Extrode.Jaunty`, `src/Extrode.Jaunty.Extensions.Reflection`, `src/Extrode.Jaunty.FlatFiles`, `tests/Extrode.Jaunty.Tests`);
 the rest are unconditioned.
 
 **Therefore: no centralisation.** Duplicate the existing exact-TFM `ItemGroup` idiom for net10.0,
-as at `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj:30-45`:
+as at `src/Extrode.Jaunty.FlatFiles/Extrode.Jaunty.FlatFiles.csproj:30-45`:
 
 ```xml
 <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-  <ProjectReference Include="..\Jaunty\Jaunty.csproj"
+  <ProjectReference Include="..\Extrode.Jaunty\Extrode.Jaunty.csproj"
                     SetTargetFramework="TargetFramework=net10.0"
                     SkipGetTargetFrameworkProperties="true" />
 </ItemGroup>
@@ -200,11 +200,11 @@ net10.0 target without widening them produces a net10 build that silently loses 
 
 | File:line | What a net10 inner build loses |
 |---|---|
-| `src/Jaunty/Jaunty.csproj:41-45` | `Nullable`, `IsAotCompatible`, **and `ASYNC_ENUMERABLE_SUPPORT`** — net10 `Jaunty.dll` would ship **without the `IAsyncEnumerable` streaming API** and unmarked for AOT |
-| `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj:24-28` | `Nullable`, `IsAotCompatible`, **`EnableTrimAnalyzer`** — the net10 leg stops running the trim analysis PR1 exists to keep green |
-| `src/Jaunty.Fluent/Jaunty.Fluent.csproj:23-25` | same shape |
-| `tests/Jaunty.Tests/Jaunty.Tests.csproj:16-22` | `ASYNC_ENUMERABLE_SUPPORT` and the `NoWarn` list on the net10 test leg |
-| `tests/Jaunty.Tests/Jaunty.Tests.csproj:40` | `Configuration`-**and**-TFM conditioned; needs the same widening |
+| `src/Extrode.Jaunty/Extrode.Jaunty.csproj:41-45` | `Nullable`, `IsAotCompatible`, **and `ASYNC_ENUMERABLE_SUPPORT`** — net10 `Extrode.Jaunty.dll` would ship **without the `IAsyncEnumerable` streaming API** and unmarked for AOT |
+| `src/Extrode.Jaunty.FlatFiles/Extrode.Jaunty.FlatFiles.csproj:24-28` | `Nullable`, `IsAotCompatible`, **`EnableTrimAnalyzer`** — the net10 leg stops running the trim analysis PR1 exists to keep green |
+| `src/Extrode.Jaunty.Fluent/Extrode.Jaunty.Fluent.csproj:23-25` | same shape |
+| `tests/Extrode.Jaunty.Tests/Extrode.Jaunty.Tests.csproj:16-22` | `ASYNC_ENUMERABLE_SUPPORT` and the `NoWarn` list on the net10 test leg |
+| `tests/Extrode.Jaunty.Tests/Extrode.Jaunty.Tests.csproj:40` | `Configuration`-**and**-TFM conditioned; needs the same widening |
 
 **None of these fail loudly.** A missing `DefineConstants` compiles out an API; a missing
 `EnableTrimAnalyzer` reports zero trim warnings, which reads as success. AC2 and AC3 would both go
@@ -214,7 +214,7 @@ already at `src/Directory.Build.props:11-12` — and verify by asserting
 `ASYNC_ENUMERABLE_SUPPORT`-gated API is present in the net10 build.
 
 By contrast the one net8.0-conditioned `ItemGroup` that holds `PackageReference`s
-(`src/Jaunty/Jaunty.csproj:36-39`) fails *loudly* on net10 — missing `ILogger`. That asymmetry is
+(`src/Extrode.Jaunty/Extrode.Jaunty.csproj:36-39`) fails *loudly* on net10 — missing `ILogger`. That asymmetry is
 why the PropertyGroups are the dangerous half and the earlier drafts, which enumerated ItemGroups
 precisely, missed the half that matters.
 
@@ -225,11 +225,11 @@ pins are untouched", since three of the four are netstandard pins. The Approach 
 corrected instead. One-line note in the maintainer's tracker if anyone wants them made uniform later.
 
 **Loader assertion (the real safety net).** After the net10 test legs run, assert each test
-assembly loaded the net10 build of `Jaunty.dll`.
+assembly loaded the net10 build of `Extrode.Jaunty.dll`.
 
-**Do not use `Assembly.Location` — it is vacuous here.** A referenced `Jaunty.dll` is copied into
+**Do not use `Assembly.Location` — it is vacuous here.** A referenced `Extrode.Jaunty.dll` is copied into
 the *consuming* project's output directory, so on a net10 test leg its `Location` is
-`tests/Jaunty.Tests/bin/…/net10.0/Jaunty.dll` — a path containing `net10.0` — **whether the net8
+`tests/Extrode.Jaunty.Tests/bin/…/net10.0/Extrode.Jaunty.dll` — a path containing `net10.0` — **whether the net8
 or the net10 build was copied there**. The folder name comes from the test project's TFM, not the
 dependency's, so the check is green in exactly the failure case it exists to catch. It is also
 empty in single-file and NativeAOT contexts, so it could not be reused for the AC5 samples.
@@ -237,7 +237,7 @@ empty in single-file and NativeAOT contexts, so it could not be reused for the A
 Use the loaded assembly's own metadata instead:
 
 ```csharp
-var tfm = typeof(Jaunty.Jaunty).Assembly
+var tfm = typeof(Extrode.Jaunty.Jaunty).Assembly
     .GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>()!
     .FrameworkName;                                   // ".NETCoreApp,Version=v10.0"
 Assert.Equal(".NETCoreApp,Version=v10.0", tfm);

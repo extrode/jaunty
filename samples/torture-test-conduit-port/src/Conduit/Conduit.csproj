@@ -13,8 +13,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\Jaunty\Jaunty.csproj" />
-    <ProjectReference Include="..\..\..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" />
-    <ProjectReference Include="..\..\..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Extrode.Jaunty\Extrode.Jaunty.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Extrode.Jaunty.Fluent\Extrode.Jaunty.Fluent.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Extrode.Jaunty.Extensions.Reflection\Extrode.Jaunty.Extensions.Reflection.csproj" />
   </ItemGroup>
 </Project>

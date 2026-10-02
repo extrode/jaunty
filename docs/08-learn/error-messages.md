@@ -74,9 +74,9 @@ table are ambiguous SQL.
 
 Full text:
 
-> No metadata found for type 'Product'. Ensure the class has [Table] and is processed by the Jaunty
-> source generator (the class must be declared 'partial'), or call Jaunty.Extensions.Reflection's
-> UseReflectionMapping().
+> No metadata found for type 'Product'. Ensure the class has [Table] and is processed by the
+> Extrode.Jaunty source generator (the class must be declared 'partial'), or call
+> UseReflectionMapping() from Extrode.Jaunty.Extensions.Reflection inside JauntyConfig.Configure.
 
 Jaunty reads entity metadata that its source generator emits at compile time — that is what keeps
 it free of runtime reflection and NativeAOT-safe. The message means the generator produced nothing
@@ -84,18 +84,18 @@ for this type. Three causes, in the order they occur:
 
 1. **The class is not `partial`.** The generator adds to your class, so it needs the keyword.
    `public partial class Product`.
-2. **The generator is not referenced.** In a project that references `Jaunty` through a project
+2. **The generator is not referenced.** In a project that references `Extrode.Jaunty` through a project
    reference rather than the NuGet package, the analyzer has to be wired up explicitly:
    ```xml
-   <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+   <ProjectReference Include="..\..\src\Extrode.Jaunty.SourceGenerator\Extrode.Jaunty.SourceGenerator.csproj"
                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
    ```
    The NuGet package does this for you.
 3. **The type has no `[Table]` attribute** and no convention picked it up.
 
 If you want runtime reflection instead — for a prototype, or a type you cannot make `partial` —
-`UseReflectionMapping()` from `Jaunty.Extensions.Reflection` supplies it, at the cost of the
-NativeAOT guarantee.
+`Extrode.Jaunty.Extensions.Reflection` supplies it (`c.UseReflectionMapping()` inside
+`JauntyConfig.Configure` on trimmed or NativeAOT publishes), at the cost of the NativeAOT guarantee.
 
 ## `InvalidOperationException` naming a property with no column
 

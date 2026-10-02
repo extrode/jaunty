@@ -9,8 +9,8 @@ using Conduit.Infrastructure;
 
 using FluentValidation;
 
-using Jaunty;
-using Jaunty.Fluent;
+using Extrode.Jaunty;
+using Extrode.Jaunty.Fluent;
 
 using MediatR;
 

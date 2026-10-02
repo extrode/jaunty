@@ -4,7 +4,7 @@
 
 ```powershell
 pwsh -NoProfile -File scripts/coverage.ps1                       # every suite under tests/
-pwsh -NoProfile -File scripts/coverage.ps1 -Suite Jaunty.Tests   # one suite
+pwsh -NoProfile -File scripts/coverage.ps1 -Suite Extrode.Jaunty.Tests   # one suite
 ```
 
 Parameters: `-Suite`, `-Configuration` (default `Release`), `-Framework` (default `net10.0`).
@@ -32,7 +32,7 @@ Coverage settings live in `coverage.runsettings` at the repository root. They ar
 
 That one line is the reason the file exists. Coverlet's own default also excludes
 `CompilerGeneratedAttribute`, which hides lambda and closure bodies. Measured on
-`Jaunty.FlatFiles.Tests` with `coverlet.collector` 10.0.1, the same run reports:
+`Extrode.Jaunty.FlatFiles.Tests` with `coverlet.collector` 10.0.1, the same run reports:
 
 | `ExcludeByAttribute` | Classes | State machines | Lines |
 |---|---:|---:|---:|
@@ -51,7 +51,19 @@ needs changing to be included.
 
 ---
 
-## The 2026-08-27 baseline
+## The 2026-09-20 baseline
+
+Superseded the 2026-08-27 baseline below; current numbers, per-file ranking, and a full
+method-level "why is this uncovered" triage (genuine gap vs. dead platform path vs. defensive code
+vs. live-DB-only vs. tooling artifact) live in
+[`reports/coverage-gaps-2026-09-20.md`](reports/coverage-gaps-2026-09-20.md). Headline: **88.9%
+line coverage (22,883/25,750 lines), 3,987 methods, 806 with at least one uncovered line.** That
+report also fixed a real bug
+in `scripts/coverage.ps1`: a `--nologo` flag silently broke `dotnet test --coverage` (reported
+"Zero tests ran" instead of failing loudly), so any coverage run before this date should be treated
+as suspect until re-verified.
+
+## The 2026-08-27 baseline (historical)
 
 Measured across 8 suites and 8,471 tests, 0 failures. Reports were union-merged per `(file, line)`,
 with nested compiler-generated classes folded into their outer class and partial classes keyed by
@@ -87,7 +99,7 @@ load.
 | `…Span`, live on net8.0/net10.0 | 81 | 81 | 100 % |
 | `…Classic`, live on netstandard2.0 | 80 | 3 | 3.8 % |
 
-`Jaunty.Tests` does target net472 and 50 parser tests pass there locally. But `ci.yml` is
+`Extrode.Jaunty.Tests` does target net472 and 50 parser tests pass there locally. But `ci.yml` is
 `ubuntu-latest` throughout and **has no net472 leg**, so no CI run has ever executed the code path
 .NET Framework users get. Two hand-maintained parsers that have to agree, one of them tested only
 when someone happens to run the net472 leg on a Windows box, is a silent wrong-parameter-set

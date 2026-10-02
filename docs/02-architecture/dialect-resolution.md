@@ -24,7 +24,7 @@ flowchart TD
     Cache -- miss --> Custom{"RegisterDialect'd<br/>under this type name?"}
 
     Custom -- yes --> Enhance["TryEnhanceWithBulkCopy"]
-    Custom -- no --> Builtin{"A name Jaunty knows?"}
+    Custom -- no --> Builtin{"A name Extrode.Jaunty knows?"}
 
     Builtin -- "SqlConnection" --> D1["SqlServerDialect"]
     Builtin -- "NpgsqlConnection" --> D2["PostgreSqlDialect"]
@@ -84,7 +84,7 @@ accident: eight layers of connection decorator is not a shape real code has.
 
 ## Bulk copy is a capability probed at run time
 
-`UseNativeBulkCopy()` lives in `Jaunty.Extensions.Reflection`, a package the core does not
+`UseNativeBulkCopy()` lives in `Extrode.Jaunty.Extensions.Reflection`, a package the core does not
 reference. Rather than a compile-time dependency, resolution ends with a probe: if that assembly
 is loaded, the resolved dialect is wrapped in one that can bulk-copy. If it is not, the base
 dialect comes back unchanged and every write path still works.
@@ -120,9 +120,9 @@ custom registrations through it costs them nothing and removes the inconsistency
 ## When resolution fails
 
 ```
-No SQL dialect is registered for connection type 'FooConnection'. Jaunty resolves dialects
+No SQL dialect is registered for connection type 'FooConnection'. Extrode.Jaunty resolves dialects
 from the connection type name and recognises SqlConnection, NpgsqlConnection, MySqlConnection,
-SQLiteConnection and SqliteConnection. If this is a wrapped or profiled connection, Jaunty
+SQLiteConnection and SqliteConnection. If this is a wrapped or profiled connection, Extrode.Jaunty
 could not reach the connection underneath it. Register a dialect for it with
 SqlDialectFactory.RegisterDialect("FooConnection", dialect).
 ```

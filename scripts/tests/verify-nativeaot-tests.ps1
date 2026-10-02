@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Tests for scripts/Verify-NativeAOT.ps1, written 2026-07-30 with its markers-only rewrite.
+# Tests for scripts/verify-nativeaot.ps1, written 2026-07-30 with its markers-only rewrite.
 #
 # Each case perturbs the tree with a temp probe file, runs the scanner, and asserts the exit
 # code. Cases 2-5 pin the specific defects the rewrite fixed, so a regression to any of them
@@ -8,9 +8,9 @@
 
 $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$scanner = Join-Path (Split-Path -Parent $scriptDir) 'Verify-NativeAOT.ps1'
+$scanner = Join-Path (Split-Path -Parent $scriptDir) 'verify-nativeaot.ps1'
 $repoRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
-$probe = Join-Path $repoRoot 'src\Jaunty\ScannerTestProbeExtensions.cs'
+$probe = Join-Path $repoRoot 'src\Extrode.Jaunty\ScannerTestProbeExtensions.cs'
 
 $failures = 0
 function Assert-Exit([string]$name, [int]$expected, [scriptblock]$setup) {
@@ -32,7 +32,7 @@ Assert-Exit 'baseline tree passes' 0 { }
 Assert-Exit 'unmarked reflection fails, even in a *Extensions.cs file' 1 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     public static PropertyInfo[] P(object o) => o.GetType().GetProperties();
@@ -43,7 +43,7 @@ internal static class ScannerTestProbe
 Assert-Exit 'lowercase prose "NativeAOT-safe:" does not allow a site' 1 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     // This helper is NativeAOT-safe: it only reads.
@@ -55,7 +55,7 @@ internal static class ScannerTestProbe
 Assert-Exit 'marker separated by a blank line does not allow a site' 1 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     // AOT-SAFE: misplaced, a blank line breaks adjacency.
@@ -68,7 +68,7 @@ internal static class ScannerTestProbe
 Assert-Exit 'adjacent marker allows a site' 0 {
     Set-Content $probe @'
 using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
     // AOT-SAFE: test probe; deleted by the test that wrote it.
@@ -77,20 +77,53 @@ internal static class ScannerTestProbe
 '@
 }
 
-Assert-Exit 'GetGetMethod( is not counted as GetMethod(' 0 {
+Assert-Exit 'a longer name ending in GetMethod( is not counted as GetMethod(' 0 {
     Set-Content $probe @'
-using System.Reflection;
-namespace Jaunty;
+namespace Extrode.Jaunty;
 internal static class ScannerTestProbe
 {
-    public static MethodInfo? P(PropertyInfo p) => p.GetGetMethod();
+    public static object? P(object o) => LookupGetMethod(o);
+    private static object? LookupGetMethod(object o) => o;
+}
+'@
+}
+
+# Round 38: these four shapes passed unmarked because the scanner had no pattern for them.
+$unmarked = [ordered]@{
+    'GetCustomAttribute<T>(' = 'public static object? P(System.Type t) => t.GetCustomAttribute<System.ObsoleteAttribute>();'
+    'GetCustomAttributes(' = 'public static object[] P(System.Type t) => t.GetCustomAttributes(true);'
+    'GetIndexParameters(' = 'public static int P(PropertyInfo p) => p.GetIndexParameters().Length;'
+    'GetGetMethod(' = 'public static MethodInfo? P(PropertyInfo p) => p.GetGetMethod();'
+    'GetSetMethod(' = 'public static MethodInfo? P(PropertyInfo p) => p.GetSetMethod();'
+    'Expression.Compile(' = 'public static System.Func<int> P(System.Linq.Expressions.Expression<System.Func<int>> e) => e.Compile();'
+}
+foreach ($case in $unmarked.GetEnumerator()) {
+    $body = $case.Value
+    Assert-Exit "unmarked $($case.Key) fails" 1 {
+        Set-Content $probe @"
+using System.Reflection;
+namespace Extrode.Jaunty;
+internal static class ScannerTestProbe
+{
+    $body
+}
+"@
+    }
+}
+
+Assert-Exit 'RegexOptions.Compiled is not counted as Expression.Compile(' 0 {
+    Set-Content $probe @'
+namespace Extrode.Jaunty;
+internal static class ScannerTestProbe
+{
+    public static readonly System.Text.RegularExpressions.Regex R = new("a", System.Text.RegularExpressions.RegexOptions.Compiled);
 }
 '@
 }
 
 Assert-Exit 'prose in a doc comment is not counted as reflection' 0 {
     Set-Content $probe @'
-namespace Jaunty;
+namespace Extrode.Jaunty;
 /// <summary>Historically used <c>typeof(T).GetMethod(name)</c>; no longer.</summary>
 internal static class ScannerTestProbe
 {

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+  NativeAOT smoke check, published and run by CI's aot-publish job. It proves the naming resolvers
+  need no reflection: a source-generated entity, with its table and column names coming from
+  JauntyConfig resolvers, round-trips through core CRUD and the fluent API in a NativeAOT binary.
+  The process exits non-zero on any wrong result.
+
+  TreatWarningsAsErrors also makes every trim and AOT analysis warning (IL2xxx, IL3xxx) an error,
+  since the ILLink and ILCompiler targets default their own warnings-as-errors switch to it.
+  TrimmerSingleWarn=false reports each warning at its call site instead of one summary warning
+  per assembly. No Extrode.Jaunty.Extensions.Reflection reference, on purpose.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Extrode.Jaunty\Extrode.Jaunty.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Jaunty.Fluent\Extrode.Jaunty.Fluent.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Jaunty.SourceGenerator\Extrode.Jaunty.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
+  </ItemGroup>
+
+</Project>

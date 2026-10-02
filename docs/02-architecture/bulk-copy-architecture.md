@@ -298,7 +298,7 @@ catch
 For full NativeAOT compatibility, consider:
 
 1. **Source-generated providers** - Generate provider code at compile time
-2. **Extension packages** - Move bulk copy to `Jaunty.Providers.*` packages
+2. **Extension packages** - Move bulk copy to `Extrode.Jaunty.Providers.*` packages
 3. **Direct references** - Add optional direct package references with trimming support
 
 ## Testing Strategy
@@ -315,7 +315,7 @@ For full NativeAOT compatibility, consider:
 
 ### Performance Tests
 
-See `benchmarks/Jaunty.Benchmarks/Benchmarks/BulkCopyBenchmarks.cs`
+See `benchmarks/Extrode.Jaunty.Benchmarks/Benchmarks/BulkCopyBenchmarks.cs`
 
 ## Extensibility
 

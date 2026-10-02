@@ -1,21 +1,21 @@
-# Jaunty NativeAOT evaluation script
+# Extrode.Jaunty NativeAOT evaluation script
 $ErrorActionPreference = "Continue" # Allow script to continue so we see all warnings
 
-$Project = "src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj"
+$Project = "src/Extrode.Jaunty.Scaffolding.Cli/Extrode.Jaunty.Scaffolding.Cli.csproj"
 
 # Auto-detect runtime identifier and binary name based on OS
 if ($IsLinux) {
     $Runtime = "linux-x64"
-    $BinaryName = "Jaunty.Scaffolding.Cli"
+    $BinaryName = "Extrode.Jaunty.Scaffolding.Cli"
 } elseif ($IsMacOS) {
     $Runtime = "osx-x64"
-    $BinaryName = "Jaunty.Scaffolding.Cli"
+    $BinaryName = "Extrode.Jaunty.Scaffolding.Cli"
 } else {
     $Runtime = "win-x64"
-    $BinaryName = "Jaunty.Scaffolding.Cli.exe"
+    $BinaryName = "Extrode.Jaunty.Scaffolding.Cli.exe"
 }
 
-Write-Host "--- Attempting NativeAOT Publish for Jaunty.Scaffolding.Cli ---" -ForegroundColor Cyan
+Write-Host "--- Attempting NativeAOT Publish for Extrode.Jaunty.Scaffolding.Cli ---" -ForegroundColor Cyan
 Write-Host "Runtime: $Runtime" -ForegroundColor Gray
 
 # Publish with AOT enabled. PublishAot comes from the Cli csproj: passing

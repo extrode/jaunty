@@ -234,6 +234,12 @@ two paths agree on every value tried, including 0.1, 1/3, 2.675, 1e22 and 12345.
 Only the scale can differ: `0.0000001` where the text path gave `0.00000010`. A test compares
 both paths against a live SQLite reader for each of those values.
 
+That held until SQLite 3.53.4 (SQLitePCLRaw 3.0.5), which formats a `REAL` with up to 17 digits,
+so `GetDecimal` now returns `1234567890.123456` where the cast gives `1234567890.12346`. The cast
+stayed: it is the same value the reflection mapper's `Convert.ChangeType` produces, and nothing
+both exact and fast was found. The test now compares against the reflection conversion. Decision
+013 in `docs/decisions/` has the measurements.
+
 ## Step 5: hand a custom mapper back as it was given
 
 `CommandOptions<T>.WithMapper(Func<IDataReader, T>)` lets you write the row mapping yourself.
@@ -302,7 +308,7 @@ The runs above compare against the July baseline so that the before and after ar
 loop. The baseline was then fixed to read the price as the type the column reports, RepoDb's
 SQLite-only bool workaround was confined to SQLite, and the warm job went from 5 to 15
 iterations. The full four-provider run on that harness is
-[benchmarks-2026-09-02.md](../05-quality/reports/benchmarks-2026-09-02.md), and it is what the
+[benchmarks-2026-09-02.md](../reports/benchmarks-2026-09-02.md), and it is what the
 README quotes. On that harness, SQLite at 10,000 rows measured alone: the hand-coded loop 4.08 ms, Jaunty
 `Query<T>` 5.42 ms, RepoDb 5.77 ms, Dapper 7.45 ms. So the honest sentence is this: Jaunty is
 the fastest of the five libraries measured on SQLite and SQL Server, level with RepoDb on the
@@ -335,7 +341,7 @@ and the mapper cannot: NULL is a legitimate value there.
 ## Repeating the numbers
 
 ```bash
-cd benchmarks/Jaunty.Benchmarks
+cd benchmarks/Extrode.Jaunty.Benchmarks
 dotnet run -c Release -f net10.0 -- --filter "*.Benchmarks.QueryBenchmarks.*"
 ```
 
@@ -343,7 +349,7 @@ The full parameter set runs 1, 100 and 10,000 rows on SQLite, SQL Server, Postgr
 MariaDB; the server providers need the `docker-compose.yml` containers and a local SQL Server.
 Edit the two `[Params]` attributes in `QueryBenchmarks.cs` to narrow a run.
 
-The earlier reports are [BENCHMARKS-2026-07-04.md](../05-quality/reports/BENCHMARKS-2026-07-04.md)
-and [benchmarks-2026-07-29.md](../05-quality/reports/benchmarks-2026-07-29.md). The
+The earlier reports are [benchmarks-2026-07-04.md](../reports/benchmarks-2026-07-04.md)
+and [benchmarks-2026-07-29.md](../reports/benchmarks-2026-07-29.md). The
 performance rules the code is written to are in
 [performance-spec.md](../02-architecture/performance-spec.md).

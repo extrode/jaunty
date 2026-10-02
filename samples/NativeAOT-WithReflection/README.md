@@ -22,15 +22,14 @@ Two things, both visible in this project:
    the extension is wired up by hand at start-up:
 
    ```csharp
-   JauntyReflectionExtensions.UseReflectionMapping();
-   SpecialTypeMappers.Register();
+   JauntyConfig.Configure(c => c.UseReflectionMapping());
    ```
 
 2. **A trimmer root.** The `.csproj` has to keep the whole extension assembly, because the
    trimmer cannot see through the reflection to know what is used:
 
    ```xml
-   <TrimmerRootAssembly Include="Jaunty.Extensions.Reflection" />
+   <TrimmerRootAssembly Include="Extrode.Jaunty.Extensions.Reflection" />
    ```
 
    That is a size cost paid unconditionally, and it is why the reflection extension is a

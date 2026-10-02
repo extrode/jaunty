@@ -14,11 +14,11 @@
     is a commit, not an SDK install.
 
     Why 13.0 and not 14.0. C# 14's first-class span conversions change overload resolution on
-    calls that were previously unambiguous, and Jaunty has two known casualties:
+    calls that were previously unambiguous, and Extrode.Jaunty has two known casualties:
 
       - net472: string.Contains(string, StringComparison) rebinds to the MemoryExtensions
         span overload, which does not exist on net472 (fixed at the call sites, 2026-07-29).
-      - Jaunty.Fluent: for an *array* receiver, ids.Contains(p.Id) rebinds from
+      - Extrode.Jaunty.Fluent: for an *array* receiver, ids.Contains(p.Id) rebinds from
         Enumerable.Contains to MemoryExtensions.Contains(ReadOnlySpan<T>, T), with the array
         wrapped in ReadOnlySpan<T>.op_Implicit. WhereExpressionVisitor recognised neither the
         declaring type nor the static form, so it fell through to the constant-evaluation
@@ -26,7 +26,7 @@
 
     Note what the pin did NOT do for the second one. Expression trees are built by whoever
     writes the lambda, so a consumer compiling with C# 14 sent that shape to the shipped
-    Jaunty.Fluent no matter what this file says. The pin turned four tests green while the
+    Extrode.Jaunty.Fluent no matter what this file says. The pin turned four tests green while the
     product stayed broken; the visitor is fixed now, and the tests that cover it build the C# 14
     tree by hand so they hold under this pin. A LangVersion pin is protection against ambient
     SDK drift in *our* build. It is never protection for the shipped product.

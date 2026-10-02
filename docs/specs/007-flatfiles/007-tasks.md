@@ -26,7 +26,7 @@
 - Priority: P0
 - Feature: F-001
 - Files:
-  - `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj`
+  - `src/Extrode.Jaunty.FlatFiles/Extrode.Jaunty.FlatFiles.csproj`
   - Update `Jaunty.sln`
 - Acceptance: `dotnet build` succeeds targeting netstandard2.0 and net10.0
 
@@ -36,7 +36,7 @@
 - Feature: F-002
 - Depends: T001
 - Files:
-  - `src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj`
+  - `src/Extrode.Jaunty.FlatFiles.DuckDB/Extrode.Jaunty.FlatFiles.DuckDB.csproj`
   - Update `Jaunty.sln`
 - Acceptance: `dotnet build` succeeds targeting net8.0 and net10.0; DuckDB.NET.Data.Full referenced
 
@@ -46,8 +46,8 @@
 - Feature: F-003
 - Depends: T001, T002
 - Files:
-  - `tests/Jaunty.FlatFiles.Tests/Jaunty.FlatFiles.Tests.csproj`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Jaunty.FlatFiles.DuckDB.Tests.csproj`
+  - `tests/Extrode.Jaunty.FlatFiles.Tests/Extrode.Jaunty.FlatFiles.Tests.csproj`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests.csproj`
 - Acceptance: `dotnet test` runs (0 tests, 0 failures) on all TFMs
 
 ### [T004] Define core interfaces
@@ -56,15 +56,15 @@
 - Feature: F-004
 - Depends: T001
 - Files:
-  - `src/Jaunty.FlatFiles/IFlatFileDatabase.cs`
-  - `src/Jaunty.FlatFiles/IFileSource.cs`
-  - `src/Jaunty.FlatFiles/IFlatFileDialect.cs`
-  - `src/Jaunty.FlatFiles/FileFormat.cs`
-  - `src/Jaunty.FlatFiles/WriteBack/WriteBackMode.cs`
-  - `src/Jaunty.FlatFiles/WriteBack/ExportFormat.cs`
-  - `src/Jaunty.FlatFiles/WriteBack/IWriteBackStrategy.cs`
-  - `src/Jaunty.FlatFiles/Import/IImportPipeline.cs`
-  - `src/Jaunty.FlatFiles/Import/ConflictStrategy.cs`
+  - `src/Extrode.Jaunty.FlatFiles/IFlatFileDatabase.cs`
+  - `src/Extrode.Jaunty.FlatFiles/IFileSource.cs`
+  - `src/Extrode.Jaunty.FlatFiles/IFlatFileDialect.cs`
+  - `src/Extrode.Jaunty.FlatFiles/FileFormat.cs`
+  - `src/Extrode.Jaunty.FlatFiles/WriteBack/WriteBackMode.cs`
+  - `src/Extrode.Jaunty.FlatFiles/WriteBack/ExportFormat.cs`
+  - `src/Extrode.Jaunty.FlatFiles/WriteBack/IWriteBackStrategy.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Import/IImportPipeline.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Import/ConflictStrategy.cs`
 - Tests: Compile-only validation
 - Acceptance: All interfaces compile; no external dependencies beyond Jaunty core
 
@@ -74,15 +74,15 @@
 - Feature: F-005
 - Depends: T004
 - Files:
-  - `src/Jaunty.FlatFiles/Configuration/FlatFileDatabaseOptions.cs`
-  - `src/Jaunty.FlatFiles/Configuration/CsvOptions.cs`
-  - `src/Jaunty.FlatFiles/Configuration/TsvOptions.cs`
-  - `src/Jaunty.FlatFiles/Configuration/ParquetOptions.cs`
-  - `src/Jaunty.FlatFiles/Configuration/JsonFileOptions.cs`
-  - `src/Jaunty.FlatFiles/Configuration/WriteBackOptions.cs`
-  - `src/Jaunty.FlatFiles/Import/ImportOptions.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Configuration/FlatFileDatabaseOptions.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Configuration/CsvOptions.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Configuration/TsvOptions.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Configuration/ParquetOptions.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Configuration/JsonFileOptions.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Configuration/WriteBackOptions.cs`
+  - `src/Extrode.Jaunty.FlatFiles/Import/ImportOptions.cs`
 - Tests:
-  - `tests/Jaunty.FlatFiles.Tests/Configuration/FlatFileDatabaseOptionsTests.cs`
+  - `tests/Extrode.Jaunty.FlatFiles.Tests/Configuration/FlatFileDatabaseOptionsTests.cs`
   - Test builder methods return self (fluent chain)
   - Test defaults are applied
 - Acceptance: Options build correctly; defaults match spec
@@ -93,9 +93,9 @@
 - Feature: F-006
 - Depends: T004
 - Files:
-  - `src/Jaunty.FlatFiles.DuckDB/DuckDbDialect.cs`
+  - `src/Extrode.Jaunty.FlatFiles.DuckDB/DuckDbDialect.cs`
 - Tests:
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/DuckDbDialectTests.cs`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/DuckDbDialectTests.cs`
   - Test: identifier quoting (`"column_name"`)
   - Test: parameter prefix (`$1`, `$2`)
   - Test: boolean literals (`true`/`false`)
@@ -109,7 +109,7 @@
 - Feature: F-007
 - Depends: T002
 - Files:
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/DuckDbConnectionTests.cs`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/DuckDbConnectionTests.cs`
 - Tests:
   - Test: open in-memory DuckDBConnection
   - Test: execute CREATE TABLE + INSERT via DuckDBCommand
@@ -125,7 +125,7 @@
 - Feature: F-008
 - Depends: T006, T007
 - Files:
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/MaterializationTests.cs`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/MaterializationTests.cs`
 - Tests:
   - Test: raw SQL → entity mapping via Jaunty's existing pipeline
   - Test: all C# ↔ DuckDB type mappings (string, int, decimal, DateTime, bool, etc.)
@@ -138,15 +138,15 @@
 - Priority: P0
 - Feature: F-009
 - Files:
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/sales.csv`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/sales.tsv`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/inventory.parquet`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/customers.json`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/customers.ndjson`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/empty.csv`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/no-header.csv`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/malformed.csv`
-  - `tests/Jaunty.FlatFiles.DuckDB.Tests/Fixtures/TestEntities.cs`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/sales.csv`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/sales.tsv`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/inventory.parquet`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/customers.json`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/customers.ndjson`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/empty.csv`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/no-header.csv`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/malformed.csv`
+  - `tests/Extrode.Jaunty.FlatFiles.DuckDB.Tests/Fixtures/TestEntities.cs`
 - Acceptance: All fixtures loadable; Parquet generated via DuckDB COPY TO in a setup script
 
 ### [T010] Create architecture diagrams
@@ -167,7 +167,7 @@
 
 ### [T011] Implement FlatFileDatabase.Open(string path) — single file shorthand
 - Priority: P0 | Feature: F-011 | Depends: T006, T008
-- Files: `src/Jaunty.FlatFiles.DuckDB/DuckDbFlatFileDatabase.cs`
+- Files: `src/Extrode.Jaunty.FlatFiles.DuckDB/DuckDbFlatFileDatabase.cs`
 - Tests: Open CSV → query returns results
 - Acceptance: Single-argument Open works for CSV files
 
@@ -179,13 +179,13 @@
 
 ### [T013] Implement CsvFileSource with CREATE VIEW generation
 - Priority: P0 | Feature: F-013 | Depends: T011
-- Files: `src/Jaunty.FlatFiles.DuckDB/Sources/DuckDbCsvSource.cs`
+- Files: `src/Extrode.Jaunty.FlatFiles.DuckDB/Sources/DuckDbCsvSource.cs`
 - Tests: Verify generated SQL matches expected `read_csv_auto()` call
 - Acceptance: CSV file registered as DuckDB VIEW
 
 ### [T014] Implement TsvFileSource
 - Priority: P0 | Feature: F-014 | Depends: T013
-- Files: `src/Jaunty.FlatFiles.DuckDB/Sources/DuckDbTsvSource.cs`
+- Files: `src/Extrode.Jaunty.FlatFiles.DuckDB/Sources/DuckDbTsvSource.cs`
 - Tests: TSV file loads with `delim='\t'`
 - Acceptance: TSV queryable
 
@@ -255,12 +255,12 @@
 
 ### [T027] Implement ParquetFileSource
 - Priority: P0 | Feature: F-027 | Depends: T013
-- Files: `src/Jaunty.FlatFiles.DuckDB/Sources/DuckDbParquetSource.cs`
+- Files: `src/Extrode.Jaunty.FlatFiles.DuckDB/Sources/DuckDbParquetSource.cs`
 - Tests: Parquet file registered and queryable
 
 ### [T028] Implement JsonFileSource
 - Priority: P0 | Feature: F-028 | Depends: T013
-- Files: `src/Jaunty.FlatFiles.DuckDB/Sources/DuckDbJsonSource.cs`
+- Files: `src/Extrode.Jaunty.FlatFiles.DuckDB/Sources/DuckDbJsonSource.cs`
 - Tests: JSON array and NDJSON both loadable
 
 ### [T029] ParquetOptions (hive partitioning)

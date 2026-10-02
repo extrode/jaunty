@@ -6,12 +6,16 @@ Documentation for Jaunty quality assurance, testing strategies, and code coverag
 
 ## Reports
 
-- [`reports/PRODUCTION-READINESS-2026-07-02.md`](reports/PRODUCTION-READINESS-2026-07-02.md) - Production readiness assessment (July 2026)
+Dated, point-in-time reports (benchmarks, coverage gaps, audits) live in
+[`../reports/`](../reports/), not here - this folder holds the living quality/testing guides,
+`../reports/` holds the dated snapshots. See
+[`../reports/production-readiness-2026-07-02.md`](../reports/production-readiness-2026-07-02.md)
+for the production readiness assessment (July 2026).
 
 ## Code Coverage
 
 - [`code-coverage.md`](code-coverage.md) - **How to run coverage, what `coverage.runsettings` does, and the 2026-08-27 baseline**
-- [`reports/COVERAGE-GAPS-2026-07-04.md`](reports/COVERAGE-GAPS-2026-07-04.md) - Coverage gap inventory (July 2026; older dotCover analysis archived under `../99-archive/2026-02-code-coverage/`)
+- [`../reports/coverage-gaps-2026-07-04.md`](../reports/coverage-gaps-2026-07-04.md) - Coverage gap inventory (July 2026; older dotCover analysis archived under `../archive/2026-02-code-coverage/`)
 
 ---
 
@@ -45,7 +49,7 @@ dotnet test
 dotnet test /p:CollectCoverage=true
 
 # Run specific test project
-dotnet test tests/Jaunty.Tests
+dotnet test tests/Extrode.Jaunty.Tests
 ```
 
 ---

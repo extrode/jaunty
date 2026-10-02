@@ -7,7 +7,15 @@ the market-analysis papers are held in the private work repository and are not p
 
 ## Release Runbook
 
-- [`RELEASE-RUNBOOK.md`](RELEASE-RUNBOOK.md) - Step-by-step process for cutting and shipping a release
+- [`release-runbook.md`](release-runbook.md) - Step-by-step process for cutting and shipping a release
+
+## Upgrade guides
+
+- [`upgrading-to-configure.md`](upgrading-to-configure.md) - Mapping settings move into `JauntyConfig.Configure`: what breaks, what to change, and why
+
+## Planning
+
+- [`feature-candidates.md`](feature-candidates.md) - Features Jaunty may add later, what each would need, and why it is not built yet
 
 ## Commercial
 
@@ -20,7 +28,7 @@ its terms are available on request rather than published here. To ask, open a
 
 ## Reports
 
-- [`../05-quality/reports/PRODUCTION-READINESS-2026-07-02.md`](../05-quality/reports/PRODUCTION-READINESS-2026-07-02.md) - Production readiness assessment
+- [`../reports/production-readiness-2026-07-02.md`](../reports/production-readiness-2026-07-02.md) - Production readiness assessment
 
 ---
 

@@ -9,7 +9,7 @@
 		<!--
 		  Ardalis.Specification.EntityFrameworkCore is retained (not removed as the port brief
 		  suggested) because EfRepository.cs and the IntegrationTests project (which must remain
-		  untouched) still depend on it. The Jaunty-backed JauntyRepository uses only the base
+		  untouched) still depend on it. The Extrode.Jaunty-backed JauntyRepository uses only the base
 		  Ardalis.Specification contract, referenced explicitly below.
 		-->
 		<PackageReference Include="Ardalis.Specification" />
@@ -25,9 +25,9 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\ApplicationCore\ApplicationCore.csproj" />
-		<ProjectReference Include="..\..\..\..\src\Jaunty\Jaunty.csproj" />
-		<ProjectReference Include="..\..\..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" />
-		<ProjectReference Include="..\..\..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" />
+		<ProjectReference Include="..\..\..\..\src\Extrode.Jaunty\Extrode.Jaunty.csproj" />
+		<ProjectReference Include="..\..\..\..\src\Extrode.Jaunty.Fluent\Extrode.Jaunty.Fluent.csproj" />
+		<ProjectReference Include="..\..\..\..\src\Extrode.Jaunty.Extensions.Reflection\Extrode.Jaunty.Extensions.Reflection.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="Data\Migrations\" />

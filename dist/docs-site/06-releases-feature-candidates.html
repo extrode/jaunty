@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature candidates — jaunty docs</title>
+<link rel="stylesheet" href="site.css">
+<script>
+/* Inline, in the head, and before anything paints. A saved preference applied
+   from nav.js would arrive after the first frame, and the reader would watch
+   the page flash the wrong theme on every navigation. */
+(function () {
+  var d = document.documentElement;
+  var KEYS = ['theme', 'fs', 'nav-w', 'toc', 'nav'];
+  /* Over file:// Firefox gives every page its own empty localStorage, so the link
+     that brought the reader here carries the preferences too: ?dg=nav-w:336,ts:…
+     The newer of the two wins, by the ts each side records at its last change, so
+     a reload after a change keeps the change and a stale bookmark loses to storage. */
+  var fromLink = {};
+  var m = /[?&]dg=([^&#]*)/.exec(location.search);
+  if (m) decodeURIComponent(m[1]).split(',').forEach(function (kv) {
+    var i = kv.indexOf(':');
+    if (i > 0) fromLink[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+  var pref = {};
+  try {
+    var stored = parseInt(localStorage.getItem('dg-ts'), 10) || 0;
+    var linked = parseInt(fromLink.ts, 10) || 0;
+    if (m && linked >= stored) {
+      KEYS.forEach(function (k) {
+        pref[k] = fromLink[k] || null;
+        if (pref[k]) localStorage.setItem('dg-' + k, pref[k]); else localStorage.removeItem('dg-' + k);
+      });
+      localStorage.setItem('dg-ts', String(linked));
+    } else {
+      KEYS.forEach(function (k) { pref[k] = localStorage.getItem('dg-' + k); });
+    }
+  } catch (e) { /* private mode, file:// with storage denied -- the link still counts */
+    KEYS.forEach(function (k) { pref[k] = fromLink[k] || null; });
+  }
+  if (pref.theme === 'light' || pref.theme === 'dark') d.setAttribute('data-theme', pref.theme);
+  var s = parseFloat(pref.fs);
+  if (s >= 0.75 && s <= 1.75) d.style.setProperty('--fs-scale', String(s));
+  var w = parseInt(pref['nav-w'], 10);
+  if (w >= 180 && w <= 480) d.style.setProperty('--nav-w', w + 'px');
+  if (pref.toc === 'hidden') d.setAttribute('data-toc', 'hidden');
+  if (pref.nav === 'hidden') d.setAttribute('data-nav', 'hidden');
+})();
+</script>
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Releases &#8250; Feature candidates</span>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-tools">
+      <button class="tool-btn search-btn" type="button" onclick="openSearch()" title="Search (/)">
+        <span class="search-word">search</span><kbd>/</kbd>
+      </button>
+      <div class="fs-group" role="group" aria-label="Text size">
+        <button class="tool-btn" onclick="fontSize(-1)" title="Smaller text">A&#8722;</button>
+        <button class="tool-btn" onclick="fontSize(0)" title="Reset text size">A</button>
+        <button class="tool-btn" onclick="fontSize(1)" title="Larger text">A+</button>
+      </div>
+      <button class="tool-btn theme-btn" id="theme-btn" onclick="cycleTheme()"
+              title="Colour scheme" aria-live="polite">auto</button>
+    </div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">General</span>
+  </div>
+  <div class="nav-group-items">  <a href="constitution.html">Constitution — jaunty</a>  <a href="conventions.html">Conventions — jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quick start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-readme.html">Quick Start Guide</a>  <a href="00-quick-start-build-and-test.html">Build and Test Guide</a>  <a href="00-quick-start-project-layout.html">Project Layout</a>  <a href="00-quick-start-project-structure.html">Project Structure</a>  <a href="00-quick-start-why-jaunty.html">Why Jaunty (and Why Not)</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Api reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-readme.html">API Reference</a>  <a href="01-api-reference-api-summary.html">Jaunty API Reference Summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk Copy Operations</a>  <a href="01-api-reference-command-options.html">CommandOptions</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">CRUD Operations</a>  <a href="01-api-reference-fluent-api.html">Fluent API</a>  <a href="01-api-reference-get-and-execute-operations.html">Get, GetAll, and Execute Operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a>  <a href="01-api-reference-overview.html">Jaunty API Reference</a>  <a href="01-api-reference-query-methods.html">Query Methods</a>  <a href="01-api-reference-query-partial-methods.html">Partial Query Methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar Methods</a>  <a href="01-api-reference-schemas.html">Schemas</a>  <a href="01-api-reference-single-result-methods.html">Single Result Methods</a>  <a href="01-api-reference-special-types.html">Special Types</a>  <a href="01-api-reference-stored-procedures.html">Stored Procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming Methods</a>  <a href="01-api-reference-write-methods.html">Write Methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-readme.html">Architecture Documentation</a>  <a href="02-architecture-architecture-specification.html">Jaunty Architecture Specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture Visual Guide</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a>  <a href="02-architecture-connection-and-transaction-ownership.html">Connection and Transaction Ownership</a>  <a href="02-architecture-dependencies.html">Dependencies</a>  <a href="02-architecture-design-philosophy.html">Design Philosophy</a>  <a href="02-architecture-dialect-resolution.html">Dialect Resolution</a>  <a href="02-architecture-metadata-system-spec.html">Metadata System Specification</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter Binding Specification</a>  <a href="02-architecture-performance-spec.html">Performance Optimization Guide</a>  <a href="02-architecture-reflection-and-trimming.html">Reflection, trimming and NativeAOT</a>  <a href="02-architecture-source-generator-pipeline.html">Source Generator Pipeline</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-readme.html">Development Guides</a>  <a href="03-development-adding-new-methods.html">Adding a New Method</a>  <a href="03-development-api-design-guidelines.html">Jaunty API Design Guidelines</a>  <a href="03-development-ci-architecture.html">CI Architecture</a>  <a href="03-development-code-review-checklist.html">Code Review Checklist</a>  <a href="03-development-contribution-workflow.html">Contribution workflow</a>  <a href="03-development-di-integration-design.html">Dependency Injection Integration Design</a>  <a href="03-development-file-naming-convention.html">File Naming Convention</a>  <a href="03-development-hybrid-design.html">Jaunty Hybrid Fast-Path Design</a>  <a href="03-development-limitations.html">Jaunty Known Limitations</a>  <a href="03-development-multi-targeting.html">Multi-Targeting</a>  <a href="03-development-optimization-checklist.html">Optimization Progress Checklist</a>  <a href="03-development-optimizations.html">Jaunty Optimization Roadmap</a>  <a href="03-development-self-hosted-ci-runner.html">Self-hosted CI runner</a>  <a href="03-development-xml-documentation-style.html">Jaunty XML Documentation Style Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-readme.html">Jaunty Extensions</a>  <a href="04-extensions-flatfiles-readme.html">Flatfiles / Jaunty.FlatFiles</a>  <a href="04-extensions-flatfiles-architecture.html">Flatfiles / Jaunty.FlatFiles Architecture</a>  <a href="04-extensions-flatfiles-code-analysis.html">Flatfiles / Jaunty.FlatFiles — Code Analysis: Inconsistencies &amp; Performance Issues</a>  <a href="04-extensions-flatfiles-flatfile-spec.html">Flatfiles / FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-readme.html">Quality &amp; Testing</a>  <a href="05-quality-code-coverage.html">Code Coverage</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html" class="active" aria-current="page">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-readme.html">Your First Hour with Jaunty</a>  <a href="08-learn-error-messages.html">Error Messages, Explained</a>  <a href="08-learn-exercises.html">Exercises</a>  <a href="08-learn-how-jaunty-got-fast.html">How Jaunty got fast</a>  <a href="08-learn-migrating-readme.html">Migrating / Migrating to Jaunty</a>  <a href="08-learn-migrating-from-dapper.html">Migrating / Migrating from Dapper</a>  <a href="08-learn-migrating-from-ef-core.html">Migrating / Migrating from EF Core</a>  <a href="08-learn-migrating-strict-mapping.html">Migrating / Strict mapping: the one thing that will surprise you</a>  </div>
+</div>
+
+      </div>
+      <div class="nav-resizer" id="nav-resizer" title="Drag to resize, double-click to reset"></div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content has-toc" id="jt-content">
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#paged-delete-and-update">Paged DELETE and UPDATE</a><a class="toc-l2" href="#per-connection-naming">Per-connection naming</a><a class="toc-l2" href="#schemas-for-flat-file-views-and-imports">Schemas for flat-file views and imports</a></nav>
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Releases &#8250; Feature candidates</nav>
+        <article>
+<h1 id="feature-candidates">Feature candidates</h1>
+<p>Features Jaunty may add later. Nothing here is planned or promised. An entry records what the
+feature would need and why it is not built yet, so the reasoning is not lost and a request can be
+weighed against it.</p>
+<p>To ask for one of these, or for something not listed, open an issue describing what you are
+trying to do.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Asked for by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#paged-delete-and-update">Paged DELETE and UPDATE</a></td>
+<td>Not planned</td>
+<td>Nobody yet</td>
+</tr>
+<tr>
+<td><a href="#per-connection-naming">Per-connection naming</a></td>
+<td>Not planned</td>
+<td>Nobody yet</td>
+</tr>
+<tr>
+<td><a href="#schemas-for-flat-file-views-and-imports">Schemas for flat-file views and imports</a></td>
+<td>Not planned</td>
+<td>Nobody yet</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="paged-delete-and-update">Paged DELETE and UPDATE</h2>
+<p><strong>What it would do:</strong> make <code>From&lt;Order&gt;().OrderBy(o =&gt; o.CreatedAt).Take(5).Delete()</code> delete
+those five rows, instead of refusing it.</p>
+<p><strong>Today:</strong> refused at compile time (CS0619), and at runtime for the one route the compiler cannot
+see. The workaround, selecting keys and then deleting by key in one transaction, is in
+<a href="01-api-reference-fluent-api.html#writes-after-take-or-skip">Writes after Take or Skip</a>.</p>
+<p><strong>What it would need:</strong></p>
+<ul>
+<li>A required <code>OrderBy</code>. Without one, &quot;the first five rows&quot; is whatever order the database happens
+to return, and the chain should not compile.</li>
+<li>A primary key on the entity, to write <code>WHERE key IN (SELECT key ... ORDER BY ... LIMIT n)</code>.</li>
+<li>Per-database SQL:
+<ul>
+<li>SQL Server: a CTE or a key subquery with <code>ORDER BY ... OFFSET ... FETCH</code>, since <code>DELETE TOP</code>
+takes no <code>ORDER BY</code>.</li>
+<li>PostgreSQL and DuckDB: a key subquery.</li>
+<li>SQLite: a key subquery, since <code>DELETE ... LIMIT</code> is a compile-time option most builds leave off.</li>
+<li>MySQL and MariaDB: <code>DELETE ... ORDER BY ... LIMIT n</code> for <code>Take</code>. <code>Skip</code> has no form, because
+there is no offset on DELETE and MySQL rejects <code>LIMIT</code> inside an <code>IN (...)</code> subquery; a derived
+table works around that but changes the locking.</li>
+</ul>
+</li>
+<li>Composite keys, which need a row-value <code>IN</code> or an <code>EXISTS</code> join and differ again per database.</li>
+<li>Tests for each database, both orders (<code>Take</code> then <code>Where</code>, <code>Where</code> then <code>Take</code>), and <code>Distinct</code>.</li>
+</ul>
+<p><strong>Why not now:</strong> it is new surface on every database for something nobody has asked for, and the
+workaround is short and portable. Blocking it costs nothing that works today.</p>
+<hr />
+<h2 id="per-connection-naming">Per-connection naming</h2>
+<p><strong>What it would do:</strong> let two connections in one process map the same entity to different table
+or column names, for example one schema per tenant.</p>
+<p><strong>Today:</strong> <code>JauntyConfig.TableNameResolver</code>, <code>SchemaNameResolver</code> and <code>ColumnNameResolver</code> are
+process-wide. Changing one affects every connection, and the caches rebuild for everyone.</p>
+<p><strong>What it would need:</strong> a naming scope carried with the connection or the call (for example in
+<code>CommandOptions</code>), cache keys that include it, and the same on the source-generated path, whose
+name cache is keyed only by the configuration generation.</p>
+<p><strong>Why not now:</strong> nobody has asked for it, and a schema per tenant is usually handled by the
+connection string or the database user's default schema, which needs nothing from Jaunty.</p>
+<hr />
+<h2 id="schemas-for-flat-file-views-and-imports">Schemas for flat-file views and imports</h2>
+<p><strong>What it would do:</strong> register a flat file's view in the entity's schema, and import into a
+schema-qualified table, when the entity has <code>[Table(..., Schema = ...)]</code> or a
+<code>SchemaNameResolver</code> is set.</p>
+<p><strong>Today:</strong> FlatFiles applies the table and column names in core's order but no schema. File views
+live in DuckDB's default schema, and an import writes to the unqualified table name, which the
+target database resolves through the connection's default schema.</p>
+<p><strong>What it would need:</strong> <code>CREATE SCHEMA IF NOT EXISTS</code> and a qualified view name on the DuckDB
+side; schema-qualified DDL, INSERTs and the column check in each import dialect (SQL Server,
+PostgreSQL, SQLite); and a rule for SQLite, which has attached databases rather than schemas.</p>
+<p><strong>Why not now:</strong> nobody has asked for it. An import into a non-default schema works today through
+a connection whose default schema is that one (the login's default schema on SQL Server, <code>search_path</code> on PostgreSQL).</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-continuity-rider-template.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Exhibit A - Escrow and Continuity Rider (Template)</span>
+</a><a class="pn-next" href="06-releases-feature-gap-analysis.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+    <span class="status-spacer"></span>
+    <button class="status-kbd" type="button" onclick="toggleHelp()"><kbd>?</kbd> shortcuts</button>
+  </footer>
+</div>
+
+<!-- ===== search (opened with / or Ctrl+K; the index loads on first use) ===== -->
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-box" role="dialog" aria-label="Search the docs">
+    <input type="search" id="search-input" placeholder="search the docs" autocomplete="off"
+           spellcheck="false" oninput="runSearch(this.value)">
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-foot"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- ===== keyboard shortcuts ===== -->
+<div class="kbd-help" id="kbd-help" hidden>
+  <div class="kbd-box" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kbd-title">Keyboard shortcuts</div>
+    <table>
+      <tr><td><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>search</td></tr>
+      <tr><td><kbd>f</kbd></td><td>filter the sidebar; <kbd>Enter</kbd> opens the first match, <kbd>Esc</kbd> clears</td></tr>
+      <tr><td><kbd>h</kbd></td><td>home</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>previous / next page</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous heading</td></tr>
+      <tr><td><kbd>b</kbd></td><td>toggle the sidebar</td></tr>
+      <tr><td><kbd>w</kbd></td><td>reset the sidebar width</td></tr>
+      <tr><td><kbd>o</kbd></td><td>toggle "on this page"</td></tr>
+      <tr><td><kbd>t</kbd></td><td>colour scheme: auto, light, dark</td></tr>
+      <tr><td><kbd>-</kbd> <kbd>=</kbd> <kbd>0</kbd></td><td>text smaller / larger / reset</td></tr>
+      <tr><td><kbd>?</kbd></td><td>this panel</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+    </table>
+  </div>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

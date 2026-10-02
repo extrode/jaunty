@@ -18,7 +18,7 @@ Jaunty's parameter binding system extracts parameter names from SQL, validates c
 **Purpose**: single-pass scanner that extracts `@name` and `$name` placeholders from SQL,
 skipping everything that only looks like one.
 
-**Location**: `src/Jaunty/Internals/Parameters/SqlParameterParser.cs`
+**Location**: `src/Extrode.Jaunty/Internals/Parameters/SqlParameterParser.cs`
 
 There is no state variable. The scanner is one loop over the characters, and every construct it
 recognizes is skipped by a helper that returns the index just past that construct, so a comment or a
@@ -141,7 +141,7 @@ ExtractParameterNames("SELECT * FROM users WHERE email = 'a@b.com' OR name = @Na
 
 **Purpose**: Caches parsed parameter names per SQL string.
 
-**Location**: `src/Jaunty/Internals/Parameters/SqlParameterParserCache.cs`
+**Location**: `src/Extrode.Jaunty/Internals/Parameters/SqlParameterParserCache.cs`
 
 ```csharp
 internal static class SqlParameterParserCache
@@ -174,7 +174,7 @@ internal static class SqlParameterParserCache
 
 **Purpose**: Binds object properties to `DbCommand.Parameters`.
 
-**Location**: `src/Jaunty/Internals/Parameters/ParameterBinder.cs`
+**Location**: `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs`
 
 **Named Parameter Binding**:
 
@@ -244,7 +244,7 @@ public static void BindPositional(DbCommand command, object[] parameters, string
 
 **Purpose**: Caches property info for parameter types.
 
-**Location**: `src/Jaunty/Internals/Parameters/ParameterCache.cs`
+**Location**: `src/Extrode.Jaunty/Internals/Parameters/ParameterCache.cs`
 
 ```csharp
 internal static class ParameterCache<T>
@@ -330,7 +330,7 @@ SQL parameters: [@CategoryId, @MinPrice, @MaxPrice]. Provided: [CategoryId, MinP
 
 **Purpose**: Support `WHERE id IN @Ids` syntax.
 
-**Location**: `src/Jaunty/Internals/Parameters/ParameterBinder.cs`
+**Location**: `src/Extrode.Jaunty/Internals/Parameters/ParameterBinder.cs`
 
 ```csharp
 public static void BindWithCollectionExpansion(DbCommand command, object parameters)
