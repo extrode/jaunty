@@ -49,7 +49,8 @@ public static partial class Jaunty
     /// (including an unset <c>0</c>) inserts a new row whose key the database assigns. The new key
     /// is not written back to the entity; use <c>Insert</c> when you need it. A key that matches no
     /// row always inserts, so two calls with an unset key create two rows. On dialects without
-    /// MERGE this runs as an UPDATE followed by a guarded INSERT in one command.
+    /// MERGE this runs as an UPDATE followed by a guarded INSERT in one command. PostgreSQL runs
+    /// that command as one implicit transaction, so the pair is atomic without a caller transaction.
     /// </para>
     /// </remarks>
     /// <example>
