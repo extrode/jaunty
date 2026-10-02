@@ -36,6 +36,24 @@ public class TableNameResolverTests
         public int Id { get; set; }
     }
 
+    [Table("")]
+    public class EntityWithEmptyTableName
+    {
+        public int Id { get; set; }
+    }
+
+    [System.ComponentModel.DataAnnotations.Schema.Table("")]
+    public class EntityWithEmptyDataAnnotationsTableName
+    {
+        public int Id { get; set; }
+    }
+
+    [Theory]
+    [InlineData(typeof(EntityWithEmptyTableName), "entitywithemptytablename")]
+    [InlineData(typeof(EntityWithEmptyDataAnnotationsTableName), "entitywithemptydataannotationstablename")]
+    public void Resolve_WithAnEmptyAttributeName_FallsBackToTheClassName(Type entity, string expected)
+        => Assert.Equal(expected, TableNameResolver.Resolve(entity));
+
     [Fact]
     public void Resolve_WithTableAttribute_ReturnsAttributeName()
     {
@@ -73,16 +91,15 @@ public class TableNameResolverTests
     }
 
     [Fact]
-    public void Resolve_WithInheritedDataAnnotationsTableAttribute_ReturnsAttributeName()
+    public void Resolve_WithInheritedDataAnnotationsTableAttribute_FallsBackToTheClassName()
     {
         var name = TableNameResolver.Resolve<EntityDerivedFromDataAnnotationsTable>();
-        Assert.Equal("da_products", name);
+        Assert.Equal("entityderivedfromdataannotationstable", name);
     }
 
     // AUD-R35-242: the one inheritance shape left unpinned, and the one whose result surprises.
     // Extrode.Jaunty's TableAttribute is [AttributeUsage(..., Inherited = false)], so a derived entity does
-    // not inherit it and falls through to the class-name default - the mirror image of the
-    // DataAnnotations case directly above, which does inherit. Core's MetadataBuilder reads the
+    // not inherit it and falls through to the class-name default. Core's MetadataBuilder reads the
     // attribute the same way, so this is the attribute's declaration, not a FlatFiles divergence.
     [Fact]
     public void Resolve_WithInheritedJauntyTableAttribute_FallsBackToTheClassName()

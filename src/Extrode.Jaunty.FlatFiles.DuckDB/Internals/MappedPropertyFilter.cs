@@ -1,6 +1,7 @@
 using System.Reflection;
 
 using Extrode.Jaunty.Attributes;
+using Extrode.Jaunty.Internals.Entity;
 
 namespace Extrode.Jaunty.FlatFiles.DuckDB.Internals;
 
@@ -147,16 +148,21 @@ internal static class MappedPropertyFilter
     /// <c>MetadataBuilder</c> and the source generator carries it too; this was the third path,
     /// which did not.
     /// </para>
+    /// <para>
+    /// AUD-R35-246: <c>JauntyConfig.ColumnNameResolver</c> was ignored here, so the import DDL and
+    /// INSERTs used the property name where core CRUD used the resolved one. The order now comes from
+    /// core's <c>NameResolution.Column</c>: a non-empty attribute name, then the resolver, then the
+    /// property name.
+    /// </para>
     /// </remarks>
     public static string GetColumnName(PropertyInfo property)
     {
         // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         string? name = property.GetCustomAttribute<ColumnAttribute>()?.Name;
-        if (!string.IsNullOrEmpty(name))
-            return name!;
+        if (string.IsNullOrEmpty(name))
+            name = DataAnnotationsColumnName(property);
 
-        name = DataAnnotationsColumnName(property);
-        return string.IsNullOrEmpty(name) ? property.Name : name!;
+        return NameResolution.Column(property.Name, name);
     }
 
     /// <summary>
