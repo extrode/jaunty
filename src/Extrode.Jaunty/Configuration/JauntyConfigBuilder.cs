@@ -150,6 +150,8 @@ public sealed class JauntyConfigBuilder
     /// <summary>Index of the first handler added to this builder rather than copied into it.</summary>
     internal int AddedTypeHandlersFrom { get; }
 
+    internal void RemoveTypeHandlers(Type key) => _typeHandlers.RemoveAll(h => h.Key == key);
+
     /// <summary>
     /// Registers a type handler using delegate-based conversion functions.
     /// </summary>
@@ -173,6 +175,10 @@ public sealed class JauntyConfigBuilder
     /// A handler for <c>Nullable&lt;X&gt;</c> is keyed on <c>X</c>, since every read and write
     /// lookup asks for the underlying type. Registering one for <c>X</c> and one for <c>X?</c>
     /// keeps whichever came last.
+    /// <para>
+    /// A repeated <see cref="JauntyConfig.Configure"/> compares handlers by their type, so a new
+    /// instance of the same handler class on each run counts as the same setting.
+    /// </para>
     /// </remarks>
     public JauntyConfigBuilder RegisterTypeHandler<T>(TypeHandler<T> handler)
     {
@@ -187,8 +193,8 @@ public sealed class JauntyConfigBuilder
         internal AdaptedTypeHandler(TypeHandler<T> handler) => _handler = handler;
         object? ITypeHandler.Parse(object? dbValue) => _handler.Parse(dbValue);
         object? ITypeHandler.ToDbValue(object? value) => _handler.ToDbValue((T?)value);
-        public override bool Equals(object? obj) => obj is AdaptedTypeHandler<T> other && Equals(_handler, other._handler);
-        public override int GetHashCode() => _handler.GetHashCode();
+        public override bool Equals(object? obj) => obj is AdaptedTypeHandler<T> other && _handler.GetType() == other._handler.GetType();
+        public override int GetHashCode() => _handler.GetType().GetHashCode();
     }
 
     private sealed class DelegateTypeHandler<T> : ITypeHandler

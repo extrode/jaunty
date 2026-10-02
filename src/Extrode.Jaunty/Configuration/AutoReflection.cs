@@ -57,7 +57,7 @@ internal static class AutoReflection
             MethodInfo? method = type?.GetMethod(HookName, BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(JauntyConfigBuilder) }, null);
 
             if (method is null)
-                return null;
+                return type is null ? null : OlderExtension(assembly.GetName().Version, typeof(AutoReflection).Assembly.GetName().Version);
 
             method.Invoke(null, new object[] { builder });
         }
@@ -76,4 +76,16 @@ internal static class AutoReflection
 
         return null;
     }
+
+    /// <summary>
+    /// The error for an extension assembly that has the extension type but not the hook: an older
+    /// package next to a newer core. A missing hook at the same version is a trimmed one, the
+    /// expected source-gen-only case.
+    /// </summary>
+    internal static Exception? OlderExtension(Version? extension, Version? core)
+        => extension is not null && core is not null && extension < core
+            ? new InvalidOperationException(
+                ExtensionAssembly + " " + extension + " is older than Extrode.Jaunty " + core +
+                " and cannot switch on reflection mapping; update it to the same version.")
+            : null;
 }
