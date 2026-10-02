@@ -17,8 +17,11 @@ namespace Extrode.Jaunty.Configuration;
 /// <para><b>Thread safety:</b> every setting is an atomic, immediately visible write
 /// (volatile fields), and the interceptor mutation methods
 /// (<see cref="AddInterceptor"/>, <see cref="AddInterceptors"/>, <see cref="ClearInterceptors"/>)
-/// are synchronized, so concurrent registration cannot lose interceptors. Commands that
-/// are already executing keep the configuration they observed at their start.</para>
+/// are synchronized, so concurrent registration cannot lose interceptors. A command that is
+/// already executing keeps the interceptor pipeline it observed at its start. Mapping settings -
+/// the naming resolvers, binder resolvers and type handlers - are read when an operation builds its
+/// SQL and again when it binds parameters or reads rows, so an operation that overlaps a change to
+/// one of them can see both values and fail.</para>
 /// <para><see cref="Reset"/> is <b>not</b> atomic as a whole (each individual field reset
 /// is); it is intended for test cleanup, not for reconfiguring a live application.
 /// For deterministic behavior, configure Extrode.Jaunty once at application startup.</para>

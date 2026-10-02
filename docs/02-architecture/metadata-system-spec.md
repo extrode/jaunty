@@ -282,6 +282,10 @@ sequenceDiagram
 
 With no resolver change, a read costs one generation compare.
 
+A resolver that maps two properties of one entity to the same column (compared
+case-insensitively) is rejected with an `ArgumentException` on both paths. Entities compiled
+against a package older than this order keep their build-time names until rebuilt.
+
 **Example**:
 
 ```csharp
