@@ -92,12 +92,11 @@ builder.Services.AddJauntyLogging();   // runtime settings are unchanged
 var app = builder.Build();
 ```
 
-If a setting comes from configuration, read it first and guard the call (see the next section):
+If a setting comes from configuration, read it first and use `TryConfigure` (see the rules below):
 
 ```csharp
 string schema = builder.Configuration["Db:Schema"] ?? "";
-if (!JauntyConfig.IsConfigured)
-    JauntyConfig.Configure(c => c.SchemaNameResolver = _ => schema);
+JauntyConfig.TryConfigure(c => c.SchemaNameResolver = _ => schema);
 ```
 
 ### Reflection mapping
@@ -121,9 +120,12 @@ publish, or to put the hooks back after replacing one of them by hand. If you ne
 
 2. **A second call with the same settings does nothing; with different settings it throws.** "The
    same" means every delegate refers to the same method on the same target. Method groups
-   (`c.ColumnNameResolver = Snake;`) and lambdas that capture nothing compare equal. A lambda that
-   captures a variable is a new delegate on every call, so guard it with
-   `if (!JauntyConfig.IsConfigured)`.
+   (`c.ColumnNameResolver = Snake;`) and lambdas that capture nothing compare equal, and type
+   handlers compare by their type, so `c.RegisterTypeHandler(new MoneyHandler())` is the same on
+   every run. A lambda that captures a variable is a new delegate on every call, so make that call
+   through `JauntyConfig.TryConfigure`, which applies the first call and skips the rest without
+   running them. A repeated `Configure` runs your callback again to compare, so keep it free of
+   side effects.
 
 3. **Settings cannot change while the app runs.** Per-tenant or per-request table names are not
    supported: they would need settings scoped to a connection, which Jaunty does not have. If you
@@ -134,8 +136,23 @@ publish, or to put the hooks back after replacing one of them by hand. If you ne
 
 `WebApplicationFactory`, Aspire and similar hosts can run `Program.cs` several times in one test
 process. That keeps working when the settings are the same each time (rule 2). If they differ, or
-use captured values, guard the call with `IsConfigured`. The first host's settings then apply to
-every host in that process.
+use captured values, call `TryConfigure` instead of `Configure`; it is safe when hosts start on
+parallel threads. The first host's settings then apply to every host in that process.
+
+Rule 1 applies to the whole test process: if any test runs a query before the first host starts,
+every later `Configure` or `TryConfigure` throws, and which test runs first depends on ordering. Set
+the settings once for the test assembly before any test runs, for example in a module initializer,
+and let the hosts' own call become a no-op:
+
+```csharp
+internal static class JauntyTestSetup
+{
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void Init() => JauntyConfig.TryConfigure(Startup.ConfigureJaunty);
+}
+```
+
+where `Startup.ConfigureJaunty` is the same method `Program.cs` passes to `Configure`.
 
 ## Your own unit tests
 

@@ -299,15 +299,14 @@ builder.<span class="tok-var">Services</span>.<span class="tok-fn">AddJauntyLogg
 <span class="tok-kw">var</span> app = builder.<span class="tok-fn">Build</span>();
 </code></pre>
 </div>
-<p>If a setting comes from configuration, read it first and guard the call (see the next section):</p>
+<p>If a setting comes from configuration, read it first and use <code>TryConfigure</code> (see the rules below):</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">string</span> schema = builder.<span class="tok-var">Configuration</span>[<span class="tok-str">&quot;Db:Schema&quot;</span>] ?? <span class="tok-str">&quot;&quot;</span>;
-<span class="tok-ctl">if</span> (!<span class="tok-type">JauntyConfig</span>.<span class="tok-var">IsConfigured</span>)
-    <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = _ =&gt; schema);
+<span class="tok-type">JauntyConfig</span>.<span class="tok-fn">TryConfigure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = _ =&gt; schema);
 </code></pre>
 </div>
 <h3 id="reflection-mapping">Reflection mapping</h3>
@@ -333,9 +332,12 @@ read its settings (a query, a generated TableName, or a Fluent query ran first).
 </li>
 <li><p><strong>A second call with the same settings does nothing; with different settings it throws.</strong> &quot;The
 same&quot; means every delegate refers to the same method on the same target. Method groups
-(<code>c.ColumnNameResolver = Snake;</code>) and lambdas that capture nothing compare equal. A lambda that
-captures a variable is a new delegate on every call, so guard it with
-<code>if (!JauntyConfig.IsConfigured)</code>.</p>
+(<code>c.ColumnNameResolver = Snake;</code>) and lambdas that capture nothing compare equal, and type
+handlers compare by their type, so <code>c.RegisterTypeHandler(new MoneyHandler())</code> is the same on
+every run. A lambda that captures a variable is a new delegate on every call, so make that call
+through <code>JauntyConfig.TryConfigure</code>, which applies the first call and skips the rest without
+running them. A repeated <code>Configure</code> runs your callback again to compare, so keep it free of
+side effects.</p>
 </li>
 <li><p><strong>Settings cannot change while the app runs.</strong> Per-tenant or per-request table names are not
 supported: they would need settings scoped to a connection, which Jaunty does not have. If you
@@ -346,8 +348,25 @@ or separate schemas chosen by the connection string.</p>
 <h2 id="integration-tests-that-start-the-app-more-than-once">Integration tests that start the app more than once</h2>
 <p><code>WebApplicationFactory</code>, Aspire and similar hosts can run <code>Program.cs</code> several times in one test
 process. That keeps working when the settings are the same each time (rule 2). If they differ, or
-use captured values, guard the call with <code>IsConfigured</code>. The first host's settings then apply to
-every host in that process.</p>
+use captured values, call <code>TryConfigure</code> instead of <code>Configure</code>; it is safe when hosts start on
+parallel threads. The first host's settings then apply to every host in that process.</p>
+<p>Rule 1 applies to the whole test process: if any test runs a query before the first host starts,
+every later <code>Configure</code> or <code>TryConfigure</code> throws, and which test runs first depends on ordering. Set
+the settings once for the test assembly before any test runs, for example in a module initializer,
+and let the hosts' own call become a no-op:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> <span class="tok-type">JauntyTestSetup</span>
+{
+    <span class="tok-attr">[System.Runtime.CompilerServices.ModuleInitializer]</span>
+    <span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> <span class="tok-fn">Init</span>() =&gt; <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">TryConfigure</span>(<span class="tok-type">Startup</span>.<span class="tok-var">ConfigureJaunty</span>);
+}
+</code></pre>
+</div>
+<p>where <code>Startup.ConfigureJaunty</code> is the same method <code>Program.cs</code> passes to <code>Configure</code>.</p>
 <h2 id="your-own-unit-tests">Your own unit tests</h2>
 <p><code>JauntyConfig.Reset()</code> restores the defaults and allows <code>Configure</code> again. It is for tests only,
 and it is not safe while another test is using Jaunty, so put tests that call <code>Reset()</code> and then
