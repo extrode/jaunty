@@ -19,7 +19,8 @@ the version cut as of 2026-10-02.
    (`https://nuget.pkg.github.com/extrode/index.json`) using the workflow's
    own `GITHUB_TOKEN` — no secrets to manage.
 4. Creates a GitHub Release with the `.nupkg` + `.snupkg` files attached
-   (GitHub Packages has no symbol server; symbols ship on the Release).
+   (GitHub Packages has no symbol server; symbols ship on the Release). A
+   version with a pre-release suffix (`-rc.N`) marks the Release pre-release.
 
 Package validation (`EnablePackageValidation`) runs during pack, so a
 ns2.0/net8.0 public-API divergence fails the release instead of shipping.
