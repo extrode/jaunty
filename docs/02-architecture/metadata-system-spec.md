@@ -151,49 +151,173 @@ sequenceDiagram
 
 ## Metadata Resolution
 
-### Column Name Resolution Priority
+### Name Resolution Order
+
+Every table, schema and column name is resolved in one order, by one function
+(`NameResolution` in `src/Extrode.Jaunty/Internals/Entity/`). Reflection mapping
+(`MetadataBuilder`) and source-generated mapping (`GeneratedNameCache`) both call it, so an entity
+gets the same names whichever path maps it.
+
+| Name | 1st: attribute, if its name is non-empty | 2nd: resolver, if set and it returns non-null | 3rd: default |
+|---|---|---|---|
+| Table | `[Table(name)]`: Jaunty's if present, otherwise DataAnnotations' | `JauntyConfig.TableNameResolver(type)` | C# type name |
+| Schema | the schema of that same `[Table]` (constructor argument or `Schema =`) | `JauntyConfig.SchemaNameResolver(type)` | none: the name is emitted unqualified |
+| Column | Jaunty `[Column(name)]`, otherwise DataAnnotations `[Column(name)]` | `JauntyConfig.ColumnNameResolver(propertyName)` | C# property name |
+
+Three rules:
+- An empty attribute name, such as `[Table("")]` or `[Column("")]`, names nothing, so resolution
+  falls through to the resolver.
+- A resolver is called only when no attribute name applies.
+- A resolver that returns `null` falls through to the default. One that returns `""` is used as
+  given.
+
+#### Table name
 
 ```mermaid
 flowchart TD
-    Prop["Property 'ProductName'"] --> CheckAttr{"Has [Column]<br/>attribute?"}
-    
-    CheckAttr -->|Yes| UseAttr["Use [Column] name<br/>e.g., 'prod_name'"]
-    CheckAttr -->|No| CheckConfig{"JauntyConfig.<br/>ColumnNameResolver?"}
-    
-    CheckConfig -->|Yes| UseResolver["Use resolver result<br/>e.g., 'product_name'"]
-    CheckConfig -->|No| UseProp["Use property name<br/>'ProductName'"]
-    
-    UseAttr --> Final["Final column name"]
-    UseResolver --> Final
-    UseProp --> Final
-    
-    style CheckAttr fill:#ff9
-    style CheckConfig fill:#ff9
-    style Final fill:#9f9
+    Start["Entity type 'OrderLine'"] --> J{"Jaunty [Table]<br/>present?"}
+    J -->|Yes| JN{"Its name<br/>non-empty?"}
+    J -->|No| D{"DataAnnotations [Table]<br/>present?"}
+    D -->|Yes| DN{"Its name<br/>non-empty?"}
+    D -->|No| R
+    JN -->|Yes| UseAttr["Use the attribute name"]
+    JN -->|No| R
+    DN -->|Yes| UseAttr
+    DN -->|No| R{"TableNameResolver<br/>set?"}
+    R -->|No| UseType["Use the type name<br/>'OrderLine'"]
+    R -->|Yes| Call["Call it with the type"]
+    Call --> Null{"Returned<br/>null?"}
+    Null -->|Yes| UseType
+    Null -->|No| UseResult["Use the result<br/>e.g. 'order_lines'"]
+
+    style J fill:#ff9
+    style D fill:#ff9
+    style R fill:#ff9
+    style UseAttr fill:#9f9
+    style UseType fill:#9f9
+    style UseResult fill:#9f9
 ```
+
+#### Schema name
+
+```mermaid
+flowchart TD
+    Start["Entity type 'OrderLine'"] --> T{"The chosen [Table]<br/>has a non-empty schema?"}
+    T -->|Yes| UseAttr["Use the attribute schema"]
+    T -->|No| R{"SchemaNameResolver<br/>set?"}
+    R -->|No| None["No schema:<br/>the table name is emitted unqualified"]
+    R -->|Yes| Call["Call it with the type"]
+    Call --> Null{"Returned<br/>null?"}
+    Null -->|Yes| None
+    Null -->|No| UseResult["Use the result<br/>e.g. 'sales'"]
+
+    style T fill:#ff9
+    style R fill:#ff9
+    style UseAttr fill:#9f9
+    style None fill:#9f9
+    style UseResult fill:#9f9
+```
+
+The database resolves an unqualified name itself; see
+[schema qualification](../01-api-reference/schemas.md).
+
+#### Column name
+
+```mermaid
+flowchart TD
+    Prop["Property 'ProductName'"] --> J{"Jaunty [Column] with<br/>a non-empty name?"}
+    J -->|Yes| UseAttr["Use the attribute name<br/>e.g. 'prod_name'"]
+    J -->|No| D{"DataAnnotations [Column]<br/>with a non-empty name?"}
+    D -->|Yes| UseAttr
+    D -->|No| R{"ColumnNameResolver<br/>set?"}
+    R -->|No| UseProp["Use the property name<br/>'ProductName'"]
+    R -->|Yes| Call["Call it with 'ProductName'"]
+    Call --> Null{"Returned<br/>null?"}
+    Null -->|Yes| UseProp
+    Null -->|No| UseResult["Use the result<br/>e.g. 'product_name'"]
+
+    style J fill:#ff9
+    style D fill:#ff9
+    style R fill:#ff9
+    style UseAttr fill:#9f9
+    style UseProp fill:#9f9
+    style UseResult fill:#9f9
+```
+
+#### When the names are resolved
+
+Reflection mapping resolves names when it builds an entity's metadata. Source-generated mapping
+resolves them at runtime too, not at build time. The generator bakes in only the attribute names,
+and leaves the rest to `GeneratedNameCache`, which keeps one set of resolved names per
+configuration generation. Setting any `JauntyConfig` resolver starts a new generation, so the next
+query on either path picks up the new names.
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant Cfg as JauntyConfig
+    participant Gen as Generated entity code
+    participant Cache as GeneratedNameCache
+    participant NR as NameResolution
+    participant Core as CRUD / Fluent SQL caches
+
+    App->>Cfg: ColumnNameResolver = ToSnakeCase
+    Cfg->>Cfg: bump configuration generation
+    App->>Core: connection.Insert(widget)
+    Core->>Gen: IEntityMetadataSource.TableName / Columns
+    Gen->>Cache: Current
+    Cache->>Cache: generation changed?
+    alt changed
+        Cache->>NR: Table / Schema / Column for each name
+        NR-->>Cache: resolved names
+        Cache->>Gen: build columns, parameter map, metadata
+    end
+    Cache-->>Gen: names for this generation
+    Gen-->>Core: metadata with resolved names
+    Core->>Gen: BindInsert(command, widget)
+    Gen->>Cache: Current (same generation)
+    Gen-->>Core: parameters '@display_name', ...
+    Note over Core,Gen: The SQL, the bound parameter names, the reader's<br/>column lookups and the generated statics<br/>all come from the same resolved names
+```
+
+With no resolver change, a read costs one generation compare.
+
+A resolver that maps two properties of one entity to the same column (compared
+case-insensitively) is rejected with an `ArgumentException` on both paths. Entities compiled
+against a package older than this order keep their build-time names until rebuilt.
 
 **Example**:
 
 ```csharp
-public class Product
+[Table("")]                      // empty: names nothing, the resolver applies
+public partial class OrderLine
 {
-    // [Column] takes priority
-    [Column("prod_id")]
-    public int Id { get; set; }
-    
-    // JauntyConfig resolver applies (if no [Column])
-    public string ProductName { get; set; }
-    
-    // JauntyConfig resolver applies
-    public decimal Price { get; set; }
+    [Key]
+    public int OrderLineId { get; set; }
+
+    [Column("prod_name")]        // attribute wins over the resolver
+    public string ProductName { get; set; } = "";
+
+    public decimal UnitPrice { get; set; }
 }
 
-// With JauntyConfig.ColumnNameResolver set to a snake_case helper you supply
-// Resolution:
-// Id -> "prod_id" (from [Column])
-// ProductName -> "product_name" (from resolver)
-// Price -> "price" (from resolver)
+JauntyConfig.TableNameResolver = type => ToSnakeCase(type.Name) + "s";   // your own helper
+JauntyConfig.ColumnNameResolver = ToSnakeCase;
 ```
+
+| Member | Name, reflection or source-generated |
+|---|---|
+| table | `order_lines` (resolver) |
+| `OrderLineId` | `order_line_id` (resolver) |
+| `ProductName` | `prod_name` (`[Column]`) |
+| `UnitPrice` | `unit_price` (resolver) |
+
+With no resolvers set, the same entity maps to table `OrderLine` with columns `OrderLineId`,
+`prod_name` and `UnitPrice`.
+
+FlatFiles does not use this order. It names tables through its own `TableNameResolver`: the
+`[Table]` name if the class has one, otherwise the lowercased class name, and it ignores all three
+`JauntyConfig` resolvers.
 
 ---
 

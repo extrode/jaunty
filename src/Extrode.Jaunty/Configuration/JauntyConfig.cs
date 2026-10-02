@@ -17,8 +17,11 @@ namespace Extrode.Jaunty.Configuration;
 /// <para><b>Thread safety:</b> every setting is an atomic, immediately visible write
 /// (volatile fields), and the interceptor mutation methods
 /// (<see cref="AddInterceptor"/>, <see cref="AddInterceptors"/>, <see cref="ClearInterceptors"/>)
-/// are synchronized, so concurrent registration cannot lose interceptors. Commands that
-/// are already executing keep the configuration they observed at their start.</para>
+/// are synchronized, so concurrent registration cannot lose interceptors. A command that is
+/// already executing keeps the interceptor pipeline it observed at its start. Mapping settings -
+/// the naming resolvers, binder resolvers and type handlers - are read when an operation builds its
+/// SQL and again when it binds parameters or reads rows, so an operation that overlaps a change to
+/// one of them can see both values and fail.</para>
 /// <para><see cref="Reset"/> is <b>not</b> atomic as a whole (each individual field reset
 /// is); it is intended for test cleanup, not for reconfiguring a live application.
 /// For deterministic behavior, configure Extrode.Jaunty once at application startup.</para>
@@ -91,9 +94,9 @@ public static class JauntyConfig
     /// connection in the process and its return value is emitted verbatim on every engine. A
     /// constant such as <c>_ => "dbo"</c> therefore produces "dbo.products" on SQLite and
     /// PostgreSQL too. Scope it by type, or return <see cref="string.Empty"/> to leave an entity
-    /// unqualified, which is Extrode.Jaunty's default. Consulted on the reflection mapping path only -
-    /// source-generated entities use the compile-time [Table] attribute. A [Table] schema wins
-    /// over this resolver either way.
+    /// unqualified, which is Extrode.Jaunty's default. A non-empty [Table] schema wins over this
+    /// resolver, and the resolver is then not called; a <see langword="null"/> result means no
+    /// schema. Applies to reflection-mapped and source-generated entities alike.
     /// </remarks>
     public static Func<Type, string>? SchemaNameResolver
     {
@@ -104,6 +107,11 @@ public static class JauntyConfig
     /// <summary>
     /// Gets or sets a custom resolver for table names.
     /// </summary>
+    /// <remarks>
+    /// Consulted only when no [Table] attribute gives a non-empty name. A <see langword="null"/>
+    /// result falls back to the type name; any other result, <see cref="string.Empty"/> included,
+    /// is used as given. Applies to reflection-mapped and source-generated entities alike.
+    /// </remarks>
     public static Func<Type, string>? TableNameResolver
     {
         get => _tableNameResolver;
@@ -113,6 +121,11 @@ public static class JauntyConfig
     /// <summary>
     /// Gets or sets a custom resolver for column names.
     /// </summary>
+    /// <remarks>
+    /// Receives the property name, and is consulted only when no [Column] attribute gives a
+    /// non-empty name. A <see langword="null"/> result falls back to the property name; any other
+    /// result is used as given. Applies to reflection-mapped and source-generated entities alike.
+    /// </remarks>
     public static Func<string, string>? ColumnNameResolver
     {
         get => _columnNameResolver;

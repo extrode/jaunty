@@ -127,20 +127,23 @@ namespace Snapshots.EveryType
         public static void BindInsert(IDbCommand command, PlainDecimal entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Total", entity.Total);
-            AddParam(command, p, "@Discount", entity.Discount);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.Total);
+            AddParam(command, p, n.Parameter(2), entity.Discount);
         }
         public static void BindUpdate(IDbCommand command, PlainDecimal entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Total", entity.Total);
-            AddParam(command, p, "@Discount", entity.Discount);
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.Total);
+            AddParam(command, p, n.Parameter(2), entity.Discount);
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         public static void BindDelete(IDbCommand command, PlainDecimal entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
         {
@@ -170,20 +173,21 @@ namespace Snapshots.EveryType
 
             public static CacheEntry Resolve(IDataReader reader)
             {
+                var names = __JauntyNameHolder.Cache.Current.Names;
                 var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))
+                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
 
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))
+                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
                 {
                     SetLast(cached);
                     return cached;
                 }
 
                 var ords = new int[3];
-                ords[0] = reader.GetOrdinal("Id");
-                ords[1] = reader.GetOrdinal("Total");
-                ords[2] = reader.GetOrdinal("Discount");
+                ords[0] = reader.GetOrdinal(names.Column(0));
+                ords[1] = reader.GetOrdinal(names.Column(1));
+                ords[2] = reader.GetOrdinal(names.Column(2));
                 var entry = new CacheEntry(reader, ords);
 #if NET8_0_OR_GREATER
                 _cache.AddOrUpdate(reader, entry);
@@ -227,7 +231,7 @@ namespace Snapshots.EveryType
                 /// <summary>True where a decimal property's column reports double, so it is read through GetDouble.</summary>
                 public bool[] DecimalAsDouble { get; }
 
-                public bool Matches(IDataReader reader)
+                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
                 {
                     if (!ReferenceEquals(reader, _reader))
                         return false;
@@ -238,19 +242,19 @@ namespace Snapshots.EveryType
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "Id", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "Total", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "Discount", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), names.Column(2), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -258,44 +262,65 @@ namespace Snapshots.EveryType
             }
         }
 
-        public static string TableName { get; } = "plain_decimal";
-        public static string? SchemaName { get; } = null;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            = new string[] {
-            "Id",
-        };
+        private static class __JauntyNameHolder
+        {
+            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+                typeof(PlainDecimal),
+                "plain_decimal",
+                null,
+                new string[] { "Id", "Total", "Discount" },
+                new string?[] { null, null, null },
+                n => new __JauntyNamed(n));
+        }
 
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Total", "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!),
-            new ColumnInfo("Discount", "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Total", "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!),
-            new ColumnInfo("Discount", "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Id", "Id", true, true, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!),
-        };
-
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
+        private sealed class __JauntyNamed
+        {
+            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
             {
-            ["Id"] = new ColumnInfo("Id", "Id", true, true, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!),
-            ["Total"] = new ColumnInfo("Total", "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!),
-            ["Discount"] = new ColumnInfo("Discount", "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!),
-        };
+                Names = n;
+                PrimaryKeyColumnNames = new string[] {
+                    n.Column(0),
+                };
+                InsertColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!),
+                    new ColumnInfo(n.Column(2), "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!),
+                };
+                UpdateColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!),
+                    new ColumnInfo(n.Column(2), "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!),
+                };
+                DeleteColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(0), "Id", true, true, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!),
+                };
+                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "Id", true, true, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!));
+                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "Total", false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!));
+                if (!parameterMap.ContainsKey(n.Column(2))) parameterMap.Add(n.Column(2), new ColumnInfo(n.Column(2), "Discount", false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!));
+                ParameterMap = parameterMap;
+                EntityColumns = new EntityColumnInfo[] {
+                    new EntityColumnInfo(n.Column(0), "Id", true, true, false, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(1), "Total", false, false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(2), "Discount", false, false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                };
+            }
 
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
-            = new EntityColumnInfo[] {
-            new EntityColumnInfo("Id", "Id", true, true, false, typeof(long), e => (object?)((PlainDecimal)e).Id, (e, v) => ((PlainDecimal)e).Id = (long)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Total", "Total", false, false, false, typeof(decimal), e => (object?)((PlainDecimal)e).Total, (e, v) => ((PlainDecimal)e).Total = (decimal)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Discount", "Discount", false, false, false, typeof(decimal?), e => (object?)((PlainDecimal)e).Discount, (e, v) => ((PlainDecimal)e).Discount = (decimal?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-        };
+            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        }
+
+        public static string TableName => __JauntyNameHolder.Cache.Current.Names.TableName;
+        public static string? SchemaName => __JauntyNameHolder.Cache.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __JauntyNameHolder.Cache.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __JauntyNameHolder.Cache.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __JauntyNameHolder.Cache.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __JauntyNameHolder.Cache.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __JauntyNameHolder.Cache.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __JauntyNameHolder.Cache.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;

@@ -133,22 +133,25 @@ namespace Snapshots.HandWritten
         public static void BindInsert(IDbCommand command, TableWithBase entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@HelpLink", entity.HelpLink);
-            AddParam(command, p, "@Source", entity.Source);
-            AddParam(command, p, "@HResult", entity.HResult);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.HelpLink);
+            AddParam(command, p, n.Parameter(2), entity.Source);
+            AddParam(command, p, n.Parameter(3), entity.HResult);
         }
         public static void BindUpdate(IDbCommand command, TableWithBase entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@HelpLink", entity.HelpLink);
-            AddParam(command, p, "@Source", entity.Source);
-            AddParam(command, p, "@HResult", entity.HResult);
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.HelpLink);
+            AddParam(command, p, n.Parameter(2), entity.Source);
+            AddParam(command, p, n.Parameter(3), entity.HResult);
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         public static void BindDelete(IDbCommand command, TableWithBase entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
         {
@@ -178,21 +181,22 @@ namespace Snapshots.HandWritten
 
             public static CacheEntry Resolve(IDataReader reader)
             {
+                var names = __JauntyNameHolder.Cache.Current.Names;
                 var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))
+                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
 
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))
+                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
                 {
                     SetLast(cached);
                     return cached;
                 }
 
                 var ords = new int[4];
-                ords[0] = reader.GetOrdinal("Id");
-                ords[1] = reader.GetOrdinal("HelpLink");
-                ords[2] = reader.GetOrdinal("Source");
-                ords[3] = reader.GetOrdinal("HResult");
+                ords[0] = reader.GetOrdinal(names.Column(0));
+                ords[1] = reader.GetOrdinal(names.Column(1));
+                ords[2] = reader.GetOrdinal(names.Column(2));
+                ords[3] = reader.GetOrdinal(names.Column(3));
                 var entry = new CacheEntry(reader, ords);
 #if NET8_0_OR_GREATER
                 _cache.AddOrUpdate(reader, entry);
@@ -230,7 +234,7 @@ namespace Snapshots.HandWritten
 
                 public int[] Ordinals { get; }
 
-                public bool Matches(IDataReader reader)
+                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
                 {
                     if (!ReferenceEquals(reader, _reader))
                         return false;
@@ -241,25 +245,25 @@ namespace Snapshots.HandWritten
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "Id", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "HelpLink", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "Source", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), names.Column(2), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord3 = Ordinals[3];
                     if ((uint)ord3 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord3), "HResult", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord3), names.Column(3), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -267,48 +271,69 @@ namespace Snapshots.HandWritten
             }
         }
 
-        public static string TableName { get; } = "with_base";
-        public static string? SchemaName { get; } = null;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            = new string[] {
-            "Id",
-        };
+        private static class __JauntyNameHolder
+        {
+            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+                typeof(TableWithBase),
+                "with_base",
+                null,
+                new string[] { "Id", "HelpLink", "Source", "HResult" },
+                new string?[] { null, null, null, null },
+                n => new __JauntyNamed(n));
+        }
 
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("HelpLink", "HelpLink", false, false, typeof(string), e => (object?)((TableWithBase)e).HelpLink, (e, v) => ((TableWithBase)e).HelpLink = (string)v!),
-            new ColumnInfo("Source", "Source", false, false, typeof(string), e => (object?)((TableWithBase)e).Source, (e, v) => ((TableWithBase)e).Source = (string)v!),
-            new ColumnInfo("HResult", "HResult", false, false, typeof(int), e => (object?)((TableWithBase)e).HResult, (e, v) => ((TableWithBase)e).HResult = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("HelpLink", "HelpLink", false, false, typeof(string), e => (object?)((TableWithBase)e).HelpLink, (e, v) => ((TableWithBase)e).HelpLink = (string)v!),
-            new ColumnInfo("Source", "Source", false, false, typeof(string), e => (object?)((TableWithBase)e).Source, (e, v) => ((TableWithBase)e).Source = (string)v!),
-            new ColumnInfo("HResult", "HResult", false, false, typeof(int), e => (object?)((TableWithBase)e).HResult, (e, v) => ((TableWithBase)e).HResult = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((TableWithBase)e).Id, (e, v) => ((TableWithBase)e).Id = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
+        private sealed class __JauntyNamed
+        {
+            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
             {
-            ["Id"] = new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((TableWithBase)e).Id, (e, v) => ((TableWithBase)e).Id = (int)v!),
-            ["HelpLink"] = new ColumnInfo("HelpLink", "HelpLink", false, false, typeof(string), e => (object?)((TableWithBase)e).HelpLink, (e, v) => ((TableWithBase)e).HelpLink = (string)v!),
-            ["Source"] = new ColumnInfo("Source", "Source", false, false, typeof(string), e => (object?)((TableWithBase)e).Source, (e, v) => ((TableWithBase)e).Source = (string)v!),
-            ["HResult"] = new ColumnInfo("HResult", "HResult", false, false, typeof(int), e => (object?)((TableWithBase)e).HResult, (e, v) => ((TableWithBase)e).HResult = (int)v!),
-        };
+                Names = n;
+                PrimaryKeyColumnNames = new string[] {
+                    n.Column(0),
+                };
+                InsertColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "HelpLink", false, false, typeof(string), e => (object?)((TableWithBase)e).HelpLink, (e, v) => ((TableWithBase)e).HelpLink = (string)v!),
+                    new ColumnInfo(n.Column(2), "Source", false, false, typeof(string), e => (object?)((TableWithBase)e).Source, (e, v) => ((TableWithBase)e).Source = (string)v!),
+                    new ColumnInfo(n.Column(3), "HResult", false, false, typeof(int), e => (object?)((TableWithBase)e).HResult, (e, v) => ((TableWithBase)e).HResult = (int)v!),
+                };
+                UpdateColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "HelpLink", false, false, typeof(string), e => (object?)((TableWithBase)e).HelpLink, (e, v) => ((TableWithBase)e).HelpLink = (string)v!),
+                    new ColumnInfo(n.Column(2), "Source", false, false, typeof(string), e => (object?)((TableWithBase)e).Source, (e, v) => ((TableWithBase)e).Source = (string)v!),
+                    new ColumnInfo(n.Column(3), "HResult", false, false, typeof(int), e => (object?)((TableWithBase)e).HResult, (e, v) => ((TableWithBase)e).HResult = (int)v!),
+                };
+                DeleteColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((TableWithBase)e).Id, (e, v) => ((TableWithBase)e).Id = (int)v!),
+                };
+                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((TableWithBase)e).Id, (e, v) => ((TableWithBase)e).Id = (int)v!));
+                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "HelpLink", false, false, typeof(string), e => (object?)((TableWithBase)e).HelpLink, (e, v) => ((TableWithBase)e).HelpLink = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(2))) parameterMap.Add(n.Column(2), new ColumnInfo(n.Column(2), "Source", false, false, typeof(string), e => (object?)((TableWithBase)e).Source, (e, v) => ((TableWithBase)e).Source = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(3))) parameterMap.Add(n.Column(3), new ColumnInfo(n.Column(3), "HResult", false, false, typeof(int), e => (object?)((TableWithBase)e).HResult, (e, v) => ((TableWithBase)e).HResult = (int)v!));
+                ParameterMap = parameterMap;
+                EntityColumns = new EntityColumnInfo[] {
+                    new EntityColumnInfo(n.Column(0), "Id", true, true, false, typeof(int), e => (object?)((TableWithBase)e).Id, (e, v) => ((TableWithBase)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(1), "HelpLink", false, false, false, typeof(string), e => (object?)((TableWithBase)e).HelpLink, (e, v) => ((TableWithBase)e).HelpLink = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(2), "Source", false, false, false, typeof(string), e => (object?)((TableWithBase)e).Source, (e, v) => ((TableWithBase)e).Source = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(3), "HResult", false, false, false, typeof(int), e => (object?)((TableWithBase)e).HResult, (e, v) => ((TableWithBase)e).HResult = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                };
+            }
 
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
-            = new EntityColumnInfo[] {
-            new EntityColumnInfo("Id", "Id", true, true, false, typeof(int), e => (object?)((TableWithBase)e).Id, (e, v) => ((TableWithBase)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("HelpLink", "HelpLink", false, false, false, typeof(string), e => (object?)((TableWithBase)e).HelpLink, (e, v) => ((TableWithBase)e).HelpLink = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Source", "Source", false, false, false, typeof(string), e => (object?)((TableWithBase)e).Source, (e, v) => ((TableWithBase)e).Source = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("HResult", "HResult", false, false, false, typeof(int), e => (object?)((TableWithBase)e).HResult, (e, v) => ((TableWithBase)e).HResult = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-        };
+            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        }
+
+        public static string TableName => __JauntyNameHolder.Cache.Current.Names.TableName;
+        public static string? SchemaName => __JauntyNameHolder.Cache.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __JauntyNameHolder.Cache.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __JauntyNameHolder.Cache.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __JauntyNameHolder.Cache.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __JauntyNameHolder.Cache.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __JauntyNameHolder.Cache.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __JauntyNameHolder.Cache.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;

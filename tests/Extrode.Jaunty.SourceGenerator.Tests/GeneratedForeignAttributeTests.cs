@@ -117,8 +117,7 @@ public sealed class GeneratedForeignAttributeTests
             }
             """);
 
-        Assert.Contains("new ColumnInfo(\"da_fallback\", \"Name\"", sources[0], StringComparison.Ordinal);
-        Assert.Contains("new ColumnInfo(\"jaunty_wins\", \"Both\"", sources[0], StringComparison.Ordinal);
+        Assert.Contains("new string?[] { null, \"da_fallback\", \"jaunty_wins\" }", sources[0], StringComparison.Ordinal);
     }
 
     [Fact]

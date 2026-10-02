@@ -223,44 +223,47 @@ namespace Snapshots.Escaping
         public static void BindInsert(IDbCommand command, OddNames entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@quote\"d", entity.Quoted);
-            AddParam(command, p, "@nul\0", entity.Nul);
-            AddParam(command, p, "@bell\a", entity.Bell);
-            AddParam(command, p, "@back\bspace", entity.Backspace);
-            AddParam(command, p, "@form\ffeed", entity.FormFeed);
-            AddParam(command, p, "@new\nline", entity.NewLine);
-            AddParam(command, p, "@car\rreturn", entity.CarriageReturn);
-            AddParam(command, p, "@tab\tstop", entity.Tab);
-            AddParam(command, p, "@vert\vtab", entity.VerticalTab);
-            AddParam(command, p, "@ctl\u0001x", entity.Control);
-            AddParam(command, p, "@nel\u0085x", entity.NextLine);
-            AddParam(command, p, "@ls\u2028x", entity.LineSeparator);
-            AddParam(command, p, "@ps\u2029x", entity.ParagraphSeparator);
-            AddParam(command, p, "@ünï", entity.Accented);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.Quoted);
+            AddParam(command, p, n.Parameter(2), entity.Nul);
+            AddParam(command, p, n.Parameter(3), entity.Bell);
+            AddParam(command, p, n.Parameter(4), entity.Backspace);
+            AddParam(command, p, n.Parameter(5), entity.FormFeed);
+            AddParam(command, p, n.Parameter(6), entity.NewLine);
+            AddParam(command, p, n.Parameter(7), entity.CarriageReturn);
+            AddParam(command, p, n.Parameter(8), entity.Tab);
+            AddParam(command, p, n.Parameter(9), entity.VerticalTab);
+            AddParam(command, p, n.Parameter(10), entity.Control);
+            AddParam(command, p, n.Parameter(11), entity.NextLine);
+            AddParam(command, p, n.Parameter(12), entity.LineSeparator);
+            AddParam(command, p, n.Parameter(13), entity.ParagraphSeparator);
+            AddParam(command, p, n.Parameter(14), entity.Accented);
         }
         public static void BindUpdate(IDbCommand command, OddNames entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@quote\"d", entity.Quoted);
-            AddParam(command, p, "@nul\0", entity.Nul);
-            AddParam(command, p, "@bell\a", entity.Bell);
-            AddParam(command, p, "@back\bspace", entity.Backspace);
-            AddParam(command, p, "@form\ffeed", entity.FormFeed);
-            AddParam(command, p, "@new\nline", entity.NewLine);
-            AddParam(command, p, "@car\rreturn", entity.CarriageReturn);
-            AddParam(command, p, "@tab\tstop", entity.Tab);
-            AddParam(command, p, "@vert\vtab", entity.VerticalTab);
-            AddParam(command, p, "@ctl\u0001x", entity.Control);
-            AddParam(command, p, "@nel\u0085x", entity.NextLine);
-            AddParam(command, p, "@ls\u2028x", entity.LineSeparator);
-            AddParam(command, p, "@ps\u2029x", entity.ParagraphSeparator);
-            AddParam(command, p, "@ünï", entity.Accented);
-            AddParam(command, p, "@back\\slash", entity.Id);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.Quoted);
+            AddParam(command, p, n.Parameter(2), entity.Nul);
+            AddParam(command, p, n.Parameter(3), entity.Bell);
+            AddParam(command, p, n.Parameter(4), entity.Backspace);
+            AddParam(command, p, n.Parameter(5), entity.FormFeed);
+            AddParam(command, p, n.Parameter(6), entity.NewLine);
+            AddParam(command, p, n.Parameter(7), entity.CarriageReturn);
+            AddParam(command, p, n.Parameter(8), entity.Tab);
+            AddParam(command, p, n.Parameter(9), entity.VerticalTab);
+            AddParam(command, p, n.Parameter(10), entity.Control);
+            AddParam(command, p, n.Parameter(11), entity.NextLine);
+            AddParam(command, p, n.Parameter(12), entity.LineSeparator);
+            AddParam(command, p, n.Parameter(13), entity.ParagraphSeparator);
+            AddParam(command, p, n.Parameter(14), entity.Accented);
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         public static void BindDelete(IDbCommand command, OddNames entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@back\\slash", entity.Id);
+            var n = __JauntyNameHolder.Cache.Current.Names;
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
         {
@@ -290,32 +293,33 @@ namespace Snapshots.Escaping
 
             public static CacheEntry Resolve(IDataReader reader)
             {
+                var names = __JauntyNameHolder.Cache.Current.Names;
                 var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))
+                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
 
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))
+                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
                 {
                     SetLast(cached);
                     return cached;
                 }
 
                 var ords = new int[15];
-                ords[0] = reader.GetOrdinal("back\\slash");
-                ords[1] = reader.GetOrdinal("quote\"d");
-                ords[2] = reader.GetOrdinal("nul\0");
-                ords[3] = reader.GetOrdinal("bell\a");
-                ords[4] = reader.GetOrdinal("back\bspace");
-                ords[5] = reader.GetOrdinal("form\ffeed");
-                ords[6] = reader.GetOrdinal("new\nline");
-                ords[7] = reader.GetOrdinal("car\rreturn");
-                ords[8] = reader.GetOrdinal("tab\tstop");
-                ords[9] = reader.GetOrdinal("vert\vtab");
-                ords[10] = reader.GetOrdinal("ctl\u0001x");
-                ords[11] = reader.GetOrdinal("nel\u0085x");
-                ords[12] = reader.GetOrdinal("ls\u2028x");
-                ords[13] = reader.GetOrdinal("ps\u2029x");
-                ords[14] = reader.GetOrdinal("ünï");
+                ords[0] = reader.GetOrdinal(names.Column(0));
+                ords[1] = reader.GetOrdinal(names.Column(1));
+                ords[2] = reader.GetOrdinal(names.Column(2));
+                ords[3] = reader.GetOrdinal(names.Column(3));
+                ords[4] = reader.GetOrdinal(names.Column(4));
+                ords[5] = reader.GetOrdinal(names.Column(5));
+                ords[6] = reader.GetOrdinal(names.Column(6));
+                ords[7] = reader.GetOrdinal(names.Column(7));
+                ords[8] = reader.GetOrdinal(names.Column(8));
+                ords[9] = reader.GetOrdinal(names.Column(9));
+                ords[10] = reader.GetOrdinal(names.Column(10));
+                ords[11] = reader.GetOrdinal(names.Column(11));
+                ords[12] = reader.GetOrdinal(names.Column(12));
+                ords[13] = reader.GetOrdinal(names.Column(13));
+                ords[14] = reader.GetOrdinal(names.Column(14));
                 var entry = new CacheEntry(reader, ords);
 #if NET8_0_OR_GREATER
                 _cache.AddOrUpdate(reader, entry);
@@ -353,7 +357,7 @@ namespace Snapshots.Escaping
 
                 public int[] Ordinals { get; }
 
-                public bool Matches(IDataReader reader)
+                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
                 {
                     if (!ReferenceEquals(reader, _reader))
                         return false;
@@ -364,91 +368,91 @@ namespace Snapshots.Escaping
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "back\\slash", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "quote\"d", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "nul\0", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), names.Column(2), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord3 = Ordinals[3];
                     if ((uint)ord3 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord3), "bell\a", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord3), names.Column(3), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord4 = Ordinals[4];
                     if ((uint)ord4 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord4), "back\bspace", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord4), names.Column(4), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord5 = Ordinals[5];
                     if ((uint)ord5 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord5), "form\ffeed", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord5), names.Column(5), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord6 = Ordinals[6];
                     if ((uint)ord6 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord6), "new\nline", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord6), names.Column(6), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord7 = Ordinals[7];
                     if ((uint)ord7 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord7), "car\rreturn", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord7), names.Column(7), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord8 = Ordinals[8];
                     if ((uint)ord8 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord8), "tab\tstop", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord8), names.Column(8), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord9 = Ordinals[9];
                     if ((uint)ord9 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord9), "vert\vtab", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord9), names.Column(9), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord10 = Ordinals[10];
                     if ((uint)ord10 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord10), "ctl\u0001x", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord10), names.Column(10), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord11 = Ordinals[11];
                     if ((uint)ord11 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord11), "nel\u0085x", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord11), names.Column(11), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord12 = Ordinals[12];
                     if ((uint)ord12 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord12), "ls\u2028x", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord12), names.Column(12), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord13 = Ordinals[13];
                     if ((uint)ord13 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord13), "ps\u2029x", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord13), names.Column(13), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord14 = Ordinals[14];
                     if ((uint)ord14 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord14), "ünï", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord14), names.Column(14), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -456,92 +460,113 @@ namespace Snapshots.Escaping
             }
         }
 
-        public static string TableName { get; } = "odd\\name\"quoted\"\0\a\b\f\n\r\t\v\u0001\u0085\u2028\u2029end";
-        public static string? SchemaName { get; } = null;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            = new string[] {
-            "back\\slash",
-        };
+        private static class __JauntyNameHolder
+        {
+            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+                typeof(OddNames),
+                "odd\\name\"quoted\"\0\a\b\f\n\r\t\v\u0001\u0085\u2028\u2029end",
+                null,
+                new string[] { "Id", "Quoted", "Nul", "Bell", "Backspace", "FormFeed", "NewLine", "CarriageReturn", "Tab", "VerticalTab", "Control", "NextLine", "LineSeparator", "ParagraphSeparator", "Accented" },
+                new string?[] { "back\\slash", "quote\"d", "nul\0", "bell\a", "back\bspace", "form\ffeed", "new\nline", "car\rreturn", "tab\tstop", "vert\vtab", "ctl\u0001x", "nel\u0085x", "ls\u2028x", "ps\u2029x", "ünï" },
+                n => new __JauntyNamed(n));
+        }
 
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("quote\"d", "Quoted", false, false, typeof(string), e => (object?)((OddNames)e).Quoted, (e, v) => ((OddNames)e).Quoted = (string)v!),
-            new ColumnInfo("nul\0", "Nul", false, false, typeof(string), e => (object?)((OddNames)e).Nul, (e, v) => ((OddNames)e).Nul = (string)v!),
-            new ColumnInfo("bell\a", "Bell", false, false, typeof(string), e => (object?)((OddNames)e).Bell, (e, v) => ((OddNames)e).Bell = (string)v!),
-            new ColumnInfo("back\bspace", "Backspace", false, false, typeof(string), e => (object?)((OddNames)e).Backspace, (e, v) => ((OddNames)e).Backspace = (string)v!),
-            new ColumnInfo("form\ffeed", "FormFeed", false, false, typeof(string), e => (object?)((OddNames)e).FormFeed, (e, v) => ((OddNames)e).FormFeed = (string)v!),
-            new ColumnInfo("new\nline", "NewLine", false, false, typeof(string), e => (object?)((OddNames)e).NewLine, (e, v) => ((OddNames)e).NewLine = (string)v!),
-            new ColumnInfo("car\rreturn", "CarriageReturn", false, false, typeof(string), e => (object?)((OddNames)e).CarriageReturn, (e, v) => ((OddNames)e).CarriageReturn = (string)v!),
-            new ColumnInfo("tab\tstop", "Tab", false, false, typeof(string), e => (object?)((OddNames)e).Tab, (e, v) => ((OddNames)e).Tab = (string)v!),
-            new ColumnInfo("vert\vtab", "VerticalTab", false, false, typeof(string), e => (object?)((OddNames)e).VerticalTab, (e, v) => ((OddNames)e).VerticalTab = (string)v!),
-            new ColumnInfo("ctl\u0001x", "Control", false, false, typeof(string), e => (object?)((OddNames)e).Control, (e, v) => ((OddNames)e).Control = (string)v!),
-            new ColumnInfo("nel\u0085x", "NextLine", false, false, typeof(string), e => (object?)((OddNames)e).NextLine, (e, v) => ((OddNames)e).NextLine = (string)v!),
-            new ColumnInfo("ls\u2028x", "LineSeparator", false, false, typeof(string), e => (object?)((OddNames)e).LineSeparator, (e, v) => ((OddNames)e).LineSeparator = (string)v!),
-            new ColumnInfo("ps\u2029x", "ParagraphSeparator", false, false, typeof(string), e => (object?)((OddNames)e).ParagraphSeparator, (e, v) => ((OddNames)e).ParagraphSeparator = (string)v!),
-            new ColumnInfo("ünï", "Accented", false, false, typeof(string), e => (object?)((OddNames)e).Accented, (e, v) => ((OddNames)e).Accented = (string)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("quote\"d", "Quoted", false, false, typeof(string), e => (object?)((OddNames)e).Quoted, (e, v) => ((OddNames)e).Quoted = (string)v!),
-            new ColumnInfo("nul\0", "Nul", false, false, typeof(string), e => (object?)((OddNames)e).Nul, (e, v) => ((OddNames)e).Nul = (string)v!),
-            new ColumnInfo("bell\a", "Bell", false, false, typeof(string), e => (object?)((OddNames)e).Bell, (e, v) => ((OddNames)e).Bell = (string)v!),
-            new ColumnInfo("back\bspace", "Backspace", false, false, typeof(string), e => (object?)((OddNames)e).Backspace, (e, v) => ((OddNames)e).Backspace = (string)v!),
-            new ColumnInfo("form\ffeed", "FormFeed", false, false, typeof(string), e => (object?)((OddNames)e).FormFeed, (e, v) => ((OddNames)e).FormFeed = (string)v!),
-            new ColumnInfo("new\nline", "NewLine", false, false, typeof(string), e => (object?)((OddNames)e).NewLine, (e, v) => ((OddNames)e).NewLine = (string)v!),
-            new ColumnInfo("car\rreturn", "CarriageReturn", false, false, typeof(string), e => (object?)((OddNames)e).CarriageReturn, (e, v) => ((OddNames)e).CarriageReturn = (string)v!),
-            new ColumnInfo("tab\tstop", "Tab", false, false, typeof(string), e => (object?)((OddNames)e).Tab, (e, v) => ((OddNames)e).Tab = (string)v!),
-            new ColumnInfo("vert\vtab", "VerticalTab", false, false, typeof(string), e => (object?)((OddNames)e).VerticalTab, (e, v) => ((OddNames)e).VerticalTab = (string)v!),
-            new ColumnInfo("ctl\u0001x", "Control", false, false, typeof(string), e => (object?)((OddNames)e).Control, (e, v) => ((OddNames)e).Control = (string)v!),
-            new ColumnInfo("nel\u0085x", "NextLine", false, false, typeof(string), e => (object?)((OddNames)e).NextLine, (e, v) => ((OddNames)e).NextLine = (string)v!),
-            new ColumnInfo("ls\u2028x", "LineSeparator", false, false, typeof(string), e => (object?)((OddNames)e).LineSeparator, (e, v) => ((OddNames)e).LineSeparator = (string)v!),
-            new ColumnInfo("ps\u2029x", "ParagraphSeparator", false, false, typeof(string), e => (object?)((OddNames)e).ParagraphSeparator, (e, v) => ((OddNames)e).ParagraphSeparator = (string)v!),
-            new ColumnInfo("ünï", "Accented", false, false, typeof(string), e => (object?)((OddNames)e).Accented, (e, v) => ((OddNames)e).Accented = (string)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("back\\slash", "Id", true, true, typeof(int), e => (object?)((OddNames)e).Id, (e, v) => ((OddNames)e).Id = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
+        private sealed class __JauntyNamed
+        {
+            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
             {
-            ["back\\slash"] = new ColumnInfo("back\\slash", "Id", true, true, typeof(int), e => (object?)((OddNames)e).Id, (e, v) => ((OddNames)e).Id = (int)v!),
-            ["quote\"d"] = new ColumnInfo("quote\"d", "Quoted", false, false, typeof(string), e => (object?)((OddNames)e).Quoted, (e, v) => ((OddNames)e).Quoted = (string)v!),
-            ["nul\0"] = new ColumnInfo("nul\0", "Nul", false, false, typeof(string), e => (object?)((OddNames)e).Nul, (e, v) => ((OddNames)e).Nul = (string)v!),
-            ["bell\a"] = new ColumnInfo("bell\a", "Bell", false, false, typeof(string), e => (object?)((OddNames)e).Bell, (e, v) => ((OddNames)e).Bell = (string)v!),
-            ["back\bspace"] = new ColumnInfo("back\bspace", "Backspace", false, false, typeof(string), e => (object?)((OddNames)e).Backspace, (e, v) => ((OddNames)e).Backspace = (string)v!),
-            ["form\ffeed"] = new ColumnInfo("form\ffeed", "FormFeed", false, false, typeof(string), e => (object?)((OddNames)e).FormFeed, (e, v) => ((OddNames)e).FormFeed = (string)v!),
-            ["new\nline"] = new ColumnInfo("new\nline", "NewLine", false, false, typeof(string), e => (object?)((OddNames)e).NewLine, (e, v) => ((OddNames)e).NewLine = (string)v!),
-            ["car\rreturn"] = new ColumnInfo("car\rreturn", "CarriageReturn", false, false, typeof(string), e => (object?)((OddNames)e).CarriageReturn, (e, v) => ((OddNames)e).CarriageReturn = (string)v!),
-            ["tab\tstop"] = new ColumnInfo("tab\tstop", "Tab", false, false, typeof(string), e => (object?)((OddNames)e).Tab, (e, v) => ((OddNames)e).Tab = (string)v!),
-            ["vert\vtab"] = new ColumnInfo("vert\vtab", "VerticalTab", false, false, typeof(string), e => (object?)((OddNames)e).VerticalTab, (e, v) => ((OddNames)e).VerticalTab = (string)v!),
-            ["ctl\u0001x"] = new ColumnInfo("ctl\u0001x", "Control", false, false, typeof(string), e => (object?)((OddNames)e).Control, (e, v) => ((OddNames)e).Control = (string)v!),
-            ["nel\u0085x"] = new ColumnInfo("nel\u0085x", "NextLine", false, false, typeof(string), e => (object?)((OddNames)e).NextLine, (e, v) => ((OddNames)e).NextLine = (string)v!),
-            ["ls\u2028x"] = new ColumnInfo("ls\u2028x", "LineSeparator", false, false, typeof(string), e => (object?)((OddNames)e).LineSeparator, (e, v) => ((OddNames)e).LineSeparator = (string)v!),
-            ["ps\u2029x"] = new ColumnInfo("ps\u2029x", "ParagraphSeparator", false, false, typeof(string), e => (object?)((OddNames)e).ParagraphSeparator, (e, v) => ((OddNames)e).ParagraphSeparator = (string)v!),
-            ["ünï"] = new ColumnInfo("ünï", "Accented", false, false, typeof(string), e => (object?)((OddNames)e).Accented, (e, v) => ((OddNames)e).Accented = (string)v!),
-        };
+                Names = n;
+                PrimaryKeyColumnNames = new string[] {
+                    n.Column(0),
+                };
+                InsertColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "Quoted", false, false, typeof(string), e => (object?)((OddNames)e).Quoted, (e, v) => ((OddNames)e).Quoted = (string)v!),
+                    new ColumnInfo(n.Column(2), "Nul", false, false, typeof(string), e => (object?)((OddNames)e).Nul, (e, v) => ((OddNames)e).Nul = (string)v!),
+                    new ColumnInfo(n.Column(3), "Bell", false, false, typeof(string), e => (object?)((OddNames)e).Bell, (e, v) => ((OddNames)e).Bell = (string)v!),
+                    new ColumnInfo(n.Column(4), "Backspace", false, false, typeof(string), e => (object?)((OddNames)e).Backspace, (e, v) => ((OddNames)e).Backspace = (string)v!),
+                    new ColumnInfo(n.Column(5), "FormFeed", false, false, typeof(string), e => (object?)((OddNames)e).FormFeed, (e, v) => ((OddNames)e).FormFeed = (string)v!),
+                    new ColumnInfo(n.Column(6), "NewLine", false, false, typeof(string), e => (object?)((OddNames)e).NewLine, (e, v) => ((OddNames)e).NewLine = (string)v!),
+                    new ColumnInfo(n.Column(7), "CarriageReturn", false, false, typeof(string), e => (object?)((OddNames)e).CarriageReturn, (e, v) => ((OddNames)e).CarriageReturn = (string)v!),
+                    new ColumnInfo(n.Column(8), "Tab", false, false, typeof(string), e => (object?)((OddNames)e).Tab, (e, v) => ((OddNames)e).Tab = (string)v!),
+                    new ColumnInfo(n.Column(9), "VerticalTab", false, false, typeof(string), e => (object?)((OddNames)e).VerticalTab, (e, v) => ((OddNames)e).VerticalTab = (string)v!),
+                    new ColumnInfo(n.Column(10), "Control", false, false, typeof(string), e => (object?)((OddNames)e).Control, (e, v) => ((OddNames)e).Control = (string)v!),
+                    new ColumnInfo(n.Column(11), "NextLine", false, false, typeof(string), e => (object?)((OddNames)e).NextLine, (e, v) => ((OddNames)e).NextLine = (string)v!),
+                    new ColumnInfo(n.Column(12), "LineSeparator", false, false, typeof(string), e => (object?)((OddNames)e).LineSeparator, (e, v) => ((OddNames)e).LineSeparator = (string)v!),
+                    new ColumnInfo(n.Column(13), "ParagraphSeparator", false, false, typeof(string), e => (object?)((OddNames)e).ParagraphSeparator, (e, v) => ((OddNames)e).ParagraphSeparator = (string)v!),
+                    new ColumnInfo(n.Column(14), "Accented", false, false, typeof(string), e => (object?)((OddNames)e).Accented, (e, v) => ((OddNames)e).Accented = (string)v!),
+                };
+                UpdateColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "Quoted", false, false, typeof(string), e => (object?)((OddNames)e).Quoted, (e, v) => ((OddNames)e).Quoted = (string)v!),
+                    new ColumnInfo(n.Column(2), "Nul", false, false, typeof(string), e => (object?)((OddNames)e).Nul, (e, v) => ((OddNames)e).Nul = (string)v!),
+                    new ColumnInfo(n.Column(3), "Bell", false, false, typeof(string), e => (object?)((OddNames)e).Bell, (e, v) => ((OddNames)e).Bell = (string)v!),
+                    new ColumnInfo(n.Column(4), "Backspace", false, false, typeof(string), e => (object?)((OddNames)e).Backspace, (e, v) => ((OddNames)e).Backspace = (string)v!),
+                    new ColumnInfo(n.Column(5), "FormFeed", false, false, typeof(string), e => (object?)((OddNames)e).FormFeed, (e, v) => ((OddNames)e).FormFeed = (string)v!),
+                    new ColumnInfo(n.Column(6), "NewLine", false, false, typeof(string), e => (object?)((OddNames)e).NewLine, (e, v) => ((OddNames)e).NewLine = (string)v!),
+                    new ColumnInfo(n.Column(7), "CarriageReturn", false, false, typeof(string), e => (object?)((OddNames)e).CarriageReturn, (e, v) => ((OddNames)e).CarriageReturn = (string)v!),
+                    new ColumnInfo(n.Column(8), "Tab", false, false, typeof(string), e => (object?)((OddNames)e).Tab, (e, v) => ((OddNames)e).Tab = (string)v!),
+                    new ColumnInfo(n.Column(9), "VerticalTab", false, false, typeof(string), e => (object?)((OddNames)e).VerticalTab, (e, v) => ((OddNames)e).VerticalTab = (string)v!),
+                    new ColumnInfo(n.Column(10), "Control", false, false, typeof(string), e => (object?)((OddNames)e).Control, (e, v) => ((OddNames)e).Control = (string)v!),
+                    new ColumnInfo(n.Column(11), "NextLine", false, false, typeof(string), e => (object?)((OddNames)e).NextLine, (e, v) => ((OddNames)e).NextLine = (string)v!),
+                    new ColumnInfo(n.Column(12), "LineSeparator", false, false, typeof(string), e => (object?)((OddNames)e).LineSeparator, (e, v) => ((OddNames)e).LineSeparator = (string)v!),
+                    new ColumnInfo(n.Column(13), "ParagraphSeparator", false, false, typeof(string), e => (object?)((OddNames)e).ParagraphSeparator, (e, v) => ((OddNames)e).ParagraphSeparator = (string)v!),
+                    new ColumnInfo(n.Column(14), "Accented", false, false, typeof(string), e => (object?)((OddNames)e).Accented, (e, v) => ((OddNames)e).Accented = (string)v!),
+                };
+                DeleteColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((OddNames)e).Id, (e, v) => ((OddNames)e).Id = (int)v!),
+                };
+                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((OddNames)e).Id, (e, v) => ((OddNames)e).Id = (int)v!));
+                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "Quoted", false, false, typeof(string), e => (object?)((OddNames)e).Quoted, (e, v) => ((OddNames)e).Quoted = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(2))) parameterMap.Add(n.Column(2), new ColumnInfo(n.Column(2), "Nul", false, false, typeof(string), e => (object?)((OddNames)e).Nul, (e, v) => ((OddNames)e).Nul = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(3))) parameterMap.Add(n.Column(3), new ColumnInfo(n.Column(3), "Bell", false, false, typeof(string), e => (object?)((OddNames)e).Bell, (e, v) => ((OddNames)e).Bell = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(4))) parameterMap.Add(n.Column(4), new ColumnInfo(n.Column(4), "Backspace", false, false, typeof(string), e => (object?)((OddNames)e).Backspace, (e, v) => ((OddNames)e).Backspace = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(5))) parameterMap.Add(n.Column(5), new ColumnInfo(n.Column(5), "FormFeed", false, false, typeof(string), e => (object?)((OddNames)e).FormFeed, (e, v) => ((OddNames)e).FormFeed = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(6))) parameterMap.Add(n.Column(6), new ColumnInfo(n.Column(6), "NewLine", false, false, typeof(string), e => (object?)((OddNames)e).NewLine, (e, v) => ((OddNames)e).NewLine = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(7))) parameterMap.Add(n.Column(7), new ColumnInfo(n.Column(7), "CarriageReturn", false, false, typeof(string), e => (object?)((OddNames)e).CarriageReturn, (e, v) => ((OddNames)e).CarriageReturn = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(8))) parameterMap.Add(n.Column(8), new ColumnInfo(n.Column(8), "Tab", false, false, typeof(string), e => (object?)((OddNames)e).Tab, (e, v) => ((OddNames)e).Tab = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(9))) parameterMap.Add(n.Column(9), new ColumnInfo(n.Column(9), "VerticalTab", false, false, typeof(string), e => (object?)((OddNames)e).VerticalTab, (e, v) => ((OddNames)e).VerticalTab = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(10))) parameterMap.Add(n.Column(10), new ColumnInfo(n.Column(10), "Control", false, false, typeof(string), e => (object?)((OddNames)e).Control, (e, v) => ((OddNames)e).Control = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(11))) parameterMap.Add(n.Column(11), new ColumnInfo(n.Column(11), "NextLine", false, false, typeof(string), e => (object?)((OddNames)e).NextLine, (e, v) => ((OddNames)e).NextLine = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(12))) parameterMap.Add(n.Column(12), new ColumnInfo(n.Column(12), "LineSeparator", false, false, typeof(string), e => (object?)((OddNames)e).LineSeparator, (e, v) => ((OddNames)e).LineSeparator = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(13))) parameterMap.Add(n.Column(13), new ColumnInfo(n.Column(13), "ParagraphSeparator", false, false, typeof(string), e => (object?)((OddNames)e).ParagraphSeparator, (e, v) => ((OddNames)e).ParagraphSeparator = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(14))) parameterMap.Add(n.Column(14), new ColumnInfo(n.Column(14), "Accented", false, false, typeof(string), e => (object?)((OddNames)e).Accented, (e, v) => ((OddNames)e).Accented = (string)v!));
+                ParameterMap = parameterMap;
+                EntityColumns = new EntityColumnInfo[] {
+                    new EntityColumnInfo(n.Column(0), "Id", true, true, false, typeof(int), e => (object?)((OddNames)e).Id, (e, v) => ((OddNames)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(1), "Quoted", false, false, false, typeof(string), e => (object?)((OddNames)e).Quoted, (e, v) => ((OddNames)e).Quoted = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(2), "Nul", false, false, false, typeof(string), e => (object?)((OddNames)e).Nul, (e, v) => ((OddNames)e).Nul = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(3), "Bell", false, false, false, typeof(string), e => (object?)((OddNames)e).Bell, (e, v) => ((OddNames)e).Bell = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(4), "Backspace", false, false, false, typeof(string), e => (object?)((OddNames)e).Backspace, (e, v) => ((OddNames)e).Backspace = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(5), "FormFeed", false, false, false, typeof(string), e => (object?)((OddNames)e).FormFeed, (e, v) => ((OddNames)e).FormFeed = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(6), "NewLine", false, false, false, typeof(string), e => (object?)((OddNames)e).NewLine, (e, v) => ((OddNames)e).NewLine = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(7), "CarriageReturn", false, false, false, typeof(string), e => (object?)((OddNames)e).CarriageReturn, (e, v) => ((OddNames)e).CarriageReturn = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(8), "Tab", false, false, false, typeof(string), e => (object?)((OddNames)e).Tab, (e, v) => ((OddNames)e).Tab = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(9), "VerticalTab", false, false, false, typeof(string), e => (object?)((OddNames)e).VerticalTab, (e, v) => ((OddNames)e).VerticalTab = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(10), "Control", false, false, false, typeof(string), e => (object?)((OddNames)e).Control, (e, v) => ((OddNames)e).Control = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(11), "NextLine", false, false, false, typeof(string), e => (object?)((OddNames)e).NextLine, (e, v) => ((OddNames)e).NextLine = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(12), "LineSeparator", false, false, false, typeof(string), e => (object?)((OddNames)e).LineSeparator, (e, v) => ((OddNames)e).LineSeparator = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(13), "ParagraphSeparator", false, false, false, typeof(string), e => (object?)((OddNames)e).ParagraphSeparator, (e, v) => ((OddNames)e).ParagraphSeparator = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(14), "Accented", false, false, false, typeof(string), e => (object?)((OddNames)e).Accented, (e, v) => ((OddNames)e).Accented = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                };
+            }
 
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
-            = new EntityColumnInfo[] {
-            new EntityColumnInfo("back\\slash", "Id", true, true, false, typeof(int), e => (object?)((OddNames)e).Id, (e, v) => ((OddNames)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("quote\"d", "Quoted", false, false, false, typeof(string), e => (object?)((OddNames)e).Quoted, (e, v) => ((OddNames)e).Quoted = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("nul\0", "Nul", false, false, false, typeof(string), e => (object?)((OddNames)e).Nul, (e, v) => ((OddNames)e).Nul = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("bell\a", "Bell", false, false, false, typeof(string), e => (object?)((OddNames)e).Bell, (e, v) => ((OddNames)e).Bell = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("back\bspace", "Backspace", false, false, false, typeof(string), e => (object?)((OddNames)e).Backspace, (e, v) => ((OddNames)e).Backspace = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("form\ffeed", "FormFeed", false, false, false, typeof(string), e => (object?)((OddNames)e).FormFeed, (e, v) => ((OddNames)e).FormFeed = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("new\nline", "NewLine", false, false, false, typeof(string), e => (object?)((OddNames)e).NewLine, (e, v) => ((OddNames)e).NewLine = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("car\rreturn", "CarriageReturn", false, false, false, typeof(string), e => (object?)((OddNames)e).CarriageReturn, (e, v) => ((OddNames)e).CarriageReturn = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("tab\tstop", "Tab", false, false, false, typeof(string), e => (object?)((OddNames)e).Tab, (e, v) => ((OddNames)e).Tab = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("vert\vtab", "VerticalTab", false, false, false, typeof(string), e => (object?)((OddNames)e).VerticalTab, (e, v) => ((OddNames)e).VerticalTab = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("ctl\u0001x", "Control", false, false, false, typeof(string), e => (object?)((OddNames)e).Control, (e, v) => ((OddNames)e).Control = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("nel\u0085x", "NextLine", false, false, false, typeof(string), e => (object?)((OddNames)e).NextLine, (e, v) => ((OddNames)e).NextLine = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("ls\u2028x", "LineSeparator", false, false, false, typeof(string), e => (object?)((OddNames)e).LineSeparator, (e, v) => ((OddNames)e).LineSeparator = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("ps\u2029x", "ParagraphSeparator", false, false, false, typeof(string), e => (object?)((OddNames)e).ParagraphSeparator, (e, v) => ((OddNames)e).ParagraphSeparator = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("ünï", "Accented", false, false, false, typeof(string), e => (object?)((OddNames)e).Accented, (e, v) => ((OddNames)e).Accented = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-        };
+            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        }
+
+        public static string TableName => __JauntyNameHolder.Cache.Current.Names.TableName;
+        public static string? SchemaName => __JauntyNameHolder.Cache.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __JauntyNameHolder.Cache.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __JauntyNameHolder.Cache.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __JauntyNameHolder.Cache.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __JauntyNameHolder.Cache.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __JauntyNameHolder.Cache.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __JauntyNameHolder.Cache.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;

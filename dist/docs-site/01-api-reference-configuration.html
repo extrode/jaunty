@@ -205,8 +205,8 @@ verbatim on PostgreSQL and SQLite as well as SQL Server, giving <code>dbo.produc
 &quot;no such table&quot; error there. Scope it by type, or return <code>string.Empty</code> to leave an entity
 unqualified. Returning <code>string.Empty</code> emits no schema at all, which is what Jaunty does by
 default — see <a href="01-api-reference-schemas.html"><code>schemas.md</code></a>.</p>
-<p>It is consulted on the reflection mapping path only. Source-generated entities read the <code>[Table]</code>
-attribute at compile time and ignore it.</p>
+<p>It applies to reflection-mapped and source-generated entities alike. A non-empty <code>[Table]</code>
+schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#name-resolution-order">name resolution order</a>.</p>
 <h3 id="tablenameresolver">TableNameResolver</h3>
 <p>A function that resolves table names for entity types. Receives the entity type and returns the table name to use.</p>
 <p><strong>Property:</strong></p>
@@ -404,7 +404,9 @@ resolver delegates on <code>JauntyConfig</code>:</p>
 </tr>
 </tbody>
 </table>
-<p>All three are nullable and default to <code>null</code>, which means the .NET name is used unchanged.</p>
+<p>All three are nullable and default to <code>null</code>, which means the .NET name is used unchanged. They
+apply to reflection-mapped and source-generated entities alike, and only to names that no
+attribute fixes: see the <a href="02-architecture-metadata-system-spec.html#name-resolution-order">name resolution order</a>.</p>
 <p>Nothing stops you writing the conversions; there is deliberately no inflector in the box, because
 pluralisation is language- and schema-specific and a wrong guess is worse than no guess.</p>
 <div class="code-block">
@@ -592,12 +594,16 @@ requirement.</p>
 </code></pre>
 </div>
 <h2 id="configuration-priority">Configuration Priority</h2>
-<p>Jaunty uses the following priority order for determining table/column names:</p>
+<p>Jaunty resolves every table, schema and column name in one order, whether the entity is
+reflection-mapped or source-generated:</p>
 <ol>
-<li><strong>[Table] and [Column] attributes</strong> - Highest priority</li>
-<li><strong>JauntyConfig resolvers</strong> - Medium priority</li>
-<li><strong>Property/type names</strong> - Default fallback</li>
+<li><strong>[Table] and [Column] attributes</strong>, when the name they give is non-empty. <code>[Column(&quot;&quot;)]</code>
+names nothing and falls through.</li>
+<li><strong>JauntyConfig resolvers</strong>, when set and returning non-null. A resolver is not called for a name
+an attribute already fixes.</li>
+<li><strong>Property/type names</strong> (no schema), as the default.</li>
 </ol>
+<p>The <a href="02-architecture-metadata-system-spec.html#name-resolution-order">name resolution order</a> diagrams each case.</p>
 <p><strong>Example:</strong></p>
 <div class="code-block">
   <div class="code-header">
@@ -693,7 +699,7 @@ requirement.</p>
 <li><strong>Thread Safety</strong>: The configuration properties are static and shared across all threads</li>
 <li><strong>Performance</strong>: Once configured, the resolvers are cached and have minimal performance impact</li>
 <li><strong>Fallback Behavior</strong>: When resolvers return null, Jaunty falls back to default behavior</li>
-<li><strong>Attribute Override</strong>: <code>[Table]</code>, <code>[Column]</code>, and <code>[Ignore]</code> attributes take precedence over configuration</li>
+<li><strong>Attribute Override</strong>: a non-empty <code>[Table]</code> or <code>[Column]</code> name, and <code>[Ignore]</code>, take precedence over configuration, on both mapping paths</li>
 <li><strong>Reset Capability</strong>: Use <code>JauntyConfig.Reset()</code> to clear all configuration and return to defaults</li>
 <li><strong>IMapped Behavior</strong>: <code>IMapped&lt;T&gt;.ReadEntity</code> is strict/full-shape mapping; for <code>QueryPartial*</code> projections, prefer <code>CommandOptions&lt;T&gt;.WithMapper(...)</code> if your query may omit columns</li>
 </ul></div>

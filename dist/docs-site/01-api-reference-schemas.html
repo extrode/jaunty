@@ -369,8 +369,8 @@ return <code>string.Empty</code> for entities that should stay unqualified:</p>
         : <span class="tok-str">&quot;dbo&quot;</span>;
 </code></pre>
 </div>
-<p>It is consulted on the reflection mapping path only. Source-generated entities read the <code>[Table]</code>
-attribute at compile time and ignore it. A <code>[Table]</code> schema wins over the resolver either way.</p>
+<p>It applies to reflection-mapped and source-generated entities alike. A non-empty <code>[Table]</code>
+schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#name-resolution-order">name resolution order</a>.</p>
 <h2 id="isqldialectgetdefaultschema"><code>ISqlDialect.GetDefaultSchema()</code></h2>
 <p>Informational. It reports the engine's conventional default (<code>dbo</code>, <code>public</code>, <code>main</code>, or empty)
 and <strong>Jaunty never emits it</strong>. The effective default is session state — the login's default schema,

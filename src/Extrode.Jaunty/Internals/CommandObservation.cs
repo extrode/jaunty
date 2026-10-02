@@ -54,7 +54,7 @@ namespace Extrode.Jaunty.Internals;
 /// thirty call sites read it twice - once to test, once to call - so a clear landing between the
 /// two reads threw <see cref="NullReferenceException"/> out of a live query. Snapshotting it into a
 /// local also gives the behaviour <see cref="Configuration.JauntyConfig"/> already documents:
-/// "commands that are already executing keep the configuration they observed at their start".
+/// "a command that is already executing keeps the interceptor pipeline it observed at its start".
 /// </para>
 /// </remarks>
 internal static class CommandObservation

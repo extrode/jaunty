@@ -639,12 +639,14 @@
 <h3 id="identity-columns">Identity Columns</h3>
 <p>For identity columns, the generated value is returned by Insert operations and can be automatically populated in the entity if it implements <code>IEntity</code> or <code>IEntity&lt;T&gt;</code>.</p>
 <h3 id="column-mapping">Column Mapping</h3>
-<p>Properties are mapped to columns using:</p>
+<p>Properties are mapped to columns using, in order:</p>
 <ol>
-<li><code>[Column]</code> attribute for custom column names</li>
-<li>Property name (converted using configured naming convention)</li>
-<li>Global configuration via <code>JauntyConfig.ColumnNameResolver</code></li>
+<li>A non-empty <code>[Column]</code> attribute name</li>
+<li><code>JauntyConfig.ColumnNameResolver</code>, when set and returning non-null</li>
+<li>The property name</li>
 </ol>
+<p>Reflection-mapped and source-generated entities follow the same order; see the
+<a href="02-architecture-metadata-system-spec.html#name-resolution-order">name resolution order</a>.</p>
 <h2 id="important-notes">Important Notes</h2>
 <div class="callout callout-warn"><ul>
 <li><strong>Entity Requirements</strong>: All entity types must have a parameterless constructor (<code>where T : new()</code>)</li>
