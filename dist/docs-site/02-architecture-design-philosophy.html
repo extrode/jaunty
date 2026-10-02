@@ -417,11 +417,13 @@ Good: &quot;Strict mapping failed: property 'Price' on type 'Product' has no mat
 <span class="tok-kw">var</span> product = connection.<span class="tok-fn">Query</span>&lt;<span class="tok-type">Product</span>&gt;(sql);
 <span class="tok-com">// MetadataCache&lt;Product&gt; is now initialized</span>
 
-<span class="tok-com">// Changing config after first use has NO EFFECT on cached types</span>
-<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-kw">null</span>;  <span class="tok-com">// Ignored for Product</span>
+<span class="tok-com">// Changing config later is picked up, at the cost of rebuilding the cache</span>
+<span class="tok-type">JauntyConfig</span>.<span class="tok-var">ColumnNameResolver</span> = <span class="tok-kw">null</span>;  <span class="tok-com">// bumps the configuration generation</span>
 </code></pre>
 </div>
-<p><strong>Why</strong>: Static generic caching is faster than per-call resolution.</p>
+<p><strong>Why</strong>: Static generic caching is faster than per-call resolution. Every <code>JauntyConfig</code> setter
+bumps a configuration generation, and caches built under an older one are rebuilt on next use, so
+a late change is correct but discards compiled work.</p>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="02-architecture-performance-spec.html"><code>performance.md</code></a> - Performance optimizations</li>

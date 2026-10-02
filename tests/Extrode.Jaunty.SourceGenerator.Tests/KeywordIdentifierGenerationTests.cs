@@ -39,8 +39,8 @@ public class KeywordIdentifierGenerationTests
             Header + "[Table(\"t\")] public partial class Order { public int Id { get; set; } public string @event { get; set; } = \"\"; }");
 
         Assert.Contains("entity.@event = ", sources[0], StringComparison.Ordinal);
-        Assert.Contains("new ColumnInfo(\"event\", \"event\"", sources[0], StringComparison.Ordinal);
-        Assert.Contains("GetOrdinal(\"event\")", sources[0], StringComparison.Ordinal);
+        Assert.Contains("new string[] { \"Id\", \"event\" }", sources[0], StringComparison.Ordinal);
+        Assert.Contains("new ColumnInfo(n.Column(1), \"event\"", sources[0], StringComparison.Ordinal);
     }
 
     [Fact]

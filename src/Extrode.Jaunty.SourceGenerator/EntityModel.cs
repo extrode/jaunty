@@ -45,7 +45,8 @@ internal sealed record EntityModel(
     LocationInfo? DiagnosticLocation,
     EquatableArray<ContainingTypeInfo> ContainingTypes = default,
     string? UnsupportedNestingReason = null,
-    EquatableArray<DroppedPropertyInfo> DroppedProperties = default);
+    EquatableArray<DroppedPropertyInfo> DroppedProperties = default,
+    bool TableNameIsExplicit = false);
 
 /// <summary>
 /// A property the generated mapper leaves out but the reflection mapper maps, with the reason.
@@ -87,7 +88,8 @@ internal readonly record struct PropertyMetadata(
     bool IsEnum,
     bool IsIdentityInferred,
     int? EnumStorageOverride,
-    bool IsNonNullableValueType)
+    bool IsNonNullableValueType,
+    bool ColumnNameIsExplicit = false)
 {
     /// <summary>
     /// AUD-R35-069. Whether the property's type is a value type that is not <c>Nullable&lt;T&gt;</c>,
@@ -124,6 +126,14 @@ internal readonly record struct PropertyMetadata(
     /// <c>BuildValueConverter</c> makes. Meaningful only when <see cref="IsEnum"/> is true.
     /// </summary>
     public int? EnumStorageOverride { get; init; } = EnumStorageOverride;
+
+    /// <summary>
+    /// Whether <see cref="ColumnName"/> came from a non-empty <c>[Column]</c>. Only an attribute
+    /// name is fixed at build time; the property-name default is handed to
+    /// <c>GeneratedNameCache</c>, which applies <c>JauntyConfig.ColumnNameResolver</c> to it at
+    /// runtime in the order the reflection path uses.
+    /// </summary>
+    public bool ColumnNameIsExplicit { get; init; } = ColumnNameIsExplicit;
 }
 
 /// <summary>

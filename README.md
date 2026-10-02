@@ -561,7 +561,8 @@ JauntyConfig.SchemaNameResolver = type =>
     type.Namespace?.EndsWith(".Archive", StringComparison.Ordinal) == true ? "archive" : string.Empty;
 ```
 
-Precedence is `[Column]`, then the resolver, then the property name. `SchemaNameResolver` sees only
+Precedence is a non-empty `[Table]` or `[Column]` name, then the resolver, then the type or
+property name, for reflection-mapped and source-generated entities alike. `SchemaNameResolver` sees only
 the type, so a blanket `_ => "dbo"` would qualify tables on PostgreSQL and SQLite too; return
 `string.Empty` for types that should stay unqualified. Resolvers may be changed after queries have
 run, and cached metadata is rebuilt on next use. Per-engine detail is in

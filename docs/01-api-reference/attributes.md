@@ -29,7 +29,9 @@ public partial class Product
 - `Schema`: Gets the optional schema name
 
 **Notes:**
-- Takes precedence over `JauntyConfig.TableNameResolver`
+- A non-empty name takes precedence over `JauntyConfig.TableNameResolver`, for reflection-mapped
+  and source-generated entities alike. `[Table("")]` names no table, so the resolver or the type
+  name applies; see the [name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order)
 - If schema is not specified, the table name is emitted unqualified and the database resolves it:
   the login's default schema on SQL Server, `search_path` on PostgreSQL, `main` on SQLite, the
   connection's database on MySQL. Jaunty never substitutes a default of its own —
@@ -88,8 +90,9 @@ public partial class Product
 - `Name`: Gets the column name
 
 **Notes:**
-- Takes precedence over `JauntyConfig.ColumnNameResolver`
-- Attribute takes highest priority in naming resolution
+- A non-empty name takes precedence over `JauntyConfig.ColumnNameResolver`, on both mapping paths
+- `[Column("")]` names nothing: a DataAnnotations `[Column]` on the same property, then the
+  resolver, then the property name apply
 - Only applies to properties of entity classes
 
 ## Ignore Attribute
@@ -272,9 +275,13 @@ public enum OrderPriority { Low = 0, High = 1 }
 
 Jaunty uses the following priority order for mapping configuration:
 
-1. **Attributes** (`[Table]`, `[Column]`, `[Ignore]`, `[Key]`, `[DatabaseGenerated]`) - Highest priority
+1. **Attributes** (`[Table]`, `[Column]`, `[Ignore]`, `[Key]`, `[DatabaseGenerated]`) - Highest priority. A
+   `[Table]` or `[Column]` name counts only when it is non-empty
 2. **JauntyConfig resolvers** (`SchemaNameResolver`, `TableNameResolver`, `ColumnNameResolver`) - Medium priority
 3. **Default behavior** (property/type names) - Lowest priority
+
+Reflection-mapped and source-generated entities follow the same order; the
+[name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order) diagrams it.
 
 ## Examples
 
