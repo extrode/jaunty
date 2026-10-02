@@ -72,7 +72,7 @@ This is the constraint to plan around, and it is not visible from the signatures
 
 1. `options.Mapper`, when the caller supplied one.
 2. The source-generated `IMapped<T>` mapper - **only when the mode is `Strict`**.
-3. A special-type mapper, when `SpecialTypeMappers.Register()` has been called
+3. A special-type mapper, when `SpecialTypeMappers.Register(c)` has been called inside `JauntyConfig.Configure`
    (see [`special-types.md`](special-types.md)).
 4. The reflection extension, when `Extrode.Jaunty.Extensions.Reflection` is loaded.
 5. Otherwise it throws *No mapper found for type 'T'*.
@@ -84,7 +84,7 @@ projection mapper, so on a partial query the dispatcher always falls through.
 **The practical consequence:** in a source-generation-only build - the NativeAOT and
 zero-reflection configuration - `QueryPartial<T>` throws unless you either
 
-- reference `Extrode.Jaunty.Extensions.Reflection` and call `UseReflectionMapping()`, or
+- reference `Extrode.Jaunty.Extensions.Reflection` and call `UseReflectionMapping()` inside `JauntyConfig.Configure`, or
 - pass your own mapper: `CommandOptions<T>.WithMapper(...)`.
 
 If neither is acceptable, the alternative is to keep strict mapping and declare a DTO whose

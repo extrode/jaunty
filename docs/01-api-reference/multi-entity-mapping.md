@@ -155,7 +155,7 @@ leading segment, and a unit separator joins that segment to the column names:
 
 | part | why it is in the key |
 |---|---|
-| configuration generation | a `JauntyConfig.ColumnNameResolver` change, or `JauntyConfig.Reset()`, retires mappers built under the old configuration instead of serving them for the life of the process |
+| configuration generation | a `JauntyConfig.Configure` call that sets `ColumnNameResolver`, or `JauntyConfig.Reset()`, retires mappers built under the old configuration instead of serving them for the life of the process |
 | field count | a cheap discriminator ahead of the names |
 | every column name, in order | the layout the split points were computed against |
 

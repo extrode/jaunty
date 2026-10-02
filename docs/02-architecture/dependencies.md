@@ -116,10 +116,10 @@ packages that references a database driver.
 | `net8.0`, `net10.0` | `Npgsql` 10.0.1 |
 | `netstandard2.0` | `Npgsql` 8.0.7 — 10.x no longer targets it |
 
-Install it and call `JauntyNpgsql.Use()` once at startup if you import CSV into PostgreSQL:
+Install it and call `c.UseNpgsqlCopy()` inside `JauntyConfig.Configure` if you import CSV into PostgreSQL:
 
 ```csharp
-JauntyNpgsql.Use();
+JauntyConfig.Configure(c => c.UseNpgsqlCopy());
 connection.ImportCsv("products", "products.csv");
 ```
 
@@ -133,7 +133,7 @@ direct, compile-time calls.
 
 **Without a provider, an Npgsql connection is rejected by name** rather than falling back quietly.
 To use the server-side path deliberately — where the database server opens the file, not your
-process — set `JauntyConfig.CopyImportFactory` to a factory that returns `null`. You can also
+process — set `c.CopyImportFactory` inside `JauntyConfig.Configure` to a factory that returns `null`. You can also
 register your own implementation for any driver with an equivalent API.
 
 Every other engine is unaffected: SQLite, MySQL/MariaDB and SQL Server never consult the factory.
