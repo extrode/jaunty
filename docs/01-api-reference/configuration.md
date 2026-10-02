@@ -30,8 +30,10 @@ are upgrading code that assigned these properties directly,
   as `Product.Jaunty.TableName` counts as first use, and `Configure` after that throws.
 - **A second call with the same settings does nothing; with different settings it throws.**
   Delegates compare equal when they refer to the same method on the same target, which holds for
-  method groups and for lambdas that capture nothing. Guard a call whose lambda captures a value
-  with `if (!JauntyConfig.IsConfigured)`.
+  method groups and for lambdas that capture nothing; type handlers compare by their type, so
+  `new GuidAsStringHandler()` on each run counts as the same. Make a call whose lambda captures a
+  value through `JauntyConfig.TryConfigure` instead. A repeated `Configure` runs your callback
+  again to compare, so keep it free of side effects.
 - **Reflection mapping is switched on first** when Extrode.Jaunty.Extensions.Reflection is
   referenced, and your callback can override any hook it set. Call `c.UseReflectionMapping()`
   yourself only in a trimmed or NativeAOT publish, where the automatic step cannot load the
@@ -110,16 +112,22 @@ JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // your own h
 JauntyConfig.Configure(c => c.ColumnNameResolver = propertyName => propertyName.ToLower());
 ```
 
-### IsConfigured
+### TryConfigure()
 
-`true` once `Configure` has completed. Use it to guard a `Configure` call that can run more than
-once in one process with settings that compare unequal, such as a lambda capturing a value read
-from configuration, or a test host that runs `Program.cs` again.
+Applies the settings like `Configure` on the first call in a process and returns `true`; every
+later call returns `false` without running the callback. Use it where startup code can run more
+than once in one process with settings that compare unequal, such as a lambda capturing a value
+read from configuration in a test host that runs `Program.cs` again, possibly on parallel threads.
+It still throws once an operation has read the settings.
 
 ```csharp
-if (!JauntyConfig.IsConfigured)
-    JauntyConfig.Configure(c => c.SchemaNameResolver = _ => schemaFromConfig);
+JauntyConfig.TryConfigure(c => c.SchemaNameResolver = _ => schemaFromConfig);
 ```
+
+### IsConfigured
+
+`true` once `Configure` or `TryConfigure` has completed. Checking it and then calling `Configure`
+is not atomic; use `TryConfigure` for that.
 
 ### Reset()
 
@@ -433,15 +441,14 @@ public class Product
 }
 ```
 
-### 3. Guard a Startup Path That Can Run Twice
+### 3. A Startup Path That Can Run Twice
 
 Integration test hosts such as `WebApplicationFactory` can run `Program.cs` more than once in one
-process. Identical settings are a no-op; settings captured from configuration are not, so guard
-them:
+process. Identical settings are a no-op; settings captured from configuration are not, so use
+`TryConfigure` for them:
 
 ```csharp
-if (!JauntyConfig.IsConfigured)
-    JauntyConfig.Configure(c => c.TableNameResolver = type => prefix + type.Name);
+JauntyConfig.TryConfigure(c => c.TableNameResolver = type => prefix + type.Name);
 ```
 
 ### 4. Reset Configuration for Tests

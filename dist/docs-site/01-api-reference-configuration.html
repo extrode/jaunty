@@ -156,7 +156,7 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#jauntyconfig-class">JauntyConfig Class</a><a class="toc-l3" href="#schemanameresolver">SchemaNameResolver</a><a class="toc-l3" href="#tablenameresolver">TableNameResolver</a><a class="toc-l3" href="#columnnameresolver">ColumnNameResolver</a><a class="toc-l3" href="#isconfigured">IsConfigured</a><a class="toc-l3" href="#reset">Reset()</a><a class="toc-l3" href="#defaultenumstorage">DefaultEnumStorage</a><a class="toc-l3" href="#registertypehandler">RegisterTypeHandler</a><a class="toc-l2" href="#naming-conventions">Naming conventions</a><a class="toc-l2" href="#commandoptions-class">CommandOptions Class</a><a class="toc-l3" href="#constructor">Constructor</a><a class="toc-l3" href="#static-factory-methods">Static Factory Methods</a><a class="toc-l2" href="#non-generic-commandoptions">Non-Generic CommandOptions</a><a class="toc-l3" href="#constructor-1">Constructor</a><a class="toc-l3" href="#static-factory-methods-1">Static Factory Methods</a><a class="toc-l2" href="#configuration-priority">Configuration Priority</a><a class="toc-l2" href="#best-practices">Best Practices</a><a class="toc-l3" href="#1-set-configuration-at-startup">1. Set Configuration at Startup</a><a class="toc-l3" href="#2-use-attributes-for-specific-overrides">2. Use Attributes for Specific Overrides</a><a class="toc-l3" href="#3-guard-a-startup-path-that-can-run-twice">3. Guard a Startup Path That Can Run Twice</a><a class="toc-l3" href="#4-reset-configuration-for-tests">4. Reset Configuration for Tests</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#overview">Overview</a><a class="toc-l2" href="#jauntyconfig-class">JauntyConfig Class</a><a class="toc-l3" href="#schemanameresolver">SchemaNameResolver</a><a class="toc-l3" href="#tablenameresolver">TableNameResolver</a><a class="toc-l3" href="#columnnameresolver">ColumnNameResolver</a><a class="toc-l3" href="#tryconfigure">TryConfigure()</a><a class="toc-l3" href="#isconfigured">IsConfigured</a><a class="toc-l3" href="#reset">Reset()</a><a class="toc-l3" href="#defaultenumstorage">DefaultEnumStorage</a><a class="toc-l3" href="#registertypehandler">RegisterTypeHandler</a><a class="toc-l2" href="#naming-conventions">Naming conventions</a><a class="toc-l2" href="#commandoptions-class">CommandOptions Class</a><a class="toc-l3" href="#constructor">Constructor</a><a class="toc-l3" href="#static-factory-methods">Static Factory Methods</a><a class="toc-l2" href="#non-generic-commandoptions">Non-Generic CommandOptions</a><a class="toc-l3" href="#constructor-1">Constructor</a><a class="toc-l3" href="#static-factory-methods-1">Static Factory Methods</a><a class="toc-l2" href="#configuration-priority">Configuration Priority</a><a class="toc-l2" href="#best-practices">Best Practices</a><a class="toc-l3" href="#1-set-configuration-at-startup">1. Set Configuration at Startup</a><a class="toc-l3" href="#2-use-attributes-for-specific-overrides">2. Use Attributes for Specific Overrides</a><a class="toc-l3" href="#3-a-startup-path-that-can-run-twice">3. A Startup Path That Can Run Twice</a><a class="toc-l3" href="#4-reset-configuration-for-tests">4. Reset Configuration for Tests</a><a class="toc-l2" href="#important-notes">Important Notes</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Api reference &#8250; Configuration</nav>
         <article>
@@ -192,8 +192,10 @@ are upgrading code that assigned these properties directly,
 as <code>Product.Jaunty.TableName</code> counts as first use, and <code>Configure</code> after that throws.</li>
 <li><strong>A second call with the same settings does nothing; with different settings it throws.</strong>
 Delegates compare equal when they refer to the same method on the same target, which holds for
-method groups and for lambdas that capture nothing. Guard a call whose lambda captures a value
-with <code>if (!JauntyConfig.IsConfigured)</code>.</li>
+method groups and for lambdas that capture nothing; type handlers compare by their type, so
+<code>new GuidAsStringHandler()</code> on each run counts as the same. Make a call whose lambda captures a
+value through <code>JauntyConfig.TryConfigure</code> instead. A repeated <code>Configure</code> runs your callback
+again to compare, so keep it free of side effects.</li>
 <li><strong>Reflection mapping is switched on first</strong> when Extrode.Jaunty.Extensions.Reflection is
 referenced, and your callback can override any hook it set. Call <code>c.UseReflectionMapping()</code>
 yourself only in a trimmed or NativeAOT publish, where the automatic step cannot load the
@@ -286,19 +288,23 @@ schema wins over it; see the <a href="02-architecture-metadata-system-spec.html#
 <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">ColumnNameResolver</span> = propertyName =&gt; propertyName.<span class="tok-fn">ToLower</span>());
 </code></pre>
 </div>
-<h3 id="isconfigured">IsConfigured</h3>
-<p><code>true</code> once <code>Configure</code> has completed. Use it to guard a <code>Configure</code> call that can run more than
-once in one process with settings that compare unequal, such as a lambda capturing a value read
-from configuration, or a test host that runs <code>Program.cs</code> again.</p>
+<h3 id="tryconfigure">TryConfigure()</h3>
+<p>Applies the settings like <code>Configure</code> on the first call in a process and returns <code>true</code>; every
+later call returns <code>false</code> without running the callback. Use it where startup code can run more
+than once in one process with settings that compare unequal, such as a lambda capturing a value
+read from configuration in a test host that runs <code>Program.cs</code> again, possibly on parallel threads.
+It still throws once an operation has read the settings.</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-ctl">if</span> (!<span class="tok-type">JauntyConfig</span>.<span class="tok-var">IsConfigured</span>)
-    <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = _ =&gt; schemaFromConfig);
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">TryConfigure</span>(c =&gt; c.<span class="tok-var">SchemaNameResolver</span> = _ =&gt; schemaFromConfig);
 </code></pre>
 </div>
+<h3 id="isconfigured">IsConfigured</h3>
+<p><code>true</code> once <code>Configure</code> or <code>TryConfigure</code> has completed. Checking it and then calling <code>Configure</code>
+is not atomic; use <code>TryConfigure</code> for that.</p>
 <h3 id="reset">Reset()</h3>
 <p>Restores every setting to its default and allows <code>Configure</code> to run again. <strong>For tests only:</strong> it
 races any operation running at the same time, so a test that calls <code>Reset()</code> and then <code>Configure</code>
@@ -692,17 +698,16 @@ an attribute already fixes.</li>
 }
 </code></pre>
 </div>
-<h3 id="3-guard-a-startup-path-that-can-run-twice">3. Guard a Startup Path That Can Run Twice</h3>
+<h3 id="3-a-startup-path-that-can-run-twice">3. A Startup Path That Can Run Twice</h3>
 <p>Integration test hosts such as <code>WebApplicationFactory</code> can run <code>Program.cs</code> more than once in one
-process. Identical settings are a no-op; settings captured from configuration are not, so guard
-them:</p>
+process. Identical settings are a no-op; settings captured from configuration are not, so use
+<code>TryConfigure</code> for them:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-ctl">if</span> (!<span class="tok-type">JauntyConfig</span>.<span class="tok-var">IsConfigured</span>)
-    <span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-var">TableNameResolver</span> = type =&gt; prefix + type.<span class="tok-var">Name</span>);
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">TryConfigure</span>(c =&gt; c.<span class="tok-var">TableNameResolver</span> = type =&gt; prefix + type.<span class="tok-var">Name</span>);
 </code></pre>
 </div>
 <h3 id="4-reset-configuration-for-tests">4. Reset Configuration for Tests</h3>
