@@ -254,6 +254,9 @@ internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDeci
         string[] keyColumns,
         string[] keyParams)
     {
+        if (GeneratedKeyUpsertSql.Applies(insertColumns, keyColumns))
+            return GeneratedKeyUpsertSql.Build(tableName, insertColumns, insertParams, updateColumns, updateParams, keyColumns, keyParams, string.Empty);
+
         // SQLite: INSERT INTO table (...) VALUES (...) ON CONFLICT (key) DO UPDATE SET col = excluded.col
         var sb = new System.Text.StringBuilder(256);
         sb.Append("INSERT INTO ");

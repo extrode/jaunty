@@ -262,6 +262,9 @@ public sealed class DuckDbDialect : IFlatFileDialect, ISubstringToEndDialect
         string[] keyColumns,
         string[] keyParams)
     {
+        if (Extrode.Jaunty.Dialects.GeneratedKeyUpsertSql.Applies(insertColumns, keyColumns))
+            return Extrode.Jaunty.Dialects.GeneratedKeyUpsertSql.Build(tableName, insertColumns, insertParams, updateColumns, updateParams, keyColumns, keyParams, string.Empty);
+
         var sb = new StringBuilder(256);
         sb.Append("INSERT INTO ");
         sb.Append(tableName);
