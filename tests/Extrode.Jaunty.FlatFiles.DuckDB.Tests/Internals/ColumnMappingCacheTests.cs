@@ -1,8 +1,10 @@
 using Extrode.Jaunty.FlatFiles.DuckDB.Internals;
 using Extrode.Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
+using Extrode.Jaunty.FlatFiles.DuckDB.Tests.Unit;
 
 namespace Extrode.Jaunty.FlatFiles.DuckDB.Tests.Internals;
 
+[Collection(GlobalInterceptorStateCollection.Name)]
 public class ColumnMappingCacheTests
 {
     [Fact]

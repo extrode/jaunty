@@ -3,12 +3,14 @@ using System.Reflection;
 
 using Extrode.Jaunty.FlatFiles.DuckDB.Internals;
 using Extrode.Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
+using Extrode.Jaunty.FlatFiles.DuckDB.Tests.Unit;
 
 namespace Extrode.Jaunty.FlatFiles.DuckDB.Tests.Internals;
 
 /// <summary>
 /// Tests for ColumnMappingCache performance and caching behavior.
 /// </summary>
+[Collection(GlobalInterceptorStateCollection.Name)]
 public class ColumnMappingCachePerformanceTests
 {
     [Fact]
