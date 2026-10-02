@@ -39,7 +39,9 @@ $branches = @(
   'fix/fable-review-r38-survivors',
   'feat/generated-naming-resolvers',
   'chore/cleanup-naming-resolver-branches',
-  'chore/cleanup-tmp-mc-worktree'
+  'chore/cleanup-tmp-mc-worktree',
+  'fix/fable-review-naming-resolvers',
+  'chore/cleanup-fable-naming-review'
 )
 foreach ($b in $branches) {
   git rev-parse --verify --quiet "refs/heads/$b" *> $null
@@ -83,6 +85,6 @@ if (-not $registered) {
 Write-Host ''
 
 Write-Host '--- remaining state'
-git branch --list 'fix/fable-review-r38-survivors' 'feat/generated-naming-resolvers' 'chore/cleanup-naming-resolver-branches' 'chore/cleanup-tmp-mc-worktree'
+git branch --list 'fix/fable-review-r38-survivors' 'feat/generated-naming-resolvers' 'chore/cleanup-naming-resolver-branches' 'chore/cleanup-tmp-mc-worktree' 'fix/fable-review-naming-resolvers' 'chore/cleanup-fable-naming-review'
 git worktree list
 if ($Execute -and $Failed) { exit 1 }
