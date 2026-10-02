@@ -24,7 +24,7 @@ default lives in `src/Directory.Build.props`.
   thread could pair SQL built from one setting with parameters built from another. `Configure`
   runs once: a repeat with the same settings does nothing, one with different settings throws
   (use the new `JauntyConfig.TryConfigure` for a call that can repeat), and a call after the first
-  query throws.
+  query, or after any read of a mapping setting, throws.
   `Logger`, the capacities, interceptors, `BulkCopyConfiguration` and dialect registration are
   unchanged. Generated code is unaffected. See
   [Upgrading to JauntyConfig.Configure](docs/06-releases/upgrading-to-configure.md) and
