@@ -282,7 +282,7 @@ public class JauntyConfigConfigureTests : IDisposable
         inCallback.Wait(TestContext.Current.CancellationToken);
         Task resetting = Task.Run(JauntyConfig.Reset, TestContext.Current.CancellationToken);
 
-        Assert.False(resetting.Wait(200, TestContext.Current.CancellationToken));
+        Assert.NotSame(resetting, await Task.WhenAny(resetting, Task.Delay(200, TestContext.Current.CancellationToken)));
         release.Set();
         await configuring;
         await resetting;

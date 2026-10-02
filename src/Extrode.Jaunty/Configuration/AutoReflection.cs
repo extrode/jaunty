@@ -98,6 +98,7 @@ internal static class AutoReflection
     /// </summary>
     internal static string? ProductVersion(Assembly assembly)
     {
+        // AOT-SAFE: assembly-level attributes are kept by the trimmer; if one is ever stripped this returns null and the version check is skipped.
         string? version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         if (version is null)
             return null;
