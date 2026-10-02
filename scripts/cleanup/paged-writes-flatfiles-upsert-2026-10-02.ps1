@@ -80,7 +80,13 @@ Remove-MergedBranches $repo @(
   'test/allocation-budget-serial',
   'chore/cleanup-paged-writes-upsert',
   'fix/review-upsert-followups',
-  'chore/cleanup-review-followups'
+  'chore/cleanup-review-followups',
+  'test/upsert-batch-atomicity',
+  'feat/upsert-own-transaction',
+  'fix/write-parameter-cache-lazy-init',
+  'docs/rebuild-site-upsert-atomicity',
+  'docs/rebuild-site-upsert-own-transaction',
+  'chore/cleanup-upsert-own-transaction'
 )
 Write-Host ''
 
@@ -93,7 +99,7 @@ if (-not (Test-Path (Join-Path $audit '.git'))) {
   Write-Host "  refused: $audit is not on dev. Left alone."
   $Failed = $true
 } else {
-  Remove-MergedBranches $audit @('docs/todo-naming-and-paged-writes', 'docs/todo-close-three-findings')
+  Remove-MergedBranches $audit @('docs/todo-naming-and-paged-writes', 'docs/todo-close-three-findings', 'docs/todo-async-sqlite-transaction')
 }
 Write-Host ''
 
@@ -116,5 +122,5 @@ Write-Host ''
 
 Write-Host '--- remaining state'
 git worktree list
-git branch --list 'docs/paged-writes-blocked' 'feat/generated-members-nested-class' 'test/interceptor-elapsed-margin' 'feat/paged-write-fence' 'docs/rebuild-site-paged-writes' 'feat/flatfiles-core-naming' 'refactor/dead-code-sweep' 'fix/flatfiles-stray-aot-marker' 'test/serialize-clr-type-test' 'fix/upsert-identity-key' 'docs/duckdb-core-crud-limitation' 'test/allocation-budget-serial' 'chore/cleanup-paged-writes-upsert' 'fix/review-upsert-followups' 'chore/cleanup-review-followups'
+git branch --list 'docs/paged-writes-blocked' 'feat/generated-members-nested-class' 'test/interceptor-elapsed-margin' 'feat/paged-write-fence' 'docs/rebuild-site-paged-writes' 'feat/flatfiles-core-naming' 'refactor/dead-code-sweep' 'fix/flatfiles-stray-aot-marker' 'test/serialize-clr-type-test' 'fix/upsert-identity-key' 'docs/duckdb-core-crud-limitation' 'test/allocation-budget-serial' 'chore/cleanup-paged-writes-upsert' 'fix/review-upsert-followups' 'chore/cleanup-review-followups' 'test/upsert-batch-atomicity' 'feat/upsert-own-transaction' 'fix/write-parameter-cache-lazy-init' 'docs/rebuild-site-upsert-atomicity' 'docs/rebuild-site-upsert-own-transaction' 'chore/cleanup-upsert-own-transaction'
 if ($Execute -and $Failed) { exit 1 }
