@@ -100,6 +100,7 @@ Release documentation:
 
 - **[06-releases/](06-releases/README.md)**
   - [Release Runbook](06-releases/release-runbook.md) - Step-by-step release process
+  - [Upgrading to JauntyConfig.Configure](06-releases/upgrading-to-configure.md) - what the set-once configuration change breaks and how to update
   - [Feature Gap Analysis](06-releases/feature-gap-analysis.md) - gaps against competing ORMs
   - [Feature Candidates](06-releases/feature-candidates.md) - features Jaunty may add later, and why they are not built yet
 

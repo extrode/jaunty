@@ -25,24 +25,25 @@ For untyped rows without any of this machinery, see
 ## Registration is required
 
 Special-type mapping lives in `Extrode.Jaunty.Extensions.Reflection`, not in the core package. Nothing is
-wired up until you register it:
+wired up until you register it. Referencing the package does this automatically; trimmed and
+NativeAOT publishes register it explicitly:
 
 ```csharp
 using Extrode.Jaunty.Extensions.Reflection;
 
-JauntyReflectionExtensions.UseReflectionMapping();   // registers special types as well
+JauntyConfig.Configure(c => c.UseReflectionMapping());   // registers special types as well
 ```
 
-`UseReflectionMapping()` calls `SpecialTypeMappers.Register()` for you, because
+`UseReflectionMapping()` calls `SpecialTypeMappers.Register(c)` for you, because
 `DrDispatcher` has to resolve these types through the special-type hook before it ever reaches the
 property-based reflection mapper - and these types have no mappable properties, so reaching that
 mapper would fail. If you want the special-type hook and nothing else:
 
 ```csharp
-SpecialTypeMappers.Register();
+JauntyConfig.Configure(c => SpecialTypeMappers.Register(c));
 ```
 
-`Register()` is idempotent and non-clobbering: it assigns `JauntyConfig.SpecialTypeMapperResolver`
+`Register(c)` is idempotent and non-clobbering: it assigns `JauntyConfig.SpecialTypeMapperResolver`
 only when that property is still null, so a custom resolver you installed yourself survives a
 later call.
 

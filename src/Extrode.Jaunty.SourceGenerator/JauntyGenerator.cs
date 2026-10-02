@@ -82,7 +82,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     /// </para>
     /// <para>
     /// Warning rather than error, and generation is skipped: without a generated mapper the
-    /// entity is only mapped when <c>UseReflectionMapping()</c> has been called, and then it loses
+    /// entity is only mapped when reflection mapping is switched on, and then it loses
     /// the AOT-safe path. Otherwise the first call that needs it throws. The warning exists so that
     /// is known at build time.
     /// </para>
@@ -90,7 +90,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor UnsupportedNestingDescriptor = new(
         id: "JAUNTYGEN004",
         title: "No mapper was generated for the entity",
-        messageFormat: "No mapper was generated for entity '{0}' because {1}. Without a generated mapper it is mapped only by reflection, which needs Extrode.Jaunty.Extensions.Reflection referenced (it then enables itself) or UseReflectionMapping() called, and which a trimmed or NativeAOT publish can break.",
+        messageFormat: "No mapper was generated for entity '{0}' because {1}. Without a generated mapper it is mapped only by reflection, which needs Extrode.Jaunty.Extensions.Reflection referenced (it then enables itself) or UseReflectionMapping() called inside JauntyConfig.Configure, and which a trimmed or NativeAOT publish can break.",
         category: "JauntySourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);

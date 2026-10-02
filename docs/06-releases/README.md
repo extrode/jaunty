@@ -9,6 +9,10 @@ the market-analysis papers are held in the private work repository and are not p
 
 - [`release-runbook.md`](release-runbook.md) - Step-by-step process for cutting and shipping a release
 
+## Upgrade guides
+
+- [`upgrading-to-configure.md`](upgrading-to-configure.md) - Mapping settings move into `JauntyConfig.Configure`: what breaks, what to change, and why
+
 ## Planning
 
 - [`feature-candidates.md`](feature-candidates.md) - Features Jaunty may add later, what each would need, and why it is not built yet

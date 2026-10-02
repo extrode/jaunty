@@ -28,17 +28,22 @@ namespace Extrode.Jaunty.Extensions.Reflection;
 public static class SpecialTypeMappers
 {
     /// <summary>
-    /// Registers special type mappers with Extrode.Jaunty configuration.
-    /// Call this at application startup to enable Dictionary, KeyValuePair, ValueTuple, and ExpandoObject mapping.
+    /// Registers special type mappers on the builder passed to <c>JauntyConfig.Configure</c>, to
+    /// enable Dictionary, KeyValuePair, ValueTuple, and ExpandoObject mapping.
+    /// <c>UseReflectionMapping()</c> already calls this.
     /// </summary>
+    /// <param name="config">The builder passed to <c>JauntyConfig.Configure</c>.</param>
     /// <remarks>
-    /// Idempotent: if <see cref="JauntyConfig.SpecialTypeMapperResolver"/> is already set (by a
-    /// prior call to this method, or by a custom resolver configured directly), this call is a
+    /// Idempotent: if <see cref="JauntyConfigBuilder.SpecialTypeMapperResolver"/> is already set (by a
+    /// prior call to this method, or by a custom resolver set directly), this call is a
     /// silent no-op rather than overwriting it.
     /// </remarks>
-    public static void Register()
+    public static void Register(JauntyConfigBuilder config)
     {
-        JauntyConfig.SpecialTypeMapperResolver ??= ResolveSpecialTypeMapper;
+        if (config is null)
+            throw new ArgumentNullException(nameof(config));
+
+        config.SpecialTypeMapperResolver ??= ResolveSpecialTypeMapper;
     }
 
     private static object ResolveSpecialTypeMapper(Type type, IDataReader reader)

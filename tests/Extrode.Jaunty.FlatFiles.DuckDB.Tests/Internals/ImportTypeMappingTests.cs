@@ -40,7 +40,7 @@ public class ImportTypeMappingTests : IDisposable
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        JauntyConfig.DefaultEnumStorage = _originalEnumStorage;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = _originalEnumStorage);
     }
 
     private enum Priority
@@ -133,7 +133,7 @@ public class ImportTypeMappingTests : IDisposable
     public void ANumericEnumMapsAsItsUnderlyingType(IImportDialect dialect, string engine)
     {
         _ = engine;
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
 
         Assert.Equal(dialect.MapClrTypeToSqlType(typeof(int)), dialect.MapClrTypeToSqlType(typeof(Priority)));
         Assert.Equal(dialect.MapClrTypeToSqlType(typeof(byte)), dialect.MapClrTypeToSqlType(typeof(ByteBackedPriority)));
@@ -148,7 +148,7 @@ public class ImportTypeMappingTests : IDisposable
     public void AStringEnumMapsAsAString(IImportDialect dialect, string engine)
     {
         _ = engine;
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         Assert.Equal(dialect.MapClrTypeToSqlType(typeof(string)), dialect.MapClrTypeToSqlType(typeof(Priority)));
     }

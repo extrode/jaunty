@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -377,12 +377,12 @@
 <h2 id="configuration">Configuration</h2>
 <h3 id="jauntyconfig-class">JauntyConfig Class</h3>
 <ul>
-<li><code>SchemaNameResolver</code> - Global schema name resolver</li>
-<li><code>TableNameResolver</code> - Global table name resolver</li>
-<li><code>ColumnNameResolver</code> - Global column name resolver</li>
-<li><code>DefaultEnumStorage</code> - Global default enum storage strategy (numeric or string)</li>
-<li><code>RegisterTypeHandler&lt;T&gt;(fromDb, toDb)</code> / <code>RegisterTypeHandler&lt;T&gt;(TypeHandler&lt;T&gt;)</code> - Register a custom type handler</li>
-<li><code>RemoveTypeHandler&lt;T&gt;()</code> - Remove a registered type handler</li>
+<li><code>Configure(Action&lt;JauntyConfigBuilder&gt;)</code> - Set the options below once at startup, before the first query (see <a href="06-releases-upgrading-to-configure.html">upgrading-to-configure.md</a>)</li>
+<li><code>SchemaNameResolver</code> - Global schema name resolver (set through <code>Configure</code>)</li>
+<li><code>TableNameResolver</code> - Global table name resolver (set through <code>Configure</code>)</li>
+<li><code>ColumnNameResolver</code> - Global column name resolver (set through <code>Configure</code>)</li>
+<li><code>DefaultEnumStorage</code> - Global default enum storage strategy, numeric or string (set through <code>Configure</code>)</li>
+<li><code>c.RegisterTypeHandler&lt;T&gt;(fromDb, toDb)</code> / <code>c.RegisterTypeHandler&lt;T&gt;(TypeHandler&lt;T&gt;)</code> - Register a custom type handler inside <code>Configure</code></li>
 <li><code>Reset()</code> - Reset all configuration to defaults</li>
 </ul>
 <h3 id="commandoptions-struct">CommandOptions Struct</h3>

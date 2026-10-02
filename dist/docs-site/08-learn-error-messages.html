@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group data-open="true">
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -241,9 +241,9 @@ table are ambiguous SQL.</p>
 <h2 id="no-metadata-found-for-type-product"><code>No metadata found for type 'Product'.</code></h2>
 <p>Full text:</p>
 <blockquote>
-<p>No metadata found for type 'Product'. Ensure the class has [Table] and is processed by the Jaunty
-source generator (the class must be declared 'partial'), or call Jaunty.Extensions.Reflection's
-UseReflectionMapping().</p>
+<p>No metadata found for type 'Product'. Ensure the class has [Table] and is processed by the
+Extrode.Jaunty source generator (the class must be declared 'partial'), or call
+UseReflectionMapping() from Extrode.Jaunty.Extensions.Reflection inside JauntyConfig.Configure.</p>
 </blockquote>
 <p>Jaunty reads entity metadata that its source generator emits at compile time — that is what keeps
 it free of runtime reflection and NativeAOT-safe. The message means the generator produced nothing
@@ -266,8 +266,8 @@ The NuGet package does this for you.</li>
 <li><strong>The type has no <code>[Table]</code> attribute</strong> and no convention picked it up.</li>
 </ol>
 <p>If you want runtime reflection instead — for a prototype, or a type you cannot make <code>partial</code> —
-<code>UseReflectionMapping()</code> from <code>Extrode.Jaunty.Extensions.Reflection</code> supplies it, at the cost of the
-NativeAOT guarantee.</p>
+<code>Extrode.Jaunty.Extensions.Reflection</code> supplies it (<code>c.UseReflectionMapping()</code> inside
+<code>JauntyConfig.Configure</code> on trimmed or NativeAOT publishes), at the cost of the NativeAOT guarantee.</p>
 <h2 id="invalidoperationexception-naming-a-property-with-no-column"><code>InvalidOperationException</code> naming a property with no column</h2>
 <p><code>Query&lt;T&gt;</code> maps strictly: every public writable property must have a column in the result set. A
 property that does not is an error at the call site rather than a silently-null field.</p>

@@ -38,13 +38,13 @@ public class MultiEntityArity2InvocationTests : IDisposable
 
     public MultiEntityArity2InvocationTests()
     {
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
         _originalResolver = JauntyConfig.ReflectionMultiMapperResolver;
     }
 
     public void Dispose()
     {
-        JauntyConfig.ReflectionMultiMapperResolver = _originalResolver;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = _originalResolver);
         GC.SuppressFinalize(this);
     }
 
@@ -139,7 +139,7 @@ public class MultiEntityArity2InvocationTests : IDisposable
         _countedCalls = 0;
         Func<Type, Type, object> inner = _originalResolver!;
 
-        JauntyConfig.ReflectionMultiMapperResolver = (a, b) =>
+        JauntyConfig.Reconfigure(jc => jc.ReflectionMultiMapperResolver = (a, b) =>
         {
             object real = inner(a, b);
 
@@ -153,7 +153,7 @@ public class MultiEntityArity2InvocationTests : IDisposable
             }
 
             return real;
-        };
+        });
     }
 
     /// <summary>

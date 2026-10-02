@@ -35,16 +35,16 @@ public class GeneratedBindingSupportTests
     [Fact]
     public void ToDbValue_RegisteredHandler_Wins()
     {
-        JauntyConfig.RegisterTypeHandler<HandledToken>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<HandledToken>(
             fromDb: v => new HandledToken((string)v!),
-            toDb: v => v.Text);
+            toDb: v => v.Text));
         try
         {
             Assert.Equal("tok", GeneratedBindingSupport.ToDbValue(new HandledToken("tok")));
         }
         finally
         {
-            JauntyConfig.RemoveTypeHandler<HandledToken>();
+            TypeHandlerRegistry.Remove<HandledToken>();
         }
     }
 
@@ -84,15 +84,15 @@ public class GeneratedBindingSupportTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
             Assert.Equal("Idle", GeneratedBindingSupport.ToDbEnumValue(SupportState.Idle, null));
 
-            JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
             Assert.Equal(0, GeneratedBindingSupport.ToDbEnumValue(SupportState.Idle, null));
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = original);
         }
     }
 
@@ -105,16 +105,16 @@ public class GeneratedBindingSupportTests
     [Fact]
     public void ToDbEnumValue_RegisteredHandler_WinsOverStorage()
     {
-        JauntyConfig.RegisterTypeHandler<SupportState>(
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler<SupportState>(
             fromDb: v => (SupportState)Convert.ToInt32(v),
-            toDb: v => (int)v * 100);
+            toDb: v => (int)v * 100));
         try
         {
             Assert.Equal(100, GeneratedBindingSupport.ToDbEnumValue(SupportState.Busy, EnumStorage.String));
         }
         finally
         {
-            JauntyConfig.RemoveTypeHandler<SupportState>();
+            TypeHandlerRegistry.Remove<SupportState>();
         }
     }
 }

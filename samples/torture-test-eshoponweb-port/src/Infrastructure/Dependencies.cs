@@ -19,8 +19,8 @@ public static class Dependencies
     {
         // Ensure Extrode.Jaunty's reflection-based mapping is active for the flat Row POCOs (they carry no
         // source-generated mappers in this project). Extrode.Jaunty auto-discovers the extension assembly,
-        // but calling it explicitly is safe and idempotent.
-        Extrode.Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping();
+        // and a second host in the same process repeats this with identical settings, which is a no-op.
+        Extrode.Jaunty.Configuration.JauntyConfig.Configure(static c => Extrode.Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping(c));
 
         // Historically named "UseOnlyInMemoryDatabase"; now selects a SQLite catalog store
         // (used by the functional test fixtures). Identity continues to use EF Core.

@@ -174,19 +174,18 @@ We choose return types that accurately reflect the underlying database operation
 
 ```csharp
 // At application startup
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
+JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // a helper you write; Extrode.Jaunty ships none
 
 // First query triggers caching
 var product = connection.Query<Product>(sql);
 // MetadataCache<Product> is now initialized
 
-// Changing config later is picked up, at the cost of rebuilding the cache
-JauntyConfig.ColumnNameResolver = null;  // bumps the configuration generation
+// Calling Configure after first use throws
 ```
 
-**Why**: Static generic caching is faster than per-call resolution. Every `JauntyConfig` setter
-bumps a configuration generation, and caches built under an older one are rebuilt on next use, so
-a late change is correct but discards compiled work.
+**Why**: Static generic caching is faster than per-call resolution. `Configure` runs once, before
+the first query, so a cache is never built under settings that later change. See
+[upgrading-to-configure.md](../06-releases/upgrading-to-configure.md).
 
 ## See Also
 

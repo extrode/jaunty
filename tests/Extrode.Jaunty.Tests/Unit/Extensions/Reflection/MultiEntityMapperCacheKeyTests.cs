@@ -17,7 +17,7 @@ public class MultiEntityMapperCacheKeyTests : IDisposable
 {
     public void Dispose()
     {
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         GC.SuppressFinalize(this);
     }
 
@@ -43,7 +43,7 @@ public class MultiEntityMapperCacheKeyTests : IDisposable
         var reader = new MutableStubReader(["Id", "order_id"], [1, 7]);
         Assert.Equal(0, MapPair(reader).OrderId);
 
-        JauntyConfig.ColumnNameResolver = SnakeOrderId;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = SnakeOrderId);
 
         Assert.Equal(7, MapPair(reader).OrderId);
     }
@@ -53,7 +53,7 @@ public class MultiEntityMapperCacheKeyTests : IDisposable
     {
         Assert.Equal(0, MapPair(new MutableStubReader(["Id", "order_id"], [1, 7])).OrderId);
 
-        JauntyConfig.ColumnNameResolver = SnakeOrderId;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = SnakeOrderId);
 
         Assert.Equal(7, MapPair(new MutableStubReader(["Id", "order_id"], [1, 7])).OrderId);
     }
@@ -170,7 +170,7 @@ public class MultiEntityMapperCacheKeyTests : IDisposable
     {
         Assert.Equal(0, Map(arity, Ids(arity, ("order_id", 7)))[0].OrderId);
 
-        JauntyConfig.ColumnNameResolver = SnakeOrderId;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = SnakeOrderId);
 
         Assert.Equal(7, Map(arity, Ids(arity, ("order_id", 7)))[0].OrderId);
     }

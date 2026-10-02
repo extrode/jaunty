@@ -71,7 +71,7 @@ public class EnumStorageOverrideCallSiteTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
 
             object? bound = ParameterBinder.ApplyTypeHandlerIfNeeded(Ticket.Closed, column.Property);
 
@@ -79,7 +79,7 @@ public class EnumStorageOverrideCallSiteTests
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = original);
         }
     }
 
@@ -90,7 +90,7 @@ public class EnumStorageOverrideCallSiteTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
             object? bound = ParameterBinder.ApplyTypeHandlerIfNeeded(Ticket.Closed, column.Property, column.EnumStorageOverride);
 
@@ -98,7 +98,7 @@ public class EnumStorageOverrideCallSiteTests
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = original);
         }
     }
 
@@ -109,7 +109,7 @@ public class EnumStorageOverrideCallSiteTests
         EnumStorage original = JauntyConfig.DefaultEnumStorage;
         try
         {
-            JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
             object? bound = ParameterBinder.ApplyTypeHandlerIfNeeded(Ticket.Closed, column.Property, column.EnumStorageOverride);
 
@@ -117,7 +117,7 @@ public class EnumStorageOverrideCallSiteTests
         }
         finally
         {
-            JauntyConfig.DefaultEnumStorage = original;
+            JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = original);
         }
     }
 

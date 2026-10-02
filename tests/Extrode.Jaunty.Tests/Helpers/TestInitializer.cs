@@ -11,12 +11,12 @@ public static class TestInitializer
     [ModuleInitializer]
     public static void Initialize()
     {
-        JauntyReflectionExtensions.UseReflectionMapping();
-        SpecialTypeMappers.Register();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
+        JauntyConfig.Reconfigure(SpecialTypeMappers.Register);
 
         // The PostgreSQL client-side COPY path used to find Npgsql by reflection; it now needs a
         // registered provider. Without this the live [Postgres] import tests would take the
         // server-side fallback - or, since the guard makes that loud, throw.
-        JauntyNpgsql.Use();
+        JauntyConfig.Reconfigure(jc => jc.UseNpgsqlCopy());
     }
 }

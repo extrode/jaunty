@@ -56,7 +56,7 @@ internal static class CrudSqlCache
                 $"Cannot build CRUD SQL for type '{typeof(T).Name}'. " +
                 "Ensure the class has [Table] and is processed by the Extrode.Jaunty source generator " +
                 "(the class must be declared 'partial'), or call " +
-                "Extrode.Jaunty.Extensions.Reflection's UseReflectionMapping().");
+                "UseReflectionMapping() from Extrode.Jaunty.Extensions.Reflection inside JauntyConfig.Configure.");
         }
 
         string escapedTableName = dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);

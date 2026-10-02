@@ -22,13 +22,13 @@ namespace Extrode.Jaunty.Fluent.Tests.Unit;
 /// </summary>
 public class FluentMetadataStalenessTests : IDisposable
 {
-    public FluentMetadataStalenessTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public FluentMetadataStalenessTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
         JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
     }
 
     [Table("fluent_resolver_rename")]
@@ -58,8 +58,8 @@ public class FluentMetadataStalenessTests : IDisposable
         Assert.Contains("WidgetName", before, StringComparison.Ordinal);
         Assert.DoesNotContain("widget_name", before, StringComparison.Ordinal);
 
-        JauntyConfig.ColumnNameResolver = static name =>
-            name == nameof(FluentRenameWidget.WidgetName) ? "widget_name" : name;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = static name =>
+            name == nameof(FluentRenameWidget.WidgetName) ? "widget_name" : name);
 
         string after = connection.From<FluentRenameWidget>()
             .Where(w => w.WidgetName == "x")

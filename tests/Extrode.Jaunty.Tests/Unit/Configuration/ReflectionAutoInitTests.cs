@@ -45,7 +45,7 @@ public class ReflectionAutoInitTests
     {
         Func<Type, object>? previous = JauntyConfig.ReflectionTableMetadataResolver;
         Func<Type, object> mine = t => t == typeof(Row) ? Metadata() : null!;
-        JauntyConfig.ReflectionTableMetadataResolver = mine;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionTableMetadataResolver = mine);
 
         try
         {
@@ -57,7 +57,7 @@ public class ReflectionAutoInitTests
         }
         finally
         {
-            JauntyConfig.ReflectionTableMetadataResolver = previous;
+            JauntyConfig.Reconfigure(jc => jc.ReflectionTableMetadataResolver = previous);
         }
     }
 
@@ -65,7 +65,7 @@ public class ReflectionAutoInitTests
     public void AutoInit_StillInstallsTheHooksNobodySet()
     {
         Func<Type, object>? previous = JauntyConfig.ReflectionTableMetadataResolver;
-        JauntyConfig.ReflectionTableMetadataResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionTableMetadataResolver = null);
 
         try
         {
@@ -77,8 +77,8 @@ public class ReflectionAutoInitTests
         }
         finally
         {
-            JauntyConfig.ReflectionTableMetadataResolver = previous ?? JauntyConfig.ReflectionTableMetadataResolver;
-            JauntyReflectionExtensions.UseReflectionMapping();
+            JauntyConfig.Reconfigure(jc => jc.ReflectionTableMetadataResolver = previous ?? JauntyConfig.ReflectionTableMetadataResolver);
+            JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
         }
     }
 
@@ -87,17 +87,17 @@ public class ReflectionAutoInitTests
     {
         Func<Type, object>? previous = JauntyConfig.ReflectionTableMetadataResolver;
         Func<Type, object> mine = t => t == typeof(Row) ? Metadata() : null!;
-        JauntyConfig.ReflectionTableMetadataResolver = mine;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionTableMetadataResolver = mine);
 
         try
         {
-            JauntyReflectionExtensions.UseReflectionMapping();
+            JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
             Assert.NotSame(mine, JauntyConfig.ReflectionTableMetadataResolver);
         }
         finally
         {
-            JauntyConfig.ReflectionTableMetadataResolver = previous;
+            JauntyConfig.Reconfigure(jc => jc.ReflectionTableMetadataResolver = previous);
         }
     }
 }

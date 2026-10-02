@@ -53,12 +53,46 @@ internal static class ConfigurationGeneration
     /// tag the result as current. Reading it first means such a build is tagged stale and the next
     /// lookup rebuilds, which is self-healing.
     /// </summary>
-    public static int Current => Volatile.Read(ref _current);
+    public static int Current
+    {
+        get
+        {
+            MarkRead();
+            return Volatile.Read(ref _current);
+        }
+    }
 
     /// <summary>
     /// Marks every configuration-derived cache entry built so far as superseded.
     /// </summary>
     public static void Invalidate() => Interlocked.Increment(ref _current);
+
+    private static volatile bool _read;
+
+    /// <summary>
+    /// Whether any operation has read the frozen settings since startup or the last
+    /// <c>JauntyConfig.Reset()</c>. <c>JauntyConfig.Configure</c> refuses to run once this is set:
+    /// an operation that already read the old settings could otherwise pair them with the new ones.
+    /// </summary>
+    public static bool HasBeenRead => _read;
+
+    /// <summary>
+    /// Records that the frozen settings have been read. Called by every frozen getter, by
+    /// <see cref="Current"/> (which every derived cache reads, including those generated code and
+    /// Fluent reach without touching the <c>Jaunty</c> class), and by the type handler lookups. The
+    /// check before the write keeps the steady state a plain read.
+    /// </summary>
+    public static void MarkRead()
+    {
+        if (!_read)
+        {
+            _read = true;
+            Interlocked.MemoryBarrier();
+        }
+    }
+
+    /// <summary>Clears <see cref="HasBeenRead"/>. Only <c>JauntyConfig.Reset()</c> calls this.</summary>
+    public static void ClearRead() => _read = false;
 }
 
 /// <summary>

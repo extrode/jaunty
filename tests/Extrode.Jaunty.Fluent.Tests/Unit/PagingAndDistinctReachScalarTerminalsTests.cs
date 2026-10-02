@@ -2,6 +2,7 @@ using System.Data.SQLite;
 
 using Extrode.Jaunty.Attributes;
 using Extrode.Jaunty.Extensions.Reflection;
+using Extrode.Jaunty.Configuration;
 
 namespace Extrode.Jaunty.Fluent.Tests.Unit;
 
@@ -55,7 +56,7 @@ public class PagingAndDistinctReachScalarTerminalsTests : IDisposable
 
     public PagingAndDistinctReachScalarTerminalsTests()
     {
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
         _connection = new SQLiteConnection("Data Source=:memory:");
         _connection.Open();

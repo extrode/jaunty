@@ -1,4 +1,5 @@
-﻿
+
+using System.ComponentModel;
 using System.Data;
 
 using Extrode.Jaunty.Attributes;
@@ -14,37 +15,37 @@ namespace Extrode.Jaunty.Configuration;
 /// Provides global configuration options for Extrode.Jaunty's entity-to-database mapping behavior.
 /// </summary>
 /// <remarks>
-/// <para><b>Thread safety:</b> every setting is an atomic, immediately visible write
-/// (volatile fields), and the interceptor mutation methods
-/// (<see cref="AddInterceptor"/>, <see cref="AddInterceptors"/>, <see cref="ClearInterceptors"/>)
-/// are synchronized, so concurrent registration cannot lose interceptors. A command that is
-/// already executing keeps the interceptor pipeline it observed at its start. Mapping settings -
-/// the naming resolvers, binder resolvers and type handlers - are read when an operation builds its
-/// SQL and again when it binds parameters or reads rows, so an operation that overlaps a change to
-/// one of them can see both values and fail.</para>
-/// <para><see cref="Reset"/> is <b>not</b> atomic as a whole (each individual field reset
-/// is); it is intended for test cleanup, not for reconfiguring a live application.
-/// For deterministic behavior, configure Extrode.Jaunty once at application startup.</para>
+/// <para><b>Set once, at startup.</b> Names, mapping hooks, enum storage and type handlers are set
+/// through one <see cref="Configure"/> call and are read-only afterwards: their getters are here,
+/// their setters are on <see cref="JauntyConfigBuilder"/>. One operation reads them more than once -
+/// for its SQL text, then for its parameters or reader ordinals - so a change landing between those
+/// reads would pair SQL built under one configuration with parameters built under another. See
+/// docs/decisions/2026-10-02-014-configuration-is-set-once-at-startup.md and the upgrade guide,
+/// docs/06-releases/upgrading-to-configure.md.</para>
+/// <para><b>Still settable at runtime:</b> <see cref="Logger"/>, the capacity settings and the
+/// interceptors. Each is read once per use, so no operation can see two values of one. The
+/// interceptor mutation methods (<see cref="AddInterceptor"/>, <see cref="AddInterceptors"/>,
+/// <see cref="ClearInterceptors"/>) are synchronized, so concurrent registration cannot lose
+/// interceptors, and a command that is already executing keeps the pipeline it observed at its
+/// start.</para>
+/// <para><see cref="Reset"/> is for test cleanup only, and is <b>not</b> atomic as a whole.</para>
 /// </remarks>
 public static class JauntyConfig
 {
     private static readonly object InterceptorSync = new();
+    private static readonly object ConfigureSync = new();
 
-    private static volatile Func<Type, string>? _schemaNameResolver;
-    private static volatile Func<Type, string>? _tableNameResolver;
-    private static volatile Func<string, string>? _columnNameResolver;
+    private const int Unconfigured = 0;
+    private const int Configuring = 1;
+    private const int Configured = 2;
+
+    private static volatile JauntySettings _settings = JauntySettings.Defaults;
+    private static int _state = Unconfigured;
+    private static volatile int _configuringThread;
+    private static int _autoInstallSkipped;
+
     private static volatile Action<string, object?>? _logger;
-    private static volatile Func<Type, MappingMode, object>? _reflectionMapperResolver;
-    private static volatile Func<Type, IDataReader, object>? _specialTypeMapperResolver;
-    private static volatile Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
-    private static volatile Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
-    private static volatile Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
-    private static volatile Func<Type, object>? _reflectionTableMetadataResolver;
-    private static volatile CopyImportFactory? _copyImportFactory;
-    private static volatile Func<Type, Type, object>? _reflectionMultiMapperResolver;
-    private static volatile Func<Type[], IDataReader, Action<object, IDataRecord>[]>? _reflectionMultiMapperResolverN;
     private static volatile InterceptorPipeline? _interceptorPipeline;
-    private static volatile EnumStorage _defaultEnumStorage = EnumStorage.Numeric;
 
     private static volatile int _parameterParsingCapacity = 8;
     private static volatile int _queryResultCapacity = 64;
@@ -86,51 +87,285 @@ public static class JauntyConfig
         set => _csvFieldCapacity = value > 0 ? value : 16;
     }
 
+
     /// <summary>
-    /// Gets or sets a custom resolver for schema names.
+    /// Sets names, mapping hooks, enum storage and type handlers, once, for the life of the process.
+    /// </summary>
+    /// <param name="configure">Sets the settings on the builder it is given.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="configure"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Extrode.Jaunty is already configured with different settings, or an operation has already
+    /// read the settings (any query, any generated <c>TableName</c>, any Fluent query) before this call.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// The builder starts from the defaults. If Extrode.Jaunty.Extensions.Reflection is present,
+    /// reflection mapping is switched on first, exactly as it is without a <c>Configure</c> call;
+    /// <paramref name="configure"/> then runs and wins over it. The result replaces the settings in
+    /// one write.
+    /// </para>
+    /// <para>
+    /// A second call with the same settings does nothing, so a test host that runs
+    /// <c>Program.cs</c> again in the same process keeps working. Settings compare equal when every
+    /// delegate refers to the same method on the same target - true of method groups and of lambdas
+    /// that capture nothing; type handlers compare by their type. A lambda that captures a value is
+    /// a new delegate each time, so make that call with <see cref="TryConfigure"/> instead.
+    /// </para>
+    /// <para>
+    /// A repeated call runs <paramref name="configure"/> again to compare its result, so keep the
+    /// callback free of side effects.
+    /// </para>
+    /// </remarks>
+    public static void Configure(Action<JauntyConfigBuilder> configure)
+        => ConfigureCore(configure, compareWhenConfigured: true);
+
+    /// <summary>
+    /// Sets the mapping settings unless they are already set. The first call in a process applies
+    /// <paramref name="configure"/> exactly as <see cref="Configure"/> does and returns
+    /// <see langword="true"/>; every later call returns <see langword="false"/> without running it.
     /// </summary>
     /// <remarks>
-    /// Global and dialect-blind: it receives only the entity type, so one resolver serves every
-    /// connection in the process and its return value is emitted verbatim on every engine. A
-    /// constant such as <c>_ => "dbo"</c> therefore produces "dbo.products" on SQLite and
-    /// PostgreSQL too. Scope it by type, or return <see cref="string.Empty"/> to leave an entity
-    /// unqualified, which is Extrode.Jaunty's default. A non-empty [Table] schema wins over this
-    /// resolver, and the resolver is then not called; a <see langword="null"/> result means no
-    /// schema. Applies to reflection-mapped and source-generated entities alike.
+    /// Use it where the same startup code can run more than once in one process with settings that
+    /// compare unequal, such as test hosts started in parallel whose resolver captures a value read
+    /// from configuration. A call racing another thread's <see cref="Configure"/> waits for it to
+    /// finish. Like <see cref="Configure"/>, it throws once an operation has read the settings.
     /// </remarks>
-    public static Func<Type, string>? SchemaNameResolver
+    /// <param name="configure">Sets the frozen settings on the builder.</param>
+    /// <returns>Whether this call applied the settings.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="configure"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The settings are not configured yet and an operation has already read them.
+    /// </exception>
+    public static bool TryConfigure(Action<JauntyConfigBuilder> configure)
+        => ConfigureCore(configure, compareWhenConfigured: false);
+
+    private static bool ConfigureCore(Action<JauntyConfigBuilder> configure, bool compareWhenConfigured)
     {
-        get => _schemaNameResolver;
-        set { _schemaNameResolver = value; ConfigurationGeneration.Invalidate(); }
+        if (configure is null)
+            throw new ArgumentNullException(nameof(configure));
+
+        SpinWait spin = default;
+        while (true)
+        {
+            int prior = Interlocked.CompareExchange(ref _state, Configuring, Unconfigured);
+            if (prior == Unconfigured)
+                break;
+
+            if (prior == Configuring)
+            {
+                if (_configuringThread == Environment.CurrentManagedThreadId)
+                    throw new InvalidOperationException("JauntyConfig.Configure was called from inside its own callback.");
+                spin.SpinOnce();
+                continue;
+            }
+
+            if (!compareWhenConfigured || Build(configure).SameAs(_settings))
+                return false;
+
+            throw new InvalidOperationException(
+                "Extrode.Jaunty is already configured with different settings. JauntyConfig.Configure " +
+                "sets them once per process; make a call that can repeat with different settings " +
+                "through JauntyConfig.TryConfigure(...). " +
+                "See docs/06-releases/upgrading-to-configure.md.");
+        }
+
+        _configuringThread = Environment.CurrentManagedThreadId;
+        try
+        {
+            if (ConfigurationGeneration.HasBeenRead)
+                throw AlreadyRead();
+
+            JauntySettings previous = _settings;
+            Apply(Build(configure), clearHandlers: true);
+
+            // A first read racing this call marks the flag before it loads the settings, and the
+            // barrier orders the publish above before the check below, so either that read saw only
+            // the new settings or this check sees the flag.
+            Interlocked.MemoryBarrier();
+            if (ConfigurationGeneration.HasBeenRead)
+            {
+                Apply(previous, clearHandlers: true);
+                throw AlreadyRead();
+            }
+
+            _configuringThread = 0;
+            Interlocked.Exchange(ref _autoInstallSkipped, 0);
+            Volatile.Write(ref _state, Configured);
+            return true;
+        }
+        catch
+        {
+            _configuringThread = 0;
+            Volatile.Write(ref _state, Unconfigured);
+            if (Interlocked.Exchange(ref _autoInstallSkipped, 0) == 1)
+                Jaunty.TryEnableReflectionMapping();
+            throw;
+        }
+    }
+
+    private static InvalidOperationException AlreadyRead() => new InvalidOperationException(
+        "JauntyConfig.Configure was called after Extrode.Jaunty had already read its " +
+        "settings (a query, a generated TableName, or a Fluent query ran first). Call it " +
+        "at startup, before anything else touches Extrode.Jaunty. " +
+        "See docs/06-releases/upgrading-to-configure.md.");
+
+    /// <summary>
+    /// Whether <see cref="Configure"/> has completed. Use it to guard a call that can run more than
+    /// once in one process with settings that compare unequal, such as a lambda capturing a value
+    /// read from configuration.
+    /// </summary>
+    public static bool IsConfigured => Volatile.Read(ref _state) == Configured;
+
+    /// <summary>
+    /// Drops a type handler from the current settings after <c>TypeHandlerRegistry.Remove</c> took
+    /// it out of the registry, so the two stay in step.
+    /// </summary>
+    internal static void ForgetTypeHandler(Type key)
+    {
+        lock (ConfigureSync)
+        {
+            var builder = new JauntyConfigBuilder(_settings);
+            builder.RemoveTypeHandlers(key);
+            _settings = new JauntySettings(builder);
+        }
+    }
+
+    private static JauntySettings Build(Action<JauntyConfigBuilder> configure)
+    {
+        var builder = new JauntyConfigBuilder();
+        AutoReflection.Apply(builder);
+        configure(builder);
+        return new JauntySettings(builder);
     }
 
     /// <summary>
-    /// Gets or sets a custom resolver for table names.
+    /// Replaces the settings, registers their type handlers and retires every derived cache.
     /// </summary>
-    /// <remarks>
-    /// Consulted only when no [Table] attribute gives a non-empty name. A <see langword="null"/>
-    /// result falls back to the type name; any other result, <see cref="string.Empty"/> included,
-    /// is used as given. Applies to reflection-mapped and source-generated entities alike.
-    /// </remarks>
-    public static Func<Type, string>? TableNameResolver
+    private static void Apply(JauntySettings settings, bool clearHandlers, int firstNewHandler = 0)
     {
-        get => _tableNameResolver;
-        set { _tableNameResolver = value; ConfigurationGeneration.Invalidate(); }
+        lock (ConfigureSync)
+        {
+            _settings = settings;
+            if (clearHandlers)
+                TypeHandlerRegistry.Clear();
+            for (int i = firstNewHandler; i < settings.TypeHandlers.Length; i++)
+                TypeHandlerRegistry.Register(settings.TypeHandlers[i].Key, settings.TypeHandlers[i].Value);
+        }
+
+        ConfigurationGeneration.Invalidate();
     }
 
     /// <summary>
-    /// Gets or sets a custom resolver for column names.
+    /// Changes the current settings in place, at any time, without the once-only and read-first
+    /// checks. For Extrode.Jaunty's own tests, which set one resolver at a time across a process
+    /// that has long since run queries; never called by the library.
     /// </summary>
-    /// <remarks>
-    /// Receives the property name, and is consulted only when no [Column] attribute gives a
-    /// non-empty name. A <see langword="null"/> result falls back to the property name; any other
-    /// result is used as given. Applies to reflection-mapped and source-generated entities alike.
-    /// </remarks>
-    public static Func<string, string>? ColumnNameResolver
+    internal static void Reconfigure(Action<JauntyConfigBuilder> change)
     {
-        get => _columnNameResolver;
-        set { _columnNameResolver = value; ConfigurationGeneration.Invalidate(); }
+        if (change is null)
+            throw new ArgumentNullException(nameof(change));
+
+        lock (ConfigureSync)
+        {
+            var builder = new JauntyConfigBuilder(_settings);
+            change(builder);
+            Apply(new JauntySettings(builder), clearHandlers: false, firstNewHandler: builder.AddedTypeHandlersFrom);
+        }
     }
+
+    /// <summary>
+    /// Installs reflection mapping when <see cref="Configure"/> has not been called, filling only
+    /// the hooks that are still unset. Called from <c>Jaunty</c>'s static constructor, which runs on
+    /// the first touch of the <c>Jaunty</c> class - possibly after generated code or Fluent has
+    /// already read the settings, so this bypasses both the once-only rule and the read-first check.
+    /// It leaves <see cref="IsConfigured"/> false.
+    /// </summary>
+    /// <returns>The unexpected exception the probe swallowed, or <see langword="null"/>.</returns>
+    internal static Exception? InstallAutoReflectionIfUnconfigured(Func<System.Reflection.AssemblyName, System.Reflection.Assembly> load)
+    {
+        int prior = Interlocked.CompareExchange(ref _state, Configuring, Unconfigured);
+        if (prior != Unconfigured)
+        {
+            // A Configure in flight installs reflection itself; if it fails instead, its catch
+            // sees this flag and retries the install.
+            if (prior == Configuring)
+                Interlocked.Exchange(ref _autoInstallSkipped, 1);
+            return null;
+        }
+
+        try
+        {
+            var probed = new JauntyConfigBuilder();
+            Exception? failure = AutoReflection.TryApply(probed, load);
+
+            lock (ConfigureSync)
+            {
+                var merged = new JauntyConfigBuilder(_settings);
+                merged.ReflectionMapperResolver ??= probed.ReflectionMapperResolver;
+                merged.ReflectionInsertBinderResolver ??= probed.ReflectionInsertBinderResolver;
+                merged.ReflectionUpdateBinderResolver ??= probed.ReflectionUpdateBinderResolver;
+                merged.ReflectionDeleteBinderResolver ??= probed.ReflectionDeleteBinderResolver;
+                merged.ReflectionTableMetadataResolver ??= probed.ReflectionTableMetadataResolver;
+                merged.ReflectionMultiMapperResolver ??= probed.ReflectionMultiMapperResolver;
+                merged.ReflectionMultiMapperResolverN ??= probed.ReflectionMultiMapperResolverN;
+                merged.SpecialTypeMapperResolver ??= probed.SpecialTypeMapperResolver;
+                Apply(new JauntySettings(merged), clearHandlers: false, firstNewHandler: merged.AddedTypeHandlersFrom);
+            }
+            return failure;
+        }
+        finally
+        {
+            Volatile.Write(ref _state, Unconfigured);
+        }
+    }
+
+    private static JauntySettings Read()
+    {
+        ConfigurationGeneration.MarkRead();
+        return _settings;
+    }
+
+    /// <summary>Resolves an entity type's schema name. Set through <see cref="Configure"/>.</summary>
+    /// <remarks><inheritdoc cref="JauntyConfigBuilder.SchemaNameResolver" path="/remarks"/></remarks>
+    public static Func<Type, string>? SchemaNameResolver => Read().SchemaNameResolver;
+
+    /// <summary>Resolves an entity type's table name. Set through <see cref="Configure"/>.</summary>
+    /// <remarks><inheritdoc cref="JauntyConfigBuilder.TableNameResolver" path="/remarks"/></remarks>
+    public static Func<Type, string>? TableNameResolver => Read().TableNameResolver;
+
+    /// <summary>Resolves a property's column name. Set through <see cref="Configure"/>.</summary>
+    /// <remarks><inheritdoc cref="JauntyConfigBuilder.ColumnNameResolver" path="/remarks"/></remarks>
+    public static Func<string, string>? ColumnNameResolver => Read().ColumnNameResolver;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.ReflectionMapperResolver"/>
+    public static Func<Type, MappingMode, object>? ReflectionMapperResolver => Read().ReflectionMapperResolver;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.ReflectionInsertBinderResolver"/>
+    public static Func<Type, Action<IDbCommand, object>>? ReflectionInsertBinderResolver => Read().ReflectionInsertBinderResolver;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.ReflectionUpdateBinderResolver"/>
+    public static Func<Type, Action<IDbCommand, object>>? ReflectionUpdateBinderResolver => Read().ReflectionUpdateBinderResolver;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.ReflectionDeleteBinderResolver"/>
+    public static Func<Type, Action<IDbCommand, object>>? ReflectionDeleteBinderResolver => Read().ReflectionDeleteBinderResolver;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.ReflectionTableMetadataResolver"/>
+    public static Func<Type, object>? ReflectionTableMetadataResolver => Read().ReflectionTableMetadataResolver;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.CopyImportFactory"/>
+    public static CopyImportFactory? CopyImportFactory => Read().CopyImportFactory;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.ReflectionMultiMapperResolver"/>
+    public static Func<Type, Type, object>? ReflectionMultiMapperResolver => Read().ReflectionMultiMapperResolver;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.ReflectionMultiMapperResolverN"/>
+    public static Func<Type[], IDataReader, Action<object, IDataRecord>[]>? ReflectionMultiMapperResolverN => Read().ReflectionMultiMapperResolverN;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.SpecialTypeMapperResolver"/>
+    public static Func<Type, IDataReader, object>? SpecialTypeMapperResolver => Read().SpecialTypeMapperResolver;
+
+    /// <inheritdoc cref="JauntyConfigBuilder.DefaultEnumStorage"/>
+    public static EnumStorage DefaultEnumStorage => Read().DefaultEnumStorage;
 
     /// <summary>
     /// Gets or sets a global diagnostic logger for SQL commands.
@@ -162,146 +397,6 @@ public static class JauntyConfig
     }
 
     /// <summary>
-    /// Optional fallback mapper resolver for types that are not source-generated.
-    /// Typically provided by Extrode.Jaunty.Extensions.Reflection.
-    /// Returns a Func&lt;IDataReader, T&gt; or Func&lt;DbDataReader, T&gt; cast to object.
-    /// </summary>
-    public static Func<Type, MappingMode, object>? ReflectionMapperResolver
-    {
-        get => _reflectionMapperResolver;
-        set { _reflectionMapperResolver = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-    /// <summary>
-    /// Optional fallback parameter binder resolver for INSERT operations.
-    /// </summary>
-    public static Func<Type, Action<IDbCommand, object>>? ReflectionInsertBinderResolver
-    {
-        get => _reflectionInsertBinderResolver;
-        set { _reflectionInsertBinderResolver = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-    /// <summary>
-    /// Optional fallback parameter binder resolver for UPDATE operations.
-    /// </summary>
-    public static Func<Type, Action<IDbCommand, object>>? ReflectionUpdateBinderResolver
-    {
-        get => _reflectionUpdateBinderResolver;
-        set { _reflectionUpdateBinderResolver = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-    /// <summary>
-    /// Optional fallback parameter binder resolver for DELETE operations.
-    /// </summary>
-    public static Func<Type, Action<IDbCommand, object>>? ReflectionDeleteBinderResolver
-    {
-        get => _reflectionDeleteBinderResolver;
-        set { _reflectionDeleteBinderResolver = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-    /// <summary>
-    /// Optional fallback table metadata resolver for types that are not source-generated.
-    /// Returns an EntityMetadata object.
-    /// </summary>
-    public static Func<Type, object>? ReflectionTableMetadataResolver
-    {
-        get => _reflectionTableMetadataResolver;
-        set { _reflectionTableMetadataResolver = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-    /// <summary>
-    /// Optional client-side bulk-copy provider, used by CSV import for the streaming
-    /// <c>COPY ... FROM STDIN</c> path.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Core declares no dependency on a database driver, so it cannot call a provider's copy API
-    /// directly. Until this hook it called PostgreSQL's by reflection - five
-    /// <c>GetType().GetMethod(...)</c> probes that all returned null under trimming, one of which
-    /// then committed a partially written import instead of aborting it.
-    /// </para>
-    /// <para>
-    /// Install <c>Extrode.Jaunty.Extensions.Npgsql</c> and call <c>JauntyNpgsql.Use()</c> for
-    /// PostgreSQL, or assign your own <see cref="CopyImportFactory"/> for another driver. Leave it
-    /// unset and CSV import uses the server-side path, where the database engine opens the file.
-    /// </para>
-    /// </remarks>
-    public static CopyImportFactory? CopyImportFactory
-    {
-        get => _copyImportFactory;
-        set { _copyImportFactory = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-    /// <summary>
-    /// Optional fallback multi-mapper resolver for types that are not source-generated.
-    /// Returns a MultiEntityMapper object.
-    /// </summary>
-    public static Func<Type, Type, object>? ReflectionMultiMapperResolver
-    {
-        get => _reflectionMultiMapperResolver;
-        set { _reflectionMultiMapperResolver = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-    /// <summary>
-    /// Optional fallback multi-mapper resolver for arity-3+ multi-entity queries.
-    /// Key: array of N Type objects (one per entity type position).
-    /// Value: array of N Action&lt;object, IDataRecord&gt; delegates (one per type position).
-    /// Registered by Extrode.Jaunty.Extensions.Reflection via UseReflectionMapping().
-    /// </summary>
-    public static Func<Type[], IDataReader, Action<object, IDataRecord>[]>? ReflectionMultiMapperResolverN
-    {
-        get => _reflectionMultiMapperResolverN;
-        set { _reflectionMultiMapperResolverN = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-
-    /// <summary>
-    /// Optional resolver for special types (Dictionary, KeyValuePair, ValueTuple, ExpandoObject).
-    /// Typically provided by Extrode.Jaunty.Extensions.Reflection.SpecialTypeMappers.Register().
-    /// Returns a Func&lt;IDataReader, object&gt; that creates the special type instance.
-    /// </summary>
-    public static Func<Type, IDataReader, object>? SpecialTypeMapperResolver
-    {
-        get => _specialTypeMapperResolver;
-        set { _specialTypeMapperResolver = value; ConfigurationGeneration.Invalidate(); }
-    }
-
-    /// <summary>
-    /// Gets or sets the global default enum storage strategy.
-    /// Default: EnumStorage.Numeric.
-    /// </summary>
-    public static EnumStorage DefaultEnumStorage
-    {
-        get => _defaultEnumStorage;
-        set => _defaultEnumStorage = value;
-    }
-
-    /// <summary>
-    /// Registers a type handler using delegate-based conversion functions.
-    /// </summary>
-    public static void RegisterTypeHandler<T>(Func<object?, T> fromDb, Func<T?, object?> toDb)
-    {
-        if (fromDb is null) throw new ArgumentNullException(nameof(fromDb));
-        if (toDb is null) throw new ArgumentNullException(nameof(toDb));
-        TypeHandlerRegistry.Register<T>(new DelegateTypeHandler<T>(fromDb, toDb));
-    }
-
-    /// <summary>
-    /// Registers a type handler using a TypeHandler instance.
-    /// </summary>
-    public static void RegisterTypeHandler<T>(TypeHandler<T> handler)
-    {
-        if (handler is null) throw new ArgumentNullException(nameof(handler));
-        TypeHandlerRegistry.Register<T>(new AdaptedTypeHandler<T>(handler));
-    }
-
-    /// <summary>
-    /// Removes the registered type handler for the specified type.
-    /// </summary>
-    public static bool RemoveTypeHandler<T>() => TypeHandlerRegistry.Remove<T>();
-
-        /// <summary>
-    /// Gets the interceptor pipeline for command execution hooks.
     /// </summary>
     /// <remarks>
     /// Use <see cref="AddInterceptor(ICommandInterceptor)"/> or <see cref="AddInterceptors(IEnumerable{ICommandInterceptor})"/> to register interceptors.
@@ -415,73 +510,68 @@ public static class JauntyConfig
     }
 
     /// <summary>
-    /// Resets all configuration options to their default values.
+    /// Restores every setting to its default and allows <see cref="Configure"/> to run again.
+    /// <b>For test cleanup only.</b>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// AUD-R26 (batch 4, medium/bug). This used to clear the resolver fields and stop there, which
-    /// left the write path unrecoverable: <c>WriteParameterCache&lt;T&gt;</c> and every other cache
-    /// derived from configuration kept whatever they had built before the reset, so re-registering
-    /// a resolver afterwards changed nothing. Bumping
-    /// <see cref="Internals.ConfigurationGeneration"/> retires those entries; the next lookup of
-    /// each rebuilds from the configuration as it stands then.
+    /// Clears the frozen settings and type handlers, the logger, the capacities, the interceptors,
+    /// <see cref="BulkCopyConfiguration"/> and custom dialect registrations, then retires every
+    /// derived cache. It also clears the record that the settings were read, so a test can call
+    /// <see cref="Configure"/> afterwards.
     /// </para>
     /// <para>
-    /// AUD-R26 (batch 4, low/consistency). "All" now means all. Two further process-wide surfaces
-    /// used to survive this call, both of them public and both mutable from a test:
-    /// <see cref="BulkCopyConfiguration"/>'s six settable statics, which had their own
-    /// <see cref="BulkCopyConfiguration.Reset"/> that this method never called, and
-    /// <c>SqlDialectFactory</c>'s custom registrations, which had no reset at all - so a dialect
-    /// registered for a connection type name in one test governed every connection of that name for
-    /// the rest of the process. Given this method's stated purpose is test cleanup, a reader
-    /// reasonably concludes one call restores a clean slate, and now one does.
+    /// Not atomic as a whole, and it races any operation running at the same time: a test that
+    /// calls <c>Reset()</c> then <c>Configure</c> must run in a collection that does not run in
+    /// parallel with other tests using Extrode.Jaunty. It does not switch reflection mapping back
+    /// on; <see cref="Configure"/> does, or the extension's <c>UseReflectionMapping()</c> inside it.
     /// </para>
     /// <para>
-    /// <see cref="DefaultEnumStorage"/> and the capacity settings do not participate in the
-    /// generation counter: nothing compiles them in, every consumer re-reads them per call by
-    /// design (see <c>MetadataCache&lt;T&gt;.CreateFallbackSetter</c> and
-    /// <c>JauntyReflectionExtensions.BuildValueConverter</c>), so invalidating on them would only
-    /// discard work that is still correct.
+    /// AUD-R26 (batch 4): bumping <see cref="Internals.ConfigurationGeneration"/> retires the
+    /// entries <c>WriteParameterCache&lt;T&gt;</c>, <c>CrudSqlCache</c> and the other derived caches
+    /// built before the reset, so the next lookup rebuilds from the settings as they stand then. It
+    /// stays last so that nothing rebuilt between the first write and this line survives either.
     /// </para>
     /// </remarks>
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
     public static void Reset()
     {
-        _schemaNameResolver = null;
-        _tableNameResolver = null;
-        _columnNameResolver = null;
+        SpinWait spin = default;
+        while (true)
+        {
+            int state = Volatile.Read(ref _state);
+            if (state == Configuring)
+            {
+                if (_configuringThread == Environment.CurrentManagedThreadId)
+                    throw new InvalidOperationException("JauntyConfig.Reset was called from inside a Configure callback.");
+                spin.SpinOnce();
+                continue;
+            }
+            if (Interlocked.CompareExchange(ref _state, Configuring, state) == state)
+                break;
+        }
+
+        lock (ConfigureSync)
+        {
+            _settings = JauntySettings.Defaults;
+            TypeHandlerRegistry.Clear();
+            Interlocked.Exchange(ref _autoInstallSkipped, 0);
+            Volatile.Write(ref _state, Unconfigured);
+        }
+
         _logger = null;
-        _reflectionMapperResolver = null;
-        _specialTypeMapperResolver = null;
-        _reflectionInsertBinderResolver = null;
-        _reflectionUpdateBinderResolver = null;
-        _reflectionDeleteBinderResolver = null;
-        ReflectionTableMetadataResolver = null;
-        CopyImportFactory = null;
-        ReflectionMultiMapperResolver = null;
-        ReflectionMultiMapperResolverN = null;
         lock (InterceptorSync)
         {
             _interceptorPipeline = null;
         }
-        _defaultEnumStorage = EnumStorage.Numeric;
         _parameterParsingCapacity = 8;
         _queryResultCapacity = 64;
         _csvFieldCapacity = 16;
-        TypeHandlerRegistry.Clear();
         BulkCopyConfiguration.Reset();
         Dialects.SqlDialectFactory.ResetRegistrations();
 
-        // AUD-R35-141: this call is the only thing that retires the caches, and the comment that
-        // used to sit here said the opposite - that "the individual field writes above each bump the
-        // generation already" and this was a top-up for TypeHandlerRegistry and the two surfaces
-        // below. They do not: nine of the twelve resolver resets are direct writes to the backing
-        // fields, which bypass the property setters and their Invalidate() calls, and only the three
-        // written through properties bump anything. So a future edit that trusted the old comment and
-        // dropped this line would have silently reinstated AUD-R26's stale-cache bug - CrudSqlCache,
-        // MultiRowInsertCache, MetadataCache<T> and WriteParameterCache<T>'s bindings all keep
-        // serving entries built from the configuration Reset() just cleared. It stays last so that
-        // nothing rebuilt between the first field write and this line survives either.
         ConfigurationGeneration.Invalidate();
+        ConfigurationGeneration.ClearRead();
     }
 
     /// <summary>
@@ -498,25 +588,5 @@ public static class JauntyConfig
             _interceptorPipeline = null;
             return existing;
         }
-    }
-    private sealed class AdaptedTypeHandler<T> : ITypeHandler
-    {
-        private readonly TypeHandler<T> _handler;
-        internal AdaptedTypeHandler(TypeHandler<T> handler) => _handler = handler;
-        object? ITypeHandler.Parse(object? dbValue) => _handler.Parse(dbValue);
-        object? ITypeHandler.ToDbValue(object? value) => _handler.ToDbValue((T?)value);
-    }
-
-    private sealed class DelegateTypeHandler<T> : ITypeHandler
-    {
-        private readonly Func<object?, T> _fromDb;
-        private readonly Func<T?, object?> _toDb;
-        internal DelegateTypeHandler(Func<object?, T> fromDb, Func<T?, object?> toDb)
-        {
-            _fromDb = fromDb;
-            _toDb = toDb;
-        }
-        object? ITypeHandler.Parse(object? dbValue) => _fromDb(dbValue);
-        object? ITypeHandler.ToDbValue(object? value) => _toDb((T?)value);
     }
 }

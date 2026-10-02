@@ -12,7 +12,7 @@ namespace Extrode.Jaunty.TypeHandlers;
 /// </para>
 /// <para>
 /// For most use cases the delegate-based registration API,
-/// <c>JauntyConfig.RegisterTypeHandler&lt;T&gt;(Func&lt;object?, T&gt;, Func&lt;T?, object?&gt;)</c>, is simpler and
+/// <c>JauntyConfigBuilder.RegisterTypeHandler&lt;T&gt;(Func&lt;object?, T&gt;, Func&lt;T?, object?&gt;)</c>, is simpler and
 /// preferred. Use this base class when you need structured handler logic or state management.
 /// </para>
 /// <para>
@@ -46,8 +46,8 @@ namespace Extrode.Jaunty.TypeHandlers;
 ///     }
 /// }
 /// 
-/// // Register the handler
-/// JauntyConfig.RegisterTypeHandler(new GuidAsStringHandler());
+/// // Register the handler, once, at startup
+/// JauntyConfig.Configure(c => c.RegisterTypeHandler(new GuidAsStringHandler()));
 /// </code>
 /// </example>
 /// <seealso cref="Configuration.JauntyConfig"/>

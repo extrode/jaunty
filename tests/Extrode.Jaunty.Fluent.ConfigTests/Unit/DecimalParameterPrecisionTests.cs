@@ -62,13 +62,13 @@ public class DecimalParameterPrecisionTests : IDisposable
     /// </summary>
     private const decimal HighPrecision = 1234567890123456789012345.678m;
 
-    public DecimalParameterPrecisionTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public DecimalParameterPrecisionTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
         JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
     }
 
     [Table("precise_invoice")]

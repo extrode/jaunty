@@ -332,7 +332,7 @@ public partial class ProductCategoryMapping
 
 ```csharp
 // Global configuration
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
+JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // a helper you write; Extrode.Jaunty ships none
 
 // Entity with attribute override
 public partial class Product
@@ -367,7 +367,7 @@ Use attributes for exceptions and global configuration for general conventions:
 
 ```csharp
 // Global configuration for snake_case
-JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.Jaunty ships none
+JauntyConfig.Configure(c => c.ColumnNameResolver = ToSnakeCase);   // a helper you write; Extrode.Jaunty ships none
 
 // Specific override for this property
 public partial class Product

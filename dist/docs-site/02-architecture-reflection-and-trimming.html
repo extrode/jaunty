@@ -140,7 +140,7 @@
     <span class="nav-chev">›</span>
     <span class="nav-group-label">Releases</span>
   </div>
-  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  </div>
+  <div class="nav-group-items">  <a href="06-releases-readme.html">Releases &amp; Planning</a>  <a href="06-releases-continuity-rider-template.html">Exhibit A - Escrow and Continuity Rider (Template)</a>  <a href="06-releases-feature-candidates.html">Feature candidates</a>  <a href="06-releases-feature-gap-analysis.html">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</a>  <a href="06-releases-release-runbook.html">Release Runbook</a>  <a href="06-releases-upgrading-to-configure.html">Upgrading to JauntyConfig.Configure</a>  </div>
 </div>
 <div class="nav-group" data-group>
   <div class="nav-group-header" onclick="toggleGroup(this)">
@@ -205,7 +205,7 @@ sites on this page execute</strong>.</p>
 <td><code>Extrode.Jaunty.Init</code> (1 site)</td>
 <td>Auto-discovery of <code>Extrode.Jaunty.Extensions.Reflection</code></td>
 <td>Extension not enabled</td>
-<td>Call <code>JauntyReflectionExtensions.UseReflectionMapping()</code> yourself, or don't use the package</td>
+<td>Call <code>c.UseReflectionMapping()</code> inside <code>JauntyConfig.Configure</code> yourself, or don't use the package</td>
 </tr>
 <tr>
 <td>5</td>
@@ -310,7 +310,7 @@ trimmed and want the extension, call it explicitly:</p>
     <span class="code-lang">C#</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyReflectionExtensions</span>.<span class="tok-fn">UseReflectionMapping</span>();
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-type">JauntyConfig</span>.<span class="tok-fn">Configure</span>(c =&gt; c.<span class="tok-fn">UseReflectionMapping</span>());
 </code></pre>
 </div>
 <p><code>SqlDialectFactory</code>'s bulk-copy probe (site 5) is the same pattern with the same reasoning.</p>

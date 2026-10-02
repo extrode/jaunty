@@ -25,7 +25,7 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
 
     public void Dispose()
     {
-        JauntyConfig.CopyImportFactory = _previousFactory;
+        JauntyConfig.Reconfigure(jc => jc.CopyImportFactory = _previousFactory);
         GC.SuppressFinalize(this);
     }
 
@@ -189,7 +189,7 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
     {
         using NpgsqlConnection conn = OpenOrSkip();
         CreateTable(conn, "npgsql_copy_writer_decode_failure");
-        JauntyNpgsql.Use();
+        JauntyConfig.Reconfigure(jc => jc.UseNpgsqlCopy());
 
         string dir = Path.Combine(Path.GetTempPath(), $"jaunty_pg_live_decode_{Guid.NewGuid():N}");
         Directory.CreateDirectory(dir);
@@ -215,7 +215,7 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
     {
         using NpgsqlConnection conn = OpenOrSkip();
         CreateTable(conn, "npgsql_copy_writer_decode_failure_async");
-        JauntyNpgsql.Use();
+        JauntyConfig.Reconfigure(jc => jc.UseNpgsqlCopy());
 
         string dir = Path.Combine(Path.GetTempPath(), $"jaunty_pg_live_decode_async_{Guid.NewGuid():N}");
         Directory.CreateDirectory(dir);
@@ -241,7 +241,7 @@ public class NpgsqlCopyImportWriterLiveTests : IDisposable
     {
         using NpgsqlConnection conn = OpenOrSkip();
         CreateTable(conn, "npgsql_copy_writer_factory");
-        JauntyNpgsql.Use();
+        JauntyConfig.Reconfigure(jc => jc.UseNpgsqlCopy());
 
         using (ICopyImportWriter? writer = JauntyConfig.CopyImportFactory!(conn, "COPY npgsql_copy_writer_factory (id, note) FROM STDIN"))
         {

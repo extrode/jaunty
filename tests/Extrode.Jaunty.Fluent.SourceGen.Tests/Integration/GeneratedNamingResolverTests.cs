@@ -40,9 +40,9 @@ public sealed class GeneratedNamingResolverTests : IDisposable
 
     public void Dispose()
     {
-        JauntyConfig.TableNameResolver = null;
-        JauntyConfig.SchemaNameResolver = null;
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         _connection.Dispose();
     }
 
@@ -60,8 +60,8 @@ public sealed class GeneratedNamingResolverTests : IDisposable
 
     private static void UseSnakeCase()
     {
-        JauntyConfig.TableNameResolver = type => Snake(type.Name) + "s";
-        JauntyConfig.ColumnNameResolver = Snake;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = type => Snake(type.Name) + "s");
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = Snake);
     }
 
     private void Execute(string sql)
@@ -99,8 +99,8 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     [Fact]
     public void AResolverReturningNull_FallsBackToTheCSharpName()
     {
-        JauntyConfig.TableNameResolver = _ => null!;
-        JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? null! : Snake(name);
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => null!);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name == "DisplayName" ? null! : Snake(name));
 
         Assert.Equal("ResolvedNameWidget", ResolvedNameWidget.Jaunty.TableName);
         Assert.Equal(["widget_id", "DisplayName", "fixed_price"], ColumnNames());
@@ -109,7 +109,7 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     [Fact]
     public void TheSchemaResolver_SuppliesTheSchema()
     {
-        JauntyConfig.SchemaNameResolver = _ => "main";
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => "main");
 
         Assert.Equal("main", ResolvedNameWidget.Jaunty.SchemaName);
         Assert.Equal("main", FluentMetadataCache.GetMetadata<ResolvedNameWidget>().SchemaName);
@@ -181,8 +181,8 @@ public sealed class GeneratedNamingResolverTests : IDisposable
         UseSnakeCase();
         _connection.Insert(new ResolvedNameWidget { DisplayName = "Snake", UnitPrice = 1m });
 
-        JauntyConfig.TableNameResolver = null;
-        JauntyConfig.ColumnNameResolver = null;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = null);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = null);
         _connection.Insert(new ResolvedNameWidget { DisplayName = "Pascal", UnitPrice = 2m });
 
         ResolvedNameWidget pascal = Assert.Single(_connection.Query<ResolvedNameWidget>("SELECT * FROM ResolvedNameWidget"));
@@ -209,7 +209,7 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     [Fact]
     public void AResolverMappingTwoPropertiesToOneColumn_IsRejectedOnEveryPath()
     {
-        JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? "WIDGET_ID" : Snake(name);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name == "DisplayName" ? "WIDGET_ID" : Snake(name));
         Execute("INSERT INTO ResolvedNameWidget VALUES (1, 'a', 1)");
 
         ArgumentException read = Assert.Throws<ArgumentException>(() => _connection.Query<ResolvedNameWidget>("SELECT * FROM ResolvedNameWidget").ToList());
@@ -222,11 +222,11 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     public void AFirstWriteRejectedByTheResolver_DoesNotBreakLaterWrites()
     {
         Execute("CREATE TABLE first_write_widgets (widget_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)");
-        JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? "WIDGET_ID" : Snake(name);
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name == "DisplayName" ? "WIDGET_ID" : Snake(name));
 
         Assert.Throws<ArgumentException>(() => _connection.Insert(new FirstWriteWidget { DisplayName = "a" }));
 
-        JauntyConfig.ColumnNameResolver = Snake;
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = Snake);
         _connection.Insert(new FirstWriteWidget { DisplayName = "b" });
 
         Assert.Equal("b", _connection.Query<FirstWriteWidget>("SELECT * FROM first_write_widgets").Single().DisplayName);
@@ -236,14 +236,14 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     public void TheSchemaResolver_QualifiesCrudAndFluentSql()
     {
         UseSnakeCase();
-        JauntyConfig.SchemaNameResolver = _ => "nowhere";
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => "nowhere");
 
         SqliteException insert = Assert.Throws<SqliteException>(() => _connection.Insert(new ResolvedNameWidget { DisplayName = "a", UnitPrice = 1m }));
         Assert.Contains("nowhere", insert.Message);
         SqliteException select = Assert.Throws<SqliteException>(() => _connection.From<ResolvedNameWidget>().Select().ToList());
         Assert.Contains("nowhere", select.Message);
 
-        JauntyConfig.SchemaNameResolver = _ => "main";
+        JauntyConfig.Reconfigure(jc => jc.SchemaNameResolver = _ => "main");
         _connection.Insert(new ResolvedNameWidget { DisplayName = "b", UnitPrice = 1m });
         Assert.Equal("b", Assert.Single(_connection.From<ResolvedNameWidget>().Select()).DisplayName);
     }
@@ -278,8 +278,8 @@ public sealed class GeneratedNamingResolverTests : IDisposable
     [Fact]
     public void AResolverReturningEmpty_IsUsedVerbatim()
     {
-        JauntyConfig.TableNameResolver = _ => "";
-        JauntyConfig.ColumnNameResolver = name => name == "DisplayName" ? "" : name;
+        JauntyConfig.Reconfigure(jc => jc.TableNameResolver = _ => "");
+        JauntyConfig.Reconfigure(jc => jc.ColumnNameResolver = name => name == "DisplayName" ? "" : name);
 
         Assert.Equal("", ResolvedNameWidget.Jaunty.TableName);
         Assert.Equal(["WidgetId", "", "fixed_price"], ColumnNames());

@@ -107,7 +107,7 @@ public class SchemaCacheBoundsTests
         public string? Name { get; set; }
     }
 
-    public SchemaCacheBoundsTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public SchemaCacheBoundsTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     // ------------------------------------------------------------------
     // Reading the caches

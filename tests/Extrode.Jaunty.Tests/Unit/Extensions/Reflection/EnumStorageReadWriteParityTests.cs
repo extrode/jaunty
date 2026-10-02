@@ -55,14 +55,14 @@ public class EnumStorageReadWriteParityTests : IDisposable
 {
     public EnumStorageReadWriteParityTests()
     {
-        JauntyReflectionExtensions.UseReflectionMapping();
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
     }
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
     }
 
     public enum Status
@@ -89,7 +89,7 @@ public class EnumStorageReadWriteParityTests : IDisposable
         var numeric = Read<FlipAfterFirstRead>(new NumericRow(1));
         Assert.Equal(Status.Active, numeric.Status);
 
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         // The same entity type, now stored as a name. Before the fix this threw
         // InvalidOperationException from the string-to-numeric fallback.
@@ -108,13 +108,13 @@ public class EnumStorageReadWriteParityTests : IDisposable
     public void ChangingTheDefaultBack_TakesEffectAgain()
     {
         // The re-check must be a live read of the config, not a one-time upgrade to String.
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
         Assert.Equal(Status.Active, Read<FlipBack>(new StringRow(nameof(Status.Active))).Status);
 
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
         Assert.Equal(Status.Active, Read<FlipBack>(new NumericRow(1)).Status);
 
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
         Assert.Equal(Status.Pending, Read<FlipBack>(new StringRow(nameof(Status.Pending))).Status);
     }
 
@@ -132,7 +132,7 @@ public class EnumStorageReadWriteParityTests : IDisposable
         // halves disagreed about the same column on the same entity.
         Read<ReadWriteParity>(new NumericRow(1));
 
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         object? written = BindAndCapture(new ReadWriteParity { Id = 1, Status = Status.Active });
         Assert.Equal(nameof(Status.Active), written);
@@ -159,7 +159,7 @@ public class EnumStorageReadWriteParityTests : IDisposable
         // while the Convert path lets Enum.Parse's own ArgumentException out.
         Read<SelectionFollowsConfig>(new NumericRow(1));
 
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         var ex = Assert.Throws<InvalidOperationException>(
             () => Read<SelectionFollowsConfig>(new StringRow("not-a-status")));
@@ -184,11 +184,11 @@ public class EnumStorageReadWriteParityTests : IDisposable
     [Fact]
     public void AttributedProperty_IgnoresTheGlobalDefault()
     {
-        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.Numeric);
 
         Assert.Equal(Status.Active, Read<AttributedString>(new StringRow(nameof(Status.Active))).Status);
 
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         Assert.Equal(Status.Active, Read<AttributedString>(new StringRow(nameof(Status.Active))).Status);
     }
@@ -205,7 +205,7 @@ public class EnumStorageReadWriteParityTests : IDisposable
     [Fact]
     public void AttributedNumericProperty_IsNotSwitchedByTheGlobalDefault()
     {
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         Assert.Equal(Status.Active, Read<AttributedNumeric>(new NumericRow(1)).Status);
     }
@@ -226,7 +226,7 @@ public class EnumStorageReadWriteParityTests : IDisposable
     {
         // The numeric-fallback catch inside the string setter is pre-existing tolerance for a
         // column that holds numbers despite String storage; deferring the choice must not lose it.
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         Assert.Equal(Status.Active, Read<StringStorageToleratesNumeric>(new StringRow("1")).Status);
     }
@@ -241,7 +241,7 @@ public class EnumStorageReadWriteParityTests : IDisposable
     [Fact]
     public void StringStorage_StillThrowsOnAnUnparseableValue()
     {
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         var ex = Assert.Throws<InvalidOperationException>(
             () => Read<StringStorageRejectsGarbage>(new StringRow("not-a-status")));
@@ -259,7 +259,7 @@ public class EnumStorageReadWriteParityTests : IDisposable
     [Fact]
     public void StringStorage_StillParsesNamesCaseInsensitively()
     {
-        JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+        JauntyConfig.Reconfigure(jc => jc.DefaultEnumStorage = EnumStorage.String);
 
         Assert.Equal(Status.Active, Read<CaseInsensitiveNames>(new StringRow("ACTIVE")).Status);
     }

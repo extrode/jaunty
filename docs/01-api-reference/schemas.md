@@ -132,17 +132,17 @@ The resolver is **global and dialect-blind**. It receives a `Type` and nothing e
 resolver serves every connection in the process:
 
 ```csharp
-JauntyConfig.SchemaNameResolver = _ => "dbo";     // applies to SQLite too
+JauntyConfig.Configure(c => c.SchemaNameResolver = _ => "dbo");     // applies to SQLite too
 ```
 
 That emits `dbo.products` on SQLite and PostgreSQL as well as SQL Server. Scope it by type, and
 return `string.Empty` for entities that should stay unqualified:
 
 ```csharp
-JauntyConfig.SchemaNameResolver = t =>
+JauntyConfig.Configure(c => c.SchemaNameResolver = t =>
     t.Namespace?.StartsWith("App.Sqlite", StringComparison.Ordinal) == true
         ? string.Empty
-        : "dbo";
+        : "dbo");
 ```
 
 It applies to reflection-mapped and source-generated entities alike. A non-empty `[Table]`

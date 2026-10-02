@@ -8,6 +8,7 @@ using Extrode.Jaunty.Internals.Write;
 using Microsoft.Data.Sqlite;
 
 using Xunit;
+using Extrode.Jaunty.Configuration;
 
 namespace Extrode.Jaunty.Tests.Unit.Write;
 
@@ -46,7 +47,7 @@ namespace Extrode.Jaunty.Tests.Unit.Write;
 [Collection("Type Handler Operations")]
 public class BulkValueSetterAlignmentTests
 {
-    public BulkValueSetterAlignmentTests() => JauntyReflectionExtensions.UseReflectionMapping();
+    public BulkValueSetterAlignmentTests() => JauntyConfig.Reconfigure(jc => jc.UseReflectionMapping());
 
     [Table("alignment_short")]
     public class ShortCollectionWidget

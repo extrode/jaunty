@@ -24,16 +24,16 @@ public class CopyImportProviderTests : IDisposable
 
     public void Dispose()
     {
-        JauntyConfig.CopyImportFactory = _previousFactory;
+        JauntyConfig.Reconfigure(jc => jc.CopyImportFactory = _previousFactory);
         GC.SuppressFinalize(this);
     }
 
     [Fact]
     public void UseInstallsAFactory()
     {
-        JauntyConfig.CopyImportFactory = null;
+        JauntyConfig.Reconfigure(jc => jc.CopyImportFactory = null);
 
-        JauntyNpgsql.Use();
+        JauntyConfig.Reconfigure(jc => jc.UseNpgsqlCopy());
 
         Assert.NotNull(JauntyConfig.CopyImportFactory);
     }
@@ -41,7 +41,7 @@ public class CopyImportProviderTests : IDisposable
     [Fact]
     public void TheNpgsqlFactoryDeclinesConnectionsItDoesNotOwn()
     {
-        JauntyNpgsql.Use();
+        JauntyConfig.Reconfigure(jc => jc.UseNpgsqlCopy());
         using var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
 
         ICopyImportWriter? writer = JauntyConfig.CopyImportFactory!(connection, "COPY x FROM STDIN");
@@ -52,7 +52,7 @@ public class CopyImportProviderTests : IDisposable
     [Fact]
     public void TheNpgsqlFactoryAcceptsAnNpgsqlConnection()
     {
-        JauntyNpgsql.Use();
+        JauntyConfig.Reconfigure(jc => jc.UseNpgsqlCopy());
         using var connection = new NpgsqlConnection("Host=localhost");
 
         // Not open, so it cannot start a copy - but it must recognise the type and try, rather than
@@ -65,20 +65,20 @@ public class CopyImportProviderTests : IDisposable
     [Fact]
     public void WithNoProviderRegisteredAPostgresImportSaysSoInsteadOfFallingBack()
     {
-        JauntyConfig.CopyImportFactory = null;
+        JauntyConfig.Reconfigure(jc => jc.CopyImportFactory = null);
         using var connection = new NpgsqlConnection("Host=localhost");
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
             CsvImportExtensions.RequireCopyImportProvider(connection));
 
         Assert.Contains("Extrode.Jaunty.Extensions.Npgsql", ex.Message);
-        Assert.Contains("JauntyNpgsql.Use()", ex.Message);
+        Assert.Contains("UseNpgsqlCopy()", ex.Message);
     }
 
     [Fact]
     public void TheGuardStaysOutOfTheWayOfEveryOtherProvider()
     {
-        JauntyConfig.CopyImportFactory = null;
+        JauntyConfig.Reconfigure(jc => jc.CopyImportFactory = null);
         using var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
 
         // Only Npgsql connections need a provider; the server-side COPY FROM fallback that other
@@ -89,7 +89,7 @@ public class CopyImportProviderTests : IDisposable
     [Fact]
     public void TheGuardIsSilentOnceAProviderIsRegistered()
     {
-        JauntyNpgsql.Use();
+        JauntyConfig.Reconfigure(jc => jc.UseNpgsqlCopy());
         using var connection = new NpgsqlConnection("Host=localhost");
 
         CsvImportExtensions.RequireCopyImportProvider(connection);

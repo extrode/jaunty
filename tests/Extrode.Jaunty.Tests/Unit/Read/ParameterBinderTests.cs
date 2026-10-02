@@ -1160,7 +1160,7 @@ public class ParameterBinderTests
     [Fact]
     public void Bind_WhenTypeHandlerThrows_PropagatesAsInvalidOperationException()
     {
-        JauntyConfig.RegisterTypeHandler(new ThrowingBoxHandler());
+        JauntyConfig.Reconfigure(jc => jc.RegisterTypeHandler(new ThrowingBoxHandler()));
         try
         {
             var command = new MockDbCommand("SELECT * FROM t WHERE v = @Box");
@@ -1171,7 +1171,7 @@ public class ParameterBinderTests
         }
         finally
         {
-            JauntyConfig.RemoveTypeHandler<ThrowingBox>();
+            TypeHandlerRegistry.Remove<ThrowingBox>();
         }
     }
 

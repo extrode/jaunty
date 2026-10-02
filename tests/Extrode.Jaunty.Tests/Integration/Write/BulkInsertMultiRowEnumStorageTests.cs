@@ -94,8 +94,7 @@ public class BulkInsertMultiRowEnumStorageTests : IClassFixture<DialectFixture>
     private static List<string> Run(WriteDialectContext ctx, EnumStorage? storage)
     {
         Func<Type, object>? previous = JauntyConfig.ReflectionTableMetadataResolver;
-        JauntyConfig.ReflectionTableMetadataResolver =
-            t => t == typeof(EnumBulkRow) ? GeneratedMetadata(storage) : null!;
+        JauntyConfig.Reconfigure(jc => jc.ReflectionTableMetadataResolver = t => t == typeof(EnumBulkRow) ? GeneratedMetadata(storage) : null!);
 
         try
         {
@@ -107,7 +106,7 @@ public class BulkInsertMultiRowEnumStorageTests : IClassFixture<DialectFixture>
         }
         finally
         {
-            JauntyConfig.ReflectionTableMetadataResolver = previous;
+            JauntyConfig.Reconfigure(jc => jc.ReflectionTableMetadataResolver = previous);
         }
     }
 
