@@ -188,24 +188,27 @@ namespace Snapshots.Shadowed
         public static void BindInsert(IDbCommand command, Shadowed entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@G", entity.G);
-            AddParam(command, p, "@D", entity.D);
-            AddParam(command, p, "@T", entity.T);
-            AddParam(command, p, "@O", entity.O);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.G);
+            AddParam(command, p, n.Parameter(2), entity.D);
+            AddParam(command, p, n.Parameter(3), entity.T);
+            AddParam(command, p, n.Parameter(4), entity.O);
         }
         public static void BindUpdate(IDbCommand command, Shadowed entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@G", entity.G);
-            AddParam(command, p, "@D", entity.D);
-            AddParam(command, p, "@T", entity.T);
-            AddParam(command, p, "@O", entity.O);
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.G);
+            AddParam(command, p, n.Parameter(2), entity.D);
+            AddParam(command, p, n.Parameter(3), entity.T);
+            AddParam(command, p, n.Parameter(4), entity.O);
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         public static void BindDelete(IDbCommand command, Shadowed entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
         {
@@ -235,22 +238,23 @@ namespace Snapshots.Shadowed
 
             public static CacheEntry Resolve(IDataReader reader)
             {
+                var names = __jauntyNames.Current.Names;
                 var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))
+                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
 
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))
+                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
                 {
                     SetLast(cached);
                     return cached;
                 }
 
                 var ords = new int[5];
-                ords[0] = reader.GetOrdinal("Id");
-                ords[1] = reader.GetOrdinal("G");
-                ords[2] = reader.GetOrdinal("D");
-                ords[3] = reader.GetOrdinal("T");
-                ords[4] = reader.GetOrdinal("O");
+                ords[0] = reader.GetOrdinal(names.Column(0));
+                ords[1] = reader.GetOrdinal(names.Column(1));
+                ords[2] = reader.GetOrdinal(names.Column(2));
+                ords[3] = reader.GetOrdinal(names.Column(3));
+                ords[4] = reader.GetOrdinal(names.Column(4));
                 var entry = new CacheEntry(reader, ords);
 #if NET8_0_OR_GREATER
                 _cache.AddOrUpdate(reader, entry);
@@ -288,7 +292,7 @@ namespace Snapshots.Shadowed
 
                 public int[] Ordinals { get; }
 
-                public bool Matches(IDataReader reader)
+                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
                 {
                     if (!ReferenceEquals(reader, _reader))
                         return false;
@@ -299,31 +303,31 @@ namespace Snapshots.Shadowed
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "Id", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "G", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "D", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), names.Column(2), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord3 = Ordinals[3];
                     if ((uint)ord3 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord3), "T", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord3), names.Column(3), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord4 = Ordinals[4];
                     if ((uint)ord4 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord4), "O", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord4), names.Column(4), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -331,52 +335,70 @@ namespace Snapshots.Shadowed
             }
         }
 
-        public static string TableName { get; } = "shadowed";
-        public static string? SchemaName { get; } = null;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            = new string[] {
-            "Id",
-        };
+        private static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> __jauntyNames = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+            typeof(Shadowed),
+            "shadowed",
+            null,
+            new string[] { "Id", "G", "D", "T", "O" },
+            new string?[] { null, null, null, null, null },
+            n => new __JauntyNamed(n));
 
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("G", "G", false, false, typeof(global::System.Guid), e => (object?)((Shadowed)e).G, (e, v) => ((Shadowed)e).G = (global::System.Guid)v!),
-            new ColumnInfo("D", "D", false, false, typeof(global::System.DateTime), e => (object?)((Shadowed)e).D, (e, v) => ((Shadowed)e).D = (global::System.DateTime)v!),
-            new ColumnInfo("T", "T", false, false, typeof(global::System.TimeSpan), e => (object?)((Shadowed)e).T, (e, v) => ((Shadowed)e).T = (global::System.TimeSpan)v!),
-            new ColumnInfo("O", "O", false, false, typeof(global::System.DateTimeOffset), e => (object?)((Shadowed)e).O, (e, v) => ((Shadowed)e).O = (global::System.DateTimeOffset)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("G", "G", false, false, typeof(global::System.Guid), e => (object?)((Shadowed)e).G, (e, v) => ((Shadowed)e).G = (global::System.Guid)v!),
-            new ColumnInfo("D", "D", false, false, typeof(global::System.DateTime), e => (object?)((Shadowed)e).D, (e, v) => ((Shadowed)e).D = (global::System.DateTime)v!),
-            new ColumnInfo("T", "T", false, false, typeof(global::System.TimeSpan), e => (object?)((Shadowed)e).T, (e, v) => ((Shadowed)e).T = (global::System.TimeSpan)v!),
-            new ColumnInfo("O", "O", false, false, typeof(global::System.DateTimeOffset), e => (object?)((Shadowed)e).O, (e, v) => ((Shadowed)e).O = (global::System.DateTimeOffset)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((Shadowed)e).Id, (e, v) => ((Shadowed)e).Id = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
+        private sealed class __JauntyNamed
+        {
+            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
             {
-            ["Id"] = new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((Shadowed)e).Id, (e, v) => ((Shadowed)e).Id = (int)v!),
-            ["G"] = new ColumnInfo("G", "G", false, false, typeof(global::System.Guid), e => (object?)((Shadowed)e).G, (e, v) => ((Shadowed)e).G = (global::System.Guid)v!),
-            ["D"] = new ColumnInfo("D", "D", false, false, typeof(global::System.DateTime), e => (object?)((Shadowed)e).D, (e, v) => ((Shadowed)e).D = (global::System.DateTime)v!),
-            ["T"] = new ColumnInfo("T", "T", false, false, typeof(global::System.TimeSpan), e => (object?)((Shadowed)e).T, (e, v) => ((Shadowed)e).T = (global::System.TimeSpan)v!),
-            ["O"] = new ColumnInfo("O", "O", false, false, typeof(global::System.DateTimeOffset), e => (object?)((Shadowed)e).O, (e, v) => ((Shadowed)e).O = (global::System.DateTimeOffset)v!),
-        };
+                Names = n;
+                PrimaryKeyColumnNames = new string[] {
+                    n.Column(0),
+                };
+                InsertColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "G", false, false, typeof(global::System.Guid), e => (object?)((Shadowed)e).G, (e, v) => ((Shadowed)e).G = (global::System.Guid)v!),
+                    new ColumnInfo(n.Column(2), "D", false, false, typeof(global::System.DateTime), e => (object?)((Shadowed)e).D, (e, v) => ((Shadowed)e).D = (global::System.DateTime)v!),
+                    new ColumnInfo(n.Column(3), "T", false, false, typeof(global::System.TimeSpan), e => (object?)((Shadowed)e).T, (e, v) => ((Shadowed)e).T = (global::System.TimeSpan)v!),
+                    new ColumnInfo(n.Column(4), "O", false, false, typeof(global::System.DateTimeOffset), e => (object?)((Shadowed)e).O, (e, v) => ((Shadowed)e).O = (global::System.DateTimeOffset)v!),
+                };
+                UpdateColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "G", false, false, typeof(global::System.Guid), e => (object?)((Shadowed)e).G, (e, v) => ((Shadowed)e).G = (global::System.Guid)v!),
+                    new ColumnInfo(n.Column(2), "D", false, false, typeof(global::System.DateTime), e => (object?)((Shadowed)e).D, (e, v) => ((Shadowed)e).D = (global::System.DateTime)v!),
+                    new ColumnInfo(n.Column(3), "T", false, false, typeof(global::System.TimeSpan), e => (object?)((Shadowed)e).T, (e, v) => ((Shadowed)e).T = (global::System.TimeSpan)v!),
+                    new ColumnInfo(n.Column(4), "O", false, false, typeof(global::System.DateTimeOffset), e => (object?)((Shadowed)e).O, (e, v) => ((Shadowed)e).O = (global::System.DateTimeOffset)v!),
+                };
+                DeleteColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((Shadowed)e).Id, (e, v) => ((Shadowed)e).Id = (int)v!),
+                };
+                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((Shadowed)e).Id, (e, v) => ((Shadowed)e).Id = (int)v!));
+                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "G", false, false, typeof(global::System.Guid), e => (object?)((Shadowed)e).G, (e, v) => ((Shadowed)e).G = (global::System.Guid)v!));
+                if (!parameterMap.ContainsKey(n.Column(2))) parameterMap.Add(n.Column(2), new ColumnInfo(n.Column(2), "D", false, false, typeof(global::System.DateTime), e => (object?)((Shadowed)e).D, (e, v) => ((Shadowed)e).D = (global::System.DateTime)v!));
+                if (!parameterMap.ContainsKey(n.Column(3))) parameterMap.Add(n.Column(3), new ColumnInfo(n.Column(3), "T", false, false, typeof(global::System.TimeSpan), e => (object?)((Shadowed)e).T, (e, v) => ((Shadowed)e).T = (global::System.TimeSpan)v!));
+                if (!parameterMap.ContainsKey(n.Column(4))) parameterMap.Add(n.Column(4), new ColumnInfo(n.Column(4), "O", false, false, typeof(global::System.DateTimeOffset), e => (object?)((Shadowed)e).O, (e, v) => ((Shadowed)e).O = (global::System.DateTimeOffset)v!));
+                ParameterMap = parameterMap;
+                EntityColumns = new EntityColumnInfo[] {
+                    new EntityColumnInfo(n.Column(0), "Id", true, true, false, typeof(int), e => (object?)((Shadowed)e).Id, (e, v) => ((Shadowed)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(1), "G", false, false, false, typeof(global::System.Guid), e => (object?)((Shadowed)e).G, (e, v) => ((Shadowed)e).G = (global::System.Guid)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(2), "D", false, false, false, typeof(global::System.DateTime), e => (object?)((Shadowed)e).D, (e, v) => ((Shadowed)e).D = (global::System.DateTime)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(3), "T", false, false, false, typeof(global::System.TimeSpan), e => (object?)((Shadowed)e).T, (e, v) => ((Shadowed)e).T = (global::System.TimeSpan)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(4), "O", false, false, false, typeof(global::System.DateTimeOffset), e => (object?)((Shadowed)e).O, (e, v) => ((Shadowed)e).O = (global::System.DateTimeOffset)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                };
+            }
 
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
-            = new EntityColumnInfo[] {
-            new EntityColumnInfo("Id", "Id", true, true, false, typeof(int), e => (object?)((Shadowed)e).Id, (e, v) => ((Shadowed)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("G", "G", false, false, false, typeof(global::System.Guid), e => (object?)((Shadowed)e).G, (e, v) => ((Shadowed)e).G = (global::System.Guid)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("D", "D", false, false, false, typeof(global::System.DateTime), e => (object?)((Shadowed)e).D, (e, v) => ((Shadowed)e).D = (global::System.DateTime)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("T", "T", false, false, false, typeof(global::System.TimeSpan), e => (object?)((Shadowed)e).T, (e, v) => ((Shadowed)e).T = (global::System.TimeSpan)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("O", "O", false, false, false, typeof(global::System.DateTimeOffset), e => (object?)((Shadowed)e).O, (e, v) => ((Shadowed)e).O = (global::System.DateTimeOffset)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-        };
+            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        }
+
+        public static string TableName => __jauntyNames.Current.Names.TableName;
+        public static string? SchemaName => __jauntyNames.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __jauntyNames.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __jauntyNames.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __jauntyNames.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __jauntyNames.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __jauntyNames.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __jauntyNames.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;

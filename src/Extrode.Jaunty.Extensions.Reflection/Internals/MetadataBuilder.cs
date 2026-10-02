@@ -37,21 +37,23 @@ internal static class MetadataBuilder
         if (type.IsAbstract)
             throw new InvalidOperationException($"Type '{type.Name}' cannot be abstract. Only concrete types can be mapped.");
 
-        string? schemaName = JauntyConfig.SchemaNameResolver?.Invoke(type);
-        string tableName = JauntyConfig.TableNameResolver?.Invoke(type) ?? type.Name;
+        // The attributes supply the explicit names; NameResolution applies the resolvers and the
+        // C# defaults in the one order the source-generated path follows too.
+        string? attributeTable = null;
+        string? attributeSchema = null;
 
         // 1. Table Attribute resolution (Both namespaces)
         TableAttribute? tableAttr = type.GetCustomAttribute<TableAttribute>();
         if (tableAttr is not null)
         {
-            if (!string.IsNullOrEmpty(tableAttr.Name)) tableName = tableAttr.Name;
+            if (!string.IsNullOrEmpty(tableAttr.Name)) attributeTable = tableAttr.Name;
 
             // AUD-R35-221: this was `is not null`, so [Table("X", "")] set the schema to the empty
             // string and discarded any configured JauntyConfig.SchemaNameResolver value. Every
             // sibling guard tests IsNullOrEmpty - the table name one line above, the
             // DataAnnotations branch below, the column-name guard from AUD-R32-006, and the
             // generator's GetTableNameAndSchema.
-            if (!string.IsNullOrEmpty(tableAttr.Schema)) schemaName = tableAttr.Schema;
+            if (!string.IsNullOrEmpty(tableAttr.Schema)) attributeSchema = tableAttr.Schema;
         }
         else
         {
@@ -63,12 +65,15 @@ internal static class MetadataBuilder
                 object? schemaArg = GetNamedArgument(dataTableAttr, "Schema");
 
                 if (nameArg is string name && !string.IsNullOrEmpty(name))
-                    tableName = name;
+                    attributeTable = name;
 
                 if (schemaArg is string schema && !string.IsNullOrEmpty(schema))
-                    schemaName = schema;
+                    attributeSchema = schema;
             }
         }
+
+        string tableName = NameResolution.Table(type, attributeTable);
+        string? schemaName = NameResolution.Schema(type, attributeSchema);
 
         PropertyInfo[] props = MostDerivedPerName(type.GetProperties(BindingFlags.Instance | BindingFlags.Public));
         var columns = new List<ColumnMetadata>();
@@ -92,7 +97,7 @@ internal static class MetadataBuilder
             if (!property.CanWrite) continue;
 
             // 3. Column name resolution
-            string colName = JauntyConfig.ColumnNameResolver?.Invoke(property.Name) ?? property.Name;
+            string? attributeColumn = null;
             ColumnAttribute? colAttr = property.GetCustomAttribute<ColumnAttribute>();
 
             // AUD-R32-006: the IsNullOrEmpty guard was missing here alone. ColumnAttribute's
@@ -101,7 +106,7 @@ internal static class MetadataBuilder
             // resolutions above all fall back to the default. The source generator carries the
             // same guard so both mapping modes agree.
             if (colAttr is not null && !string.IsNullOrEmpty(colAttr.Name))
-                colName = colAttr.Name;
+                attributeColumn = colAttr.Name;
             else
             {
                 // Use string-based detection for ColumnAttribute
@@ -110,9 +115,11 @@ internal static class MetadataBuilder
                 {
                     var nameArg = GetConstructorArgument(dataColAttr, 0) ?? GetNamedArgument(dataColAttr, "Name");
                     if (nameArg is string name && !string.IsNullOrEmpty(name))
-                        colName = name;
+                        attributeColumn = name;
                 }
             }
+
+            string colName = NameResolution.Column(property.Name, attributeColumn);
 
             // 4. Key resolution
             bool isKey = property.GetCustomAttribute<KeyAttribute>() is not null ||

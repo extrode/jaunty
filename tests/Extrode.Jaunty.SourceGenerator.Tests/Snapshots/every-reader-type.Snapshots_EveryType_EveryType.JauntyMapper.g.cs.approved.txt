@@ -444,94 +444,97 @@ namespace Snapshots.EveryType
         public static void BindInsert(IDbCommand command, EveryType entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@LongValue", entity.LongValue);
-            AddParam(command, p, "@BoolValue", entity.BoolValue);
-            AddParam(command, p, "@DecimalValue", entity.DecimalValue);
-            AddParam(command, p, "@DoubleValue", entity.DoubleValue);
-            AddParam(command, p, "@FloatValue", entity.FloatValue);
-            AddParam(command, p, "@ShortValue", entity.ShortValue);
-            AddParam(command, p, "@ByteValue", entity.ByteValue);
-            AddParam(command, p, "@GuidValue", entity.GuidValue);
-            AddParam(command, p, "@DateTimeValue", entity.DateTimeValue);
-            AddParam(command, p, "@TimeSpanValue", entity.TimeSpanValue);
-            AddParam(command, p, "@DateTimeOffsetValue", entity.DateTimeOffsetValue);
-            AddParam(command, p, "@NullableInt", entity.NullableInt);
-            AddParam(command, p, "@NullableLong", entity.NullableLong);
-            AddParam(command, p, "@NullableBool", entity.NullableBool);
-            AddParam(command, p, "@NullableDecimal", entity.NullableDecimal);
-            AddParam(command, p, "@NullableDouble", entity.NullableDouble);
-            AddParam(command, p, "@NullableFloat", entity.NullableFloat);
-            AddParam(command, p, "@NullableShort", entity.NullableShort);
-            AddParam(command, p, "@NullableByte", entity.NullableByte);
-            AddParam(command, p, "@NullableGuid", entity.NullableGuid);
-            AddParam(command, p, "@NullableDateTime", entity.NullableDateTime);
-            AddParam(command, p, "@NullableTimeSpan", entity.NullableTimeSpan);
-            AddParam(command, p, "@NullableDateTimeOffset", entity.NullableDateTimeOffset);
-            AddParam(command, p, "@Text", entity.Text);
-            AddParam(command, p, "@NullableText", entity.NullableText);
-            AddParam(command, p, "@CharValue", entity.CharValue);
-            AddParam(command, p, "@UnsignedInt", entity.UnsignedInt);
-            AddParam(command, p, "@UnsignedLong", entity.UnsignedLong);
-            AddParam(command, p, "@SignedByte", entity.SignedByte);
-            AddParam(command, p, "@UnsignedShort", entity.UnsignedShort);
-            AddParam(command, p, "@DateOnlyValue", entity.DateOnlyValue);
-            AddParam(command, p, "@TimeOnlyValue", entity.TimeOnlyValue);
-            AddParam(command, p, "@Bytes", entity.Bytes);
-            AddEnumParam(command, p, "@Colour", entity.Colour, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
-            AddEnumParam(command, p, "@NullableColour", entity.NullableColour, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
-            AddEnumParam(command, p, "@StoredAsString", entity.StoredAsString, global::Extrode.Jaunty.Attributes.EnumStorage.String);
-            AddEnumParam(command, p, "@StoredAsNumber", entity.StoredAsNumber, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric);
-            AddParam(command, p, "@Money", entity.Money);
-            AddParam(command, p, "@Anything", entity.Anything);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.LongValue);
+            AddParam(command, p, n.Parameter(2), entity.BoolValue);
+            AddParam(command, p, n.Parameter(3), entity.DecimalValue);
+            AddParam(command, p, n.Parameter(4), entity.DoubleValue);
+            AddParam(command, p, n.Parameter(5), entity.FloatValue);
+            AddParam(command, p, n.Parameter(6), entity.ShortValue);
+            AddParam(command, p, n.Parameter(7), entity.ByteValue);
+            AddParam(command, p, n.Parameter(8), entity.GuidValue);
+            AddParam(command, p, n.Parameter(9), entity.DateTimeValue);
+            AddParam(command, p, n.Parameter(10), entity.TimeSpanValue);
+            AddParam(command, p, n.Parameter(11), entity.DateTimeOffsetValue);
+            AddParam(command, p, n.Parameter(12), entity.NullableInt);
+            AddParam(command, p, n.Parameter(13), entity.NullableLong);
+            AddParam(command, p, n.Parameter(14), entity.NullableBool);
+            AddParam(command, p, n.Parameter(15), entity.NullableDecimal);
+            AddParam(command, p, n.Parameter(16), entity.NullableDouble);
+            AddParam(command, p, n.Parameter(17), entity.NullableFloat);
+            AddParam(command, p, n.Parameter(18), entity.NullableShort);
+            AddParam(command, p, n.Parameter(19), entity.NullableByte);
+            AddParam(command, p, n.Parameter(20), entity.NullableGuid);
+            AddParam(command, p, n.Parameter(21), entity.NullableDateTime);
+            AddParam(command, p, n.Parameter(22), entity.NullableTimeSpan);
+            AddParam(command, p, n.Parameter(23), entity.NullableDateTimeOffset);
+            AddParam(command, p, n.Parameter(24), entity.Text);
+            AddParam(command, p, n.Parameter(25), entity.NullableText);
+            AddParam(command, p, n.Parameter(26), entity.CharValue);
+            AddParam(command, p, n.Parameter(27), entity.UnsignedInt);
+            AddParam(command, p, n.Parameter(28), entity.UnsignedLong);
+            AddParam(command, p, n.Parameter(29), entity.SignedByte);
+            AddParam(command, p, n.Parameter(30), entity.UnsignedShort);
+            AddParam(command, p, n.Parameter(31), entity.DateOnlyValue);
+            AddParam(command, p, n.Parameter(32), entity.TimeOnlyValue);
+            AddParam(command, p, n.Parameter(33), entity.Bytes);
+            AddEnumParam(command, p, n.Parameter(34), entity.Colour, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
+            AddEnumParam(command, p, n.Parameter(35), entity.NullableColour, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
+            AddEnumParam(command, p, n.Parameter(36), entity.StoredAsString, global::Extrode.Jaunty.Attributes.EnumStorage.String);
+            AddEnumParam(command, p, n.Parameter(37), entity.StoredAsNumber, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric);
+            AddParam(command, p, n.Parameter(38), entity.Money);
+            AddParam(command, p, n.Parameter(39), entity.Anything);
         }
         public static void BindUpdate(IDbCommand command, EveryType entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@LongValue", entity.LongValue);
-            AddParam(command, p, "@BoolValue", entity.BoolValue);
-            AddParam(command, p, "@DecimalValue", entity.DecimalValue);
-            AddParam(command, p, "@DoubleValue", entity.DoubleValue);
-            AddParam(command, p, "@FloatValue", entity.FloatValue);
-            AddParam(command, p, "@ShortValue", entity.ShortValue);
-            AddParam(command, p, "@ByteValue", entity.ByteValue);
-            AddParam(command, p, "@GuidValue", entity.GuidValue);
-            AddParam(command, p, "@DateTimeValue", entity.DateTimeValue);
-            AddParam(command, p, "@TimeSpanValue", entity.TimeSpanValue);
-            AddParam(command, p, "@DateTimeOffsetValue", entity.DateTimeOffsetValue);
-            AddParam(command, p, "@NullableInt", entity.NullableInt);
-            AddParam(command, p, "@NullableLong", entity.NullableLong);
-            AddParam(command, p, "@NullableBool", entity.NullableBool);
-            AddParam(command, p, "@NullableDecimal", entity.NullableDecimal);
-            AddParam(command, p, "@NullableDouble", entity.NullableDouble);
-            AddParam(command, p, "@NullableFloat", entity.NullableFloat);
-            AddParam(command, p, "@NullableShort", entity.NullableShort);
-            AddParam(command, p, "@NullableByte", entity.NullableByte);
-            AddParam(command, p, "@NullableGuid", entity.NullableGuid);
-            AddParam(command, p, "@NullableDateTime", entity.NullableDateTime);
-            AddParam(command, p, "@NullableTimeSpan", entity.NullableTimeSpan);
-            AddParam(command, p, "@NullableDateTimeOffset", entity.NullableDateTimeOffset);
-            AddParam(command, p, "@Text", entity.Text);
-            AddParam(command, p, "@NullableText", entity.NullableText);
-            AddParam(command, p, "@CharValue", entity.CharValue);
-            AddParam(command, p, "@UnsignedInt", entity.UnsignedInt);
-            AddParam(command, p, "@UnsignedLong", entity.UnsignedLong);
-            AddParam(command, p, "@SignedByte", entity.SignedByte);
-            AddParam(command, p, "@UnsignedShort", entity.UnsignedShort);
-            AddParam(command, p, "@DateOnlyValue", entity.DateOnlyValue);
-            AddParam(command, p, "@TimeOnlyValue", entity.TimeOnlyValue);
-            AddParam(command, p, "@Bytes", entity.Bytes);
-            AddEnumParam(command, p, "@Colour", entity.Colour, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
-            AddEnumParam(command, p, "@NullableColour", entity.NullableColour, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
-            AddEnumParam(command, p, "@StoredAsString", entity.StoredAsString, global::Extrode.Jaunty.Attributes.EnumStorage.String);
-            AddEnumParam(command, p, "@StoredAsNumber", entity.StoredAsNumber, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric);
-            AddParam(command, p, "@Money", entity.Money);
-            AddParam(command, p, "@Anything", entity.Anything);
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(1), entity.LongValue);
+            AddParam(command, p, n.Parameter(2), entity.BoolValue);
+            AddParam(command, p, n.Parameter(3), entity.DecimalValue);
+            AddParam(command, p, n.Parameter(4), entity.DoubleValue);
+            AddParam(command, p, n.Parameter(5), entity.FloatValue);
+            AddParam(command, p, n.Parameter(6), entity.ShortValue);
+            AddParam(command, p, n.Parameter(7), entity.ByteValue);
+            AddParam(command, p, n.Parameter(8), entity.GuidValue);
+            AddParam(command, p, n.Parameter(9), entity.DateTimeValue);
+            AddParam(command, p, n.Parameter(10), entity.TimeSpanValue);
+            AddParam(command, p, n.Parameter(11), entity.DateTimeOffsetValue);
+            AddParam(command, p, n.Parameter(12), entity.NullableInt);
+            AddParam(command, p, n.Parameter(13), entity.NullableLong);
+            AddParam(command, p, n.Parameter(14), entity.NullableBool);
+            AddParam(command, p, n.Parameter(15), entity.NullableDecimal);
+            AddParam(command, p, n.Parameter(16), entity.NullableDouble);
+            AddParam(command, p, n.Parameter(17), entity.NullableFloat);
+            AddParam(command, p, n.Parameter(18), entity.NullableShort);
+            AddParam(command, p, n.Parameter(19), entity.NullableByte);
+            AddParam(command, p, n.Parameter(20), entity.NullableGuid);
+            AddParam(command, p, n.Parameter(21), entity.NullableDateTime);
+            AddParam(command, p, n.Parameter(22), entity.NullableTimeSpan);
+            AddParam(command, p, n.Parameter(23), entity.NullableDateTimeOffset);
+            AddParam(command, p, n.Parameter(24), entity.Text);
+            AddParam(command, p, n.Parameter(25), entity.NullableText);
+            AddParam(command, p, n.Parameter(26), entity.CharValue);
+            AddParam(command, p, n.Parameter(27), entity.UnsignedInt);
+            AddParam(command, p, n.Parameter(28), entity.UnsignedLong);
+            AddParam(command, p, n.Parameter(29), entity.SignedByte);
+            AddParam(command, p, n.Parameter(30), entity.UnsignedShort);
+            AddParam(command, p, n.Parameter(31), entity.DateOnlyValue);
+            AddParam(command, p, n.Parameter(32), entity.TimeOnlyValue);
+            AddParam(command, p, n.Parameter(33), entity.Bytes);
+            AddEnumParam(command, p, n.Parameter(34), entity.Colour, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
+            AddEnumParam(command, p, n.Parameter(35), entity.NullableColour, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
+            AddEnumParam(command, p, n.Parameter(36), entity.StoredAsString, global::Extrode.Jaunty.Attributes.EnumStorage.String);
+            AddEnumParam(command, p, n.Parameter(37), entity.StoredAsNumber, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric);
+            AddParam(command, p, n.Parameter(38), entity.Money);
+            AddParam(command, p, n.Parameter(39), entity.Anything);
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         public static void BindDelete(IDbCommand command, EveryType entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@Id", entity.Id);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(0), entity.Id);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
         {
@@ -561,57 +564,58 @@ namespace Snapshots.EveryType
 
             public static CacheEntry Resolve(IDataReader reader)
             {
+                var names = __jauntyNames.Current.Names;
                 var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))
+                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
 
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))
+                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
                 {
                     SetLast(cached);
                     return cached;
                 }
 
                 var ords = new int[40];
-                ords[0] = reader.GetOrdinal("Id");
-                ords[1] = reader.GetOrdinal("LongValue");
-                ords[2] = reader.GetOrdinal("BoolValue");
-                ords[3] = reader.GetOrdinal("DecimalValue");
-                ords[4] = reader.GetOrdinal("DoubleValue");
-                ords[5] = reader.GetOrdinal("FloatValue");
-                ords[6] = reader.GetOrdinal("ShortValue");
-                ords[7] = reader.GetOrdinal("ByteValue");
-                ords[8] = reader.GetOrdinal("GuidValue");
-                ords[9] = reader.GetOrdinal("DateTimeValue");
-                ords[10] = reader.GetOrdinal("TimeSpanValue");
-                ords[11] = reader.GetOrdinal("DateTimeOffsetValue");
-                ords[12] = reader.GetOrdinal("NullableInt");
-                ords[13] = reader.GetOrdinal("NullableLong");
-                ords[14] = reader.GetOrdinal("NullableBool");
-                ords[15] = reader.GetOrdinal("NullableDecimal");
-                ords[16] = reader.GetOrdinal("NullableDouble");
-                ords[17] = reader.GetOrdinal("NullableFloat");
-                ords[18] = reader.GetOrdinal("NullableShort");
-                ords[19] = reader.GetOrdinal("NullableByte");
-                ords[20] = reader.GetOrdinal("NullableGuid");
-                ords[21] = reader.GetOrdinal("NullableDateTime");
-                ords[22] = reader.GetOrdinal("NullableTimeSpan");
-                ords[23] = reader.GetOrdinal("NullableDateTimeOffset");
-                ords[24] = reader.GetOrdinal("Text");
-                ords[25] = reader.GetOrdinal("NullableText");
-                ords[26] = reader.GetOrdinal("CharValue");
-                ords[27] = reader.GetOrdinal("UnsignedInt");
-                ords[28] = reader.GetOrdinal("UnsignedLong");
-                ords[29] = reader.GetOrdinal("SignedByte");
-                ords[30] = reader.GetOrdinal("UnsignedShort");
-                ords[31] = reader.GetOrdinal("DateOnlyValue");
-                ords[32] = reader.GetOrdinal("TimeOnlyValue");
-                ords[33] = reader.GetOrdinal("Bytes");
-                ords[34] = reader.GetOrdinal("Colour");
-                ords[35] = reader.GetOrdinal("NullableColour");
-                ords[36] = reader.GetOrdinal("StoredAsString");
-                ords[37] = reader.GetOrdinal("StoredAsNumber");
-                ords[38] = reader.GetOrdinal("Money");
-                ords[39] = reader.GetOrdinal("Anything");
+                ords[0] = reader.GetOrdinal(names.Column(0));
+                ords[1] = reader.GetOrdinal(names.Column(1));
+                ords[2] = reader.GetOrdinal(names.Column(2));
+                ords[3] = reader.GetOrdinal(names.Column(3));
+                ords[4] = reader.GetOrdinal(names.Column(4));
+                ords[5] = reader.GetOrdinal(names.Column(5));
+                ords[6] = reader.GetOrdinal(names.Column(6));
+                ords[7] = reader.GetOrdinal(names.Column(7));
+                ords[8] = reader.GetOrdinal(names.Column(8));
+                ords[9] = reader.GetOrdinal(names.Column(9));
+                ords[10] = reader.GetOrdinal(names.Column(10));
+                ords[11] = reader.GetOrdinal(names.Column(11));
+                ords[12] = reader.GetOrdinal(names.Column(12));
+                ords[13] = reader.GetOrdinal(names.Column(13));
+                ords[14] = reader.GetOrdinal(names.Column(14));
+                ords[15] = reader.GetOrdinal(names.Column(15));
+                ords[16] = reader.GetOrdinal(names.Column(16));
+                ords[17] = reader.GetOrdinal(names.Column(17));
+                ords[18] = reader.GetOrdinal(names.Column(18));
+                ords[19] = reader.GetOrdinal(names.Column(19));
+                ords[20] = reader.GetOrdinal(names.Column(20));
+                ords[21] = reader.GetOrdinal(names.Column(21));
+                ords[22] = reader.GetOrdinal(names.Column(22));
+                ords[23] = reader.GetOrdinal(names.Column(23));
+                ords[24] = reader.GetOrdinal(names.Column(24));
+                ords[25] = reader.GetOrdinal(names.Column(25));
+                ords[26] = reader.GetOrdinal(names.Column(26));
+                ords[27] = reader.GetOrdinal(names.Column(27));
+                ords[28] = reader.GetOrdinal(names.Column(28));
+                ords[29] = reader.GetOrdinal(names.Column(29));
+                ords[30] = reader.GetOrdinal(names.Column(30));
+                ords[31] = reader.GetOrdinal(names.Column(31));
+                ords[32] = reader.GetOrdinal(names.Column(32));
+                ords[33] = reader.GetOrdinal(names.Column(33));
+                ords[34] = reader.GetOrdinal(names.Column(34));
+                ords[35] = reader.GetOrdinal(names.Column(35));
+                ords[36] = reader.GetOrdinal(names.Column(36));
+                ords[37] = reader.GetOrdinal(names.Column(37));
+                ords[38] = reader.GetOrdinal(names.Column(38));
+                ords[39] = reader.GetOrdinal(names.Column(39));
                 var entry = new CacheEntry(reader, ords);
 #if NET8_0_OR_GREATER
                 _cache.AddOrUpdate(reader, entry);
@@ -655,7 +659,7 @@ namespace Snapshots.EveryType
                 /// <summary>True where a decimal property's column reports double, so it is read through GetDouble.</summary>
                 public bool[] DecimalAsDouble { get; }
 
-                public bool Matches(IDataReader reader)
+                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
                 {
                     if (!ReferenceEquals(reader, _reader))
                         return false;
@@ -666,241 +670,241 @@ namespace Snapshots.EveryType
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "Id", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "LongValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "BoolValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), names.Column(2), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord3 = Ordinals[3];
                     if ((uint)ord3 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord3), "DecimalValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord3), names.Column(3), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord4 = Ordinals[4];
                     if ((uint)ord4 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord4), "DoubleValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord4), names.Column(4), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord5 = Ordinals[5];
                     if ((uint)ord5 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord5), "FloatValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord5), names.Column(5), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord6 = Ordinals[6];
                     if ((uint)ord6 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord6), "ShortValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord6), names.Column(6), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord7 = Ordinals[7];
                     if ((uint)ord7 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord7), "ByteValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord7), names.Column(7), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord8 = Ordinals[8];
                     if ((uint)ord8 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord8), "GuidValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord8), names.Column(8), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord9 = Ordinals[9];
                     if ((uint)ord9 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord9), "DateTimeValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord9), names.Column(9), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord10 = Ordinals[10];
                     if ((uint)ord10 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord10), "TimeSpanValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord10), names.Column(10), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord11 = Ordinals[11];
                     if ((uint)ord11 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord11), "DateTimeOffsetValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord11), names.Column(11), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord12 = Ordinals[12];
                     if ((uint)ord12 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord12), "NullableInt", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord12), names.Column(12), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord13 = Ordinals[13];
                     if ((uint)ord13 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord13), "NullableLong", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord13), names.Column(13), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord14 = Ordinals[14];
                     if ((uint)ord14 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord14), "NullableBool", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord14), names.Column(14), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord15 = Ordinals[15];
                     if ((uint)ord15 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord15), "NullableDecimal", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord15), names.Column(15), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord16 = Ordinals[16];
                     if ((uint)ord16 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord16), "NullableDouble", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord16), names.Column(16), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord17 = Ordinals[17];
                     if ((uint)ord17 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord17), "NullableFloat", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord17), names.Column(17), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord18 = Ordinals[18];
                     if ((uint)ord18 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord18), "NullableShort", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord18), names.Column(18), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord19 = Ordinals[19];
                     if ((uint)ord19 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord19), "NullableByte", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord19), names.Column(19), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord20 = Ordinals[20];
                     if ((uint)ord20 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord20), "NullableGuid", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord20), names.Column(20), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord21 = Ordinals[21];
                     if ((uint)ord21 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord21), "NullableDateTime", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord21), names.Column(21), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord22 = Ordinals[22];
                     if ((uint)ord22 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord22), "NullableTimeSpan", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord22), names.Column(22), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord23 = Ordinals[23];
                     if ((uint)ord23 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord23), "NullableDateTimeOffset", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord23), names.Column(23), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord24 = Ordinals[24];
                     if ((uint)ord24 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord24), "Text", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord24), names.Column(24), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord25 = Ordinals[25];
                     if ((uint)ord25 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord25), "NullableText", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord25), names.Column(25), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord26 = Ordinals[26];
                     if ((uint)ord26 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord26), "CharValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord26), names.Column(26), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord27 = Ordinals[27];
                     if ((uint)ord27 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord27), "UnsignedInt", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord27), names.Column(27), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord28 = Ordinals[28];
                     if ((uint)ord28 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord28), "UnsignedLong", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord28), names.Column(28), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord29 = Ordinals[29];
                     if ((uint)ord29 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord29), "SignedByte", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord29), names.Column(29), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord30 = Ordinals[30];
                     if ((uint)ord30 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord30), "UnsignedShort", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord30), names.Column(30), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord31 = Ordinals[31];
                     if ((uint)ord31 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord31), "DateOnlyValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord31), names.Column(31), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord32 = Ordinals[32];
                     if ((uint)ord32 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord32), "TimeOnlyValue", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord32), names.Column(32), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord33 = Ordinals[33];
                     if ((uint)ord33 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord33), "Bytes", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord33), names.Column(33), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord34 = Ordinals[34];
                     if ((uint)ord34 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord34), "Colour", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord34), names.Column(34), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord35 = Ordinals[35];
                     if ((uint)ord35 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord35), "NullableColour", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord35), names.Column(35), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord36 = Ordinals[36];
                     if ((uint)ord36 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord36), "StoredAsString", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord36), names.Column(36), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord37 = Ordinals[37];
                     if ((uint)ord37 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord37), "StoredAsNumber", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord37), names.Column(37), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord38 = Ordinals[38];
                     if ((uint)ord38 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord38), "Money", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord38), names.Column(38), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord39 = Ordinals[39];
                     if ((uint)ord39 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord39), "Anything", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord39), names.Column(39), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -908,192 +912,210 @@ namespace Snapshots.EveryType
             }
         }
 
-        public static string TableName { get; } = "every_type";
-        public static string? SchemaName { get; } = "dbo";
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            = new string[] {
-            "Id",
-        };
+        private static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> __jauntyNames = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+            typeof(EveryType),
+            "every_type",
+            "dbo",
+            new string[] { "Id", "LongValue", "BoolValue", "DecimalValue", "DoubleValue", "FloatValue", "ShortValue", "ByteValue", "GuidValue", "DateTimeValue", "TimeSpanValue", "DateTimeOffsetValue", "NullableInt", "NullableLong", "NullableBool", "NullableDecimal", "NullableDouble", "NullableFloat", "NullableShort", "NullableByte", "NullableGuid", "NullableDateTime", "NullableTimeSpan", "NullableDateTimeOffset", "Text", "NullableText", "CharValue", "UnsignedInt", "UnsignedLong", "SignedByte", "UnsignedShort", "DateOnlyValue", "TimeOnlyValue", "Bytes", "Colour", "NullableColour", "StoredAsString", "StoredAsNumber", "Money", "Anything" },
+            new string?[] { null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null },
+            n => new __JauntyNamed(n));
 
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("LongValue", "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!),
-            new ColumnInfo("BoolValue", "BoolValue", false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!),
-            new ColumnInfo("DecimalValue", "DecimalValue", false, false, typeof(decimal), e => (object?)((EveryType)e).DecimalValue, (e, v) => ((EveryType)e).DecimalValue = (decimal)v!),
-            new ColumnInfo("DoubleValue", "DoubleValue", false, false, typeof(double), e => (object?)((EveryType)e).DoubleValue, (e, v) => ((EveryType)e).DoubleValue = (double)v!),
-            new ColumnInfo("FloatValue", "FloatValue", false, false, typeof(float), e => (object?)((EveryType)e).FloatValue, (e, v) => ((EveryType)e).FloatValue = (float)v!),
-            new ColumnInfo("ShortValue", "ShortValue", false, false, typeof(short), e => (object?)((EveryType)e).ShortValue, (e, v) => ((EveryType)e).ShortValue = (short)v!),
-            new ColumnInfo("ByteValue", "ByteValue", false, false, typeof(byte), e => (object?)((EveryType)e).ByteValue, (e, v) => ((EveryType)e).ByteValue = (byte)v!),
-            new ColumnInfo("GuidValue", "GuidValue", false, false, typeof(global::System.Guid), e => (object?)((EveryType)e).GuidValue, (e, v) => ((EveryType)e).GuidValue = (global::System.Guid)v!),
-            new ColumnInfo("DateTimeValue", "DateTimeValue", false, false, typeof(global::System.DateTime), e => (object?)((EveryType)e).DateTimeValue, (e, v) => ((EveryType)e).DateTimeValue = (global::System.DateTime)v!),
-            new ColumnInfo("TimeSpanValue", "TimeSpanValue", false, false, typeof(global::System.TimeSpan), e => (object?)((EveryType)e).TimeSpanValue, (e, v) => ((EveryType)e).TimeSpanValue = (global::System.TimeSpan)v!),
-            new ColumnInfo("DateTimeOffsetValue", "DateTimeOffsetValue", false, false, typeof(global::System.DateTimeOffset), e => (object?)((EveryType)e).DateTimeOffsetValue, (e, v) => ((EveryType)e).DateTimeOffsetValue = (global::System.DateTimeOffset)v!),
-            new ColumnInfo("NullableInt", "NullableInt", false, false, typeof(int?), e => (object?)((EveryType)e).NullableInt, (e, v) => ((EveryType)e).NullableInt = (int?)v!),
-            new ColumnInfo("NullableLong", "NullableLong", false, false, typeof(long?), e => (object?)((EveryType)e).NullableLong, (e, v) => ((EveryType)e).NullableLong = (long?)v!),
-            new ColumnInfo("NullableBool", "NullableBool", false, false, typeof(bool?), e => (object?)((EveryType)e).NullableBool, (e, v) => ((EveryType)e).NullableBool = (bool?)v!),
-            new ColumnInfo("NullableDecimal", "NullableDecimal", false, false, typeof(decimal?), e => (object?)((EveryType)e).NullableDecimal, (e, v) => ((EveryType)e).NullableDecimal = (decimal?)v!),
-            new ColumnInfo("NullableDouble", "NullableDouble", false, false, typeof(double?), e => (object?)((EveryType)e).NullableDouble, (e, v) => ((EveryType)e).NullableDouble = (double?)v!),
-            new ColumnInfo("NullableFloat", "NullableFloat", false, false, typeof(float?), e => (object?)((EveryType)e).NullableFloat, (e, v) => ((EveryType)e).NullableFloat = (float?)v!),
-            new ColumnInfo("NullableShort", "NullableShort", false, false, typeof(short?), e => (object?)((EveryType)e).NullableShort, (e, v) => ((EveryType)e).NullableShort = (short?)v!),
-            new ColumnInfo("NullableByte", "NullableByte", false, false, typeof(byte?), e => (object?)((EveryType)e).NullableByte, (e, v) => ((EveryType)e).NullableByte = (byte?)v!),
-            new ColumnInfo("NullableGuid", "NullableGuid", false, false, typeof(global::System.Guid?), e => (object?)((EveryType)e).NullableGuid, (e, v) => ((EveryType)e).NullableGuid = (global::System.Guid?)v!),
-            new ColumnInfo("NullableDateTime", "NullableDateTime", false, false, typeof(global::System.DateTime?), e => (object?)((EveryType)e).NullableDateTime, (e, v) => ((EveryType)e).NullableDateTime = (global::System.DateTime?)v!),
-            new ColumnInfo("NullableTimeSpan", "NullableTimeSpan", false, false, typeof(global::System.TimeSpan?), e => (object?)((EveryType)e).NullableTimeSpan, (e, v) => ((EveryType)e).NullableTimeSpan = (global::System.TimeSpan?)v!),
-            new ColumnInfo("NullableDateTimeOffset", "NullableDateTimeOffset", false, false, typeof(global::System.DateTimeOffset?), e => (object?)((EveryType)e).NullableDateTimeOffset, (e, v) => ((EveryType)e).NullableDateTimeOffset = (global::System.DateTimeOffset?)v!),
-            new ColumnInfo("Text", "Text", false, false, typeof(string), e => (object?)((EveryType)e).Text, (e, v) => ((EveryType)e).Text = (string)v!),
-            new ColumnInfo("NullableText", "NullableText", false, false, typeof(string), e => (object?)((EveryType)e).NullableText, (e, v) => ((EveryType)e).NullableText = (string)v!),
-            new ColumnInfo("CharValue", "CharValue", false, false, typeof(char), e => (object?)((EveryType)e).CharValue, (e, v) => ((EveryType)e).CharValue = (char)v!),
-            new ColumnInfo("UnsignedInt", "UnsignedInt", false, false, typeof(uint), e => (object?)((EveryType)e).UnsignedInt, (e, v) => ((EveryType)e).UnsignedInt = (uint)v!),
-            new ColumnInfo("UnsignedLong", "UnsignedLong", false, false, typeof(ulong), e => (object?)((EveryType)e).UnsignedLong, (e, v) => ((EveryType)e).UnsignedLong = (ulong)v!),
-            new ColumnInfo("SignedByte", "SignedByte", false, false, typeof(sbyte), e => (object?)((EveryType)e).SignedByte, (e, v) => ((EveryType)e).SignedByte = (sbyte)v!),
-            new ColumnInfo("UnsignedShort", "UnsignedShort", false, false, typeof(ushort), e => (object?)((EveryType)e).UnsignedShort, (e, v) => ((EveryType)e).UnsignedShort = (ushort)v!),
-            new ColumnInfo("DateOnlyValue", "DateOnlyValue", false, false, typeof(global::System.DateOnly), e => (object?)((EveryType)e).DateOnlyValue, (e, v) => ((EveryType)e).DateOnlyValue = (global::System.DateOnly)v!),
-            new ColumnInfo("TimeOnlyValue", "TimeOnlyValue", false, false, typeof(global::System.TimeOnly), e => (object?)((EveryType)e).TimeOnlyValue, (e, v) => ((EveryType)e).TimeOnlyValue = (global::System.TimeOnly)v!),
-            new ColumnInfo("Bytes", "Bytes", false, false, typeof(byte[]), e => (object?)((EveryType)e).Bytes, (e, v) => ((EveryType)e).Bytes = (byte[])v!),
-            new ColumnInfo("Colour", "Colour", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).Colour, (e, v) => ((EveryType)e).Colour = (global::Snapshots.EveryType.Colour)v!),
-            new ColumnInfo("NullableColour", "NullableColour", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).NullableColour, (e, v) => ((EveryType)e).NullableColour = (global::Snapshots.EveryType.Colour?)v!),
-            new ColumnInfo("StoredAsString", "StoredAsString", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).StoredAsString, (e, v) => ((EveryType)e).StoredAsString = (global::Snapshots.EveryType.Colour)v!),
-            new ColumnInfo("StoredAsNumber", "StoredAsNumber", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).StoredAsNumber, (e, v) => ((EveryType)e).StoredAsNumber = (global::Snapshots.EveryType.Colour?)v!),
-            new ColumnInfo("Money", "Money", false, false, typeof(global::Snapshots.EveryType.Money), e => (object?)((EveryType)e).Money, (e, v) => ((EveryType)e).Money = (global::Snapshots.EveryType.Money)v!),
-            new ColumnInfo("Anything", "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("LongValue", "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!),
-            new ColumnInfo("BoolValue", "BoolValue", false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!),
-            new ColumnInfo("DecimalValue", "DecimalValue", false, false, typeof(decimal), e => (object?)((EveryType)e).DecimalValue, (e, v) => ((EveryType)e).DecimalValue = (decimal)v!),
-            new ColumnInfo("DoubleValue", "DoubleValue", false, false, typeof(double), e => (object?)((EveryType)e).DoubleValue, (e, v) => ((EveryType)e).DoubleValue = (double)v!),
-            new ColumnInfo("FloatValue", "FloatValue", false, false, typeof(float), e => (object?)((EveryType)e).FloatValue, (e, v) => ((EveryType)e).FloatValue = (float)v!),
-            new ColumnInfo("ShortValue", "ShortValue", false, false, typeof(short), e => (object?)((EveryType)e).ShortValue, (e, v) => ((EveryType)e).ShortValue = (short)v!),
-            new ColumnInfo("ByteValue", "ByteValue", false, false, typeof(byte), e => (object?)((EveryType)e).ByteValue, (e, v) => ((EveryType)e).ByteValue = (byte)v!),
-            new ColumnInfo("GuidValue", "GuidValue", false, false, typeof(global::System.Guid), e => (object?)((EveryType)e).GuidValue, (e, v) => ((EveryType)e).GuidValue = (global::System.Guid)v!),
-            new ColumnInfo("DateTimeValue", "DateTimeValue", false, false, typeof(global::System.DateTime), e => (object?)((EveryType)e).DateTimeValue, (e, v) => ((EveryType)e).DateTimeValue = (global::System.DateTime)v!),
-            new ColumnInfo("TimeSpanValue", "TimeSpanValue", false, false, typeof(global::System.TimeSpan), e => (object?)((EveryType)e).TimeSpanValue, (e, v) => ((EveryType)e).TimeSpanValue = (global::System.TimeSpan)v!),
-            new ColumnInfo("DateTimeOffsetValue", "DateTimeOffsetValue", false, false, typeof(global::System.DateTimeOffset), e => (object?)((EveryType)e).DateTimeOffsetValue, (e, v) => ((EveryType)e).DateTimeOffsetValue = (global::System.DateTimeOffset)v!),
-            new ColumnInfo("NullableInt", "NullableInt", false, false, typeof(int?), e => (object?)((EveryType)e).NullableInt, (e, v) => ((EveryType)e).NullableInt = (int?)v!),
-            new ColumnInfo("NullableLong", "NullableLong", false, false, typeof(long?), e => (object?)((EveryType)e).NullableLong, (e, v) => ((EveryType)e).NullableLong = (long?)v!),
-            new ColumnInfo("NullableBool", "NullableBool", false, false, typeof(bool?), e => (object?)((EveryType)e).NullableBool, (e, v) => ((EveryType)e).NullableBool = (bool?)v!),
-            new ColumnInfo("NullableDecimal", "NullableDecimal", false, false, typeof(decimal?), e => (object?)((EveryType)e).NullableDecimal, (e, v) => ((EveryType)e).NullableDecimal = (decimal?)v!),
-            new ColumnInfo("NullableDouble", "NullableDouble", false, false, typeof(double?), e => (object?)((EveryType)e).NullableDouble, (e, v) => ((EveryType)e).NullableDouble = (double?)v!),
-            new ColumnInfo("NullableFloat", "NullableFloat", false, false, typeof(float?), e => (object?)((EveryType)e).NullableFloat, (e, v) => ((EveryType)e).NullableFloat = (float?)v!),
-            new ColumnInfo("NullableShort", "NullableShort", false, false, typeof(short?), e => (object?)((EveryType)e).NullableShort, (e, v) => ((EveryType)e).NullableShort = (short?)v!),
-            new ColumnInfo("NullableByte", "NullableByte", false, false, typeof(byte?), e => (object?)((EveryType)e).NullableByte, (e, v) => ((EveryType)e).NullableByte = (byte?)v!),
-            new ColumnInfo("NullableGuid", "NullableGuid", false, false, typeof(global::System.Guid?), e => (object?)((EveryType)e).NullableGuid, (e, v) => ((EveryType)e).NullableGuid = (global::System.Guid?)v!),
-            new ColumnInfo("NullableDateTime", "NullableDateTime", false, false, typeof(global::System.DateTime?), e => (object?)((EveryType)e).NullableDateTime, (e, v) => ((EveryType)e).NullableDateTime = (global::System.DateTime?)v!),
-            new ColumnInfo("NullableTimeSpan", "NullableTimeSpan", false, false, typeof(global::System.TimeSpan?), e => (object?)((EveryType)e).NullableTimeSpan, (e, v) => ((EveryType)e).NullableTimeSpan = (global::System.TimeSpan?)v!),
-            new ColumnInfo("NullableDateTimeOffset", "NullableDateTimeOffset", false, false, typeof(global::System.DateTimeOffset?), e => (object?)((EveryType)e).NullableDateTimeOffset, (e, v) => ((EveryType)e).NullableDateTimeOffset = (global::System.DateTimeOffset?)v!),
-            new ColumnInfo("Text", "Text", false, false, typeof(string), e => (object?)((EveryType)e).Text, (e, v) => ((EveryType)e).Text = (string)v!),
-            new ColumnInfo("NullableText", "NullableText", false, false, typeof(string), e => (object?)((EveryType)e).NullableText, (e, v) => ((EveryType)e).NullableText = (string)v!),
-            new ColumnInfo("CharValue", "CharValue", false, false, typeof(char), e => (object?)((EveryType)e).CharValue, (e, v) => ((EveryType)e).CharValue = (char)v!),
-            new ColumnInfo("UnsignedInt", "UnsignedInt", false, false, typeof(uint), e => (object?)((EveryType)e).UnsignedInt, (e, v) => ((EveryType)e).UnsignedInt = (uint)v!),
-            new ColumnInfo("UnsignedLong", "UnsignedLong", false, false, typeof(ulong), e => (object?)((EveryType)e).UnsignedLong, (e, v) => ((EveryType)e).UnsignedLong = (ulong)v!),
-            new ColumnInfo("SignedByte", "SignedByte", false, false, typeof(sbyte), e => (object?)((EveryType)e).SignedByte, (e, v) => ((EveryType)e).SignedByte = (sbyte)v!),
-            new ColumnInfo("UnsignedShort", "UnsignedShort", false, false, typeof(ushort), e => (object?)((EveryType)e).UnsignedShort, (e, v) => ((EveryType)e).UnsignedShort = (ushort)v!),
-            new ColumnInfo("DateOnlyValue", "DateOnlyValue", false, false, typeof(global::System.DateOnly), e => (object?)((EveryType)e).DateOnlyValue, (e, v) => ((EveryType)e).DateOnlyValue = (global::System.DateOnly)v!),
-            new ColumnInfo("TimeOnlyValue", "TimeOnlyValue", false, false, typeof(global::System.TimeOnly), e => (object?)((EveryType)e).TimeOnlyValue, (e, v) => ((EveryType)e).TimeOnlyValue = (global::System.TimeOnly)v!),
-            new ColumnInfo("Bytes", "Bytes", false, false, typeof(byte[]), e => (object?)((EveryType)e).Bytes, (e, v) => ((EveryType)e).Bytes = (byte[])v!),
-            new ColumnInfo("Colour", "Colour", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).Colour, (e, v) => ((EveryType)e).Colour = (global::Snapshots.EveryType.Colour)v!),
-            new ColumnInfo("NullableColour", "NullableColour", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).NullableColour, (e, v) => ((EveryType)e).NullableColour = (global::Snapshots.EveryType.Colour?)v!),
-            new ColumnInfo("StoredAsString", "StoredAsString", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).StoredAsString, (e, v) => ((EveryType)e).StoredAsString = (global::Snapshots.EveryType.Colour)v!),
-            new ColumnInfo("StoredAsNumber", "StoredAsNumber", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).StoredAsNumber, (e, v) => ((EveryType)e).StoredAsNumber = (global::Snapshots.EveryType.Colour?)v!),
-            new ColumnInfo("Money", "Money", false, false, typeof(global::Snapshots.EveryType.Money), e => (object?)((EveryType)e).Money, (e, v) => ((EveryType)e).Money = (global::Snapshots.EveryType.Money)v!),
-            new ColumnInfo("Anything", "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
+        private sealed class __JauntyNamed
+        {
+            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
             {
-            ["Id"] = new ColumnInfo("Id", "Id", true, true, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!),
-            ["LongValue"] = new ColumnInfo("LongValue", "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!),
-            ["BoolValue"] = new ColumnInfo("BoolValue", "BoolValue", false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!),
-            ["DecimalValue"] = new ColumnInfo("DecimalValue", "DecimalValue", false, false, typeof(decimal), e => (object?)((EveryType)e).DecimalValue, (e, v) => ((EveryType)e).DecimalValue = (decimal)v!),
-            ["DoubleValue"] = new ColumnInfo("DoubleValue", "DoubleValue", false, false, typeof(double), e => (object?)((EveryType)e).DoubleValue, (e, v) => ((EveryType)e).DoubleValue = (double)v!),
-            ["FloatValue"] = new ColumnInfo("FloatValue", "FloatValue", false, false, typeof(float), e => (object?)((EveryType)e).FloatValue, (e, v) => ((EveryType)e).FloatValue = (float)v!),
-            ["ShortValue"] = new ColumnInfo("ShortValue", "ShortValue", false, false, typeof(short), e => (object?)((EveryType)e).ShortValue, (e, v) => ((EveryType)e).ShortValue = (short)v!),
-            ["ByteValue"] = new ColumnInfo("ByteValue", "ByteValue", false, false, typeof(byte), e => (object?)((EveryType)e).ByteValue, (e, v) => ((EveryType)e).ByteValue = (byte)v!),
-            ["GuidValue"] = new ColumnInfo("GuidValue", "GuidValue", false, false, typeof(global::System.Guid), e => (object?)((EveryType)e).GuidValue, (e, v) => ((EveryType)e).GuidValue = (global::System.Guid)v!),
-            ["DateTimeValue"] = new ColumnInfo("DateTimeValue", "DateTimeValue", false, false, typeof(global::System.DateTime), e => (object?)((EveryType)e).DateTimeValue, (e, v) => ((EveryType)e).DateTimeValue = (global::System.DateTime)v!),
-            ["TimeSpanValue"] = new ColumnInfo("TimeSpanValue", "TimeSpanValue", false, false, typeof(global::System.TimeSpan), e => (object?)((EveryType)e).TimeSpanValue, (e, v) => ((EveryType)e).TimeSpanValue = (global::System.TimeSpan)v!),
-            ["DateTimeOffsetValue"] = new ColumnInfo("DateTimeOffsetValue", "DateTimeOffsetValue", false, false, typeof(global::System.DateTimeOffset), e => (object?)((EveryType)e).DateTimeOffsetValue, (e, v) => ((EveryType)e).DateTimeOffsetValue = (global::System.DateTimeOffset)v!),
-            ["NullableInt"] = new ColumnInfo("NullableInt", "NullableInt", false, false, typeof(int?), e => (object?)((EveryType)e).NullableInt, (e, v) => ((EveryType)e).NullableInt = (int?)v!),
-            ["NullableLong"] = new ColumnInfo("NullableLong", "NullableLong", false, false, typeof(long?), e => (object?)((EveryType)e).NullableLong, (e, v) => ((EveryType)e).NullableLong = (long?)v!),
-            ["NullableBool"] = new ColumnInfo("NullableBool", "NullableBool", false, false, typeof(bool?), e => (object?)((EveryType)e).NullableBool, (e, v) => ((EveryType)e).NullableBool = (bool?)v!),
-            ["NullableDecimal"] = new ColumnInfo("NullableDecimal", "NullableDecimal", false, false, typeof(decimal?), e => (object?)((EveryType)e).NullableDecimal, (e, v) => ((EveryType)e).NullableDecimal = (decimal?)v!),
-            ["NullableDouble"] = new ColumnInfo("NullableDouble", "NullableDouble", false, false, typeof(double?), e => (object?)((EveryType)e).NullableDouble, (e, v) => ((EveryType)e).NullableDouble = (double?)v!),
-            ["NullableFloat"] = new ColumnInfo("NullableFloat", "NullableFloat", false, false, typeof(float?), e => (object?)((EveryType)e).NullableFloat, (e, v) => ((EveryType)e).NullableFloat = (float?)v!),
-            ["NullableShort"] = new ColumnInfo("NullableShort", "NullableShort", false, false, typeof(short?), e => (object?)((EveryType)e).NullableShort, (e, v) => ((EveryType)e).NullableShort = (short?)v!),
-            ["NullableByte"] = new ColumnInfo("NullableByte", "NullableByte", false, false, typeof(byte?), e => (object?)((EveryType)e).NullableByte, (e, v) => ((EveryType)e).NullableByte = (byte?)v!),
-            ["NullableGuid"] = new ColumnInfo("NullableGuid", "NullableGuid", false, false, typeof(global::System.Guid?), e => (object?)((EveryType)e).NullableGuid, (e, v) => ((EveryType)e).NullableGuid = (global::System.Guid?)v!),
-            ["NullableDateTime"] = new ColumnInfo("NullableDateTime", "NullableDateTime", false, false, typeof(global::System.DateTime?), e => (object?)((EveryType)e).NullableDateTime, (e, v) => ((EveryType)e).NullableDateTime = (global::System.DateTime?)v!),
-            ["NullableTimeSpan"] = new ColumnInfo("NullableTimeSpan", "NullableTimeSpan", false, false, typeof(global::System.TimeSpan?), e => (object?)((EveryType)e).NullableTimeSpan, (e, v) => ((EveryType)e).NullableTimeSpan = (global::System.TimeSpan?)v!),
-            ["NullableDateTimeOffset"] = new ColumnInfo("NullableDateTimeOffset", "NullableDateTimeOffset", false, false, typeof(global::System.DateTimeOffset?), e => (object?)((EveryType)e).NullableDateTimeOffset, (e, v) => ((EveryType)e).NullableDateTimeOffset = (global::System.DateTimeOffset?)v!),
-            ["Text"] = new ColumnInfo("Text", "Text", false, false, typeof(string), e => (object?)((EveryType)e).Text, (e, v) => ((EveryType)e).Text = (string)v!),
-            ["NullableText"] = new ColumnInfo("NullableText", "NullableText", false, false, typeof(string), e => (object?)((EveryType)e).NullableText, (e, v) => ((EveryType)e).NullableText = (string)v!),
-            ["CharValue"] = new ColumnInfo("CharValue", "CharValue", false, false, typeof(char), e => (object?)((EveryType)e).CharValue, (e, v) => ((EveryType)e).CharValue = (char)v!),
-            ["UnsignedInt"] = new ColumnInfo("UnsignedInt", "UnsignedInt", false, false, typeof(uint), e => (object?)((EveryType)e).UnsignedInt, (e, v) => ((EveryType)e).UnsignedInt = (uint)v!),
-            ["UnsignedLong"] = new ColumnInfo("UnsignedLong", "UnsignedLong", false, false, typeof(ulong), e => (object?)((EveryType)e).UnsignedLong, (e, v) => ((EveryType)e).UnsignedLong = (ulong)v!),
-            ["SignedByte"] = new ColumnInfo("SignedByte", "SignedByte", false, false, typeof(sbyte), e => (object?)((EveryType)e).SignedByte, (e, v) => ((EveryType)e).SignedByte = (sbyte)v!),
-            ["UnsignedShort"] = new ColumnInfo("UnsignedShort", "UnsignedShort", false, false, typeof(ushort), e => (object?)((EveryType)e).UnsignedShort, (e, v) => ((EveryType)e).UnsignedShort = (ushort)v!),
-            ["DateOnlyValue"] = new ColumnInfo("DateOnlyValue", "DateOnlyValue", false, false, typeof(global::System.DateOnly), e => (object?)((EveryType)e).DateOnlyValue, (e, v) => ((EveryType)e).DateOnlyValue = (global::System.DateOnly)v!),
-            ["TimeOnlyValue"] = new ColumnInfo("TimeOnlyValue", "TimeOnlyValue", false, false, typeof(global::System.TimeOnly), e => (object?)((EveryType)e).TimeOnlyValue, (e, v) => ((EveryType)e).TimeOnlyValue = (global::System.TimeOnly)v!),
-            ["Bytes"] = new ColumnInfo("Bytes", "Bytes", false, false, typeof(byte[]), e => (object?)((EveryType)e).Bytes, (e, v) => ((EveryType)e).Bytes = (byte[])v!),
-            ["Colour"] = new ColumnInfo("Colour", "Colour", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).Colour, (e, v) => ((EveryType)e).Colour = (global::Snapshots.EveryType.Colour)v!),
-            ["NullableColour"] = new ColumnInfo("NullableColour", "NullableColour", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).NullableColour, (e, v) => ((EveryType)e).NullableColour = (global::Snapshots.EveryType.Colour?)v!),
-            ["StoredAsString"] = new ColumnInfo("StoredAsString", "StoredAsString", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).StoredAsString, (e, v) => ((EveryType)e).StoredAsString = (global::Snapshots.EveryType.Colour)v!),
-            ["StoredAsNumber"] = new ColumnInfo("StoredAsNumber", "StoredAsNumber", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).StoredAsNumber, (e, v) => ((EveryType)e).StoredAsNumber = (global::Snapshots.EveryType.Colour?)v!),
-            ["Money"] = new ColumnInfo("Money", "Money", false, false, typeof(global::Snapshots.EveryType.Money), e => (object?)((EveryType)e).Money, (e, v) => ((EveryType)e).Money = (global::Snapshots.EveryType.Money)v!),
-            ["Anything"] = new ColumnInfo("Anything", "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!),
-        };
+                Names = n;
+                PrimaryKeyColumnNames = new string[] {
+                    n.Column(0),
+                };
+                InsertColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!),
+                    new ColumnInfo(n.Column(2), "BoolValue", false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!),
+                    new ColumnInfo(n.Column(3), "DecimalValue", false, false, typeof(decimal), e => (object?)((EveryType)e).DecimalValue, (e, v) => ((EveryType)e).DecimalValue = (decimal)v!),
+                    new ColumnInfo(n.Column(4), "DoubleValue", false, false, typeof(double), e => (object?)((EveryType)e).DoubleValue, (e, v) => ((EveryType)e).DoubleValue = (double)v!),
+                    new ColumnInfo(n.Column(5), "FloatValue", false, false, typeof(float), e => (object?)((EveryType)e).FloatValue, (e, v) => ((EveryType)e).FloatValue = (float)v!),
+                    new ColumnInfo(n.Column(6), "ShortValue", false, false, typeof(short), e => (object?)((EveryType)e).ShortValue, (e, v) => ((EveryType)e).ShortValue = (short)v!),
+                    new ColumnInfo(n.Column(7), "ByteValue", false, false, typeof(byte), e => (object?)((EveryType)e).ByteValue, (e, v) => ((EveryType)e).ByteValue = (byte)v!),
+                    new ColumnInfo(n.Column(8), "GuidValue", false, false, typeof(global::System.Guid), e => (object?)((EveryType)e).GuidValue, (e, v) => ((EveryType)e).GuidValue = (global::System.Guid)v!),
+                    new ColumnInfo(n.Column(9), "DateTimeValue", false, false, typeof(global::System.DateTime), e => (object?)((EveryType)e).DateTimeValue, (e, v) => ((EveryType)e).DateTimeValue = (global::System.DateTime)v!),
+                    new ColumnInfo(n.Column(10), "TimeSpanValue", false, false, typeof(global::System.TimeSpan), e => (object?)((EveryType)e).TimeSpanValue, (e, v) => ((EveryType)e).TimeSpanValue = (global::System.TimeSpan)v!),
+                    new ColumnInfo(n.Column(11), "DateTimeOffsetValue", false, false, typeof(global::System.DateTimeOffset), e => (object?)((EveryType)e).DateTimeOffsetValue, (e, v) => ((EveryType)e).DateTimeOffsetValue = (global::System.DateTimeOffset)v!),
+                    new ColumnInfo(n.Column(12), "NullableInt", false, false, typeof(int?), e => (object?)((EveryType)e).NullableInt, (e, v) => ((EveryType)e).NullableInt = (int?)v!),
+                    new ColumnInfo(n.Column(13), "NullableLong", false, false, typeof(long?), e => (object?)((EveryType)e).NullableLong, (e, v) => ((EveryType)e).NullableLong = (long?)v!),
+                    new ColumnInfo(n.Column(14), "NullableBool", false, false, typeof(bool?), e => (object?)((EveryType)e).NullableBool, (e, v) => ((EveryType)e).NullableBool = (bool?)v!),
+                    new ColumnInfo(n.Column(15), "NullableDecimal", false, false, typeof(decimal?), e => (object?)((EveryType)e).NullableDecimal, (e, v) => ((EveryType)e).NullableDecimal = (decimal?)v!),
+                    new ColumnInfo(n.Column(16), "NullableDouble", false, false, typeof(double?), e => (object?)((EveryType)e).NullableDouble, (e, v) => ((EveryType)e).NullableDouble = (double?)v!),
+                    new ColumnInfo(n.Column(17), "NullableFloat", false, false, typeof(float?), e => (object?)((EveryType)e).NullableFloat, (e, v) => ((EveryType)e).NullableFloat = (float?)v!),
+                    new ColumnInfo(n.Column(18), "NullableShort", false, false, typeof(short?), e => (object?)((EveryType)e).NullableShort, (e, v) => ((EveryType)e).NullableShort = (short?)v!),
+                    new ColumnInfo(n.Column(19), "NullableByte", false, false, typeof(byte?), e => (object?)((EveryType)e).NullableByte, (e, v) => ((EveryType)e).NullableByte = (byte?)v!),
+                    new ColumnInfo(n.Column(20), "NullableGuid", false, false, typeof(global::System.Guid?), e => (object?)((EveryType)e).NullableGuid, (e, v) => ((EveryType)e).NullableGuid = (global::System.Guid?)v!),
+                    new ColumnInfo(n.Column(21), "NullableDateTime", false, false, typeof(global::System.DateTime?), e => (object?)((EveryType)e).NullableDateTime, (e, v) => ((EveryType)e).NullableDateTime = (global::System.DateTime?)v!),
+                    new ColumnInfo(n.Column(22), "NullableTimeSpan", false, false, typeof(global::System.TimeSpan?), e => (object?)((EveryType)e).NullableTimeSpan, (e, v) => ((EveryType)e).NullableTimeSpan = (global::System.TimeSpan?)v!),
+                    new ColumnInfo(n.Column(23), "NullableDateTimeOffset", false, false, typeof(global::System.DateTimeOffset?), e => (object?)((EveryType)e).NullableDateTimeOffset, (e, v) => ((EveryType)e).NullableDateTimeOffset = (global::System.DateTimeOffset?)v!),
+                    new ColumnInfo(n.Column(24), "Text", false, false, typeof(string), e => (object?)((EveryType)e).Text, (e, v) => ((EveryType)e).Text = (string)v!),
+                    new ColumnInfo(n.Column(25), "NullableText", false, false, typeof(string), e => (object?)((EveryType)e).NullableText, (e, v) => ((EveryType)e).NullableText = (string)v!),
+                    new ColumnInfo(n.Column(26), "CharValue", false, false, typeof(char), e => (object?)((EveryType)e).CharValue, (e, v) => ((EveryType)e).CharValue = (char)v!),
+                    new ColumnInfo(n.Column(27), "UnsignedInt", false, false, typeof(uint), e => (object?)((EveryType)e).UnsignedInt, (e, v) => ((EveryType)e).UnsignedInt = (uint)v!),
+                    new ColumnInfo(n.Column(28), "UnsignedLong", false, false, typeof(ulong), e => (object?)((EveryType)e).UnsignedLong, (e, v) => ((EveryType)e).UnsignedLong = (ulong)v!),
+                    new ColumnInfo(n.Column(29), "SignedByte", false, false, typeof(sbyte), e => (object?)((EveryType)e).SignedByte, (e, v) => ((EveryType)e).SignedByte = (sbyte)v!),
+                    new ColumnInfo(n.Column(30), "UnsignedShort", false, false, typeof(ushort), e => (object?)((EveryType)e).UnsignedShort, (e, v) => ((EveryType)e).UnsignedShort = (ushort)v!),
+                    new ColumnInfo(n.Column(31), "DateOnlyValue", false, false, typeof(global::System.DateOnly), e => (object?)((EveryType)e).DateOnlyValue, (e, v) => ((EveryType)e).DateOnlyValue = (global::System.DateOnly)v!),
+                    new ColumnInfo(n.Column(32), "TimeOnlyValue", false, false, typeof(global::System.TimeOnly), e => (object?)((EveryType)e).TimeOnlyValue, (e, v) => ((EveryType)e).TimeOnlyValue = (global::System.TimeOnly)v!),
+                    new ColumnInfo(n.Column(33), "Bytes", false, false, typeof(byte[]), e => (object?)((EveryType)e).Bytes, (e, v) => ((EveryType)e).Bytes = (byte[])v!),
+                    new ColumnInfo(n.Column(34), "Colour", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).Colour, (e, v) => ((EveryType)e).Colour = (global::Snapshots.EveryType.Colour)v!),
+                    new ColumnInfo(n.Column(35), "NullableColour", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).NullableColour, (e, v) => ((EveryType)e).NullableColour = (global::Snapshots.EveryType.Colour?)v!),
+                    new ColumnInfo(n.Column(36), "StoredAsString", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).StoredAsString, (e, v) => ((EveryType)e).StoredAsString = (global::Snapshots.EveryType.Colour)v!),
+                    new ColumnInfo(n.Column(37), "StoredAsNumber", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).StoredAsNumber, (e, v) => ((EveryType)e).StoredAsNumber = (global::Snapshots.EveryType.Colour?)v!),
+                    new ColumnInfo(n.Column(38), "Money", false, false, typeof(global::Snapshots.EveryType.Money), e => (object?)((EveryType)e).Money, (e, v) => ((EveryType)e).Money = (global::Snapshots.EveryType.Money)v!),
+                    new ColumnInfo(n.Column(39), "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!),
+                };
+                UpdateColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!),
+                    new ColumnInfo(n.Column(2), "BoolValue", false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!),
+                    new ColumnInfo(n.Column(3), "DecimalValue", false, false, typeof(decimal), e => (object?)((EveryType)e).DecimalValue, (e, v) => ((EveryType)e).DecimalValue = (decimal)v!),
+                    new ColumnInfo(n.Column(4), "DoubleValue", false, false, typeof(double), e => (object?)((EveryType)e).DoubleValue, (e, v) => ((EveryType)e).DoubleValue = (double)v!),
+                    new ColumnInfo(n.Column(5), "FloatValue", false, false, typeof(float), e => (object?)((EveryType)e).FloatValue, (e, v) => ((EveryType)e).FloatValue = (float)v!),
+                    new ColumnInfo(n.Column(6), "ShortValue", false, false, typeof(short), e => (object?)((EveryType)e).ShortValue, (e, v) => ((EveryType)e).ShortValue = (short)v!),
+                    new ColumnInfo(n.Column(7), "ByteValue", false, false, typeof(byte), e => (object?)((EveryType)e).ByteValue, (e, v) => ((EveryType)e).ByteValue = (byte)v!),
+                    new ColumnInfo(n.Column(8), "GuidValue", false, false, typeof(global::System.Guid), e => (object?)((EveryType)e).GuidValue, (e, v) => ((EveryType)e).GuidValue = (global::System.Guid)v!),
+                    new ColumnInfo(n.Column(9), "DateTimeValue", false, false, typeof(global::System.DateTime), e => (object?)((EveryType)e).DateTimeValue, (e, v) => ((EveryType)e).DateTimeValue = (global::System.DateTime)v!),
+                    new ColumnInfo(n.Column(10), "TimeSpanValue", false, false, typeof(global::System.TimeSpan), e => (object?)((EveryType)e).TimeSpanValue, (e, v) => ((EveryType)e).TimeSpanValue = (global::System.TimeSpan)v!),
+                    new ColumnInfo(n.Column(11), "DateTimeOffsetValue", false, false, typeof(global::System.DateTimeOffset), e => (object?)((EveryType)e).DateTimeOffsetValue, (e, v) => ((EveryType)e).DateTimeOffsetValue = (global::System.DateTimeOffset)v!),
+                    new ColumnInfo(n.Column(12), "NullableInt", false, false, typeof(int?), e => (object?)((EveryType)e).NullableInt, (e, v) => ((EveryType)e).NullableInt = (int?)v!),
+                    new ColumnInfo(n.Column(13), "NullableLong", false, false, typeof(long?), e => (object?)((EveryType)e).NullableLong, (e, v) => ((EveryType)e).NullableLong = (long?)v!),
+                    new ColumnInfo(n.Column(14), "NullableBool", false, false, typeof(bool?), e => (object?)((EveryType)e).NullableBool, (e, v) => ((EveryType)e).NullableBool = (bool?)v!),
+                    new ColumnInfo(n.Column(15), "NullableDecimal", false, false, typeof(decimal?), e => (object?)((EveryType)e).NullableDecimal, (e, v) => ((EveryType)e).NullableDecimal = (decimal?)v!),
+                    new ColumnInfo(n.Column(16), "NullableDouble", false, false, typeof(double?), e => (object?)((EveryType)e).NullableDouble, (e, v) => ((EveryType)e).NullableDouble = (double?)v!),
+                    new ColumnInfo(n.Column(17), "NullableFloat", false, false, typeof(float?), e => (object?)((EveryType)e).NullableFloat, (e, v) => ((EveryType)e).NullableFloat = (float?)v!),
+                    new ColumnInfo(n.Column(18), "NullableShort", false, false, typeof(short?), e => (object?)((EveryType)e).NullableShort, (e, v) => ((EveryType)e).NullableShort = (short?)v!),
+                    new ColumnInfo(n.Column(19), "NullableByte", false, false, typeof(byte?), e => (object?)((EveryType)e).NullableByte, (e, v) => ((EveryType)e).NullableByte = (byte?)v!),
+                    new ColumnInfo(n.Column(20), "NullableGuid", false, false, typeof(global::System.Guid?), e => (object?)((EveryType)e).NullableGuid, (e, v) => ((EveryType)e).NullableGuid = (global::System.Guid?)v!),
+                    new ColumnInfo(n.Column(21), "NullableDateTime", false, false, typeof(global::System.DateTime?), e => (object?)((EveryType)e).NullableDateTime, (e, v) => ((EveryType)e).NullableDateTime = (global::System.DateTime?)v!),
+                    new ColumnInfo(n.Column(22), "NullableTimeSpan", false, false, typeof(global::System.TimeSpan?), e => (object?)((EveryType)e).NullableTimeSpan, (e, v) => ((EveryType)e).NullableTimeSpan = (global::System.TimeSpan?)v!),
+                    new ColumnInfo(n.Column(23), "NullableDateTimeOffset", false, false, typeof(global::System.DateTimeOffset?), e => (object?)((EveryType)e).NullableDateTimeOffset, (e, v) => ((EveryType)e).NullableDateTimeOffset = (global::System.DateTimeOffset?)v!),
+                    new ColumnInfo(n.Column(24), "Text", false, false, typeof(string), e => (object?)((EveryType)e).Text, (e, v) => ((EveryType)e).Text = (string)v!),
+                    new ColumnInfo(n.Column(25), "NullableText", false, false, typeof(string), e => (object?)((EveryType)e).NullableText, (e, v) => ((EveryType)e).NullableText = (string)v!),
+                    new ColumnInfo(n.Column(26), "CharValue", false, false, typeof(char), e => (object?)((EveryType)e).CharValue, (e, v) => ((EveryType)e).CharValue = (char)v!),
+                    new ColumnInfo(n.Column(27), "UnsignedInt", false, false, typeof(uint), e => (object?)((EveryType)e).UnsignedInt, (e, v) => ((EveryType)e).UnsignedInt = (uint)v!),
+                    new ColumnInfo(n.Column(28), "UnsignedLong", false, false, typeof(ulong), e => (object?)((EveryType)e).UnsignedLong, (e, v) => ((EveryType)e).UnsignedLong = (ulong)v!),
+                    new ColumnInfo(n.Column(29), "SignedByte", false, false, typeof(sbyte), e => (object?)((EveryType)e).SignedByte, (e, v) => ((EveryType)e).SignedByte = (sbyte)v!),
+                    new ColumnInfo(n.Column(30), "UnsignedShort", false, false, typeof(ushort), e => (object?)((EveryType)e).UnsignedShort, (e, v) => ((EveryType)e).UnsignedShort = (ushort)v!),
+                    new ColumnInfo(n.Column(31), "DateOnlyValue", false, false, typeof(global::System.DateOnly), e => (object?)((EveryType)e).DateOnlyValue, (e, v) => ((EveryType)e).DateOnlyValue = (global::System.DateOnly)v!),
+                    new ColumnInfo(n.Column(32), "TimeOnlyValue", false, false, typeof(global::System.TimeOnly), e => (object?)((EveryType)e).TimeOnlyValue, (e, v) => ((EveryType)e).TimeOnlyValue = (global::System.TimeOnly)v!),
+                    new ColumnInfo(n.Column(33), "Bytes", false, false, typeof(byte[]), e => (object?)((EveryType)e).Bytes, (e, v) => ((EveryType)e).Bytes = (byte[])v!),
+                    new ColumnInfo(n.Column(34), "Colour", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).Colour, (e, v) => ((EveryType)e).Colour = (global::Snapshots.EveryType.Colour)v!),
+                    new ColumnInfo(n.Column(35), "NullableColour", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).NullableColour, (e, v) => ((EveryType)e).NullableColour = (global::Snapshots.EveryType.Colour?)v!),
+                    new ColumnInfo(n.Column(36), "StoredAsString", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).StoredAsString, (e, v) => ((EveryType)e).StoredAsString = (global::Snapshots.EveryType.Colour)v!),
+                    new ColumnInfo(n.Column(37), "StoredAsNumber", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).StoredAsNumber, (e, v) => ((EveryType)e).StoredAsNumber = (global::Snapshots.EveryType.Colour?)v!),
+                    new ColumnInfo(n.Column(38), "Money", false, false, typeof(global::Snapshots.EveryType.Money), e => (object?)((EveryType)e).Money, (e, v) => ((EveryType)e).Money = (global::Snapshots.EveryType.Money)v!),
+                    new ColumnInfo(n.Column(39), "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!),
+                };
+                DeleteColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!),
+                };
+                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "Id", true, true, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!));
+                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "LongValue", false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!));
+                if (!parameterMap.ContainsKey(n.Column(2))) parameterMap.Add(n.Column(2), new ColumnInfo(n.Column(2), "BoolValue", false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!));
+                if (!parameterMap.ContainsKey(n.Column(3))) parameterMap.Add(n.Column(3), new ColumnInfo(n.Column(3), "DecimalValue", false, false, typeof(decimal), e => (object?)((EveryType)e).DecimalValue, (e, v) => ((EveryType)e).DecimalValue = (decimal)v!));
+                if (!parameterMap.ContainsKey(n.Column(4))) parameterMap.Add(n.Column(4), new ColumnInfo(n.Column(4), "DoubleValue", false, false, typeof(double), e => (object?)((EveryType)e).DoubleValue, (e, v) => ((EveryType)e).DoubleValue = (double)v!));
+                if (!parameterMap.ContainsKey(n.Column(5))) parameterMap.Add(n.Column(5), new ColumnInfo(n.Column(5), "FloatValue", false, false, typeof(float), e => (object?)((EveryType)e).FloatValue, (e, v) => ((EveryType)e).FloatValue = (float)v!));
+                if (!parameterMap.ContainsKey(n.Column(6))) parameterMap.Add(n.Column(6), new ColumnInfo(n.Column(6), "ShortValue", false, false, typeof(short), e => (object?)((EveryType)e).ShortValue, (e, v) => ((EveryType)e).ShortValue = (short)v!));
+                if (!parameterMap.ContainsKey(n.Column(7))) parameterMap.Add(n.Column(7), new ColumnInfo(n.Column(7), "ByteValue", false, false, typeof(byte), e => (object?)((EveryType)e).ByteValue, (e, v) => ((EveryType)e).ByteValue = (byte)v!));
+                if (!parameterMap.ContainsKey(n.Column(8))) parameterMap.Add(n.Column(8), new ColumnInfo(n.Column(8), "GuidValue", false, false, typeof(global::System.Guid), e => (object?)((EveryType)e).GuidValue, (e, v) => ((EveryType)e).GuidValue = (global::System.Guid)v!));
+                if (!parameterMap.ContainsKey(n.Column(9))) parameterMap.Add(n.Column(9), new ColumnInfo(n.Column(9), "DateTimeValue", false, false, typeof(global::System.DateTime), e => (object?)((EveryType)e).DateTimeValue, (e, v) => ((EveryType)e).DateTimeValue = (global::System.DateTime)v!));
+                if (!parameterMap.ContainsKey(n.Column(10))) parameterMap.Add(n.Column(10), new ColumnInfo(n.Column(10), "TimeSpanValue", false, false, typeof(global::System.TimeSpan), e => (object?)((EveryType)e).TimeSpanValue, (e, v) => ((EveryType)e).TimeSpanValue = (global::System.TimeSpan)v!));
+                if (!parameterMap.ContainsKey(n.Column(11))) parameterMap.Add(n.Column(11), new ColumnInfo(n.Column(11), "DateTimeOffsetValue", false, false, typeof(global::System.DateTimeOffset), e => (object?)((EveryType)e).DateTimeOffsetValue, (e, v) => ((EveryType)e).DateTimeOffsetValue = (global::System.DateTimeOffset)v!));
+                if (!parameterMap.ContainsKey(n.Column(12))) parameterMap.Add(n.Column(12), new ColumnInfo(n.Column(12), "NullableInt", false, false, typeof(int?), e => (object?)((EveryType)e).NullableInt, (e, v) => ((EveryType)e).NullableInt = (int?)v!));
+                if (!parameterMap.ContainsKey(n.Column(13))) parameterMap.Add(n.Column(13), new ColumnInfo(n.Column(13), "NullableLong", false, false, typeof(long?), e => (object?)((EveryType)e).NullableLong, (e, v) => ((EveryType)e).NullableLong = (long?)v!));
+                if (!parameterMap.ContainsKey(n.Column(14))) parameterMap.Add(n.Column(14), new ColumnInfo(n.Column(14), "NullableBool", false, false, typeof(bool?), e => (object?)((EveryType)e).NullableBool, (e, v) => ((EveryType)e).NullableBool = (bool?)v!));
+                if (!parameterMap.ContainsKey(n.Column(15))) parameterMap.Add(n.Column(15), new ColumnInfo(n.Column(15), "NullableDecimal", false, false, typeof(decimal?), e => (object?)((EveryType)e).NullableDecimal, (e, v) => ((EveryType)e).NullableDecimal = (decimal?)v!));
+                if (!parameterMap.ContainsKey(n.Column(16))) parameterMap.Add(n.Column(16), new ColumnInfo(n.Column(16), "NullableDouble", false, false, typeof(double?), e => (object?)((EveryType)e).NullableDouble, (e, v) => ((EveryType)e).NullableDouble = (double?)v!));
+                if (!parameterMap.ContainsKey(n.Column(17))) parameterMap.Add(n.Column(17), new ColumnInfo(n.Column(17), "NullableFloat", false, false, typeof(float?), e => (object?)((EveryType)e).NullableFloat, (e, v) => ((EveryType)e).NullableFloat = (float?)v!));
+                if (!parameterMap.ContainsKey(n.Column(18))) parameterMap.Add(n.Column(18), new ColumnInfo(n.Column(18), "NullableShort", false, false, typeof(short?), e => (object?)((EveryType)e).NullableShort, (e, v) => ((EveryType)e).NullableShort = (short?)v!));
+                if (!parameterMap.ContainsKey(n.Column(19))) parameterMap.Add(n.Column(19), new ColumnInfo(n.Column(19), "NullableByte", false, false, typeof(byte?), e => (object?)((EveryType)e).NullableByte, (e, v) => ((EveryType)e).NullableByte = (byte?)v!));
+                if (!parameterMap.ContainsKey(n.Column(20))) parameterMap.Add(n.Column(20), new ColumnInfo(n.Column(20), "NullableGuid", false, false, typeof(global::System.Guid?), e => (object?)((EveryType)e).NullableGuid, (e, v) => ((EveryType)e).NullableGuid = (global::System.Guid?)v!));
+                if (!parameterMap.ContainsKey(n.Column(21))) parameterMap.Add(n.Column(21), new ColumnInfo(n.Column(21), "NullableDateTime", false, false, typeof(global::System.DateTime?), e => (object?)((EveryType)e).NullableDateTime, (e, v) => ((EveryType)e).NullableDateTime = (global::System.DateTime?)v!));
+                if (!parameterMap.ContainsKey(n.Column(22))) parameterMap.Add(n.Column(22), new ColumnInfo(n.Column(22), "NullableTimeSpan", false, false, typeof(global::System.TimeSpan?), e => (object?)((EveryType)e).NullableTimeSpan, (e, v) => ((EveryType)e).NullableTimeSpan = (global::System.TimeSpan?)v!));
+                if (!parameterMap.ContainsKey(n.Column(23))) parameterMap.Add(n.Column(23), new ColumnInfo(n.Column(23), "NullableDateTimeOffset", false, false, typeof(global::System.DateTimeOffset?), e => (object?)((EveryType)e).NullableDateTimeOffset, (e, v) => ((EveryType)e).NullableDateTimeOffset = (global::System.DateTimeOffset?)v!));
+                if (!parameterMap.ContainsKey(n.Column(24))) parameterMap.Add(n.Column(24), new ColumnInfo(n.Column(24), "Text", false, false, typeof(string), e => (object?)((EveryType)e).Text, (e, v) => ((EveryType)e).Text = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(25))) parameterMap.Add(n.Column(25), new ColumnInfo(n.Column(25), "NullableText", false, false, typeof(string), e => (object?)((EveryType)e).NullableText, (e, v) => ((EveryType)e).NullableText = (string)v!));
+                if (!parameterMap.ContainsKey(n.Column(26))) parameterMap.Add(n.Column(26), new ColumnInfo(n.Column(26), "CharValue", false, false, typeof(char), e => (object?)((EveryType)e).CharValue, (e, v) => ((EveryType)e).CharValue = (char)v!));
+                if (!parameterMap.ContainsKey(n.Column(27))) parameterMap.Add(n.Column(27), new ColumnInfo(n.Column(27), "UnsignedInt", false, false, typeof(uint), e => (object?)((EveryType)e).UnsignedInt, (e, v) => ((EveryType)e).UnsignedInt = (uint)v!));
+                if (!parameterMap.ContainsKey(n.Column(28))) parameterMap.Add(n.Column(28), new ColumnInfo(n.Column(28), "UnsignedLong", false, false, typeof(ulong), e => (object?)((EveryType)e).UnsignedLong, (e, v) => ((EveryType)e).UnsignedLong = (ulong)v!));
+                if (!parameterMap.ContainsKey(n.Column(29))) parameterMap.Add(n.Column(29), new ColumnInfo(n.Column(29), "SignedByte", false, false, typeof(sbyte), e => (object?)((EveryType)e).SignedByte, (e, v) => ((EveryType)e).SignedByte = (sbyte)v!));
+                if (!parameterMap.ContainsKey(n.Column(30))) parameterMap.Add(n.Column(30), new ColumnInfo(n.Column(30), "UnsignedShort", false, false, typeof(ushort), e => (object?)((EveryType)e).UnsignedShort, (e, v) => ((EveryType)e).UnsignedShort = (ushort)v!));
+                if (!parameterMap.ContainsKey(n.Column(31))) parameterMap.Add(n.Column(31), new ColumnInfo(n.Column(31), "DateOnlyValue", false, false, typeof(global::System.DateOnly), e => (object?)((EveryType)e).DateOnlyValue, (e, v) => ((EveryType)e).DateOnlyValue = (global::System.DateOnly)v!));
+                if (!parameterMap.ContainsKey(n.Column(32))) parameterMap.Add(n.Column(32), new ColumnInfo(n.Column(32), "TimeOnlyValue", false, false, typeof(global::System.TimeOnly), e => (object?)((EveryType)e).TimeOnlyValue, (e, v) => ((EveryType)e).TimeOnlyValue = (global::System.TimeOnly)v!));
+                if (!parameterMap.ContainsKey(n.Column(33))) parameterMap.Add(n.Column(33), new ColumnInfo(n.Column(33), "Bytes", false, false, typeof(byte[]), e => (object?)((EveryType)e).Bytes, (e, v) => ((EveryType)e).Bytes = (byte[])v!));
+                if (!parameterMap.ContainsKey(n.Column(34))) parameterMap.Add(n.Column(34), new ColumnInfo(n.Column(34), "Colour", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).Colour, (e, v) => ((EveryType)e).Colour = (global::Snapshots.EveryType.Colour)v!));
+                if (!parameterMap.ContainsKey(n.Column(35))) parameterMap.Add(n.Column(35), new ColumnInfo(n.Column(35), "NullableColour", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).NullableColour, (e, v) => ((EveryType)e).NullableColour = (global::Snapshots.EveryType.Colour?)v!));
+                if (!parameterMap.ContainsKey(n.Column(36))) parameterMap.Add(n.Column(36), new ColumnInfo(n.Column(36), "StoredAsString", false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).StoredAsString, (e, v) => ((EveryType)e).StoredAsString = (global::Snapshots.EveryType.Colour)v!));
+                if (!parameterMap.ContainsKey(n.Column(37))) parameterMap.Add(n.Column(37), new ColumnInfo(n.Column(37), "StoredAsNumber", false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).StoredAsNumber, (e, v) => ((EveryType)e).StoredAsNumber = (global::Snapshots.EveryType.Colour?)v!));
+                if (!parameterMap.ContainsKey(n.Column(38))) parameterMap.Add(n.Column(38), new ColumnInfo(n.Column(38), "Money", false, false, typeof(global::Snapshots.EveryType.Money), e => (object?)((EveryType)e).Money, (e, v) => ((EveryType)e).Money = (global::Snapshots.EveryType.Money)v!));
+                if (!parameterMap.ContainsKey(n.Column(39))) parameterMap.Add(n.Column(39), new ColumnInfo(n.Column(39), "Anything", false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!));
+                ParameterMap = parameterMap;
+                EntityColumns = new EntityColumnInfo[] {
+                    new EntityColumnInfo(n.Column(0), "Id", true, true, false, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(1), "LongValue", false, false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(2), "BoolValue", false, false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(3), "DecimalValue", false, false, false, typeof(decimal), e => (object?)((EveryType)e).DecimalValue, (e, v) => ((EveryType)e).DecimalValue = (decimal)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(4), "DoubleValue", false, false, false, typeof(double), e => (object?)((EveryType)e).DoubleValue, (e, v) => ((EveryType)e).DoubleValue = (double)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(5), "FloatValue", false, false, false, typeof(float), e => (object?)((EveryType)e).FloatValue, (e, v) => ((EveryType)e).FloatValue = (float)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(6), "ShortValue", false, false, false, typeof(short), e => (object?)((EveryType)e).ShortValue, (e, v) => ((EveryType)e).ShortValue = (short)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(7), "ByteValue", false, false, false, typeof(byte), e => (object?)((EveryType)e).ByteValue, (e, v) => ((EveryType)e).ByteValue = (byte)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(8), "GuidValue", false, false, false, typeof(global::System.Guid), e => (object?)((EveryType)e).GuidValue, (e, v) => ((EveryType)e).GuidValue = (global::System.Guid)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(9), "DateTimeValue", false, false, false, typeof(global::System.DateTime), e => (object?)((EveryType)e).DateTimeValue, (e, v) => ((EveryType)e).DateTimeValue = (global::System.DateTime)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(10), "TimeSpanValue", false, false, false, typeof(global::System.TimeSpan), e => (object?)((EveryType)e).TimeSpanValue, (e, v) => ((EveryType)e).TimeSpanValue = (global::System.TimeSpan)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(11), "DateTimeOffsetValue", false, false, false, typeof(global::System.DateTimeOffset), e => (object?)((EveryType)e).DateTimeOffsetValue, (e, v) => ((EveryType)e).DateTimeOffsetValue = (global::System.DateTimeOffset)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(12), "NullableInt", false, false, false, typeof(int?), e => (object?)((EveryType)e).NullableInt, (e, v) => ((EveryType)e).NullableInt = (int?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(13), "NullableLong", false, false, false, typeof(long?), e => (object?)((EveryType)e).NullableLong, (e, v) => ((EveryType)e).NullableLong = (long?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(14), "NullableBool", false, false, false, typeof(bool?), e => (object?)((EveryType)e).NullableBool, (e, v) => ((EveryType)e).NullableBool = (bool?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(15), "NullableDecimal", false, false, false, typeof(decimal?), e => (object?)((EveryType)e).NullableDecimal, (e, v) => ((EveryType)e).NullableDecimal = (decimal?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(16), "NullableDouble", false, false, false, typeof(double?), e => (object?)((EveryType)e).NullableDouble, (e, v) => ((EveryType)e).NullableDouble = (double?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(17), "NullableFloat", false, false, false, typeof(float?), e => (object?)((EveryType)e).NullableFloat, (e, v) => ((EveryType)e).NullableFloat = (float?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(18), "NullableShort", false, false, false, typeof(short?), e => (object?)((EveryType)e).NullableShort, (e, v) => ((EveryType)e).NullableShort = (short?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(19), "NullableByte", false, false, false, typeof(byte?), e => (object?)((EveryType)e).NullableByte, (e, v) => ((EveryType)e).NullableByte = (byte?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(20), "NullableGuid", false, false, false, typeof(global::System.Guid?), e => (object?)((EveryType)e).NullableGuid, (e, v) => ((EveryType)e).NullableGuid = (global::System.Guid?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(21), "NullableDateTime", false, false, false, typeof(global::System.DateTime?), e => (object?)((EveryType)e).NullableDateTime, (e, v) => ((EveryType)e).NullableDateTime = (global::System.DateTime?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(22), "NullableTimeSpan", false, false, false, typeof(global::System.TimeSpan?), e => (object?)((EveryType)e).NullableTimeSpan, (e, v) => ((EveryType)e).NullableTimeSpan = (global::System.TimeSpan?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(23), "NullableDateTimeOffset", false, false, false, typeof(global::System.DateTimeOffset?), e => (object?)((EveryType)e).NullableDateTimeOffset, (e, v) => ((EveryType)e).NullableDateTimeOffset = (global::System.DateTimeOffset?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(24), "Text", false, false, false, typeof(string), e => (object?)((EveryType)e).Text, (e, v) => ((EveryType)e).Text = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(25), "NullableText", false, false, false, typeof(string), e => (object?)((EveryType)e).NullableText, (e, v) => ((EveryType)e).NullableText = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(26), "CharValue", false, false, false, typeof(char), e => (object?)((EveryType)e).CharValue, (e, v) => ((EveryType)e).CharValue = (char)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(27), "UnsignedInt", false, false, false, typeof(uint), e => (object?)((EveryType)e).UnsignedInt, (e, v) => ((EveryType)e).UnsignedInt = (uint)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(28), "UnsignedLong", false, false, false, typeof(ulong), e => (object?)((EveryType)e).UnsignedLong, (e, v) => ((EveryType)e).UnsignedLong = (ulong)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(29), "SignedByte", false, false, false, typeof(sbyte), e => (object?)((EveryType)e).SignedByte, (e, v) => ((EveryType)e).SignedByte = (sbyte)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(30), "UnsignedShort", false, false, false, typeof(ushort), e => (object?)((EveryType)e).UnsignedShort, (e, v) => ((EveryType)e).UnsignedShort = (ushort)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(31), "DateOnlyValue", false, false, false, typeof(global::System.DateOnly), e => (object?)((EveryType)e).DateOnlyValue, (e, v) => ((EveryType)e).DateOnlyValue = (global::System.DateOnly)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(32), "TimeOnlyValue", false, false, false, typeof(global::System.TimeOnly), e => (object?)((EveryType)e).TimeOnlyValue, (e, v) => ((EveryType)e).TimeOnlyValue = (global::System.TimeOnly)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(33), "Bytes", false, false, false, typeof(byte[]), e => (object?)((EveryType)e).Bytes, (e, v) => ((EveryType)e).Bytes = (byte[])v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(34), "Colour", false, false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).Colour, (e, v) => ((EveryType)e).Colour = (global::Snapshots.EveryType.Colour)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(35), "NullableColour", false, false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).NullableColour, (e, v) => ((EveryType)e).NullableColour = (global::Snapshots.EveryType.Colour?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(36), "StoredAsString", false, false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).StoredAsString, (e, v) => ((EveryType)e).StoredAsString = (global::Snapshots.EveryType.Colour)v!, global::Extrode.Jaunty.Attributes.EnumStorage.String),
+                    new EntityColumnInfo(n.Column(37), "StoredAsNumber", false, false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).StoredAsNumber, (e, v) => ((EveryType)e).StoredAsNumber = (global::Snapshots.EveryType.Colour?)v!, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric),
+                    new EntityColumnInfo(n.Column(38), "Money", false, false, false, typeof(global::Snapshots.EveryType.Money), e => (object?)((EveryType)e).Money, (e, v) => ((EveryType)e).Money = (global::Snapshots.EveryType.Money)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(39), "Anything", false, false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                };
+            }
 
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
-            = new EntityColumnInfo[] {
-            new EntityColumnInfo("Id", "Id", true, true, false, typeof(int), e => (object?)((EveryType)e).Id, (e, v) => ((EveryType)e).Id = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("LongValue", "LongValue", false, false, false, typeof(long), e => (object?)((EveryType)e).LongValue, (e, v) => ((EveryType)e).LongValue = (long)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("BoolValue", "BoolValue", false, false, false, typeof(bool), e => (object?)((EveryType)e).BoolValue, (e, v) => ((EveryType)e).BoolValue = (bool)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("DecimalValue", "DecimalValue", false, false, false, typeof(decimal), e => (object?)((EveryType)e).DecimalValue, (e, v) => ((EveryType)e).DecimalValue = (decimal)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("DoubleValue", "DoubleValue", false, false, false, typeof(double), e => (object?)((EveryType)e).DoubleValue, (e, v) => ((EveryType)e).DoubleValue = (double)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("FloatValue", "FloatValue", false, false, false, typeof(float), e => (object?)((EveryType)e).FloatValue, (e, v) => ((EveryType)e).FloatValue = (float)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("ShortValue", "ShortValue", false, false, false, typeof(short), e => (object?)((EveryType)e).ShortValue, (e, v) => ((EveryType)e).ShortValue = (short)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("ByteValue", "ByteValue", false, false, false, typeof(byte), e => (object?)((EveryType)e).ByteValue, (e, v) => ((EveryType)e).ByteValue = (byte)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("GuidValue", "GuidValue", false, false, false, typeof(global::System.Guid), e => (object?)((EveryType)e).GuidValue, (e, v) => ((EveryType)e).GuidValue = (global::System.Guid)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("DateTimeValue", "DateTimeValue", false, false, false, typeof(global::System.DateTime), e => (object?)((EveryType)e).DateTimeValue, (e, v) => ((EveryType)e).DateTimeValue = (global::System.DateTime)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("TimeSpanValue", "TimeSpanValue", false, false, false, typeof(global::System.TimeSpan), e => (object?)((EveryType)e).TimeSpanValue, (e, v) => ((EveryType)e).TimeSpanValue = (global::System.TimeSpan)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("DateTimeOffsetValue", "DateTimeOffsetValue", false, false, false, typeof(global::System.DateTimeOffset), e => (object?)((EveryType)e).DateTimeOffsetValue, (e, v) => ((EveryType)e).DateTimeOffsetValue = (global::System.DateTimeOffset)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableInt", "NullableInt", false, false, false, typeof(int?), e => (object?)((EveryType)e).NullableInt, (e, v) => ((EveryType)e).NullableInt = (int?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableLong", "NullableLong", false, false, false, typeof(long?), e => (object?)((EveryType)e).NullableLong, (e, v) => ((EveryType)e).NullableLong = (long?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableBool", "NullableBool", false, false, false, typeof(bool?), e => (object?)((EveryType)e).NullableBool, (e, v) => ((EveryType)e).NullableBool = (bool?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableDecimal", "NullableDecimal", false, false, false, typeof(decimal?), e => (object?)((EveryType)e).NullableDecimal, (e, v) => ((EveryType)e).NullableDecimal = (decimal?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableDouble", "NullableDouble", false, false, false, typeof(double?), e => (object?)((EveryType)e).NullableDouble, (e, v) => ((EveryType)e).NullableDouble = (double?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableFloat", "NullableFloat", false, false, false, typeof(float?), e => (object?)((EveryType)e).NullableFloat, (e, v) => ((EveryType)e).NullableFloat = (float?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableShort", "NullableShort", false, false, false, typeof(short?), e => (object?)((EveryType)e).NullableShort, (e, v) => ((EveryType)e).NullableShort = (short?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableByte", "NullableByte", false, false, false, typeof(byte?), e => (object?)((EveryType)e).NullableByte, (e, v) => ((EveryType)e).NullableByte = (byte?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableGuid", "NullableGuid", false, false, false, typeof(global::System.Guid?), e => (object?)((EveryType)e).NullableGuid, (e, v) => ((EveryType)e).NullableGuid = (global::System.Guid?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableDateTime", "NullableDateTime", false, false, false, typeof(global::System.DateTime?), e => (object?)((EveryType)e).NullableDateTime, (e, v) => ((EveryType)e).NullableDateTime = (global::System.DateTime?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableTimeSpan", "NullableTimeSpan", false, false, false, typeof(global::System.TimeSpan?), e => (object?)((EveryType)e).NullableTimeSpan, (e, v) => ((EveryType)e).NullableTimeSpan = (global::System.TimeSpan?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableDateTimeOffset", "NullableDateTimeOffset", false, false, false, typeof(global::System.DateTimeOffset?), e => (object?)((EveryType)e).NullableDateTimeOffset, (e, v) => ((EveryType)e).NullableDateTimeOffset = (global::System.DateTimeOffset?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Text", "Text", false, false, false, typeof(string), e => (object?)((EveryType)e).Text, (e, v) => ((EveryType)e).Text = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableText", "NullableText", false, false, false, typeof(string), e => (object?)((EveryType)e).NullableText, (e, v) => ((EveryType)e).NullableText = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("CharValue", "CharValue", false, false, false, typeof(char), e => (object?)((EveryType)e).CharValue, (e, v) => ((EveryType)e).CharValue = (char)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("UnsignedInt", "UnsignedInt", false, false, false, typeof(uint), e => (object?)((EveryType)e).UnsignedInt, (e, v) => ((EveryType)e).UnsignedInt = (uint)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("UnsignedLong", "UnsignedLong", false, false, false, typeof(ulong), e => (object?)((EveryType)e).UnsignedLong, (e, v) => ((EveryType)e).UnsignedLong = (ulong)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("SignedByte", "SignedByte", false, false, false, typeof(sbyte), e => (object?)((EveryType)e).SignedByte, (e, v) => ((EveryType)e).SignedByte = (sbyte)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("UnsignedShort", "UnsignedShort", false, false, false, typeof(ushort), e => (object?)((EveryType)e).UnsignedShort, (e, v) => ((EveryType)e).UnsignedShort = (ushort)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("DateOnlyValue", "DateOnlyValue", false, false, false, typeof(global::System.DateOnly), e => (object?)((EveryType)e).DateOnlyValue, (e, v) => ((EveryType)e).DateOnlyValue = (global::System.DateOnly)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("TimeOnlyValue", "TimeOnlyValue", false, false, false, typeof(global::System.TimeOnly), e => (object?)((EveryType)e).TimeOnlyValue, (e, v) => ((EveryType)e).TimeOnlyValue = (global::System.TimeOnly)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Bytes", "Bytes", false, false, false, typeof(byte[]), e => (object?)((EveryType)e).Bytes, (e, v) => ((EveryType)e).Bytes = (byte[])v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Colour", "Colour", false, false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).Colour, (e, v) => ((EveryType)e).Colour = (global::Snapshots.EveryType.Colour)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("NullableColour", "NullableColour", false, false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).NullableColour, (e, v) => ((EveryType)e).NullableColour = (global::Snapshots.EveryType.Colour?)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("StoredAsString", "StoredAsString", false, false, false, typeof(global::Snapshots.EveryType.Colour), e => (object?)((EveryType)e).StoredAsString, (e, v) => ((EveryType)e).StoredAsString = (global::Snapshots.EveryType.Colour)v!, global::Extrode.Jaunty.Attributes.EnumStorage.String),
-            new EntityColumnInfo("StoredAsNumber", "StoredAsNumber", false, false, false, typeof(global::Snapshots.EveryType.Colour?), e => (object?)((EveryType)e).StoredAsNumber, (e, v) => ((EveryType)e).StoredAsNumber = (global::Snapshots.EveryType.Colour?)v!, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric),
-            new EntityColumnInfo("Money", "Money", false, false, false, typeof(global::Snapshots.EveryType.Money), e => (object?)((EveryType)e).Money, (e, v) => ((EveryType)e).Money = (global::Snapshots.EveryType.Money)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("Anything", "Anything", false, false, false, typeof(object), e => (object?)((EveryType)e).Anything, (e, v) => ((EveryType)e).Anything = (object)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-        };
+            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        }
+
+        public static string TableName => __jauntyNames.Current.Names.TableName;
+        public static string? SchemaName => __jauntyNames.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __jauntyNames.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __jauntyNames.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __jauntyNames.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __jauntyNames.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __jauntyNames.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __jauntyNames.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;

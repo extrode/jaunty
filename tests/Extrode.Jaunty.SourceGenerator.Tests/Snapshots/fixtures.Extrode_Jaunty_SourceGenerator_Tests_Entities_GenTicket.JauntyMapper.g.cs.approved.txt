@@ -198,24 +198,27 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
         public static void BindInsert(IDbCommand command, GenTicket entity)
         {
             var p = command.Parameters;
-            AddEnumParam(command, p, "@state_string", entity.StateString, global::Extrode.Jaunty.Attributes.EnumStorage.String);
-            AddEnumParam(command, p, "@state_numeric", entity.StateNumeric, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric);
-            AddEnumParam(command, p, "@state_default", entity.StateDefault, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
-            AddEnumParam(command, p, "@state_nullable", entity.StateNullable, global::Extrode.Jaunty.Attributes.EnumStorage.String);
+            var n = __jauntyNames.Current.Names;
+            AddEnumParam(command, p, n.Parameter(1), entity.StateString, global::Extrode.Jaunty.Attributes.EnumStorage.String);
+            AddEnumParam(command, p, n.Parameter(2), entity.StateNumeric, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric);
+            AddEnumParam(command, p, n.Parameter(3), entity.StateDefault, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
+            AddEnumParam(command, p, n.Parameter(4), entity.StateNullable, global::Extrode.Jaunty.Attributes.EnumStorage.String);
         }
         public static void BindUpdate(IDbCommand command, GenTicket entity)
         {
             var p = command.Parameters;
-            AddEnumParam(command, p, "@state_string", entity.StateString, global::Extrode.Jaunty.Attributes.EnumStorage.String);
-            AddEnumParam(command, p, "@state_numeric", entity.StateNumeric, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric);
-            AddEnumParam(command, p, "@state_default", entity.StateDefault, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
-            AddEnumParam(command, p, "@state_nullable", entity.StateNullable, global::Extrode.Jaunty.Attributes.EnumStorage.String);
-            AddParam(command, p, "@ticket_id", entity.TicketId);
+            var n = __jauntyNames.Current.Names;
+            AddEnumParam(command, p, n.Parameter(1), entity.StateString, global::Extrode.Jaunty.Attributes.EnumStorage.String);
+            AddEnumParam(command, p, n.Parameter(2), entity.StateNumeric, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric);
+            AddEnumParam(command, p, n.Parameter(3), entity.StateDefault, (global::Extrode.Jaunty.Attributes.EnumStorage?)null);
+            AddEnumParam(command, p, n.Parameter(4), entity.StateNullable, global::Extrode.Jaunty.Attributes.EnumStorage.String);
+            AddParam(command, p, n.Parameter(0), entity.TicketId);
         }
         public static void BindDelete(IDbCommand command, GenTicket entity)
         {
             var p = command.Parameters;
-            AddParam(command, p, "@ticket_id", entity.TicketId);
+            var n = __jauntyNames.Current.Names;
+            AddParam(command, p, n.Parameter(0), entity.TicketId);
         }
         private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
         {
@@ -245,22 +248,23 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 
             public static CacheEntry Resolve(IDataReader reader)
             {
+                var names = __jauntyNames.Current.Names;
                 var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader))
+                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
                     return last;
 
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))
+                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
                 {
                     SetLast(cached);
                     return cached;
                 }
 
                 var ords = new int[5];
-                ords[0] = reader.GetOrdinal("ticket_id");
-                ords[1] = reader.GetOrdinal("state_string");
-                ords[2] = reader.GetOrdinal("state_numeric");
-                ords[3] = reader.GetOrdinal("state_default");
-                ords[4] = reader.GetOrdinal("state_nullable");
+                ords[0] = reader.GetOrdinal(names.Column(0));
+                ords[1] = reader.GetOrdinal(names.Column(1));
+                ords[2] = reader.GetOrdinal(names.Column(2));
+                ords[3] = reader.GetOrdinal(names.Column(3));
+                ords[4] = reader.GetOrdinal(names.Column(4));
                 var entry = new CacheEntry(reader, ords);
 #if NET8_0_OR_GREATER
                 _cache.AddOrUpdate(reader, entry);
@@ -298,7 +302,7 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 
                 public int[] Ordinals { get; }
 
-                public bool Matches(IDataReader reader)
+                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
                 {
                     if (!ReferenceEquals(reader, _reader))
                         return false;
@@ -309,31 +313,31 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
                     var ord0 = Ordinals[0];
                     if ((uint)ord0 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord0), "ticket_id", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord1 = Ordinals[1];
                     if ((uint)ord1 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord1), "state_string", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord2 = Ordinals[2];
                     if ((uint)ord2 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord2), "state_numeric", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord2), names.Column(2), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord3 = Ordinals[3];
                     if ((uint)ord3 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord3), "state_default", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord3), names.Column(3), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     var ord4 = Ordinals[4];
                     if ((uint)ord4 >= (uint)reader.FieldCount)
                         return false;
-                    if (!string.Equals(reader.GetName(ord4), "state_nullable", global::System.StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(reader.GetName(ord4), names.Column(4), global::System.StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     return true;
@@ -341,52 +345,70 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
             }
         }
 
-        public static string TableName { get; } = "gen_tickets";
-        public static string? SchemaName { get; } = null;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            = new string[] {
-            "ticket_id",
-        };
+        private static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> __jauntyNames = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
+            typeof(GenTicket),
+            "gen_tickets",
+            null,
+            new string[] { "TicketId", "StateString", "StateNumeric", "StateDefault", "StateNullable" },
+            new string?[] { "ticket_id", "state_string", "state_numeric", "state_default", "state_nullable" },
+            n => new __JauntyNamed(n));
 
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("state_string", "StateString", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateString, (e, v) => ((GenTicket)e).StateString = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            new ColumnInfo("state_numeric", "StateNumeric", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateNumeric, (e, v) => ((GenTicket)e).StateNumeric = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            new ColumnInfo("state_default", "StateDefault", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateDefault, (e, v) => ((GenTicket)e).StateDefault = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            new ColumnInfo("state_nullable", "StateNullable", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?), e => (object?)((GenTicket)e).StateNullable, (e, v) => ((GenTicket)e).StateNullable = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("state_string", "StateString", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateString, (e, v) => ((GenTicket)e).StateString = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            new ColumnInfo("state_numeric", "StateNumeric", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateNumeric, (e, v) => ((GenTicket)e).StateNumeric = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            new ColumnInfo("state_default", "StateDefault", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateDefault, (e, v) => ((GenTicket)e).StateDefault = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            new ColumnInfo("state_nullable", "StateNullable", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?), e => (object?)((GenTicket)e).StateNullable, (e, v) => ((GenTicket)e).StateNullable = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?)v!),
-        };
-
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            = new ColumnInfo[] {
-            new ColumnInfo("ticket_id", "TicketId", true, true, typeof(int), e => (object?)((GenTicket)e).TicketId, (e, v) => ((GenTicket)e).TicketId = (int)v!),
-        };
-
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase)
+        private sealed class __JauntyNamed
+        {
+            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
             {
-            ["ticket_id"] = new ColumnInfo("ticket_id", "TicketId", true, true, typeof(int), e => (object?)((GenTicket)e).TicketId, (e, v) => ((GenTicket)e).TicketId = (int)v!),
-            ["state_string"] = new ColumnInfo("state_string", "StateString", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateString, (e, v) => ((GenTicket)e).StateString = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            ["state_numeric"] = new ColumnInfo("state_numeric", "StateNumeric", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateNumeric, (e, v) => ((GenTicket)e).StateNumeric = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            ["state_default"] = new ColumnInfo("state_default", "StateDefault", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateDefault, (e, v) => ((GenTicket)e).StateDefault = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
-            ["state_nullable"] = new ColumnInfo("state_nullable", "StateNullable", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?), e => (object?)((GenTicket)e).StateNullable, (e, v) => ((GenTicket)e).StateNullable = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?)v!),
-        };
+                Names = n;
+                PrimaryKeyColumnNames = new string[] {
+                    n.Column(0),
+                };
+                InsertColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "StateString", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateString, (e, v) => ((GenTicket)e).StateString = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
+                    new ColumnInfo(n.Column(2), "StateNumeric", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateNumeric, (e, v) => ((GenTicket)e).StateNumeric = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
+                    new ColumnInfo(n.Column(3), "StateDefault", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateDefault, (e, v) => ((GenTicket)e).StateDefault = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
+                    new ColumnInfo(n.Column(4), "StateNullable", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?), e => (object?)((GenTicket)e).StateNullable, (e, v) => ((GenTicket)e).StateNullable = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?)v!),
+                };
+                UpdateColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(1), "StateString", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateString, (e, v) => ((GenTicket)e).StateString = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
+                    new ColumnInfo(n.Column(2), "StateNumeric", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateNumeric, (e, v) => ((GenTicket)e).StateNumeric = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
+                    new ColumnInfo(n.Column(3), "StateDefault", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateDefault, (e, v) => ((GenTicket)e).StateDefault = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!),
+                    new ColumnInfo(n.Column(4), "StateNullable", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?), e => (object?)((GenTicket)e).StateNullable, (e, v) => ((GenTicket)e).StateNullable = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?)v!),
+                };
+                DeleteColumns = new ColumnInfo[] {
+                    new ColumnInfo(n.Column(0), "TicketId", true, true, typeof(int), e => (object?)((GenTicket)e).TicketId, (e, v) => ((GenTicket)e).TicketId = (int)v!),
+                };
+                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "TicketId", true, true, typeof(int), e => (object?)((GenTicket)e).TicketId, (e, v) => ((GenTicket)e).TicketId = (int)v!));
+                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "StateString", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateString, (e, v) => ((GenTicket)e).StateString = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!));
+                if (!parameterMap.ContainsKey(n.Column(2))) parameterMap.Add(n.Column(2), new ColumnInfo(n.Column(2), "StateNumeric", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateNumeric, (e, v) => ((GenTicket)e).StateNumeric = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!));
+                if (!parameterMap.ContainsKey(n.Column(3))) parameterMap.Add(n.Column(3), new ColumnInfo(n.Column(3), "StateDefault", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateDefault, (e, v) => ((GenTicket)e).StateDefault = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!));
+                if (!parameterMap.ContainsKey(n.Column(4))) parameterMap.Add(n.Column(4), new ColumnInfo(n.Column(4), "StateNullable", false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?), e => (object?)((GenTicket)e).StateNullable, (e, v) => ((GenTicket)e).StateNullable = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?)v!));
+                ParameterMap = parameterMap;
+                EntityColumns = new EntityColumnInfo[] {
+                    new EntityColumnInfo(n.Column(0), "TicketId", true, true, false, typeof(int), e => (object?)((GenTicket)e).TicketId, (e, v) => ((GenTicket)e).TicketId = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(1), "StateString", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateString, (e, v) => ((GenTicket)e).StateString = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!, global::Extrode.Jaunty.Attributes.EnumStorage.String),
+                    new EntityColumnInfo(n.Column(2), "StateNumeric", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateNumeric, (e, v) => ((GenTicket)e).StateNumeric = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric),
+                    new EntityColumnInfo(n.Column(3), "StateDefault", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateDefault, (e, v) => ((GenTicket)e).StateDefault = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    new EntityColumnInfo(n.Column(4), "StateNullable", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?), e => (object?)((GenTicket)e).StateNullable, (e, v) => ((GenTicket)e).StateNullable = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?)v!, global::Extrode.Jaunty.Attributes.EnumStorage.String),
+                };
+            }
 
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
-            = new EntityColumnInfo[] {
-            new EntityColumnInfo("ticket_id", "TicketId", true, true, false, typeof(int), e => (object?)((GenTicket)e).TicketId, (e, v) => ((GenTicket)e).TicketId = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("state_string", "StateString", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateString, (e, v) => ((GenTicket)e).StateString = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!, global::Extrode.Jaunty.Attributes.EnumStorage.String),
-            new EntityColumnInfo("state_numeric", "StateNumeric", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateNumeric, (e, v) => ((GenTicket)e).StateNumeric = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!, global::Extrode.Jaunty.Attributes.EnumStorage.Numeric),
-            new EntityColumnInfo("state_default", "StateDefault", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState), e => (object?)((GenTicket)e).StateDefault, (e, v) => ((GenTicket)e).StateDefault = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-            new EntityColumnInfo("state_nullable", "StateNullable", false, false, false, typeof(global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?), e => (object?)((GenTicket)e).StateNullable, (e, v) => ((GenTicket)e).StateNullable = (global::Extrode.Jaunty.SourceGenerator.Tests.Entities.GenTicketState?)v!, global::Extrode.Jaunty.Attributes.EnumStorage.String),
-        };
+            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+        }
+
+        public static string TableName => __jauntyNames.Current.Names.TableName;
+        public static string? SchemaName => __jauntyNames.Current.Names.SchemaName;
+        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __jauntyNames.Current.PrimaryKeyColumnNames;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __jauntyNames.Current.InsertColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __jauntyNames.Current.UpdateColumns;
+        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __jauntyNames.Current.DeleteColumns;
+        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __jauntyNames.Current.ParameterMap;
+        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __jauntyNames.Current.EntityColumns;
 
         string IEntityMetadataSource.TableName => TableName;
         string? IEntityMetadataSource.SchemaName => SchemaName;
