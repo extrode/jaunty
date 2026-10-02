@@ -620,8 +620,8 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
     IPagedWhereClause<T> IWhereClause<T>.Skip(int count) { _skip = count; return this; }
     IOrderByClause<T> IOrderByClause<T>.Take(int count) { _take = count; return this; }
     IOrderByClause<T> IOrderByClause<T>.Skip(int count) { _skip = count; return this; }
-    IDistinctClause<T> IDistinctClause<T>.Take(int count) { _take = count; return this; }
-    IDistinctClause<T> IDistinctClause<T>.Skip(int count) { _skip = count; return this; }
+    IPagedDistinctClause<T> IDistinctClause<T>.Take(int count) { _take = count; return this; }
+    IPagedDistinctClause<T> IDistinctClause<T>.Skip(int count) { _skip = count; return this; }
 
     #endregion
 
@@ -744,9 +744,10 @@ internal sealed partial class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>,
         if (_take.HasValue || _skip.HasValue)
         {
             throw new InvalidOperationException(
-                $"Take/Skip are not carried into {statement}, so it would affect every matching row " +
-                "rather than the paged subset. Remove the Take/Skip, or select the rows first and " +
-                $"{(statement == "DELETE" ? "delete" : "update")} them by key.");
+                $"Take/Skip are not carried into {statement}: SQL has no portable {statement} ... LIMIT, " +
+                "so it would affect every matching row rather than the paged subset. Select the keys of " +
+                $"the rows you want, then {(statement == "DELETE" ? "delete" : "update")} them by key in one " +
+                "transaction (see 'Writes after Take or Skip' in docs/01-api-reference/fluent-api.md).");
         }
     }
 
