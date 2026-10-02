@@ -105,6 +105,17 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Extrode.Jaunty.FlatFiles.DuckDB.Tests</_Parameter1>
     </AssemblyAttribute>
+    <!-- These three set mapping settings mid-suite through JauntyConfig.Reconfigure, which is
+         internal now that the public setters are gone. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Extrode.Jaunty.FlatFiles.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Extrode.Jaunty.SourceGenerator.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Extrode.Jaunty.Scaffolding.Tests</_Parameter1>
+    </AssemblyAttribute>
 	</ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
