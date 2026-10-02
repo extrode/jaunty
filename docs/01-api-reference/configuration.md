@@ -44,8 +44,8 @@ verbatim on PostgreSQL and SQLite as well as SQL Server, giving `dbo.products` a
 unqualified. Returning `string.Empty` emits no schema at all, which is what Jaunty does by
 default — see [`schemas.md`](schemas.md).
 
-It is consulted on the reflection mapping path only. Source-generated entities read the `[Table]`
-attribute at compile time and ignore it.
+It applies to reflection-mapped and source-generated entities alike. A non-empty `[Table]`
+schema wins over it; see the [name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order).
 
 ### TableNameResolver
 
@@ -183,7 +183,9 @@ resolver delegates on `JauntyConfig`:
 | `TableNameResolver` | `Func<Type, string>?` | the table name |
 | `ColumnNameResolver` | `Func<string, string>?` | each member name |
 
-All three are nullable and default to `null`, which means the .NET name is used unchanged.
+All three are nullable and default to `null`, which means the .NET name is used unchanged. They
+apply to reflection-mapped and source-generated entities alike, and only to names that no
+attribute fixes: see the [name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order).
 
 Nothing stops you writing the conversions; there is deliberately no inflector in the box, because
 pluralisation is language- and schema-specific and a wrong guess is worse than no guess.
@@ -340,11 +342,16 @@ public static CommandOptions With(IDbTransaction transaction, int timeoutSeconds
 
 ## Configuration Priority
 
-Jaunty uses the following priority order for determining table/column names:
+Jaunty resolves every table, schema and column name in one order, whether the entity is
+reflection-mapped or source-generated:
 
-1. **[Table] and [Column] attributes** - Highest priority
-2. **JauntyConfig resolvers** - Medium priority
-3. **Property/type names** - Default fallback
+1. **[Table] and [Column] attributes**, when the name they give is non-empty. `[Column("")]`
+   names nothing and falls through.
+2. **JauntyConfig resolvers**, when set and returning non-null. A resolver is not called for a name
+   an attribute already fixes.
+3. **Property/type names** (no schema), as the default.
+
+The [name resolution order](../02-architecture/metadata-system-spec.md#name-resolution-order) diagrams each case.
 
 **Example:**
 ```csharp
@@ -430,6 +437,6 @@ public void Cleanup()
 - **Thread Safety**: The configuration properties are static and shared across all threads
 - **Performance**: Once configured, the resolvers are cached and have minimal performance impact
 - **Fallback Behavior**: When resolvers return null, Jaunty falls back to default behavior
-- **Attribute Override**: `[Table]`, `[Column]`, and `[Ignore]` attributes take precedence over configuration
+- **Attribute Override**: a non-empty `[Table]` or `[Column]` name, and `[Ignore]`, take precedence over configuration, on both mapping paths
 - **Reset Capability**: Use `JauntyConfig.Reset()` to clear all configuration and return to defaults
 - **IMapped Behavior**: `IMapped<T>.ReadEntity` is strict/full-shape mapping; for `QueryPartial*` projections, prefer `CommandOptions<T>.WithMapper(...)` if your query may omit columns

@@ -180,11 +180,13 @@ JauntyConfig.ColumnNameResolver = ToSnakeCase;   // a helper you write; Extrode.
 var product = connection.Query<Product>(sql);
 // MetadataCache<Product> is now initialized
 
-// Changing config after first use has NO EFFECT on cached types
-JauntyConfig.ColumnNameResolver = null;  // Ignored for Product
+// Changing config later is picked up, at the cost of rebuilding the cache
+JauntyConfig.ColumnNameResolver = null;  // bumps the configuration generation
 ```
 
-**Why**: Static generic caching is faster than per-call resolution.
+**Why**: Static generic caching is faster than per-call resolution. Every `JauntyConfig` setter
+bumps a configuration generation, and caches built under an older one are rebuilt on next use, so
+a late change is correct but discards compiled work.
 
 ## See Also
 
