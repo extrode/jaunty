@@ -31,7 +31,7 @@ public sealed class ComputedColumnBindingTests : IDisposable
         using var cmd = _connection.CreateCommand();
         var entity = new GenComputedEntity { EntityId = 1, Label = "a", ComputedValue = "should-not-bind" };
 
-        GenComputedEntity.BindInsert(cmd, entity);
+        GenComputedEntity.Jaunty.BindInsert(cmd, entity);
 
         var paramNames = cmd.Parameters.Cast<SqliteParameter>().Select(p => p.ParameterName).ToList();
         Assert.Contains("@label", paramNames);
@@ -44,7 +44,7 @@ public sealed class ComputedColumnBindingTests : IDisposable
         using var cmd = _connection.CreateCommand();
         var entity = new GenComputedEntity { EntityId = 1, Label = "a", ComputedValue = "should-not-bind" };
 
-        GenComputedEntity.BindUpdate(cmd, entity);
+        GenComputedEntity.Jaunty.BindUpdate(cmd, entity);
 
         var paramNames = cmd.Parameters.Cast<SqliteParameter>().Select(p => p.ParameterName).ToList();
         Assert.Contains("@label", paramNames);

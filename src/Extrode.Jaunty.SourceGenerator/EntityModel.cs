@@ -46,7 +46,9 @@ internal sealed record EntityModel(
     EquatableArray<ContainingTypeInfo> ContainingTypes = default,
     string? UnsupportedNestingReason = null,
     EquatableArray<DroppedPropertyInfo> DroppedProperties = default,
-    bool TableNameIsExplicit = false);
+    bool TableNameIsExplicit = false,
+    bool HidesInheritedJaunty = false,
+    bool HidesInheritedReadEntity = false);
 
 /// <summary>
 /// A property the generated mapper leaves out but the reflection mapper maps, with the reason.

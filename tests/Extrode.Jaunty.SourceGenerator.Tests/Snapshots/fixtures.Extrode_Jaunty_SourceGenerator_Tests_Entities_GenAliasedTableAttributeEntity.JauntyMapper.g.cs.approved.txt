@@ -11,302 +11,303 @@ namespace Extrode.Jaunty.SourceGenerator.Tests.Entities
 {
     public partial class GenAliasedTableAttributeEntity : IMapped<GenAliasedTableAttributeEntity>, IEntityMetadataSource, IGeneratedAccessors<GenAliasedTableAttributeEntity>
     {
-        public readonly struct ColumnInfo
-        {
-            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)
-            {
-                ColumnName = columnName;
-                PropertyName = propertyName;
-                IsPrimaryKey = isPrimaryKey;
-                IsIdentity = isIdentity;
-                PropertyType = propertyType;
-                Getter = getter;
-                Setter = setter;
-            }
-            public string ColumnName { get; }
-            public string PropertyName { get; }
-            public bool IsPrimaryKey { get; }
-            public bool IsIdentity { get; }
-            public global::System.Type PropertyType { get; }
-            public global::System.Func<object, object?> Getter { get; }
-            public global::System.Action<object, object?> Setter { get; }
-        }
-
         #if NET8_0_OR_GREATER
-        public static GenAliasedTableAttributeEntity ReadEntity(IDataReader reader)
+        public static GenAliasedTableAttributeEntity ReadEntity(IDataReader reader) => Jaunty.ReadEntity(reader);
         #else
-        public GenAliasedTableAttributeEntity ReadEntity(IDataReader reader)
+        public GenAliasedTableAttributeEntity ReadEntity(IDataReader reader) => Jaunty.ReadEntity(reader);
         #endif
+
+        public static class Jaunty
         {
-            var entry = OrdinalMap.Resolve(reader);
-            var ord = entry.Ordinals;
-            var entity = new GenAliasedTableAttributeEntity();
-            bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
-            bool isDbReader = reader is DbDataReader;
-            try
+            public readonly struct ColumnInfo
             {
-                if (isDbReader)
+                public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, global::System.Type propertyType, global::System.Func<object, object?> getter, global::System.Action<object, object?> setter)
                 {
-                    var dbReader = (DbDataReader)reader;
-                    entity.EntityId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(dbReader.GetValue(ord[0])) : dbReader.GetInt32(ord[0]));
-                    if (!dbReader.IsDBNull(ord[1]))
-                        entity.Label = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(dbReader.GetValue(ord[1])) : dbReader.GetString(ord[1]));
+                    ColumnName = columnName;
+                    PropertyName = propertyName;
+                    IsPrimaryKey = isPrimaryKey;
+                    IsIdentity = isIdentity;
+                    PropertyType = propertyType;
+                    Getter = getter;
+                    Setter = setter;
                 }
-                else
+                public string ColumnName { get; }
+                public string PropertyName { get; }
+                public bool IsPrimaryKey { get; }
+                public bool IsIdentity { get; }
+                public global::System.Type PropertyType { get; }
+                public global::System.Func<object, object?> Getter { get; }
+                public global::System.Action<object, object?> Setter { get; }
+            }
+
+            public static GenAliasedTableAttributeEntity ReadEntity(IDataReader reader)
+            {
+                var entry = OrdinalMap.Resolve(reader);
+                var ord = entry.Ordinals;
+                var entity = new GenAliasedTableAttributeEntity();
+                bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
+                bool isDbReader = reader is DbDataReader;
+                try
                 {
-                    entity.EntityId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(reader.GetValue(ord[0])) : reader.GetInt32(ord[0]));
-                    if (!reader.IsDBNull(ord[1]))
-                        entity.Label = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(reader.GetValue(ord[1])) : reader.GetString(ord[1]));
+                    if (isDbReader)
+                    {
+                        var dbReader = (DbDataReader)reader;
+                        entity.EntityId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(dbReader.GetValue(ord[0])) : dbReader.GetInt32(ord[0]));
+                        if (!dbReader.IsDBNull(ord[1]))
+                            entity.Label = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(dbReader.GetValue(ord[1])) : dbReader.GetString(ord[1]));
+                    }
+                    else
+                    {
+                        entity.EntityId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(reader.GetValue(ord[0])) : reader.GetInt32(ord[0]));
+                        if (!reader.IsDBNull(ord[1]))
+                            entity.Label = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(reader.GetValue(ord[1])) : reader.GetString(ord[1]));
+                    }
                 }
+                catch (Exception ex)
+                {
+                    ThrowIfNonNullableColumnIsNull(reader, ord, ex);
+                    throw;
+                }
+                return entity;
             }
-            catch (Exception ex)
+            public static Func<IDataReader, GenAliasedTableAttributeEntity> CreateRowMapper(IDataReader reader)
             {
-                ThrowIfNonNullableColumnIsNull(reader, ord, ex);
-                throw;
-            }
-            return entity;
-        }
-        public static Func<IDataReader, GenAliasedTableAttributeEntity> CreateRowMapper(IDataReader reader)
-        {
-            var entry = OrdinalMap.Resolve(reader);
-            var ord = entry.Ordinals;
-            if (reader is DbDataReader)
-            {
+                var entry = OrdinalMap.Resolve(reader);
+                var ord = entry.Ordinals;
+                if (reader is DbDataReader)
+                {
+                    return r =>
+                    {
+                        var rr = (DbDataReader)r;
+                        var entity = new GenAliasedTableAttributeEntity();
+                        bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
+                        try
+                        {
+                            entity.EntityId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(rr.GetValue(ord[0])) : rr.GetInt32(ord[0]));
+                            if (!rr.IsDBNull(ord[1]))
+                                entity.Label = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(rr.GetValue(ord[1])) : rr.GetString(ord[1]));
+                        }
+                        catch (Exception ex)
+                        {
+                            ThrowIfNonNullableColumnIsNull(rr, ord, ex);
+                            throw;
+                        }
+                        return entity;
+                    };
+                }
                 return r =>
                 {
-                    var rr = (DbDataReader)r;
                     var entity = new GenAliasedTableAttributeEntity();
                     bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
                     try
                     {
-                        entity.EntityId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(rr.GetValue(ord[0])) : rr.GetInt32(ord[0]));
-                        if (!rr.IsDBNull(ord[1]))
-                            entity.Label = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(rr.GetValue(ord[1])) : rr.GetString(ord[1]));
+                        entity.EntityId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(r.GetValue(ord[0])) : r.GetInt32(ord[0]));
+                        if (!r.IsDBNull(ord[1]))
+                            entity.Label = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(r.GetValue(ord[1])) : r.GetString(ord[1]));
                     }
                     catch (Exception ex)
                     {
-                        ThrowIfNonNullableColumnIsNull(rr, ord, ex);
+                        ThrowIfNonNullableColumnIsNull(r, ord, ex);
                         throw;
                     }
                     return entity;
                 };
             }
-            return r =>
+
+            private static void ThrowIfNonNullableColumnIsNull(IDataReader reader, int[] ord, Exception inner)
             {
-                var entity = new GenAliasedTableAttributeEntity();
-                bool __jauntyHasHandlers = global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlers;
-                try
-                {
-                    entity.EntityId = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<int>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<int>(r.GetValue(ord[0])) : r.GetInt32(ord[0]));
-                    if (!r.IsDBNull(ord[1]))
-                        entity.Label = (__jauntyHasHandlers && global::Extrode.Jaunty.Core.GeneratedBindingSupport.HasHandlerFor<string>() ? global::Extrode.Jaunty.Core.GeneratedBindingSupport.FromDbValue<string>(r.GetValue(ord[1])) : r.GetString(ord[1]));
-                }
-                catch (Exception ex)
-                {
-                    ThrowIfNonNullableColumnIsNull(r, ord, ex);
-                    throw;
-                }
-                return entity;
-            };
-        }
-
-        private static void ThrowIfNonNullableColumnIsNull(IDataReader reader, int[] ord, Exception inner)
-        {
-            if (reader.IsDBNull(ord[0]))
-                throw new global::System.InvalidOperationException("Cannot assign NULL to non-nullable property 'EntityId'.", inner);
-        }
-
-        public static void BindInsert(IDbCommand command, GenAliasedTableAttributeEntity entity)
-        {
-            var p = command.Parameters;
-            var n = __JauntyNameHolder.Cache.Current.Names;
-            AddParam(command, p, n.Parameter(1), entity.Label);
-        }
-        public static void BindUpdate(IDbCommand command, GenAliasedTableAttributeEntity entity)
-        {
-            var p = command.Parameters;
-            var n = __JauntyNameHolder.Cache.Current.Names;
-            AddParam(command, p, n.Parameter(1), entity.Label);
-            AddParam(command, p, n.Parameter(0), entity.EntityId);
-        }
-        public static void BindDelete(IDbCommand command, GenAliasedTableAttributeEntity entity)
-        {
-            var p = command.Parameters;
-            var n = __JauntyNameHolder.Cache.Current.Names;
-            AddParam(command, p, n.Parameter(0), entity.EntityId);
-        }
-        private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
-        {
-            var p = cmd.CreateParameter();
-            p.ParameterName = name;
-            // AUD-R30: route through the same type-handler/enum-storage conversion the
-            // reflection binder applies, via the public bridge in Extrode.Jaunty core.
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? global::System.DBNull.Value;
-            pc.Add(p);
-        }
-
-        private static void AddEnumParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value, global::Extrode.Jaunty.Attributes.EnumStorage? storage)
-        {
-            var p = cmd.CreateParameter();
-            p.ParameterName = name;
-            p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? global::System.DBNull.Value;
-            pc.Add(p);
-        }
-        private static class OrdinalMap
-        {
-            private static readonly ConditionalWeakTable<IDataReader, CacheEntry> _cache = new();
-#if !NET8_0_OR_GREATER
-            private static readonly object _cacheWriteLock = new();
-#endif
-            [ThreadStatic]
-            private static WeakReference<CacheEntry>? _last;
-
-            public static CacheEntry Resolve(IDataReader reader)
-            {
-                var names = __JauntyNameHolder.Cache.Current.Names;
-                var lastRef = _last;
-                if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
-                    return last;
-
-                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
-                {
-                    SetLast(cached);
-                    return cached;
-                }
-
-                var ords = new int[2];
-                ords[0] = reader.GetOrdinal(names.Column(0));
-                ords[1] = reader.GetOrdinal(names.Column(1));
-                var entry = new CacheEntry(reader, ords);
-#if NET8_0_OR_GREATER
-                _cache.AddOrUpdate(reader, entry);
-#else
-                lock (_cacheWriteLock)
-                {
-                    _cache.Remove(reader);
-                    _cache.Add(reader, entry);
-                }
-#endif
-                SetLast(entry);
-                return entry;
+                if (reader.IsDBNull(ord[0]))
+                    throw new global::System.InvalidOperationException("Cannot assign NULL to non-nullable property 'EntityId'.", inner);
             }
 
-            private static void SetLast(CacheEntry entry)
+            public static void BindInsert(IDbCommand command, GenAliasedTableAttributeEntity entity)
             {
-                var lastRef = _last;
-                if (lastRef is null)
-                    _last = new WeakReference<CacheEntry>(entry);
-                else
-                    lastRef.SetTarget(entry);
+                var p = command.Parameters;
+                var n = NameHolder.Cache.Current.Names;
+                AddParam(command, p, n.Parameter(1), entity.Label);
+            }
+            public static void BindUpdate(IDbCommand command, GenAliasedTableAttributeEntity entity)
+            {
+                var p = command.Parameters;
+                var n = NameHolder.Cache.Current.Names;
+                AddParam(command, p, n.Parameter(1), entity.Label);
+                AddParam(command, p, n.Parameter(0), entity.EntityId);
+            }
+            public static void BindDelete(IDbCommand command, GenAliasedTableAttributeEntity entity)
+            {
+                var p = command.Parameters;
+                var n = NameHolder.Cache.Current.Names;
+                AddParam(command, p, n.Parameter(0), entity.EntityId);
+            }
+            private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)
+            {
+                var p = cmd.CreateParameter();
+                p.ParameterName = name;
+                // AUD-R30: route through the same type-handler/enum-storage conversion the
+                // reflection binder applies, via the public bridge in Extrode.Jaunty core.
+                p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbValue(value) ?? global::System.DBNull.Value;
+                pc.Add(p);
             }
 
-            public sealed class CacheEntry
+            private static void AddEnumParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value, global::Extrode.Jaunty.Attributes.EnumStorage? storage)
             {
-                private readonly IDataReader _reader;
-                private readonly int _fieldCount;
+                var p = cmd.CreateParameter();
+                p.ParameterName = name;
+                p.Value = global::Extrode.Jaunty.Core.GeneratedBindingSupport.ToDbEnumValue(value, storage) ?? global::System.DBNull.Value;
+                pc.Add(p);
+            }
+            private static class OrdinalMap
+            {
+                private static readonly ConditionalWeakTable<IDataReader, CacheEntry> _cache = new();
+    #if !NET8_0_OR_GREATER
+                private static readonly object _cacheWriteLock = new();
+    #endif
+                [ThreadStatic]
+                private static WeakReference<CacheEntry>? _last;
 
-                public CacheEntry(IDataReader reader, int[] ordinals)
+                public static CacheEntry Resolve(IDataReader reader)
                 {
-                    _reader = reader;
-                    _fieldCount = reader.FieldCount;
-                    Ordinals = ordinals;
+                    var names = NameHolder.Cache.Current.Names;
+                    var lastRef = _last;
+                    if (lastRef is not null && lastRef.TryGetTarget(out var last) && last.Matches(reader, names))
+                        return last;
+
+                    if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader, names))
+                    {
+                        SetLast(cached);
+                        return cached;
+                    }
+
+                    var ords = new int[2];
+                    ords[0] = reader.GetOrdinal(names.Column(0));
+                    ords[1] = reader.GetOrdinal(names.Column(1));
+                    var entry = new CacheEntry(reader, ords);
+    #if NET8_0_OR_GREATER
+                    _cache.AddOrUpdate(reader, entry);
+    #else
+                    lock (_cacheWriteLock)
+                    {
+                        _cache.Remove(reader);
+                        _cache.Add(reader, entry);
+                    }
+    #endif
+                    SetLast(entry);
+                    return entry;
                 }
 
-                public int[] Ordinals { get; }
-
-                public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
+                private static void SetLast(CacheEntry entry)
                 {
-                    if (!ReferenceEquals(reader, _reader))
-                        return false;
+                    var lastRef = _last;
+                    if (lastRef is null)
+                        _last = new WeakReference<CacheEntry>(entry);
+                    else
+                        lastRef.SetTarget(entry);
+                }
 
-                    if (reader.FieldCount != _fieldCount)
-                        return false;
+                public sealed class CacheEntry
+                {
+                    private readonly IDataReader _reader;
+                    private readonly int _fieldCount;
 
-                    var ord0 = Ordinals[0];
-                    if ((uint)ord0 >= (uint)reader.FieldCount)
-                        return false;
-                    if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
-                        return false;
+                    public CacheEntry(IDataReader reader, int[] ordinals)
+                    {
+                        _reader = reader;
+                        _fieldCount = reader.FieldCount;
+                        Ordinals = ordinals;
+                    }
 
-                    var ord1 = Ordinals[1];
-                    if ((uint)ord1 >= (uint)reader.FieldCount)
-                        return false;
-                    if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
-                        return false;
+                    public int[] Ordinals { get; }
 
-                    return true;
+                    public bool Matches(IDataReader reader, global::Extrode.Jaunty.Core.GeneratedNames names)
+                    {
+                        if (!ReferenceEquals(reader, _reader))
+                            return false;
+
+                        if (reader.FieldCount != _fieldCount)
+                            return false;
+
+                        var ord0 = Ordinals[0];
+                        if ((uint)ord0 >= (uint)reader.FieldCount)
+                            return false;
+                        if (!string.Equals(reader.GetName(ord0), names.Column(0), global::System.StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        var ord1 = Ordinals[1];
+                        if ((uint)ord1 >= (uint)reader.FieldCount)
+                            return false;
+                        if (!string.Equals(reader.GetName(ord1), names.Column(1), global::System.StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        return true;
+                    }
                 }
             }
-        }
 
-        private static class __JauntyNameHolder
-        {
-            internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<__JauntyNamed>(
-                typeof(GenAliasedTableAttributeEntity),
-                "gen_aliased_table_entities",
-                null,
-                new string[] { "EntityId", "Label" },
-                new string?[] { "entity_id", "label" },
-                n => new __JauntyNamed(n));
-        }
-
-        private sealed class __JauntyNamed
-        {
-            public __JauntyNamed(global::Extrode.Jaunty.Core.GeneratedNames n)
+            private static class NameHolder
             {
-                Names = n;
-                PrimaryKeyColumnNames = new string[] {
-                    n.Column(0),
-                };
-                InsertColumns = new ColumnInfo[] {
-                    new ColumnInfo(n.Column(1), "Label", false, false, typeof(string), e => (object?)((GenAliasedTableAttributeEntity)e).Label, (e, v) => ((GenAliasedTableAttributeEntity)e).Label = (string)v!),
-                };
-                UpdateColumns = new ColumnInfo[] {
-                    new ColumnInfo(n.Column(1), "Label", false, false, typeof(string), e => (object?)((GenAliasedTableAttributeEntity)e).Label, (e, v) => ((GenAliasedTableAttributeEntity)e).Label = (string)v!),
-                };
-                DeleteColumns = new ColumnInfo[] {
-                    new ColumnInfo(n.Column(0), "EntityId", true, true, typeof(int), e => (object?)((GenAliasedTableAttributeEntity)e).EntityId, (e, v) => ((GenAliasedTableAttributeEntity)e).EntityId = (int)v!),
-                };
-                var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
-                if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "EntityId", true, true, typeof(int), e => (object?)((GenAliasedTableAttributeEntity)e).EntityId, (e, v) => ((GenAliasedTableAttributeEntity)e).EntityId = (int)v!));
-                if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "Label", false, false, typeof(string), e => (object?)((GenAliasedTableAttributeEntity)e).Label, (e, v) => ((GenAliasedTableAttributeEntity)e).Label = (string)v!));
-                ParameterMap = parameterMap;
-                EntityColumns = new EntityColumnInfo[] {
-                    new EntityColumnInfo(n.Column(0), "EntityId", true, true, false, typeof(int), e => (object?)((GenAliasedTableAttributeEntity)e).EntityId, (e, v) => ((GenAliasedTableAttributeEntity)e).EntityId = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-                    new EntityColumnInfo(n.Column(1), "Label", false, false, false, typeof(string), e => (object?)((GenAliasedTableAttributeEntity)e).Label, (e, v) => ((GenAliasedTableAttributeEntity)e).Label = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
-                };
+                internal static readonly global::Extrode.Jaunty.Core.GeneratedNameCache<Named> Cache = new global::Extrode.Jaunty.Core.GeneratedNameCache<Named>(
+                    typeof(GenAliasedTableAttributeEntity),
+                    "gen_aliased_table_entities",
+                    null,
+                    new string[] { "EntityId", "Label" },
+                    new string?[] { "entity_id", "label" },
+                    n => new Named(n));
             }
 
-            public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
-            public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
-            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
-            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
-            public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
-            public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
-            public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+            private sealed class Named
+            {
+                public Named(global::Extrode.Jaunty.Core.GeneratedNames n)
+                {
+                    Names = n;
+                    PrimaryKeyColumnNames = new string[] {
+                        n.Column(0),
+                    };
+                    InsertColumns = new ColumnInfo[] {
+                        new ColumnInfo(n.Column(1), "Label", false, false, typeof(string), e => (object?)((GenAliasedTableAttributeEntity)e).Label, (e, v) => ((GenAliasedTableAttributeEntity)e).Label = (string)v!),
+                    };
+                    UpdateColumns = new ColumnInfo[] {
+                        new ColumnInfo(n.Column(1), "Label", false, false, typeof(string), e => (object?)((GenAliasedTableAttributeEntity)e).Label, (e, v) => ((GenAliasedTableAttributeEntity)e).Label = (string)v!),
+                    };
+                    DeleteColumns = new ColumnInfo[] {
+                        new ColumnInfo(n.Column(0), "EntityId", true, true, typeof(int), e => (object?)((GenAliasedTableAttributeEntity)e).EntityId, (e, v) => ((GenAliasedTableAttributeEntity)e).EntityId = (int)v!),
+                    };
+                    var parameterMap = new global::System.Collections.Generic.Dictionary<string, ColumnInfo>(global::System.StringComparer.OrdinalIgnoreCase);
+                    if (!parameterMap.ContainsKey(n.Column(0))) parameterMap.Add(n.Column(0), new ColumnInfo(n.Column(0), "EntityId", true, true, typeof(int), e => (object?)((GenAliasedTableAttributeEntity)e).EntityId, (e, v) => ((GenAliasedTableAttributeEntity)e).EntityId = (int)v!));
+                    if (!parameterMap.ContainsKey(n.Column(1))) parameterMap.Add(n.Column(1), new ColumnInfo(n.Column(1), "Label", false, false, typeof(string), e => (object?)((GenAliasedTableAttributeEntity)e).Label, (e, v) => ((GenAliasedTableAttributeEntity)e).Label = (string)v!));
+                    ParameterMap = parameterMap;
+                    EntityColumns = new EntityColumnInfo[] {
+                        new EntityColumnInfo(n.Column(0), "EntityId", true, true, false, typeof(int), e => (object?)((GenAliasedTableAttributeEntity)e).EntityId, (e, v) => ((GenAliasedTableAttributeEntity)e).EntityId = (int)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                        new EntityColumnInfo(n.Column(1), "Label", false, false, false, typeof(string), e => (object?)((GenAliasedTableAttributeEntity)e).Label, (e, v) => ((GenAliasedTableAttributeEntity)e).Label = (string)v!, (global::Extrode.Jaunty.Attributes.EnumStorage?)null),
+                    };
+                }
+
+                public global::Extrode.Jaunty.Core.GeneratedNames Names { get; }
+                public global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }
+                public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }
+                public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns { get; }
+                public global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns { get; }
+                public global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap { get; }
+                public global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }
+            }
+
+            public static string TableName => NameHolder.Cache.Current.Names.TableName;
+            public static string? SchemaName => NameHolder.Cache.Current.Names.SchemaName;
+            public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => NameHolder.Cache.Current.PrimaryKeyColumnNames;
+            public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => NameHolder.Cache.Current.InsertColumns;
+            public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => NameHolder.Cache.Current.UpdateColumns;
+            public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => NameHolder.Cache.Current.DeleteColumns;
+            public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => NameHolder.Cache.Current.ParameterMap;
+            public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => NameHolder.Cache.Current.EntityColumns;
         }
 
-        public static string TableName => __JauntyNameHolder.Cache.Current.Names.TableName;
-        public static string? SchemaName => __JauntyNameHolder.Cache.Current.Names.SchemaName;
-        public static global::System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames => __JauntyNameHolder.Cache.Current.PrimaryKeyColumnNames;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns => __JauntyNameHolder.Cache.Current.InsertColumns;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> UpdateColumns => __JauntyNameHolder.Cache.Current.UpdateColumns;
-        public static global::System.Collections.Generic.IReadOnlyList<ColumnInfo> DeleteColumns => __JauntyNameHolder.Cache.Current.DeleteColumns;
-        public static global::System.Collections.Generic.Dictionary<string, ColumnInfo> ParameterMap => __JauntyNameHolder.Cache.Current.ParameterMap;
-        public static global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns => __JauntyNameHolder.Cache.Current.EntityColumns;
+        string IEntityMetadataSource.TableName => Jaunty.TableName;
+        string? IEntityMetadataSource.SchemaName => Jaunty.SchemaName;
+        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => Jaunty.EntityColumns;
 
-        string IEntityMetadataSource.TableName => TableName;
-        string? IEntityMetadataSource.SchemaName => SchemaName;
-        global::System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;
-
-        #if NET8_0_OR_GREATER
-        Func<IDataReader, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.RowMapper => ReadEntity;
-        #else
-        Func<IDataReader, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.RowMapper => r => new GenAliasedTableAttributeEntity().ReadEntity(r);
-        #endif
-        Func<IDataReader, Func<IDataReader, GenAliasedTableAttributeEntity>> IGeneratedAccessors<GenAliasedTableAttributeEntity>.RowMapperFactory => CreateRowMapper;
-        Action<IDbCommand, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.InsertBinder => BindInsert;
-        Action<IDbCommand, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.UpdateBinder => BindUpdate;
-        Action<IDbCommand, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.DeleteBinder => BindDelete;
+        Func<IDataReader, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.RowMapper => Jaunty.ReadEntity;
+        Func<IDataReader, Func<IDataReader, GenAliasedTableAttributeEntity>> IGeneratedAccessors<GenAliasedTableAttributeEntity>.RowMapperFactory => Jaunty.CreateRowMapper;
+        Action<IDbCommand, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.InsertBinder => Jaunty.BindInsert;
+        Action<IDbCommand, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.UpdateBinder => Jaunty.BindUpdate;
+        Action<IDbCommand, GenAliasedTableAttributeEntity> IGeneratedAccessors<GenAliasedTableAttributeEntity>.DeleteBinder => Jaunty.BindDelete;
     }
 }

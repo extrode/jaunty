@@ -118,6 +118,43 @@ The limit is unavoidable: this sees static types at call sites. A parameters obj
 `object`-typed variable, or built by reflection, cannot be rooted from here, and `JAUNTYGEN003` says
 so at the call site rather than letting it fail after publish.
 
+## What the generator adds to an entity
+
+Everything the generator writes sits in one nested class, `Jaunty`, so it cannot clash with the
+entity's own members. An audit table with a `TableName` column is an ordinary entity:
+
+```csharp
+[Table("audit_log")]
+public partial class AuditEntry
+{
+    [Key] public int Id { get; set; }
+    public string TableName { get; set; } = "";   // your column
+}
+
+AuditEntry.Jaunty.TableName      // "audit_log", under the current naming resolvers
+auditEntry.TableName             // your property
+```
+
+`AuditEntry.Jaunty` holds `TableName`, `SchemaName`, `PrimaryKeyColumnNames`, `InsertColumns`,
+`UpdateColumns`, `DeleteColumns`, `ParameterMap`, `EntityColumns`, `ColumnInfo`, `ReadEntity`,
+`CreateRowMapper`, `BindInsert`, `BindUpdate` and `BindDelete`. Extrode.Jaunty itself reaches them
+through the explicit `IEntityMetadataSource` and `IGeneratedAccessors<T>` implementations, never by
+name.
+
+Two names stay on the entity: the `Jaunty` class itself, and `ReadEntity`, which `IMapped<T>`
+requires there and which forwards to `Jaunty.ReadEntity`. The generator reports `JAUNTYGEN004` and
+writes no mapper when the entity:
+
+- is itself named `Jaunty`, or declares any member named `Jaunty`
+- declares a `ReadEntity` member other than an overload with different parameters
+- maps a property, its own or inherited, named `Jaunty` or `ReadEntity`
+- declares its own `BindInsert`, `BindUpdate` or `BindDelete(IDbCommand, T)`, or
+  `CreateRowMapper(IDataReader)`. These no longer clash, but the generated mapper would silently
+  replace them, so the reflection mapper keeps using the entity's own method.
+
+Inside the entity's own code, a bare `Jaunty.X` now means the nested class. Write
+`Extrode.Jaunty.X` to reach the namespace.
+
 ## Diagnostics
 
 | id | severity | says |
@@ -125,7 +162,7 @@ so at the call site rather than letting it fail after publish.
 | `JAUNTYGEN001` | warning | two properties map to the same column; the generated binder binds one parameter name twice and the command fails at execution |
 | `JAUNTYGEN002` | warning | a hand-written mapper or binder is located by reflection, so trimming can remove its members |
 | `JAUNTYGEN003` | warning | a parameters object at this call site cannot be rooted for trimming |
-| `JAUNTYGEN004` | warning | no mapper was generated for the entity (not partial, abstract, generic, no usable constructor, or nested in such a type); it is mapped only by reflection: `Extrode.Jaunty.Extensions.Reflection` referenced (it enables itself) or `UseReflectionMapping()` called |
+| `JAUNTYGEN004` | warning | no mapper was generated for the entity (not partial, abstract, generic, no usable constructor, nested in such a type, or a [reserved name](#what-the-generator-adds-to-an-entity)); it is mapped only by reflection: `Extrode.Jaunty.Extensions.Reflection` referenced (it enables itself) or `UseReflectionMapping()` called |
 | `JAUNTYGEN005` | warning | the generated mapper drops a property the reflection mapper maps, so referencing the generator package silently changes behaviour |
 
 All five are warnings rather than errors, for two different reasons. `JAUNTYGEN002`, `JAUNTYGEN003`

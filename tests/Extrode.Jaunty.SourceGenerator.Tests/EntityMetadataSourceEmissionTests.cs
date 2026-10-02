@@ -18,7 +18,7 @@ public sealed class EntityMetadataSourceEmissionTests
     {
         IEntityMetadataSource source = new GenProduct();
 
-        Assert.Equal(GenProduct.TableName, source.TableName);
+        Assert.Equal(GenProduct.Jaunty.TableName, source.TableName);
         Assert.Null(source.SchemaName);
     }
 
@@ -27,8 +27,8 @@ public sealed class EntityMetadataSourceEmissionTests
     {
         IEntityMetadataSource source = new GenOrderLine();
 
-        Assert.Equal(GenOrderLine.TableName, source.TableName);
-        Assert.Equal(GenOrderLine.SchemaName, source.SchemaName);
+        Assert.Equal(GenOrderLine.Jaunty.TableName, source.TableName);
+        Assert.Equal(GenOrderLine.Jaunty.SchemaName, source.SchemaName);
         Assert.Equal("sales", source.SchemaName);
     }
 
@@ -37,7 +37,7 @@ public sealed class EntityMetadataSourceEmissionTests
     {
         IEntityMetadataSource source = new GenWidget();
 
-        Assert.Equal(GenWidget.TableName, source.TableName);
+        Assert.Equal(GenWidget.Jaunty.TableName, source.TableName);
         Assert.Equal("dbo", source.SchemaName);
     }
 
@@ -158,9 +158,9 @@ public sealed class EntityMetadataSourceEmissionTests
     {
         IEntityMetadataSource source = new GenProduct();
 
-        Assert.Equal(GenProduct.EntityColumns.Count, source.Columns.Count);
+        Assert.Equal(GenProduct.Jaunty.EntityColumns.Count, source.Columns.Count);
         Assert.Equal(
-            GenProduct.EntityColumns.Select(c => c.ColumnName).OrderBy(x => x),
+            GenProduct.Jaunty.EntityColumns.Select(c => c.ColumnName).OrderBy(x => x),
             source.Columns.Select(c => c.ColumnName).OrderBy(x => x));
     }
 }
