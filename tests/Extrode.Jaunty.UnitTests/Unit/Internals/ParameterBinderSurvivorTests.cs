@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Extrode.Jaunty.Tests.Unit.Internals;
 
+[Collection(ParameterBinderCacheCollection.Name)]
 public class ParameterBinderSurvivorTests
 {
     public sealed class TwoProps
