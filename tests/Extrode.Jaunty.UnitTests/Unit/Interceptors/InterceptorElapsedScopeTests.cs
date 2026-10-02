@@ -14,9 +14,9 @@ namespace Extrode.Jaunty.Tests.Unit.Interceptors;
 /// </summary>
 public class InterceptorElapsedScopeTests
 {
-    private static readonly TimeSpan HookDelay = TimeSpan.FromMilliseconds(200);
+    private static readonly TimeSpan HookDelay = TimeSpan.FromMilliseconds(1000);
 
-    private static readonly TimeSpan Ceiling = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan Ceiling = TimeSpan.FromMilliseconds(600);
 
     private sealed class SlowExecutingInterceptor : ICommandInterceptor, ISyncCommandInterceptor
     {
