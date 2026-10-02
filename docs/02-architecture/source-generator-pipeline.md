@@ -125,7 +125,7 @@ so at the call site rather than letting it fail after publish.
 | `JAUNTYGEN001` | warning | two properties map to the same column; the generated binder binds one parameter name twice and the command fails at execution |
 | `JAUNTYGEN002` | warning | a hand-written mapper or binder is located by reflection, so trimming can remove its members |
 | `JAUNTYGEN003` | warning | a parameters object at this call site cannot be rooted for trimming |
-| `JAUNTYGEN004` | warning | no mapper was generated for the entity (not partial, abstract, generic, no usable constructor, or nested in such a type); it is mapped only if `UseReflectionMapping()` is called |
+| `JAUNTYGEN004` | warning | no mapper was generated for the entity (not partial, abstract, generic, no usable constructor, or nested in such a type); it is mapped only by reflection: `Extrode.Jaunty.Extensions.Reflection` referenced (it enables itself) or `UseReflectionMapping()` called |
 | `JAUNTYGEN005` | warning | the generated mapper drops a property the reflection mapper maps, so referencing the generator package silently changes behaviour |
 
 All five are warnings rather than errors, for two different reasons. `JAUNTYGEN002`, `JAUNTYGEN003`
