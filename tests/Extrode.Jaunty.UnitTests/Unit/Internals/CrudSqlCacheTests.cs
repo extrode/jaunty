@@ -55,6 +55,19 @@ public class CrudSqlCacheTests : IDisposable
         public int Value { get; set; }
     }
 
+    [Table("partly_generated_items")]
+    public class PartlyGeneratedItem
+    {
+        [Key]
+        [Column("k1")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int K1 { get; set; }
+
+        [Key]
+        [Column("k2")]
+        public int K2 { get; set; }
+    }
+
     [Table("computed_items")]
     public class ComputedItem
     {
@@ -235,6 +248,34 @@ public class CrudSqlCacheTests : IDisposable
 
         Assert.True(sql.SupportsUpsert);
         Assert.Contains("ON CONFLICT", sql.UpsertSql);
+    }
+
+    [Fact]
+    public void GetSql_SQLite_GeneratedKey_UpsertNeedsOwnTransaction()
+        => Assert.True(CrudSqlCache.GetSql<IdentityItem>(_connection).UpsertNeedsOwnTransaction);
+
+    [Fact]
+    public void GetSql_SQLite_InsertedKey_UpsertDoesNotNeedOwnTransaction()
+        => Assert.False(CrudSqlCache.GetSql<SimpleItem>(_connection).UpsertNeedsOwnTransaction);
+
+    [Fact]
+    public void GetSql_SQLite_GeneratedKeyWithNothingToUpdate_UpsertDoesNotNeedOwnTransaction()
+    {
+        var sql = CrudSqlCache.GetSql<PartlyGeneratedItem>(_connection);
+
+        Assert.DoesNotContain("UPDATE", sql.UpsertSql);
+        Assert.False(sql.UpsertNeedsOwnTransaction);
+    }
+
+    [Fact]
+    public void GetSql_Postgres_GeneratedKey_UpsertDoesNotNeedOwnTransaction()
+    {
+        using var connection = new Npgsql.NpgsqlConnection();
+
+        var sql = CrudSqlCache.GetSql<IdentityItem>(connection);
+
+        Assert.StartsWith("UPDATE", sql.UpsertSql, StringComparison.Ordinal);
+        Assert.False(sql.UpsertNeedsOwnTransaction);
     }
 
     [Fact]

@@ -197,6 +197,237 @@ public class UpsertGeneratedKeyTests : IClassFixture<DialectFixture>
         }
     }
 
+    private static IDisposable RecordAutocommitOnRowUpdate(IDbConnection connection, List<bool> autocommit)
+    {
+        switch (connection)
+        {
+            case Microsoft.Data.Sqlite.SqliteConnection microsoft:
+                SQLitePCL.sqlite3 handle = microsoft.Handle!;
+                SQLitePCL.raw.sqlite3_update_hook(handle, (SQLitePCL.delegate_update)((_, _, _, _, _) => autocommit.Add(SQLitePCL.raw.sqlite3_get_autocommit(handle) != 0)), null);
+                return new Release(() => SQLitePCL.raw.sqlite3_update_hook(handle, (SQLitePCL.delegate_update?)null, null));
+            case System.Data.SQLite.SQLiteConnection system:
+                System.Data.SQLite.SQLiteUpdateEventHandler handler = (_, _) => autocommit.Add(system.AutoCommit);
+                system.Update += handler;
+                return new Release(() => system.Update -= handler);
+            default:
+                throw new NotSupportedException(connection.GetType().Name);
+        }
+    }
+
+    private sealed class Release(Action release) : IDisposable
+    {
+        public void Dispose() => release();
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void SQLite_RunsTheUpdateInsideItsOwnTransaction(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            long id = IdOf(connection, "second");
+            var autocommit = new List<bool>();
+
+            using (RecordAutocommitOnRowUpdate(connection, autocommit))
+                Assert.Equal(1, connection.Upsert(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "renamed" }));
+
+            Assert.Equal([false], autocommit);
+            Assert.Equal("renamed", Name(connection, id));
+            Assert.Equal(2, Count(connection));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task SQLite_UpsertAsync_RunsTheUpdateInsideItsOwnTransaction(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            long id = IdOf(connection, "second");
+            var autocommit = new List<bool>();
+
+            using (RecordAutocommitOnRowUpdate(connection, autocommit))
+                Assert.Equal(1, await connection.UpsertAsync(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "renamed" }, TestContext.Current.CancellationToken));
+
+            Assert.Equal([false], autocommit);
+            Assert.Equal("renamed", Name(connection, id));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
+    [MariaDB]
+    public async Task MariaDb_RunsTheUpdateInsideItsOwnTransaction(DialectInfo dialect)
+    {
+        string table = UpsertGeneratedKeyEntity.TableName;
+        string log = table + "_txlog";
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            Execute(connection, $"CREATE TEMPORARY TABLE {log} (v INT)");
+            Execute(connection, $"CREATE TRIGGER {table}_upd AFTER UPDATE ON {table} FOR EACH ROW INSERT INTO {log} VALUES (@@in_transaction)");
+            long id = IdOf(connection, "second");
+
+            Assert.Equal(1, connection.Upsert(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "renamed" }));
+            Assert.Equal(1, await connection.UpsertAsync(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "again" }, TestContext.Current.CancellationToken));
+
+            Assert.Equal(2, Scalar(connection, $"SELECT COUNT(*) FROM {log}"));
+            Assert.Equal(2, Scalar(connection, $"SELECT SUM(v) FROM {log}"));
+            Assert.Equal("again", Name(connection, id));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+            Execute(connection, $"DROP TEMPORARY TABLE IF EXISTS {log}");
+        }
+    }
+
+    [Theory]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ACallerTransaction_IsUsedInsteadOfItsOwn(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            long id = IdOf(connection, "second");
+
+            using (IDbTransaction transaction = connection.BeginTransaction())
+            {
+                Assert.Equal(1, connection.Upsert(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "renamed" }, new Extrode.Jaunty.Core.CommandOptions(transaction: transaction)));
+                transaction.Rollback();
+            }
+
+            Assert.Equal("second", Name(connection, id));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void AnOpenTransactionNotPassedIn_RunsInsideIt(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            long id = IdOf(connection, "second");
+
+            using (IDbTransaction transaction = connection.BeginTransaction())
+            {
+                Assert.Equal(1, connection.Upsert(new UpsertGeneratedKeyEntity { Id = (int)id, Name = "renamed" }));
+                transaction.Rollback();
+            }
+
+            Assert.Equal("second", Name(connection, id));
+            Assert.Equal(2, Count(connection));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
+    [MariaDB]
+    [MicrosoftSqlite]
+    public async Task AFailedInsert_LeavesNoTransactionOpen(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            Assert.ThrowsAny<System.Data.Common.DbException>(() => connection.Upsert(new UpsertGeneratedKeyEntity { Name = null! }));
+            await Assert.ThrowsAnyAsync<System.Data.Common.DbException>(() => connection.UpsertAsync(new UpsertGeneratedKeyEntity { Name = null! }, TestContext.Current.CancellationToken).AsTask());
+
+            using (IDbTransaction transaction = connection.BeginTransaction())
+                transaction.Rollback();
+
+            Assert.Equal(2, Count(connection));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void AFailedUpsertInsideAnOpenTransactionNotPassedIn_KeepsTheCallersWork(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            using (IDbTransaction transaction = connection.BeginTransaction())
+            {
+                using (IDbCommand insert = connection.CreateCommand())
+                {
+                    insert.Transaction = transaction;
+                    insert.CommandText = $"INSERT INTO {UpsertGeneratedKeyEntity.TableName} (name) VALUES ('callers')";
+                    insert.ExecuteNonQuery();
+                }
+
+                Assert.ThrowsAny<System.Data.Common.DbException>(() => connection.Upsert(new UpsertGeneratedKeyEntity { Name = null! }));
+
+                transaction.Commit();
+            }
+
+            Assert.Equal(3, Count(connection));
+            Assert.Equal(1, Scalar(connection, $"SELECT COUNT(*) FROM {UpsertGeneratedKeyEntity.TableName} WHERE name = 'callers'"));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
+    [Theory]
+    [MariaDB]
+    [SystemSqlite]
+    public async Task UpsertAsync_AFailedUpsertInsideAnOpenTransactionNotPassedIn_KeepsTheCallersWork(DialectInfo dialect)
+    {
+        using IDbConnection connection = Seeded(dialect);
+        try
+        {
+            using (IDbTransaction transaction = connection.BeginTransaction())
+            {
+                using (IDbCommand insert = connection.CreateCommand())
+                {
+                    insert.Transaction = transaction;
+                    insert.CommandText = $"INSERT INTO {UpsertGeneratedKeyEntity.TableName} (name) VALUES ('callers')";
+                    insert.ExecuteNonQuery();
+                }
+
+                await Assert.ThrowsAnyAsync<System.Data.Common.DbException>(() => connection.UpsertAsync(new UpsertGeneratedKeyEntity { Name = null! }, TestContext.Current.CancellationToken).AsTask());
+
+                transaction.Commit();
+            }
+
+            Assert.Equal(3, Count(connection));
+        }
+        finally
+        {
+            Execute(connection, Drop(dialect));
+        }
+    }
+
     [Theory]
     [Postgres]
     public void Postgres_RunsTheUpdateAndTheInsertInOneTransaction(DialectInfo dialect)

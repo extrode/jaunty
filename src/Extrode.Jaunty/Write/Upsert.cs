@@ -48,8 +48,16 @@ public static partial class Jaunty
     /// (including an unset <c>0</c>) inserts a new row whose key the database assigns. The new key
     /// is not written back to the entity; use <c>Insert</c> when you need it. A key that matches no
     /// row always inserts, so two calls with an unset key create two rows. On dialects without
-    /// MERGE this runs as an UPDATE followed by a guarded INSERT in one command. PostgreSQL runs
-    /// that command as one implicit transaction, so the pair is atomic without a caller transaction.
+    /// MERGE this runs as an UPDATE followed by a guarded INSERT in one command.
+    /// </para>
+    /// <para>
+    /// The pair is always atomic, so a concurrent DELETE of the row cannot slip between the two
+    /// statements and bring it back under a new key. SQL Server's MERGE is one statement, and
+    /// PostgreSQL runs the command as one implicit transaction. On MySQL/MariaDB, SQLite and DuckDB,
+    /// where each statement would commit on its own, Jaunty begins a transaction around the pair
+    /// when you pass none, and commits it before returning. Pass a transaction through
+    /// <see cref="CommandOptions"/> to make the upsert part of a larger unit of work; Jaunty then
+    /// uses yours and neither commits nor rolls it back.
     /// </para>
     /// </remarks>
     /// <example>
@@ -178,11 +186,15 @@ public static partial class Jaunty
     private static int UpsertCoreDirect<T>(IDbConnection connection, T entity, CachedCrudSql cached, CommandOptions options) where T : new()
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
+        IDbTransaction? ownTransaction = null;
 
         try
         {
             if (wasClosed)
                 connection.Open();
+
+            if (options.Transaction is null && cached.UpsertNeedsOwnTransaction)
+                ownTransaction = UpsertOwnTransaction.TryBegin(connection);
 
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.UpsertSql;
@@ -204,6 +216,10 @@ public static partial class Jaunty
                     ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
                     : options.Transaction;
             }
+            else if (ownTransaction is not null)
+            {
+                command.Transaction = ownTransaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -213,10 +229,19 @@ public static partial class Jaunty
 
             CommandObservation.Log(command.CommandText, entity);
 
-            return command.ExecuteNonQuery();
+            int affected = command.ExecuteNonQuery();
+            ownTransaction?.Commit();
+            return affected;
+        }
+        catch
+        {
+            UpsertOwnTransaction.CommitAfterFailure(ownTransaction);
+            throw;
         }
         finally
         {
+            ownTransaction?.Dispose();
+
             if (wasClosed && connection.State != ConnectionState.Closed)
                 connection.Close();
         }

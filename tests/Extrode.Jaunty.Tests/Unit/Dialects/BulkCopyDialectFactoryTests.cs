@@ -69,6 +69,7 @@ public class BulkCopyDialectFactoryTests
         Assert.Equal(inner.ParameterPrefix, wrapper.ParameterPrefix);
         Assert.Equal(inner.SupportsForeignKeyToggle, wrapper.SupportsForeignKeyToggle);
         Assert.Equal(inner.RequiresAutocommitForForeignKeyToggle, wrapper.RequiresAutocommitForForeignKeyToggle);
+        Assert.Equal(inner.UpsertBatchIsAtomic, wrapper.UpsertBatchIsAtomic);
         Assert.Equal(inner.SupportsUpsert, wrapper.SupportsUpsert);
         Assert.Equal(inner.SupportsMultiRowInsert, wrapper.SupportsMultiRowInsert);
         Assert.Equal(inner.MaxParametersPerStatement, wrapper.MaxParametersPerStatement);
@@ -132,6 +133,7 @@ public class BulkCopyDialectFactoryTests
         public IBulkCopyProvider? CreateBulkCopyProvider() => null;
         public bool SupportsForeignKeyToggle => _inner.SupportsForeignKeyToggle;
         public bool RequiresAutocommitForForeignKeyToggle => _inner.RequiresAutocommitForForeignKeyToggle;
+        public bool UpsertBatchIsAtomic => _inner.UpsertBatchIsAtomic;
         public bool SupportsUpsert => _inner.SupportsUpsert;
         public bool SupportsMultiRowInsert => _inner.SupportsMultiRowInsert;
         public int MaxParametersPerStatement => _inner.MaxParametersPerStatement;

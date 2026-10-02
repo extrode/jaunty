@@ -49,8 +49,16 @@ public static partial class Jaunty
     /// (including an unset <c>0</c>) inserts a new row whose key the database assigns. The new key
     /// is not written back to the entity; use <c>Insert</c> when you need it. A key that matches no
     /// row always inserts, so two calls with an unset key create two rows. On dialects without
-    /// MERGE this runs as an UPDATE followed by a guarded INSERT in one command. PostgreSQL runs
-    /// that command as one implicit transaction, so the pair is atomic without a caller transaction.
+    /// MERGE this runs as an UPDATE followed by a guarded INSERT in one command.
+    /// </para>
+    /// <para>
+    /// The pair is always atomic, so a concurrent DELETE of the row cannot slip between the two
+    /// statements and bring it back under a new key. SQL Server's MERGE is one statement, and
+    /// PostgreSQL runs the command as one implicit transaction. On MySQL/MariaDB, SQLite and DuckDB,
+    /// where each statement would commit on its own, Jaunty begins a transaction around the pair
+    /// when you pass none, and commits it before returning. Pass a transaction through
+    /// <see cref="CommandOptions"/> to make the upsert part of a larger unit of work; Jaunty then
+    /// uses yours and neither commits nor rolls it back.
     /// </para>
     /// </remarks>
     /// <example>
@@ -184,11 +192,15 @@ public static partial class Jaunty
     private static async ValueTask<int> UpsertCoreDirectAsync<T>(DbConnection connection, T entity, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
+        DbTransaction? ownTransaction = null;
 
         try
         {
             if (wasClosed)
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            if (options.Transaction is null && cached.UpsertNeedsOwnTransaction)
+                ownTransaction = await UpsertOwnTransaction.TryBeginAsync(connection, cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
             DbCommand command = connection.CreateCommand();
@@ -202,7 +214,7 @@ public static partial class Jaunty
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction) ?? ownTransaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -212,10 +224,27 @@ public static partial class Jaunty
 
             CommandObservation.Log(command.CommandText, entity);
 
-            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            int affected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            if (ownTransaction is not null)
+                await UpsertOwnTransaction.CommitAsync(ownTransaction, cancellationToken).ConfigureAwait(false);
+            return affected;
+        }
+        catch
+        {
+            await UpsertOwnTransaction.CommitAfterFailureAsync(ownTransaction).ConfigureAwait(false);
+            throw;
         }
         finally
         {
+            if (ownTransaction is not null)
+            {
+#if NET8_0_OR_GREATER
+                await ownTransaction.DisposeAsync().ConfigureAwait(false);
+#else
+                ownTransaction.Dispose();
+#endif
+            }
+
             if (wasClosed && connection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER

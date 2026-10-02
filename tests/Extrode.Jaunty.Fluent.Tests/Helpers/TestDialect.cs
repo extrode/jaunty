@@ -11,6 +11,7 @@ internal class TestDialect : ISqlDialect
 {
     public bool SupportsForeignKeyToggle => false;
     public bool RequiresAutocommitForForeignKeyToggle => false;
+    public bool UpsertBatchIsAtomic => true;
     public bool SupportsUpsert => true;
     public bool SupportsMultiRowInsert => true;
     public int MaxParametersPerStatement => 2100;

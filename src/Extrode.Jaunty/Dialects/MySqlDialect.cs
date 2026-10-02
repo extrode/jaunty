@@ -175,6 +175,7 @@ internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect, IFract
     public bool SupportsForeignKeyToggle => true;
 
     public bool RequiresAutocommitForForeignKeyToggle => false;
+    public bool UpsertBatchIsAtomic => false;
 
     public string GenerateCoalesce(params string[] expressions)
     {
