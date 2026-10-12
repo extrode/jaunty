@@ -80,13 +80,15 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     /// </summary>
     private void VisitCondition(Expression node)
     {
-        Expression operand = node is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unary
-            ? unary.Operand
-            : node;
+        // Every Convert, not just one: (bool)(object)flag reached VisitMember through VisitUnary and
+        // was emitted as a bare value - not a predicate on SQL Server.
+        Expression operand = node;
+        while (operand is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unary)
+            operand = unary.Operand;
 
         if (node.Type == typeof(bool) && operand is MemberExpression or ConstantExpression)
         {
-            (bool IsColumn, string? Sql, object? Value) info = AnalyzeExpression(node);
+            (bool IsColumn, string? Sql, object? Value) info = AnalyzeExpression(operand);
             if (info.IsColumn)
                 _sql.Append(info.Sql).Append(" = ").Append(_dialect.FormatBooleanLiteral(true));
             else
@@ -203,6 +205,7 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     protected override Expression VisitMember(MemberExpression node)
     {
         (bool IsColumn, string? Sql, object? Value) info = AnalyzeExpression(node);
+        // Stryker disable once all : unreachable from Translate: a member is visited only through VisitUnary's Convert arm, and VisitCondition unwraps every Convert above a member, while VisitBinary analyses its operands without visiting them
         if (info.IsColumn)
         {
             _sql.Append(info.Sql);

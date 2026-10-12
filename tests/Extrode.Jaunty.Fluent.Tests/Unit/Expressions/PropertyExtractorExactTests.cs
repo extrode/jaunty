@@ -18,6 +18,19 @@ public class PropertyExtractorExactTests
     }
 
     [Fact]
+    public void ExtractParameterMember_OfABareParameter_NamesTheExpressionAndTheParameter()
+    {
+        // The body is one of the selector's own parameters, so it has a position but no member:
+        // the no-member check has to reject it before the position is trusted.
+        Expression<Func<Product, Category, Category>> selector = (p, c) => c;
+
+        var ex = Assert.Throws<ArgumentException>(() => PropertyExtractor.ExtractParameterMember(selector));
+
+        Assert.StartsWith("Expression '(p, c) => c' does not refer to a property of one of its parameters.", ex.Message, StringComparison.Ordinal);
+        Assert.Equal("selector", ex.ParamName);
+    }
+
+    [Fact]
     public void ExtractPropertyName_OfANonProperty_NamesTheExpressionAndTheParameter()
     {
         Expression<Func<Product, int>> selector = p => 5;
