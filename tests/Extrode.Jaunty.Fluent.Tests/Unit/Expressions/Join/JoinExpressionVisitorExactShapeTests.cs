@@ -20,6 +20,21 @@ public class JoinExpressionVisitorExactShapeTests
         => Assert.Throws<NotSupportedException>(() => Translate(expr)).Message;
 
     [Fact]
+    public void ABoolColumnBoxedAndUnboxed_StillComparesToTrue()
+        => Assert.Equal("p.[discontinued] = 1", Translate((p, c) => (bool)(object)p.Discontinued).Sql);
+
+    [Fact]
+    public void ACapturedBoolBoxedAndUnboxed_StillFolds()
+    {
+        bool off = false;
+        Assert.Equal("1 = 0", Translate((p, c) => (bool)(object)off).Sql);
+    }
+
+    [Fact]
+    public void AColumnUnderTwoConverts_IsStillTheColumn()
+        => Assert.Equal("(p.[product_id] = c.[category_id])", Translate((p, c) => (double)(long)p.ProductId == c.CategoryId).Sql);
+
+    [Fact]
     public void ColumnEqualsNull_IsIsNull()
         => Assert.Equal("(p.[category_id] IS NULL)", Translate((p, c) => p.CategoryId == null).Sql);
 
