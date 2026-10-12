@@ -38,6 +38,17 @@ public class ExistsVisitorExactShapeTests
         => Assert.Equal("p.[discontinued] = 1", Sql((c, p) => p.Discontinued));
 
     [Fact]
+    public void ABoolColumnBoxedAndUnboxed_StillComparesToTrue()
+        => Assert.Equal("p.[discontinued] = 1", Sql((c, p) => (bool)(object)p.Discontinued));
+
+    [Fact]
+    public void ACapturedBoolBoxedAndUnboxed_StillFolds()
+    {
+        bool on = true;
+        Assert.Equal("1 = 1", Sql((c, p) => (bool)(object)on));
+    }
+
+    [Fact]
     public void ACapturedFalseBody_FoldsToFalse()
     {
         bool off = false;
