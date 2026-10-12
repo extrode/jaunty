@@ -2095,9 +2095,13 @@ public partial class JauntyGenerator : IIncrementalGenerator
             // declares its own Guid, DateTime, TimeSpan or DateTimeOffset produced CS0426 in a
             // .g.cs the consumer cannot edit. The `_` arm below already got this right by passing
             // the qualified typeName straight through.
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "global::System.Guid" => new("reader.GetValue", "global::System.Guid", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "global::System.DateTime" => new("reader.GetDateTime", "global::System.DateTime", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "global::System.TimeSpan" => new("reader.GetValue", "global::System.TimeSpan", false),
+            // Stryker disable once Boolean : NeedsNullCheck is read only after the IsNonNullableValueType early return in AppendPropertyRead, so this flag is never observed for a non-nullable value type
             "global::System.DateTimeOffset" => new("reader.GetValue", "global::System.DateTimeOffset", false),
 
             // Nullable value types - needs null check
