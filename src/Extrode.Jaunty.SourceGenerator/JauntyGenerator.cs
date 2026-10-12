@@ -929,6 +929,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             _ => null,
         };
 
+        // Stryker disable once Boolean : unreachable: both callers pass only members fetched by GetMembers("ReadEntity"/"BindInsert"/"BindUpdate"/"BindDelete"/"CreateRowMapper"), whose Name is always one of the arms above
         if (generated is null)
             return false;
 
