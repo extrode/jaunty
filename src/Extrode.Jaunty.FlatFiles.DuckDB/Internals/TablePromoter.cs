@@ -213,19 +213,20 @@ internal static class TablePromoter
                 // Stryker disable once Boolean : DuckDB.NET completes this call synchronously (TheDuckDbDriverCompletesItsAsyncCallsSynchronously pins that), so no continuation is scheduled and ConfigureAwait has nothing to change
                 await ownTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
-            // Stryker disable all : an async caller sees the exception only once the task faults, after
-            // the Dispose below would have rolled back anyway, so removing this catch is unobservable
-            // unless ROLLBACK itself fails, which no test can provoke. It stays so that a failing
-            // rollback cannot replace the promotion error, matching EnsurePromotedToTable.
+            // The explicit rollback is unobservable: an async caller sees the exception only once the
+            // task faults, after the Dispose below would have rolled back anyway, unless ROLLBACK
+            // itself fails, which no test can provoke. It stays so that a failing rollback cannot
+            // replace the promotion error, matching EnsurePromotedToTable. The rethrow is not
+            // suppressed: AFailedPromotion_PropagatesOnTheAsyncPathToo kills its removal.
             catch
             {
+                // Stryker disable once all : equivalent: the finally's Dispose rolls back an uncommitted transaction, and a null ownTransaction makes Rollback throw into the empty catch
                 if (ownTransaction is not null)
                 {
                     try { ownTransaction.Rollback(); } catch { }
                 }
                 throw;
             }
-            // Stryker restore all
             finally
             {
                 ownTransaction?.Dispose();
