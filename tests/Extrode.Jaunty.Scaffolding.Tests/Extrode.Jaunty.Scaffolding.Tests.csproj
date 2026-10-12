@@ -34,6 +34,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Fallback providers, referenced only so FallbackProviderTypeTests can pin the type names
+         each schema reader tries when its primary provider is not loadable. -->
+    <PackageReference Include="System.Data.SQLite.Core" />
+    <PackageReference Include="System.Data.SqlClient" />
+    <PackageReference Include="MySql.Data" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Extrode.Jaunty.Scaffolding\Extrode.Jaunty.Scaffolding.csproj" />
     <!-- AUD-R25 (B8-1): ScaffoldGeneratorCompositionTests compiles the scaffolder's own output
          together with JauntyGenerator, in memory, to prove the two halves of the product actually
