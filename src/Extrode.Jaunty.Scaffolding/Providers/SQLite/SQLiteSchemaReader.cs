@@ -71,11 +71,17 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         // spec 010 T16), and the PostgreSQL reader already uses this form. Under NativeAOT a
         // literal for an unreferenced assembly simply returns null and falls through.
         var type = Type.GetType("Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite");
-        // Stryker disable once String : the primary provider assembly always loads in the test project, so the fallback type name (System.Data.SQLite) is never evaluated
-        type ??= Type.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite");
+        type ??= FallbackProviderType();
 
         return FromProviderType(type, connectionString);
     }
+
+    /// <summary>
+    /// The fallback provider (System.Data.SQLite), tried only when the primary one is not loadable. Kept in
+    /// its own method so a test that references System.Data.SQLite can pin the type name.
+    /// </summary>
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+    internal static Type? FallbackProviderType() => Type.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite");
 
     internal static DbConnection FromProviderType(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? type,

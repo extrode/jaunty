@@ -68,6 +68,9 @@
          .NETFramework4.6.2/4.8 targets alongside net8/9/10, so one version covers every TFM. -->
     <PackageVersion Include="MySql.Data" Version="26.7.0" />
     <PackageVersion Include="System.Data.SQLite.Core" Version="1.0.119" />
+    <!-- System.Data.SqlClient is deprecated; referenced only by Scaffolding.Tests to pin the
+         scaffolder's fallback SQL Server provider type name. -->
+    <PackageVersion Include="System.Data.SqlClient" Version="4.9.1" />
     <!-- Test framework / MTP -->
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
