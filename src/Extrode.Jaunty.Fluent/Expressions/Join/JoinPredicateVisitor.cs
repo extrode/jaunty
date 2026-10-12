@@ -94,13 +94,19 @@ internal abstract class JoinPredicateVisitor : ExpressionVisitor
     {
         if (node.Type == typeof(bool))
         {
-            if (TryGetColumnExpression(node) is { } column)
+            // Every Convert, not just one: (bool)(object)a.Flag reached VisitMember through
+            // VisitUnary and was emitted as a bare column - not a predicate on SQL Server.
+            Expression operand = node;
+            while (operand is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unary)
+                operand = unary.Operand;
+
+            if (TryGetColumnExpression(operand) is { } column)
             {
                 _sql.Append(column).Append(" = ").Append(_dialect.FormatBooleanLiteral(true));
                 return;
             }
 
-            if (node is MemberExpression or ConstantExpression && !MentionsJoinParameter(node))
+            if (operand is MemberExpression or ConstantExpression && !MentionsJoinParameter(operand))
             {
                 _sql.Append(EvaluateExpression(node) is true ? "1 = 1" : "1 = 0");
                 return;
