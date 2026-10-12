@@ -117,11 +117,17 @@ public sealed class MySqlSchemaReader : ISchemaReader
         // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
         // returns null and falls through.
         var type = Type.GetType("MySqlConnector.MySqlConnection, MySqlConnector");
-        // Stryker disable once String : the primary provider assembly always loads in the test project, so the fallback type name (MySql.Data) is never evaluated
-        type ??= Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data");
+        type ??= FallbackProviderType();
 
         return FromProviderType(type, connectionString);
     }
+
+    /// <summary>
+    /// The fallback provider (MySql.Data), tried only when the primary one is not loadable. Kept in
+    /// its own method so a test that references MySql.Data can pin the type name.
+    /// </summary>
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+    internal static Type? FallbackProviderType() => Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data");
 
     internal static DbConnection FromProviderType(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? type,
