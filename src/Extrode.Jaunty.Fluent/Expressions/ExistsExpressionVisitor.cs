@@ -202,10 +202,10 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         return node;
     }
 
+    // Stryker disable once all : unreachable from Translate: a member is visited only through VisitUnary's Convert arm, and VisitCondition unwraps every Convert above a member, while VisitBinary analyses its operands without visiting them
     protected override Expression VisitMember(MemberExpression node)
     {
         (bool IsColumn, string? Sql, object? Value) info = AnalyzeExpression(node);
-        // Stryker disable once all : unreachable from Translate: a member is visited only through VisitUnary's Convert arm, and VisitCondition unwraps every Convert above a member, while VisitBinary analyses its operands without visiting them
         if (info.IsColumn)
         {
             _sql.Append(info.Sql);
