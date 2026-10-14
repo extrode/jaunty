@@ -1023,6 +1023,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 if (modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword))
                 {
                     isPartial = true;
+                    // Stryker disable once Statement : equivalent: isPartial is only ever set to true, so scanning the remaining modifiers changes nothing
                     break;
                 }
             }

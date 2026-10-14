@@ -157,6 +157,20 @@ public class EntityDeclarationGuardTests
     }
 
     [Fact]
+    public void ASetsRequiredMembersConstructorBesideAnotherConstructor_IsStillEnough()
+    {
+        // One parameterless [SetsRequiredMembers] constructor satisfies new(); the others do not matter.
+        (ImmutableArray<string> sources, ImmutableArray<Diagnostic> generatorDiagnostics, ImmutableArray<Diagnostic> compileErrors) =
+            GeneratorHarness.RunAndCompile(Entity(
+                "public partial class Order",
+                "[System.Diagnostics.CodeAnalysis.SetsRequiredMembers] public Order() { Name = \"\"; } public Order(string name) { Name = name; } public int Id { get; set; } public required string Name { get; set; }"));
+
+        Assert.Single(sources);
+        Assert.Empty(compileErrors);
+        Assert.DoesNotContain(generatorDiagnostics, d => d.Id == "JAUNTYGEN004");
+    }
+
+    [Fact]
     public void AnEntityWithRequiredMembersAndAPlainParameterlessConstructor_StillReportsJauntyGen004()
     {
         Diagnostic diagnostic = AssertSkippedWithDiagnostic(Entity(
