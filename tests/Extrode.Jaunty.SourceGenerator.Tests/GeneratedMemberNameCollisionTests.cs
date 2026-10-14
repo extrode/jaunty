@@ -147,6 +147,16 @@ public class GeneratedMemberNameCollisionTests
     }
 
     [Fact]
+    public void InheritedMethodNamedReadEntity_IsHiddenWithNew()
+    {
+        // The base is not an entity, so only the inherited member says ReadEntity needs "new".
+        string generated = AssertGenerated(Entity("", "    public static object ReadEntity(System.Data.IDataReader reader) => new object();"))[0];
+
+        Assert.Contains("public new static Order ReadEntity(", generated, StringComparison.Ordinal);
+        Assert.Contains("public static class Jaunty", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GeneratedBaseEntity_IsHiddenWithNewOnBothEntityLevelMembers()
     {
         ImmutableArray<string> sources = AssertGenerated(Entity("", "    public int BaseId { get; set; }", "[Table(\"b\")]"), expectedSources: 2);
