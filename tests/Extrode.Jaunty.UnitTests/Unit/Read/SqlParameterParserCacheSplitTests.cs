@@ -1,3 +1,5 @@
+using System.Reflection;
+
 using Extrode.Jaunty.Internals.Parameters;
 
 using Xunit;
@@ -112,5 +114,20 @@ public class SqlParameterParserCacheSplitTests
         Assert.Equal(
             SqlParameterParserCache.GetOrAdd(sql, backslashEscapes: false),
             SqlParameterParserCache.GetOrAdd(sql, backslashEscapes: true));
+    }
+
+    /// <summary>
+    /// Every slot is created lazily on its first call. Other tests have usually filled them all by
+    /// the time this one runs, so it empties them first; that is safe alongside them, because a
+    /// slot found empty is simply created again.
+    /// </summary>
+    [Fact]
+    public void AnEmptySlotIsCreatedOnFirstUse()
+    {
+        var slots = (Array)typeof(SqlParameterParserCache)
+            .GetField("Slots", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+        Array.Clear(slots, 0, slots.Length);
+
+        Assert.Equal(["Name", "Id"], SqlParameterParserCache.GetOrAdd(Sql("c7")));
     }
 }

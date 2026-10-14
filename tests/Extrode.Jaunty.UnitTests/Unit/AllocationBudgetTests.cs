@@ -106,7 +106,17 @@ public class AllocationBudgetTests
         AssertWithinBudget("CrudSqlCache.GetSql (warm hit)", perCall, 0);
     }
 
-    private static readonly object?[] _sink = new object?[1];
+    [Fact]
+    public void SqlParameterParserCache_WarmCacheHit_AllocatesNothing()
+    {
+        const string sql = "SELECT id FROM get_test WHERE id = @id AND name = @name";
+
+        long perCall = MeasurePerCall(static () => Sink(SqlParameterParserCache.GetOrAdd(sql)));
+
+        AssertWithinBudget("SqlParameterParserCache.GetOrAdd (warm hit)", perCall, 0);
+    }
+
+        private static readonly object?[] _sink = new object?[1];
 
     private static void Sink(object? value) => _sink[0] = value;
 }
