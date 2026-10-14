@@ -38,6 +38,14 @@ public class ParameterPrefixDetectionTests
         Assert.Equal(expected, ParameterBinder.DetectParameterPrefix(sql));
     }
 
+    [Fact]
+    public void AMinusThatOnlyFollowsAnIdentifier_IsSubtractionNotAComment()
+    {
+        // Only "--" opens a comment. Taking any character followed by one '-' for the opener
+        // would skip the rest of the line, $1 with it, and fall back to '@'.
+        Assert.Equal("$", ParameterBinder.DetectParameterPrefix("SELECT price-$1 FROM t"));
+    }
+
     [Theory]
     [InlineData("/* @nope */ SELECT * FROM t WHERE id = $1", "$")]
     [InlineData("SELECT /* @nope */ * FROM t WHERE id = $1", "$")]
