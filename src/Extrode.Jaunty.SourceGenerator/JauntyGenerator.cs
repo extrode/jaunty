@@ -1082,6 +1082,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
             if (char.IsLetterOrDigit(c))
                 sb.Append(c);
             else if (c == '@')
+                // Stryker disable once Statement : equivalent: the if/else-if chain is the whole loop body, so an empty arm also moves on to the next character
                 continue;
             else if (c == '_')
                 sb.Append("__");
