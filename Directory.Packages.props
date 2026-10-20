@@ -36,7 +36,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.6" />
+    <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.6.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
     <PackageVersion Include="System.CommandLine" Version="2.0.12" />
@@ -47,9 +47,9 @@
     <!-- Database drivers used by tests/benchmarks/the scaffolding CLI tool - not a dependency
          propagated into a consumer's own project, so bumped to latest without the same-major
          constraint. net472 keeps the latest patch within the major that still supports it. -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.3" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.31" Condition="'$(TargetFramework)' == 'net472'" />
     <!-- NOT bumped to 3.0.5 (latest): its bundled native SQLite formats REAL->text with full
          round-trip precision instead of 15 significant digits. JauntyGenerator.cs's RealColumnsLocal
