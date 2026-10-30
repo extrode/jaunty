@@ -64,6 +64,7 @@
 
     <!-- Database providers -->
     <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" /><!-- pin: see Directory.Packages.props -->
     <PackageReference Include="Npgsql" />
     <PackageReference Include="MySqlConnector" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
