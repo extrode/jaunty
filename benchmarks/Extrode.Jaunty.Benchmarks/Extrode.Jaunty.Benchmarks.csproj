@@ -12,6 +12,7 @@
 
   <!-- BenchmarkDotNet -->
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.Pkcs" /><!-- pin: see Directory.Packages.props; not transitive pinning, which leaks into shipped nuspecs -->
     <PackageReference Include="BenchmarkDotNet" />
   </ItemGroup>
 

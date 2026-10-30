@@ -22,7 +22,6 @@
   -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <!-- NU1507 fires because this machine's NuGet.Config (outside this repo) lists two sources
          (nuget.org, jauntyq-github) with no package source mapping - unrelated to CPM itself, but
          the SDK escalates it to an error only once CPM is on. Adding package source mapping is a
