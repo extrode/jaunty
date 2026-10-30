@@ -41,6 +41,7 @@
     <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Condition="'$(TargetFramework)' != 'net472'" /><!-- pin: see Directory.Packages.props; not transitive pinning, which leaks into shipped nuspecs -->
     <Compile Remove="Integration\ARCHIVED-FOR-DELETION\**" />
     <EmbeddedResource Remove="Integration\ARCHIVED-FOR-DELETION\**" />
     <None Remove="Integration\ARCHIVED-FOR-DELETION\**" />
