@@ -28,7 +28,7 @@
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.png</PackageIcon>
+    <PackageIcon>jaunty-icon-128.png</PackageIcon>
     <Copyright>Copyright (c) 2026 Extrode LLC</Copyright>
     <Company>Extrode LLC</Company>
     <RepositoryUrl>https://github.com/extrode/jaunty</RepositoryUrl>
@@ -53,6 +53,6 @@
     <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE-DISTRIBUTION-EXCEPTION.md" Pack="true" PackagePath="\" />
-    <None Include="$(MSBuildThisFileDirectory)..\docs\assets\icon.png" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\docs\assets\logo\jaunty-icon-128.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
