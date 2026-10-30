@@ -3,5 +3,6 @@
   "namingExempt": [
     "docs/archive/",
     "docs/assets/"
-  ]
+  ],
+  "externalWorkTree": true
 }
