@@ -315,6 +315,98 @@ public class PackageIdentityTests
         }
     }
 
+    [Fact]
+    public void ThePackedIconIsATransparentPngSoItReadsOnBothNugetOrgThemes()
+    {
+        XDocument props = SourceProjects()
+            .Single(p => p.Project.EndsWith("src/Directory.Build.props", StringComparison.Ordinal))
+            .Document;
+
+        string icon = props.Descendants("PackageIcon").Single().Value;
+
+        string include = props.Descendants("None")
+            .Select(n => (string?)n.Attribute("Include") ?? string.Empty)
+            .Single(i => i.EndsWith(icon, StringComparison.Ordinal))
+            .Replace("$(MSBuildThisFileDirectory)", string.Empty)
+            .Replace('\\', '/');
+
+        string path = Path.GetFullPath(Path.Combine(LocateRepositoryRoot().FullName, "src", include));
+
+        Assert.True(File.Exists(path), "'" + path + "' is missing; the pack would fail.");
+
+        byte[] png = File.ReadAllBytes(path);
+        const int ColorTypeOffset = 25;
+        const byte Rgba = 6;
+
+        Assert.Equal(Rgba, png[ColorTypeOffset]);
+
+        using MemoryStream compressed = new();
+        int position = 8;
+
+        while (position < png.Length)
+        {
+            int length = (png[position] << 24) | (png[position + 1] << 16) | (png[position + 2] << 8) | png[position + 3];
+            string type = System.Text.Encoding.ASCII.GetString(png, position + 4, 4);
+
+            if (type == "IDAT")
+                compressed.Write(png, position + 8, length);
+
+            position += 12 + length;
+        }
+
+        int width = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
+        int height = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
+        const int Bpp = 4;
+        int stride = (width * Bpp) + 1;
+
+        compressed.Position = 2;
+        using System.IO.Compression.DeflateStream inflate = new(compressed, System.IO.Compression.CompressionMode.Decompress);
+        using MemoryStream raw = new();
+        inflate.CopyTo(raw);
+        byte[] data = raw.ToArray();
+        Assert.Equal(height * stride, data.Length);
+
+        byte[] pixels = new byte[height * width * Bpp];
+
+        for (int y = 0; y < height; y++)
+        {
+            byte filter = data[y * stride];
+
+            for (int i = 0; i < width * Bpp; i++)
+            {
+                int a = i >= Bpp ? pixels[(y * width * Bpp) + i - Bpp] : 0;
+                int b = y > 0 ? pixels[((y - 1) * width * Bpp) + i] : 0;
+                int c = i >= Bpp && y > 0 ? pixels[((y - 1) * width * Bpp) + i - Bpp] : 0;
+                int x = data[(y * stride) + 1 + i];
+
+                int predictor = filter switch
+                {
+                    0 => 0,
+                    1 => a,
+                    2 => b,
+                    3 => (a + b) / 2,
+                    _ => Paeth(a, b, c),
+                };
+
+                pixels[(y * width * Bpp) + i] = (byte)(x + predictor);
+            }
+        }
+
+        const int InsideWhereTheOldDarkSquareWasOpaque = 16;
+        const int AlphaOffset = 3;
+        Assert.Equal(0, pixels[((InsideWhereTheOldDarkSquareWasOpaque * width) + InsideWhereTheOldDarkSquareWasOpaque) * Bpp + AlphaOffset]);
+    }
+
+    private static int Paeth(int a, int b, int c)
+    {
+        int p = a + b - c;
+        int pa = Math.Abs(p - a);
+        int pb = Math.Abs(p - b);
+        int pc = Math.Abs(p - c);
+
+        return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+    }
+
     /// <summary>Every <c>.csproj</c> under <c>src/</c>, plus <c>src/Directory.Build.props</c>.</summary>
     private static IEnumerable<(string Project, XDocument Document)> SourceProjects()
     {
