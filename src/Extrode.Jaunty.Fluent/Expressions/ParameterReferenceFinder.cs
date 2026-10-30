@@ -24,6 +24,7 @@ internal sealed class ParameterReferenceFinder : ExpressionVisitor
         return finder._found;
     }
 
+    // Stryker disable once Conditional : equivalent: once _found is set nothing clears it, so visiting the rest of the tree only costs time
     public override Expression? Visit(Expression? node) => _found ? node : base.Visit(node);
 
     protected override Expression VisitParameter(ParameterExpression node)

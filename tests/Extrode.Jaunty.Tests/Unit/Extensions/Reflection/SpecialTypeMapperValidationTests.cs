@@ -22,6 +22,14 @@ public class SpecialTypeMapperValidationTests
     }
 
     [Fact]
+    public void Register_NullBuilder_ThrowsArgumentNull()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() => SpecialTypeMappers.Register(null!));
+
+        Assert.Equal("config", ex.ParamName);
+    }
+
+    [Fact]
     public void NonStringDictionaryKey_Throws()
     {
         var ex = Assert.Throws<NotSupportedException>(() =>

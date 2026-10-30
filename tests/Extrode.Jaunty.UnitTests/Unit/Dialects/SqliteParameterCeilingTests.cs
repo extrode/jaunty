@@ -117,6 +117,8 @@ public class SqliteParameterCeilingTests
 
         Assert.Contains("32766", refused.Message, StringComparison.Ordinal);
         Assert.Contains("batching", refused.Message, StringComparison.OrdinalIgnoreCase);
+        // With a connection in hand the message names its type, not the dialect's.
+        Assert.Contains("SqliteConnection provider", refused.Message, StringComparison.Ordinal);
     }
 
     /// <summary>The three dialects that were already right must stay right.</summary>

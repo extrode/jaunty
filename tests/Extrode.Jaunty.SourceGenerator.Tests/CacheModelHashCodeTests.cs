@@ -68,6 +68,26 @@ public sealed class CacheModelHashCodeTests
         Assert.Equal(ExpectedMapper(typeName, supplies, members, null), Mapper(typeName, supplies, members, null));
     }
 
+    private static object NewMapper(string typeName, string supplies, string members)
+        => Activator.CreateInstance(Nested("HandWrittenMapper"), typeName, supplies, members, null)!;
+
+    [Fact]
+    public void HandWrittenMapper_EqualFields_CompareEqual()
+    {
+        Assert.True(NewMapper("Type", "supplies", "members").Equals(NewMapper("Type", "supplies", "members")));
+    }
+
+    // Each row differs from ("Type", "supplies", "members") in exactly one field, so a comparer that
+    // let any one field's match stand in for another's (an || in place of an &&) reports it equal.
+    [Theory]
+    [InlineData("Other", "supplies", "members")]
+    [InlineData("Type", "other", "members")]
+    [InlineData("Type", "supplies", "other")]
+    public void HandWrittenMapper_OneDifferentField_ComparesUnequal(string typeName, string supplies, string members)
+    {
+        Assert.False(NewMapper("Type", "supplies", "members").Equals(NewMapper(typeName, supplies, members)));
+    }
+
     private static int Root(string? expression, bool isWitness)
         => Activator.CreateInstance(Nested("ParameterRoot"), expression, isWitness)!.GetHashCode();
 
