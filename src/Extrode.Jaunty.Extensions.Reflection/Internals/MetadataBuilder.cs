@@ -96,6 +96,10 @@ internal static class MetadataBuilder
 
             if (!property.CanWrite) continue;
 
+            // A setter-only property has no getter for MetadataCache.CreateGetter to compile
+            // (Expression.Property throws "must be readable"); ParameterCache skips it the same way.
+            if (property.GetGetMethod() is null) continue;
+
             // 3. Column name resolution
             string? attributeColumn = null;
             ColumnAttribute? colAttr = property.GetCustomAttribute<ColumnAttribute>();

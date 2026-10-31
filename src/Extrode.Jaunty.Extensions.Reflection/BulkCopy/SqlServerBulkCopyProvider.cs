@@ -16,16 +16,16 @@ namespace Extrode.Jaunty.Extensions.Reflection.BulkCopy;
 internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 {
     private static readonly Type? SqlBulkCopyType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopy, Microsoft.Data.SqlClient")
-        ?? Type.GetType("System.Data.SqlClient.SqlBulkCopy, System.Data");
+        ?? Type.GetType("System.Data.SqlClient.SqlBulkCopy, System.Data.SqlClient");
 
     private static readonly Type? SqlBulkCopyOptionsType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions, Microsoft.Data.SqlClient")
-        ?? Type.GetType("System.Data.SqlClient.SqlBulkCopyOptions, System.Data");
+        ?? Type.GetType("System.Data.SqlClient.SqlBulkCopyOptions, System.Data.SqlClient");
 
     private static readonly Type? SqlConnectionType = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
-        ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data");
+        ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
 
     private static readonly Type? SqlTransactionType = Type.GetType("Microsoft.Data.SqlClient.SqlTransaction, Microsoft.Data.SqlClient")
-        ?? Type.GetType("System.Data.SqlClient.SqlTransaction, System.Data");
+        ?? Type.GetType("System.Data.SqlClient.SqlTransaction, System.Data.SqlClient");
 
     private static readonly PropertyInfo? RowsCopiedProperty = SqlBulkCopyType?.GetProperty("RowsCopied");
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");

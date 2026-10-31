@@ -98,15 +98,22 @@ public class FractionalAverageTests
         Assert.Equal("AVG(CAST([qty] AS FLOAT))", FractionalAverage.Generate(wrapper, "[qty]"));
     }
 
+    [Fact]
+    public void TheMySqlBulkCopyWrapper_ForwardsToTheWrappedDialect()
+    {
+        var wrapper = new global::Extrode.Jaunty.Extensions.Reflection.Dialects.MySqlDialectWithBulkCopy();
+
+        Assert.IsAssignableFrom<IFractionalAverageDialect>(wrapper);
+        Assert.Equal("AVG(qty + 0E0)", FractionalAverage.Generate(wrapper, "qty"));
+    }
+
     [Theory]
-    [InlineData("MySql")]
     [InlineData("PostgreSql")]
     [InlineData("SQLite")]
     public void TheOtherBulkCopyWrappers_StillGetTheBareForm(string flavor)
     {
         ISqlDialect wrapper = flavor switch
         {
-            "MySql" => new global::Extrode.Jaunty.Extensions.Reflection.Dialects.MySqlDialectWithBulkCopy(),
             "PostgreSql" => new global::Extrode.Jaunty.Extensions.Reflection.Dialects.PostgreSqlDialectWithBulkCopy(),
             _ => new global::Extrode.Jaunty.Extensions.Reflection.Dialects.SQLiteDialectWithBulkCopy(),
         };
