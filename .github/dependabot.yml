@@ -29,6 +29,10 @@ updates:
       # bumping them drops older SDK consumers. Bump deliberately, not via bot.
       - dependency-name: "Microsoft.CodeAnalysis.CSharp"
       - dependency-name: "Microsoft.CodeAnalysis.Analyzers"
+      # The net8.0 pin stays on the 8.0 line (8.0.2 is patched); 9.0.18 carries
+      # two advisories and NuGet audit warnings are errors here.
+      - dependency-name: "System.Security.Cryptography.Pkcs"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

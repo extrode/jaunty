@@ -8,7 +8,7 @@ namespace Extrode.Jaunty.Extensions.Reflection.Dialects;
 /// MySQL dialect with bulk copy support.
 /// Extends the base dialect to provide MySqlBulkLoader provider.
 /// </summary>
-internal sealed class MySqlDialectWithBulkCopy : ISqlDialect, ISubstringToEndDialect, IDialectWrapper
+internal sealed class MySqlDialectWithBulkCopy : ISqlDialect, ISubstringToEndDialect, IFractionalAverageDialect, IDialectWrapper
 {
     private readonly MySqlDialect _inner;
 
@@ -33,6 +33,9 @@ internal sealed class MySqlDialectWithBulkCopy : ISqlDialect, ISubstringToEndDia
     }
 
     // Delegate all other calls to the base dialect
+    public string GenerateFractionalAverage(string operand)
+        => FractionalAverage.Generate(_inner, operand);
+
     public bool SupportsForeignKeyToggle => _inner.SupportsForeignKeyToggle;
     public bool RequiresAutocommitForForeignKeyToggle => _inner.RequiresAutocommitForForeignKeyToggle;
     public bool UpsertBatchIsAtomic => _inner.UpsertBatchIsAtomic;

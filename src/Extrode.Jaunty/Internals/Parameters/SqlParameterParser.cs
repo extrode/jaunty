@@ -24,20 +24,25 @@ internal static class SqlParameterParser
     /// <c>ARRAY[@a, @b]</c> and <c>tags[@i]</c> and DuckDB's <c>[@a, @b]</c> list literal hold real
     /// placeholders, which a bracket run would hide from binding.
     /// </param>
-    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false, bool dollarSigil = true, bool bracketIdentifiers = true)
+    /// <param name="nestsBlockComments">
+    /// Whether <c>/* ... */</c> comments nest, so that <c>/* a /* b */ @Old */</c> is one comment.
+    /// True only for PostgreSQL and SQL Server, which count depth; MySQL, SQLite and every other
+    /// engine end the comment at the first <c>*/</c>.
+    /// </param>
+    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false, bool dollarSigil = true, bool bracketIdentifiers = true, bool nestsBlockComments = false)
     {
         if (string.IsNullOrWhiteSpace(sql))
             return [];
 
 #if NET8_0_OR_GREATER
-        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes, dollarSigil, bracketIdentifiers);
+        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes, dollarSigil, bracketIdentifiers, nestsBlockComments);
 #else
-        return ExtractParameterNamesClassic(sql, backslashEscapes, dollarSigil, bracketIdentifiers);
+        return ExtractParameterNamesClassic(sql, backslashEscapes, dollarSigil, bracketIdentifiers, nestsBlockComments);
 #endif
     }
 
 #if NET8_0_OR_GREATER
-    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers)
+    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers, bool nestsBlockComments)
     {
         // Deferred until the first sigil is found. Opening with a sized List cost every
         // parameterless statement a List plus its backing array - measured at 120 bytes/call by
@@ -58,17 +63,25 @@ internal static class SqlParameterParser
                 continue;
             }
 
+            // MySQL/MariaDB also open a line comment with '#'. Nowhere else: SQL Server's #tmp
+            // tables and PostgreSQL's # operator are ordinary SQL text.
+            if (c == '#' && backslashEscapes)
+            {
+                i = SkipToEndOfLine(sql, i + 1);
+                continue;
+            }
+
             // Skip block comment
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
-                i = SkipBlockComment(sql, i + 2);
+                i = SkipBlockComment(sql, i + 2, nestsBlockComments);
                 continue;
             }
 
             // Skip string literal (single quote)
             if (c == '\'')
             {
-                i = SkipQuoted(sql, i + 1, '\'', backslashEscapes);
+                i = SkipQuoted(sql, i + 1, '\'', backslashEscapes || (dollarSigil && IsEscapeStringPrefix(sql, i)));
                 continue;
             }
 
@@ -176,13 +189,26 @@ internal static class SqlParameterParser
         return i;
     }
 
-    private static int SkipBlockComment(ReadOnlySpan<char> sql, int i)
+    private static int SkipBlockComment(ReadOnlySpan<char> sql, int i, bool nested)
     {
         int len = sql.Length;
+        int depth = 1;
         while (i + 1 < len)
         {
             if (sql[i] == '*' && sql[i + 1] == '/')
-                return i + 2;
+            {
+                if (--depth == 0)
+                    return i + 2;
+                i += 2;
+                continue;
+            }
+
+            if (nested && sql[i] == '/' && sql[i + 1] == '*')
+            {
+                depth++;
+                i += 2;
+                continue;
+            }
             i++;
         }
         return len;
@@ -236,7 +262,7 @@ internal static class SqlParameterParser
     }
 #endif
 
-    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers)
+    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers, bool nestsBlockComments)
     {
         List<string>? names = null;
         var i = 0;
@@ -253,15 +279,21 @@ internal static class SqlParameterParser
                 continue;
             }
 
+            if (c == '#' && backslashEscapes)
+            {
+                i = SkipToEndOfLineClassic(sql, i + 1, len);
+                continue;
+            }
+
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
-                i = SkipBlockCommentClassic(sql, i + 2, len);
+                i = SkipBlockCommentClassic(sql, i + 2, len, nestsBlockComments);
                 continue;
             }
 
             if (c == '\'')
             {
-                i = SkipQuotedClassic(sql, i + 1, len, '\'', backslashEscapes);
+                i = SkipQuotedClassic(sql, i + 1, len, '\'', backslashEscapes || (dollarSigil && IsEscapeStringPrefix(sql, i)));
                 continue;
             }
 
@@ -344,12 +376,26 @@ internal static class SqlParameterParser
         return i;
     }
 
-    private static int SkipBlockCommentClassic(string sql, int i, int len)
+    // Internal so ParameterBinder's two walkers share it rather than keep their own copies.
+    internal static int SkipBlockCommentClassic(string sql, int i, int len, bool nested)
     {
+        int depth = 1;
         while (i + 1 < len)
         {
             if (sql[i] == '*' && sql[i + 1] == '/')
-                return i + 2;
+            {
+                if (--depth == 0)
+                    return i + 2;
+                i += 2;
+                continue;
+            }
+
+            if (nested && sql[i] == '/' && sql[i + 1] == '*')
+            {
+                depth++;
+                i += 2;
+                continue;
+            }
             i++;
         }
         return len;
@@ -432,6 +478,21 @@ internal static class SqlParameterParser
     /// <inheritdoc cref="IsSigilInsideIdentifier(string, int)"/>
     internal static bool IsSigilInsideIdentifier(ReadOnlySpan<char> sql, int sigilPos)
         => sigilPos > 0 && IsParameterChar(sql[sigilPos - 1]);
+
+    /// <summary>
+    /// Whether the <c>'</c> at <paramref name="quotePos"/> opens a PostgreSQL escape string
+    /// (<c>E'O\'Brien'</c>), in which a backslash escapes the next character.
+    /// </summary>
+    /// <remarks>
+    /// The <c>E</c> must stand alone: in <c>SOME'x'</c> it ends an identifier. Callers apply this
+    /// only when <c>dollarSigil</c> is set.
+    /// </remarks>
+    internal static bool IsEscapeStringPrefix(string sql, int quotePos)
+        => quotePos > 0 && sql[quotePos - 1] is 'E' or 'e' && !(quotePos > 1 && IsParameterChar(sql[quotePos - 2]));
+
+    /// <inheritdoc cref="IsEscapeStringPrefix(string, int)"/>
+    internal static bool IsEscapeStringPrefix(ReadOnlySpan<char> sql, int quotePos)
+        => quotePos > 0 && sql[quotePos - 1] is 'E' or 'e' && !(quotePos > 1 && IsParameterChar(sql[quotePos - 2]));
 
     /// <summary>
     /// Index just past a <c>$</c> that is not a sigil and the identifier characters and further

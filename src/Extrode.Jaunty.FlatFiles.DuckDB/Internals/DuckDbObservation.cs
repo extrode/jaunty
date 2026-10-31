@@ -79,6 +79,7 @@ internal static class DuckDbObservation
         for (int i = 0; i < parameters.Length; i++)
         {
             (string name, object? value) = parameters[i];
+            ArgumentNullException.ThrowIfNull(name, nameof(parameters));
 
             // Callers may pass the bare name or the "$" placeholder text; report the bare form so
             // an audit record reads the same whichever spelling the caller used.

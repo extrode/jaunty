@@ -11,6 +11,8 @@ for that: contributions require a signed CLA and must be authored by a human
 - Branch off `dev`: `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/` prefixes.
 - Merge back into `dev` with `--no-ff`.
 - Commit prefixes match branch prefixes: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`.
+- Commits carry the maintainer's identity only: no AI author or committer, no `Co-Authored-By`,
+  `Claude-Session` or "Generated with" trailers. CI (`scripts/check-authorship.sh`) fails on them.
 - Pushing `dev` to `origin`, and releasing to `main`, is a maintainer decision.
 - `dev` is protected: a PR and a passing `Build & Test` status check are required.
   Only the repo owner can bypass this; nobody else can push directly.

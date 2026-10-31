@@ -323,6 +323,46 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         Assert.Equal(3, categories.Count);
     }
 
+    public sealed class IdRow
+    {
+        public long Id { get; set; }
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadAsync_Cancelled_StillAdvancesToTheNextResultSet(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        await using var gridReader = await connection.QueryMultipleAsync("SELECT 1 AS Id; SELECT 2 AS Id");
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => gridReader.ReadAsync<IdRow>(cancellationToken: cts.Token));
+
+        List<IdRow> next = await gridReader.ReadAsync<IdRow>();
+        Assert.Equal(2L, Assert.Single(next).Id);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadStreamAsync_CancelledMidStream_StillAdvancesToTheNextResultSet(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        await using var gridReader = await connection.QueryMultipleAsync("SELECT 1 AS Id UNION ALL SELECT 2; SELECT 3 AS Id");
+        using var cts = new CancellationTokenSource();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (IdRow _ in gridReader.ReadStreamAsync<IdRow>(cancellationToken: cts.Token))
+                cts.Cancel();
+        });
+
+        List<IdRow> next = await gridReader.ReadAsync<IdRow>();
+        Assert.Equal(3L, Assert.Single(next).Id);
+    }
+
     #region ReadPartialFirstAsync / ReadPartialFirstOrDefaultAsync
 
     [Theory]

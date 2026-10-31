@@ -392,7 +392,7 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         var maliciousDbPath = Path.GetTempPath() + "jaunty_csv_sec\"evil.db";
 
         var ex = Assert.Throws<TargetInvocationException>(() =>
-            method.Invoke(null, [maliciousDbPath, TableName, csvPath, new CsvImportOptions()]));
+            method.Invoke(null, [maliciousDbPath, TableName, csvPath, new CsvImportOptions(), true, CancellationToken.None]));
         Assert.IsType<ArgumentException>(ex.InnerException);
     }
 
@@ -958,6 +958,195 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             SQLiteConnection.ClearAllPools();
             if (File.Exists(tempDb))
                 File.Delete(tempDb);
+        }
+    }
+
+    private static long CountSqliteRows(SQLiteConnection connection, string table)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = $"SELECT COUNT(*) FROM {table}";
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
+    [Fact]
+    public void ImportCsv_SqliteCli_MissingTableWithHeader_CreatesItFromTheHeaderAndImportsEveryRow()
+    {
+        var csvPath = WriteTempCsv("h1,h2\n1,2\n3,4\n");
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_missing_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+
+            long rows = connection.ImportCsv("people", csvPath);
+
+            Assert.Equal(2, rows);
+            Assert.Equal(2, CountSqliteRows(connection, "people"));
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT h1 FROM people ORDER BY h1 LIMIT 1";
+            Assert.Equal("1", Convert.ToString(cmd.ExecuteScalar()));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+            File.Delete(csvPath);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_SqliteCli_MissingTableWithoutHeader_ThrowsAndCreatesNothing()
+    {
+        var csvPath = WriteTempCsv("1,2\n3,4\n");
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_missing_nohdr_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+
+            Assert.Throws<InvalidOperationException>(() =>
+                connection.ImportCsv("people", csvPath, new CsvImportOptions { HasHeader = false }));
+            Assert.False(SchemaHasObjectNamed(connection, "main", "people"));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+            File.Delete(csvPath);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_SqliteCli_RecordWithSurplusFields_ThrowsInvalidDataExceptionAndImportsNothing()
+    {
+        var csvPath = WriteTempCsv("a,b\n1,2\n1,2,3\n");
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_surplus_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "CREATE TABLE pairs (a TEXT, b TEXT)";
+                cmd.ExecuteNonQuery();
+            }
+
+            Assert.Throws<InvalidDataException>(() => connection.ImportCsv("pairs", csvPath));
+            Assert.Equal(0, CountSqliteRows(connection, "pairs"));
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+            File.Delete(csvPath);
+        }
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_SqliteCli_CancelledWhileTheCliRuns_KillsItAndThrows()
+    {
+        var csv = new StringBuilder("a\n");
+        for (int i = 0; i < 200; i++)
+            csv.Append(i).Append('\n');
+        var csvPath = WriteTempCsv(csv.ToString());
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_cancel_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText =
+                    "CREATE TABLE slow (a TEXT);" +
+                    "CREATE TRIGGER slow_insert AFTER INSERT ON slow BEGIN " +
+                    "SELECT count(*) FROM (WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 3000000) SELECT x FROM c); " +
+                    "END;";
+                cmd.ExecuteNonQuery();
+            }
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                await connection.ImportCsvAsync("slow", csvPath, cancellationToken: cts.Token));
+
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Import ran for {stopwatch.Elapsed} after cancellation.");
+        }
+        finally
+        {
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+            File.Delete(csvPath);
+        }
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_SqliteCli_CliThatFillsStdout_StillCompletes()
+    {
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            return;
+
+        string originalPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        string? realSqlite = originalPath.Split(Path.PathSeparator)
+            .Select(dir => Path.Combine(dir, "sqlite3"))
+            .FirstOrDefault(File.Exists);
+        Assert.NotNull(realSqlite);
+
+        var shimDir = Path.Combine(Path.GetTempPath(), $"jaunty_sqlite3_shim_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(shimDir);
+        var shim = Path.Combine(shimDir, "sqlite3");
+        var marker = Path.Combine(shimDir, "ran");
+        File.WriteAllText(shim,
+            "#!/bin/sh\n" +
+            $"touch '{marker}'\n" +
+            "line=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n" +
+            "i=0\n" +
+            "while [ $i -lt 16384 ]; do echo $line; i=$((i+1)); done\n" +
+            $"exec '{realSqlite}' \"$@\"\n");
+        using (var chmod = System.Diagnostics.Process.Start("chmod", $"+x \"{shim}\""))
+            chmod!.WaitForExit();
+
+        var csvPath = WriteTempCsv("a\n1\n2\n");
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_stdout_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "CREATE TABLE drained (a TEXT)";
+                cmd.ExecuteNonQuery();
+            }
+
+            Environment.SetEnvironmentVariable("PATH", shimDir + Path.PathSeparator + originalPath);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+
+            long rows = await connection.ImportCsvAsync("drained", csvPath, cancellationToken: cts.Token);
+
+            Assert.True(File.Exists(marker));
+            Assert.Equal(2, rows);
+            Assert.Equal(2, CountSqliteRows(connection, "drained"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+            File.Delete(csvPath);
+            File.Delete(shim);
+            if (File.Exists(marker))
+                File.Delete(marker);
+            Directory.Delete(shimDir);
         }
     }
 
@@ -1927,7 +2116,7 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         var options = new CsvImportOptions { Quote = '\'' };
 
         var ex = Assert.Throws<TargetInvocationException>(() =>
-            method.Invoke(null, [dbPath, TableName, csvPath, options]));
+            method.Invoke(null, [dbPath, TableName, csvPath, options, true, CancellationToken.None]));
         Assert.IsType<NotSupportedException>(ex.InnerException);
     }
 

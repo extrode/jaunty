@@ -70,6 +70,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         // Type.GetType on a string it can see (IL2057, fatal at ilc on the NativeAOT publish -
         // spec 010 T16), and the PostgreSQL reader already uses this form. Under NativeAOT a
         // literal for an unreferenced assembly simply returns null and falls through.
+        // AOT-SAFE: literal type name, which the trimmer resolves intrinsically; an absent provider returns null and falls through.
         var type = Type.GetType("Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite");
         type ??= FallbackProviderType();
 
@@ -81,7 +82,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
     /// its own method so a test that references System.Data.SQLite can pin the type name.
     /// </summary>
     [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    internal static Type? FallbackProviderType() => Type.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite");
+    internal static Type? FallbackProviderType() => Type.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite"); // AOT-SAFE: literal type name, which the trimmer resolves intrinsically; an absent provider returns null and falls through.
 
     internal static DbConnection FromProviderType(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? type,

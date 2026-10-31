@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 
 using Extrode.Jaunty.Fluent.Expressions;
+using Extrode.Jaunty.Dialects;
 using Extrode.Jaunty.Fluent.Internals;
 using Extrode.Jaunty.Internals.Entity;
 
@@ -20,6 +21,11 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
     {
         _fromBuilder = fromBuilder;
         _joinType = joinType;
+        // The alias is written into the JOIN, column prefixes and ORDER BY verbatim, so it is
+        // validated here exactly as the FROM alias is.
+        if (joinAlias is not null)
+            SqlIdentifierValidator.Validate(joinAlias, nameof(joinAlias));
+
         _joinAlias = joinAlias;
         _joinMetadata = FluentMetadataCache.GetMetadata<TJoin>();
     }

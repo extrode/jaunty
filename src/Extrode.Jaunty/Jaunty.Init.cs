@@ -55,6 +55,7 @@ public static partial class Jaunty
     /// </remarks>
     internal static void TryEnableReflectionMapping()
     {
+        // AOT-SAFE: optional extension load; an absent assembly is the source-gen-only case and enables nothing.
         Exception? failure = TryEnableReflectionMapping(static name => Assembly.Load(name));
 
         if (failure is not null)

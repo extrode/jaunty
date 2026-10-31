@@ -108,6 +108,7 @@ public static class JauntyReflectionExtensions
     // (the mapper resolves setters per reader inside its own closure, and the binders capture only
     // per-type converters).
     private static readonly MethodInfo MetadataBuildMethod =
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
         typeof(MetadataBuilder).GetMethod(nameof(MetadataBuilder.Build), BindingFlags.Public | BindingFlags.Static)!;
 
     private static readonly MethodInfo GetTypedMapperMethod = NonPublicStatic(nameof(GetTypedMapper));
@@ -162,15 +163,18 @@ public static class JauntyReflectionExtensions
     private static readonly ConcurrentDictionary<int, MethodInfo> MultiMapperNMethodCache = new();
 
     private static MethodInfo NonPublicStatic(string name) =>
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
         typeof(JauntyReflectionExtensions).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)!;
 
     private static object ResolveTableMetadata(Type type) =>
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
         GetOrBuild(TableMetadataCache, type, static t => MetadataBuildMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
     private static object ResolveMapper(Type type, MappingMode mode) =>
         GetOrBuild(MapperCache, (Type: type, Mode: mode), static key =>
         {
             var mapperFactory = (Func<MappingMode, Func<IDataReader, object>>)
+                // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
                 GetTypedMapperMethod.MakeGenericMethod(key.Type).Invoke(null, null)!;
 
             Func<IDataReader, object> mapper = mapperFactory(key.Mode);
@@ -180,6 +184,7 @@ public static class JauntyReflectionExtensions
         });
 
     private static object CreateTypedMapper(Type type, Func<IDataReader, object> mapper) =>
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
         WrapMapperMethod.MakeGenericMethod(type).Invoke(null, new object[] { mapper })!;
 
     private static Func<IDataReader, T> WrapMapper<T>(Func<IDataReader, object> mapper) where T : new()
@@ -189,18 +194,22 @@ public static class JauntyReflectionExtensions
 
     private static Action<IDbCommand, object> ResolveInsertBinder(Type type) =>
         GetOrBuild(InsertBinderCache, type, static t =>
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
             (Action<IDbCommand, object>)GetTypedInsertBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
     private static Action<IDbCommand, object> ResolveUpdateBinder(Type type) =>
         GetOrBuild(UpdateBinderCache, type, static t =>
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
             (Action<IDbCommand, object>)GetTypedUpdateBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
     private static Action<IDbCommand, object> ResolveDeleteBinder(Type type) =>
         GetOrBuild(DeleteBinderCache, type, static t =>
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
             (Action<IDbCommand, object>)GetTypedDeleteBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
     private static object ResolveMultiMapper(Type t1, Type t2) =>
         GetOrBuild(MultiMapperCache, (t1, t2), static key =>
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
             GetTypedMultiMapperMethod.MakeGenericMethod(key.Item1, key.Item2).Invoke(null, null)!);
 
     // Guarded: the attribute's netstandard2.0 SDK polyfill is internal to its own file, so it is
@@ -217,11 +226,13 @@ public static class JauntyReflectionExtensions
         // The result is not cached: BuildMultiMapperNDelegates* binds against this reader's column
         // layout, so it is per-call by construction. Only the helper lookup is hoisted.
         MethodInfo method = MultiMapperNMethodCache.GetOrAdd(types.Length, static arity =>
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
             typeof(JauntyReflectionExtensions).GetMethod(
                 "BuildMultiMapperNDelegates" + arity,
                 BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException($"No N-ary multi-mapper helper found for arity {arity}. Supported: 3-7."));
 
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
         MethodInfo generic = method.MakeGenericMethod(types);
         return (Action<object, IDataRecord>[])generic.Invoke(null, new object[] { reader })!;
     }
@@ -338,6 +349,7 @@ public static class JauntyReflectionExtensions
 
         if (underlyingType.IsEnum)
         {
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); binds this assembly's own generic factory methods.
             EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
 
             if (enumAttr is not null)

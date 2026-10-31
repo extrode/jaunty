@@ -412,6 +412,7 @@ internal static class MetadataCache<T>
     {
         if (underlyingType.IsEnum)
         {
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection mapping path that source generation replaces.
             EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
 
             // An attribute is genuinely immutable, so its choice can be baked into the setter.
@@ -494,13 +495,16 @@ internal static class MetadataCache<T>
         ParameterExpression target = Expression.Parameter(typeof(T));
         ParameterExpression record = Expression.Parameter(typeof(IDataRecord));
         ParameterExpression index = Expression.Parameter(typeof(int));
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection mapping path that source generation replaces.
         MethodCallExpression getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
 
         Expression valueExpression = Expression.Convert(
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection mapping path that source generation replaces.
             Expression.Call(typeof(DbValueConverter).GetMethod(nameof(DbValueConverter.ChangeType), [typeof(object), typeof(Type)])!,
             getValue, Expression.Constant(propertyType)), propertyType);
 
         BinaryExpression assign = Expression.Assign(Expression.Property(target, property), valueExpression);
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection mapping path that source generation replaces.
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();
     }
 
@@ -510,6 +514,7 @@ internal static class MetadataCache<T>
         ParameterExpression target = Expression.Parameter(typeof(T), "target");
         MemberExpression access = Expression.Property(target, property);
         UnaryExpression box = Expression.Convert(access, typeof(object));
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection mapping path that source generation replaces.
         return Expression.Lambda<Func<T, object?>>(box, target).Compile();
     }
 

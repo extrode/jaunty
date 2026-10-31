@@ -43,6 +43,7 @@ internal static class MetadataBuilder
         string? attributeSchema = null;
 
         // 1. Table Attribute resolution (Both namespaces)
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
         TableAttribute? tableAttr = type.GetCustomAttribute<TableAttribute>();
         if (tableAttr is not null)
         {
@@ -75,6 +76,7 @@ internal static class MetadataBuilder
         string tableName = NameResolution.Table(type, attributeTable);
         string? schemaName = NameResolution.Schema(type, attributeSchema);
 
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
         PropertyInfo[] props = MostDerivedPerName(type.GetProperties(BindingFlags.Instance | BindingFlags.Public));
         var columns = new List<ColumnMetadata>();
 
@@ -86,9 +88,11 @@ internal static class MetadataBuilder
             // instance property named "Item" with GetIndexParameters().Length > 0.
             // Expression.Property/PropertyInfo.SetValue throw for these; skip them like
             // ParameterCache.cs already does.
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
             if (property.GetIndexParameters().Length > 0) continue;
 
             // 2. Ignore resolution
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
             if (property.GetCustomAttribute<IgnoreAttribute>() is not null) continue;
 
             // Use string-based detection for NotMappedAttribute
@@ -96,8 +100,14 @@ internal static class MetadataBuilder
 
             if (!property.CanWrite) continue;
 
+            // A setter-only property has no getter for MetadataCache.CreateGetter to compile
+            // (Expression.Property throws "must be readable"); ParameterCache skips it the same way.
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
+            if (property.GetGetMethod() is null) continue;
+
             // 3. Column name resolution
             string? attributeColumn = null;
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
             ColumnAttribute? colAttr = property.GetCustomAttribute<ColumnAttribute>();
 
             // AUD-R32-006: the IsNullOrEmpty guard was missing here alone. ColumnAttribute's
@@ -122,6 +132,7 @@ internal static class MetadataBuilder
             string colName = NameResolution.Column(property.Name, attributeColumn);
 
             // 4. Key resolution
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
             bool isKey = property.GetCustomAttribute<KeyAttribute>() is not null ||
                          HasAttribute(property, KeyAttributeTypeName) ||
                          property.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) ||
@@ -149,6 +160,7 @@ internal static class MetadataBuilder
             // tells users to write [DatabaseGenerated] explicitly to get identical behaviour either
             // way.
             DatabaseGeneratedOption? genOption = null;
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
             DatabaseGeneratedAttribute? genAttr = property.GetCustomAttribute<DatabaseGeneratedAttribute>();
 
             if (genAttr is not null)
@@ -214,6 +226,7 @@ internal static class MetadataBuilder
         {
             PropertyInfo property = properties[i];
 
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); reflection metadata path that source generation replaces.
             if (property.GetIndexParameters().Length > 0)
             {
                 kept.Add(property);

@@ -146,7 +146,7 @@ internal static class ParameterBinder
 
         // Slow path: parse and bind, then cache if no collection expansion happened
         bool backslashEscapes = UsesBackslashEscapes(command.Connection);
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql, backslashEscapes, UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection));
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql, backslashEscapes, UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection), NestsBlockComments(command.Connection));
         // AUD-R35-116: metadata, the name lookup and the collection-typed answer are all pure
         // functions of the parameters type, so they are resolved together and cached together.
         ParameterShape shape = GetShape(type);
@@ -261,7 +261,7 @@ internal static class ParameterBinder
         // the parameters type merely has a collection-typed property whose value happened to be
         // null. That SQL was already parsed through SqlParameterParserCache two lines earlier and
         // the result discarded, so every such call re-tokenized the whole statement on the hot path.
-        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection));
+        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection), NestsBlockComments(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -450,6 +450,15 @@ internal static class ParameterBinder
     private static bool UsesBracketIdentifiers(ISqlDialect dialect)
         => SqlDialectFactory.Unwrap(dialect) is SqlServerDialect or SQLiteDialect;
 
+    // See SqlParameterParser.ExtractParameterNames's nestsBlockComments. Keyed on the dialect itself:
+    // a custom dialect (Oracle, DuckDB, Firebird...) ends a comment at the first */ like the
+    // engines that do not nest.
+    private static bool NestsBlockComments(IDbConnection? connection)
+        => connection is not null && NestsBlockComments(SqlDialectFactory.GetDialect(connection));
+
+    private static bool NestsBlockComments(ISqlDialect dialect)
+        => SqlDialectFactory.Unwrap(dialect) is PostgreSqlDialect or SqlServerDialect;
+
     /// <summary>
     /// Where <see cref="ExpandCollectionParameters"/> reads a parameter's value from. A struct
     /// constraint rather than a delegate, so neither binding path allocates for it.
@@ -537,8 +546,11 @@ internal static class ParameterBinder
                 // two shapes a caller reaches by the same accident: a `List<int>?` left unset.
                 // They now behave identically. The declared type is what decides, since there is
                 // no value to inspect; IsCollectionType excludes string and byte[], so a null
-                // string or blob still binds as a DBNull scalar.
-                if (property is not null && IsCollectionType(property.PropertyType) && !HasTypeHandler(property.PropertyType))
+                // string or blob still binds as a DBNull scalar. A null held in a property declared
+                // object (or ICloneable) only might have been a collection, so the SQL decides:
+                // `IN @Ids` gets the empty set, `= @Ids` a DBNull.
+                if (property is not null && !HasTypeHandler(property.PropertyType)
+                    && (IsEnumerableType(property.PropertyType) || (IsCollectionType(property.PropertyType) && IsInListOperand(sql, sqlName))))
                 {
                     expansions ??= new List<CollectionExpansion>(2);
                     expansions.Add(new CollectionExpansion(sqlName, Array.Empty<object?>(), 0, property));
@@ -578,7 +590,8 @@ internal static class ParameterBinder
         bool backslashEscapes = knownDialect is not null && SqlDialectFactory.Unwrap(knownDialect) is MySqlDialect;
         bool dollarSigil = knownDialect is null || UsesDollarSigil(knownDialect);
         bool bracketIdentifiers = knownDialect is null || UsesBracketIdentifiers(knownDialect);
-        var paramPrefix = DetectParameterPrefix(sql, backslashEscapes, dollarSigil, bracketIdentifiers);
+        bool nestsBlockComments = knownDialect is not null && NestsBlockComments(knownDialect);
+        var paramPrefix = DetectParameterPrefix(sql, backslashEscapes, dollarSigil, bracketIdentifiers, nestsBlockComments);
         var expandedParams = new Dictionary<string, ExpandedParameterValue>(CommonConstants.OrdinalIgnoreCase);
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var replacements = new Dictionary<string, string>(CommonConstants.OrdinalIgnoreCase);
@@ -635,7 +648,7 @@ internal static class ParameterBinder
         // Rewrite the SQL in a single literal/comment-aware pass so that @Name-looking text inside
         // string literals, quoted identifiers, or comments is never mistaken for a real placeholder
         // (unlike a naive textual find/replace, which would corrupt such SQL).
-        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements, backslashEscapes, dollarSigil, bracketIdentifiers);
+        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements, backslashEscapes, dollarSigil, bracketIdentifiers, nestsBlockComments);
 
         return (result, expandedParams, expandedOriginalNames);
     }
@@ -673,7 +686,7 @@ internal static class ParameterBinder
     // Internal rather than private so AUD-R26's sigil-position rule can be tested at this site
     // directly; the precedent is AUD-R9-011, which promoted PostgreSqlSchemaReader's SQL consts for
     // the same reason. ParameterBinder is itself internal, so this widens nothing publicly.
-    internal static string DetectParameterPrefix(string sql, bool backslashEscapes = false, bool dollarSigil = true, bool bracketIdentifiers = true)
+    internal static string DetectParameterPrefix(string sql, bool backslashEscapes = false, bool dollarSigil = true, bool bracketIdentifiers = true, bool nestsBlockComments = false)
     {
         int len = sql.Length;
         int i = 0;
@@ -682,9 +695,10 @@ internal static class ParameterBinder
         {
             char c = sql[i];
 
-            if (c == '-' && i + 1 < len && sql[i + 1] == '-')
+            // '#' is a line comment on MySQL/MariaDB only - see SqlParameterParser.
+            if ((c == '-' && i + 1 < len && sql[i + 1] == '-') || (c == '#' && backslashEscapes))
             {
-                i += 2;
+                i += c == '#' ? 1 : 2;
                 while (i < len && sql[i] is not ('\n' or '\r')) i++;
                 // Stryker disable once Statement : the walk sits on the newline (or the end) here, and the fall-through i++ only steps over it
                 continue;
@@ -692,9 +706,7 @@ internal static class ParameterBinder
 
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
-                i += 2;
-                while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
-                i = Math.Min(i + 2, len);
+                i = SqlParameterParser.SkipBlockCommentClassic(sql, i + 2, len, nestsBlockComments);
                 continue;
             }
 
@@ -705,8 +717,8 @@ internal static class ParameterBinder
             if (c is '\'' or '"' or '`' || (c == '[' && bracketIdentifiers))
             {
                 char terminator = c == '[' ? ']' : c;
-                // AUD-R34-014: string literals only, and MySQL/MariaDB only.
-                bool escapes = backslashEscapes && c is '\'' or '"';
+                // AUD-R34-014: string literals only, and MySQL/MariaDB only - plus PostgreSQL's E'...'.
+                bool escapes = (backslashEscapes && c is '\'' or '"') || (dollarSigil && c == '\'' && SqlParameterParser.IsEscapeStringPrefix(sql, i));
                 i++;
                 while (i < len)
                 {
@@ -779,7 +791,7 @@ internal static class ParameterBinder
     // Literal/comment-aware placeholder rewrite. Walks the SQL using the same tokenization rules as
     // SqlParameterParser (skipping string literals, quoted identifiers, comments, and @@ system
     // variables) and replaces only genuine parameter placeholders whose name is in 'replacements'.
-    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers)
+    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers, bool nestsBlockComments)
     {
         var sb = new StringBuilder(sql.Length + 16);
         int i = 0;
@@ -789,11 +801,11 @@ internal static class ParameterBinder
         {
             char c = sql[i];
 
-            // Single-line comment: copy verbatim to end of line
-            if (c == '-' && i + 1 < len && sql[i + 1] == '-')
+            // Single-line comment (or MySQL's '#' one): copy verbatim to end of line
+            if ((c == '-' && i + 1 < len && sql[i + 1] == '-') || (c == '#' && backslashEscapes))
             {
                 int start = i;
-                i += 2;
+                i += c == '#' ? 1 : 2;
                 while (i < len && sql[i] is not ('\n' or '\r')) i++;
                 sb.Append(sql, start, i - start);
                 continue;
@@ -803,9 +815,7 @@ internal static class ParameterBinder
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
                 int start = i;
-                i += 2;
-                while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
-                i = Math.Min(i + 2, len);
+                i = SqlParameterParser.SkipBlockCommentClassic(sql, i + 2, len, nestsBlockComments);
                 sb.Append(sql, start, i - start);
                 continue;
             }
@@ -815,8 +825,8 @@ internal static class ParameterBinder
             if (c is '\'' or '"' or '`' || (c == '[' && bracketIdentifiers))
             {
                 char terminator = c == '[' ? ']' : c;
-                // AUD-R34-014: string literals only, and MySQL/MariaDB only.
-                bool escapes = backslashEscapes && c is '\'' or '"';
+                // AUD-R34-014: string literals only, and MySQL/MariaDB only - plus PostgreSQL's E'...'.
+                bool escapes = (backslashEscapes && c is '\'' or '"') || (dollarSigil && c == '\'' && SqlParameterParser.IsEscapeStringPrefix(sql, i));
                 int start = i;
                 i++;
                 while (i < len)
@@ -956,6 +966,33 @@ internal static class ParameterBinder
             || (type.IsInterface && type.IsAssignableFrom(typeof(object[])));
     }
 
+    // The declared type is itself a collection, so a null value of it is an empty one. Unlike
+    // IsCollectionType, object and ICloneable do not count: they only might hold one.
+    private static bool IsEnumerableType(Type type)
+        => type != typeof(string) && type != typeof(byte[]) && typeof(IEnumerable).IsAssignableFrom(type);
+
+    // Whether a placeholder for name appears as `IN @name` (or `NOT IN $name`). Text-only: an
+    // occurrence inside a literal or comment can also match, which at worst turns a null `= @name`
+    // into `= (SELECT NULL WHERE 1 = 0)`, still a comparison with NULL.
+    private static bool IsInListOperand(string sql, string name)
+    {
+        for (int at = sql.IndexOf(name, StringComparison.OrdinalIgnoreCase); at >= 0; at = sql.IndexOf(name, at + 1, StringComparison.OrdinalIgnoreCase))
+        {
+            int end = at + name.Length;
+            if (at == 0 || sql[at - 1] is not ('@' or '$') || (end < sql.Length && IsParameterChar(sql[end])))
+                continue;
+
+            int i = at - 2;
+            while (i >= 0 && char.IsWhiteSpace(sql[i])) i--;
+            if (i == at - 2 || i < 1 || char.ToUpperInvariant(sql[i]) != 'N' || char.ToUpperInvariant(sql[i - 1]) != 'I')
+                continue;
+            if (i < 2 || !IsParameterChar(sql[i - 2]))
+                return true;
+        }
+
+        return false;
+    }
+
     // AUD-R26: was a byte-identical private copy of SqlParameterParser's. Forwarded rather than
     // duplicated, because the finding's requirement was that all four sigil sites agree, and two
     // copies of the rule is how they stop agreeing.
@@ -1049,7 +1086,7 @@ internal static class ParameterBinder
 
     private static void BindScalar(IDbCommand command, object value)
     {
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection));
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection), NestsBlockComments(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -1118,7 +1155,7 @@ internal static class ParameterBinder
     /// </remarks>
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
     {
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection));
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection), NestsBlockComments(command.Connection));
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         Dictionary<string, object?>? caseInsensitive = null;
@@ -1213,7 +1250,7 @@ internal static class ParameterBinder
         command.Parameters.Clear();
         command.CommandText = expandedSql!;
 
-        string[] expandedNames = SqlParameterParser.ExtractParameterNames(expandedSql!, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection));
+        string[] expandedNames = SqlParameterParser.ExtractParameterNames(expandedSql!, UsesBackslashEscapes(command.Connection), UsesDollarSigil(command.Connection), UsesBracketIdentifiers(command.Connection), NestsBlockComments(command.Connection));
         var added = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         foreach (string sqlName in expandedNames)

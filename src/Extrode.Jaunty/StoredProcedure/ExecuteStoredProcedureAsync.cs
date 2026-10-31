@@ -4,6 +4,7 @@ using System.Data.Common;
 using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Interceptors;
+using Extrode.Jaunty.Internals;
 using Extrode.Jaunty.Internals.Read;
 using Extrode.Jaunty.StoredProcedure;
 
@@ -274,6 +275,14 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning the results as a list of entities of type <typeparamref name="T"/>.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A list of the mapped result rows.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -288,6 +297,15 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning the first result.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first result row.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the stored procedure returns no rows.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -302,6 +320,14 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning the first result or <see langword="default"/>.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first result row, or <see langword="default"/> when the procedure returns no rows.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -316,6 +342,14 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning a scalar value.
     /// </summary>
+    /// <typeparam name="T">The type of the scalar value.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first column of the first row, converted to the requested type.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -330,6 +364,13 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning the number of rows affected.
     /// </summary>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The number of rows affected.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -368,20 +409,15 @@ public static partial class Jaunty
         // ExecuteNonQueryCoreAsync and therefore do both. Same method name, same public surface,
         // opposite observability - and it silently excluded precisely the stored-procedure calls
         // that use output and return parameters, typically the ones an audit trail most needs.
-        // Whether anything is actually observing is the pipeline's own decision (IsObserved covers
-        // interceptors and the DiagnosticListener alike), so the only test here is whether a
-        // pipeline is configured at all.
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken)
-            : pipeline.ExecuteWithInterceptionAsync(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken),
-                cancellationToken);
+        // Routed through CommandObservation like every other command, so a DiagnosticListener
+        // subscriber with no interceptor registered sees these calls too (round 39).
+        return CommandObservation.ExecuteAsync(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken),
+            cancellationToken);
     }
 
     private static async ValueTask<TResult> ExecuteWithOutputParametersCoreAsync<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
@@ -413,7 +449,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
 #if NET8_0_OR_GREATER
             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -460,17 +496,13 @@ public static partial class Jaunty
         SpParameters spParameters = parameters ?? new SpParameters();
 
         // See ExecuteWithOutputParametersAsync for why this wrapper exists (AUD-R25).
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken)
-            : pipeline.ExecuteWithInterceptionAsync(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken),
-                cancellationToken);
+        return CommandObservation.ExecuteAsync(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken),
+            cancellationToken);
     }
 
     private static async ValueTask<T> ExecuteScalarWithOutputParametersCoreAsync<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
@@ -501,7 +533,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
             object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
@@ -540,17 +572,13 @@ public static partial class Jaunty
         SpParameters spParameters = parameters ?? new SpParameters();
 
         // See ExecuteWithOutputParametersAsync for why this wrapper exists (AUD-R25).
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken)
-            : pipeline.ExecuteWithInterceptionAsync(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken),
-                cancellationToken);
+        return CommandObservation.ExecuteAsync(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken),
+            cancellationToken);
     }
 
     private static async ValueTask<int> ExecuteNonQueryWithOutputParametersCoreAsync(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
@@ -581,7 +609,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
             int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 

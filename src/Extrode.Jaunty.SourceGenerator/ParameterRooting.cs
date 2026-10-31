@@ -539,7 +539,7 @@ public partial class JauntyGenerator
             if (!first)
                 builder.Append(", ");
 
-            builder.Append(property.Name).Append(" = ").Append(value);
+            builder.Append(EscapeIdentifier(property.Name)).Append(" = ").Append(value);
             first = false;
         }
 

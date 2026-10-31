@@ -103,6 +103,23 @@ public class MetadataCacheTests : IDisposable
         }
     }
 
+    public class SetterOnlyItem
+    {
+        private string _hash = string.Empty;
+        public int Id { get; set; }
+        public string Password { set => _hash = value; }
+        public string Hash => _hash;
+    }
+
+    [Fact]
+    public void SetterOnlyProperty_IsSkipped_AndDoesNotBreakTheEntity()
+    {
+        var meta = MetadataCache<SetterOnlyItem>.Metadata;
+
+        Assert.DoesNotContain(meta.Columns, c => c.PropertyName == "Password");
+        Assert.Contains(meta.Columns, c => c.PropertyName == "Id");
+    }
+
     #endregion
 
     #region Metadata Caching

@@ -24,17 +24,115 @@ public class GridReaderStreamClaimTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public void ReadBeforeTheStreamIsEnumerated_Throws_AndTheStreamStillGetsItsOwnSet(DialectInfo dialect)
+    public void ReadBeforeTheStreamIsEnumerated_TakesTheSet_AndTheStaleStreamThrows(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var grid = connection.QueryMultiple(ThreeSets);
 
         IEnumerable<Row> first = grid.ReadStream<Row>();
 
-        var ex = Assert.Throws<InvalidOperationException>(() => grid.Read<Row>());
-        Assert.Contains("still being streamed", ex.Message);
+        Assert.Equal([1L], Ids(grid.Read<Row>()));
+        var ex = Assert.Throws<InvalidOperationException>(() => Ids(first));
+        Assert.Contains("only once", ex.Message);
+        Assert.Equal([2L], Ids(grid.Read<Row>()));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ADiscardedStream_DoesNotBlockTheNextRead(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var grid = connection.QueryMultiple(ThreeSets);
+
+        grid.ReadStream<Row>();
+
+        Assert.Equal([1L], Ids(grid.Read<Row>()));
+        Assert.Equal([2L], Ids(grid.Read<Row>()));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void AnEnumeratorDisposedBeforeMoveNext_DoesNotBlockTheNextRead(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var grid = connection.QueryMultiple(ThreeSets);
+
+        grid.ReadStream<Row>().GetEnumerator().Dispose();
+
+        Assert.Equal([1L], Ids(grid.Read<Row>()));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task ADiscardedAsyncStream_DoesNotBlockTheNextRead(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        await using var grid = await connection.QueryMultipleAsync(ThreeSets);
+
+        grid.ReadStreamAsync<Row>();
+
+        long[] next = Ids(await grid.ReadAsync<Row>());
+        Assert.Equal([1L], next);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ASecondStreamBeforeTheFirstIsEnumerated_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var grid = connection.QueryMultiple(ThreeSets);
+
+        IEnumerable<Row> first = grid.ReadPartialStream<Row>();
+
+        Assert.Throws<InvalidOperationException>(() => grid.ReadPartialStream<Row>());
         Assert.Equal([1L], Ids(first));
         Assert.Equal([2L], Ids(grid.Read<Row>()));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task ASecondAsyncStreamBeforeTheFirstIsEnumerated_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        await using var grid = await connection.QueryMultipleAsync(ThreeSets);
+
+        grid.ReadStreamAsync<Row>();
+
+        Assert.Throws<InvalidOperationException>(() => grid.ReadPartialStreamAsync<Row>());
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void AnEnumeratorDisposedBeforeMoveNext_DoesNotBlockTheNextStream(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var grid = connection.QueryMultiple(ThreeSets);
+
+        grid.ReadStream<Row>().GetEnumerator().Dispose();
+
+        Assert.Equal([1L], Ids(grid.ReadStream<Row>()));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task AnAsyncEnumeratorDisposedBeforeMoveNext_DoesNotBlockTheNextStream(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        await using var grid = await connection.QueryMultipleAsync(ThreeSets);
+
+        await grid.ReadStreamAsync<Row>().GetAsyncEnumerator().DisposeAsync();
+
+        var rows = new List<Row>();
+        await foreach (Row row in grid.ReadStreamAsync<Row>())
+            rows.Add(row);
+        Assert.Equal([1L], Ids(rows));
     }
 
     [Theory]
@@ -58,15 +156,17 @@ public class GridReaderStreamClaimTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public void AnotherStreamWhileOneIsOpen_Throws(DialectInfo dialect)
+    public void AnotherStreamWhileOneIsBeingEnumerated_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var grid = connection.QueryMultiple(ThreeSets);
 
-        IEnumerable<Row> first = grid.ReadStream<Row>();
+        using (IEnumerator<Row> e = grid.ReadStream<Row>().GetEnumerator())
+        {
+            Assert.True(e.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => grid.ReadStream<Row>());
+        }
 
-        Assert.Throws<InvalidOperationException>(() => grid.ReadStream<Row>());
-        Assert.Equal([1L], Ids(first));
         Assert.Equal([2L], Ids(grid.ReadStream<Row>()));
     }
 
@@ -103,21 +203,41 @@ public class GridReaderStreamClaimTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public async Task AsyncStream_ReadBeforeEnumeration_Throws_AndTheStreamStillGetsItsOwnSet(DialectInfo dialect)
+    public async Task AsyncStream_ReadBeforeEnumeration_TakesTheSet_AndTheStaleStreamThrows(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         await using var grid = await connection.QueryMultipleAsync(ThreeSets);
 
         IAsyncEnumerable<Row> first = grid.ReadStreamAsync<Row>();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => grid.ReadAsync<Row>());
-        Assert.Throws<InvalidOperationException>(() => grid.ReadPartialStreamAsync<Row>());
+        long[] taken = Ids(await grid.ReadAsync<Row>());
+        Assert.Equal([1L], taken);
 
-        var ids = new List<long>();
-        await foreach (Row row in first)
-            ids.Add(row.Id);
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (Row _ in first)
+            {
+            }
+        });
+        long[] next = Ids(await grid.ReadAsync<Row>());
+        Assert.Equal([2L], next);
+    }
 
-        Assert.Equal([1L], ids);
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task AsyncStream_ReadWhileEnumerating_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        await using var grid = await connection.QueryMultipleAsync(ThreeSets);
+
+        await using (IAsyncEnumerator<Row> e = grid.ReadStreamAsync<Row>().GetAsyncEnumerator())
+        {
+            Assert.True(await e.MoveNextAsync());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => grid.ReadAsync<Row>());
+            Assert.Throws<InvalidOperationException>(() => grid.ReadPartialStreamAsync<Row>());
+        }
+
         long[] next = Ids(await grid.ReadAsync<Row>());
         Assert.Equal([2L], next);
     }

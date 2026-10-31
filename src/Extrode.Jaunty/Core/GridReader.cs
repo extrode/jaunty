@@ -50,8 +50,20 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
 
     // AUD-R38-050: a stream leaves the grid on its result set until the iterator finishes, so
     // another read in the meantime mapped that set as the wrong type and the stream then read the
-    // next one. Set when a stream is handed out, cleared when its iterator ends.
+    // next one. Set when a stream's enumeration starts, cleared when its iterator ends. Claiming
+    // at hand-out instead left the grid stuck for good when the stream was discarded or its
+    // enumerator disposed before the first MoveNext, because the iterator's finally never ran.
     private object? _streamClaim;
+
+    // The stream handed out on the current set whose enumeration has not started. A second stream
+    // hand-out on that set throws, so two streams cannot both map it. Non-stream reads still take
+    // the set (the stale stream then throws), and the stream releases it when enumeration starts
+    // or its enumerator is disposed first.
+    private StreamHandOut? _handOut;
+
+    // Counts NextResult calls that landed on another set, so a stream that starts after the grid
+    // has moved past the set it was handed out on refuses to read the wrong one.
+    private int _resultSetIndex;
 
     /// <summary>
     /// Initializes a new <see cref="GridReader"/> over an open reader.
@@ -500,12 +512,13 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
     private IEnumerable<T> ReadStreamCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
     {
         EnsureNotConsumed();
-        return ReadStreamIterator(ClaimStream(), options, mode);
+        StreamHandOut handOut = HandOutStream();
+        return new HandedOutStream<T>(this, handOut, ReadStreamIterator(handOut, options, mode));
     }
 
-    private IEnumerable<T> ReadStreamIterator<T>(object claim, CommandOptions<T> options, MappingMode mode) where T : new()
+    private IEnumerable<T> ReadStreamIterator<T>(StreamHandOut handOut, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        EnsureClaimHeld(claim);
+        ClaimStream(handOut);
 
         // Lazy, like ReadStreamAsyncIterator - see ReadCore for why resolving before the first Read
         // makes an empty result set throw here but not on the async or First/Single paths.
@@ -526,22 +539,34 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
     }
 
-    private object ClaimStream()
+    private StreamHandOut HandOutStream()
     {
-        var claim = new object();
-        _streamClaim = claim;
-        return claim;
+        if (_handOut is { } pending && pending.ResultSet == _resultSetIndex)
+            throw new InvalidOperationException(
+                "A stream has already been taken from the current result set. Enumerate it, or dispose its enumerator, before taking another.");
+        return _handOut = new StreamHandOut(_resultSetIndex);
     }
 
-    private void EnsureClaimHeld(object claim)
+    private void ReleaseHandOut(StreamHandOut handOut)
     {
-        if (!ReferenceEquals(_streamClaim, claim))
-            throw new InvalidOperationException("A grid stream can be enumerated only once.");
+        if (_handOut == handOut)
+            _handOut = null;
+    }
+
+    private void ClaimStream(StreamHandOut handOut)
+    {
+        ReleaseHandOut(handOut);
+        if (_consumed || _streamClaim is not null || _resultSetIndex != handOut.ResultSet)
+            throw new InvalidOperationException(
+                "A grid stream can be enumerated only once, and only while the grid is still on the result set it was taken from.");
+        _streamClaim = new object();
     }
 
     private void Advance()
     {
-        if (!reader.NextResult())
+        if (reader.NextResult())
+            _resultSetIndex++;
+        else
         {
             _consumed = true;
             Dispose();
@@ -655,7 +680,7 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
         finally
         {
-            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
     }
 
@@ -667,7 +692,8 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-        return ReadStreamAsyncIterator(dbReader, ClaimStream(), options, MappingMode.Strict, cancellationToken);
+        StreamHandOut handOut = HandOutStream();
+        return new HandedOutAsyncStream<T>(this, handOut, ReadStreamAsyncIterator(dbReader, handOut, options, MappingMode.Strict, cancellationToken));
     }
 
     /// <summary>
@@ -678,16 +704,17 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-        return ReadStreamAsyncIterator(dbReader, ClaimStream(), options, MappingMode.Projection, cancellationToken);
+        StreamHandOut handOut = HandOutStream();
+        return new HandedOutAsyncStream<T>(this, handOut, ReadStreamAsyncIterator(dbReader, handOut, options, MappingMode.Projection, cancellationToken));
     }
 
     // See ReadStreamCore for why EnsureNotConsumed/the DbDataReader check run eagerly in the two
     // public wrappers above rather than here: an async-iterator body only executes once
     // enumeration begins, so validation placed here would silently never run for a caller who
     // discards the returned IAsyncEnumerable<T> without enumerating it.
-    private async IAsyncEnumerable<T> ReadStreamAsyncIterator<T>(DbDataReader dbReader, object claim, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken) where T : new()
+    private async IAsyncEnumerable<T> ReadStreamAsyncIterator<T>(DbDataReader dbReader, StreamHandOut handOut, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken) where T : new()
     {
-        EnsureClaimHeld(claim);
+        ClaimStream(handOut);
         Func<IDataReader, T>? map = null;
 
         try
@@ -701,7 +728,7 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         finally
         {
             _streamClaim = null;
-            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
     }
 
@@ -723,7 +750,7 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
         finally
         {
-            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
 
         return results;
@@ -742,7 +769,7 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
         finally
         {
-            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
     }
 
@@ -762,7 +789,7 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
         finally
         {
-            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
     }
 
@@ -783,7 +810,7 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
         finally
         {
-            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
     }
 
@@ -806,18 +833,23 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
         }
         finally
         {
-            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
     }
 
-    private async Task AdvanceAsync(CancellationToken cancellationToken = default)
+    // Runs from the finally of every async read. It deliberately takes no token: the read's own
+    // token may be the one that just cancelled it, and NextResultAsync with a cancelled token
+    // neither advances nor marks the grid consumed, leaving the next read on the half-read set.
+    private async Task AdvanceAsync()
     {
         try
         {
             bool hasNext = reader is DbDataReader dbReader
-                ? await dbReader.NextResultAsync(cancellationToken).ConfigureAwait(false)
+                ? await dbReader.NextResultAsync(CancellationToken.None).ConfigureAwait(false)
                 : reader.NextResult();
-            if (!hasNext)
+            if (hasNext)
+                _resultSetIndex++;
+            else
             {
                 _consumed = true;
                 await DisposeAsync().ConfigureAwait(false);
@@ -882,6 +914,56 @@ public sealed class GridReader : IDisposable, IAsyncDisposable
 #else
             await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
+        }
+    }
+    private sealed class StreamHandOut(int resultSet)
+    {
+        public readonly int ResultSet = resultSet;
+    }
+
+    // Wraps a stream iterator so that disposing its enumerator before the first MoveNext releases
+    // the hand-out: the compiler-generated iterator runs no code at all in that case.
+    private sealed class HandedOutStream<T>(GridReader grid, StreamHandOut handOut, IEnumerable<T> inner) : IEnumerable<T>
+    {
+        public IEnumerator<T> GetEnumerator() => new Enumerator(grid, handOut, inner.GetEnumerator());
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+
+        private sealed class Enumerator(GridReader grid, StreamHandOut handOut, IEnumerator<T> inner) : IEnumerator<T>
+        {
+            public T Current => inner.Current;
+
+            object? System.Collections.IEnumerator.Current => inner.Current;
+
+            public bool MoveNext() => inner.MoveNext();
+
+            public void Reset() => inner.Reset();
+
+            public void Dispose()
+            {
+                grid.ReleaseHandOut(handOut);
+                inner.Dispose();
+            }
+        }
+    }
+
+    /// <inheritdoc cref="HandedOutStream{T}"/>
+    private sealed class HandedOutAsyncStream<T>(GridReader grid, StreamHandOut handOut, IAsyncEnumerable<T> inner) : IAsyncEnumerable<T>
+    {
+        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+            => new Enumerator(grid, handOut, inner.GetAsyncEnumerator(cancellationToken));
+
+        private sealed class Enumerator(GridReader grid, StreamHandOut handOut, IAsyncEnumerator<T> inner) : IAsyncEnumerator<T>
+        {
+            public T Current => inner.Current;
+
+            public ValueTask<bool> MoveNextAsync() => inner.MoveNextAsync();
+
+            public ValueTask DisposeAsync()
+            {
+                grid.ReleaseHandOut(handOut);
+                return inner.DisposeAsync();
+            }
         }
     }
 }

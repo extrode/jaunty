@@ -98,6 +98,14 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a stored procedure that takes no parameters, with command options.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="options">Command options for transaction, timeout and row mapper. The command type is always <see cref="CommandType.StoredProcedure"/>.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A list of the mapped result rows.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
     /// so <c>connection.ExecuteStoredProcedureAsync("proc", options)</c> bound the options as a
@@ -106,7 +114,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        return ExecuteStoredProcedureAsync<T>(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureAsync<T>(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>
@@ -250,6 +258,15 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a stored procedure that takes no parameters, with command options.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="options">Command options for transaction, timeout and row mapper. The command type is always <see cref="CommandType.StoredProcedure"/>.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first result row.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the stored procedure returns no rows.</exception>
     /// <remarks>
     /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
     /// so <c>connection.ExecuteStoredProcedureFirstAsync("proc", options)</c> bound the options as a
@@ -258,7 +275,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>
@@ -413,6 +430,14 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a stored procedure that takes no parameters, with command options.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="options">Command options for transaction, timeout and row mapper. The command type is always <see cref="CommandType.StoredProcedure"/>.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first result row, or <see langword="default"/> when the procedure returns no rows.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
     /// so <c>connection.ExecuteStoredProcedureFirstOrDefaultAsync("proc", options)</c> bound the options as a
@@ -421,7 +446,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>
@@ -557,6 +582,14 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a stored procedure that takes no parameters, with command options.
     /// </summary>
+    /// <typeparam name="T">The type of the scalar value.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="options">Command options for transaction, timeout and row mapper. The command type is always <see cref="CommandType.StoredProcedure"/>.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first column of the first row, converted to the requested type.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
     /// so <c>connection.ExecuteStoredProcedureScalarAsync("proc", options)</c> bound the options as a
@@ -565,7 +598,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default)
     {
-        return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>
@@ -697,6 +730,13 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a stored procedure that takes no parameters, with command options.
     /// </summary>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="options">Command options for transaction and timeout. The command type is always <see cref="CommandType.StoredProcedure"/>.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The number of rows affected.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R34-003. Without this overload the only three-argument form took <c>object? parameters</c>,
     /// so <c>connection.ExecuteStoredProcedureNonQueryAsync("proc", options)</c> bound the options as a
@@ -705,7 +745,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CommandOptions options, CancellationToken cancellationToken = default)
     {
-        return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>

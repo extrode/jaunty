@@ -369,6 +369,8 @@ public static partial class Jaunty
         // Use cached compiled property getters for multi-row binding
         Func<T, object?>[] getters = MultiRowInsertCache.GetOrBuildGetters<T>(cached.Metadata);
 
+        string[] parameterStems = MultiRowInsertCache.ParameterStems(insertableColumns);
+
         int totalInserted = 0;
         int entityCount = entityList.Count;
         int offset = 0;
@@ -402,7 +404,7 @@ public static partial class Jaunty
                 {
                     DbParameter p = command.CreateParameter();
                     // Parameter name matches SQL generated in MultiRowInsertCache.Build()
-                    p.ParameterName = insertableColumns[c].ColumnName + "_" + row;
+                    p.ParameterName = parameterStems[c] + "_" + row;
                     p.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[c](entity), insertableColumns[c].Property, insertableColumns[c].EnumStorageOverride) ?? DBNull.Value;
                     command.Parameters.Add(p);
                 }

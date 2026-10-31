@@ -460,6 +460,36 @@ jobs:
           path: "**/coverage.cobertura.xml"
           retention-days: 7
 
+  commit-authorship:
+    name: Commit authorship
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.head_ref != 'dev' && github.head_ref != 'main')
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Reject AI authorship and attribution trailers
+        run: |
+          before="${{ github.event.before }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            range="origin/${{ github.base_ref }}..HEAD"
+          elif [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] \
+               && git cat-file -e "$before^{commit}" 2>/dev/null; then
+            range="$before..${{ github.sha }}"
+          else
+            # New branch, or a force-push whose old tip is gone: check everything the push adds
+            # over dev (over main when the push is to dev itself).
+            base="$(git merge-base origin/dev HEAD)"
+            if [ "$base" = "$(git rev-parse HEAD)" ]; then
+              base="$(git merge-base origin/main HEAD)"
+            fi
+            range="$base..HEAD"
+          fi
+          scripts/check-authorship.sh "$range"
+
   verify-aot:
     name: Verify NativeAOT Compatibility
     if: >-

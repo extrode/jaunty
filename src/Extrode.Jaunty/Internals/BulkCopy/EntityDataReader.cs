@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 using Extrode.Jaunty.Internals.Entity;
+using Extrode.Jaunty.Internals.Parameters;
 
 namespace Extrode.Jaunty.Internals.BulkCopy;
 
@@ -65,7 +66,7 @@ internal sealed class EntityDataReader<T> : IDataReader where T : new()
         if (_memoOrdinal == i)
             return _memoValue!;
 
-        object value = _getters[i](_enumerator.Current) ?? DBNull.Value;
+        object value = ReadCell(i);
         _memoOrdinal = i;
         _memoValue = value;
         return value;
@@ -93,10 +94,18 @@ internal sealed class EntityDataReader<T> : IDataReader where T : new()
 
         for (int i = 0; i < count; i++)
         {
-            values[i] = _getters[i](_enumerator.Current) ?? DBNull.Value;
+            values[i] = ReadCell(i);
         }
 
         return count;
+    }
+
+    // Same conversion the multi-row and loop paths apply (BulkInsert/BulkInsertAsync), so a
+    // registered ITypeHandler or EnumStorage still holds once a batch reaches native bulk copy.
+    private object ReadCell(int i)
+    {
+        ColumnMetadata column = _columns[i];
+        return ParameterBinder.ApplyTypeHandlerIfNeeded(_getters[i](_enumerator.Current), column.Property, column.EnumStorageOverride) ?? DBNull.Value;
     }
 
     /// <inheritdoc/>

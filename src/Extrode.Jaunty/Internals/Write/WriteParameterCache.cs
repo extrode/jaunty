@@ -411,6 +411,7 @@ internal static class WriteParameterCache<T> where T : new()
         if (!IsConvertibleFromInt64(idType))
             return null;
 
+        // AOT-SAFE: Id on IEntity<TId>, an interface T implements and the caller's instantiation keeps; see the suppressions above.
         PropertyInfo idProperty = entityInterface.GetProperty(nameof(IEntity<object>.Id))!;
 
         ParameterExpression target = Expression.Parameter(typeof(T), "target");

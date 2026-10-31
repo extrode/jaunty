@@ -15,31 +15,59 @@ namespace Extrode.Jaunty.Extensions.Reflection.BulkCopy;
 /// </summary>
 internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 {
-    private static readonly Type? SqlBulkCopyType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopy, Microsoft.Data.SqlClient")
-        ?? Type.GetType("System.Data.SqlClient.SqlBulkCopy, System.Data");
+    /// <summary>
+    /// Where each SqlClient type is looked for, in order. System.Data.SqlClient lives in its own
+    /// assembly on .NET Core (the NuGet package) but in the in-box System.Data on .NET Framework,
+    /// so both names are tried.
+    /// </summary>
+    internal static readonly (string Namespace, string Assembly)[] Candidates =
+    [
+        ("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient"),
+        ("System.Data.SqlClient", "System.Data.SqlClient"),
+        ("System.Data.SqlClient", "System.Data"),
+    ];
 
-    private static readonly Type? SqlBulkCopyOptionsType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions, Microsoft.Data.SqlClient")
-        ?? Type.GetType("System.Data.SqlClient.SqlBulkCopyOptions, System.Data");
+    private static readonly Type? SqlBulkCopyType = ResolveSqlClientType("SqlBulkCopy");
 
-    private static readonly Type? SqlConnectionType = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
-        ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data");
+    private static readonly Type? SqlBulkCopyOptionsType = ResolveSqlClientType("SqlBulkCopyOptions");
 
-    private static readonly Type? SqlTransactionType = Type.GetType("Microsoft.Data.SqlClient.SqlTransaction, Microsoft.Data.SqlClient")
-        ?? Type.GetType("System.Data.SqlClient.SqlTransaction, System.Data");
+    private static readonly Type? SqlConnectionType = ResolveSqlClientType("SqlConnection");
 
+    private static readonly Type? SqlTransactionType = ResolveSqlClientType("SqlTransaction");
+
+    private static Type? ResolveSqlClientType(string name)
+    {
+        foreach ((string ns, string assembly) in Candidates)
+        {
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
+            if (Type.GetType(ns + "." + name + ", " + assembly) is { } type)
+                return type;
+        }
+        return null;
+    }
+
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly PropertyInfo? RowsCopiedProperty = SqlBulkCopyType?.GetProperty("RowsCopied");
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly PropertyInfo? ColumnMappingsProperty = SqlBulkCopyType?.GetProperty("ColumnMappings");
 
     // AUD-R25: BulkCopyOptions.EnableStreaming is public, defaults to true and is documented as
     // "rows are streamed to the database without buffering", but no provider read it - setting it
     // to false changed nothing. On SQL Server it maps directly onto SqlBulkCopy.EnableStreaming,
     // which this provider never set despite reflecting over five other SqlBulkCopy properties.
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly PropertyInfo? EnableStreamingProperty = SqlBulkCopyType?.GetProperty("EnableStreaming");
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly MethodInfo? ColumnMappingsAddMethod = ColumnMappingsProperty?.PropertyType.GetMethod("Add", [typeof(string), typeof(string)]);
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly MethodInfo? WriteToServerMethod = SqlBulkCopyType?.GetMethod("WriteToServer", [typeof(IDataReader)]);
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly MethodInfo? WriteToServerAsyncMethod = SqlBulkCopyType?.GetMethod("WriteToServerAsync", [typeof(IDataReader), typeof(CancellationToken)]);
 
     /// <summary>
@@ -93,6 +121,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         object? bulkCopyOptions = MapBulkCopyOptions(options);
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
         object? bulkCopy = Activator.CreateInstance(SqlBulkCopyType, sqlConnection, bulkCopyOptions, options.Transaction) ?? throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
 
         try
@@ -132,6 +161,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         object? bulkCopyOptions = MapBulkCopyOptions(options);
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
         object? bulkCopy = Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions, options.Transaction) ?? throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
 
         try
@@ -226,6 +256,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         // Map TableLock option
         if (options.TableLock == TableLockOption.BulkLock)
         {
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
             object? tableLockValue = SqlBulkCopyOptionsType.GetField("TableLock")?.GetValue(null);
             if (tableLockValue != null)
                 result |= (int)tableLockValue;
@@ -234,6 +265,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         // Map IdentityMode option
         if (options.IdentityMode == BulkCopyIdentityMode.KeepIdentity)
         {
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
             object? keepIdentityValue = SqlBulkCopyOptionsType.GetField("KeepIdentity")?.GetValue(null);
             if (keepIdentityValue != null)
                 result |= (int)keepIdentityValue;
@@ -242,6 +274,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         // Map CheckConstraints option
         if (options.CheckConstraints)
         {
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
             object? checkConstraintsValue = SqlBulkCopyOptionsType.GetField("CheckConstraints")?.GetValue(null);
             if (checkConstraintsValue != null)
                 result |= (int)checkConstraintsValue;

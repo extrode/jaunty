@@ -17,16 +17,25 @@ namespace Extrode.Jaunty.Extensions.Reflection.BulkCopy;
 /// </summary>
 internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 {
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly Type? NpgsqlConnectionType = Type.GetType("Npgsql.NpgsqlConnection, Npgsql")
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
         ?? Type.GetType("Npgsql.NpgsqlConnection, Npgsql.NetStandard");
 
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly Type? NpgsqlBinaryImporterType = Type.GetType("Npgsql.NpgsqlBinaryImporter, Npgsql")
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
         ?? Type.GetType("Npgsql.NpgsqlBinaryImporter, Npgsql.NetStandard");
 
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? BeginBinaryImportMethod = NpgsqlConnectionType?.GetMethod("BeginBinaryImport", new[] { typeof(string) });
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? StartRowMethod = NpgsqlBinaryImporterType?.GetMethod("StartRow");
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? WriteNullMethod = NpgsqlBinaryImporterType?.GetMethod("WriteNull");
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? CompleteMethod = NpgsqlBinaryImporterType?.GetMethod("Complete", Type.EmptyTypes);
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? DisposeMethod = NpgsqlBinaryImporterType?.GetMethod("Dispose");
 
     // NpgsqlBinaryImporter.Write<T>(T value) is generic — we need to use MakeGenericMethod per type
@@ -45,9 +54,13 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
     // Async methods available in Npgsql 6+
     private static readonly MethodInfo? BeginBinaryImportAsyncMethod = FindAsyncMethod("BeginBinaryImportAsync");
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? StartRowAsyncMethod = NpgsqlBinaryImporterType?.GetMethod("StartRowAsync", new[] { typeof(CancellationToken) });
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? WriteNullAsyncMethod = NpgsqlBinaryImporterType?.GetMethod("WriteNullAsync", new[] { typeof(CancellationToken) });
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? CompleteAsyncMethod = NpgsqlBinaryImporterType?.GetMethod("CompleteAsync", new[] { typeof(CancellationToken) });
+    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
     private static readonly MethodInfo? DisposeAsyncMethod = NpgsqlBinaryImporterType?.GetMethod("DisposeAsync");
 
     /// <inheritdoc/>
@@ -142,6 +155,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                     else
                     {
                         // Use Write<T> with the actual runtime type to avoid boxing/type issues
+                        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
                         MethodInfo writeMethod = WriteMethodCache.GetOrAdd(value.GetType(), t => writeGenericMethod.MakeGenericMethod(t));
                         writeMethod.Invoke(importer, new[] { value });
                     }
@@ -227,6 +241,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
         // Get the result from the completed Task<T>
 
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
         PropertyInfo? resultProperty = importerTask.GetType().GetProperty("Result");
         var importer = resultProperty?.GetValue(importerTask);
 
@@ -260,6 +275,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                         // and hangs indefinitely against a real server instead of throwing
                         // (AUD-R11 batch-06: caught via coverage testing - this path had no
                         // test at all before, sync or async, so the deadlock was undetected).
+                        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
                         MethodInfo writeMethod = WriteAsyncMethodCache.GetOrAdd(value.GetType(), t => writeAsyncGenericMethod.MakeGenericMethod(t));
                         if (writeMethod.Invoke(importer, new[] { value, cancellationToken }) is Task writeTask)
                             await writeTask.ConfigureAwait(false);
@@ -359,6 +375,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
         // Look for Write<T>(T value) — a generic method with exactly one parameter
 
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
         foreach (MethodInfo? method in NpgsqlBinaryImporterType.GetMethods())
         {
             if (method.Name == "Write" && method.IsGenericMethodDefinition)
@@ -384,6 +401,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         // WriteAsync<T>(T, string, CancellationToken) overloads with 3 parameters, so the
         // 2-parameter check below is what disambiguates the plain overload from those.
 
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
         foreach (MethodInfo? method in NpgsqlBinaryImporterType.GetMethods())
         {
             if (method.Name == "WriteAsync" && method.IsGenericMethodDefinition)
@@ -405,6 +423,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         if (NpgsqlConnectionType == null) return null;
 
         // Look for the async overload that takes (string, CancellationToken)
+        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound Npgsql bulk-copy API, null and unused when Npgsql is absent.
         return NpgsqlConnectionType.GetMethod(methodName, new[] { typeof(string), typeof(CancellationToken) });
     }
 }
