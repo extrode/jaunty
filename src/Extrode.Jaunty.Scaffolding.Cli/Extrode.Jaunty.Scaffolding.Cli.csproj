@@ -60,6 +60,8 @@
   </Target>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="System.CommandLine" />
 
     <!-- Database providers -->
