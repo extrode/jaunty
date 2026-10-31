@@ -68,6 +68,26 @@ public class MultiRowInsertCacheTests
         Assert.Contains("(@price_usd_0, @qty_0), (@price_usd_1, @qty_1)", sql);
     }
 
+    private sealed class CollidingStemProbeEntity { }
+
+    [Fact]
+    public void GetOrBuild_ColumnsWhoseStemsCollide_GetDistinctPlaceholders()
+    {
+        var metadata = new EntityMetadata("probe_table", null,
+        [
+            MarkerColumn("Price$", "x"),
+            MarkerColumn("Price_", "y"),
+            MarkerColumn("Price__2", "z")
+        ]);
+
+        string sql = MultiRowInsertCache.GetOrBuild(
+            typeof(CollidingStemProbeEntity), typeof(PlaceholderProbeConnection), 2, metadata, new PostgreSqlDialect());
+
+        Assert.Equal(["Price_", "Price__3", "Price__2"], MultiRowInsertCache.ParameterStems(metadata.InsertColumns));
+        Assert.Contains("(Price$, Price_, Price__2)", sql);
+        Assert.Contains("(@Price__0, @Price__3_0, @Price__2_0), (@Price__1, @Price__3_1, @Price__2_1)", sql);
+    }
+
     [Theory]
     [InlineData("ProductName", "ProductName")]
     [InlineData("price$usd", "price_usd")]

@@ -24,20 +24,25 @@ internal static class SqlParameterParser
     /// <c>ARRAY[@a, @b]</c> and <c>tags[@i]</c> and DuckDB's <c>[@a, @b]</c> list literal hold real
     /// placeholders, which a bracket run would hide from binding.
     /// </param>
-    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false, bool dollarSigil = true, bool bracketIdentifiers = true)
+    /// <param name="nestsBlockComments">
+    /// Whether <c>/* ... */</c> comments nest, so that <c>/* a /* b */ @Old */</c> is one comment.
+    /// True only for PostgreSQL and SQL Server, which count depth; MySQL, SQLite and every other
+    /// engine end the comment at the first <c>*/</c>.
+    /// </param>
+    internal static string[] ExtractParameterNames(string sql, bool backslashEscapes = false, bool dollarSigil = true, bool bracketIdentifiers = true, bool nestsBlockComments = false)
     {
         if (string.IsNullOrWhiteSpace(sql))
             return [];
 
 #if NET8_0_OR_GREATER
-        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes, dollarSigil, bracketIdentifiers);
+        return ExtractParameterNamesSpan(sql.AsSpan(), backslashEscapes, dollarSigil, bracketIdentifiers, nestsBlockComments);
 #else
-        return ExtractParameterNamesClassic(sql, backslashEscapes, dollarSigil, bracketIdentifiers);
+        return ExtractParameterNamesClassic(sql, backslashEscapes, dollarSigil, bracketIdentifiers, nestsBlockComments);
 #endif
     }
 
 #if NET8_0_OR_GREATER
-    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers)
+    private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers, bool nestsBlockComments)
     {
         // Deferred until the first sigil is found. Opening with a sized List cost every
         // parameterless statement a List plus its backing array - measured at 120 bytes/call by
@@ -69,7 +74,7 @@ internal static class SqlParameterParser
             // Skip block comment
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
-                i = SkipBlockComment(sql, i + 2, NestsBlockComments(dollarSigil, bracketIdentifiers));
+                i = SkipBlockComment(sql, i + 2, nestsBlockComments);
                 continue;
             }
 
@@ -257,7 +262,7 @@ internal static class SqlParameterParser
     }
 #endif
 
-    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers)
+    private static string[] ExtractParameterNamesClassic(string sql, bool backslashEscapes, bool dollarSigil, bool bracketIdentifiers, bool nestsBlockComments)
     {
         List<string>? names = null;
         var i = 0;
@@ -282,7 +287,7 @@ internal static class SqlParameterParser
 
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
-                i = SkipBlockCommentClassic(sql, i + 2, len, NestsBlockComments(dollarSigil, bracketIdentifiers));
+                i = SkipBlockCommentClassic(sql, i + 2, len, nestsBlockComments);
                 continue;
             }
 
@@ -473,18 +478,6 @@ internal static class SqlParameterParser
     /// <inheritdoc cref="IsSigilInsideIdentifier(string, int)"/>
     internal static bool IsSigilInsideIdentifier(ReadOnlySpan<char> sql, int sigilPos)
         => sigilPos > 0 && IsParameterChar(sql[sigilPos - 1]);
-
-    /// <summary>
-    /// Whether <c>/* ... */</c> comments nest, so that <c>/* a /* b */ @Old */</c> is one comment.
-    /// </summary>
-    /// <remarks>
-    /// PostgreSQL and SQL Server count depth; MySQL and SQLite end the comment at the first
-    /// <c>*/</c>. The flags single those two out: of the resolved dialects, PostgreSQL is the only one with
-    /// <c>$</c> and without <c>[</c>, SQL Server the only one with <c>[</c> and without
-    /// <c>$</c>. SQLite and an unresolved connection set both, MySQL neither.
-    /// </remarks>
-    internal static bool NestsBlockComments(bool dollarSigil, bool bracketIdentifiers)
-        => dollarSigil != bracketIdentifiers;
 
     /// <summary>
     /// Whether the <c>'</c> at <paramref name="quotePos"/> opens a PostgreSQL escape string

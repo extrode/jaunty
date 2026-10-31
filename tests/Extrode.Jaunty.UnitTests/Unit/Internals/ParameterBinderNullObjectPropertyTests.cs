@@ -41,6 +41,26 @@ public class ParameterBinderNullObjectPropertyTests
     }
 
     [Fact]
+    public void AnObjectProperty_Null_InAnInList_ExpandsToTheEmptySet()
+    {
+        using SqliteCommand command = Command("SELECT 1 FROM r39_object_in WHERE Id IN @Ids");
+        ParameterBinder.Bind(command, new ObjectFilter { Ids = null });
+
+        Assert.Equal("SELECT 1 FROM r39_object_in WHERE Id IN (SELECT NULL WHERE 1 = 0)", command.CommandText);
+        Assert.Equal(0, command.Parameters.Count);
+    }
+
+    [Fact]
+    public void AnInterfaceProperty_Null_InANotInList_ExpandsToTheEmptySet()
+    {
+        using SqliteCommand command = Command("SELECT 1 FROM r39_iface_in WHERE Id not in\n@Ids");
+        ParameterBinder.Bind(command, new CloneableFilter { Ids = null });
+
+        Assert.Equal("SELECT 1 FROM r39_iface_in WHERE Id not in\n(SELECT NULL WHERE 1 = 0)", command.CommandText);
+        Assert.Equal(0, command.Parameters.Count);
+    }
+
+    [Fact]
     public void AnObjectProperty_HoldingAList_StillExpands()
     {
         const string sql = "SELECT 1 FROM r39_object_list WHERE Id IN @Ids";

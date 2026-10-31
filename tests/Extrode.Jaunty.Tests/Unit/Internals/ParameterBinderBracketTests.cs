@@ -30,7 +30,7 @@ public class ParameterBinderBracketTests
     {
         MethodInfo method = typeof(SqlParameterParser).GetMethod(
             "ExtractParameterNamesClassic", BindingFlags.NonPublic | BindingFlags.Static)!;
-        return (string[])method.Invoke(null, new object[] { sql, false, true, bracketIdentifiers })!;
+        return (string[])method.Invoke(null, new object[] { sql, false, true, bracketIdentifiers, false })!;
     }
 
     [Theory]
