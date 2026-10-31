@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 
 using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Internals;
@@ -106,7 +107,9 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
-        return GetByIdSimpleCore<T>(connection, id, default, required: true)!;
+        var found = new StrongBox<bool>();
+        T? result = GetByIdSimpleCore<T>(connection, id, default, found);
+        return found.Value ? result! : throw NotFound<T>(id);
     }
 
     /// <summary>
@@ -127,7 +130,9 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
-        return GetByIdSimpleCore<T>(connection, id, options, required: true)!;
+        var found = new StrongBox<bool>();
+        T? result = GetByIdSimpleCore<T>(connection, id, options, found);
+        return found.Value ? result! : throw NotFound<T>(id);
     }
 
     /// <summary>
@@ -147,7 +152,9 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
         KeyGuard.ThrowIfNull(id, nameof(id));
-        return GetByIdTypedCore<T, TId>(connection, id, default, required: true)!;
+        var found = new StrongBox<bool>();
+        T? result = GetByIdTypedCore<T, TId>(connection, id, default, found);
+        return found.Value ? result! : throw NotFound<T>(id);
     }
 
     /// <summary>
@@ -168,7 +175,9 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
         KeyGuard.ThrowIfNull(id, nameof(id));
-        return GetByIdTypedCore<T, TId>(connection, id, options, required: true)!;
+        var found = new StrongBox<bool>();
+        T? result = GetByIdTypedCore<T, TId>(connection, id, options, found);
+        return found.Value ? result! : throw NotFound<T>(id);
     }
 
     /// <summary>
@@ -293,8 +302,9 @@ public static partial class Jaunty
 
         async ValueTask<T> AwaitAsync()
         {
-            var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken, required: true).ConfigureAwait(false);
-            return result!;
+            var found = new StrongBox<bool>();
+            T? result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken, found).ConfigureAwait(false);
+            return found.Value ? result! : throw NotFound<T>(id);
         }
     }
 
@@ -331,8 +341,9 @@ public static partial class Jaunty
 
         async ValueTask<T> AwaitAsync()
         {
-            var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken, required: true).ConfigureAwait(false);
-            return result!;
+            var found = new StrongBox<bool>();
+            T? result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken, found).ConfigureAwait(false);
+            return found.Value ? result! : throw NotFound<T>(id);
         }
     }
 
@@ -368,8 +379,9 @@ public static partial class Jaunty
 
         async ValueTask<T> AwaitAsync()
         {
-            var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken, required: true).ConfigureAwait(false);
-            return result!;
+            var found = new StrongBox<bool>();
+            T? result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken, found).ConfigureAwait(false);
+            return found.Value ? result! : throw NotFound<T>(id);
         }
     }
 
@@ -406,8 +418,9 @@ public static partial class Jaunty
 
         async ValueTask<T> AwaitAsync()
         {
-            var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken, required: true).ConfigureAwait(false);
-            return result!;
+            var found = new StrongBox<bool>();
+            T? result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken, found).ConfigureAwait(false);
+            return found.Value ? result! : throw NotFound<T>(id);
         }
     }
 }
