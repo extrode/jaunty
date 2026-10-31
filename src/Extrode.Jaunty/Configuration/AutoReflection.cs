@@ -28,6 +28,7 @@ internal static class AutoReflection
     /// </summary>
     internal static void Apply(JauntyConfigBuilder builder)
     {
+        // AOT-SAFE: optional extension load; TryApply treats an absent assembly as the source-gen-only case and returns null.
         Exception? failure = TryApply(builder, static name => Assembly.Load(name));
         if (failure is not null)
             throw new InvalidOperationException("Switching on reflection mapping from " + ExtensionAssembly + " failed.", failure);
