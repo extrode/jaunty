@@ -33,6 +33,11 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
     {
         _parent = parent;
         _joinType = joinType;
+        // The alias is written into the JOIN, column prefixes and ORDER BY verbatim, so it is
+        // validated here exactly as the FROM alias is.
+        if (alias is not null)
+            SqlIdentifierValidator.Validate(alias, nameof(alias));
+
         _alias = alias;
         _metadata = FluentMetadataCache.GetMetadata<T3>();
     }

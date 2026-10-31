@@ -537,8 +537,10 @@ internal static class ParameterBinder
                 // two shapes a caller reaches by the same accident: a `List<int>?` left unset.
                 // They now behave identically. The declared type is what decides, since there is
                 // no value to inspect; IsCollectionType excludes string and byte[], so a null
-                // string or blob still binds as a DBNull scalar.
-                if (property is not null && IsCollectionType(property.PropertyType) && !HasTypeHandler(property.PropertyType))
+                // string or blob still binds as a DBNull scalar. So does a null held in a property
+                // declared object (or ICloneable): nothing says it was meant to be a collection,
+                // and the IN-list shape is only worth inferring from a type that is one.
+                if (property is not null && IsEnumerableType(property.PropertyType) && !HasTypeHandler(property.PropertyType))
                 {
                     expansions ??= new List<CollectionExpansion>(2);
                     expansions.Add(new CollectionExpansion(sqlName, Array.Empty<object?>(), 0, property));
@@ -682,9 +684,10 @@ internal static class ParameterBinder
         {
             char c = sql[i];
 
-            if (c == '-' && i + 1 < len && sql[i + 1] == '-')
+            // '#' is a line comment on MySQL/MariaDB only - see SqlParameterParser.
+            if ((c == '-' && i + 1 < len && sql[i + 1] == '-') || (c == '#' && backslashEscapes))
             {
-                i += 2;
+                i += c == '#' ? 1 : 2;
                 while (i < len && sql[i] is not ('\n' or '\r')) i++;
                 // Stryker disable once Statement : the walk sits on the newline (or the end) here, and the fall-through i++ only steps over it
                 continue;
@@ -692,9 +695,7 @@ internal static class ParameterBinder
 
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
-                i += 2;
-                while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
-                i = Math.Min(i + 2, len);
+                i = SqlParameterParser.SkipBlockCommentClassic(sql, i + 2, len, SqlParameterParser.NestsBlockComments(dollarSigil, bracketIdentifiers));
                 continue;
             }
 
@@ -705,8 +706,8 @@ internal static class ParameterBinder
             if (c is '\'' or '"' or '`' || (c == '[' && bracketIdentifiers))
             {
                 char terminator = c == '[' ? ']' : c;
-                // AUD-R34-014: string literals only, and MySQL/MariaDB only.
-                bool escapes = backslashEscapes && c is '\'' or '"';
+                // AUD-R34-014: string literals only, and MySQL/MariaDB only - plus PostgreSQL's E'...'.
+                bool escapes = (backslashEscapes && c is '\'' or '"') || (dollarSigil && c == '\'' && SqlParameterParser.IsEscapeStringPrefix(sql, i));
                 i++;
                 while (i < len)
                 {
@@ -789,11 +790,11 @@ internal static class ParameterBinder
         {
             char c = sql[i];
 
-            // Single-line comment: copy verbatim to end of line
-            if (c == '-' && i + 1 < len && sql[i + 1] == '-')
+            // Single-line comment (or MySQL's '#' one): copy verbatim to end of line
+            if ((c == '-' && i + 1 < len && sql[i + 1] == '-') || (c == '#' && backslashEscapes))
             {
                 int start = i;
-                i += 2;
+                i += c == '#' ? 1 : 2;
                 while (i < len && sql[i] is not ('\n' or '\r')) i++;
                 sb.Append(sql, start, i - start);
                 continue;
@@ -803,9 +804,7 @@ internal static class ParameterBinder
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
                 int start = i;
-                i += 2;
-                while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
-                i = Math.Min(i + 2, len);
+                i = SqlParameterParser.SkipBlockCommentClassic(sql, i + 2, len, SqlParameterParser.NestsBlockComments(dollarSigil, bracketIdentifiers));
                 sb.Append(sql, start, i - start);
                 continue;
             }
@@ -815,8 +814,8 @@ internal static class ParameterBinder
             if (c is '\'' or '"' or '`' || (c == '[' && bracketIdentifiers))
             {
                 char terminator = c == '[' ? ']' : c;
-                // AUD-R34-014: string literals only, and MySQL/MariaDB only.
-                bool escapes = backslashEscapes && c is '\'' or '"';
+                // AUD-R34-014: string literals only, and MySQL/MariaDB only - plus PostgreSQL's E'...'.
+                bool escapes = (backslashEscapes && c is '\'' or '"') || (dollarSigil && c == '\'' && SqlParameterParser.IsEscapeStringPrefix(sql, i));
                 int start = i;
                 i++;
                 while (i < len)
@@ -955,6 +954,11 @@ internal static class ParameterBinder
             || type == typeof(object)
             || (type.IsInterface && type.IsAssignableFrom(typeof(object[])));
     }
+
+    // The declared type is itself a collection, so a null value of it is an empty one. Unlike
+    // IsCollectionType, object and ICloneable do not count: they only might hold one.
+    private static bool IsEnumerableType(Type type)
+        => type != typeof(string) && type != typeof(byte[]) && typeof(IEnumerable).IsAssignableFrom(type);
 
     // AUD-R26: was a byte-identical private copy of SqlParameterParser's. Forwarded rather than
     // duplicated, because the finding's requirement was that all four sigil sites agree, and two

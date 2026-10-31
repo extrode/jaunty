@@ -1,6 +1,10 @@
 ﻿using System.Data.Common;
 
 using Extrode.Jaunty.Core;
+using Extrode.Jaunty.Configuration;
+using Extrode.Jaunty.Diagnostics;
+using Extrode.Jaunty.Interceptors;
+using Extrode.Jaunty.StoredProcedure;
 
 namespace Extrode.Jaunty.Tests.Unit.StoredProcedures;
 
@@ -20,6 +24,7 @@ namespace Extrode.Jaunty.Tests.Unit.StoredProcedures;
 /// records what Extrode.Jaunty actually put on the command, which is the thing under test.
 /// </para>
 /// </summary>
+[Collection(ConfigurationGenerationCollection.Name)]
 public class StoredProcedureOptionsOverloadTests
 {
     internal sealed class Row
@@ -349,5 +354,111 @@ public class StoredProcedureOptionsOverloadTests
         Assert.Equal(CommandType.StoredProcedure, connection.ExecutedCommandType);
         Assert.Equal(0, connection.ExecutedTimeout);
         Assert.Null(connection.ExecutedTransaction);
+    }
+
+    private sealed class ProcedureObserver(string procedureName) : IObserver<KeyValuePair<string, object?>>
+    {
+        private int _executing;
+
+        public int Executing => Volatile.Read(ref _executing);
+
+        public void OnCompleted() { }
+        public void OnError(Exception error) { }
+
+        public void OnNext(KeyValuePair<string, object?> value)
+        {
+            if (value.Key == JauntyDiagnosticListener.CommandExecutingEventName
+                && value.Value is CommandEventPayload payload
+                && payload.CommandText == procedureName)
+                Interlocked.Increment(ref _executing);
+        }
+    }
+
+    private static int ExecutingEventsFor(string procedureName, Action run)
+    {
+        var observer = new ProcedureObserver(procedureName);
+        using (JauntyDiagnosticListener.Instance.Subscribe(observer))
+            run();
+        return observer.Executing;
+    }
+
+    private static async Task<int> ExecutingEventsForAsync(string procedureName, Func<Task> run)
+    {
+        var observer = new ProcedureObserver(procedureName);
+        using (JauntyDiagnosticListener.Instance.Subscribe(observer))
+            await run();
+        return observer.Executing;
+    }
+
+    [Fact]
+    public void ExecuteStoredProcedure_GivenSpParameters_IsVisibleToADiagnosticsSubscriber()
+    {
+        using var connection = new RecordingConnection();
+
+        int events = ExecutingEventsFor("ObservedSpRows", () => connection.ExecuteStoredProcedure<Row>("ObservedSpRows", new SpParameters()));
+
+        Assert.Equal(1, events);
+    }
+
+    [Fact]
+    public async Task ExecuteStoredProcedureScalarAsync_GivenSpParameters_IsVisibleToADiagnosticsSubscriber()
+    {
+        using var connection = new RecordingConnection();
+
+        int events = await ExecutingEventsForAsync("ObservedSpScalar", async () => await connection.ExecuteStoredProcedureScalarAsync<int>("ObservedSpScalar", new SpParameters()));
+
+        Assert.Equal(1, events);
+    }
+
+    private sealed class ParametersInterceptor(string procedureName) : ICommandInterceptor
+    {
+        public List<object?> Seen { get; } = [];
+
+        public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken cancellationToken)
+        {
+            if (context.CommandText == procedureName)
+                Seen.Add(context.Parameters);
+            return default;
+        }
+
+        public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken cancellationToken) => default;
+
+        public ValueTask OnCommandFailedAsync(CommandContext context, Exception exception, CancellationToken cancellationToken) => default;
+    }
+
+    [Fact]
+    public void ExecuteStoredProcedureNonQuery_GivenOnlyOptions_BindsTheObjectParametersOverload()
+    {
+        using var connection = new RecordingConnection();
+        var interceptor = new ParametersInterceptor("BoundOptionsWork");
+        JauntyConfig.AddInterceptor(interceptor);
+        try
+        {
+            connection.ExecuteStoredProcedureNonQuery("BoundOptionsWork", CommandOptions.WithTimeout(5));
+        }
+        finally
+        {
+            JauntyConfig.ClearInterceptors();
+        }
+
+        Assert.Null(Assert.Single(interceptor.Seen));
+    }
+
+    [Fact]
+    public async Task ExecuteStoredProcedureAsync_GivenOnlyOptions_BindsTheObjectParametersOverload()
+    {
+        using var connection = new RecordingConnection();
+        var interceptor = new ParametersInterceptor("BoundOptionsRows");
+        JauntyConfig.AddInterceptor(interceptor);
+        try
+        {
+            await connection.ExecuteStoredProcedureAsync<Row>("BoundOptionsRows", CommandOptions<Row>.WithTimeout(5));
+        }
+        finally
+        {
+            JauntyConfig.ClearInterceptors();
+        }
+
+        Assert.Null(Assert.Single(interceptor.Seen));
     }
 }

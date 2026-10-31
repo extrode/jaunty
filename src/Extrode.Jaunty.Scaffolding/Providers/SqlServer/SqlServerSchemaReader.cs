@@ -166,6 +166,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
         // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
         // returns null and falls through.
+        // AOT-SAFE: literal type name, which the trimmer resolves intrinsically; an absent provider returns null and falls through.
         var type = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient");
         type ??= FallbackProviderType();
 
@@ -177,7 +178,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     /// its own method so a test that references System.Data.SqlClient can pin the type name.
     /// </summary>
     [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    internal static Type? FallbackProviderType() => Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
+    internal static Type? FallbackProviderType() => Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient"); // AOT-SAFE: literal type name, which the trimmer resolves intrinsically; an absent provider returns null and falls through.
 
     internal static DbConnection FromProviderType(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? type,

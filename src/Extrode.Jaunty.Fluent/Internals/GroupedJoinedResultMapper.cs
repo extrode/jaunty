@@ -96,8 +96,10 @@ internal static class GroupedJoinedResultMapper
             if (aliases.Length == 1 && IsScalarResult(resultType))
                 return new ResultMapperPlan(constructor: null, constructorParameters: null, properties: null, parameterAliasOrder: null, isScalar: true);
 
+            // AOT-SAFE: TResult carries [DynamicallyAccessedMembers(PublicConstructors)] on every route here; see the properties marker below.
             if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
             {
+                // AOT-SAFE: same rooted public constructors as the check above.
                 ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
 
                 if (constructor is not null)
@@ -290,6 +292,7 @@ internal static class GroupedJoinedResultMapper
             return (TResult)plan.Constructor.Invoke(values);
         }
 
+        // AOT-SAFE: TResult carries [DynamicallyAccessedMembers(PublicConstructors)], which keeps the parameterless constructor this calls.
         TResult? instance = Activator.CreateInstance<TResult>();
         PropertyInfo?[] properties = plan.Properties!;
 

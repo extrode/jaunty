@@ -370,6 +370,7 @@ public static class SqlDialectFactory
         // and the cheapest to be confident about.
         foreach (string name in InnerConnectionPropertyNames)
         {
+            // AOT-SAFE: optional decorator probe; a trimmed property returns null, see the suppression above.
             PropertyInfo? property = connectionType.GetProperty(
                 name, BindingFlags.Public | BindingFlags.Instance);
 
@@ -444,6 +445,7 @@ public static class SqlDialectFactory
 
     private static ISqlDialect? ProbeBulkCopyFactory(ISqlDialect dialect)
     {
+        // AOT-SAFE: literal type name in an optional extension; absent or trimmed returns null and the base dialect is used unchanged.
         var factoryType = Type.GetType("Extrode.Jaunty.Extensions.Reflection.Dialects.BulkCopyDialectFactory, Extrode.Jaunty.Extensions.Reflection");
         if (factoryType == null)
             return null;

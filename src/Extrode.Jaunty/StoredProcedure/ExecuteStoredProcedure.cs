@@ -4,6 +4,7 @@ using System.Data.Common;
 using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Interceptors;
+using Extrode.Jaunty.Internals;
 using Extrode.Jaunty.Internals.Parameters;
 using Extrode.Jaunty.Internals.Read;
 using Extrode.Jaunty.StoredProcedure;
@@ -301,19 +302,14 @@ public static partial class Jaunty
         // QueryScalar/ExecuteNonQueryCore and therefore do both. Same method name, same public
         // surface, opposite observability - and it silently excluded precisely the stored-procedure
         // calls that use output and return parameters, typically the ones an audit trail most needs.
-        // Whether anything is actually observing is the pipeline's own decision (IsObserved covers
-        // interceptors and the DiagnosticListener alike), so the only test here is whether a
-        // pipeline is configured at all.
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteWithOutputParametersCore(connection, procedureName, spParameters, options, handler)
-            : pipeline.ExecuteWithInterception(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteWithOutputParametersCore(connection, procedureName, spParameters, options, handler));
+        // Routed through CommandObservation like every other command, so a DiagnosticListener
+        // subscriber with no interceptor registered sees these calls too (round 39).
+        return CommandObservation.Execute(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteWithOutputParametersCore(connection, procedureName, spParameters, options, handler));
     }
 
     private static TResult ExecuteWithOutputParametersCore<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
@@ -347,7 +343,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
             TResult result = handler(reader, parameters);
@@ -379,16 +375,12 @@ public static partial class Jaunty
         SpParameters spParameters = parameters ?? new SpParameters();
 
         // See ExecuteWithOutputParameters for why this wrapper exists (AUD-R25).
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteScalarWithOutputParametersCore<T>(connection, procedureName, spParameters, options)
-            : pipeline.ExecuteWithInterception(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteScalarWithOutputParametersCore<T>(connection, procedureName, spParameters, options));
+        return CommandObservation.Execute(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteScalarWithOutputParametersCore<T>(connection, procedureName, spParameters, options));
     }
 
     private static T ExecuteScalarWithOutputParametersCore<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
@@ -421,7 +413,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
             object? result = command.ExecuteScalar();
 
@@ -455,16 +447,12 @@ public static partial class Jaunty
         SpParameters spParameters = parameters ?? new SpParameters();
 
         // See ExecuteWithOutputParameters for why this wrapper exists (AUD-R25).
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteNonQueryWithOutputParametersCore(connection, procedureName, spParameters, options)
-            : pipeline.ExecuteWithInterception(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteNonQueryWithOutputParametersCore(connection, procedureName, spParameters, options));
+        return CommandObservation.Execute(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteNonQueryWithOutputParametersCore(connection, procedureName, spParameters, options));
     }
 
     private static int ExecuteNonQueryWithOutputParametersCore(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
@@ -497,7 +485,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
             int rowsAffected = command.ExecuteNonQuery();
 

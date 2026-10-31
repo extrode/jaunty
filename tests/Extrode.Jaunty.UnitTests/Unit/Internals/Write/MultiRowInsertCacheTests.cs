@@ -1,3 +1,4 @@
+using Extrode.Jaunty.Dialects;
 using Extrode.Jaunty.Internals.Entity;
 using Extrode.Jaunty.Internals.Write;
 
@@ -45,5 +46,35 @@ public class MultiRowInsertCacheTests
         // ("FROM_AB"/"FROM_C") because both layouts hashed to the same unseparated key.
         Assert.Equal("FROM_A", gettersB[0](dummy));
         Assert.Equal("FROM_BC", gettersB[1](dummy));
+    }
+
+    private sealed class PlaceholderProbeEntity { }
+
+    private sealed class PlaceholderProbeConnection { }
+
+    [Fact]
+    public void GetOrBuild_ColumnNamesWithNonParameterCharacters_GetSanitisedPlaceholdersAndKeepTheirColumnNames()
+    {
+        var metadata = new EntityMetadata("probe_table", null,
+        [
+            MarkerColumn("price$usd", "x"),
+            MarkerColumn("qty", "y")
+        ]);
+
+        string sql = MultiRowInsertCache.GetOrBuild(
+            typeof(PlaceholderProbeEntity), typeof(PlaceholderProbeConnection), 2, metadata, new PostgreSqlDialect());
+
+        Assert.Contains("(price$usd, qty)", sql);
+        Assert.Contains("(@price_usd_0, @qty_0), (@price_usd_1, @qty_1)", sql);
+    }
+
+    [Theory]
+    [InlineData("ProductName", "ProductName")]
+    [InlineData("price$usd", "price_usd")]
+    [InlineData("#code", "_code")]
+    [InlineData("Unit Price", "Unit_Price")]
+    public void ParameterStem_KeepsLettersDigitsAndUnderscores(string columnName, string expected)
+    {
+        Assert.Equal(expected, MultiRowInsertCache.ParameterStem(columnName));
     }
 }

@@ -50,6 +50,14 @@ public class ParameterRootingEmissionTests
     // What gets rooted
     // ------------------------------------------------------------------
 
+    [Fact]
+    public void AKeywordNamedParameterProperty_IsEmittedEscaped()
+    {
+        var generated = RunGenerator(Consumer("""connection.Execute("UPDATE t SET x = 1 WHERE class = @class", new { @class = 3 });""")).Source;
+
+        Assert.Contains("PreserveParameters(new { @class = default(int) });", generated, StringComparison.Ordinal);
+    }
+
     /// <summary>
     /// The shipped sample's exact shape, and the case that cannot be solved any other way: an
     /// anonymous type has no name, so neither <c>PreserveParameters&lt;T&gt;()</c> nor

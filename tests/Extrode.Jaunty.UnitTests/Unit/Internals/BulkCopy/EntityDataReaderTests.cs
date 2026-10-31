@@ -1,3 +1,4 @@
+using Extrode.Jaunty.Attributes;
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Internals.BulkCopy;
 using Extrode.Jaunty.Internals.Entity;
@@ -680,6 +681,35 @@ public class EntityDataReaderTests : IDisposable
         Assert.True(reader.Read());
 
         Assert.Throws<ArgumentNullException>(() => reader.GetValues(null!));
+    }
+
+    private enum Status
+    {
+        Pending = 0,
+        Active = 1,
+    }
+
+    private sealed class EnumEntity
+    {
+        [EnumStorage(EnumStorage.String)]
+        public Status State { get; set; }
+    }
+
+    [Fact]
+    public void GetValueAndGetValues_ApplyTheEnumStorageOfTheProperty()
+    {
+        var prop = typeof(EnumEntity).GetProperty(nameof(EnumEntity.State))!;
+        var metadata = new EntityMetadata("EnumEntities", null, new List<ColumnMetadata>
+        {
+            new ColumnMetadata(prop, prop.Name, isPrimaryKey: false, databaseGeneratedOption: null),
+        });
+        using var reader = new EntityDataReader<EnumEntity>(new List<EnumEntity> { new EnumEntity { State = Status.Active } }, metadata);
+        Assert.True(reader.Read());
+
+        Assert.Equal("Active", reader.GetValue(0));
+        var values = new object[1];
+        reader.GetValues(values);
+        Assert.Equal("Active", values[0]);
     }
 
     private static EntityMetadata CreateReorderedSubsetMetadata()
