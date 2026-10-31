@@ -116,6 +116,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
         // spec 010 T16 fixed the same shape in SQLiteSchemaReader), and the PostgreSQL reader
         // already uses this form. Under NativeAOT a literal for an unreferenced assembly simply
         // returns null and falls through.
+        // AOT-SAFE: literal type name, which the trimmer resolves intrinsically; an absent provider returns null and falls through.
         var type = Type.GetType("MySqlConnector.MySqlConnection, MySqlConnector");
         type ??= FallbackProviderType();
 
@@ -127,7 +128,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
     /// its own method so a test that references MySql.Data can pin the type name.
     /// </summary>
     [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    internal static Type? FallbackProviderType() => Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data");
+    internal static Type? FallbackProviderType() => Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data"); // AOT-SAFE: literal type name, which the trimmer resolves intrinsically; an absent provider returns null and falls through.
 
     internal static DbConnection FromProviderType(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? type,

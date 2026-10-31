@@ -118,6 +118,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
 
     internal static DbConnection CreateConnection(string connectionString)
     {
+        // AOT-SAFE: literal type name, which the trimmer resolves intrinsically; an absent provider returns null and falls through.
         var type = Type.GetType("Npgsql.NpgsqlConnection, Npgsql");
         return FromProviderType(type, connectionString);
     }
