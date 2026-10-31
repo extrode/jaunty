@@ -31,15 +31,15 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Shipped in src/ - same-major bumps only -->
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.14" />
     <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.6" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
-    <PackageVersion Include="System.CommandLine" Version="2.0.12" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.14" />
     <!-- Npgsql: net8.0/net10.0 default is the current major; netstandard2.0/net472 override below
          pins the last release that still targets netstandard2.0. -->
     <PackageVersion Include="Npgsql" Version="10.0.3" Condition="'$(TargetFramework)' != 'netstandard2.0' AND '$(TargetFramework)' != 'net472'" />
@@ -78,19 +78,19 @@
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.1" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageVersion Include="CsCheck" Version="4.9.1" />
     <PackageVersion Include="SharpFuzz" Version="2.3.0" />
     <!-- Test-only DI/logging (test host wiring, not shipped) -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.14" />
     <!-- Benchmarks: comparison ORMs and EF Core providers. Pomelo has no EF Core 10 release yet,
          so the whole EF Core family here stays on its latest 9.x rather than mixing majors. -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="Dapper" Version="2.1.89" />
     <PackageVersion Include="Dapper.Contrib" Version="2.0.78" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.22" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.20" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
@@ -98,6 +98,6 @@
     <PackageVersion Include="RepoDb.SqlServer" Version="1.16.1" />
     <PackageVersion Include="RepoDb.PostgreSql" Version="1.16.0" />
     <PackageVersion Include="RepoDb.MySqlConnector" Version="1.16.0" />
-    <PackageVersion Include="linq2db" Version="6.5.0" />
+    <PackageVersion Include="linq2db" Version="6.5.1" />
   </ItemGroup>
 </Project>
