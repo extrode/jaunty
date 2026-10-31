@@ -5,13 +5,19 @@
 set -euo pipefail
 range="${1:?usage: check-authorship.sh <rev-range>}"
 pattern='claude|anthropic|copilot|chatgpt|openai|gemini'
+# Resolve the range up front: a failure inside the process substitution or the for list below
+# would not trip set -e, and an unknown sha (a force-pushed `before`) would pass unchecked.
+if ! shas="$(git rev-list "$range")"; then
+  echo "::error::cannot resolve commit range '$range'; no commits were checked" >&2
+  exit 2
+fi
 bad=0
 while IFS=$'\t' read -r sha an ae cn ce; do
   if printf '%s %s %s %s' "$an" "$ae" "$cn" "$ce" | grep -Eiq "$pattern"; then
     echo "::error::$sha has an AI author or committer: $an <$ae> / $cn <$ce>"; bad=1
   fi
 done < <(git log --format='%H%x09%an%x09%ae%x09%cn%x09%ce' "$range")
-for sha in $(git rev-list "$range"); do
+for sha in $shas; do
   if git log -1 --format=%B "$sha" | grep -Eiq "^(co-authored-by:.*($pattern)|claude-session:|.*generated with .*(claude|copilot|chatgpt))"; then
     echo "::error::$sha carries an AI attribution trailer"; bad=1
   fi

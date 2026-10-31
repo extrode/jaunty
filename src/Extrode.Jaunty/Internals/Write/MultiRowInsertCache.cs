@@ -162,6 +162,7 @@ internal static class MultiRowInsertCache
         sb.Append(") VALUES ");
 
         // (@col1_0, @col2_0), (@col1_1, @col2_1), ...
+        string[] stems = ParameterStems(insertableColumns);
         for (int row = 0; row < batchSize; row++)
         {
             if (row > 0) sb.Append(", ");
@@ -170,7 +171,7 @@ internal static class MultiRowInsertCache
             {
                 if (c > 0) sb.Append(", ");
                 sb.Append('@');
-                sb.Append(ParameterStem(insertableColumns[c].ColumnName));
+                sb.Append(stems[c]);
                 sb.Append('_');
                 sb.Append(row);
             }
@@ -202,6 +203,37 @@ internal static class MultiRowInsertCache
                 chars[i] = '_';
         }
         return new string(chars);
+    }
+
+    /// <summary>
+    /// <see cref="ParameterStem"/> for each column, made unique: <c>Price$</c> and <c>Price_</c>
+    /// both reduce to <c>Price_</c>, so a later column whose stem is taken gets <c>_2</c>,
+    /// <c>_3</c>... appended, skipping any stem another column already has. Derived from the column
+    /// names alone, so the SQL cached per layout and the parameter names bound against it agree.
+    /// </summary>
+    internal static string[] ParameterStems(IReadOnlyList<ColumnMetadata> columns)
+    {
+        var stems = new string[columns.Count];
+        var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (int c = 0; c < stems.Length; c++)
+            taken.Add(stems[c] = ParameterStem(columns[c].ColumnName));
+        if (taken.Count == stems.Length)
+            return stems;
+
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (int c = 0; c < stems.Length; c++)
+        {
+            if (used.Add(stems[c]))
+                continue;
+
+            string stem = stems[c];
+            int n = 2;
+            while (taken.Contains(stem + "_" + n)) n++;
+            stems[c] = stem + "_" + n;
+            taken.Add(stems[c]);
+            used.Add(stems[c]);
+        }
+        return stems;
     }
 
     private static bool IsPlaceholderChar(char c) => c == '_' || char.IsLetterOrDigit(c);

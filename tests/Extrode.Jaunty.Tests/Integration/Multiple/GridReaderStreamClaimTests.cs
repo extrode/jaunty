@@ -81,6 +81,63 @@ public class GridReaderStreamClaimTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void ASecondStreamBeforeTheFirstIsEnumerated_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var grid = connection.QueryMultiple(ThreeSets);
+
+        IEnumerable<Row> first = grid.ReadPartialStream<Row>();
+
+        Assert.Throws<InvalidOperationException>(() => grid.ReadPartialStream<Row>());
+        Assert.Equal([1L], Ids(first));
+        Assert.Equal([2L], Ids(grid.Read<Row>()));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task ASecondAsyncStreamBeforeTheFirstIsEnumerated_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        await using var grid = await connection.QueryMultipleAsync(ThreeSets);
+
+        grid.ReadStreamAsync<Row>();
+
+        Assert.Throws<InvalidOperationException>(() => grid.ReadPartialStreamAsync<Row>());
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void AnEnumeratorDisposedBeforeMoveNext_DoesNotBlockTheNextStream(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var grid = connection.QueryMultiple(ThreeSets);
+
+        grid.ReadStream<Row>().GetEnumerator().Dispose();
+
+        Assert.Equal([1L], Ids(grid.ReadStream<Row>()));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task AnAsyncEnumeratorDisposedBeforeMoveNext_DoesNotBlockTheNextStream(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        await using var grid = await connection.QueryMultipleAsync(ThreeSets);
+
+        await grid.ReadStreamAsync<Row>().GetAsyncEnumerator().DisposeAsync();
+
+        var rows = new List<Row>();
+        await foreach (Row row in grid.ReadStreamAsync<Row>())
+            rows.Add(row);
+        Assert.Equal([1L], Ids(rows));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void ReadInsideAForeach_Throws_AndNoResultSetIsSkipped(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

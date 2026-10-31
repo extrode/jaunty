@@ -9,12 +9,13 @@ namespace Extrode.Jaunty.Tests.Unit;
 public class ReleaseWorkflowTests
 {
     [Fact]
-    public void TheGitHubReleaseIsMarkedPreReleaseWhenTheVersionHasASuffix()
+    public void EveryGitHubReleaseIsMarkedLatestAndNotPreRelease()
     {
         Match step = Regex.Match(ReadReleaseWorkflow(), @"(?m)^      - name: Create GitHub Release$\n(?:^        .*\n)+");
         Assert.True(step.Success, "No 'Create GitHub Release' step was found in release.yml.");
 
-        Assert.Matches(@"(?m)^          prerelease: \$\{\{ contains\(steps\.version\.outputs\.version, '-'\) \}\}$", step.Value);
+        Assert.Matches(@"(?m)^          prerelease: false$", step.Value);
+        Assert.Matches(@"(?m)^          make_latest: 'true'$", step.Value);
     }
 
     [Fact]
