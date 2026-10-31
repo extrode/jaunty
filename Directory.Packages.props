@@ -36,7 +36,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.6" />
+    <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.6.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
     <PackageVersion Include="System.CommandLine" Version="2.0.14" />
@@ -47,9 +47,9 @@
     <!-- Database drivers used by tests/benchmarks/the scaffolding CLI tool - not a dependency
          propagated into a consumer's own project, so bumped to latest without the same-major
          constraint. net472 keeps the latest patch within the major that still supports it. -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.3" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.31" Condition="'$(TargetFramework)' == 'net472'" />
     <!-- NOT bumped to 3.0.5 (latest): its bundled native SQLite formats REAL->text with full
          round-trip precision instead of 15 significant digits. JauntyGenerator.cs's RealColumnsLocal
@@ -62,14 +62,14 @@
          Bumping this needs a fix to the generator's invariant first, not just a test update. -->
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
     <!-- pin: CVE-2026-84008 / CVE-2026-70162 (GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7); Microsoft.Data.SqlClient 7.1.0 pulls 8.0.1 (net8.0) / 9.0.18 (net10.0), patched in 8.0.2 / 10.0.13 -->
-    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="8.0.2" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.18" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" Condition="'$(TargetFramework)' == 'net10.0'" />
     <PackageVersion Include="MySqlConnector" Version="2.6.2" />
     <!-- MySql.Data 26.7.0: Oracle changed its version numbering scheme between 9.7.0 and this
          release (confirmed via nuget.org publisher metadata - still Oracle Corporation, no gap in
          the release cadence), not a 17-major-version jump in the usual sense. Still ships
          .NETFramework4.6.2/4.8 targets alongside net8/9/10, so one version covers every TFM. -->
-    <PackageVersion Include="MySql.Data" Version="26.7.0" />
+    <PackageVersion Include="MySql.Data" Version="26.10.0" />
     <PackageVersion Include="System.Data.SQLite.Core" Version="1.0.119" />
     <!-- System.Data.SqlClient is deprecated; referenced only by Scaffolding.Tests to pin the
          scaffolder's fallback SQL Server provider type name. -->
