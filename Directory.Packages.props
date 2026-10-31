@@ -36,7 +36,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.6" />
+    <PackageVersion Include="DuckDB.NET.Data.Full" Version="1.5.6.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
     <PackageVersion Include="System.CommandLine" Version="2.0.14" />
@@ -47,9 +47,9 @@
     <!-- Database drivers used by tests/benchmarks/the scaffolding CLI tool - not a dependency
          propagated into a consumer's own project, so bumped to latest without the same-major
          constraint. net472 keeps the latest patch within the major that still supports it. -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.3" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" Condition="'$(TargetFramework)' != 'net472'" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.31" Condition="'$(TargetFramework)' == 'net472'" />
     <!-- NOT bumped to 3.0.5 (latest): its bundled native SQLite formats REAL->text with full
          round-trip precision instead of 15 significant digits. JauntyGenerator.cs's RealColumnsLocal
@@ -69,7 +69,7 @@
          release (confirmed via nuget.org publisher metadata - still Oracle Corporation, no gap in
          the release cadence), not a 17-major-version jump in the usual sense. Still ships
          .NETFramework4.6.2/4.8 targets alongside net8/9/10, so one version covers every TFM. -->
-    <PackageVersion Include="MySql.Data" Version="26.7.0" />
+    <PackageVersion Include="MySql.Data" Version="26.10.0" />
     <PackageVersion Include="System.Data.SQLite.Core" Version="1.0.119" />
     <!-- System.Data.SqlClient is deprecated; referenced only by Scaffolding.Tests to pin the
          scaffolder's fallback SQL Server provider type name. -->
