@@ -106,7 +106,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
-        return GetByIdSimpleCore<T>(connection, id, default) ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+        return GetByIdSimpleCore<T>(connection, id, default, required: true)!;
     }
 
     /// <summary>
@@ -127,7 +127,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
-        return GetByIdSimpleCore<T>(connection, id, options) ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+        return GetByIdSimpleCore<T>(connection, id, options, required: true)!;
     }
 
     /// <summary>
@@ -147,7 +147,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
         KeyGuard.ThrowIfNull(id, nameof(id));
-        return GetByIdTypedCore<T, TId>(connection, id, default) ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+        return GetByIdTypedCore<T, TId>(connection, id, default, required: true)!;
     }
 
     /// <summary>
@@ -168,7 +168,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
         KeyGuard.ThrowIfNull(id, nameof(id));
-        return GetByIdTypedCore<T, TId>(connection, id, options) ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+        return GetByIdTypedCore<T, TId>(connection, id, options, required: true)!;
     }
 
     /// <summary>
@@ -293,8 +293,8 @@ public static partial class Jaunty
 
         async ValueTask<T> AwaitAsync()
         {
-            var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
-            return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+            var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken, required: true).ConfigureAwait(false);
+            return result!;
         }
     }
 
@@ -331,8 +331,8 @@ public static partial class Jaunty
 
         async ValueTask<T> AwaitAsync()
         {
-            var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);
-            return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+            var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken, required: true).ConfigureAwait(false);
+            return result!;
         }
     }
 
@@ -368,8 +368,8 @@ public static partial class Jaunty
 
         async ValueTask<T> AwaitAsync()
         {
-            var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
-            return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+            var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken, required: true).ConfigureAwait(false);
+            return result!;
         }
     }
 
@@ -406,8 +406,8 @@ public static partial class Jaunty
 
         async ValueTask<T> AwaitAsync()
         {
-            var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);
-            return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
+            var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken, required: true).ConfigureAwait(false);
+            return result!;
         }
     }
 }
