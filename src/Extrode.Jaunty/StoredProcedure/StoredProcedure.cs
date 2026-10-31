@@ -113,7 +113,7 @@ public static partial class Jaunty
     /// </remarks>
     public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options) where T : new()
     {
-        return ExecuteStoredProcedure<T>(connection, procedureName, null, options);
+        return ExecuteStoredProcedure<T>(connection, procedureName, (object?)null, options);
     }
 
     /// <summary>
@@ -261,7 +261,7 @@ public static partial class Jaunty
     /// </remarks>
     public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options) where T : new()
     {
-        return ExecuteStoredProcedureFirst<T>(connection, procedureName, null, options);
+        return ExecuteStoredProcedureFirst<T>(connection, procedureName, (object?)null, options);
     }
 
     /// <summary>
@@ -411,7 +411,7 @@ public static partial class Jaunty
     /// </remarks>
     public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options) where T : new()
     {
-        return ExecuteStoredProcedureFirstOrDefault<T>(connection, procedureName, null, options);
+        return ExecuteStoredProcedureFirstOrDefault<T>(connection, procedureName, (object?)null, options);
     }
 
     /// <summary>
@@ -548,7 +548,7 @@ public static partial class Jaunty
     /// </remarks>
     public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options)
     {
-        return ExecuteStoredProcedureScalar<T>(connection, procedureName, null, options);
+        return ExecuteStoredProcedureScalar<T>(connection, procedureName, (object?)null, options);
     }
 
     /// <summary>
@@ -679,7 +679,7 @@ public static partial class Jaunty
     /// </remarks>
     public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, CommandOptions options)
     {
-        return ExecuteStoredProcedureNonQuery(connection, procedureName, null, options);
+        return ExecuteStoredProcedureNonQuery(connection, procedureName, (object?)null, options);
     }
 
     /// <summary>

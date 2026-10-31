@@ -192,7 +192,7 @@ public static class CsvImportExtensions
     // SQLite: Use sqlite3 CLI .import command
     // =============================================
 
-    private static long ImportSqlite(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
+    private static long ImportSqlite(IDbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken = default)
     {
         RequireFileOnThisMachine(filePath);
 
@@ -207,6 +207,7 @@ public static class CsvImportExtensions
             connection.Open();
 
         string? dbPath;
+        bool tableExists;
         try
         {
             // AUD-R38-009: the file used to be read out of the connection string by splitting on ';'
@@ -232,6 +233,11 @@ public static class CsvImportExtensions
                 if (!SqliteCliCanReach(connection, tableName.Substring(0, schemaDot), dbPath))
                     return ImportViaPreparedStatements(connection, tableName, filePath, options);
 
+                // Read here, while this connection is open, because the CLI's .import treats a
+                // missing table differently: it creates it from the first line it reads (see
+                // ImportViaSqliteCli).
+                tableExists = SqliteSchemaHasObjectNamed(connection, tableName.Substring(0, schemaDot), tableName.Substring(schemaDot + 1));
+
                 // Reachable means the schema names the file the CLI was handed, and the CLI knows
                 // that file by its own name for it: main. A caller's second alias for the same file
                 // ("ATTACH 'app.db' AS alias2" where app.db is already main) does not exist in the
@@ -241,6 +247,10 @@ public static class CsvImportExtensions
             else if (!SqliteUnqualifiedNameResolvesToMain(connection, tableName))
             {
                 return ImportViaPreparedStatements(connection, tableName, filePath, options);
+            }
+            else
+            {
+                tableExists = SqliteSchemaHasObjectNamed(connection, "main", tableName);
             }
         }
         finally
@@ -253,7 +263,7 @@ public static class CsvImportExtensions
         }
 
         // Use sqlite3 CLI for file-based databases
-        return ImportViaSqliteCli(dbPath, tableName, filePath, options);
+        return ImportViaSqliteCli(dbPath, tableName, filePath, options, tableExists, cancellationToken);
     }
 
     /// <summary>
@@ -452,11 +462,12 @@ public static class CsvImportExtensions
     private static async ValueTask<long> ImportSqliteAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
         // sqlite3 CLI is process-based; offload the blocking call to a thread-pool thread so the
-        // calling async thread isn't blocked for the duration of the CLI process.
-        return await Task.Run(() => ImportSqlite(connection, tableName, filePath, options), cancellationToken).ConfigureAwait(false);
+        // calling async thread isn't blocked for the duration of the CLI process. The token goes
+        // into the import as well, which kills the CLI process if it is cancelled mid-run.
+        return await Task.Run(() => ImportSqlite(connection, tableName, filePath, options, cancellationToken), cancellationToken).ConfigureAwait(false);
     }
 
-    private static long ImportViaSqliteCli(string dbPath, string tableName, string filePath, CsvImportOptions options)
+    private static long ImportViaSqliteCli(string dbPath, string tableName, string filePath, CsvImportOptions options, bool tableExists, CancellationToken cancellationToken)
     {
         // dbPath is the file PRAGMA database_list reports for main - a real path now, but still
         // unvalidated, since SQLite accepts quote characters in file names - and is interpolated directly into the sqlite3 CLI process's command-line arguments; a quote
@@ -501,6 +512,18 @@ public static class CsvImportExtensions
         ThrowIfNullValueUnsupported(options, "sqlite3 CLI import");
         ThrowIfEncodingUnsupported(options, "sqlite3 CLI import");
 
+        // When the table does not exist, .import creates it and takes its column names from the
+        // first line it reads. "--skip 1" skips the header before that, so the first data row
+        // became the column names and was never imported, while CountCsvRows still counted it.
+        // Without a header there is no line to name the columns from at all.
+        if (!tableExists && !options.HasHeader)
+            throw new InvalidOperationException(
+                $"Table '{tableName}' does not exist, and the sqlite3 CLI import path can only create a table from a CSV header row. Create the table first, or set HasHeader.");
+
+        // The CLI drops surplus fields and exits 0, where ImportViaPreparedStatements throws, so
+        // the same file must be rejected here before the CLI sees it.
+        ThrowIfAnyRecordHasSurplusFields(filePath, options, cancellationToken);
+
         // Build sqlite3 commands
         var commands = new StringBuilder();
         commands.AppendLine(".mode csv");
@@ -508,7 +531,7 @@ public static class CsvImportExtensions
         if (options.Delimiter != ',')
             commands.AppendLine($".separator \"{options.Delimiter}\"");
 
-        if (options.HasHeader)
+        if (options.HasHeader && tableExists)
             commands.AppendLine($".import --skip 1 {schemaOption}\"{filePath.Replace("\\", "/")}\" {escapedTableName}");
         else
             commands.AppendLine($".import {schemaOption}\"{filePath.Replace("\\", "/")}\" {escapedTableName}");
@@ -528,17 +551,78 @@ public static class CsvImportExtensions
         if (process == null)
             throw new InvalidOperationException("Failed to start sqlite3 CLI. Ensure sqlite3 is installed and on PATH.");
 
-        process.StandardInput.Write(commands.ToString());
-        process.StandardInput.Close();
+        // Killing the process ends both reads and the wait below, so a cancelled import stops
+        // here instead of running until sqlite3 exits by itself.
+        using CancellationTokenRegistration killOnCancel = cancellationToken.Register(() =>
+        {
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+                // Already exited.
+            }
+        });
+
+        // stdout is drained concurrently with stderr: nothing reads it otherwise, and a CLI that
+        // writes enough to fill the pipe buffer blocks before it exits.
+        Task<string> stdout = process.StandardOutput.ReadToEndAsync();
+
+        try
+        {
+            process.StandardInput.Write(commands.ToString());
+            process.StandardInput.Close();
+        }
+        catch (IOException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The pipe broke because the process was killed; reported as cancellation below.
+        }
 
         string stderr = process.StandardError.ReadToEnd();
+        stdout.GetAwaiter().GetResult();
         process.WaitForExit();
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"sqlite3 import failed (exit code {process.ExitCode}): {stderr}");
 
         // sqlite3 doesn't report row count; count lines in file minus header
         return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
+    }
+
+    /// <summary>
+    /// Applies ImportViaPreparedStatements' field-count rule to the whole file: a record with more
+    /// fields than the first record (the header, when there is one) throws, and a shorter one is
+    /// allowed, since both paths import its missing fields as NULL.
+    /// </summary>
+    private static void ThrowIfAnyRecordHasSurplusFields(string filePath, CsvImportOptions options, CancellationToken cancellationToken)
+    {
+        using var reader = new StreamReader(filePath, options.Encoding);
+
+        string? firstLine = ReadCsvRecord(reader, options.Quote);
+        if (firstLine == null)
+            return;
+
+        int columnCount = ParseCsvLine(firstLine, options.Delimiter, options.Quote).Length;
+        long recordNumber = 1;
+        string? line;
+        while ((line = ReadCsvRecord(reader, options.Quote)) != null)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            recordNumber++;
+
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            int fieldCount = ParseCsvLine(line, options.Delimiter, options.Quote).Length;
+            if (fieldCount > columnCount)
+                throw new InvalidDataException(
+                    $"CSV record {recordNumber} in '{filePath}' has {fieldCount} fields but the " +
+                    $"{(options.HasHeader ? "header" : "first record")} defines {columnCount}. " +
+                    "Extra fields would be discarded - fix the record, or quote values that contain the delimiter.");
+        }
     }
 
     private static long ImportViaPreparedStatements(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
