@@ -94,7 +94,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.22" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
-    <PackageVersion Include="RepoDb.Sqlite.Microsoft" Version="1.16.0" />
+    <PackageVersion Include="RepoDb.Sqlite.Microsoft" Version="1.17.0" />
     <PackageVersion Include="RepoDb.SqlServer" Version="1.16.1" />
     <PackageVersion Include="RepoDb.PostgreSql" Version="1.16.0" />
     <PackageVersion Include="RepoDb.MySqlConnector" Version="1.16.0" />
