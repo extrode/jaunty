@@ -235,9 +235,11 @@ jobs:
           files: |
             packout/*.nupkg
             packout/*.snupkg
-          # A SemVer pre-release suffix (1.0.0-rc.3) marks the GitHub Release pre-release, so it
-          # is never shown as Latest. NuGet clients already read the suffix from the package.
-          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          # Every release is marked Latest, release candidates included: GitHub only lets a
+          # non-pre-release be Latest, and the newest tag should always be the one shown. NuGet
+          # clients still read the pre-release suffix (1.0.0-rc.5) from the package itself.
+          prerelease: false
+          make_latest: 'true'
           generate_release_notes: true
           body: |
             See [CHANGELOG.md](https://github.com/extrode/jaunty/blob/main/CHANGELOG.md) for details.
