@@ -4,6 +4,7 @@ using System.Data.Common;
 using Extrode.Jaunty.Core;
 using Extrode.Jaunty.Configuration;
 using Extrode.Jaunty.Interceptors;
+using Extrode.Jaunty.Internals;
 using Extrode.Jaunty.Internals.Read;
 using Extrode.Jaunty.StoredProcedure;
 
@@ -368,20 +369,15 @@ public static partial class Jaunty
         // ExecuteNonQueryCoreAsync and therefore do both. Same method name, same public surface,
         // opposite observability - and it silently excluded precisely the stored-procedure calls
         // that use output and return parameters, typically the ones an audit trail most needs.
-        // Whether anything is actually observing is the pipeline's own decision (IsObserved covers
-        // interceptors and the DiagnosticListener alike), so the only test here is whether a
-        // pipeline is configured at all.
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken)
-            : pipeline.ExecuteWithInterceptionAsync(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken),
-                cancellationToken);
+        // Routed through CommandObservation like every other command, so a DiagnosticListener
+        // subscriber with no interceptor registered sees these calls too (round 39).
+        return CommandObservation.ExecuteAsync(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken),
+            cancellationToken);
     }
 
     private static async ValueTask<TResult> ExecuteWithOutputParametersCoreAsync<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
@@ -413,7 +409,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
 #if NET8_0_OR_GREATER
             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -460,17 +456,13 @@ public static partial class Jaunty
         SpParameters spParameters = parameters ?? new SpParameters();
 
         // See ExecuteWithOutputParametersAsync for why this wrapper exists (AUD-R25).
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken)
-            : pipeline.ExecuteWithInterceptionAsync(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken),
-                cancellationToken);
+        return CommandObservation.ExecuteAsync(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken),
+            cancellationToken);
     }
 
     private static async ValueTask<T> ExecuteScalarWithOutputParametersCoreAsync<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
@@ -501,7 +493,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
             object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
@@ -540,17 +532,13 @@ public static partial class Jaunty
         SpParameters spParameters = parameters ?? new SpParameters();
 
         // See ExecuteWithOutputParametersAsync for why this wrapper exists (AUD-R25).
-        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
-
-        return pipeline is null
-            ? ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken)
-            : pipeline.ExecuteWithInterceptionAsync(
-                procedureName,
-                spParameters,
-                connection,
-                CommandType.StoredProcedure,
-                () => ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken),
-                cancellationToken);
+        return CommandObservation.ExecuteAsync(
+            procedureName,
+            spParameters,
+            connection,
+            CommandType.StoredProcedure,
+            () => ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken),
+            cancellationToken);
     }
 
     private static async ValueTask<int> ExecuteNonQueryWithOutputParametersCoreAsync(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
@@ -581,7 +569,7 @@ public static partial class Jaunty
 
             BindSpParameters(command, parameters);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            CommandObservation.Log(command.CommandText, parameters);
 
             int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 

@@ -106,7 +106,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        return ExecuteStoredProcedureAsync<T>(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureAsync<T>(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>
@@ -258,7 +258,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>
@@ -421,7 +421,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
-        return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>
@@ -565,7 +565,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CommandOptions<T> options, CancellationToken cancellationToken = default)
     {
-        return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>
@@ -705,7 +705,7 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CommandOptions options, CancellationToken cancellationToken = default)
     {
-        return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, null, options, cancellationToken);
+        return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, (object?)null, options, cancellationToken);
     }
 
     /// <summary>

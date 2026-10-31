@@ -170,7 +170,7 @@ internal static class MultiRowInsertCache
             {
                 if (c > 0) sb.Append(", ");
                 sb.Append('@');
-                sb.Append(insertableColumns[c].ColumnName);
+                sb.Append(ParameterStem(insertableColumns[c].ColumnName));
                 sb.Append('_');
                 sb.Append(row);
             }
@@ -179,4 +179,30 @@ internal static class MultiRowInsertCache
 
         return sb.ToString();
     }
+
+    /// <summary>
+    /// The column name with every character that is not a letter, digit or underscore replaced by
+    /// an underscore, for use in a parameter placeholder. The column list itself stays escaped; only
+    /// the placeholder needs this, because a column name is a valid identifier, not a valid
+    /// parameter name: SqlIdentifierValidator lets <c>$</c> and <c>#</c> through, and not every
+    /// provider reads them as part of a placeholder name (round 39).
+    /// </summary>
+    internal static string ParameterStem(string columnName)
+    {
+        int i = 0;
+        while (i < columnName.Length && IsPlaceholderChar(columnName[i]))
+            i++;
+        if (i == columnName.Length)
+            return columnName;
+
+        char[] chars = columnName.ToCharArray();
+        for (; i < chars.Length; i++)
+        {
+            if (!IsPlaceholderChar(chars[i]))
+                chars[i] = '_';
+        }
+        return new string(chars);
+    }
+
+    private static bool IsPlaceholderChar(char c) => c == '_' || char.IsLetterOrDigit(c);
 }
