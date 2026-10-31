@@ -1088,6 +1088,68 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
+    [Fact]
+    public async Task ImportCsvAsync_SqliteCli_CliThatFillsStdout_StillCompletes()
+    {
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            return;
+
+        string originalPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        string? realSqlite = originalPath.Split(Path.PathSeparator)
+            .Select(dir => Path.Combine(dir, "sqlite3"))
+            .FirstOrDefault(File.Exists);
+        Assert.NotNull(realSqlite);
+
+        var shimDir = Path.Combine(Path.GetTempPath(), $"jaunty_sqlite3_shim_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(shimDir);
+        var shim = Path.Combine(shimDir, "sqlite3");
+        var marker = Path.Combine(shimDir, "ran");
+        File.WriteAllText(shim,
+            "#!/bin/sh\n" +
+            $"touch '{marker}'\n" +
+            "line=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n" +
+            "i=0\n" +
+            "while [ $i -lt 16384 ]; do echo $line; i=$((i+1)); done\n" +
+            $"exec '{realSqlite}' \"$@\"\n");
+        using (var chmod = System.Diagnostics.Process.Start("chmod", $"+x \"{shim}\""))
+            chmod!.WaitForExit();
+
+        var csvPath = WriteTempCsv("a\n1\n2\n");
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_stdout_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            connection.Open();
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "CREATE TABLE drained (a TEXT)";
+                cmd.ExecuteNonQuery();
+            }
+
+            Environment.SetEnvironmentVariable("PATH", shimDir + Path.PathSeparator + originalPath);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+
+            long rows = await connection.ImportCsvAsync("drained", csvPath, cancellationToken: cts.Token);
+
+            Assert.True(File.Exists(marker));
+            Assert.Equal(2, rows);
+            Assert.Equal(2, CountSqliteRows(connection, "drained"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            SQLiteConnection.ClearAllPools();
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+            File.Delete(csvPath);
+            File.Delete(shim);
+            if (File.Exists(marker))
+                File.Delete(marker);
+            Directory.Delete(shimDir);
+        }
+    }
+
     // =============================================
     // SQLite file-based, both providers
     // =============================================
