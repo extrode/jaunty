@@ -17,7 +17,7 @@ namespace Extrode.Jaunty;
 
 public static partial class Jaunty
 {
-    internal static T? GetByIdSimpleCore<T>(IDbConnection connection, object id, CommandOptions<T> options) where T : new()
+    internal static T? GetByIdSimpleCore<T>(IDbConnection connection, object id, CommandOptions<T> options, bool required = false) where T : new()
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
@@ -38,13 +38,13 @@ public static partial class Jaunty
                 cached.DescribeIdParameter(id),
                 connection,
                 options.CommandType,
-                () => GetByIdSimpleCoreDirect(connection, id, cached, options));
+                () => GetByIdSimpleCoreDirect(connection, id, cached, options, required));
         }
 
-        return GetByIdSimpleCoreDirect(connection, id, cached, options);
+        return GetByIdSimpleCoreDirect(connection, id, cached, options, required);
     }
 
-    private static T? GetByIdSimpleCoreDirect<T>(IDbConnection connection, object id, CachedCrudSql cached, CommandOptions<T> options) where T : new()
+    private static T? GetByIdSimpleCoreDirect<T>(IDbConnection connection, object id, CachedCrudSql cached, CommandOptions<T> options, bool required) where T : new()
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
@@ -83,10 +83,10 @@ public static partial class Jaunty
 
             if (connection is DbConnection)
             {
-                return ExecuteReaderForGet(command, options);
+                return ExecuteReaderForGet(command, options, required, id);
             }
 
-            return ExecuteReaderForGetNonAsync(command, options);
+            return ExecuteReaderForGetNonAsync(command, options, required, id);
         }
         finally
         {
@@ -94,7 +94,7 @@ public static partial class Jaunty
         }
     }
 
-    internal static T? GetByIdTypedCore<T, TId>(IDbConnection connection, TId id, CommandOptions<T> options) where T : IEntity<TId>, new()
+    internal static T? GetByIdTypedCore<T, TId>(IDbConnection connection, TId id, CommandOptions<T> options, bool required = false) where T : IEntity<TId>, new()
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
@@ -114,13 +114,13 @@ public static partial class Jaunty
                 cached.DescribeIdParameter(id),
                 connection,
                 options.CommandType,
-                () => GetByIdTypedCoreDirect<T, TId>(connection, id, cached, options));
+                () => GetByIdTypedCoreDirect<T, TId>(connection, id, cached, options, required));
         }
 
-        return GetByIdTypedCoreDirect<T, TId>(connection, id, cached, options);
+        return GetByIdTypedCoreDirect<T, TId>(connection, id, cached, options, required);
     }
 
-    private static T? GetByIdTypedCoreDirect<T, TId>(IDbConnection connection, TId id, CachedCrudSql cached, CommandOptions<T> options) where T : IEntity<TId>, new()
+    private static T? GetByIdTypedCoreDirect<T, TId>(IDbConnection connection, TId id, CachedCrudSql cached, CommandOptions<T> options, bool required) where T : IEntity<TId>, new()
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
@@ -159,10 +159,10 @@ public static partial class Jaunty
 
             if (connection is DbConnection)
             {
-                return ExecuteReaderForGet(command, options);
+                return ExecuteReaderForGet(command, options, required, id);
             }
 
-            return ExecuteReaderForGetNonAsync(command, options);
+            return ExecuteReaderForGetNonAsync(command, options, required, id);
         }
         finally
         {
@@ -170,29 +170,36 @@ public static partial class Jaunty
         }
     }
 
-    private static T? ExecuteReaderForGet<T>(IDbCommand command, CommandOptions<T> options) where T : new()
+    private static T? ExecuteReaderForGet<T>(IDbCommand command, CommandOptions<T> options, bool required, object? id) where T : new()
     {
         using (DbDataReader reader = ((DbCommand)command).ExecuteReader())
         {
             if (!reader.Read())
-                return default;
+                return required ? throw NotFound<T>(id) : default;
 
             Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, MappingMode.Strict);
             return map(reader);
         }
     }
 
-    private static T? ExecuteReaderForGetNonAsync<T>(IDbCommand command, CommandOptions<T> options) where T : new()
+    private static T? ExecuteReaderForGetNonAsync<T>(IDbCommand command, CommandOptions<T> options, bool required, object? id) where T : new()
     {
         using (IDataReader reader = command.ExecuteReader())
         {
             if (!reader.Read())
-                return default;
+                return required ? throw NotFound<T>(id) : default;
 
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, MappingMode.Strict);
             return map(reader);
         }
     }
+
+    // AUD-R40-001: GetRequired used to test the core's result with `?? throw`, but `T` is
+    // constrained only by `new()`, so for a struct entity (supported through IMapped<T>) the
+    // not-found sentinel is default(T), which is never null: a missing row came back all-default.
+    // The core now throws at the point it knows no row was read, for every T.
+    private static InvalidOperationException NotFound<T>(object? id)
+        => new($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
 
     private static void AddGetPrimaryKeyParameter(IDbCommand command, CachedCrudSql cached, object id)
     {
@@ -202,7 +209,7 @@ public static partial class Jaunty
         param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property, primaryKey.EnumStorageOverride) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
-    internal static async ValueTask<T?> GetByIdSimpleCoreAsync<T>(DbConnection dbConnection, object id, CommandOptions<T> options, CancellationToken cancellationToken) where T : new()
+    internal static async ValueTask<T?> GetByIdSimpleCoreAsync<T>(DbConnection dbConnection, object id, CommandOptions<T> options, CancellationToken cancellationToken, bool required = false) where T : new()
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
@@ -222,14 +229,14 @@ public static partial class Jaunty
                 cached.DescribeIdParameter(id),
                 dbConnection,
                 options.CommandType,
-                () => GetByIdSimpleCoreDirectAsync(dbConnection, id, cached, options, cancellationToken),
+                () => GetByIdSimpleCoreDirectAsync(dbConnection, id, cached, options, cancellationToken, required),
                 cancellationToken).ConfigureAwait(false);
         }
 
-        return await GetByIdSimpleCoreDirectAsync(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
+        return await GetByIdSimpleCoreDirectAsync(dbConnection, id, cached, options, cancellationToken, required).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T?> GetByIdSimpleCoreDirectAsync<T>(DbConnection dbConnection, object id, CachedCrudSql cached, CommandOptions<T> options, CancellationToken cancellationToken) where T : new()
+    private static async ValueTask<T?> GetByIdSimpleCoreDirectAsync<T>(DbConnection dbConnection, object id, CachedCrudSql cached, CommandOptions<T> options, CancellationToken cancellationToken, bool required) where T : new()
     {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
@@ -267,7 +274,7 @@ public static partial class Jaunty
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                return default;
+                return required ? throw NotFound<T>(id) : default;
 
             Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, MappingMode.Strict);
             return map(reader);
@@ -285,7 +292,7 @@ public static partial class Jaunty
         }
     }
 
-    internal static async ValueTask<T?> GetByIdTypedCoreAsync<T, TId>(DbConnection dbConnection, TId id, CommandOptions<T> options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    internal static async ValueTask<T?> GetByIdTypedCoreAsync<T, TId>(DbConnection dbConnection, TId id, CommandOptions<T> options, CancellationToken cancellationToken, bool required = false) where T : IEntity<TId>, new()
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
@@ -305,14 +312,14 @@ public static partial class Jaunty
                 cached.DescribeIdParameter(id),
                 dbConnection,
                 options.CommandType,
-                () => GetByIdTypedCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken),
+                () => GetByIdTypedCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken, required),
                 cancellationToken).ConfigureAwait(false);
         }
 
-        return await GetByIdTypedCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
+        return await GetByIdTypedCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken, required).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T?> GetByIdTypedCoreDirectAsync<T, TId>(DbConnection dbConnection, TId id, CachedCrudSql cached, CommandOptions<T> options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    private static async ValueTask<T?> GetByIdTypedCoreDirectAsync<T, TId>(DbConnection dbConnection, TId id, CachedCrudSql cached, CommandOptions<T> options, CancellationToken cancellationToken, bool required) where T : IEntity<TId>, new()
     {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
@@ -350,7 +357,7 @@ public static partial class Jaunty
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                return default;
+                return required ? throw NotFound<T>(id) : default;
 
             Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, MappingMode.Strict);
             return map(reader);
