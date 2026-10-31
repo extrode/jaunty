@@ -330,6 +330,17 @@ public class SqlServerBulkCopyProviderTests
         public void Dispose() { }
     }
 
+    [Fact]
+    public void Candidates_TrySystemDataSqlClient_ThenTheInBoxSystemData()
+    {
+        string[] systemAssemblies = [.. SqlServerBulkCopyProvider.Candidates
+            .Where(c => c.Namespace == "System.Data.SqlClient")
+            .Select(c => c.Assembly)];
+
+        Assert.Equal(["System.Data.SqlClient", "System.Data"], systemAssemblies);
+        Assert.Equal(("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient"), SqlServerBulkCopyProvider.Candidates[0]);
+    }
+
     private static MethodInfo MapBulkCopyOptionsMethod =>
         typeof(SqlServerBulkCopyProvider).GetMethod("MapBulkCopyOptions", BindingFlags.NonPublic | BindingFlags.Static)!;
 

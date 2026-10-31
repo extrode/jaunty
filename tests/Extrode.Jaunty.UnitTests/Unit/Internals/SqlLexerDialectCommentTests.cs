@@ -14,41 +14,41 @@ public class SqlLexerDialectCommentTests
         SQLite,
     }
 
-    private static (bool BackslashEscapes, bool DollarSigil, bool BracketIdentifiers) Flags(Engine engine) => engine switch
+    private static (bool BackslashEscapes, bool DollarSigil, bool BracketIdentifiers, bool NestsBlockComments) Flags(Engine engine) => engine switch
     {
-        Engine.PostgreSql => (false, true, false),
-        Engine.SqlServer => (false, false, true),
-        Engine.MySql => (true, false, false),
-        _ => (false, true, true),
+        Engine.PostgreSql => (false, true, false, true),
+        Engine.SqlServer => (false, false, true, true),
+        Engine.MySql => (true, false, false, false),
+        _ => (false, true, true, false),
     };
 
     private static string[] Span(string sql, Engine engine)
     {
-        var (b, d, k) = Flags(engine);
-        return SqlParameterParser.ExtractParameterNames(sql, b, d, k);
+        var (b, d, k, n) = Flags(engine);
+        return SqlParameterParser.ExtractParameterNames(sql, b, d, k, n);
     }
 
     private static string[] Classic(string sql, Engine engine)
     {
-        var (b, d, k) = Flags(engine);
+        var (b, d, k, n) = Flags(engine);
         MethodInfo method = typeof(SqlParameterParser).GetMethod(
             "ExtractParameterNamesClassic", BindingFlags.NonPublic | BindingFlags.Static)!;
-        return (string[])method.Invoke(null, new object[] { sql, b, d, k })!;
+        return (string[])method.Invoke(null, new object[] { sql, b, d, k, n })!;
     }
 
     private static string Detect(string sql, Engine engine)
     {
-        var (b, d, k) = Flags(engine);
-        return ParameterBinder.DetectParameterPrefix(sql, b, d, k);
+        var (b, d, k, n) = Flags(engine);
+        return ParameterBinder.DetectParameterPrefix(sql, b, d, k, n);
     }
 
     private static string Replace(string sql, Engine engine)
     {
-        var (b, d, k) = Flags(engine);
+        var (b, d, k, n) = Flags(engine);
         MethodInfo method = typeof(ParameterBinder).GetMethod(
             "ReplaceParametersLiteralAware", BindingFlags.NonPublic | BindingFlags.Static)!;
         var replacements = new Dictionary<string, string> { ["Id"] = "X", ["Old"] = "Y" };
-        return (string)method.Invoke(null, new object[] { sql, '@', replacements, b, d, k })!;
+        return (string)method.Invoke(null, new object[] { sql, '@', replacements, b, d, k, n })!;
     }
 
     private static void AssertAllWalkers(string sql, Engine engine, string[] expected)

@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.ComponentModel;
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 #if NET5_0_OR_GREATER
@@ -463,8 +464,25 @@ public static class CsvImportExtensions
     {
         // sqlite3 CLI is process-based; offload the blocking call to a thread-pool thread so the
         // calling async thread isn't blocked for the duration of the CLI process. The token goes
-        // into the import as well, which kills the CLI process if it is cancelled mid-run.
+        // into the import as well, but only the sqlite3 CLI route honours it, by killing the CLI
+        // process; the prepared-statement fallbacks run to completion once started.
         return await Task.Run(() => ImportSqlite(connection, tableName, filePath, options, cancellationToken), cancellationToken).ConfigureAwait(false);
+    }
+
+    // Runs inside the caller's CancellationTokenSource.Cancel(), so nothing may escape it: Kill
+    // throws InvalidOperationException once the process has exited, Win32Exception (.NET Framework)
+    // when it exits between Kill's own check and TerminateProcess, and NotSupportedException for a
+    // process it cannot kill.
+    internal static void KillIgnoringExit(Action kill)
+    {
+        try
+        {
+            kill();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or NotSupportedException)
+        {
+            // Already exited, or exiting.
+        }
     }
 
     private static long ImportViaSqliteCli(string dbPath, string tableName, string filePath, CsvImportOptions options, bool tableExists, CancellationToken cancellationToken)
@@ -553,17 +571,7 @@ public static class CsvImportExtensions
 
         // Killing the process ends both reads and the wait below, so a cancelled import stops
         // here instead of running until sqlite3 exits by itself.
-        using CancellationTokenRegistration killOnCancel = cancellationToken.Register(() =>
-        {
-            try
-            {
-                process.Kill();
-            }
-            catch (InvalidOperationException)
-            {
-                // Already exited.
-            }
-        });
+        using CancellationTokenRegistration killOnCancel = cancellationToken.Register(() => KillIgnoringExit(process.Kill));
 
         // stdout is drained concurrently with stderr: nothing reads it otherwise, and a CLI that
         // writes enough to fill the pipe buffer blocks before it exits.

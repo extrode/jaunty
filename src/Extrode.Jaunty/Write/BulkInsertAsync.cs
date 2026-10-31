@@ -369,9 +369,7 @@ public static partial class Jaunty
         // Use cached compiled property getters for multi-row binding
         Func<T, object?>[] getters = MultiRowInsertCache.GetOrBuildGetters<T>(cached.Metadata);
 
-        string[] parameterStems = new string[colCount];
-        for (int c = 0; c < colCount; c++)
-            parameterStems[c] = MultiRowInsertCache.ParameterStem(insertableColumns[c].ColumnName);
+        string[] parameterStems = MultiRowInsertCache.ParameterStems(insertableColumns);
 
         int totalInserted = 0;
         int entityCount = entityList.Count;

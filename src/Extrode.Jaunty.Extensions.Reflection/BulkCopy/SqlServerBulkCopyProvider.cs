@@ -15,25 +15,36 @@ namespace Extrode.Jaunty.Extensions.Reflection.BulkCopy;
 /// </summary>
 internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 {
-    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
-    private static readonly Type? SqlBulkCopyType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopy, Microsoft.Data.SqlClient")
-        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
-        ?? Type.GetType("System.Data.SqlClient.SqlBulkCopy, System.Data.SqlClient");
+    /// <summary>
+    /// Where each SqlClient type is looked for, in order. System.Data.SqlClient lives in its own
+    /// assembly on .NET Core (the NuGet package) but in the in-box System.Data on .NET Framework,
+    /// so both names are tried.
+    /// </summary>
+    internal static readonly (string Namespace, string Assembly)[] Candidates =
+    [
+        ("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient"),
+        ("System.Data.SqlClient", "System.Data.SqlClient"),
+        ("System.Data.SqlClient", "System.Data"),
+    ];
 
-    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
-    private static readonly Type? SqlBulkCopyOptionsType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions, Microsoft.Data.SqlClient")
-        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
-        ?? Type.GetType("System.Data.SqlClient.SqlBulkCopyOptions, System.Data.SqlClient");
+    private static readonly Type? SqlBulkCopyType = ResolveSqlClientType("SqlBulkCopy");
 
-    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
-    private static readonly Type? SqlConnectionType = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
-        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
-        ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
+    private static readonly Type? SqlBulkCopyOptionsType = ResolveSqlClientType("SqlBulkCopyOptions");
 
-    // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
-    private static readonly Type? SqlTransactionType = Type.GetType("Microsoft.Data.SqlClient.SqlTransaction, Microsoft.Data.SqlClient")
-        // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
-        ?? Type.GetType("System.Data.SqlClient.SqlTransaction, System.Data.SqlClient");
+    private static readonly Type? SqlConnectionType = ResolveSqlClientType("SqlConnection");
+
+    private static readonly Type? SqlTransactionType = ResolveSqlClientType("SqlTransaction");
+
+    private static Type? ResolveSqlClientType(string name)
+    {
+        foreach ((string ns, string assembly) in Candidates)
+        {
+            // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
+            if (Type.GetType(ns + "." + name + ", " + assembly) is { } type)
+                return type;
+        }
+        return null;
+    }
 
     // AOT-SAFE: Extensions.Reflection is never published NativeAOT (consumers opt out by referencing it); late-bound SqlClient bulk-copy API, null and unused when SqlClient is absent.
     private static readonly PropertyInfo? RowsCopiedProperty = SqlBulkCopyType?.GetProperty("RowsCopied");

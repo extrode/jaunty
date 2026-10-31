@@ -181,7 +181,7 @@ public class SqlParameterParserPropertyTests
         if (string.IsNullOrWhiteSpace(sql))
             return [];
 
-        return (string[])classic.Invoke(null, [sql, backslashEscapes, true, true])!;
+        return (string[])classic.Invoke(null, [sql, backslashEscapes, true, true, false])!;
     }
 
     private static string Printable(string sql) =>
