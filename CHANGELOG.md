@@ -20,6 +20,7 @@ default lives in `src/Directory.Build.props`.
 - Stored-procedure `SpParameters` calls go through the command observer (interceptors, diagnostics, logger); options-only overloads no longer bind a bare `null` to the wrong overload.
 - `ImportCsv` via the SQLite CLI: a missing table no longer loses the first data row, wrong field counts throw `InvalidDataException`, the child's stdout is drained and cancellation kills the process.
 - FlatFiles rejects an undefined `ConflictStrategy`; DuckDB `Query` rejects a null parameter name.
+- `GetRequired`/`GetRequiredAsync` throw for a missing struct entity (`IMapped<T>`) instead of returning an all-default value.
 - MySQL bulk-copy dialect wrapper keeps the fractional `AVG`; setter-only properties are skipped by the metadata builder; the `System.Data.SqlClient` fallback names its own assembly.
 - Source generator escapes keyword-named properties in the parameter-rooting witness.
 
