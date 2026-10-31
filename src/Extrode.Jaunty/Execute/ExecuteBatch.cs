@@ -13,6 +13,12 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a SQL command repeatedly for each set of parameters and returns the cumulative rows affected.
     /// </summary>
+    /// <param name="connection">The database connection to execute the query against.</param>
+    /// <param name="sql">The SQL command to execute once per parameter set.</param>
+    /// <param name="parameterSets">One parameter object per execution. Every set is executed; a <see langword="null"/> entry is rejected.</param>
+    /// <returns>The total number of rows affected across all parameter sets.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/>, <paramref name="sql"/> or <paramref name="parameterSets"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="sql"/> is empty or whitespace, or when an entry in <paramref name="parameterSets"/> is <see langword="null"/>.</exception>
     /// <remarks>
     /// <para>
     /// Every set is executed. A <see langword="null"/> entry in <paramref name="parameterSets"/>
@@ -41,6 +47,13 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a SQL command repeatedly for each set of parameters with command options.
     /// </summary>
+    /// <param name="connection">The database connection to execute the query against.</param>
+    /// <param name="sql">The SQL command to execute once per parameter set.</param>
+    /// <param name="parameterSets">One parameter object per execution. Every set is executed; a <see langword="null"/> entry is rejected.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <returns>The total number of rows affected across all parameter sets.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/>, <paramref name="sql"/> or <paramref name="parameterSets"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="sql"/> is empty or whitespace, or when an entry in <paramref name="parameterSets"/> is <see langword="null"/>.</exception>
     /// <remarks>
     /// <para>
     /// Every set is executed. A <see langword="null"/> entry in <paramref name="parameterSets"/>
@@ -195,6 +208,14 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a SQL command repeatedly for each set of parameters asynchronously.
     /// </summary>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">The SQL command to execute once per parameter set.</param>
+    /// <param name="parameterSets">One parameter object per execution. Every set is executed; a <see langword="null"/> entry is rejected.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The total number of rows affected across all parameter sets.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/>, <paramref name="sql"/> or <paramref name="parameterSets"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="sql"/> is empty or whitespace, or when an entry in <paramref name="parameterSets"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <paramref name="connection"/> is not a <see cref="DbConnection"/>.</exception>
     /// <remarks>
     /// <para>
     /// Every set is executed. A <see langword="null"/> entry in <paramref name="parameterSets"/>
@@ -225,6 +246,15 @@ public static partial class Jaunty
     /// <summary>
     /// Executes a SQL command repeatedly for each set of parameters with command options asynchronously.
     /// </summary>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">The SQL command to execute once per parameter set.</param>
+    /// <param name="parameterSets">One parameter object per execution. Every set is executed; a <see langword="null"/> entry is rejected.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The total number of rows affected across all parameter sets.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/>, <paramref name="sql"/> or <paramref name="parameterSets"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="sql"/> is empty or whitespace, or when an entry in <paramref name="parameterSets"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <paramref name="connection"/> is not a <see cref="DbConnection"/>.</exception>
     /// <remarks>
     /// <para>
     /// Every set is executed. A <see langword="null"/> entry in <paramref name="parameterSets"/>

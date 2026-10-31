@@ -275,6 +275,14 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning the results as a list of entities of type <typeparamref name="T"/>.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A list of the mapped result rows.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -289,6 +297,15 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning the first result.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first result row.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the stored procedure returns no rows.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -303,6 +320,14 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning the first result or <see langword="default"/>.
     /// </summary>
+    /// <typeparam name="T">The type each result row is mapped to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first result row, or <see langword="default"/> when the procedure returns no rows.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -317,6 +342,14 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning a scalar value.
     /// </summary>
+    /// <typeparam name="T">The type of the scalar value.</typeparam>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The first column of the first row, converted to the requested type.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
@@ -331,6 +364,13 @@ public static partial class Jaunty
     /// Asynchronously executes a stored procedure with output parameters and a cancellation token,
     /// returning the number of rows affected.
     /// </summary>
+    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The stored procedure parameters, including any output parameters, or <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The number of rows affected.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> or <paramref name="procedureName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="procedureName"/> is empty or whitespace.</exception>
     /// <remarks>
     /// AUD-R38-060. Without this overload <c>(name, parameters, cancellationToken)</c> could not bind
     /// to the <see cref="SpParameters"/> overload, whose third parameter is the options struct, so it
