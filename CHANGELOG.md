@@ -9,6 +9,20 @@ default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Native bulk copy applied no `ITypeHandler` or `EnumStorage` once a batch passed the native threshold; values now convert as they do on the multi-row path.
+- Fluent `Join` aliases are validated like the `FROM` alias.
+- SQL lexing: nested block comments (PostgreSQL, SQL Server), PostgreSQL `E'..\\'..'` strings and MySQL `#` comments no longer misplace parameters.
+- A null `object` property binds `DBNull` instead of expanding as a collection.
+- Multi-row insert placeholders are built from a sanitised column name; `$` and spaces in a column name no longer break the command.
+- `GridReader` cleanup after a cancelled read no longer uses the cancelled token, and a stream discarded before its first `MoveNext` releases its claim.
+- Stored-procedure `SpParameters` calls go through the command observer (interceptors, diagnostics, logger); options-only overloads no longer bind a bare `null` to the wrong overload.
+- `ImportCsv` via the SQLite CLI: a missing table no longer loses the first data row, wrong field counts throw `InvalidDataException`, the child's stdout is drained and cancellation kills the process.
+- FlatFiles rejects an undefined `ConflictStrategy`; DuckDB `Query` rejects a null parameter name.
+- MySQL bulk-copy dialect wrapper keeps the fractional `AVG`; setter-only properties are skipped by the metadata builder; the `System.Data.SqlClient` fallback names its own assembly.
+- Source generator escapes keyword-named properties in the parameter-rooting witness.
+
 ## [1.0.0-rc.3] - 2026-10-02
 
 ### Breaking changes
