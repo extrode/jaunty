@@ -77,6 +77,10 @@ public class NamedParameterQueryTests : IDisposable
         => Assert.Throws<ArgumentNullException>(() => _db.Query<SalesRecord>(null!, ("region", "Northeast")));
 
     [Fact]
+    public void Query_WithParameters_NullParameterName_ThrowsArgumentException()
+        => Assert.Throws<ArgumentNullException>(() => _db.Query<SalesRecord>("SELECT 1", (null!, 1)));
+
+    [Fact]
     public void Query_WithParameters_WhitespaceSql_Throws()
         => Assert.Throws<ArgumentException>(() => _db.Query<SalesRecord>("   ", ("region", "Northeast")));
 

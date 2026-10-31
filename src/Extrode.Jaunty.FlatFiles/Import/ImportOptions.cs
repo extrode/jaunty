@@ -75,6 +75,11 @@ public readonly struct ImportOptions
         if (batchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize), batchSize, "Batch size must be greater than zero.");
 
+        // An undefined ConflictStrategy is read differently by each dialect (Skip on SQL Server's
+        // MERGE, Error on the plain INSERT of PostgreSQL and SQLite), so reject it here.
+        if (!Enum.IsDefined(typeof(ConflictStrategy), onConflict))
+            throw new ArgumentOutOfRangeException(nameof(onConflict), onConflict, "Unknown conflict strategy.");
+
         _batchSize = batchSize;
         OnConflict = onConflict;
         CreateTableIfMissing = createTableIfMissing;
